@@ -25,7 +25,11 @@ import {
 } from "./pages";
 
 const rootRoute = createRootRoute({ component: () => <Outlet /> });
-const route = (path: string, component: () => React.ReactNode) => createRoute({ getParentRoute: () => rootRoute, path, component });
+
+const route = <const TPath extends string,>(
+  path: TPath,
+  component: () => React.ReactNode,
+) => createRoute({ getParentRoute: () => rootRoute, path, component });
 
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: LandingPage });
 const pricingRoute = route("/pricing", PricingPage);
