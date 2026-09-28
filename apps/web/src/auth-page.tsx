@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Check, CircleAlert, Eye, EyeOff, LoaderCircle } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Logo, SaveStreamMark } from "./components/brand";
 import { PreferencesControls } from "./components/preferences-controls";
 import { usePreferences } from "./lib/preferences";
@@ -234,7 +234,7 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
   );
 }
 
-function SocialButton({ label, icon, loading, disabled, onClick, provider }: { label: string; icon: React.ReactNode; loading: boolean; disabled: boolean; onClick: () => void; provider: SocialProvider }) {
+function SocialButton({ label, icon, loading, disabled, onClick, provider }: { label: string; icon: ReactNode; loading: boolean; disabled: boolean; onClick: () => void; provider: SocialProvider }) {
   return (
     <button type="button" className={socialButton} onClick={onClick} disabled={disabled} aria-label={label} data-provider={provider}>
       {loading ? <LoaderCircle className="size-5 animate-spin" /> : icon}
