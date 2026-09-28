@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { usePreferences } from "../lib/preferences";
 import type { Status } from "../lib/types";
 
 const statusClass: Record<Status, string> = {
@@ -12,10 +13,21 @@ const statusClass: Record<Status, string> = {
 };
 
 export function StatusBadge({ status }: { status: Status }) {
+  const { t } = usePreferences();
+  const label = {
+    Recording: t("status.Recording"),
+    Processing: t("status.Processing"),
+    Ready: t("status.Ready"),
+    Waiting: t("status.Waiting"),
+    Offline: t("status.Offline"),
+    Paused: t("status.Paused"),
+    Error: t("status.Error"),
+  }[status];
+
   return (
     <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-medium ${statusClass[status]}`}>
       <span className={`size-1.5 rounded-full bg-current ${status === "Recording" ? "animate-pulse" : ""}`} />
-      {status}
+      {label}
     </span>
   );
 }
