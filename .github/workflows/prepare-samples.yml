@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 45
     env:
       DRIVE_URL: https://drive.google.com/drive/folders/1RbhMJevIdaFFjA6GMNJ5erBEYcWIHuno
+      FEATURED_DRIVE_URL: https://drive.google.com/file/d/1_bsSqN1UM4b9JIp8Ypli6yRjXeLAWeZG/view?usp=drive_link
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +45,8 @@ jobs:
           rm -rf incoming-drive
           mkdir -p incoming-drive
           python -m gdown --folder "$DRIVE_URL" --output incoming-drive
+          mkdir -p incoming-drive/featured
+          python -m gdown --fuzzy "$FEATURED_DRIVE_URL" -O incoming-drive/featured/FEATURED_REPLACEMENT.mp4
           echo "Downloaded files:"
           find incoming-drive -maxdepth 6 -type f -printf '%s %p\n' | sort -nr | head -50
           test "$(find incoming-drive -type f | wc -l)" -gt 0
@@ -55,7 +58,8 @@ jobs:
             --public-dir apps/web/public/samples \
             --data-file apps/web/src/lib/sample-media.ts \
             --max-videos 4 \
-            --max-images 6
+            --max-images 6 \
+            --clip-seconds 180
 
       - name: Upload review artifact
         uses: actions/upload-artifact@v4
