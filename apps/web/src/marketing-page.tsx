@@ -12,6 +12,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { Logo } from "./components/brand";
+import { PartnerSampleMosaic } from "./components/partner-sample-mosaic";
 import { PreferencesControls } from "./components/preferences-controls";
 import { SampleMediaGrid } from "./components/sample-media-grid";
 import { StatusBadge } from "./components/ui";
@@ -44,7 +45,6 @@ export function LandingPage() {
     t("features.usage"),
     t("features.retention"),
   ];
-  const partnerTiles = [t("partner.long"), t("partner.creator"), t("partner.review"), t("partner.library")];
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
@@ -146,9 +146,7 @@ export function LandingPage() {
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
               <div className="grid lg:grid-cols-[1fr_.95fr]">
                 <div className="p-6 sm:p-10 lg:p-12"><p className="text-sm font-semibold text-indigo-600">{t("partner.eyebrow")}</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold sm:text-4xl">{t("partner.title")}</h2><p className="mt-5 max-w-2xl leading-7 text-[var(--muted)]">{t("partner.body")}</p><a href="https://www.youtube.com/channel/UCUkhUF-GUS22KWBFEcD2fEw" target="_blank" rel="noreferrer" className={`${primaryButton} mt-7`}><Youtube className="size-4" /> {t("cta.visitPartner")} <ExternalLink className="size-4" /></a></div>
-                <div className="grid min-h-72 grid-cols-2 gap-px bg-[var(--border)] p-px sm:min-h-80">
-                  {partnerTiles.map((label, index) => <div key={label} className="relative grid place-items-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 p-6 text-center text-white"><Youtube className="size-9 text-white/70" /><p className="mt-3 text-sm font-medium">{label}</p><span className="absolute right-3 top-3 font-mono text-xs text-white/45">0{index + 1}</span></div>)}
-                </div>
+                <PartnerSampleMosaic sampleLabel={t("examples.eyebrow")} />
               </div>
             </div>
           </div>
