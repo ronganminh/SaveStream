@@ -2,11 +2,14 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   Check,
+  Clock3,
   Cloud,
+  ExternalLink,
   Play,
   Plus,
   Radio,
   Video,
+  Youtube,
 } from "lucide-react";
 import { Logo, SaveStreamMark } from "./components/brand";
 import { StatusBadge } from "./components/ui";
@@ -17,6 +20,10 @@ const primaryButton =
 const secondaryButton =
   "inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 text-sm font-semibold transition hover:bg-[var(--subtle)]";
 
+function scrollToSection(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
@@ -24,9 +31,10 @@ export function LandingPage() {
         <div className="mx-auto flex h-16 max-w-[1540px] items-center px-4 sm:px-6 lg:px-8">
           <Logo />
           <nav className="ml-10 hidden items-center gap-7 text-sm text-[var(--muted)] md:flex">
-            <a href="#features">Features</a>
-            <a href="#how">How it works</a>
-            <a href="#examples">Examples</a>
+            <button type="button" onClick={() => scrollToSection("features")} className="transition hover:text-[var(--fg)]">Features</button>
+            <button type="button" onClick={() => scrollToSection("how")} className="transition hover:text-[var(--fg)]">How it works</button>
+            <button type="button" onClick={() => scrollToSection("platforms")} className="transition hover:text-[var(--fg)]">Platforms</button>
+            <button type="button" onClick={() => scrollToSection("examples")} className="transition hover:text-[var(--fg)]">Examples</button>
             <Link to="/pricing">Pricing</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
@@ -44,7 +52,7 @@ export function LandingPage() {
       </header>
 
       <main>
-        <section className="border-b border-[var(--border)] px-4 pb-16 pt-16 text-center sm:pb-20 sm:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
+        <section className="flex items-center border-b border-[var(--border)] px-4 pb-16 pt-16 text-center sm:pb-20 sm:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
           <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs text-[var(--muted)]">
             <Cloud className="size-3 text-indigo-600" />
             Automatic cloud recording
@@ -59,13 +67,13 @@ export function LandingPage() {
             <Link to="/sign-up" className={primaryButton}>
               Start for free <ArrowRight className="size-4" />
             </Link>
-            <a href="#how" className={secondaryButton}>
+            <button type="button" onClick={() => scrollToSection("how")} className={secondaryButton}>
               See how it works
-            </a>
+            </button>
           </div>
           <p className="mt-3 text-xs text-[var(--muted)]">No credit card required.</p>
 
-          <div className="mx-auto mt-12 max-w-[1380px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl shadow-indigo-950/10 sm:mt-14 sm:p-3">
+          <div className="mx-auto mt-12 w-full max-w-[1380px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl shadow-indigo-950/10 sm:mt-14 sm:p-3">
             <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3 text-left sm:p-5 lg:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -144,11 +152,43 @@ export function LandingPage() {
                 "Usage tracking",
                 "Retention cleanup",
               ].map((item) => (
-                <div key={item} className="flex items-center gap-3 bg-[var(--surface)] p-4 lg:p-5 text-sm">
+                <div key={item} className="flex items-center gap-3 bg-[var(--surface)] p-4 text-sm lg:p-5">
                   <Check className="size-4 text-emerald-600" />
                   {item}
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="platforms" className="border-b border-[var(--border)] py-16 sm:py-20">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold text-indigo-600">Supported Platforms</p>
+              <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">TikTok Live first. Douyin is planned next.</h2>
+              <p className="mt-4 text-[var(--muted)]">The MVP focuses on a reliable TikTok recording workflow before expanding the same cloud automation model to Douyin.</p>
+            </div>
+            <div className="mt-10 grid gap-5 md:grid-cols-2">
+              <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid size-12 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+                    <Radio className="size-6" />
+                  </span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">Available</span>
+                </div>
+                <h3 className="mt-8 text-xl font-semibold">TikTok Live</h3>
+                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">Automatic monitoring, server-side recording, processing, playback and download are the core SaveStream MVP workflow.</p>
+              </article>
+              <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="grid size-12 place-items-center rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                    <Clock3 className="size-6" />
+                  </span>
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">Planned</span>
+                </div>
+                <h3 className="mt-8 text-xl font-semibold">Douyin Live</h3>
+                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">Douyin support is planned after the TikTok MVP, worker reliability and recording lifecycle are stable.</p>
+              </article>
             </div>
           </div>
         </section>
@@ -184,6 +224,36 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section id="partner" className="border-b border-[var(--border)] py-16 sm:py-20">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
+              <div className="grid lg:grid-cols-[1fr_.95fr]">
+                <div className="p-6 sm:p-10 lg:p-12">
+                  <p className="text-sm font-semibold text-indigo-600">Partner Recording Archive</p>
+                  <h2 className="mt-2 max-w-2xl text-3xl font-semibold sm:text-4xl">Hundreds of previously recorded videos available to review.</h2>
+                  <p className="mt-5 max-w-2xl leading-7 text-[var(--muted)]">Explore our partner&apos;s YouTube archive to see a large library of recorded livestream content and the long-form review workflow SaveStream is being built to support.</p>
+                  <a
+                    href="https://www.youtube.com/channel/UCUkhUF-GUS22KWBFEcD2fEw"
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${primaryButton} mt-7`}
+                  >
+                    <Youtube className="size-4" /> Visit partner channel <ExternalLink className="size-4" />
+                  </a>
+                </div>
+                <div className="grid min-h-72 grid-cols-2 gap-px bg-[var(--border)] p-px sm:min-h-80">
+                  {["Long livestream", "Creator archive", "Review footage", "Recorded library"].map((label, index) => (
+                    <div key={label} className="relative grid place-items-center overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 p-6 text-center text-white">
+                      <Youtube className="size-9 text-white/70" />
+                      <span className="absolute bottom-4 left-4 right-4 text-xs font-medium text-white/70">{label} · Example {index + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="px-4 py-16 text-center sm:px-6 sm:py-20">
           <h2 className="text-3xl font-semibold sm:text-4xl">Ready to stop missing livestreams?</h2>
           <p className="mx-auto mt-3 max-w-xl text-[var(--muted)]">Add your channels and let SaveStream record automatically in the cloud.</p>
@@ -197,6 +267,8 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-[1540px] flex-col gap-4 px-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:px-6 lg:px-8">
           <Logo />
           <nav className="flex flex-wrap gap-5 sm:ml-auto">
+            <button type="button" onClick={() => scrollToSection("platforms")}>Platforms</button>
+            <button type="button" onClick={() => scrollToSection("partner")}>Partner archive</button>
             <Link to="/pricing">Pricing</Link>
             <Link to="/help">Help</Link>
             <Link to="/terms">Terms</Link>
