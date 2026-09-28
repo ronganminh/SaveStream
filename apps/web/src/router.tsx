@@ -1,4 +1,10 @@
-import { Outlet, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import {
+  Outlet,
+  createHashHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from "@tanstack/react-router";
 import {
   AdminErrorsPage,
   AdminJobDetailPage,
@@ -73,7 +79,11 @@ const routeTree = rootRoute.addChildren([
   adminSystemRoute, adminWorkersRoute, adminJobsRoute, adminJobRoute, adminErrorsRoute,
 ]);
 
-export const router = createRouter({ routeTree, defaultPreload: "intent" });
+export const router = createRouter({
+  routeTree,
+  history: createHashHistory(),
+  defaultPreload: "intent",
+});
 
 declare module "@tanstack/react-router" {
   interface Register {
