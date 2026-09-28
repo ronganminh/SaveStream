@@ -1,0 +1,19 @@
+{
+  "name": "savestream",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/web run dev",
+    "build": "npm --workspace apps/web run build",
+    "typecheck": "npm --workspace apps/web run typecheck",
+    "preview": "npm --workspace apps/web run preview"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
