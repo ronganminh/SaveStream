@@ -11,10 +11,10 @@ import {
   Video,
   Youtube,
 } from "lucide-react";
-import { Logo, SaveStreamMark } from "./components/brand";
+import { Logo } from "./components/brand";
 import { PreferencesControls } from "./components/preferences-controls";
+import { SampleMediaGrid } from "./components/sample-media-grid";
 import { StatusBadge } from "./components/ui";
-import { recordings } from "./lib/mock-data";
 import { usePreferences } from "./lib/preferences";
 
 const primaryButton =
@@ -136,14 +136,7 @@ export function LandingPage() {
         <section id="examples" className="border-b border-[var(--border)] py-16 sm:py-20">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
             <div className="text-center"><p className="text-sm font-semibold text-indigo-600">{t("examples.eyebrow")}</p><h2 className="mt-2 text-3xl font-semibold sm:text-4xl">{t("examples.title")}</h2></div>
-            <div className="mt-10 grid gap-5 md:grid-cols-3 lg:gap-6">
-              {recordings.slice(0, 3).map((recording) => (
-                <article key={recording.id} className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
-                  <div className="relative aspect-video bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900"><SaveStreamMark className="absolute left-1/2 top-1/2 size-14 -translate-x-1/2 -translate-y-1/2 opacity-60" /><span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 font-mono text-xs text-white">{recording.duration}</span></div>
-                  <div className="p-5"><div className="flex items-center justify-between gap-3"><b>{recording.handle}</b><StatusBadge status="Ready" /></div><p className="mt-2 text-sm text-[var(--muted)]">{recording.date} · {recording.resolution}</p></div>
-                </article>
-              ))}
-            </div>
+            <SampleMediaGrid sampleLabel={t("examples.eyebrow")} />
             <div className="mt-8 text-center"><Link to="/sign-up" className={primaryButton}>{t("cta.startRecording")} <ArrowRight className="size-4" /></Link></div>
           </div>
         </section>
