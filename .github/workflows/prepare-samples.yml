@@ -43,9 +43,9 @@ jobs:
         run: |
           rm -rf incoming-drive
           mkdir -p incoming-drive
-          python -m gdown --folder "$DRIVE_URL" --output incoming-drive --remaining-ok
+          python -m gdown --folder "$DRIVE_URL" --output incoming-drive
           echo "Downloaded files:"
-          find incoming-drive -type f -maxdepth 6 -printf '%s %p\n' | sort -nr | head -50
+          find incoming-drive -maxdepth 6 -type f -printf '%s %p\n' | sort -nr | head -50
           test "$(find incoming-drive -type f | wc -l)" -gt 0
 
       - name: Score and optimize samples
