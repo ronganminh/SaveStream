@@ -6,7 +6,7 @@
       "title": "Recorded livestream sample 1",
       "mediaUrl": "/samples/video-01.mp4",
       "thumbnailUrl": "/samples/video-01.webp",
-      "durationSeconds": 1412.5,
+      "durationSeconds": 2177.6,
       "width": 640,
       "height": 1280
     },
@@ -16,7 +16,7 @@
       "title": "Recorded livestream sample 2",
       "mediaUrl": "/samples/video-02.mp4",
       "thumbnailUrl": "/samples/video-02.webp",
-      "durationSeconds": 1869.4,
+      "durationSeconds": 1412.5,
       "width": 640,
       "height": 1280
     },
@@ -26,7 +26,7 @@
       "title": "Recorded livestream sample 3",
       "mediaUrl": "/samples/video-03.mp4",
       "thumbnailUrl": "/samples/video-03.webp",
-      "durationSeconds": 2151.7,
+      "durationSeconds": 1869.4,
       "width": 640,
       "height": 1280
     },
@@ -36,7 +36,7 @@
       "title": "Recorded livestream sample 4",
       "mediaUrl": "/samples/video-04.mp4",
       "thumbnailUrl": "/samples/video-04.webp",
-      "durationSeconds": 1704.4,
+      "durationSeconds": 2151.7,
       "width": 640,
       "height": 1280
     }
@@ -44,6 +44,17 @@
   "selectionReport": [
     {
       "id": "video-01",
+      "source": "FEATURED_REPLACEMENT.mp4",
+      "score": 85.62,
+      "bestTime": 653.27,
+      "duration": 2177.56,
+      "dimensions": [
+        640,
+        1280
+      ]
+    },
+    {
+      "id": "video-02",
       "source": "TK_anhquang082_2026.09.25_05-40-37.mp4",
       "score": 145.22,
       "bestTime": 988.78,
@@ -54,7 +65,7 @@
       ]
     },
     {
-      "id": "video-02",
+      "id": "video-03",
       "source": "TK_phikhongsuy0704_2026.09.25_05-35-32.mp4",
       "score": 123.93,
       "bestTime": 934.72,
@@ -65,22 +76,11 @@
       ]
     },
     {
-      "id": "video-03",
+      "id": "video-04",
       "source": "TK_hi.tp.gim.cn_2026.09.25_01-59-58.mp4",
       "score": 123.68,
       "bestTime": 1506.19,
       "duration": 2151.7,
-      "dimensions": [
-        640,
-        1280
-      ]
-    },
-    {
-      "id": "video-04",
-      "source": "TK_04092005d1_2026.09.25_15-32-52.mp4",
-      "score": 122.75,
-      "bestTime": 1499.86,
-      "duration": 1704.38,
       "dimensions": [
         640,
         1280

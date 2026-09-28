@@ -18,7 +18,7 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 1",
     "mediaUrl": "/samples/video-01.mp4",
     "thumbnailUrl": "/samples/video-01.webp",
-    "durationSeconds": 1412.5,
+    "durationSeconds": 2177.6,
     "width": 640,
     "height": 1280
   },
@@ -28,7 +28,7 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 2",
     "mediaUrl": "/samples/video-02.mp4",
     "thumbnailUrl": "/samples/video-02.webp",
-    "durationSeconds": 1869.4,
+    "durationSeconds": 1412.5,
     "width": 640,
     "height": 1280
   },
@@ -38,7 +38,7 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 3",
     "mediaUrl": "/samples/video-03.mp4",
     "thumbnailUrl": "/samples/video-03.webp",
-    "durationSeconds": 2151.7,
+    "durationSeconds": 1869.4,
     "width": 640,
     "height": 1280
   },
@@ -48,7 +48,7 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 4",
     "mediaUrl": "/samples/video-04.mp4",
     "thumbnailUrl": "/samples/video-04.webp",
-    "durationSeconds": 1704.4,
+    "durationSeconds": 2151.7,
     "width": 640,
     "height": 1280
   }
