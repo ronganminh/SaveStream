@@ -6,15 +6,22 @@ SaveStream is a cloud SaaS for automatically monitoring TikTok channels, recordi
 
 `Added → Waiting for live → Recording → Processing → Ready`
 
-## Repository plan
+## Repository structure
 
-- `apps/web` — React + TypeScript frontend based on the approved Lovable prototype
-- `apps/api` — FastAPI application
-- `services/monitor-worker` — TikTok live-status monitoring
-- `services/recording-worker` — stream recording
-- `services/processing-worker` — FFmpeg processing and storage upload
-- `packages/tiktok-engine` — reusable TikTok recording engine
+- `apps/web` — approved frontend prototype, implemented with React, TypeScript, TanStack Router and Tailwind CSS
+- `apps/api` — FastAPI service (next phase)
+- `services/monitor-worker` — TikTok live-status monitoring (next phase)
+- `services/recording-worker` — cloud stream recording (next phase)
+- `services/processing-worker` — FFmpeg processing and object-storage upload (next phase)
+- `packages/tiktok-engine` — reusable TikTok recording engine (next phase)
 - `infra` — Docker and deployment configuration
 - `docs` — product and engineering documentation
 
-The initial implementation is frontend-first. Backend and worker services will be added in later phases.
+## Local frontend development
+
+```bash
+npm install
+npm run dev
+```
+
+The frontend currently uses typed mock data. No authentication, TikTok API, recording worker, storage, billing or database behavior is real yet.
