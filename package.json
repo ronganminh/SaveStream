@@ -11,7 +11,9 @@
     "dev": "npm --workspace apps/web run dev",
     "build": "npm --workspace apps/web run build",
     "typecheck": "npm --workspace apps/web run typecheck",
-    "preview": "npm --workspace apps/web run preview"
+    "preview": "npm --workspace apps/web run preview",
+    "deploy:web": "npm --workspace apps/web run deploy",
+    "preview:cloudflare": "npm --workspace apps/web run preview:cloudflare"
   },
   "engines": {
     "node": ">=20"
