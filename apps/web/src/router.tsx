@@ -5,18 +5,18 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
+import { AuthPage } from "./auth-page";
+import { LandingPage } from "./marketing-page";
 import {
   AdminErrorsPage,
   AdminJobDetailPage,
   AdminJobsPage,
   AdminSystemPage,
   AdminWorkersPage,
-  AuthPage,
   BillingPage,
   ChannelDetailPage,
   ChannelsPage,
   HelpPage,
-  LandingPage,
   LegalPage,
   NotificationsPage,
   OnboardingPage,
