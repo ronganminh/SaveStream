@@ -12,7 +12,6 @@ import {
   Youtube,
 } from "lucide-react";
 import { Logo } from "./components/brand";
-import { PartnerSampleMosaic } from "./components/partner-sample-mosaic";
 import { PreferencesControls } from "./components/preferences-controls";
 import { SampleMediaGrid } from "./components/sample-media-grid";
 import { StatusBadge } from "./components/ui";
@@ -146,7 +145,17 @@ export function LandingPage() {
             <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
               <div className="grid lg:grid-cols-[1fr_.95fr]">
                 <div className="p-6 sm:p-10 lg:p-12"><p className="text-sm font-semibold text-indigo-600">{t("partner.eyebrow")}</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold sm:text-4xl">{t("partner.title")}</h2><p className="mt-5 max-w-2xl leading-7 text-[var(--muted)]">{t("partner.body")}</p><a href="https://www.youtube.com/channel/UCUkhUF-GUS22KWBFEcD2fEw" target="_blank" rel="noreferrer" className={`${primaryButton} mt-7`}><Youtube className="size-4" /> {t("cta.visitPartner")} <ExternalLink className="size-4" /></a></div>
-                <PartnerSampleMosaic sampleLabel={t("examples.eyebrow")} />
+                <div className="relative min-h-[300px] bg-black sm:min-h-[360px] lg:min-h-[420px]">
+                  <iframe
+                    className="absolute inset-0 h-full w-full"
+                    src="https://www.youtube-nocookie.com/embed/videoseries?list=UUUkhUF-GUS22KWBFEcD2fEw"
+                    title="SaveStream partner YouTube archive"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
               </div>
             </div>
           </div>

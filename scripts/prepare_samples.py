@@ -203,12 +203,12 @@ def save_thumbnail(source: Path, output: Path) -> None:
         canvas.save(output, "WEBP", quality=84, method=6)
 
 
-def create_clip(source: Path, start: float, output: Path) -> None:
+def create_clip(source: Path, start: float, output: Path, clip_seconds: float) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     filter_graph = (
         "[0:v]split=2[bgsrc][fgsrc];"
-        "[bgsrc]scale=960:540:force_original_aspect_ratio=increase,crop=960:540,boxblur=24:12[bg];"
-        "[fgsrc]scale=960:540:force_original_aspect_ratio=decrease[fg];"
+        "[bgsrc]scale=854:480:force_original_aspect_ratio=increase,crop=854:480,boxblur=22:10[bg];"
+        "[fgsrc]scale=854:480:force_original_aspect_ratio=decrease[fg];"
         "[bg][fg]overlay=(W-w)/2:(H-h)/2,format=yuv420p[outv]"
     )
     result = run(
@@ -218,11 +218,11 @@ def create_clip(source: Path, start: float, output: Path) -> None:
             "-loglevel",
             "error",
             "-ss",
-            f"{max(start - 4.0, 0.0):.3f}",
+            f"{max(start, 0.0):.3f}",
             "-i",
             str(source),
             "-t",
-            "8",
+            f"{clip_seconds:.3f}",
             "-filter_complex",
             filter_graph,
             "-map",
@@ -234,11 +234,11 @@ def create_clip(source: Path, start: float, output: Path) -> None:
             "-preset",
             "veryfast",
             "-crf",
-            "27",
+            "30",
             "-c:a",
             "aac",
             "-b:a",
-            "96k",
+            "64k",
             "-movflags",
             "+faststart",
             "-y",
@@ -283,6 +283,7 @@ def main() -> int:
     parser.add_argument("--data-file", type=Path, required=True)
     parser.add_argument("--max-videos", type=int, default=4)
     parser.add_argument("--max-images", type=int, default=6)
+    parser.add_argument("--clip-seconds", type=float, default=180.0)
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -299,7 +300,9 @@ def main() -> int:
     videos.sort(key=lambda item: item.score, reverse=True)
     images.sort(key=lambda item: item.score, reverse=True)
 
-    selected_videos = videos[: args.max_videos]
+    featured = [item for item in videos if "FEATURED_REPLACEMENT" in item.path.name.upper()]
+    regular = [item for item in videos if item not in featured]
+    selected_videos = (featured[:1] + regular)[: args.max_videos]
     selected_images = images[: args.max_images]
     items: list[dict] = []
     report: list[dict] = []
@@ -310,7 +313,9 @@ def main() -> int:
         clip_name = f"{stem}.mp4"
         assert candidate.best_frame is not None
         save_thumbnail(candidate.best_frame, args.public_dir / thumb_name)
-        create_clip(candidate.path, candidate.best_time, args.public_dir / clip_name)
+        clip_seconds = min(args.clip_seconds, candidate.duration)
+        clip_start = max(0.0, min(candidate.best_time - clip_seconds / 2.0, max(candidate.duration - clip_seconds, 0.0)))
+        create_clip(candidate.path, clip_start, args.public_dir / clip_name, clip_seconds)
         items.append(
             {
                 "id": stem,
@@ -369,7 +374,7 @@ def main() -> int:
     (args.public_dir / "README.md").write_text(
         "# Generated sample media\n\n"
         "These files are automatically selected and optimized from the configured Google Drive folder.\n"
-        "Only short web preview clips and thumbnails are committed; original recordings remain in Drive.\n",
+        "Only optimized three-minute web preview clips and thumbnails are committed; original recordings remain in Drive.\n",
         encoding="utf-8",
     )
 

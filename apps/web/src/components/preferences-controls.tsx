@@ -12,7 +12,7 @@ export function PreferencesControls({ compact = false }: { compact?: boolean }) 
         <select
           value={locale}
           onChange={(event) => setLocale(event.target.value as "en" | "vi")}
-          className={`h-9 appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-8 pr-3 text-xs font-medium text-[var(--fg)] outline-none transition hover:bg-[var(--subtle)] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 ${compact ? "w-[4.4rem]" : "w-[7.7rem]"}`}
+          className={`h-10 appearance-none rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-sm pl-8 pr-3 text-xs font-medium text-[var(--fg)] outline-none transition hover:bg-[var(--subtle)] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 ${compact ? "w-[4.4rem]" : "w-[7.7rem]"}`}
           aria-label={t("preferences.language")}
           title={t("preferences.language")}
         >
@@ -27,7 +27,7 @@ export function PreferencesControls({ compact = false }: { compact?: boolean }) 
         <select
           value={theme}
           onChange={(event) => setTheme(event.target.value as ThemePreference)}
-          className={`h-9 appearance-none rounded-lg border border-[var(--border)] bg-[var(--surface)] pl-8 pr-3 text-xs font-medium text-[var(--fg)] outline-none transition hover:bg-[var(--subtle)] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 ${compact ? "w-[5.4rem]" : "w-[8.2rem]"}`}
+          className={`h-10 appearance-none rounded-full border border-[var(--border)] bg-[var(--surface)] shadow-sm pl-8 pr-3 text-xs font-medium text-[var(--fg)] outline-none transition hover:bg-[var(--subtle)] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/30 ${compact ? "w-[5.4rem]" : "w-[8.2rem]"}`}
           aria-label={t("preferences.theme")}
           title={t("preferences.theme")}
         >
