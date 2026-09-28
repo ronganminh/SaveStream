@@ -60,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Link to="/notifications" className="relative ml-1 icon-button" aria-label="Notifications"><Bell className="size-4" /><span className="absolute right-1 top-1 size-2 rounded-full bg-red-500" /></Link>
           <span className="ml-1.5 grid size-8 place-items-center rounded-full bg-indigo-600 text-[11px] font-semibold text-white sm:ml-2">{user.initials}</span>
         </header>
-        <main className="mx-auto max-w-[1320px] px-3 pb-28 pt-4 sm:px-5 sm:pt-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
+        <main className="mx-auto max-w-[1720px] px-3 pb-28 pt-4 sm:px-5 sm:pt-6 lg:px-6 lg:pb-10 lg:pt-8 xl:px-8 2xl:px-10">{children}</main>
       </div>
       <nav aria-label="Primary navigation" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-[var(--border)] bg-[color:var(--surface)]/95 px-1 pb-[max(.25rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur lg:hidden">
         {nav.map(([to, label, Icon]) => {
