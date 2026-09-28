@@ -18,9 +18,9 @@ export function SaveStreamMark({ className = "size-8" }: { className?: string })
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <Link to="/" className="inline-flex items-center gap-2.5 font-semibold tracking-tight">
-      <SaveStreamMark className="size-8" />
-      {!compact && <span>SaveStream</span>}
+    <Link to="/" className="brand-logo inline-flex min-w-0 items-center gap-2.5 font-semibold tracking-tight">
+      <SaveStreamMark className="size-8 shrink-0" />
+      {!compact && <span className="brand-wordmark truncate">SaveStream</span>}
     </Link>
   );
 }
