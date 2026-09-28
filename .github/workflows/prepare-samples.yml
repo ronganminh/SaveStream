@@ -1,0 +1,80 @@
+name: Prepare sample media
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/prepare-samples.yml"
+      - "scripts/prepare_samples.py"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prepare-sample-media
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DRIVE_URL: https://drive.google.com/drive/folders/1RbhMJevIdaFFjA6GMNJ5erBEYcWIHuno
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install media tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip
+          python -m pip install gdown pillow numpy opencv-python-headless
+
+      - name: Download shared Drive folder
+        run: |
+          rm -rf incoming-drive
+          mkdir -p incoming-drive
+          python -m gdown --folder "$DRIVE_URL" --output incoming-drive --remaining-ok
+          echo "Downloaded files:"
+          find incoming-drive -type f -maxdepth 6 -printf '%s %p\n' | sort -nr | head -50
+          test "$(find incoming-drive -type f | wc -l)" -gt 0
+
+      - name: Score and optimize samples
+        run: |
+          python scripts/prepare_samples.py \
+            --input incoming-drive \
+            --public-dir apps/web/public/samples \
+            --data-file apps/web/src/lib/sample-media.ts \
+            --max-videos 4 \
+            --max-images 6
+
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: savestream-sample-media
+          path: |
+            apps/web/public/samples
+            apps/web/src/lib/sample-media.ts
+          retention-days: 14
+
+      - name: Publish generated sample branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B automation/sample-assets
+          git add apps/web/public/samples apps/web/src/lib/sample-media.ts
+          if git diff --cached --quiet; then
+            echo "No sample-media changes to publish."
+            exit 0
+          fi
+          git commit -m "feat(samples): refresh optimized recording examples"
+          git push --force origin automation/sample-assets
