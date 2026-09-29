@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.infrastructure.db.models import Base
+from app.infrastructure.db import recording_models as _recording_models
 from app.settings import get_app_settings
 
 config = context.config

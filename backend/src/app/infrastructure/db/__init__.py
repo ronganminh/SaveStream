@@ -23,3 +23,8 @@ __all__ = [
     "PasswordCredential",
     "User",
 ]
+
+
+from .recording_models import Recording, RecordingArtifact, RecordingEvent
+
+__all__ += ["Recording", "RecordingArtifact", "RecordingEvent"]

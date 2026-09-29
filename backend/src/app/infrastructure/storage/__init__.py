@@ -1,3 +1,3 @@
-from .minio import MinioHealthClient
+from .minio import MinioStorageClient
 
-__all__ = ["MinioHealthClient"]
+__all__ = ["MinioStorageClient"]

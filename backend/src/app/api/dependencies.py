@@ -8,6 +8,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.identity.service import IdentityService, utcnow
+from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import AuthSession, User
@@ -105,3 +106,13 @@ def require_scopes(*required: str) -> Callable:
         return principal
 
     return dependency
+
+
+def get_recording_service(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> RecordingService:
+    return RecordingService(
+        session,
+        request.app.state.settings,
+    )

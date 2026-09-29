@@ -70,6 +70,14 @@ class AppSettings:
     login_rate_window_seconds: int = 60
     auth_write_rate_limit: int = 5
     auth_write_rate_window_seconds: int = 3600
+    recording_temp_dir: str = "/tmp/savestream-recordings"
+    recording_max_duration_seconds: int = 14_400
+    recording_heartbeat_seconds: int = 10
+    recording_stale_after_seconds: int = 60
+    recording_max_attempts: int = 3
+    artifact_presign_seconds: int = 900
+    sse_poll_seconds: float = 1.0
+    idempotency_ttl_seconds: int = 86_400
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -78,7 +86,6 @@ class AppSettings:
             raise ValueError(
                 "SAVESTREAM_ENVIRONMENT must be one of local, test, staging, production"
             )
-
         redis_url = _env("REDIS_URL", "redis://localhost:6379/0")
         origins = _csv_env(
             "CORS_ALLOW_ORIGINS",
@@ -86,7 +93,6 @@ class AppSettings:
         )
         if "*" in origins:
             raise ValueError("Wildcard CORS origins are not allowed")
-
         jwt_secret = _env("JWT_SECRET", "savestream-dev-only-change-me")
         if environment_raw == "production" and jwt_secret == "savestream-dev-only-change-me":
             raise ValueError("SAVESTREAM_JWT_SECRET must be configured in production")
@@ -124,6 +130,14 @@ class AppSettings:
             login_rate_window_seconds=_int_env("LOGIN_RATE_WINDOW_SECONDS", 60),
             auth_write_rate_limit=_int_env("AUTH_WRITE_RATE_LIMIT", 5),
             auth_write_rate_window_seconds=_int_env("AUTH_WRITE_RATE_WINDOW_SECONDS", 3600),
+            recording_temp_dir=_env("RECORDING_TEMP_DIR", "/tmp/savestream-recordings"),
+            recording_max_duration_seconds=_int_env("RECORDING_MAX_DURATION_SECONDS", 14_400),
+            recording_heartbeat_seconds=_int_env("RECORDING_HEARTBEAT_SECONDS", 10),
+            recording_stale_after_seconds=_int_env("RECORDING_STALE_AFTER_SECONDS", 60),
+            recording_max_attempts=_int_env("RECORDING_MAX_ATTEMPTS", 3),
+            artifact_presign_seconds=_int_env("ARTIFACT_PRESIGN_SECONDS", 900),
+            sse_poll_seconds=_float_env("SSE_POLL_SECONDS", 1.0),
+            idempotency_ttl_seconds=_int_env("IDEMPOTENCY_TTL_SECONDS", 86_400),
         )
 
 

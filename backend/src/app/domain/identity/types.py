@@ -3,24 +3,18 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
+_USER_SCOPES = {
+    "profile:read",
+    "profile:write",
+    "sessions:read",
+    "sessions:write",
+    "recordings:read",
+    "recordings:write",
+}
+
 _ROLE_SCOPES: dict[str, frozenset[str]] = {
-    "user": frozenset(
-        {
-            "profile:read",
-            "profile:write",
-            "sessions:read",
-            "sessions:write",
-        }
-    ),
-    "admin": frozenset(
-        {
-            "profile:read",
-            "profile:write",
-            "sessions:read",
-            "sessions:write",
-            "admin:*",
-        }
-    ),
+    "user": frozenset(_USER_SCOPES),
+    "admin": frozenset({*_USER_SCOPES, "admin:*"}),
 }
 
 
