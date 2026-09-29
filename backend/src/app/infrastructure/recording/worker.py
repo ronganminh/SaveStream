@@ -7,6 +7,7 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from datetime import timedelta
 
 from redis import Redis as SyncRedis
 from sqlalchemy import or_, select
@@ -65,7 +66,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 return
             recording, lease_id = claimed
 
-            source = Source(type=recording.source_type, value=recording.source_value)
+            source = Source.model_validate({"type": recording.source_type, "value": recording.source_value})
             api = TikTokAPI(proxy=None, cookies={})
             resolver = TikTokSourceResolver(api)
             try:
@@ -180,8 +181,6 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 )
                 return
 
-            if recording.status == RecordingStatus.STOP_REQUESTED.value:
-                recording.status = RecordingStatus.RECORDING.value
             await store.set_status(
                 recording,
                 RecordingStatus.PROCESSING,
@@ -294,9 +293,7 @@ async def _recover_stale(settings: AppSettings) -> list[str]:
     database = Database(settings.database_url)
     try:
         async with database.session() as session:
-            stale_before = utcnow() - __import__("datetime").timedelta(
-                seconds=settings.recording_stale_after_seconds
-            )
+            stale_before = utcnow() - timedelta(seconds=settings.recording_stale_after_seconds)
             active_values = [item.value for item in ACTIVE_RECORDING_STATUSES]
             rows = list(
                 (

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import uuid
 from datetime import datetime, timezone
 
@@ -137,11 +136,14 @@ async def stop_recording(
     service: RecordingService = Depends(get_recording_service),
 ) -> RecordingResponse:
     recording = await service.stop(principal, recording_id)
-    await request.app.state.redis.client.set(
-        f"savestream:recording:stop:{recording.id}",
-        "1",
-        ex=86400,
-    )
+    try:
+        await request.app.state.redis.client.set(
+            f"savestream:recording:stop:{recording.id}",
+            "1",
+            ex=86400,
+        )
+    except Exception:
+        pass
     return recording_response(recording)
 
 

@@ -38,7 +38,7 @@ class TikTokSourceResolver:
 
 
 class AtomicFFmpegMediaProcessor:
-    """Worker-safe remuxer that validates output before deleting the source."""
+    """Validate remux output before deleting the source file."""
 
     def finalize(self, source_path: Path) -> Path:
         final_path = Path(str(source_path).replace("_flv.mp4", ".mp4"))
@@ -46,7 +46,7 @@ class AtomicFFmpegMediaProcessor:
         try:
             (
                 ffmpeg.input(str(source_path))
-                .output(str(temp_path), c="copy")
+                .output(str(temp_path), c="copy", format="mp4")
                 .overwrite_output()
                 .run(quiet=True)
             )

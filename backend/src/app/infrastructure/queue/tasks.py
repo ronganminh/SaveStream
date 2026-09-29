@@ -14,6 +14,30 @@ def health_ping() -> str:
     return "pong"
 
 
+@celery_app.task(name="savestream.recording.run")
+def recording_run(recording_id: str) -> None:
+    from app.infrastructure.recording.worker import run_recording_job
+
+    run_recording_job(recording_id)
+
+
+@celery_app.task(name="savestream.recording.cleanup")
+def recording_cleanup(recording_id: str) -> None:
+    from app.infrastructure.recording.worker import cleanup_recording
+
+    cleanup_recording(recording_id)
+
+
+@celery_app.task(name="savestream.recording.recover_stale")
+def recording_recover_stale() -> int:
+    from app.infrastructure.recording.worker import recover_stale_recordings
+
+    ids = recover_stale_recordings()
+    for recording_id in ids:
+        recording_run.delay(recording_id)
+    return len(ids)
+
+
 @celery_app.task(
     bind=True,
     name="savestream.outbox.event",
@@ -36,5 +60,10 @@ def handle_outbox_event(
         token_id = str(payload.get("token_id", ""))
         asyncio.run(deliver_one_time_token_email(token_id))
         return
-
+    if topic == "recording.requested":
+        recording_run.delay(str(payload["recording_id"]))
+        return
+    if topic == "recording.cleanup":
+        recording_cleanup.delay(str(payload["recording_id"]))
+        return
     logger.info("outbox event handled id=%s topic=%s", event_id, topic)
