@@ -1,11 +1,12 @@
-import os
 import time
-from http.client import HTTPException
 from multiprocessing import Process
+from pathlib import Path
 
-from requests import RequestException
-
+from adapters.media_processor import FFmpegMediaProcessor
+from adapters.tiktok_gateway import TikTokLiveGateway
 from core.tiktok_api import TikTokAPI
+from engine import EngineEvent, RecordingEngine, RecordingRequest
+from engine.exceptions import LiveStreamUnavailableError
 from utils.logger_manager import logger
 from utils.video_management import VideoManagement
 from utils.custom_exceptions import LiveNotFound, UserLiveError, \
@@ -187,101 +188,74 @@ class TikTokRecorder:
                 logger.error(f"Unexpected error: {ex}\n")
 
     def start_recording(self, user, room_id):
-        """
-        Start recording live
-        """
-        live_url = self.tiktok.get_live_url(room_id)
-        if not live_url:
-            raise LiveNotFound(TikTokError.RETRIEVE_LIVE_URL)
-
-        current_date = time.strftime("%Y.%m.%d_%H-%M-%S", time.localtime())
-
-        if isinstance(self.output, str) and self.output != '':
-            if not (self.output.endswith('/') or self.output.endswith('\\')):
-                if os.name == 'nt':
-                    self.output = self.output + "\\"
-                else:
-                    self.output = self.output + "/"
-
-        output = f"{self.output if self.output else ''}TK_{user}_{current_date}_flv.mp4"
-
+        """Record one live session through the reusable recording engine."""
         if self.duration:
             logger.info(f"Started recording for {self.duration} seconds ")
         else:
             logger.info("Started recording...")
 
-        buffer_size = 512 * 1024 # 512 KB buffer
-        buffer = bytearray()
-
         logger.info("[PRESS CTRL + C ONCE TO STOP]")
-        with open(output, "wb") as out_file:
-            stop_recording = False
-            while not stop_recording:
-                try:
-                    if not self.tiktok.is_room_alive(room_id):
-                        logger.info("User is no longer live. Stopping recording.")
-                        break
 
-                    start_time = time.time()
-                    for chunk in self.tiktok.download_live_stream(live_url):
-                        buffer.extend(chunk)
-                        if len(buffer) >= buffer_size:
-                            out_file.write(buffer)
-                            buffer.clear()
+        output_dir = (
+            Path(self.output)
+            if isinstance(self.output, str) and self.output != ""
+            else Path(".")
+        )
 
-                        elapsed_time = time.time() - start_time
-                        if self.duration and elapsed_time >= self.duration:
-                            stop_recording = True
-                            break
+        engine = RecordingEngine(
+            TikTokLiveGateway(self.tiktok),
+            FFmpegMediaProcessor(
+                converter=VideoManagement.convert_flv_to_mp4,
+            ),
+        )
+        request = RecordingRequest(
+            username=user,
+            room_id=room_id,
+            output_dir=output_dir,
+            duration_seconds=self.duration,
+            min_valid_bytes=self.MIN_VALID_RECORDING_BYTES,
+        )
 
-                except ConnectionError:
-                    if self.mode == Mode.AUTOMATIC:
-                        logger.error(Error.CONNECTION_CLOSED_AUTOMATIC)
-                        time.sleep(TimeOut.CONNECTION_CLOSED * TimeOut.ONE_MINUTE)
+        def log_engine_event(event: EngineEvent) -> None:
+            if event.kind in {"failed", "retrying"}:
+                detail = (event.details or {}).get("error")
+                logger.error(
+                    "%s%s",
+                    event.message,
+                    f": {detail}" if detail else "",
+                )
+            elif event.kind in {
+                "stream_ended",
+                "stop_requested",
+                "discarded",
+            }:
+                logger.info("%s", event.message)
 
-                except (RequestException,HTTPException):
-                    time.sleep(2)
-
-                except KeyboardInterrupt:
-                    logger.info("Recording stopped by user.")
-                    stop_recording = True
-
-                except Exception as ex:
-                    logger.error(f"Unexpected error: {ex}\n")
-                    stop_recording = True
-
-                finally:
-                    if buffer:
-                        out_file.write(buffer)
-                        buffer.clear()
-                    out_file.flush()
-
-        logger.info(f"Recording finished: {output}\n")
-
-        # Discard empty/garbage recordings: if the stream returned no real
-        # data (e.g. CDN blocked the download) the file is 0 bytes / tiny.
-        # Skip conversion & upload and remove it so it doesn't pile up.
-        try:
-            file_size = os.path.getsize(output)
-        except OSError:
-            file_size = 0
-
-        if file_size < TikTokRecorder.MIN_VALID_RECORDING_BYTES:
-            logger.info(
-                f"Discarding empty recording ({file_size} bytes): {output}"
+        connection_retry_delay = 0.0
+        if self.mode == Mode.AUTOMATIC:
+            connection_retry_delay = (
+                TimeOut.CONNECTION_CLOSED * TimeOut.ONE_MINUTE
             )
-            try:
-                os.remove(output)
-            except OSError:
-                pass
+
+        try:
+            result = engine.record(
+                request,
+                on_event=log_engine_event,
+                transient_retry_delay_seconds=2.0,
+                connection_retry_delay_seconds=connection_retry_delay,
+            )
+        except LiveStreamUnavailableError as exc:
+            raise LiveNotFound(TikTokError.RETRIEVE_LIVE_URL) from exc
+
+        logger.info(f"Recording finished: {result.source_path}\n")
+
+        if result.discarded:
             return
 
-        VideoManagement.convert_flv_to_mp4(output)
-
-        if self.use_telegram:
+        if self.use_telegram and result.artifact_path is not None:
             from upload.telegram import Telegram
 
-            Telegram().upload(output.replace('_flv.mp4', '.mp4'))
+            Telegram().upload(str(result.artifact_path))
 
     def check_country_blacklisted(self):
         is_blacklisted = self.tiktok.is_country_blacklisted()

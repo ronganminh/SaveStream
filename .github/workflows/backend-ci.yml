@@ -25,7 +25,7 @@ jobs:
       - name: Lint
         run: ruff check src tests
       - name: Type check Phase 0 boundaries
-        run: mypy src/config.py src/http_utils/http_client.py src/utils/logger_manager.py src/utils/dependencies.py
+        run: mypy src/config.py src/engine src/adapters src/http_utils/http_client.py src/utils/logger_manager.py src/utils/dependencies.py
       - name: Test
         run: pytest
       - name: CLI smoke test

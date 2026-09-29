@@ -29,7 +29,7 @@ py-modules = ["main", "check_updates", "config"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["core*", "http_utils*", "upload*", "utils*"]
+include = ["adapters*", "core*", "engine*", "http_utils*", "upload*", "utils*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
@@ -47,6 +47,7 @@ select = ["E9", "F63", "F7", "F82"]
 python_version = "3.11"
 mypy_path = "src"
 ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
 check_untyped_defs = true
 warn_unused_ignores = true
 show_error_codes = true
