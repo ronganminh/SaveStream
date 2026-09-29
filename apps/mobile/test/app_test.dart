@@ -100,6 +100,11 @@ void main() {
     await tester.pump();
     await tester.pump();
 
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(HomeScreen)),
+    );
+    final dashboardState = container.read(homeDashboardProvider);
+    expect(dashboardState.hasError, isTrue, reason: dashboardState.toString());
     expect(find.byType(SsErrorState), findsOneWidget);
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
