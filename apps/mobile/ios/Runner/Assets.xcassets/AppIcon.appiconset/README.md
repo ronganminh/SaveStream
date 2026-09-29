@@ -1,0 +1,1 @@
+# SaveStream app icon\n\nThe source brand mark is stored at `assets/branding/savestream_mark.svg`. Native App Store icon rasterization is finalized in the release-readiness phase; the Phase 0 runner intentionally keeps the asset catalog valid without generated binary artwork.\n
