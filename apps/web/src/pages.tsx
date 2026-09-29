@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Activity, AlertTriangle, ArrowRight, Bell, Check, Clock3, Cloud, Download, FileVideo, HardDrive, Play, Plus, Radio, Search, Server, ShieldCheck, Trash2, Users, Video } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "./components/app-shell";
+import { AddChannelDialog, MonitoringHealth, OnboardingChecklist } from "./components/p1-experience";
 import { Logo, SaveStreamMark } from "./components/brand";
 import { PageHeader, Panel, Progress, StatusBadge } from "./components/ui";
 import { channels, jobs, notifications, recordings, workers } from "./lib/mock-data";
@@ -49,14 +50,133 @@ export function LandingPage() {
 function Metric({ label, value, detail }: { label: string; value: string; detail: string }) { return <div className="bg-[var(--surface)] p-5"><p className="text-sm text-[var(--muted)]">{label}</p><p className="mt-2 font-mono text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-[var(--muted)]">{detail}</p></div>; }
 function Avatar({ initials }: { initials: string }) { return <span className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-fuchsia-500 to-rose-400 text-xs font-semibold text-white">{initials}</span>; }
 
-export function OverviewPage() { return <AppShell><PageHeader title="Overview" subtitle="Your cloud recording workspace" action={<button className={button}><Plus className="size-4" />Add channel</button>} /><div className="grid overflow-hidden rounded-xl border border-[var(--border)] sm:grid-cols-2 xl:grid-cols-4"><Metric label="Recording hours" value="12.6 / 50 h" detail="25% used · resets Oct 1" /><Metric label="Active channels" value="3 / 5" detail="3 currently monitoring" /><Metric label="Stored recordings" value="18.4 GB" detail="4 recordings" /><Metric label="Download usage" value="24.8 / 100 GB" detail="25% used this month" /></div><Panel className="mt-6 overflow-hidden border-red-200"><div className="flex items-center justify-between border-b border-red-200 bg-red-50 px-5 py-3 text-red-700"><b className="text-xs">● ACTIVE RECORDING</b><StatusBadge status="Recording" /></div><div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center"><div className="flex items-center gap-4"><Avatar initials="LS" /><div><h2 className="font-semibold">Lina Studio</h2><p className="text-sm text-[var(--muted)]">@linastudio · TikTok</p><p className="mt-3 flex items-center gap-2 text-xs text-[var(--muted)]"><Cloud className="size-4 text-emerald-600" />Recording runs on our servers. You can safely close this page.</p></div></div><div className="grid grid-cols-2 gap-5"><div><small className="text-[var(--muted)]">Elapsed</small><p className="font-mono text-2xl font-semibold">01:42:18</p></div><div><small className="text-[var(--muted)]">Written</small><p className="font-mono text-lg font-medium">3.8 GB</p></div><Link to="/recordings/active" className={`${button} col-span-2`}>View recording</Link></div></div></Panel><div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]"><ChannelList compact /><RecordingList compact /></div></AppShell>; }
+export function OverviewPage() {
+  const [addOpen, setAddOpen] = useState(false);
+  return (
+    <>
+      <AppShell>
+        <PageHeader
+          title="Overview"
+          subtitle="Your cloud recording workspace"
+          action={<button className={button} onClick={() => setAddOpen(true)}><Plus className="size-4" />Add channel</button>}
+        />
+        <div className="grid overflow-hidden rounded-xl border border-[var(--border)] sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Recording hours" value="12.6 / 50 h" detail="25% used · resets Oct 1" />
+          <Metric label="Active channels" value="3 / 5" detail="3 currently monitoring" />
+          <Metric label="Stored recordings" value="18.4 GB" detail="4 recordings" />
+          <Metric label="Download usage" value="24.8 / 100 GB" detail="25% used this month" />
+        </div>
+        <Panel className="mt-6 overflow-hidden border-red-200">
+          <div className="flex items-center justify-between border-b border-red-200 bg-red-50 px-5 py-3 text-red-700">
+            <b className="text-xs">● ACTIVE RECORDING</b><StatusBadge status="Recording" />
+          </div>
+          <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
+            <div className="flex items-center gap-4">
+              <Avatar initials="LS" />
+              <div>
+                <h2 className="font-semibold">Lina Studio</h2>
+                <p className="text-sm text-[var(--muted)]">@linastudio · TikTok</p>
+                <p className="mt-3 flex items-center gap-2 text-xs text-[var(--muted)]"><Cloud className="size-4 text-emerald-600" />Recording runs on our servers. You can safely close this page.</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-5">
+              <div><small className="text-[var(--muted)]">Elapsed</small><p className="font-mono text-2xl font-semibold">01:42:18</p></div>
+              <div><small className="text-[var(--muted)]">Written</small><p className="font-mono text-lg font-medium">3.8 GB</p></div>
+              <Link to="/recordings/active" className={`${button} col-span-2`}>View recording</Link>
+            </div>
+          </div>
+        </Panel>
+        <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]"><ChannelList compact /><RecordingList compact /></div>
+      </AppShell>
+      <AddChannelDialog open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
+  );
+}
 
-export function ChannelsPage() { const [query,setQuery]=useState(""); const filtered=channels.filter((channel) => `${channel.name} ${channel.handle}`.toLowerCase().includes(query.toLowerCase())); return <AppShell><PageHeader title="Channels" subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live." action={<button className={button}><Plus className="size-4" />Add channel</button>} /><div className="mb-5 flex items-center gap-2 border-y border-[var(--border)] bg-[var(--subtle)] p-3"><Search className="size-4 text-[var(--muted)]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search channels" className="w-full bg-transparent text-sm outline-none" /></div><Panel>{filtered.map((channel) => <div key={channel.id} className="grid gap-4 border-b border-[var(--border)] p-4 last:border-0 md:grid-cols-[1.4fr_.7fr_.7fr_.8fr_.7fr_auto] md:items-center"><Link to="/channels/$channelId" params={{channelId:channel.id}} className="flex items-center gap-3"><Avatar initials={channel.initials} /><span><b className="block">{channel.name}</b><small className="text-[var(--muted)]">{channel.handle}</small></span></Link><span className="text-sm">TikTok</span><span className="text-sm text-emerald-600">Monitoring</span><StatusBadge status={channel.status} /><span className="text-sm text-[var(--muted)]">{channel.checked}</span><Link to="/channels/$channelId" params={{channelId:channel.id}} className="text-sm font-medium text-indigo-600">View</Link></div>)}</Panel></AppShell>; }
+export function ChannelsPage() {
+  const [query, setQuery] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const filtered = channels.filter((channel) => `${channel.name} ${channel.handle}`.toLowerCase().includes(query.toLowerCase()));
+  return (
+    <>
+      <AppShell>
+        <PageHeader
+          title="Channels"
+          subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live."
+          action={<button className={button} onClick={() => setAddOpen(true)}><Plus className="size-4" />Add channel</button>}
+        />
+        <div className="mb-5 flex items-center gap-2 border-y border-[var(--border)] bg-[var(--subtle)] p-3">
+          <Search className="size-4 text-[var(--muted)]" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search channels" className="w-full bg-transparent text-sm outline-none" />
+        </div>
+        <Panel>
+          {filtered.map((channel) => (
+            <div key={channel.id} className="grid gap-4 border-b border-[var(--border)] p-4 last:border-0 md:grid-cols-[1.4fr_.6fr_1.15fr_.75fr_auto] md:items-center">
+              <Link to="/channels/$channelId" params={{channelId:channel.id}} className="flex items-center gap-3">
+                <Avatar initials={channel.initials} />
+                <span><b className="block">{channel.name}</b><small className="text-[var(--muted)]">{channel.handle}</small></span>
+              </Link>
+              <span className="text-sm">TikTok</span>
+              <MonitoringHealth channel={channel} compact />
+              <StatusBadge status={channel.status} />
+              <Link to="/channels/$channelId" params={{channelId:channel.id}} className="text-sm font-medium text-indigo-600">View</Link>
+            </div>
+          ))}
+        </Panel>
+      </AppShell>
+      <AddChannelDialog open={addOpen} onClose={() => setAddOpen(false)} />
+    </>
+  );
+}
 
-function ChannelList({ compact = false }: { compact?: boolean }) { return <section><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Channel monitoring</h2><Link to="/channels" className="text-sm font-medium text-indigo-600">View all</Link></div><Panel>{channels.slice(0,compact?3:channels.length).map((channel) => <div key={channel.id} className="flex items-center gap-3 border-b border-[var(--border)] p-4 last:border-0"><Avatar initials={channel.initials} /><div className="min-w-0 flex-1"><b className="block truncate text-sm">{channel.name}</b><p className="text-xs text-[var(--muted)]">{channel.handle}</p></div><StatusBadge status={channel.status} /></div>)}</Panel></section>; }
+function ChannelList({ compact = false }: { compact?: boolean }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Channel monitoring</h2><Link to="/channels" className="text-sm font-medium text-indigo-600">View all</Link></div>
+      <Panel>
+        {channels.slice(0, compact ? 3 : channels.length).map((channel) => (
+          <div key={channel.id} className="flex items-center gap-3 border-b border-[var(--border)] p-4 last:border-0">
+            <Avatar initials={channel.initials} />
+            <div className="min-w-0 flex-1">
+              <b className="block truncate text-sm">{channel.name}</b>
+              <p className="text-xs text-[var(--muted)]">{channel.handle}</p>
+              <div className="mt-2"><MonitoringHealth channel={channel} compact /></div>
+            </div>
+            <StatusBadge status={channel.status} />
+          </div>
+        ))}
+      </Panel>
+    </section>
+  );
+}
 function RecordingList({ compact = false }: { compact?: boolean }) { return <section><div className="mb-3 flex items-center justify-between"><h2 className="font-semibold">Recent recordings</h2><Link to="/recordings" className="text-sm font-medium text-indigo-600">View library</Link></div><Panel>{recordings.slice(0,compact?3:recordings.length).map((recording) => <Link key={recording.id} to="/recordings/$recordingId" params={{recordingId:recording.id}} className="flex items-center gap-3 border-b border-[var(--border)] p-4 last:border-0 hover:bg-[var(--subtle)]"><div className="grid aspect-video w-20 place-items-center rounded-lg bg-slate-900 text-white"><FileVideo className="size-5" /></div><div className="min-w-0 flex-1"><b className="block truncate text-sm">{recording.handle}</b><p className="text-xs text-[var(--muted)]">{recording.date} · {recording.duration}</p></div><StatusBadge status={recording.status} /></Link>)}</Panel></section>; }
 
-export function ChannelDetailPage({ channelId }: { channelId: string }) { const channel=channels.find((item)=>item.id===channelId) ?? channels[0]!; return <AppShell><PageHeader title={channel.name} subtitle={channel.handle} action={<button className={secondaryButton}>Monitoring on</button>} /><div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]"><Panel className="p-5"><div className="flex items-center justify-between"><b>Live status</b><StatusBadge status={channel.status} /></div><p className="mt-7 font-mono text-3xl font-semibold">{channel.status==="Recording"?"01:42:18":"Waiting"}</p><p className="mt-2 text-sm text-[var(--muted)]">Last checked {channel.checked}</p>{channel.status==="Recording"&&<Link to="/recordings/active" className={`${button} mt-6`}>View active recording</Link>}</Panel><Panel className="p-5"><h2 className="font-semibold">Channel statistics</h2><div className="mt-5 grid grid-cols-2 gap-4"><Metric label="Recordings" value={String(channel.recordings)} detail="All time" /><Metric label="Recorded hours" value="21.6 h" detail="All time" /><Metric label="Storage used" value="12.8 GB" detail="Current files" /><Metric label="Last livestream" value="Yesterday" detail="20:15" /></div></Panel></div><div className="mt-8"><RecordingList /></div></AppShell>; }
+export function ChannelDetailPage({ channelId }: { channelId: string }) {
+  const channel = channels.find((item) => item.id === channelId) ?? channels[0]!;
+  return (
+    <AppShell>
+      <PageHeader title={channel.name} subtitle={channel.handle} action={<button className={secondaryButton}>Monitoring on</button>} />
+      <div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+        <Panel className="p-5">
+          <div className="flex items-center justify-between"><b>Live status</b><StatusBadge status={channel.status} /></div>
+          <p className="mt-7 font-mono text-3xl font-semibold">{channel.status === "Recording" ? "01:42:18" : "Waiting"}</p>
+          {channel.status === "Recording" && <Link to="/recordings/active" className={`${button} mt-6`}>View active recording</Link>}
+          <div className="mt-6"><MonitoringHealth channel={channel} /></div>
+        </Panel>
+        <Panel className="p-5">
+          <h2 className="font-semibold">Channel statistics</h2>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <Metric label="Recordings" value={String(channel.recordings)} detail="All time" />
+            <Metric label="Recorded hours" value="21.6 h" detail="All time" />
+            <Metric label="Storage used" value="12.8 GB" detail="Current files" />
+            <Metric label="Last livestream" value="Yesterday" detail="20:15" />
+          </div>
+        </Panel>
+      </div>
+      <div className="mt-8"><RecordingList /></div>
+    </AppShell>
+  );
+}
 
 export function RecordingsPage() { const [query,setQuery]=useState(""); const filtered=recordings.filter((recording)=>`${recording.handle} ${recording.title}`.toLowerCase().includes(query.toLowerCase())); return <AppShell><PageHeader title="Recordings" subtitle="Watch and download your completed livestream recordings." /><div className="mb-5 flex items-center gap-2 border-y border-[var(--border)] bg-[var(--subtle)] p-3"><Search className="size-4 text-[var(--muted)]" /><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="Search recordings" className="w-full bg-transparent text-sm outline-none" /></div><div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filtered.map((recording)=><Link key={recording.id} to="/recordings/$recordingId" params={{recordingId:recording.id}} className="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] transition hover:-translate-y-0.5 hover:shadow-lg"><div className="relative aspect-video bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900"><Video className="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2 text-white/60" /><span className="absolute bottom-3 right-3 rounded bg-black/70 px-2 py-1 font-mono text-xs text-white">{recording.duration}</span></div><div className="p-5"><div className="flex items-center justify-between"><b>{recording.handle}</b><StatusBadge status={recording.status} /></div><p className="mt-2 text-sm text-[var(--muted)]">{recording.date} · {recording.size}</p><p className="mt-3 text-xs text-[var(--muted)]">Expires in {recording.expires}</p></div></Link>)}</div></AppShell>; }
 
@@ -79,7 +199,7 @@ export function AdminErrorsPage() { return <AppShell><PageHeader title="Admin ·
 export function AuthPage({ mode }: { mode:"sign-in"|"sign-up"|"forgot"|"reset" }) { const title={"sign-in":"Welcome back","sign-up":"Create your account",forgot:"Reset your password",reset:"Choose a new password"}[mode]; return <div className="grid min-h-screen bg-[var(--bg)] text-[var(--fg)] lg:grid-cols-2"><div className="flex flex-col p-6 sm:p-10"><Logo /><div className="m-auto w-full max-w-sm py-12"><h1 className="text-2xl font-semibold">{title}</h1><p className="mt-2 text-sm text-[var(--muted)]">{mode==="sign-up"?"Start monitoring your first TikTok channel.":"Continue to your SaveStream workspace."}</p><form className="mt-8 space-y-4">{mode==="sign-up"&&<Field label="Full name" placeholder="Alex Nguyen" />}<Field label="Email" placeholder="you@company.com" />{mode!=="forgot"&&<Field label={mode==="reset"?"New password":"Password"} placeholder="••••••••" type="password" />}<Link to={mode==="sign-up"?"/verify-email":mode==="sign-in"?"/overview":"/sign-in"} className={`${button} w-full`}>{mode==="sign-up"?"Create account":mode==="forgot"?"Send reset link":mode==="reset"?"Reset password":"Sign in"}</Link></form>{mode==="sign-up"&&<p className="mt-4 text-xs text-[var(--muted)]">By creating an account, you agree to the Terms and Privacy Policy.</p>}</div></div><div className="hidden place-items-center bg-gradient-to-br from-indigo-50 to-violet-100 lg:grid dark:from-indigo-950/30 dark:to-violet-950/30"><div className="max-w-lg px-10"><SaveStreamMark className="size-14" /><p className="mt-8 text-3xl font-medium leading-tight">We monitor. We record. You can close the browser.</p><p className="mt-8 text-sm text-[var(--muted)]">● Recording @linastudio · 01:42:18</p></div></div></div>; }
 function Field({ label, placeholder, type="text" }: { label:string; placeholder:string; type?:string }) { return <label className="block text-sm font-medium">{label}<input type={type} placeholder={placeholder} className="mt-2 h-11 w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 outline-none focus:ring-2 focus:ring-indigo-400" /></label>; }
 export function VerifyEmailPage() { return <SimplePublic title="Check your email" body="We sent a verification link to alex@savestream.app." action="Continue to onboarding" to="/onboarding" />; }
-export function OnboardingPage() { return <SimplePublic title="Let's record your first livestream" body="Enter a TikTok username or URL. SaveStream will resolve the creator and start monitoring automatically." action="Go to dashboard" to="/overview" />; }
+export function OnboardingPage() { return <OnboardingChecklist />; }
 export function PricingPage() { return <div className="min-h-screen bg-[var(--bg)] p-6 text-[var(--fg)]"><div className="mx-auto max-w-5xl"><Logo /><div className="py-20 text-center"><h1 className="text-4xl font-semibold">Simple pricing for automatic recording.</h1><p className="mt-4 text-[var(--muted)]">Start free and upgrade when you need more recording hours.</p></div><div className="grid gap-5 md:grid-cols-2"><Plan name="Free" price="Free" features={["10 minutes recording","1 monitored channel","3-day retention"]} /><Plan name="Pro" price="$9.99 / month" features={["50 recording hours","5 monitored channels","100 GB downloads","30-day retention"]} /></div></div></div>; }
 export function HelpPage() { return <AppShell><PageHeader title="Help" subtitle="Learn how SaveStream monitoring and cloud recording work." /><div className="grid gap-5 md:grid-cols-2">{["Getting started","Cloud monitoring","Recording lifecycle","Quotas and retention","Failed recording troubleshooting","Contact support"].map((item)=><Panel key={item} className="p-5"><h2 className="font-semibold">{item}</h2><p className="mt-2 text-sm text-[var(--muted)]">Guidance for using SaveStream will live here as backend behavior is implemented.</p></Panel>)}</div></AppShell>; }
 export function StatusPage() { return <SimplePublic title="SaveStream status" body="API, monitoring, recording workers, processing and storage are operational in this frontend prototype." action="Go home" to="/" />; }
