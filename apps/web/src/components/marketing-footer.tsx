@@ -25,6 +25,7 @@ export function MarketingFooter() {
           examples: "Video ghi mẫu",
           help: "Trợ giúp",
           status: "Trạng thái hệ thống",
+          faq: "Câu hỏi thường gặp",
           tiktok: "TikTok Live Recorder",
           douyin: "Douyin Live Recorder",
           partner: "Kho recording đối tác",
@@ -51,6 +52,7 @@ export function MarketingFooter() {
           examples: "Recording Examples",
           help: "Help center",
           status: "System status",
+          faq: "FAQ",
           tiktok: "TikTok Live Recorder",
           douyin: "Douyin Live Recorder",
           partner: "Partner recording archive",
@@ -86,6 +88,7 @@ export function MarketingFooter() {
             <button type="button" className={footerLink} onClick={() => scrollToSection("examples")}>{copy.examples}</button>
             <Link to="/help" className={footerLink}>{copy.help}</Link>
             <Link to="/status" className={footerLink}>{copy.status}</Link>
+            <button type="button" className={footerLink} onClick={() => scrollToSection("faq")}>{copy.faq}</button>
           </FooterColumn>
 
           <FooterColumn title={copy.platforms}>
