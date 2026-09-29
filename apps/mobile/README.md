@@ -4,11 +4,12 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 2 includes:
+Phase 3 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
-- auth, onboarding, and session-expired guard foundation;
+- complete onboarding UI with cloud-recording explanation and authorization consent;
+- Sign in, Register, Verify Email, and Forgot Password flows backed by an AuthRepository;
 - stateful four-tab shell: Home, Channels, Recordings, Settings;
 - preserved navigation stacks with `StatefulShellRoute.indexedStack`;
 - global Flutter/router error handling and app lifecycle observer hooks;
@@ -17,9 +18,10 @@ Phase 2 includes:
 - mock scenarios: success, loading, empty, error, and offline-like;
 - seed mock Watches and Recordings using backend-aligned statuses;
 - mock list/detail routes for Channels and Recordings;
+- auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Feature UI remains intentionally skeletal until its assigned phase.
+Home, Channels, Recordings, Billing, and Settings feature depth remains phase-scoped; auth and onboarding are now functional with mock repositories.
 
 ## Requirements
 

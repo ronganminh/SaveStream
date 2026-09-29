@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/widgets/savestream_widgets.dart';
-import '../../features/auth/presentation/auth_placeholder_screen.dart';
+import '../../features/auth/data/auth_providers.dart';
+import '../../features/auth/presentation/forgot_password_screen.dart';
+import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/sign_in_screen.dart';
+import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/onboarding/presentation/onboarding_placeholder_screen.dart';
+import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
@@ -69,42 +74,58 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (BuildContext context, GoRouterState state) {
-          return OnboardingPlaceholderScreen(session: session);
+          return OnboardingScreen(session: session);
         },
       ),
       GoRoute(
         path: AppRoutes.signIn,
         builder: (BuildContext context, GoRouterState state) {
-          return AuthPlaceholderScreen(
-            kind: AuthPlaceholderKind.signIn,
-            session: session,
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return SignInScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+              );
+            },
           );
         },
       ),
       GoRoute(
         path: AppRoutes.register,
         builder: (BuildContext context, GoRouterState state) {
-          return AuthPlaceholderScreen(
-            kind: AuthPlaceholderKind.register,
-            session: session,
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return RegisterScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+              );
+            },
           );
         },
       ),
       GoRoute(
         path: AppRoutes.verifyEmail,
         builder: (BuildContext context, GoRouterState state) {
-          return AuthPlaceholderScreen(
-            kind: AuthPlaceholderKind.verifyEmail,
-            session: session,
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return VerifyEmailScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+              );
+            },
           );
         },
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (BuildContext context, GoRouterState state) {
-          return AuthPlaceholderScreen(
-            kind: AuthPlaceholderKind.forgotPassword,
-            session: session,
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return ForgotPasswordScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+              );
+            },
           );
         },
       ),

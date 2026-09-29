@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../core/config/app_config.dart';
 import '../core/mock/mock_providers.dart';
 import '../core/mock/mock_scenario.dart';
+import '../features/auth/data/auth_providers.dart';
+import '../features/auth/data/repositories/mock_auth_repository.dart';
 import '../l10n/l10n.dart';
 import 'app_settings_controller.dart';
 import 'lifecycle/app_lifecycle_controller.dart';
@@ -18,6 +20,7 @@ class SaveStreamApp extends StatefulWidget {
     this.settings,
     this.session,
     this.mockScenario = MockScenario.success,
+    this.authMockScenario = AuthMockScenario.success,
     super.key,
   });
 
@@ -25,6 +28,7 @@ class SaveStreamApp extends StatefulWidget {
   final AppSettingsController? settings;
   final AppSessionController? session;
   final MockScenario mockScenario;
+  final AuthMockScenario authMockScenario;
 
   @override
   State<SaveStreamApp> createState() => _SaveStreamAppState();
@@ -69,7 +73,10 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      overrides: [mockScenarioProvider.overrideWithValue(widget.mockScenario)],
+      overrides: <Override>[
+        mockScenarioProvider.overrideWithValue(widget.mockScenario),
+        authMockScenarioProvider.overrideWithValue(widget.authMockScenario),
+      ],
       child: AnimatedBuilder(
         animation: _settings,
         builder: (BuildContext context, Widget? child) {

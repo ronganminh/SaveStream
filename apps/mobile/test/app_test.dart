@@ -6,6 +6,7 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 
 void main() {
   AppConfig testConfig() {
@@ -15,25 +16,39 @@ void main() {
     );
   }
 
-  testWidgets('boots the Phase 2 shell with four destinations', (
+  AppSessionController signedOutSession({
+    bool hasCompletedOnboarding = true,
+  }) {
+    return AppSessionController(
+      hasCompletedOnboarding: hasCompletedOnboarding,
+      authStatus: AppAuthStatus.unauthenticated,
+    );
+  }
+
+  Future<void> enterSignInCredentials(WidgetTester tester) async {
+    final Finder fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'alex@example.com');
+    await tester.enterText(fields.at(1), 'Password123!');
+  }
+
+  testWidgets('boots the Phase 3 shell with four destinations', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
 
     expect(find.text('SaveStream'), findsOneWidget);
-    expect(find.text('Mobile foundation is ready'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Channels'), findsOneWidget);
     expect(find.text('Recordings'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
   });
 
-  testWidgets('auth guard redirects unauthenticated session to sign in', (
+  testWidgets('onboarding requires recording permission confirmation', (
     WidgetTester tester,
   ) async {
-    final AppSessionController session = AppSessionController(
-      authStatus: AppAuthStatus.unauthenticated,
+    final AppSessionController session = signedOutSession(
+      hasCompletedOnboarding: false,
     );
 
     await tester.pumpWidget(
@@ -41,25 +56,140 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in'), findsOneWidget);
-    expect(find.text('Enter preview app'), findsOneWidget);
+    expect(find.text('Welcome to SaveStream'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recording continues in the cloud'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Record responsibly'), findsOneWidget);
+
+    final FilledButton disabledStart = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Get started'),
+    );
+    expect(disabledStart.onPressed, isNull);
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Get started'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in'), findsWidgets);
   });
 
-  testWidgets('onboarding guard has priority over auth guard', (
-    WidgetTester tester,
-  ) async {
-    final AppSessionController session = AppSessionController(
-      hasCompletedOnboarding: false,
-      authStatus: AppAuthStatus.unauthenticated,
-    );
-
+  testWidgets('sign in validates required fields', (WidgetTester tester) async {
     await tester.pumpWidget(
-      SaveStreamApp(config: testConfig(), session: session),
+      SaveStreamApp(
+        config: testConfig(),
+        session: signedOutSession(),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Onboarding'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump();
+
+    expect(find.text('Enter your email.'), findsOneWidget);
+    expect(find.text('Enter your password.'), findsOneWidget);
+  });
+
+  testWidgets('signs in through mock auth repository', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        session: signedOutSession(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await enterSignInCredentials(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Mobile foundation is ready'), findsOneWidget);
+  });
+
+  testWidgets('shows invalid credentials from mock auth repository', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        session: signedOutSession(),
+        authMockScenario: AuthMockScenario.invalidCredentials,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await enterSignInCredentials(tester);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(find.text('The email or password is incorrect.'), findsOneWidget);
+  });
+
+  testWidgets('registers then verifies email through mock auth', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        session: signedOutSession(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    final Finder fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'new@example.com');
+    await tester.enterText(fields.at(1), 'Password123!');
+    await tester.enterText(fields.at(2), 'Password123!');
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Verify email'), findsWidgets);
+    expect(find.text('new@example.com'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField), '123456');
+    await tester.tap(find.widgetWithText(FilledButton, 'Verify email'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home'), findsOneWidget);
+  });
+
+  testWidgets('forgot password reaches generic sent state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        session: signedOutSession(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), 'alex@example.com');
+    await tester.tap(find.widgetWithText(FilledButton, 'Send reset link'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Check your email'), findsOneWidget);
   });
 
   testWidgets('navigates mock channel detail and preserves tab stack', (
