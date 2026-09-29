@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "savestream-backend"
-version = "0.2.0"
+version = "0.3.0"
 description = "SaveStream modular-monolith backend and reusable recording engine."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { file = "LICENSE" }
 dependencies = [
   "aiosqlite==0.20.0",
+  "argon2-cffi==25.1.0",
   "alembic==1.20.0",
   "asyncpg==0.30.0",
   "celery==5.6.3",
@@ -19,6 +20,7 @@ dependencies = [
   "fastapi==0.115.14",
   "ffmpeg-python==0.2.0",
   "httpx==0.28.1",
+  "PyJWT==2.15.1",
   "Pyrogram==2.0.106",
   "redis==5.2.1",
   "requests==2.32.5",

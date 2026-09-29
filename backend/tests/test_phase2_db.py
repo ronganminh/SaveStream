@@ -10,12 +10,12 @@ from app.infrastructure.queue.outbox import OutboxWriter
 
 
 def test_phase2_base_tables_are_registered() -> None:
-    assert set(Base.metadata.tables) == {
+    assert {
         "users",
         "idempotency_keys",
         "outbox_events",
         "audit_logs",
-    }
+    }.issubset(set(Base.metadata.tables))
     assert Base.metadata.tables["users"].c.normalized_email.unique is True
 
 
