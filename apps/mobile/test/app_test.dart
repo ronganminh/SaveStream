@@ -43,6 +43,61 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
   });
 
+  testWidgets('renders the aggregated home dashboard', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Welcome back, Alex'), findsOneWidget);
+    expect(find.text('Available credit'), findsOneWidget);
+    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('Recording now'), findsOneWidget);
+    expect(find.text('Credit is running low'), findsOneWidget);
+    expect(find.text('A recording needs attention'), findsOneWidget);
+    expect(find.text('12.6 / 50 recording hours'), findsOneWidget);
+    expect(find.text('Ada Live'), findsWidgets);
+  });
+
+  testWidgets('renders skeleton while the home dashboard is loading', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.loading),
+    );
+    await tester.pump();
+
+    expect(find.byType(SsSkeleton), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('renders the home empty account state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.empty),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Add your first channel'), findsOneWidget);
+    expect(find.text('Credit is running low'), findsNothing);
+  });
+
+  testWidgets('renders retryable home repository errors', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.error),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Something went wrong'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
   testWidgets('onboarding requires recording permission confirmation', (
     WidgetTester tester,
   ) async {
