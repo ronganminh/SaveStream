@@ -35,9 +35,9 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: SsSpacing.sm),
             Text(
               l10n.homeFoundationBody,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: colors.onSurfaceVariant),
             ),
             const SizedBox(height: SsSpacing.xl),
             SsCard(

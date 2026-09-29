@@ -32,10 +32,7 @@ class OnboardingPlaceholderScreen extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: SsSpacing.md),
-                  Text(
-                    l10n.onboardingPreviewBody,
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(l10n.onboardingPreviewBody, textAlign: TextAlign.center),
                   const SizedBox(height: SsSpacing.xl),
                   SsPrimaryButton(
                     label: l10n.continueAction,

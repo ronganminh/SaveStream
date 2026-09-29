@@ -40,8 +40,7 @@ class ChannelsScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(SsSpacing.lg),
               itemCount: items.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: SsSpacing.md),
+              separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
               itemBuilder: (BuildContext context, int index) {
                 final WatchSummary watch = items[index];
                 return SsCard(

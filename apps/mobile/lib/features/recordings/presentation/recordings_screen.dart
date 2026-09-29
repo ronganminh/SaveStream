@@ -42,8 +42,7 @@ class RecordingsScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.all(SsSpacing.lg),
               itemCount: items.length,
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: SsSpacing.md),
+              separatorBuilder: (_, _) => const SizedBox(height: SsSpacing.md),
               itemBuilder: (BuildContext context, int index) {
                 final RecordingSummary recording = items[index];
                 return SsCard(
@@ -68,10 +67,7 @@ class RecordingsScreen extends ConsumerWidget {
   }
 }
 
-String recordingStatusLabel(
-  AppLocalizations l10n,
-  RecordingStatus status,
-) {
+String recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
   return switch (status) {
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,

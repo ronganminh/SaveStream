@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-class AppLifecycleController extends ChangeNotifier with WidgetsBindingObserver {
+class AppLifecycleController extends ChangeNotifier
+    with WidgetsBindingObserver {
   AppLifecycleState? _state;
 
   AppLifecycleState? get state => _state;

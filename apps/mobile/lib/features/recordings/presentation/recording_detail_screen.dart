@@ -29,8 +29,7 @@ class RecordingDetailScreen extends ConsumerWidget {
             title: l10n.errorTitle,
             message: l10n.errorBody,
             retryLabel: l10n.retryAction,
-            onRetry: () =>
-                ref.invalidate(recordingDetailProvider(recordingId)),
+            onRetry: () => ref.invalidate(recordingDetailProvider(recordingId)),
           ),
           data: (RecordingSummary? value) {
             if (value == null) {

@@ -92,10 +92,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        mockScenario: MockScenario.loading,
-      ),
+      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.loading),
     );
     await tester.pump();
 
