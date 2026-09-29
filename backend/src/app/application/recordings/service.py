@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -341,7 +342,7 @@ class RecordingService:
 
     async def artifacts(
         self, principal: AuthPrincipal, recording_id: str
-    ) -> list[RecordingArtifact]:
+    ) -> Sequence[RecordingArtifact]:
         recording = await self.get(principal, recording_id)
         return list(
             (
