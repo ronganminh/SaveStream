@@ -4,15 +4,22 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 1 includes:
+Phase 2 includes:
 
-- SaveStream semantic design tokens;
-- Material 3 Light / Dark / System themes;
-- English and Vietnamese localization with Flutter gen_l10n;
-- reusable buttons, fields, cards, status chips, states, dialogs, and feedback;
-- a temporary component gallery for visual QA.
+- Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
+- `MaterialApp.router` with `go_router`;
+- auth, onboarding, and session-expired guard foundation;
+- stateful four-tab shell: Home, Channels, Recordings, Settings;
+- preserved navigation stacks with `StatefulShellRoute.indexedStack`;
+- global Flutter/router error handling and app lifecycle observer hooks;
+- Riverpod repository providers;
+- repository interfaces for Watches and Recordings;
+- mock scenarios: success, loading, empty, error, and offline-like;
+- seed mock Watches and Recordings using backend-aligned statuses;
+- mock list/detail routes for Channels and Recordings;
+- the Phase 1 component gallery retained at `/dev/components`.
 
-The component gallery will be replaced by the app shell in Phase 2.
+Feature UI remains intentionally skeletal until its assigned phase.
 
 ## Requirements
 
@@ -42,6 +49,22 @@ flutter run \
   --dart-define=APP_ENV=staging \
   --dart-define=API_BASE_URL=https://api-staging.example.com
 ```
+
+## Phase 2 architecture
+
+```text
+Screen
+  -> Riverpod provider/controller
+  -> Repository interface
+  -> Mock repository
+
+MaterialApp.router
+  -> guards
+  -> StatefulShellRoute
+  -> four preserved tab stacks
+```
+
+The mock layer is replaceable by API repositories in later phases without moving raw HTTP into presentation code.
 
 ## Validation
 
