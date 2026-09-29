@@ -150,5 +150,42 @@
   "invalidCredentialsMessage": "The email or password is incorrect.",
   "emailNotVerifiedMessage": "Verify your email before signing in.",
   "rateLimitedMessage": "Too many attempts. Please try again later.",
-  "authServerErrorMessage": "SaveStream could not complete this request. Please try again."
+  "authServerErrorMessage": "SaveStream could not complete this request. Please try again.",
+  "homeGreeting": "Welcome back, {name}",
+  "homeGreetingSubtitle": "Here’s what SaveStream is doing for you right now.",
+  "homeAvailableCreditLabel": "Available credit",
+  "homeActiveRecordingsLabel": "Active recordings",
+  "homeMonitoredChannelsLabel": "Monitored channels",
+  "homeLowCreditTitle": "Credit is running low",
+  "homeLowCreditBody": "Add credit soon to avoid monitoring or recording interruptions.",
+  "homeViewCreditsAction": "View credits",
+  "homeRecordingFailedTitle": "A recording needs attention",
+  "homeRecordingFailedBody": "A recent recording failed. Review it before retrying.",
+  "homeReviewRecordingAction": "Review recording",
+  "homeUsageTitle": "Usage this month",
+  "homeViewUsageAction": "View usage",
+  "homeUsageHours": "{used} / {limit} recording hours",
+  "homeActiveRecordingTitle": "Recording now",
+  "homeCloudRecordingHint": "You can close the app — recording continues in the cloud.",
+  "homeMonitoredChannelsTitle": "Monitored channels",
+  "homeRecentRecordingsTitle": "Recent recordings",
+  "homeEmptyTitle": "Add your first channel",
+  "homeEmptyBody": "Start monitoring an authorized creator to see live status and recordings here.",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@homeUsageHours": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  }
 }
