@@ -6,6 +6,7 @@
 .pub/
 /build/
 coverage/
+lib/l10n/generated/
 
 # Android
 android/.gradle/
