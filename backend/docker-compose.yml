@@ -12,6 +12,11 @@ services:
       SAVESTREAM_MINIO_ACCESS_KEY: savestream
       SAVESTREAM_MINIO_SECRET_KEY: savestream-local-only
       SAVESTREAM_MINIO_BUCKET: savestream-recordings
+      SAVESTREAM_JWT_SECRET: savestream-local-dev-secret-change-me
+      SAVESTREAM_FRONTEND_BASE_URL: http://localhost:5173
+      SAVESTREAM_SMTP_HOST: mail-debug
+      SAVESTREAM_SMTP_PORT: 1025
+      SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@savestream.local>
       SAVESTREAM_CORS_ALLOW_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:8080
     ports:
       - "8000:8000"

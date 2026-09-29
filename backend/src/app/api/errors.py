@@ -8,25 +8,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.domain.common.errors import ApplicationError
+
 logger = logging.getLogger("savestream.api")
-
-
-class AppError(Exception):
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        status_code: int = 400,
-        retryable: bool = False,
-        details: Mapping[str, Any] | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-        self.status_code = status_code
-        self.retryable = retryable
-        self.details = dict(details or {})
+AppError = ApplicationError
 
 
 def _request_id(request: Request) -> str:
@@ -57,8 +42,8 @@ def error_response(
 
 
 def install_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(AppError)
-    async def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+    @app.exception_handler(ApplicationError)
+    async def handle_app_error(request: Request, exc: ApplicationError) -> JSONResponse:
         return error_response(
             request,
             code=exc.code,
