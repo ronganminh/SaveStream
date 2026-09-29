@@ -69,7 +69,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      overrides: <Override>[
+      overrides: [
         mockScenarioProvider.overrideWithValue(widget.mockScenario),
       ],
       child: AnimatedBuilder(

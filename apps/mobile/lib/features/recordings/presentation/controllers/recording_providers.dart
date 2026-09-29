@@ -15,7 +15,7 @@ final FutureProvider<List<RecordingSummary>> recordingListProvider =
       (ref) => ref.watch(recordingRepositoryProvider).listRecordings(),
     );
 
-final FutureProviderFamily<RecordingSummary?, String> recordingDetailProvider =
+final recordingDetailProvider =
     FutureProvider.family<RecordingSummary?, String>(
       (ref, id) => ref.watch(recordingRepositoryProvider).getRecording(id),
     );
