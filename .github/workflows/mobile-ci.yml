@@ -38,11 +38,10 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Show formatter diff
-        run: |
-          dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
-          git diff -- lib/app lib/core lib/features lib/l10n/l10n.dart test
-          exit 1
+      - name: Check formatting
+        run: >-
+          dart format --output=none --set-exit-if-changed
+          lib/app lib/core lib/features lib/l10n/l10n.dart test
 
       - name: Analyze
         run: flutter analyze --fatal-infos

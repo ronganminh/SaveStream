@@ -16,5 +16,5 @@ final FutureProvider<List<WatchSummary>> watchListProvider =
     );
 
 final watchDetailProvider = FutureProvider.family<WatchSummary?, String>(
-      (ref, id) => ref.watch(watchRepositoryProvider).getWatch(id),
-    );
+  (ref, id) => ref.watch(watchRepositoryProvider).getWatch(id),
+);
