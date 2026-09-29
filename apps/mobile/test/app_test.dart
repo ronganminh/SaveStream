@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:savestream_mobile/app/app_settings_controller.dart';
 import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
@@ -8,6 +9,8 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
+import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
+import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
 
 void main() {
   AppConfig testConfig() {
