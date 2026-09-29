@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import time
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Awaitable, Protocol, cast
 
 from redis.asyncio import Redis
 
@@ -48,7 +48,7 @@ return {current, ttl}
         window_seconds: int,
     ) -> None:
         key = f"{self.prefix}:{scope}:{self._digest(identifier)}"
-        result = await self.redis.eval(self._SCRIPT, 1, key, window_seconds)
+        result = await cast(Awaitable[Any], self.redis.eval(self._SCRIPT, 1, key, str(window_seconds)))
         current = int(result[0])
         ttl = max(int(result[1]), 0)
         if current > limit:
