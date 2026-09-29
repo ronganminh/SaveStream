@@ -10,6 +10,12 @@ def test_recording_state_machine_and_actions_are_frozen():
     assert transition(RecordingStatus.QUEUED, RecordingStatus.RESOLVING) is RecordingStatus.RESOLVING
     assert transition(RecordingStatus.RECORDING, RecordingStatus.STOP_REQUESTED) is RecordingStatus.STOP_REQUESTED
     assert transition(RecordingStatus.STOP_REQUESTED, RecordingStatus.STOPPED) is RecordingStatus.STOPPED
+    try:
+        transition(RecordingStatus.STOP_REQUESTED, RecordingStatus.PROCESSING)
+    except ApplicationError:
+        pass
+    else:
+        raise AssertionError("stop_requested must transition directly to stopped/failed")
 
     assert actions_for_status(RecordingStatus.RECORDING).can_stop is True
     assert actions_for_status(RecordingStatus.FAILED).can_retry is True

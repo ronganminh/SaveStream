@@ -183,16 +183,21 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 )
                 return
 
-            await store.set_status(
-                recording,
-                RecordingStatus.PROCESSING,
-                "recording.processing",
+            stopped_by_request = (
+                result.stop_reason is StopReason.USER_REQUESTED
+                or recording.status == RecordingStatus.STOP_REQUESTED.value
             )
-            await store.set_status(
-                recording,
-                RecordingStatus.UPLOADING,
-                "recording.uploading",
-            )
+            if not stopped_by_request:
+                await store.set_status(
+                    recording,
+                    RecordingStatus.PROCESSING,
+                    "recording.processing",
+                )
+                await store.set_status(
+                    recording,
+                    RecordingStatus.UPLOADING,
+                    "recording.uploading",
+                )
 
             artifact_id = uuid.uuid4()
             storage_key = (
@@ -230,10 +235,13 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
             )
             target = (
                 RecordingStatus.STOPPED
-                if result.stop_reason is StopReason.USER_REQUESTED
+                if stopped_by_request
                 else RecordingStatus.COMPLETED
             )
-            recording.status = transition(RecordingStatus.UPLOADING, target).value
+            recording.status = transition(
+                RecordingStatus(recording.status),
+                target,
+            ).value
             recording.actual_cost = 0
             recording.ended_at = utcnow()
             recording.active_dedupe_key = None

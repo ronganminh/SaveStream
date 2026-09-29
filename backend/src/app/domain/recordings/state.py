@@ -70,7 +70,7 @@ _ALLOWED: dict[RecordingStatus, frozenset[RecordingStatus]] = {
         {RecordingStatus.COMPLETED, RecordingStatus.STOPPED, RecordingStatus.FAILED}
     ),
     RecordingStatus.STOP_REQUESTED: frozenset(
-        {RecordingStatus.STOPPED, RecordingStatus.PROCESSING, RecordingStatus.FAILED}
+        {RecordingStatus.STOPPED, RecordingStatus.FAILED}
     ),
     RecordingStatus.COMPLETED: frozenset(),
     RecordingStatus.FAILED: frozenset(),
