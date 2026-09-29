@@ -20,7 +20,7 @@ final FutureProvider<HomeDashboardViewModel> homeDashboardProvider =
         ref.watch(watchRepositoryProvider).listWatches(),
         ref.watch(recordingRepositoryProvider).listRecordings(),
         ref.watch(homeMetricsRepositoryProvider).getMetrics(),
-      ], eagerError: false);
+      ], eagerError: true);
 
       return HomeDashboardViewModel(
         metrics: results[2] as HomeAccountMetrics,
