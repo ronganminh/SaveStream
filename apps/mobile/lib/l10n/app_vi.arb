@@ -150,5 +150,42 @@
   "invalidCredentialsMessage": "Email hoặc mật khẩu không đúng.",
   "emailNotVerifiedMessage": "Hãy xác minh email trước khi đăng nhập.",
   "rateLimitedMessage": "Bạn đã thử quá nhiều lần. Vui lòng thử lại sau.",
-  "authServerErrorMessage": "SaveStream chưa thể hoàn tất yêu cầu này. Vui lòng thử lại."
+  "authServerErrorMessage": "SaveStream chưa thể hoàn tất yêu cầu này. Vui lòng thử lại.",
+  "homeGreeting": "Chào mừng trở lại, {name}",
+  "homeGreetingSubtitle": "Đây là những gì SaveStream đang theo dõi cho bạn lúc này.",
+  "homeAvailableCreditLabel": "Credit khả dụng",
+  "homeActiveRecordingsLabel": "Recording đang chạy",
+  "homeMonitoredChannelsLabel": "Kênh đang theo dõi",
+  "homeLowCreditTitle": "Credit sắp hết",
+  "homeLowCreditBody": "Hãy nạp thêm credit để tránh gián đoạn theo dõi hoặc recording.",
+  "homeViewCreditsAction": "Xem credit",
+  "homeRecordingFailedTitle": "Có recording cần kiểm tra",
+  "homeRecordingFailedBody": "Một recording gần đây đã thất bại. Hãy kiểm tra trước khi thử lại.",
+  "homeReviewRecordingAction": "Xem recording",
+  "homeUsageTitle": "Sử dụng tháng này",
+  "homeViewUsageAction": "Xem sử dụng",
+  "homeUsageHours": "{used} / {limit} giờ recording",
+  "homeActiveRecordingTitle": "Đang recording",
+  "homeCloudRecordingHint": "Bạn có thể đóng ứng dụng — recording vẫn tiếp tục trên cloud.",
+  "homeMonitoredChannelsTitle": "Kênh đang theo dõi",
+  "homeRecentRecordingsTitle": "Recording gần đây",
+  "homeEmptyTitle": "Thêm kênh đầu tiên",
+  "homeEmptyBody": "Hãy bắt đầu theo dõi một creator bạn được phép quản lý để xem trạng thái live và recording tại đây.",
+  "@homeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@homeUsageHours": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  }
 }
