@@ -75,11 +75,11 @@ export function PreferencesControls({
         value={locale}
         onChange={changeLocale}
         ariaLabel={t("preferences.language")}
-        triggerWidth={compact ? "w-[4.7rem]" : "w-[8.8rem]"}
+        triggerWidth={compact ? "min-w-[5.6rem]" : "min-w-[9.5rem]"}
         trigger={
           <>
             <Globe2 className="size-4 shrink-0 text-[var(--muted)]" />
-            <span className="truncate">
+            <span className="whitespace-nowrap">
               {compact ? selectedLanguage.compactLabel : selectedLanguage.label}
             </span>
           </>
@@ -95,11 +95,11 @@ export function PreferencesControls({
         value={theme}
         onChange={setTheme}
         ariaLabel={t("preferences.theme")}
-        triggerWidth={compact ? "w-[6rem]" : "w-[9.2rem]"}
+        triggerWidth={compact ? "min-w-[7.1rem]" : "min-w-[10rem]"}
         trigger={
           <>
             <ThemeIcon theme={theme} />
-            <span className="truncate">
+            <span className="whitespace-nowrap">
               {compact ? selectedTheme.compactLabel : selectedTheme.label}
             </span>
           </>
@@ -156,7 +156,7 @@ function PreferenceMenu<T extends string>({
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`flex h-10 ${triggerWidth} items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 text-xs font-medium text-[var(--fg)] shadow-sm outline-none transition hover:bg-[var(--subtle)] focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-400/30`}
+        className={`flex h-10 ${triggerWidth} shrink-0 items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 text-xs font-medium text-[var(--fg)] shadow-sm outline-none transition hover:bg-[var(--subtle)] focus-visible:border-indigo-400 focus-visible:ring-2 focus-visible:ring-indigo-400/30`}
       >
         {trigger}
         <ChevronDown
@@ -168,7 +168,7 @@ function PreferenceMenu<T extends string>({
         <div
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute right-0 z-50 mt-2 min-w-full overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-xl shadow-black/10 dark:shadow-black/30"
+          className="absolute right-0 z-50 mt-2 min-w-[12rem] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-xl shadow-black/10 dark:shadow-black/30"
         >
           {options.map((option) => {
             const Icon = option.icon;
