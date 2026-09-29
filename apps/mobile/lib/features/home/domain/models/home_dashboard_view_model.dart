@@ -29,7 +29,9 @@ class HomeDashboardViewModel {
   static const double lowCreditThreshold = 5;
 
   List<RecordingSummary> get activeRecordings => recordings
-      .where((RecordingSummary item) => item.status == RecordingStatus.recording)
+      .where(
+        (RecordingSummary item) => item.status == RecordingStatus.recording,
+      )
       .toList(growable: false);
 
   List<RecordingSummary> get failedRecordings => recordings
