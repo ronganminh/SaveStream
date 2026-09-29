@@ -31,10 +31,7 @@ class SsPrimaryButton extends StatelessWidget {
         label: labelWidget,
       );
     }
-    return FilledButton(
-      onPressed: effectiveOnPressed,
-      child: labelWidget,
-    );
+    return FilledButton(onPressed: effectiveOnPressed, child: labelWidget);
   }
 }
 
