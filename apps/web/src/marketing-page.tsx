@@ -11,11 +11,13 @@ import {
   Video,
   Youtube,
 } from "lucide-react";
+import { useEffect } from "react";
 import { Logo } from "./components/brand";
 import { PreferencesControls } from "./components/preferences-controls";
+import { DouyinWaitlist, PartnerArchiveProof, useLocalizedMarketingSeo } from "./components/p2-marketing";
 import { SampleMediaGrid } from "./components/sample-media-grid";
 import { StatusBadge } from "./components/ui";
-import { usePreferences } from "./lib/preferences";
+import { usePreferences, type Locale } from "./lib/preferences";
 
 const primaryButton =
   "inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400";
@@ -26,8 +28,18 @@ function scrollToSection(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-export function LandingPage() {
-  const { t } = usePreferences();
+export function LandingPage({ forcedLocale }: { forcedLocale?: Locale } = {}) {
+  const { t, locale, setLocale } = usePreferences();
+
+  useEffect(() => {
+    if (forcedLocale && forcedLocale !== locale) setLocale(forcedLocale);
+  }, [forcedLocale, locale, setLocale]);
+
+  useLocalizedMarketingSeo(forcedLocale ?? locale);
+
+  const changeMarketingLocale = (nextLocale: Locale) => {
+    window.location.assign(`/${nextLocale}`);
+  };
   const howSteps = [
     [Plus, t("how.add.title"), t("how.add.body")],
     [Radio, t("how.monitor.title"), t("how.monitor.body")],
@@ -58,7 +70,7 @@ export function LandingPage() {
             <Link to="/pricing">{t("nav.pricing")}</Link>
           </nav>
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-            <div className="hidden sm:block"><PreferencesControls compact /></div>
+            <div className="hidden sm:block"><PreferencesControls compact onLocaleChange={changeMarketingLocale} /></div>
             <Link to="/sign-in" className="hidden h-10 items-center px-3 text-sm font-medium md:inline-flex">{t("nav.signIn")}</Link>
             <Link to="/sign-up" className={`${primaryButton} px-3 sm:px-4`}>{t("nav.signUp")}</Link>
           </div>
@@ -127,7 +139,7 @@ export function LandingPage() {
             <div className="max-w-3xl"><p className="text-sm font-semibold text-indigo-600">{t("platforms.eyebrow")}</p><h2 className="mt-2 text-3xl font-semibold sm:text-4xl">{t("platforms.title")}</h2><p className="mt-4 text-[var(--muted)]">{t("platforms.body")}</p></div>
             <div className="mt-10 grid gap-5 md:grid-cols-2">
               <PlatformCard icon={<Radio className="size-6" />} tone="indigo" status={t("platforms.available")} title="TikTok Live" body={t("platforms.tiktok.body")} />
-              <PlatformCard icon={<Clock3 className="size-6" />} tone="amber" status={t("platforms.planned")} title="Douyin Live" body={t("platforms.douyin.body")} />
+              <PlatformCard icon={<Clock3 className="size-6" />} tone="amber" status={t("platforms.planned")} title="Douyin Live" body={t("platforms.douyin.body")}><DouyinWaitlist /></PlatformCard>
             </div>
           </div>
         </section>
@@ -142,20 +154,28 @@ export function LandingPage() {
 
         <section id="partner" className="border-b border-[var(--border)] py-16 sm:py-20">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
-            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]">
-              <div className="grid lg:grid-cols-[1fr_.95fr]">
-                <div className="p-6 sm:p-10 lg:p-12"><p className="text-sm font-semibold text-indigo-600">{t("partner.eyebrow")}</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold sm:text-4xl">{t("partner.title")}</h2><p className="mt-5 max-w-2xl leading-7 text-[var(--muted)]">{t("partner.body")}</p><a href="https://www.youtube.com/channel/UCUkhUF-GUS22KWBFEcD2fEw" target="_blank" rel="noreferrer" className={`${primaryButton} mt-7`}><Youtube className="size-4" /> {t("cta.visitPartner")} <ExternalLink className="size-4" /></a></div>
-                <div className="relative min-h-[300px] bg-black sm:min-h-[360px] lg:min-h-[420px]">
-                  <iframe
-                    className="absolute inset-0 h-full w-full"
-                    src="https://www.youtube-nocookie.com/embed/videoseries?list=UUUkhUF-GUS22KWBFEcD2fEw"
-                    title="SaveStream partner YouTube archive"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                </div>
+            <div className="overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-10 lg:p-12">
+              <div className="max-w-3xl">
+                <p className="text-sm font-semibold text-indigo-600">{t("partner.eyebrow")}</p>
+                <h2 className="mt-2 text-3xl font-semibold sm:text-4xl">{t("partner.title")}</h2>
+                <p className="mt-5 leading-7 text-[var(--muted)]">{t("partner.body")}</p>
+                <a href="https://www.youtube.com/channel/UCUkhUF-GUS22KWBFEcD2fEw" target="_blank" rel="noreferrer" className={`${primaryButton} mt-7`}><Youtube className="size-4" /> {t("cta.visitPartner")} <ExternalLink className="size-4" /></a>
+              </div>
+
+              <div className="mt-10 border-t border-[var(--border)] pt-10">
+                <PartnerArchiveProof />
+              </div>
+
+              <div className="relative mt-10 min-h-[300px] overflow-hidden rounded-xl bg-black sm:min-h-[380px] lg:min-h-[460px]">
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src="https://www.youtube-nocookie.com/embed/videoseries?list=UUUkhUF-GUS22KWBFEcD2fEw"
+                  title="SaveStream partner YouTube archive"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
               </div>
             </div>
           </div>
@@ -182,8 +202,8 @@ function Avatar({ initials }: { initials: string }) {
   return <span className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-fuchsia-500 to-rose-400 text-xs font-semibold text-white">{initials}</span>;
 }
 
-function PlatformCard({ icon, tone, status, title, body }: { icon: React.ReactNode; tone: "indigo" | "amber"; status: string; title: string; body: string }) {
+function PlatformCard({ icon, tone, status, title, body, children }: { icon: React.ReactNode; tone: "indigo" | "amber"; status: string; title: string; body: string; children?: React.ReactNode }) {
   const toneClass = tone === "indigo" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300" : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300";
   const statusClass = tone === "indigo" ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300";
-  return <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8"><div className="flex items-start justify-between gap-4"><span className={`grid size-12 place-items-center rounded-xl ${toneClass}`}>{icon}</span><span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClass}`}>{status}</span></div><h3 className="mt-8 text-xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{body}</p></article>;
+  return <article className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8"><div className="flex items-start justify-between gap-4"><span className={`grid size-12 place-items-center rounded-xl ${toneClass}`}>{icon}</span><span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusClass}`}>{status}</span></div><h3 className="mt-8 text-xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-[var(--muted)]">{body}</p>{children}</article>;
 }

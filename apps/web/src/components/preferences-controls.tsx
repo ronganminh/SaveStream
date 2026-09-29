@@ -14,8 +14,19 @@ import {
   type ThemePreference,
 } from "../lib/preferences";
 
-export function PreferencesControls({ compact = false }: { compact?: boolean }) {
+export function PreferencesControls({
+  compact = false,
+  onLocaleChange,
+}: {
+  compact?: boolean;
+  onLocaleChange?: (locale: Locale) => void;
+}) {
   const { locale, setLocale, theme, setTheme, t } = usePreferences();
+
+  const changeLocale = (nextLocale: Locale) => {
+    setLocale(nextLocale);
+    onLocaleChange?.(nextLocale);
+  };
 
   const languageOptions: Array<{
     value: Locale;
@@ -62,7 +73,7 @@ export function PreferencesControls({ compact = false }: { compact?: boolean }) 
     >
       <PreferenceMenu
         value={locale}
-        onChange={setLocale}
+        onChange={changeLocale}
         ariaLabel={t("preferences.language")}
         triggerWidth={compact ? "w-[4.7rem]" : "w-[8.8rem]"}
         trigger={

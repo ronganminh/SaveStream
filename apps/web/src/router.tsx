@@ -1,6 +1,6 @@
 import {
   Outlet,
-  createHashHistory,
+  createBrowserHistory,
   createRootRoute,
   createRoute,
   createRouter,
@@ -37,7 +37,24 @@ const route = <const TPath extends string,>(
   component: () => React.ReactNode,
 ) => createRoute({ getParentRoute: () => rootRoute, path, component });
 
-const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: LandingPage });
+function preferredLocale() {
+  if (typeof window === "undefined") return "en" as const;
+  const stored = window.localStorage.getItem("savestream.locale");
+  if (stored === "en" || stored === "vi") return stored;
+  return window.navigator.language.toLowerCase().startsWith("vi") ? "vi" : "en";
+}
+
+function LandingRoot() {
+  const locale = preferredLocale();
+  if (typeof window !== "undefined" && window.location.pathname === "/") {
+    window.history.replaceState({}, "", `/${locale}`);
+  }
+  return <LandingPage forcedLocale={locale} />;
+}
+
+const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: LandingRoot });
+const enLandingRoute = route("/en", () => <LandingPage forcedLocale="en" />);
+const viLandingRoute = route("/vi", () => <LandingPage forcedLocale="vi" />);
 const pricingRoute = route("/pricing", PricingPage);
 const signInRoute = route("/sign-in", () => <AuthPage mode="sign-in" />);
 const signUpRoute = route("/sign-up", () => <AuthPage mode="sign-up" />);
@@ -72,7 +89,7 @@ function AdminJobRoute() { const { jobId } = adminJobRoute.useParams(); return <
 const adminErrorsRoute = route("/admin/errors", AdminErrorsPage);
 
 const routeTree = rootRoute.addChildren([
-  indexRoute, pricingRoute, signInRoute, signUpRoute, forgotRoute, resetRoute, verifyRoute,
+  indexRoute, enLandingRoute, viLandingRoute, pricingRoute, signInRoute, signUpRoute, forgotRoute, resetRoute, verifyRoute,
   onboardingRoute, overviewRoute, channelsRoute, channelRoute, recordingsRoute, recordingRoute,
   activeRoute, processingRoute, failedRoute, usageRoute, billingRoute, settingsRoute,
   notificationsRoute, helpRoute, statusRoute, termsRoute, privacyRoute, acceptableUseRoute,
@@ -81,7 +98,7 @@ const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
   routeTree,
-  history: createHashHistory(),
+  history: createBrowserHistory(),
   defaultPreload: "intent",
 });
 
