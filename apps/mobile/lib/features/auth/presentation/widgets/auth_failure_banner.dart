@@ -42,10 +42,7 @@ class AuthFailureBanner extends StatelessWidget {
                 Text(message),
                 if (actionLabel != null) ...<Widget>[
                   const SizedBox(height: SsSpacing.sm),
-                  TextButton(
-                    onPressed: onAction,
-                    child: Text(actionLabel!),
-                  ),
+                  TextButton(onPressed: onAction, child: Text(actionLabel!)),
                 ],
               ],
             ),
