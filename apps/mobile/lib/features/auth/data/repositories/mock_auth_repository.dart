@@ -28,26 +28,17 @@ class MockAuthRepository implements AuthRepository {
   final Duration latency;
 
   @override
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) {
+  Future<void> signIn({required String email, required String password}) {
     return _respond(_AuthOperation.signIn);
   }
 
   @override
-  Future<void> register({
-    required String email,
-    required String password,
-  }) {
+  Future<void> register({required String email, required String password}) {
     return _respond(_AuthOperation.register);
   }
 
   @override
-  Future<void> verifyEmail({
-    required String email,
-    required String code,
-  }) {
+  Future<void> verifyEmail({required String email, required String code}) {
     return _respond(_AuthOperation.verifyEmail);
   }
 
