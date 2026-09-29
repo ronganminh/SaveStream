@@ -168,6 +168,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Welcome back, Alex'), findsOneWidget);
