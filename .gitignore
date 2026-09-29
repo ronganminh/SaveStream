@@ -11,3 +11,18 @@ __pycache__/
 .venv/
 .idea/
 .vscode/
+
+# Flutter mobile
+apps/mobile/.dart_tool/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/.packages
+apps/mobile/.pub-cache/
+apps/mobile/.pub/
+apps/mobile/build/
+apps/mobile/coverage/
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/ios/Flutter/ephemeral/
+apps/mobile/ios/Pods/
+apps/mobile/ios/.symlinks/
