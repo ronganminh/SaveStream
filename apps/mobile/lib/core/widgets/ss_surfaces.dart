@@ -128,13 +128,16 @@ class SsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: leading,
-      title: Text(title),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: trailing,
-      onTap: onTap,
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: leading,
+        title: Text(title),
+        subtitle: subtitle == null ? null : Text(subtitle!),
+        trailing: trailing,
+        onTap: onTap,
+      ),
     );
   }
 }

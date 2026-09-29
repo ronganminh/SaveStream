@@ -17,7 +17,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('SaveStream'), findsOneWidget);
     expect(find.text('Design system'), findsOneWidget);
@@ -33,12 +33,12 @@ void main() {
     await tester.pumpWidget(
       SaveStreamApp(config: testConfig(), settings: settings),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Design system'), findsOneWidget);
 
     settings.setLocale(const Locale('vi'));
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.text('Hệ thống thiết kế'), findsOneWidget);
     expect(find.text('Giao diện'), findsOneWidget);
@@ -50,7 +50,7 @@ void main() {
     await tester.pumpWidget(
       SaveStreamApp(config: testConfig(), settings: settings),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     settings.setThemeMode(ThemeMode.dark);
     await tester.pump();
