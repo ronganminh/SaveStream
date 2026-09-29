@@ -35,6 +35,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('SaveStream'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
