@@ -82,6 +82,7 @@ void main() {
 
     await tester.tap(find.text('Recordings'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.text('Channels'));
     await tester.pump();
 
