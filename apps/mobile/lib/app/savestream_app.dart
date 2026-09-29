@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/config/app_config.dart';
 
 class SaveStreamApp extends StatelessWidget {
-  const SaveStreamApp({
-    required this.config,
-    super.key,
-  });
+  const SaveStreamApp({required this.config, super.key});
 
   final AppConfig config;
 
@@ -34,6 +31,7 @@ class _BootstrapScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       body: SafeArea(
@@ -48,19 +46,12 @@ class _BootstrapScreen extends StatelessWidget {
                   child: CustomPaint(painter: _SaveStreamMarkPainter()),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'SaveStream',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
+                Text('SaveStream', style: textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text(
                   'Flutter mobile foundation is ready.',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
+                  style: textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),
                 DecoratedBox(
@@ -75,10 +66,7 @@ class _BootstrapScreen extends StatelessWidget {
                     ),
                     child: Text(
                       config.environment.label,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: colors.onSecondaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style: textTheme.labelMedium,
                     ),
                   ),
                 ),

@@ -1,10 +1,7 @@
 import 'app_environment.dart';
 
 class AppConfig {
-  const AppConfig({
-    required this.environment,
-    required this.apiBaseUrl,
-  });
+  const AppConfig({required this.environment, required this.apiBaseUrl});
 
   final AppEnvironment environment;
   final Uri apiBaseUrl;
@@ -27,16 +24,16 @@ class AppConfig {
       );
     }
 
-    return AppConfig(
-      environment: environment,
-      apiBaseUrl: Uri.parse(baseUrl),
-    );
+    return AppConfig(environment: environment, apiBaseUrl: Uri.parse(baseUrl));
   }
 
   static String _defaultApiBaseUrl(AppEnvironment environment) {
-    return switch (environment) {
-      AppEnvironment.local => 'http://10.0.2.2:8000',
-      AppEnvironment.staging || AppEnvironment.production => '',
-    };
+    switch (environment) {
+      case AppEnvironment.local:
+        return 'http://10.0.2.2:8000';
+      case AppEnvironment.staging:
+      case AppEnvironment.production:
+        return '';
+    }
   }
 }
