@@ -57,6 +57,12 @@ export function LandingPage({ forcedLocale }: { forcedLocale?: Locale } = {}) {
     t("features.usage"),
     t("features.retention"),
   ];
+  const faqItems = [
+    [t("faq.computer.q"), t("faq.computer.a")],
+    [t("faq.channels.q"), t("faq.channels.a")],
+    [t("faq.retention.q"), t("faq.retention.a")],
+    [t("faq.quota.q"), t("faq.quota.a")],
+  ] as const;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)]">
@@ -178,6 +184,20 @@ export function LandingPage({ forcedLocale }: { forcedLocale?: Locale } = {}) {
                   referrerPolicy="strict-origin-when-cross-origin"
                 />
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="border-b border-[var(--border)] py-16 sm:py-20">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("faq.title")}</h2>
+            <div className="mt-10 border-t border-[var(--border)]">
+              {faqItems.map(([question, answer]) => (
+                <article key={question} className="border-b border-[var(--border)] py-6 sm:py-7">
+                  <h3 className="text-base font-semibold sm:text-lg">{question}</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--muted)] sm:text-base sm:leading-7">{answer}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
