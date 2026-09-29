@@ -31,7 +31,7 @@ def recording_response(recording: Recording) -> RecordingResponse:
         )
     return RecordingResponse(
         id=str(recording.id),
-        source=Source(type=recording.source_type, value=recording.source_value),
+        source=Source.model_validate({"type": recording.source_type, "value": recording.source_value}),
         creator=creator,
         status=status.value,
         started_at=recording.started_at,

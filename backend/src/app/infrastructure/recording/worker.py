@@ -121,6 +121,8 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 while True:
                     await asyncio.sleep(settings.recording_heartbeat_seconds)
                     current = await session.get(Recording, recording_id)
+                    if current is not None:
+                        await session.refresh(current)
                     if current is None or current.worker_lease_id != lease_id:
                         stop_event.set()
                         return
