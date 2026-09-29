@@ -65,15 +65,15 @@ export function MarketingFooter() {
         };
 
   const footerLink =
-    "block w-fit text-sm text-[var(--muted)] transition hover:text-[var(--fg)] focus:outline-none focus-visible:text-indigo-600";
+    "block w-full text-left text-sm leading-6 text-[var(--muted)] transition hover:text-[var(--fg)] focus:outline-none focus-visible:text-indigo-600 lg:whitespace-nowrap";
 
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--surface)]">
       <div className="mx-auto max-w-[1540px] px-4 py-12 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.3fr_.75fr_.9fr_.95fr_.85fr_.8fr] lg:gap-8 xl:gap-12">
-          <div className="sm:col-span-2 lg:col-span-1">
+        <div className="grid items-start gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-[minmax(300px,1.45fr)_repeat(5,minmax(150px,1fr))] xl:gap-x-10">
+          <div className="min-w-0 sm:col-span-2 lg:col-span-1">
             <Logo />
-            <p className="mt-5 max-w-xs text-sm leading-6 text-[var(--muted)]">{copy.description}</p>
+            <p className="mt-5 max-w-[19rem] text-sm leading-6 text-[var(--muted)]">{copy.description}</p>
           </div>
 
           <FooterColumn title={copy.product}>
@@ -89,22 +89,18 @@ export function MarketingFooter() {
           </FooterColumn>
 
           <FooterColumn title={copy.platforms}>
-            <button type="button" className={footerLink} onClick={() => scrollToSection("platforms")}>
-              <span className="flex items-center gap-2">
-                {copy.tiktok}
-                <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  {copy.available}
-                </span>
-              </span>
-            </button>
-            <button type="button" className={footerLink} onClick={() => scrollToSection("platforms")}>
-              <span className="flex items-center gap-2">
-                {copy.douyin}
-                <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                  {copy.planned}
-                </span>
-              </span>
-            </button>
+            <PlatformFooterLink
+              label={copy.tiktok}
+              badge={copy.available}
+              badgeClass="bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+              onClick={() => scrollToSection("platforms")}
+            />
+            <PlatformFooterLink
+              label={copy.douyin}
+              badge={copy.planned}
+              badgeClass="bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300"
+              onClick={() => scrollToSection("platforms")}
+            />
           </FooterColumn>
 
           <FooterColumn title={copy.company}>
@@ -138,9 +134,34 @@ export function MarketingFooter() {
 
 function FooterColumn({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <nav aria-label={title}>
-      <h2 className="text-sm font-semibold text-[var(--fg)]">{title}</h2>
-      <div className="mt-4 space-y-3">{children}</div>
+    <nav aria-label={title} className="min-w-0 text-left">
+      <h2 className="h-6 text-sm font-semibold leading-6 text-[var(--fg)]">{title}</h2>
+      <div className="mt-4 grid auto-rows-min gap-2.5">{children}</div>
     </nav>
+  );
+}
+
+function PlatformFooterLink({
+  label,
+  badge,
+  badgeClass,
+  onClick,
+}: {
+  label: string;
+  badge: string;
+  badgeClass: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 text-left text-sm leading-6 text-[var(--muted)] transition hover:text-[var(--fg)] focus:outline-none focus-visible:text-indigo-600"
+    >
+      <span className="min-w-0 lg:whitespace-nowrap">{label}</span>
+      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${badgeClass}`}>
+        {badge}
+      </span>
+    </button>
   );
 }
