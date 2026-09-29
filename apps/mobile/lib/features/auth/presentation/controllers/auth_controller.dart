@@ -27,10 +27,7 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> signIn({required String email, required String password}) async {
     _start();
     try {
       await _repository.signIn(email: email, password: password);
