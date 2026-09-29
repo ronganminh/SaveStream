@@ -86,11 +86,7 @@ class SsStatusChip extends StatelessWidget {
 }
 
 class SsAvatar extends StatelessWidget {
-  const SsAvatar({
-    required this.label,
-    this.radius = 20,
-    super.key,
-  });
+  const SsAvatar({required this.label, this.radius = 20, super.key});
 
   final String label;
   final double radius;

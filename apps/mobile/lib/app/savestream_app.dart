@@ -7,11 +7,7 @@ import 'app_settings_controller.dart';
 import 'theme/ss_theme.dart';
 
 class SaveStreamApp extends StatefulWidget {
-  const SaveStreamApp({
-    required this.config,
-    this.settings,
-    super.key,
-  });
+  const SaveStreamApp({required this.config, this.settings, super.key});
 
   final AppConfig config;
   final AppSettingsController? settings;

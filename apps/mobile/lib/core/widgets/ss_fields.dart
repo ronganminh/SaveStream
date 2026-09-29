@@ -34,11 +34,7 @@ class SsTextField extends StatelessWidget {
 }
 
 class SsPasswordField extends StatefulWidget {
-  const SsPasswordField({
-    required this.label,
-    this.controller,
-    super.key,
-  });
+  const SsPasswordField({required this.label, this.controller, super.key});
 
   final String label;
   final TextEditingController? controller;

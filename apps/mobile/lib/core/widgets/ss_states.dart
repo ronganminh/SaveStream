@@ -17,11 +17,7 @@ class SsEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _StateLayout(
-      icon: icon,
-      title: title,
-      message: message,
-    );
+    return _StateLayout(icon: icon, title: title, message: message);
   }
 }
 
@@ -130,11 +126,7 @@ class _StateLayout extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(
-            icon,
-            size: 36,
-            color: iconColor ?? colors.onSurfaceVariant,
-          ),
+          Icon(icon, size: 36, color: iconColor ?? colors.onSurfaceVariant),
           const SizedBox(height: SsSpacing.md),
           Text(
             title,
@@ -144,9 +136,9 @@ class _StateLayout extends StatelessWidget {
           const SizedBox(height: SsSpacing.sm),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           if (action != null) ...<Widget>[

@@ -61,7 +61,9 @@ class ComponentGalleryScreen extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: SsStatusChip(
                       label:
-                          l10n.environmentLabel + ': ' + config.environment.label,
+                          l10n.environmentLabel +
+                          ': ' +
+                          config.environment.label,
                     ),
                   ),
                   const SizedBox(height: SsSpacing.xl),
@@ -83,10 +85,7 @@ class ComponentGalleryScreen extends StatelessWidget {
                           icon: Icons.tune_rounded,
                           onPressed: () {},
                         ),
-                        SsTextAction(
-                          label: l10n.textAction,
-                          onPressed: () {},
-                        ),
+                        SsTextAction(label: l10n.textAction, onPressed: () {}),
                         SsIconButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: l10n.textAction,
@@ -324,10 +323,7 @@ class _ThemeChoice extends StatelessWidget {
 }
 
 class _GallerySection extends StatelessWidget {
-  const _GallerySection({
-    required this.title,
-    required this.child,
-  });
+  const _GallerySection({required this.title, required this.child});
 
   final String title;
   final Widget child;
