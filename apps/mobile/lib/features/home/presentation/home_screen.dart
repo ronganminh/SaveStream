@@ -396,9 +396,7 @@ class _ActiveRecordingCard extends StatelessWidget {
         const SizedBox(height: SsSpacing.sm),
         SsCard(
           child: InkWell(
-            onTap: () => context.push(
-              AppRoutes.recordingDetail(recording.id),
-            ),
+            onTap: () => context.push(AppRoutes.recordingDetail(recording.id)),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: SsSpacing.xs),
               child: Row(
@@ -416,9 +414,8 @@ class _ActiveRecordingCard extends StatelessWidget {
                         const SizedBox(height: SsSpacing.xs),
                         Text(
                           l10n.homeCloudRecordingHint,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colors.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -546,10 +543,7 @@ SsStatusTone _watchStatusTone(WatchStatus status) {
   };
 }
 
-String _recordingStatusLabel(
-  AppLocalizations l10n,
-  RecordingStatus status,
-) {
+String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
   return switch (status) {
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,
