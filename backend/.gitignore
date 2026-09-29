@@ -12,6 +12,10 @@ build/
 *.egg-info/
 *.mp4
 *.flv
+*.db
+*.sqlite
+*.sqlite3
+celerybeat-schedule*
 src/cookies.json
 src/telegram.json
 src/username.txt
