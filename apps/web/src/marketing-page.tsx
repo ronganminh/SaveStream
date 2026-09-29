@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect } from "react";
 import { Logo } from "./components/brand";
+import { MarketingFooter } from "./components/marketing-footer";
 import { PreferencesControls } from "./components/preferences-controls";
 import { DouyinWaitlist, PartnerArchiveProof, useLocalizedMarketingSeo } from "./components/p2-marketing";
 import { SampleMediaGrid } from "./components/sample-media-grid";
@@ -184,12 +185,7 @@ export function LandingPage({ forcedLocale }: { forcedLocale?: Locale } = {}) {
         <section className="px-4 py-16 text-center sm:px-6 sm:py-20"><h2 className="text-3xl font-semibold sm:text-4xl">{t("bottom.title")}</h2><p className="mx-auto mt-3 max-w-xl text-[var(--muted)]">{t("bottom.body")}</p><Link to="/sign-up" className={`${primaryButton} mt-7`}>{t("cta.startRecording")}</Link></section>
       </main>
 
-      <footer className="border-t border-[var(--border)] py-8">
-        <div className="mx-auto flex max-w-[1540px] flex-col gap-4 px-4 text-sm text-[var(--muted)] sm:flex-row sm:items-center sm:px-6 lg:px-8">
-          <Logo />
-          <nav className="flex flex-wrap gap-5 sm:ml-auto"><Link to="/pricing">{t("nav.pricing")}</Link><Link to="/help">{t("footer.help")}</Link><Link to="/terms">{t("footer.terms")}</Link><Link to="/privacy">{t("footer.privacy")}</Link><Link to="/acceptable-use">{t("footer.acceptable")}</Link></nav>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
