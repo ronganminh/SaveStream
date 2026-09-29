@@ -5,23 +5,36 @@ class SsPrimaryButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.isLoading = false,
     super.key,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
-    if (icon != null) {
+    final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
+    final Widget labelWidget = isLoading
+        ? const SizedBox.square(
+            dimension: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Text(label);
+
+    if (icon != null && !isLoading) {
       return FilledButton.icon(
-        onPressed: onPressed,
+        onPressed: effectiveOnPressed,
         icon: Icon(icon),
-        label: Text(label),
+        label: labelWidget,
       );
     }
-    return FilledButton(onPressed: onPressed, child: Text(label));
+    return FilledButton(
+      onPressed: effectiveOnPressed,
+      child: labelWidget,
+    );
   }
 }
 
