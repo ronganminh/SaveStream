@@ -158,7 +158,7 @@ async def refresh(
     )
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, operation_id="logout")
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, response_model=None, operation_id="logout")
 async def logout(
     request: Request,
     response: Response,
@@ -172,6 +172,7 @@ async def logout(
 @router.post(
     "/logout-all",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     operation_id="logoutAll",
 )
 async def logout_all(
