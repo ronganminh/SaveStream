@@ -161,6 +161,8 @@ void main() {
       SaveStreamApp(config: testConfig(), session: signedOutSession()),
     );
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     await enterSignInCredentials(tester);
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
