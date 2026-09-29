@@ -6,6 +6,7 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 
 void main() {
@@ -29,7 +30,7 @@ void main() {
     await tester.enterText(fields.at(1), 'Password123!');
   }
 
-  testWidgets('boots the Phase 3 shell with four destinations', (
+  testWidgets('boots the Phase 4 shell with four destinations', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
@@ -110,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Mobile foundation is ready'), findsOneWidget);
+    expect(find.text('Welcome back, Alex'), findsOneWidget);
   });
 
   testWidgets('shows invalid credentials from mock auth repository', (
