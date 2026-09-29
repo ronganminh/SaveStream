@@ -71,7 +71,13 @@ void main() {
 
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Get started'));
+    final Finder getStartedButton = find.widgetWithText(
+      FilledButton,
+      'Get started',
+    );
+    await tester.ensureVisible(getStartedButton);
+    await tester.pumpAndSettle();
+    await tester.tap(getStartedButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Sign in'), findsWidgets);
@@ -144,7 +150,13 @@ void main() {
     await tester.enterText(fields.at(2), 'Password123!');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    final Finder createAccountButton = find.widgetWithText(
+      FilledButton,
+      'Create account',
+    );
+    await tester.ensureVisible(createAccountButton);
+    await tester.pumpAndSettle();
+    await tester.tap(createAccountButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
