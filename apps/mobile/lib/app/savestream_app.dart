@@ -13,9 +13,7 @@ class SaveStreamApp extends StatelessWidget {
       title: 'SaveStream',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4F46E5),
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF4F46E5)),
         useMaterial3: true,
       ),
       home: _BootstrapScreen(config: config),
