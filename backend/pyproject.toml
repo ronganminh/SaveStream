@@ -4,21 +4,31 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "savestream-backend"
-version = "0.0.1"
-description = "SaveStream backend migration baseline built around the existing TikTok recorder CLI."
+version = "0.2.0"
+description = "SaveStream modular-monolith backend and reusable recording engine."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { file = "LICENSE" }
 dependencies = [
+  "aiosqlite==0.20.0",
+  "alembic==1.20.0",
+  "asyncpg==0.30.0",
+  "celery==5.6.3",
   "curl-cffi==0.12.0",
   "distro==1.9.0",
+  "fastapi==0.115.14",
   "ffmpeg-python==0.2.0",
+  "httpx==0.28.1",
   "Pyrogram==2.0.106",
+  "redis==5.2.1",
   "requests==2.32.5",
+  "SQLAlchemy==2.0.54",
+  "uvicorn==0.34.3",
 ]
 
 [project.scripts]
 savestream-recorder = "main:cli"
+savestream-outbox = "app.infrastructure.queue.outbox:main"
 
 [project.optional-dependencies]
 dev = ["mypy==1.18.2", "pytest==9.0.2", "ruff==0.9.10"]
@@ -29,7 +39,7 @@ py-modules = ["main", "check_updates", "config"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["adapters*", "core*", "engine*", "http_utils*", "upload*", "utils*"]
+include = ["adapters*", "app*", "core*", "engine*", "http_utils*", "upload*", "utils*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

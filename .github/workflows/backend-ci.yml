@@ -1,11 +1,11 @@
 name: Backend CI
 on:
   push:
-    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+    paths: ["backend/**", "docs/openapi.yaml", ".github/workflows/backend-ci.yml"]
   pull_request:
-    paths: ["backend/**", ".github/workflows/backend-ci.yml"]
+    paths: ["backend/**", "docs/openapi.yaml", ".github/workflows/backend-ci.yml"]
 jobs:
-  phase-0:
+  backend:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -24,9 +24,19 @@ jobs:
         run: python -m pip install --no-deps --no-build-isolation -e .
       - name: Lint
         run: ruff check src tests
-      - name: Type check Phase 0 boundaries
-        run: mypy src/config.py src/engine src/adapters src/http_utils/http_client.py src/utils/logger_manager.py src/utils/dependencies.py
+      - name: Type check backend boundaries
+        run: mypy src/config.py src/engine src/adapters src/app src/http_utils/http_client.py src/utils/logger_manager.py src/utils/dependencies.py
       - name: Test
         run: pytest
+      - name: Alembic migration smoke
+        env:
+          SAVESTREAM_ENVIRONMENT: test
+          SAVESTREAM_DATABASE_URL: sqlite+aiosqlite:///./ci-phase2.db
+        run: |
+          rm -f ci-phase2.db
+          alembic upgrade head
+          alembic downgrade base
       - name: CLI smoke test
         run: python src/main.py -h
+      - name: Docker Compose config
+        run: docker compose -f docker-compose.yml config --quiet
