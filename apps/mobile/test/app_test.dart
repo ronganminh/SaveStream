@@ -93,9 +93,11 @@ void main() {
       SaveStreamApp(config: testConfig(), mockScenario: MockScenario.error),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+    await tester.pump();
 
+    expect(find.byType(SsErrorState), findsOneWidget);
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
   });
