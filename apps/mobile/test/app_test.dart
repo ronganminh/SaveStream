@@ -322,6 +322,7 @@ void main() {
     settings.setLocale(const Locale('vi'));
     settings.setThemeMode(ThemeMode.dark);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Trang chủ'), findsOneWidget);
     expect(find.text('Kênh'), findsOneWidget);
