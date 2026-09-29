@@ -16,9 +16,7 @@ void main() {
     );
   }
 
-  AppSessionController signedOutSession({
-    bool hasCompletedOnboarding = true,
-  }) {
+  AppSessionController signedOutSession({bool hasCompletedOnboarding = true}) {
     return AppSessionController(
       hasCompletedOnboarding: hasCompletedOnboarding,
       authStatus: AppAuthStatus.unauthenticated,
@@ -81,10 +79,7 @@ void main() {
 
   testWidgets('sign in validates required fields', (WidgetTester tester) async {
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        session: signedOutSession(),
-      ),
+      SaveStreamApp(config: testConfig(), session: signedOutSession()),
     );
     await tester.pumpAndSettle();
 
@@ -99,10 +94,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        session: signedOutSession(),
-      ),
+      SaveStreamApp(config: testConfig(), session: signedOutSession()),
     );
     await tester.pumpAndSettle();
 
@@ -139,10 +131,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        session: signedOutSession(),
-      ),
+      SaveStreamApp(config: testConfig(), session: signedOutSession()),
     );
     await tester.pumpAndSettle();
 
@@ -174,10 +163,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        session: signedOutSession(),
-      ),
+      SaveStreamApp(config: testConfig(), session: signedOutSession()),
     );
     await tester.pumpAndSettle();
 
