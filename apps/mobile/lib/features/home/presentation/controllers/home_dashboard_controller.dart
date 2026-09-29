@@ -16,14 +16,11 @@ final Provider<HomeMetricsRepository> homeMetricsRepositoryProvider =
 
 final FutureProvider<HomeDashboardViewModel> homeDashboardProvider =
     FutureProvider<HomeDashboardViewModel>((ref) async {
-      final List<Object> results = await Future.wait<Object>(
-        <Future<Object>>[
-          ref.watch(watchRepositoryProvider).listWatches(),
-          ref.watch(recordingRepositoryProvider).listRecordings(),
-          ref.watch(homeMetricsRepositoryProvider).getMetrics(),
-        ],
-        eagerError: false,
-      );
+      final List<Object> results = await Future.wait<Object>(<Future<Object>>[
+        ref.watch(watchRepositoryProvider).listWatches(),
+        ref.watch(recordingRepositoryProvider).listRecordings(),
+        ref.watch(homeMetricsRepositoryProvider).getMetrics(),
+      ], eagerError: false);
 
       return HomeDashboardViewModel(
         metrics: results[2] as HomeAccountMetrics,
