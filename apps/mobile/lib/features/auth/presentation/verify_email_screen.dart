@@ -119,8 +119,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     if (code.isEmpty) {
                       return l10n.verificationCodeRequiredMessage;
                     }
-                    if (code.length != 6 ||
-                        int.tryParse(code) == null) {
+                    if (code.length != 6 || int.tryParse(code) == null) {
                       return l10n.verificationCodeInvalidMessage;
                     }
                     return null;
