@@ -1,0 +1,49 @@
+#!/usr/bin/env sh
+set -eu
+
+APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+GRADLE_VERSION="9.3.1"
+GRADLE_SHA256="b266d5ff6b90eada6dc3b20cb090e3731302e553a27c5d3e4df1f0d76beaff06"
+GRADLE_CACHE="${GRADLE_USER_HOME:-$HOME/.gradle}/savestream-wrapper"
+GRADLE_HOME="$GRADLE_CACHE/gradle-$GRADLE_VERSION"
+ARCHIVE="$GRADLE_CACHE/gradle-$GRADLE_VERSION-bin.zip"
+URL="https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+
+if [ ! -x "$GRADLE_HOME/bin/gradle" ]; then
+  mkdir -p "$GRADLE_CACHE"
+  if [ ! -f "$ARCHIVE" ]; then
+    if command -v curl >/dev/null 2>&1; then
+      curl --fail --location --retry 3 --output "$ARCHIVE" "$URL"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -O "$ARCHIVE" "$URL"
+    else
+      echo "SaveStream: curl or wget is required to bootstrap Gradle." >&2
+      exit 1
+    fi
+  fi
+
+  if command -v sha256sum >/dev/null 2>&1; then
+    ACTUAL=$(sha256sum "$ARCHIVE" | awk '{print $1}')
+  elif command -v shasum >/dev/null 2>&1; then
+    ACTUAL=$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')
+  else
+    echo "SaveStream: sha256sum or shasum is required to verify Gradle." >&2
+    exit 1
+  fi
+
+  if [ "$ACTUAL" != "$GRADLE_SHA256" ]; then
+    rm -f "$ARCHIVE"
+    echo "SaveStream: Gradle distribution checksum mismatch." >&2
+    exit 1
+  fi
+
+  TMP_DIR="$GRADLE_CACHE/.extract-$GRADLE_VERSION-$$"
+  rm -rf "$TMP_DIR"
+  mkdir -p "$TMP_DIR"
+  unzip -q "$ARCHIVE" -d "$TMP_DIR"
+  rm -rf "$GRADLE_HOME"
+  mv "$TMP_DIR/gradle-$GRADLE_VERSION" "$GRADLE_HOME"
+  rm -rf "$TMP_DIR"
+fi
+
+exec "$GRADLE_HOME/bin/gradle" -p "$APP_HOME" "$@"
