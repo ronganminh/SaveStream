@@ -75,7 +75,7 @@ export function PreferencesControls({
         value={locale}
         onChange={changeLocale}
         ariaLabel={t("preferences.language")}
-        triggerWidth={compact ? "min-w-[5.6rem]" : "min-w-[9.5rem]"}
+        triggerWidth={compact ? "min-w-[5.4rem]" : "min-w-[9.5rem]"}
         trigger={
           <>
             <Globe2 className="size-4 shrink-0 text-[var(--muted)]" />
@@ -95,11 +95,11 @@ export function PreferencesControls({
         value={theme}
         onChange={setTheme}
         ariaLabel={t("preferences.theme")}
-        triggerWidth={compact ? "min-w-[7.1rem]" : "min-w-[10rem]"}
+        triggerWidth={compact ? "min-w-[3.5rem] sm:min-w-[7.1rem]" : "min-w-[10rem]"}
         trigger={
           <>
             <ThemeIcon theme={theme} />
-            <span className="whitespace-nowrap">
+            <span className={compact ? "hidden whitespace-nowrap sm:inline" : "whitespace-nowrap"}>
               {compact ? selectedTheme.compactLabel : selectedTheme.label}
             </span>
           </>
