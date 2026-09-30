@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/mock/mock_providers.dart';
-import '../../../home/presentation/controllers/home_dashboard_controller.dart';
 import '../../../recordings/domain/models/recording_summary.dart';
 import '../../../recordings/presentation/controllers/recording_providers.dart';
 import '../../data/repositories/mock_watch_repository.dart';
@@ -52,7 +51,6 @@ final Provider<WatchController> watchControllerProvider =
           ref.invalidate(watchDetailProvider(id));
           ref.invalidate(channelDetailProvider(id));
         },
-        invalidateHome: () => ref.invalidate(homeDashboardProvider),
       );
     });
 
@@ -61,16 +59,13 @@ class WatchController {
     required WatchRepository repository,
     required void Function() invalidateList,
     required void Function(String id) invalidateDetail,
-    required void Function() invalidateHome,
   }) : _repository = repository,
        _invalidateList = invalidateList,
-       _invalidateDetail = invalidateDetail,
-       _invalidateHome = invalidateHome;
+       _invalidateDetail = invalidateDetail;
 
   final WatchRepository _repository;
   final void Function() _invalidateList;
   final void Function(String id) _invalidateDetail;
-  final void Function() _invalidateHome;
 
   Future<WatchSummary> createWatch(CreateWatchCommand command) async {
     final WatchSummary created = await _repository.createWatch(command);
@@ -101,6 +96,5 @@ class WatchController {
   void _invalidate(String id) {
     _invalidateList();
     _invalidateDetail(id);
-    _invalidateHome();
   }
 }
