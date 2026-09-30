@@ -30,7 +30,7 @@ void main() {
   Future<void> enterSignInCredentials(WidgetTester tester) async {
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'alex@example.com');
-    await tester.enterText(fields.at(1), 'Password123!');
+    await tester.enterText(fields.at(1), 'test-password');
   }
 
   testWidgets('boots the Phase 4 shell with four destinations', (
@@ -105,6 +105,7 @@ void main() {
     );
     final dashboardState = container.read(homeDashboardProvider);
     expect(dashboardState.hasError, isTrue, reason: dashboardState.toString());
+    await tester.pumpAndSettle();
     expect(find.byType(SsErrorState), findsOneWidget);
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
@@ -218,8 +219,8 @@ void main() {
 
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'new@example.com');
-    await tester.enterText(fields.at(1), 'Password123!');
-    await tester.enterText(fields.at(2), 'Password123!');
+    await tester.enterText(fields.at(1), 'test-password');
+    await tester.enterText(fields.at(2), 'test-password');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
     final Finder createAccountButton = find.widgetWithText(
