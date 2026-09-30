@@ -438,10 +438,7 @@ class _ChannelDetailSkeleton extends StatelessWidget {
   }
 }
 
-String _recordingStatusLabel(
-  AppLocalizations l10n,
-  RecordingStatus status,
-) {
+String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
   return switch (status) {
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,
