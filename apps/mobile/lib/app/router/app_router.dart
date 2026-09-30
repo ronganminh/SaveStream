@@ -19,7 +19,11 @@ import '../../features/home/presentation/home_screen.dart';
 import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
+import '../../features/settings/presentation/language_screen.dart';
+import '../../features/settings/presentation/profile_screen.dart';
+import '../../features/settings/presentation/settings_info_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/settings/presentation/theme_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
 import '../session/app_session_controller.dart';
@@ -226,33 +230,57 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (BuildContext context, GoRouterState state) {
-                  return SettingsScreen(settings: settings);
+                  return SettingsScreen(
+                    settings: settings,
+                    session: session,
+                  );
                 },
                 routes: <RouteBase>[
                   GoRoute(
                     path: 'profile',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SsRoutePlaceholder(
-                        title: context.l10n.profileTitle,
-                        message: context.l10n.phaseRoutePlaceholderBody,
-                      );
+                      return const ProfileScreen();
                     },
                   ),
                   GoRoute(
                     path: 'language',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SsRoutePlaceholder(
-                        title: context.l10n.languageTitle,
-                        message: context.l10n.phaseRoutePlaceholderBody,
-                      );
+                      return LanguageScreen(settings: settings);
                     },
                   ),
                   GoRoute(
                     path: 'theme',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SsRoutePlaceholder(
-                        title: context.l10n.themeLabel,
-                        message: context.l10n.phaseRoutePlaceholderBody,
+                      return ThemeScreen(settings: settings);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return SettingsInfoScreen(
+                        title: context.l10n.notificationsTitle,
+                        message: context.l10n.notificationsPlaceholderBody,
+                        icon: Icons.notifications_outlined,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'privacy',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return SettingsInfoScreen(
+                        title: context.l10n.privacyPolicyTitle,
+                        message: context.l10n.privacyPolicyPlaceholderBody,
+                        icon: Icons.privacy_tip_outlined,
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'terms',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return SettingsInfoScreen(
+                        title: context.l10n.termsOfUseTitle,
+                        message: context.l10n.termsOfUsePlaceholderBody,
+                        icon: Icons.description_outlined,
                       );
                     },
                   ),
