@@ -35,10 +35,7 @@ class ProfileScreen extends ConsumerWidget {
               SsCard(
                 child: Column(
                   children: <Widget>[
-                    SsAvatar(
-                      label: data.displayName ?? data.email,
-                      radius: 36,
-                    ),
+                    SsAvatar(label: data.displayName ?? data.email, radius: 36),
                     const SizedBox(height: SsSpacing.md),
                     Text(
                       data.displayName ?? l10n.profileFallbackName,
@@ -70,10 +67,7 @@ class ProfileScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    _ProfileRow(
-                      label: l10n.emailLabel,
-                      value: data.email,
-                    ),
+                    _ProfileRow(label: l10n.emailLabel, value: data.email),
                     const Divider(),
                     _ProfileRow(
                       label: l10n.profileVerificationLabel,
