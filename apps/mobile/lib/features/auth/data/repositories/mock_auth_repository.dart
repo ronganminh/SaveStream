@@ -16,6 +16,7 @@ enum _AuthOperation {
   resendVerification,
   forgotPassword,
   logout,
+  deleteAccount,
 }
 
 class MockAuthRepository implements AuthRepository {
@@ -55,6 +56,11 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<void> logout() {
     return _respond(_AuthOperation.logout);
+  }
+
+  @override
+  Future<void> deleteAccount() {
+    return _respond(_AuthOperation.deleteAccount);
   }
 
   Future<void> _respond(_AuthOperation operation) async {
