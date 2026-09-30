@@ -18,8 +18,7 @@ String watchStatusReason(AppLocalizations l10n, WatchStatus status) {
   return switch (status) {
     WatchStatus.active => l10n.watchReasonActive,
     WatchStatus.paused => l10n.watchReasonPaused,
-    WatchStatus.pausedInsufficientCredit =>
-      l10n.watchReasonInsufficientCredit,
+    WatchStatus.pausedInsufficientCredit => l10n.watchReasonInsufficientCredit,
     WatchStatus.pausedError => l10n.watchReasonError,
     WatchStatus.disabled => l10n.watchReasonDisabled,
   };
