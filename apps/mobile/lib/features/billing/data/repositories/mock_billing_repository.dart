@@ -8,12 +8,7 @@ final class MockBillingRepository extends MockRepositoryBase
     : _orders = List<PaymentOrder>.of(_seedOrders);
 
   static const List<CreditPackage> _packages = <CreditPackage>[
-    CreditPackage(
-      id: 'pkg_10',
-      credits: 10,
-      price: 4.99,
-      currency: 'USD',
-    ),
+    CreditPackage(id: 'pkg_10', credits: 10, price: 4.99, currency: 'USD'),
     CreditPackage(
       id: 'pkg_25',
       credits: 25,
@@ -21,12 +16,7 @@ final class MockBillingRepository extends MockRepositoryBase
       currency: 'USD',
       recommended: true,
     ),
-    CreditPackage(
-      id: 'pkg_60',
-      credits: 60,
-      price: 19.99,
-      currency: 'USD',
-    ),
+    CreditPackage(id: 'pkg_60', credits: 60, price: 19.99, currency: 'USD'),
   ];
 
   static final List<PaymentOrder> _seedOrders = <PaymentOrder>[
