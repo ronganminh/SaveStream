@@ -235,5 +235,71 @@
         "type": "String"
       }
     }
+  },
+  "recordingFilterAll": "Tất cả",
+  "recordingFilterActive": "Đang hoạt động",
+  "recordingFilterCompleted": "Hoàn tất",
+  "recordingFilterFailed": "Thất bại",
+  "recordingQueuedBody": "Recording đang trong hàng đợi và chờ backend bắt đầu phân giải nguồn.",
+  "recordingResolvingBody": "SaveStream đang phân giải nguồn livestream trước khi bắt đầu recording.",
+  "recordingWaitingLiveBody": "Watch đã sẵn sàng và đang chờ creator bắt đầu LIVE.",
+  "recordingActiveBody": "Recording đang chạy trên cloud. Bạn có thể đóng ứng dụng và backend vẫn tiếp tục ghi.",
+  "recordingProcessingBody": "Stream đã ghi đang được hoàn tất và xử lý.",
+  "recordingUploadingBody": "Recording đã xử lý đang được tải lên kho lưu trữ.",
+  "recordingCompletedBody": "Recording đã hoàn tất và sẵn sàng khi artifact khả dụng.",
+  "recordingFailedBody": "Recording dừng do xảy ra lỗi. Nút thử lại chỉ hiện khi backend cho phép.",
+  "recordingStopRequestedBody": "Lệnh dừng đã được nhận và backend đang hoàn tất recording.",
+  "recordingStoppedBody": "Recording đã dừng trước luồng hoàn tất bình thường.",
+  "recordingStartedLabel": "Bắt đầu",
+  "recordingDurationLabel": "Thời lượng",
+  "recordingSizeLabel": "Dung lượng",
+  "recordingCostLabel": "Chi phí",
+  "notStartedLabel": "Chưa bắt đầu",
+  "artifactReadyLabel": "Artifact sẵn sàng",
+  "artifactPendingLabel": "Artifact đang chờ",
+  "thumbnailReadyLabel": "Thumbnail sẵn sàng",
+  "thumbnailPendingLabel": "Thumbnail đang chờ",
+  "recordingEndOfListLabel": "Bạn đã xem hết danh sách.",
+  "recordingLoadMoreFailed": "Không tải được thêm recording.",
+  "loadMoreAction": "Tải thêm",
+  "emptyActiveRecordingsBody": "Hiện không có recording đang hoạt động.",
+  "emptyCompletedRecordingsBody": "Không có recording hoàn tất phù hợp bộ lọc.",
+  "emptyFailedRecordingsBody": "Không có recording thất bại phù hợp bộ lọc.",
+  "recordingElapsedValue": "Đã ghi · {duration}",
+  "recordingBytesValue": "Dữ liệu · {bytes}",
+  "recordingProgressValue": "Hoàn tất {percent}%",
+  "recordingFailureTitle": "Lỗi recording",
+  "recordingMetadataTitle": "Thông tin recording",
+  "recordingArtifactTitle": "Artifact",
+  "playRecordingAction": "Phát",
+  "downloadRecordingAction": "Tải xuống",
+  "artifactMockActionMessage": "Action artifact đã sẵn sàng để nối backend ở Phase 12.",
+  "stopRecordingAction": "Dừng recording",
+  "retryRecordingAction": "Thử lại recording",
+  "deleteRecordingTitle": "Xóa recording?",
+  "deleteRecordingMessage": "Xóa recording này khỏi SaveStream? Khi nối API, action này sẽ tuân theo quyền backend.",
+  "deleteRecordingAction": "Xóa recording",
+  "recordingNoActionsBody": "Hiện backend action flags không cho phép thao tác nào với recording này.",
+  "recordingActionsTitle": "Thao tác khả dụng",
+  "@recordingElapsedValue": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@recordingBytesValue": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "@recordingProgressValue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   }
 }
