@@ -417,7 +417,7 @@ void main() {
       'Completed',
     ]) {
       await tester.scrollUntilVisible(
-        find.text(status).last,
+        find.text(status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
@@ -440,7 +440,7 @@ void main() {
       'Queued',
     ]) {
       await tester.scrollUntilVisible(
-        find.text(status).last,
+        find.text(status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
@@ -458,7 +458,7 @@ void main() {
 
     for (final String status in <String>['Stop requested', 'Stopped']) {
       await tester.scrollUntilVisible(
-        find.text(status).last,
+        find.text(status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
