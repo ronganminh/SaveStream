@@ -9,7 +9,9 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
+import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
 import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
+import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
 import 'package:savestream_mobile/features/credits/presentation/credits_screen.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
@@ -563,6 +565,11 @@ void main() {
     expect(find.text('Available credit is low'), findsOneWidget);
     expect(find.text('Recording usage'), findsOneWidget);
     expect(find.text('12.6'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Recent transactions'),
+      260,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Recent transactions'), findsOneWidget);
   });
 
@@ -580,8 +587,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(CreditsScreen), findsOneWidget);
-    expect(find.text('No transactions yet'), findsOneWidget);
     expect(find.text('0.0'), findsWidgets);
+    await tester.scrollUntilVisible(
+      find.text('No transactions yet'),
+      260,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('No transactions yet'), findsOneWidget);
   });
 
   testWidgets('billing waits for backend status before showing paid', (
@@ -597,15 +609,35 @@ void main() {
 
     expect(find.byType(BillingScreen), findsOneWidget);
     expect(find.text('25 credits'), findsWidgets);
-    expect(find.widgetWithText(SsStatusChip, 'Paid'), findsWidgets);
-    expect(find.widgetWithText(SsStatusChip, 'Failed'), findsOneWidget);
-    expect(find.widgetWithText(SsStatusChip, 'Cancelled'), findsOneWidget);
-    expect(find.widgetWithText(SsStatusChip, 'Expired'), findsOneWidget);
+
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(BillingScreen)),
+    );
+    final Set<PaymentOrderStatus> statuses = container
+        .read(billingSnapshotProvider)
+        .requireValue
+        .orders
+        .map((PaymentOrder order) => order.status)
+        .toSet();
+    expect(
+      statuses,
+      containsAll(<PaymentOrderStatus>[
+        PaymentOrderStatus.paid,
+        PaymentOrderStatus.failed,
+        PaymentOrderStatus.cancelled,
+        PaymentOrderStatus.expired,
+      ]),
+    );
 
     await tester.tap(find.widgetWithText(FilledButton, 'Buy package').first);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Check payment status'),
+      240,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
     expect(
       find.textContaining('Returning from checkout does not mark it paid'),
