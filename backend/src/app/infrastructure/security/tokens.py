@@ -5,6 +5,7 @@ import secrets
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import jwt
 
@@ -64,20 +65,40 @@ class TokenService:
         token = jwt.encode(payload, self.settings.jwt_secret, algorithm=self.algorithm)
         return token, ttl
 
+    def _decode_rotating(
+        self,
+        token: str,
+        *,
+        required: list[str],
+        expired_message: str,
+        invalid_message: str,
+    ) -> dict[str, Any]:
+        expired = False
+        for secret in (self.settings.jwt_secret, *self.settings.jwt_previous_secrets):
+            try:
+                return jwt.decode(
+                    token,
+                    secret,
+                    algorithms=[self.algorithm],
+                    issuer=self.settings.jwt_issuer,
+                    audience=self.settings.jwt_audience,
+                    options={"require": required},
+                )
+            except jwt.ExpiredSignatureError:
+                expired = True
+            except jwt.InvalidTokenError:
+                continue
+        if expired:
+            raise TokenExpiredError(expired_message)
+        raise TokenError(invalid_message)
+
     def decode_access_token(self, token: str) -> AccessClaims:
-        try:
-            payload = jwt.decode(
-                token,
-                self.settings.jwt_secret,
-                algorithms=[self.algorithm],
-                issuer=self.settings.jwt_issuer,
-                audience=self.settings.jwt_audience,
-                options={"require": ["sub", "sid", "jti", "typ", "iat", "exp"]},
-            )
-        except jwt.ExpiredSignatureError as exc:
-            raise TokenExpiredError("access token expired") from exc
-        except jwt.InvalidTokenError as exc:
-            raise TokenError("invalid access token") from exc
+        payload = self._decode_rotating(
+            token,
+            required=["sub", "sid", "jti", "typ", "iat", "exp"],
+            expired_message="access token expired",
+            invalid_message="invalid access token",
+        )
         if payload.get("typ") != "access":
             raise TokenError("invalid token type")
         try:
@@ -134,19 +155,12 @@ class TokenService:
         return jwt.encode(payload, self.settings.jwt_secret, algorithm=self.algorithm)
 
     def decode_one_time_token(self, token: str, *, expected_purpose: str) -> OneTimeClaims:
-        try:
-            payload = jwt.decode(
-                token,
-                self.settings.jwt_secret,
-                algorithms=[self.algorithm],
-                issuer=self.settings.jwt_issuer,
-                audience=self.settings.jwt_audience,
-                options={"require": ["sub", "jti", "purpose", "typ", "iat", "exp"]},
-            )
-        except jwt.ExpiredSignatureError as exc:
-            raise TokenExpiredError("one-time token expired") from exc
-        except jwt.InvalidTokenError as exc:
-            raise TokenError("invalid one-time token") from exc
+        payload = self._decode_rotating(
+            token,
+            required=["sub", "jti", "purpose", "typ", "iat", "exp"],
+            expired_message="one-time token expired",
+            invalid_message="invalid one-time token",
+        )
         if payload.get("typ") != "one_time" or payload.get("purpose") != expected_purpose:
             raise TokenError("invalid one-time token purpose")
         try:
