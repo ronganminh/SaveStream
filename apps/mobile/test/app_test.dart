@@ -663,24 +663,29 @@ void main() {
     expect(refreshed.orders.first.status, PaymentOrderStatus.paid);
   });
 
-  test('persists theme and locale across settings controller recreation', () async {
-    final Map<String, String> values = <String, String>{};
-    final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
-    final AppSettingsController first = AppSettingsController(store: store);
+  test(
+    'persists theme and locale across settings controller recreation',
+    () async {
+      final Map<String, String> values = <String, String>{};
+      final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
+      final AppSettingsController first = AppSettingsController(store: store);
 
-    first.setLocale(const Locale('vi'));
-    first.setThemeMode(ThemeMode.dark);
-    await Future<void>.delayed(Duration.zero);
+      first.setLocale(const Locale('vi'));
+      first.setThemeMode(ThemeMode.dark);
+      await Future<void>.delayed(Duration.zero);
 
-    final AppSettingsController restored = AppSettingsController(store: store);
-    await restored.initialize();
+      final AppSettingsController restored = AppSettingsController(
+        store: store,
+      );
+      await restored.initialize();
 
-    expect(restored.locale.languageCode, 'vi');
-    expect(restored.themeMode, ThemeMode.dark);
+      expect(restored.locale.languageCode, 'vi');
+      expect(restored.themeMode, ThemeMode.dark);
 
-    first.dispose();
-    restored.dispose();
-  });
+      first.dispose();
+      restored.dispose();
+    },
+  );
 
   testWidgets('renders Phase 8 profile verification state', (
     WidgetTester tester,
@@ -770,10 +775,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Delete your account?'), findsOneWidget);
-    expect(
-      find.widgetWithText(FilledButton, 'Delete account'),
-      findsOneWidget,
-    );
+    expect(find.widgetWithText(FilledButton, 'Delete account'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Delete account'));
     await tester.pump(const Duration(milliseconds: 200));
