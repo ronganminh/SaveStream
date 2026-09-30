@@ -28,7 +28,11 @@ def ensure_media() -> None:
             "-t",
             "8",
             "-c:v",
-            "flv",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-pix_fmt",
+            "yuv420p",
             "-f",
             "flv",
             str(MEDIA_PATH),
@@ -62,7 +66,7 @@ async def stream(room_id: str = "e2e-room") -> StreamingResponse:
         with MEDIA_PATH.open("rb") as source:
             while chunk := source.read(8192):
                 yield chunk
-                await asyncio.sleep(0.02)
+                await asyncio.sleep(0.12)
 
     return StreamingResponse(body(), media_type="video/x-flv")
 
