@@ -410,10 +410,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Recording'), findsWidgets);
-    expect(find.text('Processing'), findsOneWidget);
-    expect(find.text('Uploading'), findsOneWidget);
-    expect(find.text('Completed'), findsWidgets);
+    for (final String status in <String>[
+      'Recording',
+      'Processing',
+      'Uploading',
+      'Completed',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(status).last,
+        320,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(status), findsWidgets);
+    }
 
     await tester.scrollUntilVisible(
       find.text('Load more'),
@@ -424,10 +433,19 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
-    expect(find.text('Failed'), findsWidgets);
-    expect(find.text('Waiting for LIVE'), findsOneWidget);
-    expect(find.text('Resolving source'), findsOneWidget);
-    expect(find.text('Queued'), findsOneWidget);
+    for (final String status in <String>[
+      'Failed',
+      'Waiting for LIVE',
+      'Resolving source',
+      'Queued',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(status).last,
+        320,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(status), findsWidgets);
+    }
 
     await tester.scrollUntilVisible(
       find.text('Load more'),
@@ -438,8 +456,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
-    expect(find.text('Stop requested'), findsOneWidget);
-    expect(find.text('Stopped'), findsOneWidget);
+    for (final String status in <String>['Stop requested', 'Stopped']) {
+      await tester.scrollUntilVisible(
+        find.text(status).last,
+        320,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text(status), findsWidgets);
+    }
   });
 
   testWidgets('Recordings filters completed and failed states', (
@@ -479,6 +503,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
+    await tester.scrollUntilVisible(
+      find.text('Stop recording'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Stop recording'), findsOneWidget);
     expect(find.text('Retry recording'), findsNothing);
 
@@ -487,6 +516,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
+    await tester.drag(
+      find.byType(Scrollable).last,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Stop requested'), findsWidgets);
     expect(find.text('Stop recording'), findsNothing);
   });
@@ -508,6 +542,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Recording error'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Retry recording'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Retry recording'), findsOneWidget);
     expect(find.text('Delete recording'), findsOneWidget);
     expect(find.text('Stop recording'), findsNothing);
@@ -517,6 +556,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
+    await tester.drag(
+      find.byType(Scrollable).last,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
     expect(find.text('Queued'), findsWidgets);
     expect(find.text('Retry recording'), findsNothing);
   });
