@@ -6,7 +6,7 @@ abstract interface class AppSettingsStore {
 
 final class MemoryAppSettingsStore implements AppSettingsStore {
   MemoryAppSettingsStore([Map<String, String>? values])
-      : _values = values ?? <String, String>{};
+    : _values = values ?? <String, String>{};
 
   final Map<String, String> _values;
 
