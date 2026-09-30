@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/watch_summary.dart';
@@ -41,6 +39,9 @@ String watchTimestamp(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.neverLabel;
   }
-  final String locale = Localizations.localeOf(context).toLanguageTag();
-  return DateFormat.yMMMd(locale).add_Hm().format(value.toLocal());
+  final MaterialLocalizations material = MaterialLocalizations.of(context);
+  final DateTime local = value.toLocal();
+  return material.formatMediumDate(local) +
+      ' · ' +
+      material.formatTimeOfDay(TimeOfDay.fromDateTime(local));
 }
