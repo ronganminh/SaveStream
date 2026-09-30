@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import install_exception_handlers
-from app.api.middleware import RequestIdMiddleware
+from app.api.middleware import GlobalRateLimitMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware
 from app.api.routes.admin import router as admin_router
 from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.auth import router as auth_router
@@ -68,8 +68,10 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         ],
         expose_headers=[cfg.request_id_header],
     )
-    app.add_middleware(RequestIdMiddleware, header_name=cfg.request_id_header)
+    app.add_middleware(SecurityHeadersMiddleware, settings=cfg)
+    app.add_middleware(GlobalRateLimitMiddleware, settings=cfg)
     app.add_middleware(MetricsMiddleware, registry=metrics_registry)
+    app.add_middleware(RequestIdMiddleware, header_name=cfg.request_id_header)
     app.state.metrics_registry = metrics_registry
     install_exception_handlers(app)
     app.include_router(health_router)

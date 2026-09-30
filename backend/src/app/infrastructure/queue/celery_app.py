@@ -43,6 +43,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.operations.alerts",
                 "schedule": float(cfg.ops_alert_check_seconds),
             },
+            "privacy-retention": {
+                "task": "savestream.privacy.retention",
+                "schedule": float(cfg.retention_check_seconds),
+            },
         },
     )
     return app

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.credits.service import CreditService
+from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import (
@@ -200,6 +201,8 @@ class RecordingService:
                     )
                     if replay is not None:
                         return replay
+
+        await QuotaService(self.session, self.settings).check_recording_create(user_id)
 
         source = Source(type=payload.source.type, value=normalize_source(payload.source))
         active_key = dedupe_key(user_id, source)
