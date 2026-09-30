@@ -10,12 +10,182 @@ final Provider<RecordingRepository> recordingRepositoryProvider =
       (ref) => MockRecordingRepository(ref.watch(mockBehaviorProvider)),
     );
 
-final FutureProvider<List<RecordingSummary>> recordingListProvider =
-    FutureProvider<List<RecordingSummary>>(
-      (ref) => ref.watch(recordingRepositoryProvider).listRecordings(),
+final NotifierProvider<RecordingRevisionNotifier, int> recordingRevisionProvider =
+    NotifierProvider<RecordingRevisionNotifier, int>(
+      RecordingRevisionNotifier.new,
     );
 
-final recordingDetailProvider =
-    FutureProvider.family<RecordingSummary?, String>(
-      (ref, id) => ref.watch(recordingRepositoryProvider).getRecording(id),
+class RecordingRevisionNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() {
+    state += 1;
+  }
+}
+
+class RecordingListState {
+  const RecordingListState({
+    required this.filter,
+    required this.items,
+    required this.nextCursor,
+    this.isLoadingMore = false,
+    this.loadMoreFailed = false,
+  });
+
+  final RecordingFilter filter;
+  final List<RecordingSummary> items;
+  final String? nextCursor;
+  final bool isLoadingMore;
+  final bool loadMoreFailed;
+
+  RecordingListState copyWith({
+    RecordingFilter? filter,
+    List<RecordingSummary>? items,
+    String? nextCursor,
+    bool clearNextCursor = false,
+    bool? isLoadingMore,
+    bool? loadMoreFailed,
+  }) {
+    return RecordingListState(
+      filter: filter ?? this.filter,
+      items: items ?? this.items,
+      nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
     );
+  }
+}
+
+final AsyncNotifierProvider<RecordingListController, RecordingListState>
+recordingListControllerProvider =
+    AsyncNotifierProvider<RecordingListController, RecordingListState>(
+      RecordingListController.new,
+    );
+
+class RecordingListController extends AsyncNotifier<RecordingListState> {
+  @override
+  Future<RecordingListState> build() {
+    return _loadFirstPage(RecordingFilter.all);
+  }
+
+  Future<void> setFilter(RecordingFilter filter) async {
+    final RecordingListState? current = state.value;
+    if (current?.filter == filter) {
+      return;
+    }
+    state = const AsyncLoading<RecordingListState>();
+    state = await AsyncValue.guard<RecordingListState>(
+      () => _loadFirstPage(filter),
+    );
+  }
+
+  Future<void> refresh() async {
+    final RecordingFilter filter =
+        state.value?.filter ?? RecordingFilter.all;
+    state = const AsyncLoading<RecordingListState>();
+    state = await AsyncValue.guard<RecordingListState>(
+      () => _loadFirstPage(filter),
+    );
+  }
+
+  Future<void> loadMore() async {
+    final RecordingListState? current = state.value;
+    if (current == null ||
+        current.nextCursor == null ||
+        current.isLoadingMore) {
+      return;
+    }
+
+    state = AsyncData<RecordingListState>(
+      current.copyWith(isLoadingMore: true, loadMoreFailed: false),
+    );
+
+    try {
+      final RecordingPage page = await ref
+          .read(recordingRepositoryProvider)
+          .listRecordingPage(
+            filter: current.filter,
+            cursor: current.nextCursor,
+          );
+      state = AsyncData<RecordingListState>(
+        RecordingListState(
+          filter: current.filter,
+          items: <RecordingSummary>[...current.items, ...page.items],
+          nextCursor: page.nextCursor,
+        ),
+      );
+    } on Object {
+      state = AsyncData<RecordingListState>(
+        current.copyWith(isLoadingMore: false, loadMoreFailed: true),
+      );
+    }
+  }
+
+  Future<RecordingListState> _loadFirstPage(RecordingFilter filter) async {
+    final RecordingPage page = await ref
+        .read(recordingRepositoryProvider)
+        .listRecordingPage(filter: filter);
+    return RecordingListState(
+      filter: filter,
+      items: page.items,
+      nextCursor: page.nextCursor,
+    );
+  }
+}
+
+final recordingDetailProvider =
+    FutureProvider.family<RecordingSummary?, String>((ref, id) {
+      ref.watch(recordingRevisionProvider);
+      return ref.watch(recordingRepositoryProvider).getRecording(id);
+    });
+
+final Provider<RecordingController> recordingControllerProvider =
+    Provider<RecordingController>((ref) {
+      return RecordingController(
+        repository: ref.watch(recordingRepositoryProvider),
+        refreshList: () => ref.invalidate(recordingListControllerProvider),
+        refreshDetail: (String id) =>
+            ref.invalidate(recordingDetailProvider(id)),
+        notifyChanged: () =>
+            ref.read(recordingRevisionProvider.notifier).bump(),
+      );
+    });
+
+class RecordingController {
+  RecordingController({
+    required RecordingRepository repository,
+    required void Function() refreshList,
+    required void Function(String id) refreshDetail,
+    required void Function() notifyChanged,
+  }) : _repository = repository,
+       _refreshList = refreshList,
+       _refreshDetail = refreshDetail,
+       _notifyChanged = notifyChanged;
+
+  final RecordingRepository _repository;
+  final void Function() _refreshList;
+  final void Function(String id) _refreshDetail;
+  final void Function() _notifyChanged;
+
+  Future<void> stop(String id) async {
+    await _repository.stopRecording(id);
+    _invalidate(id);
+  }
+
+  Future<void> retry(String id) async {
+    await _repository.retryRecording(id);
+    _invalidate(id);
+  }
+
+  Future<void> delete(String id) async {
+    await _repository.deleteRecording(id);
+    _invalidate(id);
+  }
+
+  void _invalidate(String id) {
+    _refreshList();
+    _refreshDetail(id);
+    _notifyChanged();
+  }
+}
