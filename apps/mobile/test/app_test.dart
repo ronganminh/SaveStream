@@ -300,21 +300,20 @@ void main() {
 
     expect(find.text('Ada Live'), findsOneWidget);
     expect(find.text('Nora Shop'), findsOneWidget);
-    expect(
-      find.text('Monitoring paused because available credit is insufficient.'),
-      findsOneWidget,
-    );
-    expect(
-      find.text(
-        'Monitoring paused after a Watch error. Review and resume when ready.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.text('Monitoring is paused until you resume it.'),
-      findsOneWidget,
-    );
-    expect(find.text('This Watch is disabled.'), findsOneWidget);
+
+    for (final String reason in <String>[
+      'Monitoring paused because available credit is insufficient.',
+      'Monitoring paused after a Watch error. Review and resume when ready.',
+      'Monitoring is paused until you resume it.',
+      'This Watch is disabled.',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(reason),
+        320,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(reason), findsOneWidget);
+    }
   });
 
   testWidgets('Add Channel requires authorization then creates a Watch', (
@@ -350,6 +349,8 @@ void main() {
     await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
     expect(find.text('Fresh Creator'), findsOneWidget);
@@ -370,8 +371,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Monitoring settings'), findsOneWidget);
-    expect(find.text('Latest recording'), findsOneWidget);
-    expect(find.text('Recording history'), findsOneWidget);
     expect(find.text('Pause monitoring'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
@@ -387,6 +386,19 @@ void main() {
 
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('Pause monitoring'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Latest recording'),
+      320,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Latest recording'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Recording history'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Recording history'), findsOneWidget);
   });
 
   testWidgets('supports loading and empty mock scenarios', (
@@ -400,7 +412,7 @@ void main() {
     await tester.tap(find.text('Channels'));
     await tester.pump();
 
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(SsSkeleton), findsWidgets);
 
     await tester.pumpWidget(
       SaveStreamApp(
