@@ -35,6 +35,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.credits.reconcile",
                 "schedule": 3600.0,
             },
+            "payment-reconciliation": {
+                "task": "savestream.billing.reconcile",
+                "schedule": float(cfg.payment_reconcile_seconds),
+            },
         },
     )
     return app

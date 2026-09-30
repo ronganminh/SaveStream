@@ -7,6 +7,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.billing.service import BillingService
 from app.application.credits.service import CreditService
 from app.application.identity.service import IdentityService, utcnow
 from app.application.pricing.service import PricingService
@@ -15,6 +16,7 @@ from app.application.watches.service import WatchService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import AuthSession, User
+from app.infrastructure.payments.factory import selected_payment_provider
 from app.infrastructure.security.tokens import TokenError, TokenExpiredError, TokenService
 
 _bearer = HTTPBearer(auto_error=False)
@@ -138,3 +140,14 @@ def get_pricing_service(
     session: AsyncSession = Depends(get_db_session),
 ) -> PricingService:
     return PricingService(session)
+
+
+def get_billing_service(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> BillingService:
+    return BillingService(
+        session,
+        request.app.state.settings,
+        selected_payment_provider(request.app.state.settings),
+    )

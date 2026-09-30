@@ -13,6 +13,8 @@ _USER_SCOPES = {
     "watches:read",
     "watches:write",
     "credits:read",
+    "billing:read",
+    "billing:write",
 }
 
 _ROLE_SCOPES: dict[str, frozenset[str]] = {
