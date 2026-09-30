@@ -28,6 +28,7 @@ class Recording(Base):
         Index("ix_recordings_owner_created", "user_id", "created_at"),
         Index("ix_recordings_owner_status", "user_id", "status"),
         UniqueConstraint("active_dedupe_key", name="uq_recordings_active_dedupe_key"),
+        UniqueConstraint("room_session_key", name="uq_recordings_room_session_key"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -38,6 +39,7 @@ class Recording(Base):
     source_value: Mapped[str] = mapped_column(String(2048), nullable=False)
     resolved_username: Mapped[str | None] = mapped_column(String(160), nullable=True)
     room_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    room_session_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued")
     active_dedupe_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
     max_duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.identity.service import IdentityService, utcnow
 from app.application.recordings.service import RecordingService
+from app.application.watches.service import WatchService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import AuthSession, User
@@ -116,3 +117,9 @@ def get_recording_service(
         session,
         request.app.state.settings,
     )
+
+
+def get_watch_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> WatchService:
+    return WatchService(session)

@@ -13,6 +13,7 @@ from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
 from app.api.routes.recordings import router as recordings_router
 from app.api.routes.users import router as users_router
+from app.api.routes.watches import router as watches_router
 from app.infrastructure.db.session import Database
 from app.infrastructure.rate_limit import RedisRateLimiter
 from app.infrastructure.redis import RedisClient
@@ -66,6 +67,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(users_router)
     app.include_router(recordings_router)
     app.include_router(artifacts_router)
+    app.include_router(watches_router)
     return app
 
 

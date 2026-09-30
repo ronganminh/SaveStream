@@ -26,7 +26,11 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
             "recover-stale-recordings": {
                 "task": "savestream.recording.recover_stale",
                 "schedule": 60.0,
-            }
+            },
+            "watch-scheduler-tick": {
+                "task": "savestream.watch.scheduler_tick",
+                "schedule": float(cfg.watch_scheduler_tick_seconds),
+            },
         },
     )
     return app
