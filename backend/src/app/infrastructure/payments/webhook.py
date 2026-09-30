@@ -69,15 +69,23 @@ def parse_standard_event(raw_body: bytes) -> ProviderEvent:
     amount_minor_raw = payload.get("amount_minor")
     currency_raw = payload.get("currency")
     refund_reference_raw = payload.get("refund_reference")
+    try:
+        amount_minor = (
+            int(amount_minor_raw)
+            if amount_minor_raw is not None
+            else None
+        )
+    except (TypeError, ValueError) as exc:
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "Payment webhook amount is invalid",
+            status_code=400,
+        ) from exc
     return ProviderEvent(
         event_id=event_id,
         event_type=event_type,
         provider_reference=provider_reference,
-        amount_minor=(
-            int(amount_minor_raw)
-            if amount_minor_raw is not None
-            else None
-        ),
+        amount_minor=amount_minor,
         currency=(
             str(currency_raw).upper()
             if currency_raw is not None

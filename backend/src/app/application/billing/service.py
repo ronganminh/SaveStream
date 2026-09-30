@@ -521,7 +521,7 @@ class PaymentEventProcessor:
                 return
 
             if event.event_type == "refund.failed":
-                if refund.status != "failed":
+                if refund.status in {"created", "pending"}:
                     await BillingCreditService(
                         self.session
                     ).compensate_failed_refund(
@@ -535,6 +535,9 @@ class PaymentEventProcessor:
                 row.processed_at = utcnow()
                 return
 
+            if refund.status == "failed":
+                row.processing_error = "refund_succeeded_after_failed_compensation"
+                return
             if refund.status != "succeeded":
                 refund.status = "succeeded"
                 refund.succeeded_at = utcnow()
