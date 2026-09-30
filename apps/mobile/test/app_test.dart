@@ -417,11 +417,11 @@ void main() {
       'Completed',
     ]) {
       await tester.scrollUntilVisible(
-        find.text(status),
+        find.widgetWithText(SsStatusChip, status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
-      expect(find.text(status), findsWidgets);
+      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
     }
 
     await tester.scrollUntilVisible(
@@ -440,11 +440,11 @@ void main() {
       'Queued',
     ]) {
       await tester.scrollUntilVisible(
-        find.text(status),
+        find.widgetWithText(SsStatusChip, status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
-      expect(find.text(status), findsWidgets);
+      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
     }
 
     await tester.scrollUntilVisible(
@@ -458,11 +458,11 @@ void main() {
 
     for (final String status in <String>['Stop requested', 'Stopped']) {
       await tester.scrollUntilVisible(
-        find.text(status),
+        find.widgetWithText(SsStatusChip, status),
         320,
         scrollable: find.byType(Scrollable).last,
       );
-      expect(find.text(status), findsWidgets);
+      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
     }
   });
 
@@ -556,11 +556,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     await tester.scrollUntilVisible(
-      find.text('Queued'),
+      find.widgetWithText(SsStatusChip, 'Queued'),
       -320,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('Queued'), findsWidgets);
+    expect(
+      find.widgetWithText(SsStatusChip, 'Queued'),
+      findsOneWidget,
+    );
     expect(find.text('Retry recording'), findsNothing);
   });
 
