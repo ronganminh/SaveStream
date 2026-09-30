@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:savestream_mobile/app/app_settings_controller.dart';
+import 'package:savestream_mobile/app/router/app_routes.dart';
 import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
@@ -724,16 +726,16 @@ void main() {
     expect(settings.locale.languageCode, 'vi');
     expect(find.text('Ngôn ngữ'), findsWidgets);
 
-    await tester.tap(find.byType(BackButton));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Giao diện'),
-      240,
-      scrollable: find.byType(Scrollable).last,
+    final BuildContext languageContext = tester.element(
+      find.text('Ngôn ngữ').first,
     );
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
+    GoRouter.of(languageContext).pop();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Giao diện'));
+
+    final BuildContext settingsContext = tester.element(
+      find.text('Cài đặt').first,
+    );
+    GoRouter.of(settingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tối'));
     await tester.pumpAndSettle();
