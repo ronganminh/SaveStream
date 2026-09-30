@@ -30,9 +30,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _logout() async {
     await _runAccountAction(
-      () => ref
-          .read(settingsAccountControllerProvider(widget.session))
-          .logout(),
+      () =>
+          ref.read(settingsAccountControllerProvider(widget.session)).logout(),
     );
   }
 
