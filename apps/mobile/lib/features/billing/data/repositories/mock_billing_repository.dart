@@ -43,6 +43,12 @@ final class MockBillingRepository extends MockRepositoryBase
       createdAt: DateTime.utc(2026, 9, 20, 9, 15),
     ),
     PaymentOrder(
+      id: 'order_cancelled',
+      package: _packages[2],
+      status: PaymentOrderStatus.cancelled,
+      createdAt: DateTime.utc(2026, 9, 16, 11, 40),
+    ),
+    PaymentOrder(
       id: 'order_expired',
       package: _packages[0],
       status: PaymentOrderStatus.expired,
