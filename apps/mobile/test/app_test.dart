@@ -401,6 +401,126 @@ void main() {
     expect(find.text('Recording history'), findsOneWidget);
   });
 
+  testWidgets('Recordings pagination exposes all lifecycle statuses', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Recordings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Recording'), findsWidgets);
+    expect(find.text('Processing'), findsOneWidget);
+    expect(find.text('Uploading'), findsOneWidget);
+    expect(find.text('Completed'), findsWidgets);
+
+    await tester.scrollUntilVisible(
+      find.text('Load more'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Load more'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(find.text('Failed'), findsWidgets);
+    expect(find.text('Waiting for LIVE'), findsOneWidget);
+    expect(find.text('Resolving source'), findsOneWidget);
+    expect(find.text('Queued'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Load more'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Load more'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(find.text('Stop requested'), findsOneWidget);
+    expect(find.text('Stopped'), findsOneWidget);
+  });
+
+  testWidgets('Recordings filters completed and failed states', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Recordings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Completed'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(find.text('Minh Streams'), findsOneWidget);
+    expect(find.text('Studio North'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Failed'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+
+    expect(find.text('Studio North'), findsOneWidget);
+    expect(find.text('Minh Streams'), findsNothing);
+  });
+
+  testWidgets('active recording Stop action follows canStop flag', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Recordings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.text('Ada Live'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Stop recording'), findsOneWidget);
+    expect(find.text('Retry recording'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Stop requested'), findsWidgets);
+    expect(find.text('Stop recording'), findsNothing);
+  });
+
+  testWidgets('failed recording exposes Retry and Delete action flags', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Recordings'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Failed'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
+    await tester.tap(find.text('Studio North'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Recording error'), findsOneWidget);
+    expect(find.text('Retry recording'), findsOneWidget);
+    expect(find.text('Delete recording'), findsOneWidget);
+    expect(find.text('Stop recording'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Retry recording'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Queued'), findsWidgets);
+    expect(find.text('Retry recording'), findsNothing);
+  });
+
   testWidgets('supports loading and empty mock scenarios', (
     WidgetTester tester,
   ) async {
