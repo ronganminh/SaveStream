@@ -52,6 +52,13 @@ def operations_alerts() -> int:
     return run_ops_alert_check()
 
 
+@celery_app.task(name="savestream.privacy.retention")
+def privacy_retention() -> dict[str, int]:
+    from app.infrastructure.privacy.worker import run_privacy_retention
+
+    return run_privacy_retention()
+
+
 @celery_app.task(name="savestream.recording.run")
 def recording_run(recording_id: str) -> None:
     from app.infrastructure.recording.worker import run_recording_job

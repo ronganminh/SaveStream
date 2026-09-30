@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 from app.api.dependencies import get_current_principal, get_identity_service
 from app.api.schemas.identity import (
@@ -11,8 +13,11 @@ from app.api.schemas.identity import (
     UserResponse,
 )
 from app.application.identity.service import IdentityService, ip_hint
+from app.application.privacy.service import PrivacyService
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.db.models import AuthSession, User
+from app.api.dependencies import get_db_session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/v1", tags=["Users"])
 
@@ -129,4 +134,19 @@ async def revoke_session(
         principal,
         session_id,
         request_id=_request_id(request),
+    )
+
+
+@router.get("/me/export", include_in_schema=False)
+async def export_me(
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> JSONResponse:
+    payload = await PrivacyService(session).export_user(principal.user_id)
+    return JSONResponse(
+        content=jsonable_encoder(payload),
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-account-export.json"',
+            "Cache-Control": "no-store",
+        },
     )

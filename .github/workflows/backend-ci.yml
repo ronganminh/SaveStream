@@ -1,9 +1,9 @@
 name: Backend CI
 on:
   push:
-    paths: ["backend/**", "docs/openapi.yaml", ".github/workflows/backend-ci.yml"]
+    paths: ["backend/**", "deploy/**", "docs/openapi.yaml", "docs/operations/**", "docker-compose.production.example.yml", ".github/workflows/backend-ci.yml"]
   pull_request:
-    paths: ["backend/**", "docs/openapi.yaml", ".github/workflows/backend-ci.yml"]
+    paths: ["backend/**", "deploy/**", "docs/openapi.yaml", "docs/operations/**", "docker-compose.production.example.yml", ".github/workflows/backend-ci.yml"]
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -38,5 +38,33 @@ jobs:
           alembic downgrade base
       - name: CLI smoke test
         run: python src/main.py -h
+      - name: Production config smoke
+        env:
+          SAVESTREAM_ENVIRONMENT: production
+          SAVESTREAM_DATABASE_URL: postgresql+asyncpg://user:password@db:5432/savestream
+          SAVESTREAM_REDIS_URL: redis://redis:6379/0
+          SAVESTREAM_JWT_SECRET: ci-production-jwt-secret-at-least-thirty-two-characters
+          SAVESTREAM_FRONTEND_BASE_URL: https://app.example.test
+          SAVESTREAM_CORS_ALLOW_ORIGINS: https://app.example.test
+          SAVESTREAM_PAYMENT_PROVIDER: gateway
+          SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://payments.example.test
+          SAVESTREAM_PAYMENT_PROVIDER_API_KEY: ci-provider-key
+          SAVESTREAM_PAYMENT_WEBHOOK_SECRET: ci-provider-webhook-secret
+          SAVESTREAM_METRICS_TOKEN: ci-metrics-secret
+          SAVESTREAM_TRUSTED_PROXY_CIDRS: 10.0.0.0/8
+          SAVESTREAM_FORCE_HTTPS: "true"
+          SAVESTREAM_API_RATE_LIMIT: 300
+          SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: 100
+          SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: 100
+          SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: 2
+        run: python -c "from app.settings import AppSettings; AppSettings.from_env()"
+      - name: Operational script syntax
+        run: |
+          sh -n scripts/backup.sh
+          sh -n scripts/restore.sh
+          sh -n scripts/backup_restore_drill.sh
+          python -m py_compile scripts/canary_check.py scripts/load_probe.py
+      - name: Package dependency consistency
+        run: python -m pip check
       - name: Docker Compose config
         run: docker compose -f docker-compose.yml config --quiet

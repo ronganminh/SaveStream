@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.recordings import Source
 from app.api.schemas.watches import CreateWatchRequest, UpdateWatchRequest
 from app.application.credits.service import CreditService
+from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.watches.state import WatchStatus, can_resume, validate_user_status
@@ -97,6 +98,10 @@ class WatchService:
                 status_code=409,
                 details={"watch_id": str(existing.id)},
             )
+
+        await QuotaService(self.session, self.settings).check_watch_create(
+            principal.user_id
+        )
 
         watch = Watch(
             user_id=principal.user_id,
