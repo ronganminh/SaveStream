@@ -187,5 +187,53 @@
         "type": "String"
       }
     }
+  },
+  "channelsSummaryTitle": "{count, plural, =1{1 kênh đang theo dõi} other{{count} kênh đang theo dõi}}",
+  "channelsSummaryBody": "SaveStream kiểm tra trạng thái LIVE của các creator này và bắt đầu recording được phép theo cấu hình từng Watch.",
+  "autoRecordOnLabel": "Tự động ghi đang bật",
+  "autoRecordOffLabel": "Tự động ghi đang tắt",
+  "lastCheckedLabel": "Kiểm tra gần nhất",
+  "lastLiveLabel": "LIVE gần nhất",
+  "neverLabel": "Chưa có",
+  "watchReasonActive": "Theo dõi đang hoạt động.",
+  "watchReasonPaused": "Theo dõi đang tạm dừng cho đến khi bạn tiếp tục.",
+  "watchReasonInsufficientCredit": "Theo dõi tạm dừng vì credit khả dụng không đủ.",
+  "watchReasonError": "Theo dõi tạm dừng sau lỗi Watch. Hãy kiểm tra rồi tiếp tục khi sẵn sàng.",
+  "watchReasonDisabled": "Watch này đã bị tắt.",
+  "addChannelTitle": "Thêm kênh",
+  "addChannelHeading": "Theo dõi một creator TikTok",
+  "addChannelBody": "Nhập username TikTok hoặc URL hồ sơ. SaveStream sẽ resolve creator khi backend Watch API được kết nối.",
+  "channelSourceLabel": "Username TikTok hoặc URL hồ sơ",
+  "channelSourceHint": "@creator hoặc https://www.tiktok.com/@creator",
+  "channelSourceRequired": "Nhập username TikTok hoặc URL hồ sơ.",
+  "channelSourceInvalid": "Nhập username hoặc URL hồ sơ hợp lệ và không có khoảng trắng.",
+  "autoRecordTitle": "Tự động ghi khi LIVE",
+  "autoRecordDescription": "Khi Watch phát hiện phiên LIVE, SaveStream có thể tự động bắt đầu recording.",
+  "channelPermissionConfirmation": "Tôi xác nhận mình sở hữu, quản lý, có quyền ghi lại hoặc được pháp luật cho phép lưu stream này.",
+  "channelPermissionRequired": "Hãy xác nhận bạn được phép ghi stream này trước khi tiếp tục.",
+  "addAndMonitorAction": "Thêm & bắt đầu theo dõi",
+  "monitoringSettingsTitle": "Cài đặt theo dõi",
+  "pauseMonitoringAction": "Tạm dừng theo dõi",
+  "resumeMonitoringAction": "Tiếp tục theo dõi",
+  "deleteChannelTitle": "Xóa Watch của kênh?",
+  "deleteChannelMessage": "Ngừng theo dõi {name}? Các recording hiện có sẽ không bị xóa.",
+  "deleteChannelAction": "Xóa Watch",
+  "channelNoRecordingsTitle": "Chưa có recording",
+  "channelNoRecordingsBody": "Recording của kênh này sẽ xuất hiện tại đây khi được tạo.",
+  "latestRecordingTitle": "Recording mới nhất",
+  "recordingHistoryTitle": "Lịch sử recording",
+  "@channelsSummaryTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deleteChannelMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
