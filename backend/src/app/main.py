@@ -9,8 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.errors import install_exception_handlers
 from app.api.middleware import RequestIdMiddleware
 from app.api.routes.artifacts import router as artifacts_router
+from app.api.routes.credits import router as credits_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.health import router as health_router
+from app.api.routes.pricing import router as pricing_router
 from app.api.routes.recordings import router as recordings_router
 from app.api.routes.users import router as users_router
 from app.api.routes.watches import router as watches_router
@@ -68,6 +70,8 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(recordings_router)
     app.include_router(artifacts_router)
     app.include_router(watches_router)
+    app.include_router(credits_router)
+    app.include_router(pricing_router)
     return app
 
 

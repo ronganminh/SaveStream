@@ -13,6 +13,7 @@ from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.session import Database
+from tests.credit_helpers import configure_test_pricing, grant_test_credits
 from tests.identity_helpers import identity_settings
 
 
@@ -43,6 +44,8 @@ def test_watch_crud_pause_resume_and_tenant_isolation(tmp_path) -> None:
                 await session.commit()
                 await session.refresh(owner)
                 await session.refresh(other)
+                await configure_test_pricing(session)
+                await grant_test_credits(session, owner.id)
 
                 principal = AuthPrincipal(
                     user_id=owner.id,
@@ -56,7 +59,7 @@ def test_watch_crud_pause_resume_and_tenant_isolation(tmp_path) -> None:
                     role="user",
                     scopes=scopes_for_role("user"),
                 )
-                service = WatchService(session)
+                service = WatchService(session, settings)
                 created = await service.create(
                     principal,
                     CreateWatchRequest(

@@ -12,6 +12,7 @@ _USER_SCOPES = {
     "recordings:write",
     "watches:read",
     "watches:write",
+    "credits:read",
 }
 
 _ROLE_SCOPES: dict[str, frozenset[str]] = {

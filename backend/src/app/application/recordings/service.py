@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.application.credits.service import CreditService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import (
@@ -243,6 +244,20 @@ class RecordingService:
                 status_code=409,
             ) from exc
 
+        max_duration = (
+            payload.max_duration_seconds
+            or self.settings.recording_max_duration_seconds
+        )
+        reservation, estimated_max_cost = await CreditService(
+            self.session
+        ).reserve_recording(
+            user_id=user_id,
+            recording_id=recording.id,
+            max_duration_seconds=max_duration,
+        )
+        recording.estimated_max_cost = estimated_max_cost
+        recording.credit_reservation_id = str(reservation.id)
+
         await append_event(self.session, recording, "recording.queued")
         await self.outbox.enqueue(
             self.session,
@@ -428,9 +443,14 @@ class RecordingStateStore:
 
         status = RecordingStatus(recording.status)
         if status is RecordingStatus.STOP_REQUESTED:
+            await CreditService(self.session).release_recording(
+                recording_id=recording.id,
+                reason="stopped_before_start",
+            )
             recording.status = RecordingStatus.STOPPED.value
             recording.ended_at = utcnow()
             recording.active_dedupe_key = None
+            recording.actual_cost = 0
             await append_event(self.session, recording, "recording.stopped")
             await self.session.commit()
             return None
@@ -529,10 +549,15 @@ class RecordingStateStore:
         message: str,
         retryable: bool,
     ) -> None:
+        await CreditService(self.session).release_recording(
+            recording_id=recording.id,
+            reason=code,
+        )
         recording.status = RecordingStatus.FAILED.value
         recording.error_code = code
         recording.error_message = message[:4000]
         recording.error_retryable = retryable
+        recording.actual_cost = 0
         recording.ended_at = utcnow()
         recording.active_dedupe_key = None
         recording.worker_lease_id = None

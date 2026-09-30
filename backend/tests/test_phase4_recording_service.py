@@ -13,6 +13,7 @@ from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import RecordingArtifact, RecordingEvent
 from app.infrastructure.db.session import Database
+from tests.credit_helpers import configure_test_pricing, grant_test_credits
 from tests.identity_helpers import identity_settings
 
 
@@ -43,6 +44,8 @@ def test_recording_create_is_idempotent_scoped_and_deduped(tmp_path):
                 await session.commit()
                 await session.refresh(owner)
                 await session.refresh(other)
+                await configure_test_pricing(session)
+                await grant_test_credits(session, owner.id)
 
                 principal = AuthPrincipal(
                     user_id=owner.id,
@@ -140,6 +143,8 @@ def test_worker_lease_blocks_duplicate_delivery_and_recovers_stale(tmp_path):
                 session.add(user)
                 await session.commit()
                 await session.refresh(user)
+                await configure_test_pricing(session)
+                await grant_test_credits(session, user.id)
                 principal = AuthPrincipal(
                     user_id=user.id,
                     session_id=uuid.uuid4(),
@@ -200,6 +205,8 @@ def test_artifact_authorization_is_tenant_scoped(tmp_path):
                 await session.commit()
                 await session.refresh(owner)
                 await session.refresh(other)
+                await configure_test_pricing(session)
+                await grant_test_credits(session, owner.id)
                 owner_p = AuthPrincipal(owner.id, uuid.uuid4(), "user", scopes_for_role("user"))
                 other_p = AuthPrincipal(other.id, uuid.uuid4(), "user", scopes_for_role("user"))
                 service = RecordingService(session, settings)

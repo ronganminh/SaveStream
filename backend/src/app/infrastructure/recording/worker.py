@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from adapters.tiktok_gateway import TikTokLiveGateway
 from app.api.schemas.recordings import Source
+from app.application.credits.service import CreditService
 from app.application.recordings.service import (
     RecordingStateStore,
     append_event,
@@ -234,6 +235,11 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                     checksum_sha256=checksum,
                 )
             )
+            actual_cost = await CreditService(session).settle_recording(
+                recording_id=recording.id,
+                duration_seconds=recording.duration_seconds,
+                bytes_recorded=recording.bytes_recorded,
+            )
             target = (
                 RecordingStatus.STOPPED
                 if stopped_by_request
@@ -243,7 +249,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 RecordingStatus(recording.status),
                 target,
             ).value
-            recording.actual_cost = 0
+            recording.actual_cost = actual_cost
             recording.ended_at = utcnow()
             recording.active_dedupe_key = None
             recording.worker_lease_id = None

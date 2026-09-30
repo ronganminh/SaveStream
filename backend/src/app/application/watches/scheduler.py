@@ -199,4 +199,12 @@ class WatchScheduler:
         except ApplicationError as exc:
             if exc.code == "RECORDING_ALREADY_ACTIVE":
                 return
+            if exc.code == "INSUFFICIENT_CREDITS":
+                watch.status = WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value
+                watch.next_check_at = None
+                watch.scheduler_lease_id = None
+                watch.scheduler_lease_expires_at = None
+                watch.last_error = "insufficient_credits"
+                await self.session.commit()
+                return
             raise

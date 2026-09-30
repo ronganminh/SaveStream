@@ -31,6 +31,13 @@ def watch_scheduler_tick() -> int:
     return len(claims)
 
 
+@celery_app.task(name="savestream.credits.reconcile")
+def credit_reconcile() -> int:
+    from app.infrastructure.credits.reconcile import run_reconciliation
+
+    return run_reconciliation()
+
+
 @celery_app.task(name="savestream.recording.run")
 def recording_run(recording_id: str) -> None:
     from app.infrastructure.recording.worker import run_recording_job
