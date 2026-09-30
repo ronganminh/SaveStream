@@ -10,6 +10,27 @@ enum WatchStatus {
   final String apiValue;
 }
 
+enum WatchSourceType {
+  username('username'),
+  url('url');
+
+  const WatchSourceType(this.apiValue);
+
+  final String apiValue;
+}
+
+class CreateWatchCommand {
+  const CreateWatchCommand({
+    required this.sourceType,
+    required this.sourceValue,
+    required this.autoRecord,
+  });
+
+  final WatchSourceType sourceType;
+  final String sourceValue;
+  final bool autoRecord;
+}
+
 class WatchSummary {
   const WatchSummary({
     required this.id,
@@ -17,6 +38,9 @@ class WatchSummary {
     required this.creatorUsername,
     required this.status,
     required this.isLive,
+    this.autoRecord = true,
+    this.lastCheckedAt,
+    this.lastLiveAt,
   });
 
   final String id;
@@ -24,4 +48,28 @@ class WatchSummary {
   final String creatorUsername;
   final WatchStatus status;
   final bool isLive;
+  final bool autoRecord;
+  final DateTime? lastCheckedAt;
+  final DateTime? lastLiveAt;
+
+  WatchSummary copyWith({
+    String? creatorDisplayName,
+    String? creatorUsername,
+    WatchStatus? status,
+    bool? isLive,
+    bool? autoRecord,
+    DateTime? lastCheckedAt,
+    DateTime? lastLiveAt,
+  }) {
+    return WatchSummary(
+      id: id,
+      creatorDisplayName: creatorDisplayName ?? this.creatorDisplayName,
+      creatorUsername: creatorUsername ?? this.creatorUsername,
+      status: status ?? this.status,
+      isLive: isLive ?? this.isLive,
+      autoRecord: autoRecord ?? this.autoRecord,
+      lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
+      lastLiveAt: lastLiveAt ?? this.lastLiveAt,
+    );
+  }
 }
