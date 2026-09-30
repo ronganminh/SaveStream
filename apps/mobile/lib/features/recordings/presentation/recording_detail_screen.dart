@@ -21,8 +21,7 @@ class RecordingDetailScreen extends ConsumerStatefulWidget {
       _RecordingDetailScreenState();
 }
 
-class _RecordingDetailScreenState
-    extends ConsumerState<RecordingDetailScreen> {
+class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
   bool _isMutating = false;
   Object? _mutationError;
 
@@ -103,7 +102,9 @@ class _RecordingDetailScreenState
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(recordingDetailProvider(widget.recordingId));
-                await ref.read(recordingDetailProvider(widget.recordingId).future);
+                await ref.read(
+                  recordingDetailProvider(widget.recordingId).future,
+                );
               },
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -143,14 +144,12 @@ class _RecordingDetailScreenState
                     recording: value,
                     isMutating: _isMutating,
                     onStop: () => _runMutation(
-                      () => ref
-                          .read(recordingControllerProvider)
-                          .stop(value.id),
+                      () =>
+                          ref.read(recordingControllerProvider).stop(value.id),
                     ),
                     onRetry: () => _runMutation(
-                      () => ref
-                          .read(recordingControllerProvider)
-                          .retry(value.id),
+                      () =>
+                          ref.read(recordingControllerProvider).retry(value.id),
                     ),
                     onDelete: () => _delete(value),
                   ),
@@ -294,9 +293,7 @@ class _LifecycleCard extends StatelessWidget {
             LinearProgressIndicator(value: recording.progress),
             const SizedBox(height: SsSpacing.xs),
             Text(
-              l10n.recordingProgressValue(
-                (recording.progress! * 100).round(),
-              ),
+              l10n.recordingProgressValue((recording.progress! * 100).round()),
               textAlign: TextAlign.end,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -565,9 +562,9 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             ),
           ),
           const SizedBox(width: SsSpacing.md),
