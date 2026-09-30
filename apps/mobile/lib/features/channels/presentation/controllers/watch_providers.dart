@@ -13,6 +13,18 @@ final Provider<WatchRepository> watchRepositoryProvider =
       (ref) => MockWatchRepository(ref.watch(mockBehaviorProvider)),
     );
 
+final NotifierProvider<WatchRevisionNotifier, int> watchRevisionProvider =
+    NotifierProvider<WatchRevisionNotifier, int>(WatchRevisionNotifier.new);
+
+class WatchRevisionNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void bump() {
+    state += 1;
+  }
+}
+
 final FutureProvider<List<WatchSummary>> watchListProvider =
     FutureProvider<List<WatchSummary>>(
       (ref) => ref.watch(watchRepositoryProvider).listWatches(),
@@ -51,6 +63,7 @@ final Provider<WatchController> watchControllerProvider =
           ref.invalidate(watchDetailProvider(id));
           ref.invalidate(channelDetailProvider(id));
         },
+        notifyChanged: () => ref.read(watchRevisionProvider.notifier).bump(),
       );
     });
 
@@ -59,13 +72,16 @@ class WatchController {
     required WatchRepository repository,
     required void Function() invalidateList,
     required void Function(String id) invalidateDetail,
+    required void Function() notifyChanged,
   }) : _repository = repository,
        _invalidateList = invalidateList,
-       _invalidateDetail = invalidateDetail;
+       _invalidateDetail = invalidateDetail,
+       _notifyChanged = notifyChanged;
 
   final WatchRepository _repository;
   final void Function() _invalidateList;
   final void Function(String id) _invalidateDetail;
+  final void Function() _notifyChanged;
 
   Future<WatchSummary> createWatch(CreateWatchCommand command) async {
     final WatchSummary created = await _repository.createWatch(command);
@@ -96,5 +112,6 @@ class WatchController {
   void _invalidate(String id) {
     _invalidateList();
     _invalidateDetail(id);
+    _notifyChanged();
   }
 }
