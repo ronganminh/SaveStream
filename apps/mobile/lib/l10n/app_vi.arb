@@ -350,5 +350,34 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsAccountSectionTitle": "Tài khoản",
+  "settingsPreferencesSectionTitle": "Tùy chọn",
+  "settingsLegalSectionTitle": "Pháp lý",
+  "settingsAccountActionsSectionTitle": "Thao tác tài khoản",
+  "settingsDeveloperSectionTitle": "Nhà phát triển",
+  "settingsProfileSubtitle": "Email và trạng thái xác minh",
+  "notificationsTitle": "Thông báo",
+  "notificationsPlaceholderSubtitle": "Cài đặt thông báo sẽ được bật khi backend hỗ trợ.",
+  "notificationsPlaceholderBody": "Tùy chọn thông báo đang là placeholder ở Phase 8. Phần này sẽ được nối khi backend có contract thông báo.",
+  "privacyPolicyTitle": "Chính sách quyền riêng tư",
+  "privacyPolicyPlaceholderBody": "Liên kết Chính sách quyền riêng tư chính thức của SaveStream sẽ được nối trước khi phát hành.",
+  "termsOfUseTitle": "Điều khoản sử dụng",
+  "termsOfUsePlaceholderBody": "Liên kết Điều khoản sử dụng chính thức của SaveStream sẽ được nối trước khi phát hành.",
+  "logoutAction": "Đăng xuất",
+  "logoutDescription": "Đăng xuất SaveStream trên thiết bị này.",
+  "deleteAccountAction": "Xóa tài khoản",
+  "deleteAccountDescription": "Gửi yêu cầu xóa vĩnh viễn tài khoản SaveStream.",
+  "deleteAccountTitle": "Xóa tài khoản của bạn?",
+  "deleteAccountMessage": "Đây là thao tác phá hủy dữ liệu tài khoản. Khi nối API thật, backend sẽ là nguồn xác nhận cuối cùng cho việc xóa.",
+  "accountActionError": "SaveStream chưa thể hoàn tất thao tác tài khoản này. Vui lòng thử lại.",
+  "profileFallbackName": "Người dùng SaveStream",
+  "profileEmailVerified": "Email đã xác minh",
+  "profileEmailUnverified": "Email chưa xác minh",
+  "profileVerificationLabel": "Xác minh",
+  "profileVerifiedValue": "Đã xác minh",
+  "profileUnverifiedValue": "Chưa xác minh",
+  "profileManagedByBackendBody": "Thông tin định danh hồ sơ được đọc từ backend tài khoản. Chỉ các trường backend hỗ trợ mới được phép chỉnh sửa.",
+  "languageDescription": "Chọn ngôn ngữ dùng trong toàn bộ SaveStream. Tùy chọn này được lưu trên thiết bị.",
+  "themeDescription": "Chọn Sáng, Tối hoặc theo giao diện hệ thống. Tùy chọn này được lưu trên thiết bị."
 }
