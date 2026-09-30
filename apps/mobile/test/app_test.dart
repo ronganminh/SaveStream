@@ -7,6 +7,7 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
@@ -19,6 +20,7 @@ import 'package:savestream_mobile/features/recordings/domain/models/recording_su
 import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_providers.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
+import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
 
 void main() {
   AppConfig testConfig() {
@@ -659,6 +661,125 @@ void main() {
         .read(billingSnapshotProvider)
         .requireValue;
     expect(refreshed.orders.first.status, PaymentOrderStatus.paid);
+  });
+
+  test('persists theme and locale across settings controller recreation', () async {
+    final Map<String, String> values = <String, String>{};
+    final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
+    final AppSettingsController first = AppSettingsController(store: store);
+
+    first.setLocale(const Locale('vi'));
+    first.setThemeMode(ThemeMode.dark);
+    await Future<void>.delayed(Duration.zero);
+
+    final AppSettingsController restored = AppSettingsController(store: store);
+    await restored.initialize();
+
+    expect(restored.locale.languageCode, 'vi');
+    expect(restored.themeMode, ThemeMode.dark);
+
+    first.dispose();
+    restored.dispose();
+  });
+
+  testWidgets('renders Phase 8 profile verification state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.tap(find.text('Profile'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(ProfileScreen), findsOneWidget);
+    expect(find.text('Alex Nguyen'), findsOneWidget);
+    expect(find.text('alex@example.com'), findsWidgets);
+    expect(find.text('Email verified'), findsOneWidget);
+  });
+
+  testWidgets('changes language and theme through Phase 8 settings UI', (
+    WidgetTester tester,
+  ) async {
+    final AppSettingsController settings = AppSettingsController();
+
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), settings: settings),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+
+    await tester.tap(find.text('Language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vietnamese'));
+    await tester.pumpAndSettle();
+
+    expect(settings.locale.languageCode, 'vi');
+    expect(find.text('Ngôn ngữ'), findsWidgets);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Giao diện'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tối'));
+    await tester.pumpAndSettle();
+
+    expect(settings.themeMode, ThemeMode.dark);
+    final MaterialApp app = tester.widget<MaterialApp>(
+      find.byType(MaterialApp),
+    );
+    expect(app.themeMode, ThemeMode.dark);
+  });
+
+  testWidgets('logs out through Phase 8 settings account action', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.text('Log out'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Log out'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in'), findsWidgets);
+  });
+
+  testWidgets('delete account requires destructive confirmation', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.text('Delete account'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Delete account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete your account?'), findsOneWidget);
+    expect(
+      find.widgetWithText(FilledButton, 'Delete account'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete account'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in'), findsWidgets);
   });
 
   testWidgets('supports loading and empty mock scenarios', (
