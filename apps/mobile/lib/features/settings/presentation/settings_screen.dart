@@ -33,6 +33,22 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   SsListTile(
+                    title: l10n.creditsTitle,
+                    subtitle: l10n.settingsCreditsSubtitle,
+                    leading: const Icon(Icons.account_balance_wallet_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.credits),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.billingTitle,
+                    subtitle: l10n.settingsBillingSubtitle,
+                    leading: const Icon(Icons.credit_card_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.billing),
+                  ),
+                  const Divider(),
+                  SsListTile(
                     title: l10n.languageTitle,
                     subtitle: settings.locale.languageCode == 'vi'
                         ? l10n.languageVietnamese
