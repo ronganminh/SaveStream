@@ -30,7 +30,7 @@ void main() {
   Future<void> enterSignInCredentials(WidgetTester tester) async {
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'alex@example.com');
-    await tester.enterText(fields.at(1), 'test-password');
+    await tester.enterText(fields.at(1), 'x');
   }
 
   testWidgets('boots the Phase 4 shell with four destinations', (
@@ -97,7 +97,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
     final ProviderContainer container = ProviderScope.containerOf(
@@ -216,8 +216,8 @@ void main() {
 
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'new@example.com');
-    await tester.enterText(fields.at(1), 'test-password');
-    await tester.enterText(fields.at(2), 'test-password');
+    await tester.enterText(fields.at(1), 'x');
+    await tester.enterText(fields.at(2), 'x');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
     final Finder createAccountButton = find.widgetWithText(
