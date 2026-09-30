@@ -1,0 +1,78 @@
+services:
+  api:
+    environment:
+      SAVESTREAM_ENVIRONMENT: test
+      SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+      SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+      SAVESTREAM_RECORDING_HEARTBEAT_SECONDS: 1
+      SAVESTREAM_RECORDING_STALE_AFTER_SECONDS: 20
+      SAVESTREAM_SSE_POLL_SECONDS: 0.2
+      SAVESTREAM_API_RATE_LIMIT: 1000
+    depends_on:
+      fake-stream:
+        condition: service_healthy
+
+  worker:
+    environment:
+      SAVESTREAM_ENVIRONMENT: test
+      SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+      SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+      SAVESTREAM_RECORDING_HEARTBEAT_SECONDS: 1
+      SAVESTREAM_RECORDING_STALE_AFTER_SECONDS: 20
+      SAVESTREAM_API_RATE_LIMIT: 1000
+    depends_on:
+      fake-stream:
+        condition: service_healthy
+
+  outbox-dispatcher:
+    environment:
+      SAVESTREAM_ENVIRONMENT: test
+      SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+      SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+      SAVESTREAM_API_RATE_LIMIT: 1000
+
+  fake-stream:
+    build: .
+    command: ["python", "-m", "app.e2e.fake_stream_server"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8090/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  e2e-runner:
+    build: .
+    command:
+      - sh
+      - -c
+      - >-
+        until curl -fsS http://api:8000/health/ready; do sleep 1; done;
+        python -m app.e2e.seed;
+        python -m app.e2e.flow
+    environment:
+      SAVESTREAM_ENVIRONMENT: test
+      SAVESTREAM_DATABASE_URL: postgresql+asyncpg://savestream:savestream@postgres:5432/savestream
+      SAVESTREAM_REDIS_URL: redis://redis:6379/0
+      SAVESTREAM_CELERY_BROKER_URL: redis://redis:6379/1
+      SAVESTREAM_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      SAVESTREAM_MINIO_ENDPOINT: http://minio:9000
+      SAVESTREAM_MINIO_ACCESS_KEY: savestream
+      SAVESTREAM_MINIO_SECRET_KEY: savestream-local-only
+      SAVESTREAM_MINIO_BUCKET: savestream-recordings
+      SAVESTREAM_JWT_SECRET: savestream-local-dev-secret-change-me
+      SAVESTREAM_PAYMENT_PROVIDER: fake
+      SAVESTREAM_PAYMENT_WEBHOOK_SECRET: savestream-fake-payment-secret
+      SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+      SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+      SAVESTREAM_E2E_API_URL: http://api:8000
+      SAVESTREAM_E2E_MAILHOG_URL: http://mail-debug:8025
+      SAVESTREAM_E2E_TIMEOUT_SECONDS: 120
+      SAVESTREAM_API_RATE_LIMIT: 1000
+      SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: 100
+      SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: 100
+      SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: 2
+    depends_on:
+      - api
+      - worker
+      - outbox-dispatcher
+      - mail-debug
