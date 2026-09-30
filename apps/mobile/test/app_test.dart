@@ -548,10 +548,7 @@ void main() {
     expect(find.text('Delete recording'), findsOneWidget);
     expect(find.text('Stop recording'), findsNothing);
 
-    await tester.drag(
-      find.byType(Scrollable).last,
-      const Offset(0, -120),
-    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Retry recording'));
     await tester.pump(const Duration(milliseconds: 200));
