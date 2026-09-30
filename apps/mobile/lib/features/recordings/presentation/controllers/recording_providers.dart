@@ -10,10 +10,10 @@ final Provider<RecordingRepository> recordingRepositoryProvider =
       (ref) => MockRecordingRepository(ref.watch(mockBehaviorProvider)),
     );
 
-final NotifierProvider<RecordingRevisionNotifier, int> recordingRevisionProvider =
-    NotifierProvider<RecordingRevisionNotifier, int>(
-      RecordingRevisionNotifier.new,
-    );
+final NotifierProvider<RecordingRevisionNotifier, int>
+recordingRevisionProvider = NotifierProvider<RecordingRevisionNotifier, int>(
+  RecordingRevisionNotifier.new,
+);
 
 class RecordingRevisionNotifier extends Notifier<int> {
   @override
@@ -81,8 +81,7 @@ class RecordingListController extends AsyncNotifier<RecordingListState> {
   }
 
   Future<void> refresh() async {
-    final RecordingFilter filter =
-        state.value?.filter ?? RecordingFilter.all;
+    final RecordingFilter filter = state.value?.filter ?? RecordingFilter.all;
     state = const AsyncLoading<RecordingListState>();
     state = await AsyncValue.guard<RecordingListState>(
       () => _loadFirstPage(filter),
