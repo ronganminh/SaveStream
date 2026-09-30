@@ -726,6 +726,11 @@ void main() {
 
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Giao diện'),
+      240,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Giao diện'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tối'));
