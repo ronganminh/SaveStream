@@ -206,13 +206,16 @@ class AdminService:
             )
         retry = await RecordingService(self.session, self.settings).create_for_user(
             original.user_id,
-            CreateRecordingRequest(
-                source=Source.model_validate(
-                    {"type": original.source_type, "value": original.source_value}
-                ),
-                max_duration_seconds=original.max_duration_seconds,
-                quality=original.quality,
-                container=original.container,
+            CreateRecordingRequest.model_validate(
+                {
+                    "source": {
+                        "type": original.source_type,
+                        "value": original.source_value,
+                    },
+                    "max_duration_seconds": original.max_duration_seconds,
+                    "quality": original.quality,
+                    "container": original.container,
+                }
             ),
             idempotency_key=idempotency_key,
         )

@@ -53,10 +53,10 @@ class MetricsRegistry:
                     "# TYPE savestream_http_request_duration_seconds_sum counter",
                 ]
             )
-            for (method, route), value in sorted(self._duration_sum.items()):
+            for (method, route), duration_value in sorted(self._duration_sum.items()):
                 lines.append(
                     'savestream_http_request_duration_seconds_sum{method="%s",route="%s"} %.9f'
-                    % (_escape(method), _escape(route), value)
+                    % (_escape(method), _escape(route), duration_value)
                 )
             lines.extend(
                 [
@@ -64,10 +64,10 @@ class MetricsRegistry:
                     "# TYPE savestream_http_request_duration_seconds_count counter",
                 ]
             )
-            for (method, route), value in sorted(self._duration_count.items()):
+            for (method, route), count_value in sorted(self._duration_count.items()):
                 lines.append(
                     'savestream_http_request_duration_seconds_count{method="%s",route="%s"} %s'
-                    % (_escape(method), _escape(route), value)
+                    % (_escape(method), _escape(route), count_value)
                 )
 
         gauges = {
