@@ -183,6 +183,28 @@ class AppSettings:
             "FRONTEND_BASE_URL", "http://localhost:5173"
         ).rstrip("/")
         if environment_raw == "production":
+            if payment_provider == "fake":
+                raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
+            if not payment_provider_base_url:
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must be configured in production"
+                )
+            if not payment_provider_base_url.startswith("https://"):
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must use https in production"
+                )
+            if not payment_provider_api_key:
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
+                )
+            if payment_webhook_secret == "savestream-fake-payment-secret":
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                )
+            if metrics_token == "savestream-local-metrics":
+                raise ValueError(
+                    "SAVESTREAM_METRICS_TOKEN must be configured in production"
+                )
             if len(jwt_secret) < 32:
                 raise ValueError("SAVESTREAM_JWT_SECRET must be at least 32 characters")
             if jwt_secret in jwt_previous_secrets:
@@ -212,28 +234,6 @@ class AppSettings:
                     raise ValueError(
                         "Production CORS origins must use https and cannot target localhost"
                     )
-            if payment_provider == "fake":
-                raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
-            if not payment_provider_base_url:
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must be configured in production"
-                )
-            if not payment_provider_base_url.startswith("https://"):
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must use https in production"
-                )
-            if not payment_provider_api_key:
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
-                )
-            if payment_webhook_secret == "savestream-fake-payment-secret":
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
-                )
-            if metrics_token == "savestream-local-metrics":
-                raise ValueError(
-                    "SAVESTREAM_METRICS_TOKEN must be configured in production"
-                )
 
         return cls(
             environment=cast(Environment, environment_raw),
