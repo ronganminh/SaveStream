@@ -28,3 +28,8 @@ __all__ = [
 from .recording_models import Recording, RecordingArtifact, RecordingEvent
 
 __all__ += ["Recording", "RecordingArtifact", "RecordingEvent"]
+
+
+from .watch_models import Watch
+
+__all__ += ["Watch"]

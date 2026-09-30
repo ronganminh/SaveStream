@@ -78,6 +78,16 @@ class AppSettings:
     artifact_presign_seconds: int = 900
     sse_poll_seconds: float = 1.0
     idempotency_ttl_seconds: int = 86_400
+    watch_scheduler_tick_seconds: int = 15
+    watch_scheduler_batch_size: int = 50
+    watch_scheduler_lease_seconds: int = 90
+    watch_offline_check_seconds: int = 60
+    watch_live_check_seconds: int = 20
+    watch_error_backoff_base_seconds: int = 30
+    watch_error_backoff_max_seconds: int = 900
+    watch_error_pause_threshold: int = 5
+    watch_jitter_ratio: float = 0.2
+    watch_max_concurrent_recordings_per_user: int = 2
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -138,6 +148,22 @@ class AppSettings:
             artifact_presign_seconds=_int_env("ARTIFACT_PRESIGN_SECONDS", 900),
             sse_poll_seconds=_float_env("SSE_POLL_SECONDS", 1.0),
             idempotency_ttl_seconds=_int_env("IDEMPOTENCY_TTL_SECONDS", 86_400),
+            watch_scheduler_tick_seconds=_int_env("WATCH_SCHEDULER_TICK_SECONDS", 15),
+            watch_scheduler_batch_size=_int_env("WATCH_SCHEDULER_BATCH_SIZE", 50),
+            watch_scheduler_lease_seconds=_int_env("WATCH_SCHEDULER_LEASE_SECONDS", 90),
+            watch_offline_check_seconds=_int_env("WATCH_OFFLINE_CHECK_SECONDS", 60),
+            watch_live_check_seconds=_int_env("WATCH_LIVE_CHECK_SECONDS", 20),
+            watch_error_backoff_base_seconds=_int_env(
+                "WATCH_ERROR_BACKOFF_BASE_SECONDS", 30
+            ),
+            watch_error_backoff_max_seconds=_int_env(
+                "WATCH_ERROR_BACKOFF_MAX_SECONDS", 900
+            ),
+            watch_error_pause_threshold=_int_env("WATCH_ERROR_PAUSE_THRESHOLD", 5),
+            watch_jitter_ratio=_float_env("WATCH_JITTER_RATIO", 0.2),
+            watch_max_concurrent_recordings_per_user=_int_env(
+                "WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER", 2
+            ),
         )
 
 

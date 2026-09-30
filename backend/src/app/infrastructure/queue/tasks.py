@@ -14,6 +14,23 @@ def health_ping() -> str:
     return "pong"
 
 
+@celery_app.task(name="savestream.watch.check")
+def watch_check(watch_id: str, lease_id: str) -> None:
+    from app.infrastructure.watches.worker import run_watch_check
+
+    run_watch_check(watch_id, lease_id)
+
+
+@celery_app.task(name="savestream.watch.scheduler_tick")
+def watch_scheduler_tick() -> int:
+    from app.infrastructure.watches.worker import run_watch_scheduler_tick
+
+    claims = run_watch_scheduler_tick()
+    for watch_id, lease_id in claims:
+        watch_check.delay(watch_id, lease_id)
+    return len(claims)
+
+
 @celery_app.task(name="savestream.recording.run")
 def recording_run(recording_id: str) -> None:
     from app.infrastructure.recording.worker import run_recording_job

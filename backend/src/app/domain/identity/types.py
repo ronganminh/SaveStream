@@ -10,6 +10,8 @@ _USER_SCOPES = {
     "sessions:write",
     "recordings:read",
     "recordings:write",
+    "watches:read",
+    "watches:write",
 }
 
 _ROLE_SCOPES: dict[str, frozenset[str]] = {
