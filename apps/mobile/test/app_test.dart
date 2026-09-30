@@ -301,9 +301,7 @@ void main() {
     expect(find.text('Ada Live'), findsOneWidget);
     expect(find.text('Nora Shop'), findsOneWidget);
     expect(
-      find.text(
-        'Monitoring paused because available credit is insufficient.',
-      ),
+      find.text('Monitoring paused because available credit is insufficient.'),
       findsOneWidget,
     );
     expect(
