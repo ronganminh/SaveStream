@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 6 includes:
+Phase 7 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -14,7 +14,7 @@ Phase 6 includes:
 - preserved navigation stacks with `StatefulShellRoute.indexedStack`;
 - global Flutter/router error handling and app lifecycle observer hooks;
 - Riverpod repository providers;
-- repository interfaces for Watches and Recordings;
+- repository interfaces for Watches, Recordings, Credits, and Billing;
 - mock scenarios: success, loading, empty, error, and offline-like;
 - seed mock Watches and Recordings using backend-aligned statuses;
 - full Channels / Watches list with LIVE/offline, Watch status, auto-record, last checked/live metadata;
@@ -29,6 +29,12 @@ Phase 6 includes:
 - Stop / Retry / Delete actions driven by backend-aligned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete` flags;
 - mutable mock recording actions for stop, retry, and delete, with Home and Channel recording history refresh signals;
 - artifact Play / Download UI gated by artifact readiness and reserved for real backend integration in Phase 12;
+- Credits / Usage screen with backend-aligned posted, reserved, and available balances;
+- low-credit explanation, recording usage totals, recent credit transactions, empty/loading/error states, and pull-to-refresh;
+- Billing screen with credit packages, recommended package treatment, recent payment orders, and buy CTA;
+- payment order status coverage for pending, paid, failed, cancelled, and expired;
+- mock checkout flow that creates pending orders and only transitions to paid after a repository status refetch, matching the backend-confirmation rule;
+- Settings entries for Credits and Billing plus direct Home low-credit navigation;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
 - aggregated Home Dashboard via `HomeDashboardViewModel` / `homeDashboardProvider`;
 - responsive Home metrics for available credit, active recordings, and monitored channels;
@@ -37,7 +43,7 @@ Phase 6 includes:
 - Home skeleton, empty-account, retryable error, and pull-to-refresh states;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Auth, onboarding, Home, Channels/Watch management, and Recordings are now functional with mock repositories. Billing and Settings feature depth remains phase-scoped.
+Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, and Billing are now functional with mock repositories. Settings profile/preferences depth remains phase-scoped.
 
 ## Requirements
 
