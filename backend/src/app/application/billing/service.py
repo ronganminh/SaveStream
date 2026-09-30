@@ -791,10 +791,10 @@ class BillingReconciliationService:
         for order in orders:
             if not order.provider_reference:
                 continue
-            state = await self.provider.retrieve_payment(
+            payment_state = await self.provider.retrieve_payment(
                 order.provider_reference
             )
-            if state is None:
+            if payment_state is None:
                 continue
             event_type = {
                 "paid": "payment.paid",
@@ -802,22 +802,22 @@ class BillingReconciliationService:
                 "cancelled": "payment.cancelled",
                 "expired": "payment.expired",
                 "pending": "payment.pending",
-            }.get(state.status)
+            }.get(payment_state.status)
             if event_type and event_type != "payment.pending":
                 accepted = await self.processor.ingest(
                     ProviderEvent(
-                        event_id=f"reconcile:{state.event_id}",
+                        event_id=f"reconcile:{payment_state.event_id}",
                         event_type=event_type,
-                        provider_reference=state.provider_reference,
-                        amount_minor=state.amount_minor,
-                        currency=state.currency,
+                        provider_reference=payment_state.provider_reference,
+                        amount_minor=payment_state.amount_minor,
+                        currency=payment_state.currency,
                     ),
                     raw_payload={
-                        "id": f"reconcile:{state.event_id}",
+                        "id": f"reconcile:{payment_state.event_id}",
                         "type": event_type,
-                        "payment_reference": state.provider_reference,
-                        "amount_minor": state.amount_minor,
-                        "currency": state.currency,
+                        "payment_reference": payment_state.provider_reference,
+                        "amount_minor": payment_state.amount_minor,
+                        "currency": payment_state.currency,
                     },
                     signature_verified=False,
                 )
@@ -852,18 +852,18 @@ class BillingReconciliationService:
             )
             accepted = await self.processor.ingest(
                 ProviderEvent(
-                    event_id=f"reconcile:{state.event_id}",
+                    event_id=f"reconcile:{refund_state.event_id}",
                     event_type=event_type,
-                    provider_reference=state.provider_reference,
-                    amount_minor=state.amount_minor,
+                    provider_reference=refund_state.provider_reference,
+                    amount_minor=refund_state.amount_minor,
                     refund_reference=state.refund_reference,
                 ),
                 raw_payload={
-                    "id": f"reconcile:{state.event_id}",
+                    "id": f"reconcile:{refund_state.event_id}",
                     "type": event_type,
-                    "payment_reference": state.provider_reference,
+                    "payment_reference": refund_state.provider_reference,
                     "refund_reference": state.refund_reference,
-                    "amount_minor": state.amount_minor,
+                    "amount_minor": refund_state.amount_minor,
                 },
                 signature_verified=False,
             )
