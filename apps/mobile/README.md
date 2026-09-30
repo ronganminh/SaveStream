@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 3 includes:
+Phase 4 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -19,9 +19,14 @@ Phase 3 includes:
 - seed mock Watches and Recordings using backend-aligned statuses;
 - mock list/detail routes for Channels and Recordings;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
+- aggregated Home Dashboard via `HomeDashboardViewModel` / `homeDashboardProvider`;
+- responsive Home metrics for available credit, active recordings, and monitored channels;
+- usage summary, Add Channel CTA, low-credit and failed-recording alerts;
+- active recording, monitored channel, and recent recording cards linked to detail routes;
+- Home skeleton, empty-account, retryable error, and pull-to-refresh states;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Home, Channels, Recordings, Billing, and Settings feature depth remains phase-scoped; auth and onboarding are now functional with mock repositories.
+Auth, onboarding, and Home are now functional with mock repositories. Channels, Recordings, Billing, and Settings feature depth remains phase-scoped.
 
 ## Requirements
 
@@ -52,7 +57,7 @@ flutter run \
   --dart-define=API_BASE_URL=https://api-staging.example.com
 ```
 
-## Phase 2 architecture
+## Current architecture
 
 ```text
 Screen
