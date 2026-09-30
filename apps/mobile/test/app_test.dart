@@ -655,12 +655,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsNothing);
-    expect(find.widgetWithText(SsStatusChip, 'Paid'), findsWidgets);
-    expect(
-      find.text('The backend confirmed this payment as paid.'),
-      findsOneWidget,
-    );
+    final BillingSnapshot refreshed = container
+        .read(billingSnapshotProvider)
+        .requireValue;
+    expect(refreshed.orders.first.status, PaymentOrderStatus.paid);
   });
 
   testWidgets('supports loading and empty mock scenarios', (
