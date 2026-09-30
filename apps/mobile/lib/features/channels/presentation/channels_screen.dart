@@ -154,9 +154,8 @@ class _ChannelCard extends StatelessWidget {
                         const SizedBox(height: SsSpacing.xs),
                         Text(
                           watch.creatorUsername,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colors.onSurfaceVariant),
                         ),
                       ],
                     ),
