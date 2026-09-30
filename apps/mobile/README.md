@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 4 includes:
+Phase 5 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -17,7 +17,12 @@ Phase 4 includes:
 - repository interfaces for Watches and Recordings;
 - mock scenarios: success, loading, empty, error, and offline-like;
 - seed mock Watches and Recordings using backend-aligned statuses;
-- mock list/detail routes for Channels and Recordings;
+- full Channels / Watches list with LIVE/offline, Watch status, auto-record, last checked/live metadata;
+- Add Channel / Watch flow with TikTok username/profile URL input, auto-record setting, and authorization confirmation;
+- Channel Detail with monitoring status, auto-record toggle, pause/resume, delete, latest recording, and recording history;
+- mock Watch mutations for create, pause, resume, toggle auto-record, and delete;
+- Watch status coverage for active, paused, paused_insufficient_credit, paused_error, and disabled;
+- mock list/detail routes for Recordings;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
 - aggregated Home Dashboard via `HomeDashboardViewModel` / `homeDashboardProvider`;
 - responsive Home metrics for available credit, active recordings, and monitored channels;
@@ -26,7 +31,7 @@ Phase 4 includes:
 - Home skeleton, empty-account, retryable error, and pull-to-refresh states;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Auth, onboarding, and Home are now functional with mock repositories. Channels, Recordings, Billing, and Settings feature depth remains phase-scoped.
+Auth, onboarding, Home, and Channels/Watch management are now functional with mock repositories. Recordings, Billing, and Settings feature depth remains phase-scoped.
 
 ## Requirements
 
