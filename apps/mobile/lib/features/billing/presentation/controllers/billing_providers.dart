@@ -11,9 +11,7 @@ final Provider<BillingRepository> billingRepositoryProvider =
     );
 
 final NotifierProvider<BillingRevisionNotifier, int> billingRevisionProvider =
-    NotifierProvider<BillingRevisionNotifier, int>(
-      BillingRevisionNotifier.new,
-    );
+    NotifierProvider<BillingRevisionNotifier, int>(BillingRevisionNotifier.new);
 
 class BillingRevisionNotifier extends Notifier<int> {
   @override
@@ -34,8 +32,7 @@ final Provider<BillingController> billingControllerProvider =
     Provider<BillingController>((ref) {
       return BillingController(
         repository: ref.watch(billingRepositoryProvider),
-        onChanged: () =>
-            ref.read(billingRevisionProvider.notifier).bump(),
+        onChanged: () => ref.read(billingRevisionProvider.notifier).bump(),
       );
     });
 
