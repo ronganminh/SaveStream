@@ -13,7 +13,6 @@ from redis import Redis as SyncRedis
 from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
-from adapters.tiktok_gateway import TikTokLiveGateway
 from app.api.schemas.recordings import Source
 from app.application.credits.service import CreditService
 from app.application.recordings.service import (
@@ -34,11 +33,10 @@ from app.infrastructure.db.recording_models import (
 from app.infrastructure.db.session import Database
 from app.infrastructure.recording.runtime import (
     AtomicFFmpegMediaProcessor,
-    TikTokSourceResolver,
+    build_recording_runtime,
 )
 from app.infrastructure.storage.minio import MinioStorageClient
 from app.settings import AppSettings, get_app_settings
-from core.tiktok_api import TikTokAPI
 from engine import EngineEvent, RecordingEngine, RecordingRequest, StopReason
 
 _CANCEL_PREFIX = "savestream:recording:stop:"
@@ -68,14 +66,18 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 return
             recording, lease_id = claimed
 
-            source = Source.model_validate({"type": recording.source_type, "value": recording.source_value})
-            api = TikTokAPI(proxy=None, cookies={})
-            resolver = TikTokSourceResolver(api)
+            source = Source.model_validate(
+                {"type": recording.source_type, "value": recording.source_value}
+            )
+            runtime = build_recording_runtime(settings)
             try:
-                resolved = await asyncio.to_thread(resolver.resolve, source)
+                resolved = await asyncio.to_thread(runtime.resolver.resolve, source)
                 recording.resolved_username = resolved.username
                 recording.room_id = resolved.room_id
-                alive = await asyncio.to_thread(api.is_room_alive, resolved.room_id)
+                alive = await asyncio.to_thread(
+                    runtime.gateway.is_room_alive,
+                    resolved.room_id,
+                )
                 if not alive:
                     recording.status = transition(
                         RecordingStatus(recording.status),
@@ -141,7 +143,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
 
             heartbeat_task = asyncio.create_task(heartbeat_loop())
             engine = RecordingEngine(
-                TikTokLiveGateway(api),
+                runtime.gateway,
                 AtomicFFmpegMediaProcessor(),
             )
             try:
