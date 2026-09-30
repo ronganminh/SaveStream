@@ -51,8 +51,8 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
     });
 
     final String rawSource = _sourceController.text.trim();
-    final WatchSourceType sourceType = rawSource.startsWith('http://') ||
-            rawSource.startsWith('https://')
+    final WatchSourceType sourceType =
+        rawSource.startsWith('http://') || rawSource.startsWith('https://')
         ? WatchSourceType.url
         : WatchSourceType.username;
 
