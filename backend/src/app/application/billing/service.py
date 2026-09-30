@@ -840,14 +840,14 @@ class BillingReconciliationService:
         for refund in refunds:
             if not refund.provider_refund_reference:
                 continue
-            state = await self.provider.retrieve_refund(
+            refund_state = await self.provider.retrieve_refund(
                 refund.provider_refund_reference
             )
-            if state is None or state.status == "pending":
+            if refund_state is None or refund_state.status == "pending":
                 continue
             event_type = (
                 "refund.succeeded"
-                if state.status == "succeeded"
+                if refund_state.status == "succeeded"
                 else "refund.failed"
             )
             accepted = await self.processor.ingest(
@@ -856,13 +856,13 @@ class BillingReconciliationService:
                     event_type=event_type,
                     provider_reference=refund_state.provider_reference,
                     amount_minor=refund_state.amount_minor,
-                    refund_reference=state.refund_reference,
+                    refund_reference=refund_state.refund_reference,
                 ),
                 raw_payload={
                     "id": f"reconcile:{refund_state.event_id}",
                     "type": event_type,
                     "payment_reference": refund_state.provider_reference,
-                    "refund_reference": state.refund_reference,
+                    "refund_reference": refund_state.refund_reference,
                     "amount_minor": refund_state.amount_minor,
                 },
                 signature_verified=False,
