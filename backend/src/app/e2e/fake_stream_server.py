@@ -12,7 +12,7 @@ app = FastAPI(title="SaveStream E2E Stream", docs_url=None, redoc_url=None)
 
 
 def ensure_media() -> None:
-    if MEDIA_PATH.exists() and MEDIA_PATH.stat().st_size > 150_000:
+    if MEDIA_PATH.exists() and MEDIA_PATH.stat().st_size > 700_000:
         return
     MEDIA_PATH.unlink(missing_ok=True)
     subprocess.run(
@@ -31,6 +31,8 @@ def ensure_media() -> None:
             "libx264",
             "-preset",
             "ultrafast",
+            "-b:v",
+            "1M",
             "-pix_fmt",
             "yuv420p",
             "-f",
@@ -39,7 +41,7 @@ def ensure_media() -> None:
         ],
         check=True,
     )
-    if MEDIA_PATH.stat().st_size <= 100_000:
+    if MEDIA_PATH.stat().st_size <= 700_000:
         raise RuntimeError("E2E stream fixture is too small")
 
 
@@ -66,7 +68,7 @@ async def stream(room_id: str = "e2e-room") -> StreamingResponse:
         with MEDIA_PATH.open("rb") as source:
             while chunk := source.read(8192):
                 yield chunk
-                await asyncio.sleep(0.12)
+                await asyncio.sleep(0.04)
 
     return StreamingResponse(body(), media_type="video/x-flv")
 
