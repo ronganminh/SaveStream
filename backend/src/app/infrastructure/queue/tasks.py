@@ -38,6 +38,13 @@ def credit_reconcile() -> int:
     return run_reconciliation()
 
 
+@celery_app.task(name="savestream.billing.reconcile")
+def billing_reconcile() -> int:
+    from app.infrastructure.billing.reconcile import run_payment_reconciliation
+
+    return run_payment_reconciliation()
+
+
 @celery_app.task(name="savestream.recording.run")
 def recording_run(recording_id: str) -> None:
     from app.infrastructure.recording.worker import run_recording_job

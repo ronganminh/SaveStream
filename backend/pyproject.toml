@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "savestream-backend"
-version = "0.6.0"
+version = "0.7.0"
 description = "SaveStream modular-monolith backend and reusable recording engine."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
@@ -34,6 +34,7 @@ dependencies = [
 savestream-recorder = "main:cli"
 savestream-outbox = "app.infrastructure.queue.outbox:main"
 savestream-credit-admin = "app.infrastructure.credits.admin:main"
+savestream-billing-admin = "app.infrastructure.billing.admin:main"
 
 [project.optional-dependencies]
 dev = ["mypy==1.18.2", "pytest==9.0.2", "ruff==0.9.10"]

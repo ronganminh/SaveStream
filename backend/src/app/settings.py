@@ -88,6 +88,12 @@ class AppSettings:
     watch_error_pause_threshold: int = 5
     watch_jitter_ratio: float = 0.2
     watch_max_concurrent_recordings_per_user: int = 2
+    payment_provider: str = "fake"
+    payment_provider_base_url: str = ""
+    payment_provider_api_key: str = field(default="", repr=False)
+    payment_webhook_secret: str = field(default="savestream-fake-payment-secret", repr=False)
+    payment_timeout_seconds: float = 15.0
+    payment_reconcile_seconds: int = 300
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -106,6 +112,28 @@ class AppSettings:
         jwt_secret = _env("JWT_SECRET", "savestream-dev-only-change-me")
         if environment_raw == "production" and jwt_secret == "savestream-dev-only-change-me":
             raise ValueError("SAVESTREAM_JWT_SECRET must be configured in production")
+        payment_provider = _env("PAYMENT_PROVIDER", "fake").lower()
+        payment_provider_base_url = _env("PAYMENT_PROVIDER_BASE_URL", "").rstrip("/")
+        payment_provider_api_key = _env("PAYMENT_PROVIDER_API_KEY", "")
+        payment_webhook_secret = _env(
+            "PAYMENT_WEBHOOK_SECRET",
+            "savestream-fake-payment-secret",
+        )
+        if environment_raw == "production":
+            if payment_provider == "fake":
+                raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
+            if not payment_provider_base_url:
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must be configured in production"
+                )
+            if not payment_provider_api_key:
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
+                )
+            if payment_webhook_secret == "savestream-fake-payment-secret":
+                raise ValueError(
+                    "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                )
 
         return cls(
             environment=cast(Environment, environment_raw),
@@ -164,6 +192,12 @@ class AppSettings:
             watch_max_concurrent_recordings_per_user=_int_env(
                 "WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER", 2
             ),
+            payment_provider=payment_provider,
+            payment_provider_base_url=payment_provider_base_url,
+            payment_provider_api_key=payment_provider_api_key,
+            payment_webhook_secret=payment_webhook_secret,
+            payment_timeout_seconds=_float_env("PAYMENT_TIMEOUT_SECONDS", 15.0),
+            payment_reconcile_seconds=_int_env("PAYMENT_RECONCILE_SECONDS", 300),
         )
 
 

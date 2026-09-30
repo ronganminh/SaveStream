@@ -9,6 +9,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.infrastructure.db.models import Base
+from app.infrastructure.db import billing_models as _billing_models
 from app.infrastructure.db import credit_models as _credit_models
 from app.infrastructure.db import recording_models as _recording_models
 from app.infrastructure.db import watch_models as _watch_models
