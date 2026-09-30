@@ -4,6 +4,7 @@ import hashlib
 import hmac
 import json
 import os
+import quopri
 import re
 import time
 import uuid
@@ -44,14 +45,20 @@ def verification_token(
         response = client.get(f"{mailhog}/api/v2/messages")
         response.raise_for_status()
         for item in response.json().get("items", []):
-            raw = json.dumps(item)
-            if email not in raw:
+            raw_json = json.dumps(item)
+            if email not in raw_json:
                 continue
-            match = VERIFY_RE.search(raw)
-            if match:
-                value = match.group(1)
-                value = value.replace("\\r", "").replace("\\n", "")
-                return unquote(value)
+            raw_data = str(item.get("Raw", {}).get("Data", ""))
+            content_body = str(item.get("Content", {}).get("Body", ""))
+            candidates = [raw_data, content_body, raw_json]
+            for candidate in candidates:
+                decoded = quopri.decodestring(candidate).decode(
+                    "utf-8",
+                    errors="replace",
+                )
+                match = VERIFY_RE.search(decoded)
+                if match:
+                    return unquote(match.group(1))
         time.sleep(1)
     raise RuntimeError("verification email not delivered")
 
