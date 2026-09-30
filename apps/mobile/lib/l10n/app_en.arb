@@ -187,5 +187,53 @@
         "type": "String"
       }
     }
+  },
+  "channelsSummaryTitle": "{count, plural, =1{1 monitored channel} other{{count} monitored channels}}",
+  "channelsSummaryBody": "SaveStream checks these creators for LIVE status and starts authorized recordings according to each Watch.",
+  "autoRecordOnLabel": "Auto record on",
+  "autoRecordOffLabel": "Auto record off",
+  "lastCheckedLabel": "Last checked",
+  "lastLiveLabel": "Last LIVE",
+  "neverLabel": "Never",
+  "watchReasonActive": "Monitoring is active.",
+  "watchReasonPaused": "Monitoring is paused until you resume it.",
+  "watchReasonInsufficientCredit": "Monitoring paused because available credit is insufficient.",
+  "watchReasonError": "Monitoring paused after a Watch error. Review and resume when ready.",
+  "watchReasonDisabled": "This Watch is disabled.",
+  "addChannelTitle": "Add channel",
+  "addChannelHeading": "Monitor a TikTok creator",
+  "addChannelBody": "Enter a TikTok username or profile URL. SaveStream will resolve the creator when the backend Watch API is connected.",
+  "channelSourceLabel": "TikTok username or profile URL",
+  "channelSourceHint": "@creator or https://www.tiktok.com/@creator",
+  "channelSourceRequired": "Enter a TikTok username or profile URL.",
+  "channelSourceInvalid": "Enter a valid username or profile URL without spaces.",
+  "autoRecordTitle": "Automatically record LIVE",
+  "autoRecordDescription": "When this Watch detects a LIVE session, SaveStream can start a recording automatically.",
+  "channelPermissionConfirmation": "I confirm I own, manage, have permission to record, or am otherwise legally permitted to save this stream.",
+  "channelPermissionRequired": "Confirm that you are authorized to record this stream before continuing.",
+  "addAndMonitorAction": "Add & start monitoring",
+  "monitoringSettingsTitle": "Monitoring settings",
+  "pauseMonitoringAction": "Pause monitoring",
+  "resumeMonitoringAction": "Resume monitoring",
+  "deleteChannelTitle": "Delete channel Watch?",
+  "deleteChannelMessage": "Remove {name} from monitoring? Existing recordings are not deleted.",
+  "deleteChannelAction": "Delete Watch",
+  "channelNoRecordingsTitle": "No recordings yet",
+  "channelNoRecordingsBody": "Recordings for this channel will appear here when they are created.",
+  "latestRecordingTitle": "Latest recording",
+  "recordingHistoryTitle": "Recording history",
+  "@channelsSummaryTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@deleteChannelMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }
