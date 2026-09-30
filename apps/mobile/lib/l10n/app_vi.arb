@@ -301,5 +301,54 @@
         "type": "int"
       }
     }
+  },
+  "settingsCreditsSubtitle": "Số dư, mức sử dụng và giao dịch",
+  "settingsBillingSubtitle": "Mua credit và xem trạng thái thanh toán",
+  "creditsLowBalanceTitle": "Credit khả dụng đang thấp",
+  "creditsLowBalanceBody": "Một phần credit đang được giữ cho công việc đang chạy. Hãy nạp thêm để giảm nguy cơ Watch hoặc recording bị tạm dừng.",
+  "buyCreditsAction": "Mua credit",
+  "creditsRecentTransactionsTitle": "Giao dịch gần đây",
+  "creditsNoTransactionsTitle": "Chưa có giao dịch",
+  "creditsNoTransactionsBody": "Các lần mua credit và chi phí recording sẽ xuất hiện tại đây.",
+  "creditsAvailableBalanceLabel": "Khả dụng",
+  "creditsPostedBalanceLabel": "Đã ghi sổ",
+  "creditsReservedBalanceLabel": "Đang giữ",
+  "creditsReservedExplanation": "Credit đang giữ được tạm khóa cho recording đang xử lý. Credit khả dụng là số bạn có thể sử dụng ngay.",
+  "creditsUsageTitle": "Mức sử dụng recording",
+  "creditsRecordingHoursLabel": "Giờ recording",
+  "creditsRecordingCountLabel": "Số recording",
+  "creditsRecordingCostLabel": "Credit đã dùng",
+  "creditsRecordingChargeLabel": "Chi phí recording",
+  "creditsAddedLabel": "Đã cộng credit",
+  "creditsTransactionLabel": "Giao dịch credit",
+  "billingChoosePackageTitle": "Nạp credit",
+  "billingChoosePackageBody": "Chọn gói credit. Thanh toán chỉ được xem là hoàn tất sau khi backend xác nhận trạng thái order.",
+  "billingNoPackagesTitle": "Không có gói credit",
+  "billingNoPackagesBody": "Hiện chưa tải được gói credit. Kéo để làm mới hoặc thử lại sau.",
+  "billingRecentOrdersTitle": "Order thanh toán gần đây",
+  "billingNoOrdersTitle": "Chưa có order thanh toán",
+  "billingNoOrdersBody": "Các lần mua credit của bạn sẽ xuất hiện tại đây.",
+  "billingPackageCredits": "{credits} credit",
+  "billingRecommendedLabel": "Đề xuất",
+  "billingPackageDetailBody": "Credit chỉ được cộng sau khi SaveStream nhận xác nhận thanh toán từ backend.",
+  "billingBuyAction": "Mua gói",
+  "billingCheckoutStatusTitle": "Order thanh toán",
+  "billingCheckStatusAction": "Kiểm tra trạng thái",
+  "paymentStatusPending": "Đang chờ",
+  "paymentStatusPaid": "Đã thanh toán",
+  "paymentStatusFailed": "Thất bại",
+  "paymentStatusCancelled": "Đã hủy",
+  "paymentStatusExpired": "Đã hết hạn",
+  "paymentPendingBody": "Thanh toán vẫn đang chờ. Việc quay lại từ checkout không tự đánh dấu đã thanh toán; SaveStream chờ backend xác nhận.",
+  "paymentPaidBody": "Backend đã xác nhận thanh toán thành công.",
+  "paymentFailedBody": "Thanh toán thất bại. Credit không được cộng.",
+  "paymentCancelledBody": "Order thanh toán này đã bị hủy.",
+  "paymentExpiredBody": "Order này đã hết hạn trước khi thanh toán được xác nhận.",
+  "@billingPackageCredits": {
+    "placeholders": {
+      "credits": {
+        "type": "String"
+      }
+    }
   }
 }
