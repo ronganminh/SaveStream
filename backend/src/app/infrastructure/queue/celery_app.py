@@ -22,6 +22,12 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
         task_acks_late=True,
         worker_prefetch_multiplier=1,
         broker_connection_retry_on_startup=True,
+        beat_schedule={
+            "recover-stale-recordings": {
+                "task": "savestream.recording.recover_stale",
+                "schedule": 60.0,
+            }
+        },
     )
     return app
 
