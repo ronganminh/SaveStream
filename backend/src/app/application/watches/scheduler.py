@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import random
 import uuid
-from collections.abc import Callable, Protocol
+from collections.abc import Callable
+from typing import Protocol
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
