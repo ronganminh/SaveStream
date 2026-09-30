@@ -4,8 +4,7 @@ import '../../domain/repositories/watch_repository.dart';
 
 final class MockWatchRepository extends MockRepositoryBase
     implements WatchRepository {
-  MockWatchRepository(super.behavior)
-    : _items = List<WatchSummary>.of(_seed);
+  MockWatchRepository(super.behavior) : _items = List<WatchSummary>.of(_seed);
 
   static final List<WatchSummary> _seed = <WatchSummary>[
     WatchSummary(
@@ -82,10 +81,7 @@ final class MockWatchRepository extends MockRepositoryBase
 
   @override
   Future<WatchSummary?> getWatch(String id) {
-    return respond<WatchSummary?>(
-      success: () => _find(id),
-      empty: () => null,
-    );
+    return respond<WatchSummary?>(success: () => _find(id), empty: () => null);
   }
 
   @override
@@ -97,10 +93,7 @@ final class MockWatchRepository extends MockRepositoryBase
   }
 
   @override
-  Future<WatchSummary?> setAutoRecord(
-    String id, {
-    required bool enabled,
-  }) {
+  Future<WatchSummary?> setAutoRecord(String id, {required bool enabled}) {
     return respond<WatchSummary?>(
       success: () => _update(
         id,
@@ -115,10 +108,8 @@ final class MockWatchRepository extends MockRepositoryBase
     return respond<WatchSummary?>(
       success: () => _update(
         id,
-        (WatchSummary current) => current.copyWith(
-          status: WatchStatus.paused,
-          isLive: false,
-        ),
+        (WatchSummary current) =>
+            current.copyWith(status: WatchStatus.paused, isLive: false),
       ),
       empty: () => null,
     );
