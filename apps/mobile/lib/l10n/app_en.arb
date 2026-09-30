@@ -301,5 +301,54 @@
         "type": "int"
       }
     }
+  },
+  "settingsCreditsSubtitle": "Balance, usage, and transactions",
+  "settingsBillingSubtitle": "Buy credits and review payment orders",
+  "creditsLowBalanceTitle": "Available credit is low",
+  "creditsLowBalanceBody": "Some credit is reserved for active work. Add more credit to reduce the risk of monitoring or recording pauses.",
+  "buyCreditsAction": "Buy credits",
+  "creditsRecentTransactionsTitle": "Recent transactions",
+  "creditsNoTransactionsTitle": "No transactions yet",
+  "creditsNoTransactionsBody": "Credit purchases and recording charges will appear here.",
+  "creditsAvailableBalanceLabel": "Available",
+  "creditsPostedBalanceLabel": "Posted",
+  "creditsReservedBalanceLabel": "Reserved",
+  "creditsReservedExplanation": "Reserved credit is temporarily held for in-progress recording work. Available credit is the amount you can use now.",
+  "creditsUsageTitle": "Recording usage",
+  "creditsRecordingHoursLabel": "Recording hours",
+  "creditsRecordingCountLabel": "Recordings",
+  "creditsRecordingCostLabel": "Credits spent",
+  "creditsRecordingChargeLabel": "Recording charge",
+  "creditsAddedLabel": "Credit added",
+  "creditsTransactionLabel": "Credit transaction",
+  "billingChoosePackageTitle": "Add credit",
+  "billingChoosePackageBody": "Choose a credit package. Payment is only considered complete after the backend confirms the order status.",
+  "billingNoPackagesTitle": "No packages available",
+  "billingNoPackagesBody": "Credit packages are unavailable right now. Pull to refresh or try again later.",
+  "billingRecentOrdersTitle": "Recent payment orders",
+  "billingNoOrdersTitle": "No payment orders yet",
+  "billingNoOrdersBody": "Your credit purchase attempts will appear here.",
+  "billingPackageCredits": "{credits} credits",
+  "billingRecommendedLabel": "Recommended",
+  "billingPackageDetailBody": "Credits are added only after SaveStream receives backend payment confirmation.",
+  "billingBuyAction": "Buy package",
+  "billingCheckoutStatusTitle": "Payment order",
+  "billingCheckStatusAction": "Check payment status",
+  "paymentStatusPending": "Pending",
+  "paymentStatusPaid": "Paid",
+  "paymentStatusFailed": "Failed",
+  "paymentStatusCancelled": "Cancelled",
+  "paymentStatusExpired": "Expired",
+  "paymentPendingBody": "Payment is still pending. Returning from checkout does not mark it paid; SaveStream waits for backend confirmation.",
+  "paymentPaidBody": "The backend confirmed this payment as paid.",
+  "paymentFailedBody": "The payment failed. No credit is added.",
+  "paymentCancelledBody": "This payment order was cancelled.",
+  "paymentExpiredBody": "This payment order expired before payment was confirmed.",
+  "@billingPackageCredits": {
+    "placeholders": {
+      "credits": {
+        "type": "String"
+      }
+    }
   }
 }
