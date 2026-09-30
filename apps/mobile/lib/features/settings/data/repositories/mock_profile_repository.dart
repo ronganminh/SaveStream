@@ -14,10 +14,8 @@ final class MockProfileRepository extends MockRepositoryBase
         emailVerified: true,
         displayName: 'Alex Nguyen',
       ),
-      empty: () => const UserProfile(
-        email: 'alex@example.com',
-        emailVerified: false,
-      ),
+      empty: () =>
+          const UserProfile(email: 'alex@example.com', emailVerified: false),
     );
   }
 }
