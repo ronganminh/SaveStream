@@ -138,6 +138,8 @@ class AppSettings:
     recording_retention_days: int = 0
     account_deletion_grace_days: int = 0
     retention_check_seconds: int = 3600
+    recording_source_backend: str = "tiktok"
+    e2e_stream_base_url: str = ""
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -182,7 +184,21 @@ class AppSettings:
         frontend_base_url = _env(
             "FRONTEND_BASE_URL", "http://localhost:5173"
         ).rstrip("/")
+        recording_source_backend = _env("RECORDING_SOURCE_BACKEND", "tiktok").lower()
+        e2e_stream_base_url = _env("E2E_STREAM_BASE_URL", "").rstrip("/")
+        if recording_source_backend not in {"tiktok", "fake_http"}:
+            raise ValueError(
+                "SAVESTREAM_RECORDING_SOURCE_BACKEND must be one of tiktok, fake_http"
+            )
+        if recording_source_backend == "fake_http" and not e2e_stream_base_url:
+            raise ValueError(
+                "SAVESTREAM_E2E_STREAM_BASE_URL is required for fake_http recording backend"
+            )
         if environment_raw == "production":
+            if recording_source_backend != "tiktok":
+                raise ValueError(
+                    "SAVESTREAM_RECORDING_SOURCE_BACKEND must be tiktok in production"
+                )
             if payment_provider == "fake":
                 raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
             if not payment_provider_base_url:
@@ -331,6 +347,8 @@ class AppSettings:
                 "ACCOUNT_DELETION_GRACE_DAYS", 0
             ),
             retention_check_seconds=_int_env("RETENTION_CHECK_SECONDS", 3600),
+            recording_source_backend=recording_source_backend,
+            e2e_stream_base_url=e2e_stream_base_url,
         )
 
 
