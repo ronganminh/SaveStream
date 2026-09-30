@@ -24,11 +24,7 @@ class SettingsInfoScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(SsSpacing.xl),
             child: SsCard(
-              child: SsEmptyState(
-                icon: icon,
-                title: title,
-                message: message,
-              ),
+              child: SsEmptyState(icon: icon, title: title, message: message),
             ),
           ),
         ),
