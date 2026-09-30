@@ -18,8 +18,7 @@ final FutureProvider<UserProfile> profileProvider =
       return ref.watch(profileRepositoryProvider).getProfile();
     });
 
-final ProviderFamily<SettingsAccountController, AppSessionController>
-settingsAccountControllerProvider =
+final settingsAccountControllerProvider =
     Provider.family<SettingsAccountController, AppSessionController>(
       (ref, session) => SettingsAccountController(
         repository: ref.watch(authRepositoryProvider),
