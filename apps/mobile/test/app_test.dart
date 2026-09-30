@@ -289,6 +289,108 @@ void main() {
     expect(find.text('Channel detail'), findsOneWidget);
   });
 
+  testWidgets('renders all Phase 5 Watch status variants', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Channels'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Ada Live'), findsOneWidget);
+    expect(find.text('Nora Shop'), findsOneWidget);
+    expect(
+      find.text(
+        'Monitoring paused because available credit is insufficient.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Monitoring paused after a Watch error. Review and resume when ready.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Monitoring is paused until you resume it.'),
+      findsOneWidget,
+    );
+    expect(find.text('This Watch is disabled.'), findsOneWidget);
+  });
+
+  testWidgets('Add Channel requires authorization then creates a Watch', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Channels'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.byTooltip('Add channel').first);
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), '@fresh_creator');
+    final Finder addButton = find.widgetWithText(
+      FilledButton,
+      'Add & start monitoring',
+    );
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Confirm that you are authorized to record this stream before continuing.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
+    await tester.tap(addButton);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Channel detail'), findsOneWidget);
+    expect(find.text('Fresh Creator'), findsOneWidget);
+    expect(find.text('@fresh_creator'), findsOneWidget);
+  });
+
+  testWidgets('Channel detail can pause and resume monitoring', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Channels'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.text('Ada Live'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Monitoring settings'), findsOneWidget);
+    expect(find.text('Latest recording'), findsOneWidget);
+    expect(find.text('Recording history'), findsOneWidget);
+    expect(find.text('Pause monitoring'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Paused'), findsOneWidget);
+    expect(find.text('Resume monitoring'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Resume monitoring'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('Pause monitoring'), findsOneWidget);
+  });
+
   testWidgets('supports loading and empty mock scenarios', (
     WidgetTester tester,
   ) async {
