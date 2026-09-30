@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 7 includes:
+Phase 8 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -34,6 +34,14 @@ Phase 7 includes:
 - Billing screen with credit packages, recommended package treatment, recent payment orders, and buy CTA;
 - payment order status coverage for pending, paid, failed, cancelled, and expired;
 - mock checkout flow that creates pending orders and only transitions to paid after a repository status refetch, matching the backend-confirmation rule;
+- Settings sections for Profile, Credits/Billing, Preferences, Legal, Account actions, and Developer tools;
+- Profile screen backed by `ProfileRepository`, including email and verified/unverified state;
+- dedicated Language screen for English / Vietnamese and Theme screen for Light / Dark / System;
+- `AppSettingsStore` abstraction for local preferences, with production persistence via `SharedPreferencesAsync`;
+- bootstrap restores persisted theme/language before `runApp` so preferences survive app restart;
+- Notifications placeholder kept separate until a backend notification contract exists;
+- Privacy Policy and Terms of Use navigation entries are present without inventing production URLs; published links remain a release dependency;
+- Logout and Delete Account actions go through the auth/session abstraction, with destructive confirmation for account deletion;
 - Settings entries for Credits and Billing plus direct Home low-credit navigation;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
 - aggregated Home Dashboard via `HomeDashboardViewModel` / `homeDashboardProvider`;
@@ -43,7 +51,7 @@ Phase 7 includes:
 - Home skeleton, empty-account, retryable error, and pull-to-refresh states;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, and Billing are now functional with mock repositories. Settings profile/preferences depth remains phase-scoped.
+Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile are now functional with mock repositories. Phase 0–8 FULL UI MOCK milestone is complete.
 
 ## Requirements
 
@@ -89,6 +97,8 @@ MaterialApp.router
 ```
 
 The mock layer is replaceable by API repositories in later phases without moving raw HTTP into presentation code.
+
+Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are intentionally not stored here and remain part of the secure session work in Phase 10.
 
 ## Validation
 
