@@ -350,5 +350,34 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsAccountSectionTitle": "Account",
+  "settingsPreferencesSectionTitle": "Preferences",
+  "settingsLegalSectionTitle": "Legal",
+  "settingsAccountActionsSectionTitle": "Account actions",
+  "settingsDeveloperSectionTitle": "Developer",
+  "settingsProfileSubtitle": "Email and verification status",
+  "notificationsTitle": "Notifications",
+  "notificationsPlaceholderSubtitle": "Notification controls will be enabled when backend support is ready.",
+  "notificationsPlaceholderBody": "Notification preferences are a placeholder in Phase 8. They will be connected when the backend notification contract is available.",
+  "privacyPolicyTitle": "Privacy Policy",
+  "privacyPolicyPlaceholderBody": "The published SaveStream Privacy Policy link will be connected before release.",
+  "termsOfUseTitle": "Terms of Use",
+  "termsOfUsePlaceholderBody": "The published SaveStream Terms of Use link will be connected before release.",
+  "logoutAction": "Log out",
+  "logoutDescription": "Sign out of SaveStream on this device.",
+  "deleteAccountAction": "Delete account",
+  "deleteAccountDescription": "Permanently request deletion of your SaveStream account.",
+  "deleteAccountTitle": "Delete your account?",
+  "deleteAccountMessage": "This is a destructive account action. When the real API is connected, the backend will be the source of truth for deletion.",
+  "accountActionError": "SaveStream could not complete that account action. Please try again.",
+  "profileFallbackName": "SaveStream user",
+  "profileEmailVerified": "Email verified",
+  "profileEmailUnverified": "Email not verified",
+  "profileVerificationLabel": "Verification",
+  "profileVerifiedValue": "Verified",
+  "profileUnverifiedValue": "Not verified",
+  "profileManagedByBackendBody": "Profile identity fields are read from the account backend. Editing will only be enabled for fields supported by the API.",
+  "languageDescription": "Choose the language used throughout SaveStream. This preference is stored on this device.",
+  "themeDescription": "Choose Light, Dark, or follow the system appearance. This preference is stored on this device."
 }
