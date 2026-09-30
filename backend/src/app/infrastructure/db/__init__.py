@@ -33,3 +33,20 @@ __all__ += ["Recording", "RecordingArtifact", "RecordingEvent"]
 from .watch_models import Watch
 
 __all__ += ["Watch"]
+
+
+from .credit_models import (
+    CreditAccount,
+    CreditLedgerEntry,
+    CreditReservation,
+    PricingRule,
+    PricingSnapshot,
+)
+
+__all__ += [
+    "CreditAccount",
+    "CreditLedgerEntry",
+    "CreditReservation",
+    "PricingRule",
+    "PricingSnapshot",
+]

@@ -13,10 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import Source
 from app.api.schemas.watches import CreateWatchRequest, UpdateWatchRequest
+from app.application.credits.service import CreditService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.watches.state import WatchStatus, can_resume, validate_user_status
 from app.infrastructure.db.watch_models import Watch
+from app.settings import AppSettings
 
 
 def utcnow() -> datetime:
@@ -68,8 +70,9 @@ class WatchPage:
 
 
 class WatchService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: AppSettings) -> None:
         self.session = session
+        self.settings = settings
 
     async def create(
         self,
@@ -223,6 +226,25 @@ class WatchService:
                 "Watch cannot be resumed in its current state",
                 status_code=409,
             )
+        if watch.auto_record:
+            affordable, required, available = await CreditService(
+                self.session
+            ).can_afford(
+                user_id=principal.user_id,
+                max_duration_seconds=self.settings.recording_max_duration_seconds,
+            )
+            if not affordable:
+                watch.status = WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value
+                watch.next_check_at = None
+                await self.session.commit()
+                raise ApplicationError(
+                    "INSUFFICIENT_CREDITS",
+                    "Available credit is insufficient",
+                    status_code=402,
+                    retryable=False,
+                    details={"required": required, "available": available},
+                )
+
         watch.status = WatchStatus.ACTIVE.value
         watch.failure_count = 0
         watch.last_error = None

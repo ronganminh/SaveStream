@@ -17,6 +17,7 @@ from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import Watch
+from tests.credit_helpers import configure_test_pricing, grant_test_credits
 from tests.identity_helpers import identity_settings
 
 
@@ -69,7 +70,7 @@ def test_scheduler_claim_jitter_backoff_and_pause_error(tmp_path) -> None:
                     "user",
                     scopes_for_role("user"),
                 )
-                watch = await WatchService(session).create(
+                watch = await WatchService(session, settings).create(
                     principal,
                     CreateWatchRequest(
                         source=Source(type="username", value="scheduler"),
@@ -141,13 +142,15 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                 session.add(user)
                 await session.commit()
                 await session.refresh(user)
+                await configure_test_pricing(session)
+                await grant_test_credits(session, user.id)
                 principal = AuthPrincipal(
                     user.id,
                     uuid.uuid4(),
                     "user",
                     scopes_for_role("user"),
                 )
-                service = WatchService(session)
+                service = WatchService(session, settings)
                 first = await service.create(
                     principal,
                     CreateWatchRequest(

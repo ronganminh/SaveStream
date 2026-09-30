@@ -7,7 +7,9 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.credits.service import CreditService
 from app.application.identity.service import IdentityService, utcnow
+from app.application.pricing.service import PricingService
 from app.application.recordings.service import RecordingService
 from app.application.watches.service import WatchService
 from app.domain.common.errors import ApplicationError
@@ -120,6 +122,19 @@ def get_recording_service(
 
 
 def get_watch_service(
+    request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> WatchService:
-    return WatchService(session)
+    return WatchService(session, request.app.state.settings)
+
+
+def get_credit_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> CreditService:
+    return CreditService(session)
+
+
+def get_pricing_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> PricingService:
+    return PricingService(session)

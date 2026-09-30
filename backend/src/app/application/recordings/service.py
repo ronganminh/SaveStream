@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.application.credits.service import CreditService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import (
@@ -232,36 +233,52 @@ class RecordingService:
             container=payload.container,
             estimated_max_cost=0,
         )
-        self.session.add(recording)
+        max_duration = (
+            payload.max_duration_seconds
+            or self.settings.recording_max_duration_seconds
+        )
+
         try:
-            await self.session.flush()
+            async with self.session.begin_nested():
+                self.session.add(recording)
+                await self.session.flush()
+
+                reservation, estimated_max_cost = await CreditService(
+                    self.session
+                ).reserve_recording(
+                    user_id=user_id,
+                    recording_id=recording.id,
+                    max_duration_seconds=max_duration,
+                )
+                recording.estimated_max_cost = estimated_max_cost
+                recording.credit_reservation_id = str(reservation.id)
+
+                await append_event(self.session, recording, "recording.queued")
+                await self.outbox.enqueue(
+                    self.session,
+                    topic="recording.requested",
+                    aggregate_type="recording",
+                    aggregate_id=str(recording.id),
+                    payload={"recording_id": str(recording.id)},
+                )
+                self.session.add(
+                    IdempotencyKey(
+                        namespace=namespace,
+                        key=idempotency_key,
+                        request_hash=digest,
+                        response_status=202,
+                        response_body={"recording_id": str(recording.id)},
+                        expires_at=utcnow()
+                        + timedelta(seconds=self.settings.idempotency_ttl_seconds),
+                    )
+                )
         except IntegrityError as exc:
-            await self.session.rollback()
             raise ApplicationError(
                 "RECORDING_ALREADY_ACTIVE",
                 "An active recording already exists for this source",
                 status_code=409,
             ) from exc
 
-        await append_event(self.session, recording, "recording.queued")
-        await self.outbox.enqueue(
-            self.session,
-            topic="recording.requested",
-            aggregate_type="recording",
-            aggregate_id=str(recording.id),
-            payload={"recording_id": str(recording.id)},
-        )
-        self.session.add(
-            IdempotencyKey(
-                namespace=namespace,
-                key=idempotency_key,
-                request_hash=digest,
-                response_status=202,
-                response_body={"recording_id": str(recording.id)},
-                expires_at=utcnow()
-                + timedelta(seconds=self.settings.idempotency_ttl_seconds),
-            )
-        )
         await self.session.commit()
         await self.session.refresh(recording)
         return recording
@@ -428,9 +445,14 @@ class RecordingStateStore:
 
         status = RecordingStatus(recording.status)
         if status is RecordingStatus.STOP_REQUESTED:
+            await CreditService(self.session).release_recording(
+                recording_id=recording.id,
+                reason="stopped_before_start",
+            )
             recording.status = RecordingStatus.STOPPED.value
             recording.ended_at = utcnow()
             recording.active_dedupe_key = None
+            recording.actual_cost = 0
             await append_event(self.session, recording, "recording.stopped")
             await self.session.commit()
             return None
@@ -529,10 +551,15 @@ class RecordingStateStore:
         message: str,
         retryable: bool,
     ) -> None:
+        await CreditService(self.session).release_recording(
+            recording_id=recording.id,
+            reason=code,
+        )
         recording.status = RecordingStatus.FAILED.value
         recording.error_code = code
         recording.error_message = message[:4000]
         recording.error_retryable = retryable
+        recording.actual_cost = 0
         recording.ended_at = utcnow()
         recording.active_dedupe_key = None
         recording.worker_lease_id = None
