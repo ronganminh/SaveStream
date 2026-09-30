@@ -230,10 +230,7 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (BuildContext context, GoRouterState state) {
-                  return SettingsScreen(
-                    settings: settings,
-                    session: session,
-                  );
+                  return SettingsScreen(settings: settings, session: session);
                 },
                 routes: <RouteBase>[
                   GoRoute(
