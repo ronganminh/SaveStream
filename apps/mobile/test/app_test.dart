@@ -617,13 +617,18 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Check payment status'));
+    await tester.tap(
+      find.widgetWithText(OutlinedButton, 'Check payment status'),
+    );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(SsStatusChip, 'Pending'), findsNothing);
     expect(find.widgetWithText(SsStatusChip, 'Paid'), findsWidgets);
-    expect(find.text('The backend confirmed this payment as paid.'), findsOneWidget);
+    expect(
+      find.text('The backend confirmed this payment as paid.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('supports loading and empty mock scenarios', (
