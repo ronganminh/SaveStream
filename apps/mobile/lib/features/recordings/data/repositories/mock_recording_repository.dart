@@ -206,10 +206,8 @@ final class MockRecordingRepository extends MockRepositoryBase
           nextCursor: end < filtered.length ? end.toString() : null,
         );
       },
-      empty: () => const RecordingPage(
-        items: <RecordingSummary>[],
-        nextCursor: null,
-      ),
+      empty: () =>
+          const RecordingPage(items: <RecordingSummary>[], nextCursor: null),
     );
   }
 
@@ -290,7 +288,9 @@ final class MockRecordingRepository extends MockRepositoryBase
     String id,
     RecordingSummary Function(RecordingSummary current) update,
   ) {
-    final int index = _items.indexWhere((RecordingSummary item) => item.id == id);
+    final int index = _items.indexWhere(
+      (RecordingSummary item) => item.id == id,
+    );
     if (index < 0) {
       return null;
     }
