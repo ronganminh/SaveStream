@@ -4,7 +4,7 @@ import 'app_settings_store.dart';
 
 final class SharedPreferencesAppSettingsStore implements AppSettingsStore {
   SharedPreferencesAppSettingsStore({SharedPreferencesAsync? preferences})
-      : _preferences = preferences ?? SharedPreferencesAsync();
+    : _preferences = preferences ?? SharedPreferencesAsync();
 
   final SharedPreferencesAsync _preferences;
 
