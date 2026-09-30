@@ -31,9 +31,8 @@ class RecordingsScreen extends ConsumerWidget {
               title: _errorTitle(l10n, error),
               message: _errorMessage(l10n, error),
               retryLabel: l10n.retryAction,
-              onRetry: () => ref
-                  .read(recordingListControllerProvider.notifier)
-                  .refresh(),
+              onRetry: () =>
+                  ref.read(recordingListControllerProvider.notifier).refresh(),
             ),
           ),
           data: (RecordingListState state) => _RecordingListBody(state: state),
@@ -80,9 +79,8 @@ class _RecordingListBody extends ConsumerWidget {
         ),
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () => ref
-                .read(recordingListControllerProvider.notifier)
-                .refresh(),
+            onRefresh: () =>
+                ref.read(recordingListControllerProvider.notifier).refresh(),
             child: state.items.isEmpty
                 ? ListView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -155,9 +153,8 @@ class _RecordingCard extends StatelessWidget {
                         const SizedBox(height: SsSpacing.xs),
                         Text(
                           recording.creatorUsername,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colors.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -305,9 +302,8 @@ class _LoadMoreSection extends ConsumerWidget {
           const SizedBox(height: SsSpacing.sm),
         ],
         TextButton.icon(
-          onPressed: () => ref
-              .read(recordingListControllerProvider.notifier)
-              .loadMore(),
+          onPressed: () =>
+              ref.read(recordingListControllerProvider.notifier).loadMore(),
           icon: const Icon(Icons.expand_more_rounded),
           label: Text(l10n.loadMoreAction),
         ),
