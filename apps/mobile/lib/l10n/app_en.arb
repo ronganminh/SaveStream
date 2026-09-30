@@ -235,5 +235,71 @@
         "type": "String"
       }
     }
+  },
+  "recordingFilterAll": "All",
+  "recordingFilterActive": "Active",
+  "recordingFilterCompleted": "Completed",
+  "recordingFilterFailed": "Failed",
+  "recordingQueuedBody": "This recording is queued and waiting for the backend to start resolving the source.",
+  "recordingResolvingBody": "SaveStream is resolving the livestream source before recording can begin.",
+  "recordingWaitingLiveBody": "The Watch is ready and waiting for the creator to go LIVE.",
+  "recordingActiveBody": "Recording is active in the cloud. You can close the app and the backend keeps recording.",
+  "recordingProcessingBody": "The captured stream is being finalized and processed.",
+  "recordingUploadingBody": "The finalized recording is being uploaded to storage.",
+  "recordingCompletedBody": "Recording completed successfully and is ready when its artifact is available.",
+  "recordingFailedBody": "Recording stopped because an error occurred. Retry is shown only when the backend allows it.",
+  "recordingStopRequestedBody": "A stop command was accepted and the backend is finishing the recording.",
+  "recordingStoppedBody": "Recording was stopped before the normal completion path.",
+  "recordingStartedLabel": "Started",
+  "recordingDurationLabel": "Duration",
+  "recordingSizeLabel": "Size",
+  "recordingCostLabel": "Cost",
+  "notStartedLabel": "Not started",
+  "artifactReadyLabel": "Artifact ready",
+  "artifactPendingLabel": "Artifact pending",
+  "thumbnailReadyLabel": "Thumbnail ready",
+  "thumbnailPendingLabel": "Thumbnail pending",
+  "recordingEndOfListLabel": "You’re all caught up.",
+  "recordingLoadMoreFailed": "Couldn’t load more recordings.",
+  "loadMoreAction": "Load more",
+  "emptyActiveRecordingsBody": "There are no active recordings right now.",
+  "emptyCompletedRecordingsBody": "No completed recordings match this filter.",
+  "emptyFailedRecordingsBody": "No failed recordings match this filter.",
+  "recordingElapsedValue": "Elapsed · {duration}",
+  "recordingBytesValue": "Captured · {bytes}",
+  "recordingProgressValue": "{percent}% complete",
+  "recordingFailureTitle": "Recording error",
+  "recordingMetadataTitle": "Recording metadata",
+  "recordingArtifactTitle": "Artifact",
+  "playRecordingAction": "Play",
+  "downloadRecordingAction": "Download",
+  "artifactMockActionMessage": "Artifact action is ready for backend integration in Phase 12.",
+  "stopRecordingAction": "Stop recording",
+  "retryRecordingAction": "Retry recording",
+  "deleteRecordingTitle": "Delete recording?",
+  "deleteRecordingMessage": "Delete this recording from SaveStream? This action will follow backend permission rules when the API is connected.",
+  "deleteRecordingAction": "Delete recording",
+  "recordingNoActionsBody": "No recording actions are currently allowed by the backend action flags.",
+  "recordingActionsTitle": "Available actions",
+  "@recordingElapsedValue": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@recordingBytesValue": {
+    "placeholders": {
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "@recordingProgressValue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
   }
 }
