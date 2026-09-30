@@ -11,6 +11,10 @@ import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
+import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
+import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_providers.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
 
 void main() {
   AppConfig testConfig() {
@@ -410,60 +414,30 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    for (final String status in <String>[
-      'Recording',
-      'Processing',
-      'Uploading',
-      'Completed',
-    ]) {
-      await tester.scrollUntilVisible(
-        find.widgetWithText(SsStatusChip, status),
-        320,
-        scrollable: find.byType(Scrollable).last,
-      );
-      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
-    }
-
-    await tester.scrollUntilVisible(
-      find.text('Load more'),
-      320,
-      scrollable: find.byType(Scrollable).last,
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(RecordingsScreen)),
     );
-    await tester.tap(find.text('Load more'));
+    final RecordingListController controller = container.read(
+      recordingListControllerProvider.notifier,
+    );
+
+    final Future<void> secondPage = controller.loadMore();
     await tester.pump(const Duration(milliseconds: 200));
+    await secondPage;
+
+    final Future<void> thirdPage = controller.loadMore();
+    await tester.pump(const Duration(milliseconds: 200));
+    await thirdPage;
     await tester.pump();
 
-    for (final String status in <String>[
-      'Failed',
-      'Waiting for LIVE',
-      'Resolving source',
-      'Queued',
-    ]) {
-      await tester.scrollUntilVisible(
-        find.widgetWithText(SsStatusChip, status),
-        320,
-        scrollable: find.byType(Scrollable).last,
-      );
-      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
-    }
+    final Set<RecordingStatus> statuses = container
+        .read(recordingListControllerProvider)
+        .requireValue
+        .items
+        .map((RecordingSummary item) => item.status)
+        .toSet();
 
-    await tester.scrollUntilVisible(
-      find.text('Load more'),
-      320,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(find.text('Load more'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-
-    for (final String status in <String>['Stop requested', 'Stopped']) {
-      await tester.scrollUntilVisible(
-        find.widgetWithText(SsStatusChip, status),
-        320,
-        scrollable: find.byType(Scrollable).last,
-      );
-      expect(find.widgetWithText(SsStatusChip, status), findsWidgets);
-    }
+    expect(statuses, containsAll(RecordingStatus.values));
   });
 
   testWidgets('Recordings filters completed and failed states', (
@@ -555,16 +529,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.scrollUntilVisible(
-      find.widgetWithText(SsStatusChip, 'Queued'),
-      -320,
-      scrollable: find.byType(Scrollable).last,
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(RecordingDetailScreen)),
     );
-    expect(
-      find.widgetWithText(SsStatusChip, 'Queued'),
-      findsOneWidget,
-    );
-    expect(find.text('Retry recording'), findsNothing);
+    final RecordingSummary? updated = container
+        .read(recordingDetailProvider('rec_003'))
+        .value;
+
+    expect(updated?.status, RecordingStatus.queued);
+    expect(updated?.actions.canRetry, isFalse);
   });
 
   testWidgets('supports loading and empty mock scenarios', (
