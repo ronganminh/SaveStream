@@ -25,8 +25,7 @@ from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import RecordingStatus, TERMINAL_RECORDING_STATUSES
 from app.infrastructure.db.recording_models import Recording, RecordingEvent
-from app.infrastructure.recording.runtime import TikTokSourceResolver
-from core.tiktok_api import TikTokAPI
+from app.infrastructure.recording.runtime import build_recording_runtime
 
 router = APIRouter(prefix="/v1", tags=["Recordings"])
 
@@ -38,12 +37,16 @@ router = APIRouter(prefix="/v1", tags=["Recordings"])
 )
 async def live_status(
     payload: LiveStatusRequest,
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("recordings:read")),
 ) -> LiveStatusResponse:
     del principal
-    resolver = TikTokSourceResolver(TikTokAPI(proxy=None, cookies={}))
+    runtime = build_recording_runtime(request.app.state.settings)
     try:
-        resolved, is_live = await asyncio.to_thread(resolver.live_status, payload.source)
+        resolved, is_live = await asyncio.to_thread(
+            runtime.resolver.live_status,
+            payload.source,
+        )
     except Exception as exc:
         raise ApplicationError(
             "STREAM_UNAVAILABLE",
