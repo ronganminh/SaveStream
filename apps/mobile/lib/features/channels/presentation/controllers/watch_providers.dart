@@ -36,6 +36,7 @@ final watchDetailProvider = FutureProvider.family<WatchSummary?, String>(
 
 final channelDetailProvider =
     FutureProvider.family<ChannelDetailViewModel?, String>((ref, id) async {
+      ref.watch(recordingRevisionProvider);
       final List<Object?> values = await Future.wait<Object?>(<Future<Object?>>[
         ref.watch(watchRepositoryProvider).getWatch(id),
         ref.watch(recordingRepositoryProvider).listRecordings(),
