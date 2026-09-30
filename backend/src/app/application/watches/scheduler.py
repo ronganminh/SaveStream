@@ -4,7 +4,7 @@ import random
 import uuid
 from collections.abc import Callable, Protocol
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,7 @@ from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
 
-from .service import aware, utcnow
+from .service import utcnow
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,7 +144,7 @@ class WatchScheduler:
     async def _record_failure(
         self,
         watch: Watch,
-        now,
+        now: datetime,
         exc: Exception,
     ) -> None:
         watch.last_checked_at = now

@@ -52,6 +52,11 @@ def dedupe_key(user_id: uuid.UUID, source: Source) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
+def room_session_key(user_id: uuid.UUID, room_id: str) -> str:
+    normalized = f"{user_id}:tiktok-room:{room_id.strip()}"
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+
 def request_hash(payload: CreateRecordingRequest) -> str:
     canonical = json.dumps(
         payload.model_dump(mode="json"),
@@ -215,6 +220,11 @@ class RecordingService:
             user_id=user_id,
             source_type=source.type,
             source_value=source.value,
+            room_session_key=(
+                room_session_key(user_id, source.value)
+                if source.type == "room_id"
+                else None
+            ),
             status=RecordingStatus.QUEUED.value,
             active_dedupe_key=active_key,
             max_duration_seconds=payload.max_duration_seconds,

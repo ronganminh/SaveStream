@@ -11,6 +11,7 @@ from datetime import timedelta
 
 from redis import Redis as SyncRedis
 from sqlalchemy import or_, select
+from sqlalchemy.exc import IntegrityError
 
 from adapters.tiktok_gateway import TikTokLiveGateway
 from app.api.schemas.recordings import Source

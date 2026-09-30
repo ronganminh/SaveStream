@@ -1,5 +1,7 @@
+from typing import cast
+
 from app.api.schemas.recordings import Creator, Source
-from app.api.schemas.watches import WatchResponse
+from app.api.schemas.watches import LiveStatusValue, WatchResponse, WatchStatusValue
 from app.infrastructure.db.watch_models import Watch
 
 
@@ -17,8 +19,8 @@ def watch_response(watch: Watch) -> WatchResponse:
             {"type": watch.source_type, "value": watch.source_value}
         ),
         creator=creator,
-        status=watch.status,
-        live_status=watch.live_status,
+        status=cast(WatchStatusValue, watch.status),
+        live_status=cast(LiveStatusValue, watch.live_status),
         auto_record=watch.auto_record,
         last_checked_at=watch.last_checked_at,
         next_check_at=watch.next_check_at,

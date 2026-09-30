@@ -19,6 +19,7 @@ WatchStatusValue = Literal[
     "paused_error",
     "disabled",
 ]
+LiveStatusValue = Literal["unknown", "offline", "live"]
 
 
 class WatchResponse(StrictModel):
@@ -26,7 +27,7 @@ class WatchResponse(StrictModel):
     source: Source
     creator: Creator | None
     status: WatchStatusValue
-    live_status: Literal["unknown", "offline", "live"]
+    live_status: LiveStatusValue
     auto_record: bool
     last_checked_at: datetime | None
     next_check_at: datetime | None
