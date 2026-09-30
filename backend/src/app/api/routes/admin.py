@@ -59,6 +59,7 @@ def _context(request: Request) -> AuditContext:
 
 @router.get("/users", response_model=AdminUserListResponse)
 async def list_admin_users(
+    request: Request,
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
     role: str | None = Query(default=None),
@@ -68,7 +69,7 @@ async def list_admin_users(
 ) -> AdminUserListResponse:
     _require_admin(principal)
     page = await AdminService(
-        session, session.info["settings"]
+        session, request.app.state.settings
     ).list_users(
         limit=limit,
         cursor=cursor,
@@ -87,14 +88,15 @@ async def list_admin_users(
 @router.get("/users/{user_id}", response_model=AdminUserResponse)
 async def get_admin_user(
     user_id: str,
+    request: Request,
     principal: AuthPrincipal = Depends(get_current_principal),
-    request: Request = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminUserResponse:
-    del request
     _require_admin(principal)
     return admin_user_response(
-        await AdminService(session, session.info["settings"]).get_user(user_id)
+        await AdminService(
+            session, request.app.state.settings
+        ).get_user(user_id)
     )
 
 
@@ -300,6 +302,7 @@ async def adjust_admin_credit(
         amount=payload.amount,
         idempotency_key=idempotency_key,
         reason=payload.reason,
+        commit=False,
     )
     await AuditService(session).record(
         actor_user_id=principal.user_id,

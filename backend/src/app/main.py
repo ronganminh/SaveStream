@@ -8,17 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import install_exception_handlers
 from app.api.middleware import RequestIdMiddleware
+from app.api.routes.admin import router as admin_router
 from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.billing import router as billing_router
 from app.api.routes.credits import router as credits_router
 from app.api.routes.health import router as health_router
+from app.api.routes.operations import router as operations_router
 from app.api.routes.pricing import router as pricing_router
 from app.api.routes.recordings import router as recordings_router
 from app.api.routes.users import router as users_router
 from app.api.routes.watches import router as watches_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.infrastructure.db.session import Database
+from app.infrastructure.metrics.registry import MetricsMiddleware, MetricsRegistry
 from app.infrastructure.rate_limit import RedisRateLimiter
 from app.infrastructure.redis import RedisClient
 from app.infrastructure.storage.minio import MinioStorageClient
@@ -27,6 +30,7 @@ from app.settings import AppSettings, get_app_settings
 
 def create_app(settings: AppSettings | None = None) -> FastAPI:
     cfg = settings or get_app_settings()
+    metrics_registry = MetricsRegistry()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -65,6 +69,8 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         expose_headers=[cfg.request_id_header],
     )
     app.add_middleware(RequestIdMiddleware, header_name=cfg.request_id_header)
+    app.add_middleware(MetricsMiddleware, registry=metrics_registry)
+    app.state.metrics_registry = metrics_registry
     install_exception_handlers(app)
     app.include_router(health_router)
     app.include_router(auth_router)
@@ -76,6 +82,8 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(pricing_router)
     app.include_router(billing_router)
     app.include_router(webhooks_router)
+    app.include_router(admin_router)
+    app.include_router(operations_router)
     return app
 
 

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.recordings.service import RecordingService
+from app.domain.billing.state import PaymentStatus
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import RecordingStatus
 from app.infrastructure.db.billing_models import PaymentOrder
@@ -229,6 +230,12 @@ class AdminService:
         if user_id is not None:
             statement = statement.where(PaymentOrder.user_id == user_id)
         if status is not None:
+            try:
+                PaymentStatus(status)
+            except ValueError as exc:
+                raise ApplicationError(
+                    "VALIDATION_ERROR", "Invalid payment status", status_code=400
+                ) from exc
             statement = statement.where(PaymentOrder.status == status)
         if cursor:
             created_at, row_id = _decode_cursor(cursor)

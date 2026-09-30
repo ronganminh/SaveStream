@@ -59,5 +59,10 @@ async def admin_operations_snapshot(
         request.app.state.settings,
     ).snapshot()
     return OperationalSnapshotResponse(
-        **snapshot.__dict__
+        active_recordings=snapshot.active_recordings,
+        failed_recordings_recent=snapshot.failed_recordings_recent,
+        pending_outbox_events=snapshot.pending_outbox_events,
+        unprocessed_payment_events=snapshot.unprocessed_payment_events,
+        pending_payment_orders=snapshot.pending_payment_orders,
+        paused_error_watches=snapshot.paused_error_watches,
     )
