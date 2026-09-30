@@ -516,10 +516,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.drag(
-      find.byType(Scrollable).last,
-      const Offset(0, 1000),
-    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
     await tester.pumpAndSettle();
     expect(find.text('Stop requested'), findsWidgets);
     expect(find.text('Stop recording'), findsNothing);
@@ -556,10 +553,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.drag(
-      find.byType(Scrollable).last,
-      const Offset(0, 1000),
-    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
     await tester.pumpAndSettle();
     expect(find.text('Queued'), findsWidgets);
     expect(find.text('Retry recording'), findsNothing);
