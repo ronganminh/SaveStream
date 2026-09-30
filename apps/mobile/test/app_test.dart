@@ -548,13 +548,21 @@ void main() {
     expect(find.text('Delete recording'), findsOneWidget);
     expect(find.text('Stop recording'), findsNothing);
 
+    await tester.drag(
+      find.byType(Scrollable).last,
+      const Offset(0, -120),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Retry recording'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
-    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Queued'),
+      -320,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Queued'), findsWidgets);
     expect(find.text('Retry recording'), findsNothing);
   });
