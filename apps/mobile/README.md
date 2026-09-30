@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 5 includes:
+Phase 6 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -22,7 +22,13 @@ Phase 5 includes:
 - Channel Detail with monitoring status, auto-record toggle, pause/resume, delete, latest recording, and recording history;
 - mock Watch mutations for create, pause, resume, toggle auto-record, and delete;
 - Watch status coverage for active, paused, paused_insufficient_credit, paused_error, and disabled;
-- mock list/detail routes for Recordings;
+- full Recordings list with All / Active / Completed / Failed filters;
+- cursor-based mock pagination with Load More, pull-to-refresh, filter-specific empty states, skeletons, and retryable errors;
+- recording cards with creator, lifecycle status, start time, duration, size, cost, artifact, thumbnail, and progress metadata;
+- lifecycle-specific detail UI for queued, resolving, waiting_live, recording, processing, uploading, completed, failed, stop_requested, and stopped;
+- Stop / Retry / Delete actions driven by backend-aligned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete` flags;
+- mutable mock recording actions for stop, retry, and delete, with Home and Channel recording history refresh signals;
+- artifact Play / Download UI gated by artifact readiness and reserved for real backend integration in Phase 12;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
 - aggregated Home Dashboard via `HomeDashboardViewModel` / `homeDashboardProvider`;
 - responsive Home metrics for available credit, active recordings, and monitored channels;
@@ -31,7 +37,7 @@ Phase 5 includes:
 - Home skeleton, empty-account, retryable error, and pull-to-refresh states;
 - the Phase 1 component gallery retained at `/dev/components`.
 
-Auth, onboarding, Home, and Channels/Watch management are now functional with mock repositories. Recordings, Billing, and Settings feature depth remains phase-scoped.
+Auth, onboarding, Home, Channels/Watch management, and Recordings are now functional with mock repositories. Billing and Settings feature depth remains phase-scoped.
 
 ## Requirements
 
