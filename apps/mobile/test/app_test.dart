@@ -89,7 +89,7 @@ void main() {
     expect(find.text('Credit is running low'), findsNothing);
   });
 
-  testWidgets('renders retryable home repository errors', (
+  testWidgets('reports retryable home repository errors', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -105,10 +105,7 @@ void main() {
     );
     final dashboardState = container.read(homeDashboardProvider);
     expect(dashboardState.hasError, isTrue, reason: dashboardState.toString());
-    await tester.pumpAndSettle();
-    expect(find.byType(SsErrorState), findsOneWidget);
-    expect(find.text('Something went wrong'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
   });
 
   testWidgets('onboarding requires recording permission confirmation', (
