@@ -724,7 +724,7 @@ void main() {
     expect(settings.locale.languageCode, 'vi');
     expect(find.text('Ngôn ngữ'), findsWidgets);
 
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Giao diện'));
     await tester.pumpAndSettle();
