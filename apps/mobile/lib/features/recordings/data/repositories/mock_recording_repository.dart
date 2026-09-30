@@ -14,7 +14,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Ada Live',
       creatorUsername: '@ada_live',
       status: RecordingStatus.recording,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: true,
         canRetry: false,
         canDelete: false,
@@ -31,7 +31,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Nora Shop',
       creatorUsername: '@nora_shop',
       status: RecordingStatus.processing,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: false,
@@ -48,7 +48,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Mika Studio',
       creatorUsername: '@mika_studio',
       status: RecordingStatus.uploading,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: false,
@@ -65,7 +65,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Minh Streams',
       creatorUsername: '@minh_streams',
       status: RecordingStatus.completed,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: true,
@@ -84,7 +84,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Studio North',
       creatorUsername: '@studio_north',
       status: RecordingStatus.failed,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: true,
         canDelete: true,
@@ -97,13 +97,13 @@ final class MockRecordingRepository extends MockRepositoryBase
       errorCode: 'SOURCE_CONNECTION_LOST',
       errorMessage: 'The source connection ended before recording completed.',
     ),
-    RecordingSummary(
+    const RecordingSummary(
       id: 'rec_006',
       watchId: 'watch_005',
       creatorDisplayName: 'Leo Daily',
       creatorUsername: '@leo_daily',
       status: RecordingStatus.waitingLive,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: true,
@@ -111,13 +111,13 @@ final class MockRecordingRepository extends MockRepositoryBase
       startedAt: null,
       durationSeconds: 0,
     ),
-    RecordingSummary(
+    const RecordingSummary(
       id: 'rec_007',
       watchId: 'watch_004',
       creatorDisplayName: 'Nora Shop',
       creatorUsername: '@nora_shop',
       status: RecordingStatus.resolving,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: false,
@@ -126,13 +126,13 @@ final class MockRecordingRepository extends MockRepositoryBase
       durationSeconds: 0,
       progress: 0.2,
     ),
-    RecordingSummary(
+    const RecordingSummary(
       id: 'rec_008',
       watchId: 'watch_001',
       creatorDisplayName: 'Ada Live',
       creatorUsername: '@ada_live',
       status: RecordingStatus.queued,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: true,
@@ -146,7 +146,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Mika Studio',
       creatorUsername: '@mika_studio',
       status: RecordingStatus.stopRequested,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: false,
@@ -163,7 +163,7 @@ final class MockRecordingRepository extends MockRepositoryBase
       creatorDisplayName: 'Leo Daily',
       creatorUsername: '@leo_daily',
       status: RecordingStatus.stopped,
-      actions: RecordingActions(
+      actions: const RecordingActions(
         canStop: false,
         canRetry: false,
         canDelete: true,
