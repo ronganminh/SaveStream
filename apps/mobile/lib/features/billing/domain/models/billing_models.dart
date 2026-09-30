@@ -1,10 +1,4 @@
-enum PaymentOrderStatus {
-  pending,
-  paid,
-  failed,
-  cancelled,
-  expired,
-}
+enum PaymentOrderStatus { pending, paid, failed, cancelled, expired }
 
 class CreditPackage {
   const CreditPackage({
@@ -46,10 +40,7 @@ class PaymentOrder {
 }
 
 class BillingSnapshot {
-  const BillingSnapshot({
-    required this.packages,
-    required this.orders,
-  });
+  const BillingSnapshot({required this.packages, required this.orders});
 
   final List<CreditPackage> packages;
   final List<PaymentOrder> orders;
