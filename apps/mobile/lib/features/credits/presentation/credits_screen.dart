@@ -143,9 +143,9 @@ class _BalanceCard extends StatelessWidget {
         children: <Widget>[
           Text(
             l10n.creditsAvailableBalanceLabel,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: colors.onSurfaceVariant),
           ),
           const SizedBox(height: SsSpacing.xs),
           Text(
@@ -176,9 +176,9 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: SsSpacing.md),
           Text(
             l10n.creditsReservedExplanation,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -209,9 +209,9 @@ class _BalanceMetric extends StatelessWidget {
           const SizedBox(height: SsSpacing.xs),
           Text(
             label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -300,9 +300,7 @@ class _TransactionCard extends StatelessWidget {
                 ? colors.primaryContainer
                 : colors.surfaceContainerHighest,
             child: Icon(
-              transaction.isCredit
-                  ? Icons.add_rounded
-                  : Icons.remove_rounded,
+              transaction.isCredit ? Icons.add_rounded : Icons.remove_rounded,
               color: transaction.isCredit
                   ? colors.onPrimaryContainer
                   : colors.onSurfaceVariant,
