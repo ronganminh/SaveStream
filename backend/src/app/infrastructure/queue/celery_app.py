@@ -39,6 +39,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.billing.reconcile",
                 "schedule": float(cfg.payment_reconcile_seconds),
             },
+            "operations-alert-check": {
+                "task": "savestream.operations.alerts",
+                "schedule": float(cfg.ops_alert_check_seconds),
+            },
         },
     )
     return app

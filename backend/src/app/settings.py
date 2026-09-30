@@ -94,6 +94,15 @@ class AppSettings:
     payment_webhook_secret: str = field(default="savestream-fake-payment-secret", repr=False)
     payment_timeout_seconds: float = 15.0
     payment_reconcile_seconds: int = 300
+    metrics_token: str = field(default="savestream-local-metrics", repr=False)
+    ops_alert_email: str = ""
+    ops_alert_check_seconds: int = 60
+    ops_alert_cooldown_seconds: int = 1800
+    ops_failed_recording_window_seconds: int = 900
+    ops_outbox_alert_threshold: int = 100
+    ops_failed_recording_alert_threshold: int = 10
+    ops_payment_event_alert_threshold: int = 10
+    ops_paused_watch_alert_threshold: int = 20
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -119,6 +128,7 @@ class AppSettings:
             "PAYMENT_WEBHOOK_SECRET",
             "savestream-fake-payment-secret",
         )
+        metrics_token = _env("METRICS_TOKEN", "savestream-local-metrics")
         if environment_raw == "production":
             if payment_provider == "fake":
                 raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
@@ -133,6 +143,10 @@ class AppSettings:
             if payment_webhook_secret == "savestream-fake-payment-secret":
                 raise ValueError(
                     "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                )
+            if metrics_token == "savestream-local-metrics":
+                raise ValueError(
+                    "SAVESTREAM_METRICS_TOKEN must be configured in production"
                 )
 
         return cls(
@@ -198,6 +212,23 @@ class AppSettings:
             payment_webhook_secret=payment_webhook_secret,
             payment_timeout_seconds=_float_env("PAYMENT_TIMEOUT_SECONDS", 15.0),
             payment_reconcile_seconds=_int_env("PAYMENT_RECONCILE_SECONDS", 300),
+            metrics_token=metrics_token,
+            ops_alert_email=_env("OPS_ALERT_EMAIL", ""),
+            ops_alert_check_seconds=_int_env("OPS_ALERT_CHECK_SECONDS", 60),
+            ops_alert_cooldown_seconds=_int_env("OPS_ALERT_COOLDOWN_SECONDS", 1800),
+            ops_failed_recording_window_seconds=_int_env(
+                "OPS_FAILED_RECORDING_WINDOW_SECONDS", 900
+            ),
+            ops_outbox_alert_threshold=_int_env("OPS_OUTBOX_ALERT_THRESHOLD", 100),
+            ops_failed_recording_alert_threshold=_int_env(
+                "OPS_FAILED_RECORDING_ALERT_THRESHOLD", 10
+            ),
+            ops_payment_event_alert_threshold=_int_env(
+                "OPS_PAYMENT_EVENT_ALERT_THRESHOLD", 10
+            ),
+            ops_paused_watch_alert_threshold=_int_env(
+                "OPS_PAUSED_WATCH_ALERT_THRESHOLD", 20
+            ),
         )
 
 

@@ -441,6 +441,7 @@ class CreditAdminService:
         amount: int,
         idempotency_key: str,
         reason: str,
+        commit: bool = True,
     ) -> CreditLedgerEntry:
         try:
             uuid.UUID(idempotency_key)
@@ -506,8 +507,11 @@ class CreditAdminService:
             details={"reason": reason},
         )
         self.session.add(entry)
-        await self.session.commit()
-        await self.session.refresh(entry)
+        if commit:
+            await self.session.commit()
+            await self.session.refresh(entry)
+        else:
+            await self.session.flush()
         return entry
 
 
