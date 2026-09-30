@@ -190,9 +190,11 @@ class WatchScheduler:
                 f"savestream:watch-room:{watch.user_id}:{room_id}",
             )
         )
+        watch_id = watch.id
+        user_id = watch.user_id
         try:
             await RecordingService(self.session, self.settings).create_for_user(
-                watch.user_id,
+                user_id,
                 payload,
                 idempotency_key=idempotency_key,
             )
@@ -200,11 +202,13 @@ class WatchScheduler:
             if exc.code == "RECORDING_ALREADY_ACTIVE":
                 return
             if exc.code == "INSUFFICIENT_CREDITS":
-                watch.status = WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value
-                watch.next_check_at = None
-                watch.scheduler_lease_id = None
-                watch.scheduler_lease_expires_at = None
-                watch.last_error = "insufficient_credits"
-                await self.session.commit()
+                paused_watch = await self.session.get(Watch, watch_id)
+                if paused_watch is not None:
+                    paused_watch.status = WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value
+                    paused_watch.next_check_at = None
+                    paused_watch.scheduler_lease_id = None
+                    paused_watch.scheduler_lease_expires_at = None
+                    paused_watch.last_error = "insufficient_credits"
+                    await self.session.commit()
                 return
             raise

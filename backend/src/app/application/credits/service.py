@@ -458,6 +458,16 @@ class CreditAdminService:
             )
         )
         if existing is not None:
+            if (
+                existing.user_id != user_id
+                or existing.amount != amount
+                or existing.details.get("reason") != reason
+            ):
+                raise ApplicationError(
+                    "IDEMPOTENCY_KEY_REUSED",
+                    "Adjustment idempotency key was already used with a different request",
+                    status_code=409,
+                )
             return existing
 
         account = await self.session.scalar(

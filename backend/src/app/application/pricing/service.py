@@ -98,6 +98,8 @@ class PricingAdminService:
             select(PricingRule).where(PricingRule.version == version)
         )
         if existing is not None:
+            if activate and not existing.is_active:
+                return await self.activate(version)
             return existing
 
         # Validate the configured policy without choosing product defaults.

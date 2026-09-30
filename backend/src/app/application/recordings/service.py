@@ -248,13 +248,17 @@ class RecordingService:
             payload.max_duration_seconds
             or self.settings.recording_max_duration_seconds
         )
-        reservation, estimated_max_cost = await CreditService(
-            self.session
-        ).reserve_recording(
-            user_id=user_id,
-            recording_id=recording.id,
-            max_duration_seconds=max_duration,
-        )
+        try:
+            reservation, estimated_max_cost = await CreditService(
+                self.session
+            ).reserve_recording(
+                user_id=user_id,
+                recording_id=recording.id,
+                max_duration_seconds=max_duration,
+            )
+        except ApplicationError:
+            await self.session.rollback()
+            raise
         recording.estimated_max_cost = estimated_max_cost
         recording.credit_reservation_id = str(reservation.id)
 
