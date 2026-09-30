@@ -9,6 +9,7 @@ import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
+import '../../features/channels/presentation/add_channel_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
@@ -187,10 +188,7 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'add',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SsRoutePlaceholder(
-                        title: context.l10n.addChannelAction,
-                        message: context.l10n.addChannelPlaceholderBody,
-                      );
+                      return const AddChannelScreen();
                     },
                   ),
                   GoRoute(
