@@ -9,6 +9,8 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
+import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
+import 'package:savestream_mobile/features/credits/presentation/credits_screen.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
@@ -538,6 +540,90 @@ void main() {
 
     expect(updated?.status, RecordingStatus.queued);
     expect(updated?.actions.canRetry, isFalse);
+  });
+
+  testWidgets('renders Phase 7 credit balances usage and transactions', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.tap(find.text('Credits'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(CreditsScreen), findsOneWidget);
+    expect(find.text('Available'), findsOneWidget);
+    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('Posted'), findsOneWidget);
+    expect(find.text('7.4'), findsOneWidget);
+    expect(find.text('Reserved'), findsOneWidget);
+    expect(find.text('2.6'), findsOneWidget);
+    expect(find.text('Available credit is low'), findsOneWidget);
+    expect(find.text('Recording usage'), findsOneWidget);
+    expect(find.text('12.6'), findsOneWidget);
+    expect(find.text('Recent transactions'), findsOneWidget);
+  });
+
+  testWidgets('renders Phase 7 empty credit transaction state', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.empty),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.tap(find.text('Credits'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(CreditsScreen), findsOneWidget);
+    expect(find.text('No transactions yet'), findsOneWidget);
+    expect(find.text('0.0'), findsWidgets);
+  });
+
+  testWidgets('billing waits for backend status before showing paid', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pump();
+    await tester.tap(find.text('Billing'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.byType(BillingScreen), findsOneWidget);
+    expect(find.text('25 credits'), findsWidgets);
+    expect(find.widgetWithText(SsStatusChip, 'Paid'), findsWidgets);
+    expect(find.widgetWithText(SsStatusChip, 'Failed'), findsOneWidget);
+    expect(find.widgetWithText(SsStatusChip, 'Cancelled'), findsOneWidget);
+    expect(find.widgetWithText(SsStatusChip, 'Expired'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Buy package').first);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
+    expect(
+      find.textContaining('Returning from checkout does not mark it paid'),
+      findsOneWidget,
+    );
+
+    await tester.scrollUntilVisible(
+      find.text('Check payment status'),
+      240,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Check payment status'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsNothing);
+    expect(find.widgetWithText(SsStatusChip, 'Paid'), findsWidgets);
+    expect(find.text('The backend confirmed this payment as paid.'), findsOneWidget);
   });
 
   testWidgets('supports loading and empty mock scenarios', (
