@@ -233,54 +233,52 @@ class RecordingService:
             container=payload.container,
             estimated_max_cost=0,
         )
-        self.session.add(recording)
+        max_duration = (
+            payload.max_duration_seconds
+            or self.settings.recording_max_duration_seconds
+        )
+
         try:
-            await self.session.flush()
+            async with self.session.begin_nested():
+                self.session.add(recording)
+                await self.session.flush()
+
+                reservation, estimated_max_cost = await CreditService(
+                    self.session
+                ).reserve_recording(
+                    user_id=user_id,
+                    recording_id=recording.id,
+                    max_duration_seconds=max_duration,
+                )
+                recording.estimated_max_cost = estimated_max_cost
+                recording.credit_reservation_id = str(reservation.id)
+
+                await append_event(self.session, recording, "recording.queued")
+                await self.outbox.enqueue(
+                    self.session,
+                    topic="recording.requested",
+                    aggregate_type="recording",
+                    aggregate_id=str(recording.id),
+                    payload={"recording_id": str(recording.id)},
+                )
+                self.session.add(
+                    IdempotencyKey(
+                        namespace=namespace,
+                        key=idempotency_key,
+                        request_hash=digest,
+                        response_status=202,
+                        response_body={"recording_id": str(recording.id)},
+                        expires_at=utcnow()
+                        + timedelta(seconds=self.settings.idempotency_ttl_seconds),
+                    )
+                )
         except IntegrityError as exc:
-            await self.session.rollback()
             raise ApplicationError(
                 "RECORDING_ALREADY_ACTIVE",
                 "An active recording already exists for this source",
                 status_code=409,
             ) from exc
 
-        max_duration = (
-            payload.max_duration_seconds
-            or self.settings.recording_max_duration_seconds
-        )
-        try:
-            reservation, estimated_max_cost = await CreditService(
-                self.session
-            ).reserve_recording(
-                user_id=user_id,
-                recording_id=recording.id,
-                max_duration_seconds=max_duration,
-            )
-        except ApplicationError:
-            await self.session.rollback()
-            raise
-        recording.estimated_max_cost = estimated_max_cost
-        recording.credit_reservation_id = str(reservation.id)
-
-        await append_event(self.session, recording, "recording.queued")
-        await self.outbox.enqueue(
-            self.session,
-            topic="recording.requested",
-            aggregate_type="recording",
-            aggregate_id=str(recording.id),
-            payload={"recording_id": str(recording.id)},
-        )
-        self.session.add(
-            IdempotencyKey(
-                namespace=namespace,
-                key=idempotency_key,
-                request_hash=digest,
-                response_status=202,
-                response_body={"recording_id": str(recording.id)},
-                expires_at=utcnow()
-                + timedelta(seconds=self.settings.idempotency_ttl_seconds),
-            )
-        )
         await self.session.commit()
         await self.session.refresh(recording)
         return recording
