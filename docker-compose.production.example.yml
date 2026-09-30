@@ -1,0 +1,105 @@
+services:
+  edge:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./secrets/tls.crt:/run/secrets/tls.crt:ro
+      - ./secrets/tls.key:/run/secrets/tls.key:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    networks: [edge, backend]
+
+  api:
+    build: ./backend
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+    environment: &app-env
+      SAVESTREAM_ENVIRONMENT: production
+      SAVESTREAM_DATABASE_URL_FILE: /run/secrets/database_url
+      SAVESTREAM_REDIS_URL_FILE: /run/secrets/redis_url
+      SAVESTREAM_CELERY_BROKER_URL_FILE: /run/secrets/celery_broker_url
+      SAVESTREAM_CELERY_RESULT_BACKEND_FILE: /run/secrets/celery_result_backend
+      SAVESTREAM_MINIO_ACCESS_KEY_FILE: /run/secrets/minio_access_key
+      SAVESTREAM_MINIO_SECRET_KEY_FILE: /run/secrets/minio_secret_key
+      SAVESTREAM_JWT_SECRET_FILE: /run/secrets/jwt_secret
+      SAVESTREAM_PAYMENT_PROVIDER_API_KEY_FILE: /run/secrets/payment_api_key
+      SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
+      SAVESTREAM_METRICS_TOKEN_FILE: /run/secrets/metrics_token
+      SAVESTREAM_MINIO_ENDPOINT: ${SAVESTREAM_MINIO_ENDPOINT:?set minio endpoint}
+      SAVESTREAM_MINIO_BUCKET: ${SAVESTREAM_MINIO_BUCKET:-savestream-recordings}
+      SAVESTREAM_MINIO_SECURE: "true"
+      SAVESTREAM_FRONTEND_BASE_URL: ${SAVESTREAM_FRONTEND_BASE_URL:?set frontend url}
+      SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:?set cors origins}
+      SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:?set payment provider}
+      SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: ${SAVESTREAM_PAYMENT_PROVIDER_BASE_URL:?set payment provider url}
+      SAVESTREAM_TRUSTED_PROXY_CIDRS: 172.16.0.0/12
+      SAVESTREAM_FORCE_HTTPS: "true"
+      SAVESTREAM_API_RATE_LIMIT: ${SAVESTREAM_API_RATE_LIMIT:-300}
+      SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: ${SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER:?set watch quota}
+      SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: ${SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY:?set daily recording quota}
+      SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: ${SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER:?set active recording quota}
+      SAVESTREAM_RECORDING_RETENTION_DAYS: ${SAVESTREAM_RECORDING_RETENTION_DAYS:-0}
+      SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS: ${SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS:-0}
+    secrets: &app-secrets
+      - database_url
+      - redis_url
+      - celery_broker_url
+      - celery_result_backend
+      - minio_access_key
+      - minio_secret_key
+      - jwt_secret
+      - payment_api_key
+      - payment_webhook_secret
+      - metrics_token
+    networks: [backend]
+    expose: ["8000"]
+
+  worker:
+    build: ./backend
+    command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    environment: *app-env
+    secrets: *app-secrets
+    networks: [backend]
+
+  scheduler:
+    build: ./backend
+    command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "beat", "--loglevel=INFO"]
+    environment: *app-env
+    secrets: *app-secrets
+    networks: [backend]
+
+  outbox-dispatcher:
+    build: ./backend
+    command: ["python", "-m", "app.infrastructure.queue.outbox"]
+    environment: *app-env
+    secrets: *app-secrets
+    networks: [backend]
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+
+secrets:
+  database_url:
+    file: ./secrets/database_url
+  redis_url:
+    file: ./secrets/redis_url
+  celery_broker_url:
+    file: ./secrets/celery_broker_url
+  celery_result_backend:
+    file: ./secrets/celery_result_backend
+  minio_access_key:
+    file: ./secrets/minio_access_key
+  minio_secret_key:
+    file: ./secrets/minio_secret_key
+  jwt_secret:
+    file: ./secrets/jwt_secret
+  payment_api_key:
+    file: ./secrets/payment_api_key
+  payment_webhook_secret:
+    file: ./secrets/payment_webhook_secret
+  metrics_token:
+    file: ./secrets/metrics_token
