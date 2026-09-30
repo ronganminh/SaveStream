@@ -731,6 +731,8 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).last,
     );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Giao diện'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tối'));
