@@ -142,8 +142,15 @@ void main() {
     await tester.pump();
 
     expect(repository.stopCalls, 1);
-    expect(find.text('Stopped'), findsWidgets);
     expect(find.text('Stop recording'), findsNothing);
+
+    await tester.drag(
+      find.byType(Scrollable).last,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stopped'), findsWidgets);
   });
 
   testWidgets('critical flow billing -> pending -> paid', (
