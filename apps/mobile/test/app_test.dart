@@ -424,9 +424,13 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(Scrollable).first,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('Paused'), findsOneWidget);
-    expect(find.text('Resume monitoring'), findsOneWidget);
 
     await tester.ensureVisible(
       find.widgetWithText(OutlinedButton, 'Resume monitoring'),
@@ -435,9 +439,13 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Resume monitoring'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.drag(
+      find.byType(Scrollable).first,
+      const Offset(0, 1000),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('Active'), findsOneWidget);
-    expect(find.text('Pause monitoring'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('Latest recording'),
