@@ -11,6 +11,7 @@ export const isProductionMode = appMode === "production";
  * later without changing route visibility rules or presentation components.
  */
 export type FrontendIdentity = {
+  source: AppMode;
   authenticated: boolean;
   role: AppRole;
 };
