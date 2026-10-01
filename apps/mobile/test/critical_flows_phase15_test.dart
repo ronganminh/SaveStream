@@ -45,10 +45,7 @@ void main() {
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
 
-    final Finder getStarted = find.widgetWithText(
-      FilledButton,
-      'Get started',
-    );
+    final Finder getStarted = find.widgetWithText(FilledButton, 'Get started');
     await tester.ensureVisible(getStarted);
     await tester.tap(getStarted);
     await tester.pumpAndSettle();
@@ -112,10 +109,7 @@ void main() {
         _TerminalStopRecordingRepository();
 
     await tester.pumpWidget(
-      SaveStreamApp(
-        config: testConfig(),
-        recordingRepository: repository,
-      ),
+      SaveStreamApp(config: testConfig(), recordingRepository: repository),
     );
     await tester.pump();
 
@@ -213,8 +207,9 @@ final class _TerminalStopRecordingRepository implements RecordingRepository {
   int stopCalls = 0;
 
   @override
-  Future<List<RecordingSummary>> listRecordings() async =>
-      <RecordingSummary>[_recording];
+  Future<List<RecordingSummary>> listRecordings() async => <RecordingSummary>[
+    _recording,
+  ];
 
   @override
   Future<RecordingPage> listRecordingPage({

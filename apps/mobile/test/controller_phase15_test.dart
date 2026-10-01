@@ -36,28 +36,31 @@ void main() {
       expect(repository.signInCalls, 1);
     });
 
-    test('email-not-verified failure keeps pending email for verify flow', () async {
-      final _FakeAuthRepository repository = _FakeAuthRepository(
-        signInFailure: AuthFailureCode.emailNotVerified,
-      );
-      final AppSessionController session = AppSessionController(
-        authStatus: AppAuthStatus.unauthenticated,
-      );
-      final AuthController controller = AuthController(
-        repository: repository,
-        session: session,
-      );
+    test(
+      'email-not-verified failure keeps pending email for verify flow',
+      () async {
+        final _FakeAuthRepository repository = _FakeAuthRepository(
+          signInFailure: AuthFailureCode.emailNotVerified,
+        );
+        final AppSessionController session = AppSessionController(
+          authStatus: AppAuthStatus.unauthenticated,
+        );
+        final AuthController controller = AuthController(
+          repository: repository,
+          session: session,
+        );
 
-      final bool success = await controller.signIn(
-        email: 'pending@example.com',
-        password: 'secret',
-      );
+        final bool success = await controller.signIn(
+          email: 'pending@example.com',
+          password: 'secret',
+        );
 
-      expect(success, isFalse);
-      expect(controller.failure, AuthFailureCode.emailNotVerified);
-      expect(session.authStatus, AppAuthStatus.unauthenticated);
-      expect(session.pendingVerificationEmail, 'pending@example.com');
-    });
+        expect(success, isFalse);
+        expect(controller.failure, AuthFailureCode.emailNotVerified);
+        expect(session.authStatus, AppAuthStatus.unauthenticated);
+        expect(session.pendingVerificationEmail, 'pending@example.com');
+      },
+    );
   });
 
   group('WatchController', () {
@@ -159,26 +162,29 @@ void main() {
   });
 
   group('BillingController', () {
-    test('mutations notify snapshot listeners after repository calls', () async {
-      final _FakeBillingRepository repository = _FakeBillingRepository();
-      int changes = 0;
-      final BillingController controller = BillingController(
-        repository: repository,
-        onChanged: () => changes += 1,
-      );
+    test(
+      'mutations notify snapshot listeners after repository calls',
+      () async {
+        final _FakeBillingRepository repository = _FakeBillingRepository();
+        int changes = 0;
+        final BillingController controller = BillingController(
+          repository: repository,
+          onChanged: () => changes += 1,
+        );
 
-      final PaymentOrder? order = await controller.createOrder('pkg-1');
-      final CheckoutSession? checkout = await controller.createCheckout(
-        orderId: order!.id,
-        returnUri: Uri.parse('savestream:/billing/return?order_id=order-1'),
-      );
-      final PaymentOrder? refreshed = await controller.refreshOrder(order.id);
+        final PaymentOrder? order = await controller.createOrder('pkg-1');
+        final CheckoutSession? checkout = await controller.createCheckout(
+          orderId: order!.id,
+          returnUri: Uri.parse('savestream:/billing/return?order_id=order-1'),
+        );
+        final PaymentOrder? refreshed = await controller.refreshOrder(order.id);
 
-      expect(order.status, PaymentOrderStatus.created);
-      expect(checkout?.paymentOrder.status, PaymentOrderStatus.pending);
-      expect(refreshed?.status, PaymentOrderStatus.paid);
-      expect(changes, 3);
-    });
+        expect(order.status, PaymentOrderStatus.created);
+        expect(checkout?.paymentOrder.status, PaymentOrderStatus.pending);
+        expect(refreshed?.status, PaymentOrderStatus.paid);
+        expect(changes, 3);
+      },
+    );
   });
 }
 
@@ -198,7 +204,10 @@ final class _FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> register({required String email, required String password}) async {}
+  Future<void> register({
+    required String email,
+    required String password,
+  }) async {}
 
   @override
   Future<void> verifyEmail({required String token}) async {}
@@ -250,7 +259,8 @@ final class _FakeWatchRepository implements WatchRepository {
   Future<void> deleteWatch(String id) async {}
 
   @override
-  Future<WatchSummary?> getWatch(String id) async => _watch(id, WatchStatus.active);
+  Future<WatchSummary?> getWatch(String id) async =>
+      _watch(id, WatchStatus.active);
 
   @override
   Future<List<WatchSummary>> listWatches() async => <WatchSummary>[
@@ -299,7 +309,9 @@ final class _FakeRecordingRepository implements RecordingRepository {
   }
 
   @override
-  Future<RecordingSummary> createRecording(CreateRecordingCommand command) async {
+  Future<RecordingSummary> createRecording(
+    CreateRecordingCommand command,
+  ) async {
     return _recording('rec-new', RecordingStatus.queued);
   }
 
@@ -311,8 +323,9 @@ final class _FakeRecordingRepository implements RecordingRepository {
       _recording(id, RecordingStatus.recording);
 
   @override
-  Future<List<RecordingSummary>> listRecordings() async =>
-      <RecordingSummary>[_recording('rec-1', RecordingStatus.recording)];
+  Future<List<RecordingSummary>> listRecordings() async => <RecordingSummary>[
+    _recording('rec-1', RecordingStatus.recording),
+  ];
 
   @override
   Future<RecordingPage> listRecordingPage({
@@ -327,11 +340,14 @@ final class _FakeRecordingRepository implements RecordingRepository {
   }
 
   @override
-  Future<List<RecordingArtifactSummary>> listArtifacts(String recordingId) async =>
-      const <RecordingArtifactSummary>[];
+  Future<List<RecordingArtifactSummary>> listArtifacts(
+    String recordingId,
+  ) async => const <RecordingArtifactSummary>[];
 
   @override
-  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(String artifactId) async {
+  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(
+    String artifactId,
+  ) async {
     return ArtifactDownloadUrl(
       uri: Uri.parse('https://example.com/artifact.mp4'),
       expiresAt: DateTime.utc(2026, 10, 1, 12),
