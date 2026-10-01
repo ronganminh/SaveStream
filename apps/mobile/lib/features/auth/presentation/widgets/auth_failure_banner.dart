@@ -24,7 +24,10 @@ class AuthFailureBanner extends StatelessWidget {
     final String message = switch (failure) {
       AuthFailureCode.invalidCredentials => l10n.invalidCredentialsMessage,
       AuthFailureCode.emailNotVerified => l10n.emailNotVerifiedMessage,
+      AuthFailureCode.invalidToken => l10n.authInvalidTokenMessage,
+      AuthFailureCode.validation => l10n.authValidationErrorMessage,
       AuthFailureCode.rateLimited => l10n.rateLimitedMessage,
+      AuthFailureCode.sessionExpired => l10n.authSessionExpiredMessage,
       AuthFailureCode.server => l10n.authServerErrorMessage,
       AuthFailureCode.offlineLike => l10n.offlineErrorBody,
     };

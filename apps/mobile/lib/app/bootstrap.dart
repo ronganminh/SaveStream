@@ -5,8 +5,10 @@ import 'package:flutter/widgets.dart';
 import '../core/config/app_config.dart';
 import '../core/errors/app_error_reporter.dart';
 import '../core/storage/shared_preferences_app_settings_store.dart';
+import '../features/auth/data/auth_runtime.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
+import 'session/app_session_controller.dart';
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,5 +26,22 @@ Future<void> bootstrap() async {
   );
   await settings.initialize();
 
-  runApp(SaveStreamApp(config: config, settings: settings));
+  final AppSessionController session = AppSessionController(
+    authStatus: AppAuthStatus.unauthenticated,
+  );
+  final AuthRuntime authRuntime = AuthRuntime.create(
+    config: config,
+    appSession: session,
+  );
+  await authRuntime.sessionManager.restoreSession();
+
+  runApp(
+    SaveStreamApp(
+      config: config,
+      settings: settings,
+      session: session,
+      authRepository: authRuntime.repository,
+      apiClient: authRuntime.authenticatedApiClient,
+    ),
+  );
 }

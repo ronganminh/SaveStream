@@ -215,7 +215,7 @@ void main() {
     expect(find.text('The email or password is incorrect.'), findsOneWidget);
   });
 
-  testWidgets('registers then verifies email through mock auth', (
+  testWidgets('registers then verifies email and returns to sign in', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -228,8 +228,8 @@ void main() {
 
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'new@example.com');
-    await tester.enterText(fields.at(1), 'x');
-    await tester.enterText(fields.at(2), 'x');
+    await tester.enterText(fields.at(1), 'password-123');
+    await tester.enterText(fields.at(2), 'password-123');
     await tester.tap(find.byType(Checkbox));
     await tester.pump();
     final Finder createAccountButton = find.widgetWithText(
@@ -245,14 +245,17 @@ void main() {
     expect(find.text('Verify email'), findsWidgets);
     expect(find.text('new@example.com'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField), '123456');
+    await tester.enterText(
+      find.byType(TextFormField),
+      'verification-token-123456',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Verify email'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Sign in'), findsWidgets);
   });
 
   testWidgets('forgot password reaches generic sent state', (
@@ -272,6 +275,35 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Check your email'), findsOneWidget);
+  });
+
+  testWidgets('reset password accepts backend token contract', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(config: testConfig(), session: signedOutSession()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Forgot password?'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField), 'alex@example.com');
+    await tester.tap(find.widgetWithText(FilledButton, 'Send reset link'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('I have a reset token'));
+    await tester.pumpAndSettle();
+
+    final Finder fields = find.byType(TextFormField);
+    await tester.enterText(fields.at(0), 'password-reset-token-123456');
+    await tester.enterText(fields.at(1), 'new-password-123');
+    await tester.enterText(fields.at(2), 'new-password-123');
+    await tester.tap(find.widgetWithText(FilledButton, 'Reset password'));
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sign in'), findsWidgets);
   });
 
   testWidgets('navigates mock channel detail and preserves tab stack', (

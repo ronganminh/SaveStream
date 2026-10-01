@@ -15,6 +15,7 @@ enum _AuthOperation {
   verifyEmail,
   resendVerification,
   forgotPassword,
+  resetPassword,
   logout,
   deleteAccount,
 }
@@ -39,7 +40,7 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> verifyEmail({required String email, required String code}) {
+  Future<void> verifyEmail({required String token}) {
     return _respond(_AuthOperation.verifyEmail);
   }
 
@@ -51,6 +52,14 @@ class MockAuthRepository implements AuthRepository {
   @override
   Future<void> forgotPassword({required String email}) {
     return _respond(_AuthOperation.forgotPassword);
+  }
+
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  }) {
+    return _respond(_AuthOperation.resetPassword);
   }
 
   @override

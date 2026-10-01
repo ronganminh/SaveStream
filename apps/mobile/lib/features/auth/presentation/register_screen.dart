@@ -121,6 +121,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       if (value == null || value.isEmpty) {
                         return l10n.passwordRequiredMessage;
                       }
+                      if (value.length < 8) {
+                        return l10n.passwordMinLengthMessage;
+                      }
                       return null;
                     },
                   ),

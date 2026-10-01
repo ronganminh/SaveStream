@@ -20,9 +20,7 @@ class AuthController extends ChangeNotifier {
   AuthFailureCode? get failure => _failure;
 
   void clearFailure() {
-    if (_failure == null) {
-      return;
-    }
+    if (_failure == null) return;
     _failure = null;
     notifyListeners();
   }
@@ -59,16 +57,12 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<bool> verifyEmail({
-    required String email,
-    required String code,
-  }) async {
+  Future<bool> verifyEmail({required String token}) async {
     _start();
     try {
-      await _repository.verifyEmail(email: email, code: code);
+      await _repository.verifyEmail(token: token);
       _session.clearPendingVerificationEmail();
       _finish();
-      _session.markAuthenticated();
       return true;
     } on AuthException catch (error) {
       _fail(error.code);
@@ -92,6 +86,21 @@ class AuthController extends ChangeNotifier {
     _start();
     try {
       await _repository.forgotPassword(email: email);
+      _finish();
+      return true;
+    } on AuthException catch (error) {
+      _fail(error.code);
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword({
+    required String token,
+    required String password,
+  }) async {
+    _start();
+    try {
+      await _repository.resetPassword(token: token, password: password);
       _finish();
       return true;
     } on AuthException catch (error) {
