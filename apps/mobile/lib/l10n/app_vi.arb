@@ -439,5 +439,16 @@
         "type": "int"
       }
     }
-  }
+  },
+  "nonRetryableErrorTitle": "Không thể hoàn tất",
+  "nonRetryableErrorBody": "SaveStream không thể tự động thử lại yêu cầu này. Hãy thử lại sau hoặc liên hệ hỗ trợ nếu lỗi tiếp diễn.",
+  "requestIdLabel": "Request ID: {requestId}",
+  "@requestIdLabel": {
+    "placeholders": {
+      "requestId": {
+        "type": "String"
+      }
+    }
+  },
+  "refreshingLabel": "Đang làm mới…"
 }
