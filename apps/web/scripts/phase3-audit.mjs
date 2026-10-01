@@ -36,7 +36,8 @@ must("src/repositories/contracts.ts", "interface ChannelRepository");
 must("src/repositories/api.ts", "BackendUnavailableError");
 must("src/repositories/demo.ts", "demoRepositories");
 must("src/hooks/use-domain-data.ts", "toResourceState");
-must("src/hooks/use-domain-data.ts", "repositories.recordings.list()");
+must("src/hooks/use-domain-data.ts", "getRepositories");
+must("src/hooks/use-domain-data.ts", ".recordings.list()");
 
 const appPages = "src/components/app-pages.tsx";
 const overview = block(appPages, "export function OverviewPage", "export function ChannelsPage");
