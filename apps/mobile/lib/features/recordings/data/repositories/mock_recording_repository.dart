@@ -220,6 +220,45 @@ final class MockRecordingRepository extends MockRepositoryBase
   }
 
   @override
+  Future<RecordingSummary> createRecording(CreateRecordingCommand command) {
+    return respond<RecordingSummary>(
+      success: () {
+        final String username = command.sourceValue.replaceFirst('@', '');
+        final RecordingSummary created = RecordingSummary(
+          id: 'rec_${(_items.length + 1).toString().padLeft(3, '0')}',
+          sourceType: command.sourceType,
+          sourceValue: command.sourceValue,
+          creatorDisplayName: username.isEmpty ? 'TikTok creator' : username,
+          creatorUsername: username.isEmpty ? '@unknown' : '@$username',
+          status: RecordingStatus.queued,
+          actions: const RecordingActions(
+            canStop: true,
+            canRetry: false,
+            canDelete: false,
+          ),
+          startedAt: null,
+          durationSeconds: 0,
+        );
+        _items.insert(0, created);
+        return created;
+      },
+      empty: () => const RecordingSummary(
+        id: 'rec_empty',
+        creatorDisplayName: 'TikTok creator',
+        creatorUsername: '@unknown',
+        status: RecordingStatus.queued,
+        actions: RecordingActions(
+          canStop: true,
+          canRetry: false,
+          canDelete: false,
+        ),
+        startedAt: null,
+        durationSeconds: 0,
+      ),
+    );
+  }
+
+  @override
   Future<RecordingSummary?> stopRecording(String id) {
     return respond<RecordingSummary?>(
       success: () => _update(
@@ -264,6 +303,51 @@ final class MockRecordingRepository extends MockRepositoryBase
       },
       empty: () {},
     );
+  }
+
+  @override
+  Future<List<RecordingArtifactSummary>> listArtifacts(
+    String recordingId,
+  ) {
+    return respond<List<RecordingArtifactSummary>>(
+      success: () {
+        final RecordingSummary? recording = _find(recordingId);
+        if (recording == null || !recording.artifactReady) {
+          return const <RecordingArtifactSummary>[];
+        }
+        return <RecordingArtifactSummary>[
+          RecordingArtifactSummary(
+            id: 'artifact_$recordingId',
+            recordingId: recordingId,
+            sizeBytes: recording.sizeBytes ?? recording.bytesRecorded ?? 0,
+            checksumSha256: 'mock-checksum-$recordingId',
+            createdAt: recording.startedAt ?? DateTime.utc(2026, 9, 30),
+          ),
+        ];
+      },
+      empty: () => const <RecordingArtifactSummary>[],
+    );
+  }
+
+  @override
+  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(
+    String artifactId,
+  ) {
+    return respond<ArtifactDownloadUrl>(
+      success: () => ArtifactDownloadUrl(
+        uri: Uri.parse('https://example.com/$artifactId.mp4'),
+        expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 15)),
+      ),
+      empty: () => ArtifactDownloadUrl(
+        uri: Uri.parse('https://example.com/empty.mp4'),
+        expiresAt: DateTime.now().toUtc().add(const Duration(minutes: 15)),
+      ),
+    );
+  }
+
+  @override
+  Stream<RecordingSummary?> watchRecording(String id) async* {
+    yield await getRecording(id);
   }
 
   bool _matchesFilter(RecordingSummary item, RecordingFilter filter) {

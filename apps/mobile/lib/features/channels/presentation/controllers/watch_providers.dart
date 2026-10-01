@@ -49,7 +49,10 @@ final channelDetailProvider =
 
       final List<RecordingSummary> recordings =
           (values[1] as List<RecordingSummary>)
-              .where((RecordingSummary item) => item.watchId == id)
+              .where(
+                (RecordingSummary item) =>
+                    _recordingBelongsToWatch(item, watch, id),
+              )
               .toList(growable: false);
 
       return ChannelDetailViewModel(watch: watch, recordings: recordings);
@@ -125,4 +128,36 @@ class WatchController {
     _invalidateDetail(id);
     _notifyChanged();
   }
+}
+
+
+bool _recordingBelongsToWatch(
+  RecordingSummary recording,
+  WatchSummary watch,
+  String watchId,
+) {
+  if (recording.watchId == watchId) {
+    return true;
+  }
+
+  final WatchSourceType? watchSourceType = watch.sourceType;
+  final String? watchSourceValue = watch.sourceValue;
+  if (watchSourceType != null && watchSourceValue != null) {
+    if (recording.sourceType.apiValue == watchSourceType.apiValue &&
+        _normalizeSource(recording.sourceValue) ==
+            _normalizeSource(watchSourceValue)) {
+      return true;
+    }
+  }
+
+  return _normalizeUsername(recording.creatorUsername) ==
+      _normalizeUsername(watch.creatorUsername);
+}
+
+String _normalizeSource(String value) {
+  return value.trim().replaceFirst(RegExp(r'/+$'), '').toLowerCase();
+}
+
+String _normalizeUsername(String value) {
+  return value.trim().replaceFirst('@', '').toLowerCase();
 }

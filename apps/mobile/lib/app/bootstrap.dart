@@ -7,6 +7,7 @@ import '../core/errors/app_error_reporter.dart';
 import '../core/storage/shared_preferences_app_settings_store.dart';
 import '../features/auth/data/auth_runtime.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
+import '../features/recordings/data/repositories/api_recording_repository.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
 import 'session/app_session_controller.dart';
@@ -44,6 +45,9 @@ Future<void> bootstrap() async {
       authRepository: authRuntime.repository,
       apiClient: authRuntime.authenticatedApiClient,
       watchRepository: ApiWatchRepository(
+        apiClient: authRuntime.authenticatedApiClient,
+      ),
+      recordingRepository: ApiRecordingRepository(
         apiClient: authRuntime.authenticatedApiClient,
       ),
     ),
