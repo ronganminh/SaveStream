@@ -1932,7 +1932,7 @@ export function HelpPage() {
         {helpTopics.map((topic) => {
           const I = topic.icon;
           return (
-            <section key={topic.id} id={t.id} className="scroll-mt-24 rounded-lg border bg-surface p-5">
+            <section key={topic.id} id={topic.id} className="scroll-mt-24 rounded-lg border bg-surface p-5">
               <div className="flex items-center gap-2">
                 <I className="size-4 text-primary" />
                 <h2 className="font-medium">{t(topic.title)}</h2>
