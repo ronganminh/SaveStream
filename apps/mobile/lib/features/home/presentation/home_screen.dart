@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../channels/domain/models/watch_summary.dart';
@@ -34,22 +32,23 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: dashboard.when(
-          loading: () => const _HomeSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(homeDashboardProvider),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: dashboard.isRefreshing,
+          child: dashboard.when(
+            loading: () => const _HomeSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(homeDashboardProvider),
+              ),
             ),
-          ),
-          data: (HomeDashboardViewModel data) => RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(homeDashboardProvider);
-              await ref.read(homeDashboardProvider.future);
-            },
-            child: _HomeDashboard(data: data),
+            data: (HomeDashboardViewModel data) => RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(homeDashboardProvider);
+                await ref.read(homeDashboardProvider.future);
+              },
+              child: _HomeDashboard(data: data),
+            ),
           ),
         ),
       ),
@@ -572,26 +571,4 @@ SsStatusTone _recordingStatusTone(RecordingStatus status) {
     RecordingStatus.processing ||
     RecordingStatus.uploading => SsStatusTone.neutral,
   };
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
 }

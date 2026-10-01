@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/credit_models.dart';
@@ -24,22 +22,23 @@ class CreditsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.creditsTitle)),
       body: SafeArea(
-        child: overview.when(
-          loading: () => const _CreditsSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(creditsOverviewProvider),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: overview.isRefreshing,
+          child: overview.when(
+            loading: () => const _CreditsSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(creditsOverviewProvider),
+              ),
             ),
-          ),
           data: (CreditsOverview data) => RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(creditsOverviewProvider);
               await ref.read(creditsOverviewProvider.future);
             },
             child: _CreditsBody(data: data),
+            ),
           ),
         ),
       ),
@@ -414,22 +413,4 @@ String _formatTimestamp(BuildContext context, DateTime value) {
   final MaterialLocalizations material = MaterialLocalizations.of(context);
   final DateTime local = value.toLocal();
   return '${material.formatMediumDate(local)} · ${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) return l10n.offlineErrorTitle;
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) return l10n.offlineErrorBody;
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
 }

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/user_profile.dart';
@@ -19,16 +18,16 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.profileTitle)),
       body: SafeArea(
-        child: profile.when(
-          loading: () => const _ProfileSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(profileProvider),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: profile.isRefreshing,
+          child: profile.when(
+            loading: () => const _ProfileSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(profileProvider),
+              ),
             ),
-          ),
           data: (UserProfile data) => ListView(
             padding: const EdgeInsets.all(SsSpacing.lg),
             children: <Widget>[
@@ -86,6 +85,7 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            ),
           ),
         ),
       ),
@@ -135,20 +135,4 @@ class _ProfileSkeleton extends StatelessWidget {
       ],
     );
   }
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
-    return l10n.offlineErrorBody;
-  }
-  return l10n.errorBody;
 }
