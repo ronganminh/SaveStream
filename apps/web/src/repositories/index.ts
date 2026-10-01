@@ -1,16 +1,8 @@
 import { isDemoMode } from "@/lib/app-config";
-import type { SaveStreamRepositories } from "@/repositories/contracts";
+import { apiRepositories } from "@/repositories/api";
+import { demoRepositories } from "@/repositories/demo";
 
-let repositoryPromise: Promise<SaveStreamRepositories> | null = null;
-
-export function getRepositories(): Promise<SaveStreamRepositories> {
-  if (!repositoryPromise) {
-    repositoryPromise = isDemoMode
-      ? import("@/repositories/demo").then((module) => module.demoRepositories)
-      : import("@/repositories/api").then((module) => module.apiRepositories);
-  }
-  return repositoryPromise;
-}
+export const repositories = isDemoMode ? demoRepositories : apiRepositories;
 
 export type {
   ChannelRepository,

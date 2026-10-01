@@ -24,6 +24,8 @@ services:
       SAVESTREAM_MINIO_ACCESS_KEY_FILE: /run/secrets/minio_access_key
       SAVESTREAM_MINIO_SECRET_KEY_FILE: /run/secrets/minio_secret_key
       SAVESTREAM_JWT_SECRET_FILE: /run/secrets/jwt_secret
+      SAVESTREAM_SMTP_USERNAME_FILE: /run/secrets/smtp_username
+      SAVESTREAM_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
       SAVESTREAM_PAYMENT_PROVIDER_API_KEY_FILE: /run/secrets/payment_api_key
       SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
       SAVESTREAM_METRICS_TOKEN_FILE: /run/secrets/metrics_token
@@ -32,8 +34,14 @@ services:
       SAVESTREAM_MINIO_SECURE: "true"
       SAVESTREAM_FRONTEND_BASE_URL: ${SAVESTREAM_FRONTEND_BASE_URL:?set frontend url}
       SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:?set cors origins}
+      SAVESTREAM_SMTP_HOST: ${SAVESTREAM_SMTP_HOST:-smtp-relay.brevo.com}
+      SAVESTREAM_SMTP_PORT: ${SAVESTREAM_SMTP_PORT:-587}
+      SAVESTREAM_SMTP_STARTTLS: ${SAVESTREAM_SMTP_STARTTLS:-true}
+      SAVESTREAM_EMAIL_FROM: ${SAVESTREAM_EMAIL_FROM:?set verified sender}
       SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:?set payment provider}
-      SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: ${SAVESTREAM_PAYMENT_PROVIDER_BASE_URL:?set payment provider url}
+      SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: ${SAVESTREAM_PAYMENT_PROVIDER_BASE_URL:-https://api.lemonsqueezy.com/v1}
+      SAVESTREAM_LEMON_SQUEEZY_STORE_ID: ${SAVESTREAM_LEMON_SQUEEZY_STORE_ID:?set Lemon Squeezy store id}
+      SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: ${SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID:?set Lemon Squeezy variant id}
       SAVESTREAM_TRUSTED_PROXY_CIDRS: 172.16.0.0/12
       SAVESTREAM_FORCE_HTTPS: "true"
       SAVESTREAM_API_RATE_LIMIT: ${SAVESTREAM_API_RATE_LIMIT:-300}
@@ -50,6 +58,8 @@ services:
       - minio_access_key
       - minio_secret_key
       - jwt_secret
+      - smtp_username
+      - smtp_password
       - payment_api_key
       - payment_webhook_secret
       - metrics_token
@@ -97,6 +107,10 @@ secrets:
     file: ./secrets/minio_secret_key
   jwt_secret:
     file: ./secrets/jwt_secret
+  smtp_username:
+    file: ./secrets/smtp_username
+  smtp_password:
+    file: ./secrets/smtp_password
   payment_api_key:
     file: ./secrets/payment_api_key
   payment_webhook_secret:

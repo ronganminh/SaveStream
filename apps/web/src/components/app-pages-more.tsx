@@ -95,7 +95,6 @@ import {
 import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
-import { trackEvent } from "@/lib/analytics";
 
 const mono = "font-mono text-xs";
 
@@ -1905,10 +1904,6 @@ const helpTopics: { id: string; icon: typeof Cloud; title: string; body: string 
 export function HelpPage() {
   const { t } = usePreferences();
   const [contact, setContact] = useState(false);
-  const openSupport = () => {
-    trackEvent("support_opened", { source: "help" });
-    setContact(true);
-  };
   const [msg, setMsg] = useState("");
   return (
     <AppShell>
@@ -1916,7 +1911,7 @@ export function HelpPage() {
         title="Help"
         subtitle="Guidance for monitoring and recording authorized TikTok channels."
         action={
-          <Button variant="outline" onClick={openSupport}>
+          <Button variant="outline" onClick={() => setContact(true)}>
             <LifeBuoy />
             {t("Contact support")}
           </Button>
@@ -1956,7 +1951,7 @@ export function HelpPage() {
           <h2 className="font-medium">{t("Still need help?")}</h2>
           <p className="text-sm text-muted-foreground">{t("This demo does not send support messages.")}</p>
         </div>
-        <Button onClick={openSupport}>{t("Contact support")}</Button>
+        <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
       </section>
       <p className="mt-4 text-xs text-muted-foreground">
         <Link to="/status" className="text-primary underline underline-offset-4">

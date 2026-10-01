@@ -46,6 +46,12 @@ jobs:
           SAVESTREAM_JWT_SECRET: ci-production-jwt-secret-at-least-thirty-two-characters
           SAVESTREAM_FRONTEND_BASE_URL: https://app.example.test
           SAVESTREAM_CORS_ALLOW_ORIGINS: https://app.example.test
+          SAVESTREAM_SMTP_HOST: smtp-relay.brevo.com
+          SAVESTREAM_SMTP_PORT: 587
+          SAVESTREAM_SMTP_USERNAME: ci-smtp-login
+          SAVESTREAM_SMTP_PASSWORD: ci-smtp-key
+          SAVESTREAM_SMTP_STARTTLS: "true"
+          SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@example.test>
           SAVESTREAM_PAYMENT_PROVIDER: gateway
           SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://payments.example.test
           SAVESTREAM_PAYMENT_PROVIDER_API_KEY: ci-provider-key
