@@ -190,6 +190,12 @@ class AppSettings:
         smtp_password = _secret_env("SMTP_PASSWORD", "")
         smtp_starttls = _bool_env("SMTP_STARTTLS", False)
         email_from = _env("EMAIL_FROM", "SaveStream <no-reply@savestream.local>")
+        if payment_provider == "lemonsqueezy" and not (
+            6 <= len(payment_webhook_secret) <= 40
+        ):
+            raise ValueError(
+                "Lemon Squeezy webhook secret must be 6 to 40 characters"
+            )
         metrics_token = _secret_env("METRICS_TOKEN", "savestream-local-metrics")
         trusted_proxy_cidrs = _csv_env("TRUSTED_PROXY_CIDRS", "")
         force_https = _bool_env("FORCE_HTTPS", environment_raw == "production")
