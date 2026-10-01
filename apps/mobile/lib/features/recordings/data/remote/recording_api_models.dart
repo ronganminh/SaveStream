@@ -58,7 +58,10 @@ final class RecordingApiModel {
       if (platform != null && platform != 'tiktok') {
         throw const FormatException('Unsupported creator platform.');
       }
-      creatorUsername = _requiredString(creator['username'], 'creator.username');
+      creatorUsername = _requiredString(
+        creator['username'],
+        'creator.username',
+      );
       creatorDisplayName = _requiredString(
         creator['display_name'],
         'creator.display_name',
@@ -94,9 +97,7 @@ final class RecordingApiModel {
       sourceValue: sourceValue,
       creatorDisplayName: normalizedDisplayName,
       creatorUsername: normalizedUsername,
-      status: recordingStatusFromApi(
-        _requiredString(map['status'], 'status'),
-      ),
+      status: recordingStatusFromApi(_requiredString(map['status'], 'status')),
       actions: RecordingActions(
         canStop: _requiredBool(actions['can_stop'], 'actions.can_stop'),
         canRetry: _requiredBool(actions['can_retry'], 'actions.can_retry'),

@@ -139,8 +139,8 @@ final recordingDetailProvider =
       return ref.watch(recordingRepositoryProvider).getRecording(id);
     });
 
-final recordingRealtimeProvider =
-    StreamProvider.autoDispose.family<RecordingSummary?, String>((ref, id) async* {
+final recordingRealtimeProvider = StreamProvider.autoDispose
+    .family<RecordingSummary?, String>((ref, id) async* {
       await for (final RecordingSummary? recording
           in ref.watch(recordingRepositoryProvider).watchRecording(id)) {
         if (recording != null && !recording.isActiveLifecycle) {
@@ -211,9 +211,7 @@ class RecordingController {
     return _mutate(id, () => _repository.deleteRecording(id));
   }
 
-  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(
-    String artifactId,
-  ) {
+  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(String artifactId) {
     return _repository.createArtifactDownloadUrl(artifactId);
   }
 

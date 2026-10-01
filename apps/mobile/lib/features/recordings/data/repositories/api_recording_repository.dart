@@ -78,7 +78,9 @@ final class ApiRecordingRepository implements RecordingRepository {
           })
           .toList(growable: false);
 
-      if (mapped.isNotEmpty || !page.hasMore || filter != RecordingFilter.active) {
+      if (mapped.isNotEmpty ||
+          !page.hasMore ||
+          filter != RecordingFilter.active) {
         return RecordingPage(
           items: List<RecordingSummary>.unmodifiable(mapped),
           nextCursor: page.hasMore ? page.nextCursor : null,
@@ -182,9 +184,7 @@ final class ApiRecordingRepository implements RecordingRepository {
       decoder: recordingArtifactsFromJson,
     );
     return List<RecordingArtifactSummary>.unmodifiable(
-      response.data.map(
-        (RecordingArtifactApiModel item) => item.toDomain(),
-      ),
+      response.data.map((RecordingArtifactApiModel item) => item.toDomain()),
     );
   }
 
@@ -236,10 +236,7 @@ final class ApiRecordingRepository implements RecordingRepository {
         // SSE failures fall through to the canonical REST snapshot below.
       }
 
-      current = await _pollFallback(
-        id,
-        reconnectAttempt: reconnectAttempt,
-      );
+      current = await _pollFallback(id, reconnectAttempt: reconnectAttempt);
       yield current;
       if (current == null || !current.isActiveLifecycle) {
         return;
@@ -266,7 +263,9 @@ final class ApiRecordingRepository implements RecordingRepository {
         }
         if (pollAttempt >= 3) rethrow;
       }
-      await Future<void>.delayed(_reconnectDelay(reconnectAttempt + pollAttempt));
+      await Future<void>.delayed(
+        _reconnectDelay(reconnectAttempt + pollAttempt),
+      );
       pollAttempt += 1;
     }
   }

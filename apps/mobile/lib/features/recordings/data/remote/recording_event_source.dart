@@ -6,10 +6,7 @@ import '../../domain/models/recording_summary.dart';
 import 'recording_api_models.dart';
 
 abstract interface class RecordingEventSource {
-  Stream<RecordingEvent> connect(
-    String recordingId, {
-    String? lastEventId,
-  });
+  Stream<RecordingEvent> connect(String recordingId, {String? lastEventId});
 }
 
 final class DioRecordingEventSource implements RecordingEventSource {
@@ -35,9 +32,7 @@ final class DioRecordingEventSource implements RecordingEventSource {
     final List<String> dataLines = <String>[];
 
     await for (final String line
-        in utf8.decoder
-            .bind(response.stream)
-            .transform(const LineSplitter())) {
+        in utf8.decoder.bind(response.stream).transform(const LineSplitter())) {
       if (line.isEmpty) {
         if (dataLines.isNotEmpty) {
           yield _decodeEvent(

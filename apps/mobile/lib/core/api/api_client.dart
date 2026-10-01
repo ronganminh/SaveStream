@@ -123,10 +123,7 @@ final class ApiClient {
         path,
         queryParameters: queryParameters,
         cancelToken: cancelToken,
-        options: Options(
-          responseType: ResponseType.stream,
-          headers: headers,
-        ),
+        options: Options(responseType: ResponseType.stream, headers: headers),
       );
       final ResponseBody? body = response.data;
       if (body == null) {

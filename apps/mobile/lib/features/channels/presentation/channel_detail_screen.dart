@@ -54,13 +54,16 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
   Future<void> _recordNow(WatchSummary watch) async {
     RecordingSummary? created;
     await _runMutation(() async {
-      created = await ref.read(recordingControllerProvider).create(
-        CreateRecordingCommand(
-          sourceType: _recordingSourceType(watch.sourceType),
-          sourceValue:
-              watch.sourceValue ?? watch.creatorUsername.replaceFirst('@', ''),
-        ),
-      );
+      created = await ref
+          .read(recordingControllerProvider)
+          .create(
+            CreateRecordingCommand(
+              sourceType: _recordingSourceType(watch.sourceType),
+              sourceValue:
+                  watch.sourceValue ??
+                  watch.creatorUsername.replaceFirst('@', ''),
+            ),
+          );
     });
     if (_mutationError == null && created != null && mounted) {
       context.push(AppRoutes.recordingDetail(created!.id));
@@ -520,7 +523,6 @@ bool _isOfflineLike(Object error) {
           (error.kind == ApiExceptionKind.network ||
               error.kind == ApiExceptionKind.timeout));
 }
-
 
 RecordingSourceType _recordingSourceType(WatchSourceType? type) {
   return switch (type) {

@@ -49,49 +49,50 @@ void main() {
     );
   });
 
-  test('create recording sends backend UUID idempotency and frozen payload', () async {
-    final _FakeAdapter adapter = _FakeAdapter((
-      RequestOptions options,
-      int call,
-    ) {
-      expect(options.method, 'POST');
-      expect(options.path, '/v1/recordings');
-      expect(options.headers['Idempotency-Key'], '00000000-0000-4000-8000-000000000001');
-      expect(
-        options.data,
-        <String, Object?>{
-          'source': <String, Object?>{
-            'type': 'username',
-            'value': 'ada_live',
-          },
+  test(
+    'create recording sends backend UUID idempotency and frozen payload',
+    () async {
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        expect(options.method, 'POST');
+        expect(options.path, '/v1/recordings');
+        expect(
+          options.headers['Idempotency-Key'],
+          '00000000-0000-4000-8000-000000000001',
+        );
+        expect(options.data, <String, Object?>{
+          'source': <String, Object?>{'type': 'username', 'value': 'ada_live'},
           'max_duration_seconds': 3600,
           'quality': 'best',
           'container': 'mp4',
-        },
-      );
-      return _jsonResponse(
-        202,
-        _recordingJson(id: 'rec-create', status: 'queued'),
-      );
-    });
+        });
+        return _jsonResponse(
+          202,
+          _recordingJson(id: 'rec-create', status: 'queued'),
+        );
+      });
 
-    final RecordingSummary created = await repositoryFor(
-      adapter,
-      keyGenerator: const _FixedKeyGenerator(
-        '00000000-0000-4000-8000-000000000001',
-      ),
-    ).createRecording(
-      const CreateRecordingCommand(
-        sourceType: RecordingSourceType.username,
-        sourceValue: 'ada_live',
-        maxDurationSeconds: 3600,
-      ),
-    );
+      final RecordingSummary created =
+          await repositoryFor(
+            adapter,
+            keyGenerator: const _FixedKeyGenerator(
+              '00000000-0000-4000-8000-000000000001',
+            ),
+          ).createRecording(
+            const CreateRecordingCommand(
+              sourceType: RecordingSourceType.username,
+              sourceValue: 'ada_live',
+              maxDurationSeconds: 3600,
+            ),
+          );
 
-    expect(created.id, 'rec-create');
-    expect(created.status, RecordingStatus.queued);
-    expect(created.actions.canStop, isTrue);
-  });
+      expect(created.id, 'rec-create');
+      expect(created.status, RecordingStatus.queued);
+      expect(created.actions.canStop, isTrue);
+    },
+  );
 
   test('maps all recording statuses and server action flags', () async {
     final List<String> statuses = <String>[
@@ -121,10 +122,7 @@ void main() {
               canDelete: index >= 6,
             ),
         ],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
+        'pagination': <String, Object?>{'next_cursor': null, 'has_more': false},
       });
     });
 
@@ -160,10 +158,7 @@ void main() {
       expect(options.queryParameters['cursor'], 'cursor-2');
       return _jsonResponse(200, <String, Object?>{
         'items': <Object?>[_recordingJson(id: 'rec-2')],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
+        'pagination': <String, Object?>{'next_cursor': null, 'has_more': false},
       });
     });
 
@@ -178,43 +173,45 @@ void main() {
     expect(adapter.calls, 2);
   });
 
-  test('active filter skips empty backend pages without losing cursor', () async {
-    final _FakeAdapter adapter = _FakeAdapter((
-      RequestOptions options,
-      int call,
-    ) {
-      if (call == 1) {
+  test(
+    'active filter skips empty backend pages without losing cursor',
+    () async {
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        if (call == 1) {
+          return _jsonResponse(200, <String, Object?>{
+            'items': <Object?>[
+              _recordingJson(id: 'completed', status: 'completed'),
+            ],
+            'pagination': <String, Object?>{
+              'next_cursor': 'cursor-active',
+              'has_more': true,
+            },
+          });
+        }
+        expect(options.queryParameters['cursor'], 'cursor-active');
         return _jsonResponse(200, <String, Object?>{
           'items': <Object?>[
-            _recordingJson(id: 'completed', status: 'completed'),
+            _recordingJson(id: 'recording', status: 'recording'),
           ],
           'pagination': <String, Object?>{
-            'next_cursor': 'cursor-active',
-            'has_more': true,
+            'next_cursor': null,
+            'has_more': false,
           },
         });
-      }
-      expect(options.queryParameters['cursor'], 'cursor-active');
-      return _jsonResponse(200, <String, Object?>{
-        'items': <Object?>[
-          _recordingJson(id: 'recording', status: 'recording'),
-        ],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
       });
-    });
 
-    final RecordingPage page = await repositoryFor(adapter).listRecordingPage(
-      filter: RecordingFilter.active,
-      limit: 4,
-    );
+      final RecordingPage page = await repositoryFor(
+        adapter,
+      ).listRecordingPage(filter: RecordingFilter.active, limit: 4);
 
-    expect(page.items.single.id, 'recording');
-    expect(page.nextCursor, isNull);
-    expect(adapter.calls, 2);
-  });
+      expect(page.items.single.id, 'recording');
+      expect(page.nextCursor, isNull);
+      expect(adapter.calls, 2);
+    },
+  );
 
   test('stop and delete use exact recording endpoints', () async {
     final _FakeAdapter adapter = _FakeAdapter((
@@ -226,11 +223,7 @@ void main() {
         expect(options.path, '/v1/recordings/rec-1/stop');
         return _jsonResponse(
           202,
-          _recordingJson(
-            id: 'rec-1',
-            status: 'stop_requested',
-            canStop: false,
-          ),
+          _recordingJson(id: 'rec-1', status: 'stop_requested', canStop: false),
         );
       }
       expect(options.method, 'DELETE');
@@ -359,19 +352,15 @@ void main() {
   });
 
   test('realtime reconnects with Last-Event-ID and dedupes sequence', () async {
-    final _ScriptedEventSource eventSource = _ScriptedEventSource(<
-      List<RecordingEvent>
-    >[
-      <RecordingEvent>[_event(id: 'event-1', sequence: 1)],
-      <RecordingEvent>[
-        _event(id: 'event-1', sequence: 1),
-        _event(
-          id: 'event-2',
-          sequence: 2,
-          status: RecordingStatus.completed,
-        ),
+    final _ScriptedEventSource eventSource = _ScriptedEventSource(
+      <List<RecordingEvent>>[
+        <RecordingEvent>[_event(id: 'event-1', sequence: 1)],
+        <RecordingEvent>[
+          _event(id: 'event-1', sequence: 1),
+          _event(id: 'event-2', sequence: 2, status: RecordingStatus.completed),
+        ],
       ],
-    ]);
+    );
 
     int getCalls = 0;
     final _FakeAdapter adapter = _FakeAdapter((
@@ -404,7 +393,9 @@ void main() {
     expect(
       snapshots
           .whereType<RecordingSummary>()
-          .where((RecordingSummary item) => item.status == RecordingStatus.completed)
+          .where(
+            (RecordingSummary item) => item.status == RecordingStatus.completed,
+          )
           .length,
       1,
     );
@@ -422,10 +413,7 @@ Map<String, Object?> _recordingJson({
 }) {
   return <String, Object?>{
     'id': id,
-    'source': <String, Object?>{
-      'type': sourceType,
-      'value': sourceValue,
-    },
+    'source': <String, Object?>{'type': sourceType, 'value': sourceValue},
     'creator': <String, Object?>{
       'platform': 'tiktok',
       'username': 'ada_live',

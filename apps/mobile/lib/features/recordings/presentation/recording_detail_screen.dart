@@ -34,8 +34,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     final AppLifecycleState? state = WidgetsBinding.instance.lifecycleState;
-    _isForeground =
-        state == null || state == AppLifecycleState.resumed;
+    _isForeground = state == null || state == AppLifecycleState.resumed;
   }
 
   @override
@@ -80,9 +79,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
   Future<void> _retry(RecordingSummary recording) async {
     RecordingSummary? retried;
     await _runMutation(() async {
-      retried = await ref
-          .read(recordingControllerProvider)
-          .retry(recording.id);
+      retried = await ref.read(recordingControllerProvider).retry(recording.id);
     });
     if (_mutationError == null &&
         retried != null &&
@@ -498,8 +495,9 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
           ],
         ),
         data: (List<RecordingArtifactSummary> items) {
-          final RecordingArtifactSummary? artifact =
-              items.isEmpty ? null : items.first;
+          final RecordingArtifactSummary? artifact = items.isEmpty
+              ? null
+              : items.first;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[

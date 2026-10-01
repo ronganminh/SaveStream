@@ -306,9 +306,7 @@ final class MockRecordingRepository extends MockRepositoryBase
   }
 
   @override
-  Future<List<RecordingArtifactSummary>> listArtifacts(
-    String recordingId,
-  ) {
+  Future<List<RecordingArtifactSummary>> listArtifacts(String recordingId) {
     return respond<List<RecordingArtifactSummary>>(
       success: () {
         final RecordingSummary? recording = _find(recordingId);
@@ -330,9 +328,7 @@ final class MockRecordingRepository extends MockRepositoryBase
   }
 
   @override
-  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(
-    String artifactId,
-  ) {
+  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(String artifactId) {
     return respond<ArtifactDownloadUrl>(
       success: () => ArtifactDownloadUrl(
         uri: Uri.parse('https://example.com/$artifactId.mp4'),

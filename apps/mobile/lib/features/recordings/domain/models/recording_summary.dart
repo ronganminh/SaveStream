@@ -68,10 +68,7 @@ class RecordingArtifactSummary {
 }
 
 class ArtifactDownloadUrl {
-  const ArtifactDownloadUrl({
-    required this.uri,
-    required this.expiresAt,
-  });
+  const ArtifactDownloadUrl({required this.uri, required this.expiresAt});
 
   final Uri uri;
   final DateTime expiresAt;

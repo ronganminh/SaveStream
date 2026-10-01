@@ -130,7 +130,6 @@ class WatchController {
   }
 }
 
-
 bool _recordingBelongsToWatch(
   RecordingSummary recording,
   WatchSummary watch,
