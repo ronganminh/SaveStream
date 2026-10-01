@@ -11,7 +11,7 @@ final class MockHomeMetricsRepository extends MockRepositoryBase
     return respond<HomeAccountMetrics>(
       success: () => const HomeAccountMetrics(
         displayName: 'Alex',
-        availableCredit: 4.8,
+        availableCredit: 5,
         recordingHoursUsed: 12.6,
         recordingHoursLimit: 50,
       ),

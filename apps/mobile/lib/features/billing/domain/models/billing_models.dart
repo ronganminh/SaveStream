@@ -1,42 +1,78 @@
-enum PaymentOrderStatus { pending, paid, failed, cancelled, expired }
+enum PaymentOrderStatus {
+  created('created'),
+  pending('pending'),
+  paid('paid'),
+  failed('failed'),
+  cancelled('cancelled'),
+  expired('expired'),
+  partiallyRefunded('partially_refunded'),
+  refunded('refunded');
+
+  const PaymentOrderStatus(this.apiValue);
+
+  final String apiValue;
+
+  bool get isAwaitingConfirmation =>
+      this == PaymentOrderStatus.created || this == PaymentOrderStatus.pending;
+
+  bool get isTerminal => !isAwaitingConfirmation;
+}
+
+class Money {
+  const Money({required this.amountMinor, required this.currency});
+
+  final int amountMinor;
+  final String currency;
+}
 
 class CreditPackage {
   const CreditPackage({
     required this.id,
+    required this.name,
     required this.credits,
     required this.price,
-    required this.currency,
-    this.recommended = false,
+    required this.active,
   });
 
   final String id;
-  final double credits;
-  final double price;
-  final String currency;
-  final bool recommended;
+  final String name;
+  final int credits;
+  final Money price;
+  final bool active;
 }
 
 class PaymentOrder {
   const PaymentOrder({
     required this.id,
-    required this.package,
+    required this.packageId,
     required this.status,
+    required this.credits,
+    required this.amount,
     required this.createdAt,
+    required this.updatedAt,
+    this.provider,
+    this.providerReference,
   });
 
   final String id;
-  final CreditPackage package;
+  final String packageId;
   final PaymentOrderStatus status;
+  final int credits;
+  final Money amount;
+  final String? provider;
+  final String? providerReference;
   final DateTime createdAt;
+  final DateTime updatedAt;
+}
 
-  PaymentOrder copyWith({PaymentOrderStatus? status}) {
-    return PaymentOrder(
-      id: id,
-      package: package,
-      status: status ?? this.status,
-      createdAt: createdAt,
-    );
-  }
+class CheckoutSession {
+  const CheckoutSession({
+    required this.checkoutUri,
+    required this.paymentOrder,
+  });
+
+  final Uri checkoutUri;
+  final PaymentOrder paymentOrder;
 }
 
 class BillingSnapshot {
