@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 13 includes:
+Phase 14 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -110,7 +110,17 @@ Phase 13 includes:
 - checkout opens the provider externally and returns through the `savestream:` custom URL scheme configured on Android and iOS;
 - returning from checkout never marks an order paid; the app polls/refetches backend payment status until a terminal state;
 - Credits/Home state is invalidated only after backend-confirmed `paid`, so the backend/webhook remains authoritative for posted credit;
-- Phase 13 tests cover integer credit mapping, ledger/reservation pagination, pricing-unavailable behavior, all payment statuses, money minor units, idempotency reuse, absolute checkout return URIs, backend polling, and no client-side credit mutation.
+- Phase 13 tests cover integer credit mapping, ledger/reservation pagination, pricing-unavailable behavior, all payment statuses, money minor units, idempotency reuse, absolute checkout return URIs, backend polling, and no client-side credit mutation;
+- shared async error classification for offline-like, recoverable, and non-recoverable failures;
+- Retry actions are shown only when the failure is retryable and the screen has a real retry operation;
+- backend request IDs are shown as support detail without exposing raw exceptions or branching on backend message text;
+- initial async loads keep screen-specific skeletons that approximate final layouts instead of full-screen spinners;
+- refreshes on Home, Channels, Channel Detail, Credits, Billing, Recording Detail, and Profile keep existing data visible with a thin progress indicator;
+- Recording list refresh now preserves the current page and filter, surfaces refresh failures inline, and keeps load-more failures local to the pagination section;
+- Billing Return uses a layout-matched skeleton instead of a full-screen spinner while payment status loads;
+- mutation failures use shared inline feedback; actions that cannot be safely replayed no longer show a misleading Retry button;
+- async state localization covers refreshing, non-retryable failures, and Request ID support detail in EN/VI;
+- Phase 14 widget tests cover offline retry behavior, non-retryable behavior, request IDs, authoritative retry overrides, and stale-content refresh progress.
 
 Authentication, Channels/Watch management, Recordings, Credits, and Billing now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch/Recording data and the real available-credit balance; Profile remains on its current repository until a later integration phase.
 
@@ -202,7 +212,7 @@ Backend errors are expected in this shape:
 
 Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
 
-Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, Phase 11 for Watch/Channel data, Phase 12 for Recording REST + SSE, and Phase 13 for Credits + Billing. Remaining feature repository migrations stay scoped to later phases.
+Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, Phase 11 for Watch/Channel data, Phase 12 for Recording REST + SSE, Phase 13 for Credits + Billing, and Phase 14 standardizes how those async states are presented without changing transport semantics. Remaining feature repository migrations stay scoped to later phases.
 
 ## Secure authentication session
 
@@ -277,6 +287,16 @@ POST /v1/billing/payment-orders/{id}/checkout
 Create-order and checkout commands use UUID idempotency keys and retain the same key when retrying the same logical operation after transport failure. Checkout opens the provider externally and returns through `savestream:/billing/return?order_id=...`, registered on Android and iOS.
 
 A browser/deep-link return is never considered proof of payment. The app reads/polls the payment order until the backend reports a terminal state, and only backend-confirmed `paid` invalidates/refetches Credits and Home balance state. Credit posting remains owned by verified backend webhook/reconciliation.
+
+## Async state UX
+
+Phase 14 standardizes async presentation without changing backend contracts. Data screens distinguish initial loading, refreshing, success, empty, recoverable error, non-recoverable error, and offline-like failure.
+
+`SsAsyncErrorState` and `SsInlineAsyncError` derive retry behavior from typed failures such as `ApiException.retryable` and network/timeout categories. They never display raw exception text. When the backend supplies a request ID, it is rendered only as technical/support detail. Retry controls are omitted for non-retryable failures or when the UI does not retain a safe operation to replay.
+
+`SsAsyncRefreshFrame` keeps already-rendered data on screen while a provider refreshes and adds a thin progress indicator. Recording pagination uses the same principle explicitly in `RecordingListState`: refresh and load-more failures remain inline so a transient request does not replace usable content with a full-screen error.
+
+Initial loading remains screen-specific. Home, Channels, Channel Detail, Recordings, Recording Detail, Credits, Billing, Billing Return, and Profile use skeleton layouts close to their final structure. The only remaining `CircularProgressIndicator` in feature screens is the inline Recording Load More indicator.
 
 ## Validation
 
