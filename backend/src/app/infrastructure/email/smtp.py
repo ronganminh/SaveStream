@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import smtplib
+import ssl
 import uuid
 from datetime import datetime, timezone
 from email.message import EmailMessage
@@ -28,7 +29,20 @@ class SMTPEmailSender:
         message["To"] = to
         message["Subject"] = subject
         message.set_content(text)
-        with smtplib.SMTP(self.settings.smtp_host, self.settings.smtp_port, timeout=10) as smtp:
+        with smtplib.SMTP(
+            self.settings.smtp_host,
+            self.settings.smtp_port,
+            timeout=10,
+        ) as smtp:
+            if self.settings.smtp_starttls:
+                smtp.starttls(context=ssl.create_default_context())
+            if self.settings.smtp_username:
+                if not self.settings.smtp_password:
+                    raise RuntimeError("SMTP password is required when username is configured")
+                smtp.login(
+                    self.settings.smtp_username,
+                    self.settings.smtp_password,
+                )
             smtp.send_message(message)
 
 
