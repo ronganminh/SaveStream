@@ -23,7 +23,9 @@ void main() {
 
   ApiWatchRepository repositoryFor(_FakeAdapter adapter) {
     final Dio dio = Dio()..httpClientAdapter = adapter;
-    return ApiWatchRepository(apiClient: ApiClient(config: config(), dio: dio));
+    return ApiWatchRepository(
+      apiClient: ApiClient(config: config(), dio: dio),
+    );
   }
 
   test('maps every backend WatchStatus without message parsing', () async {
@@ -47,15 +49,13 @@ void main() {
               liveStatus: index == 0 ? 'live' : 'offline',
             ),
         ],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
+        'pagination': <String, Object?>{'next_cursor': null, 'has_more': false},
       });
     });
 
-    final List<WatchSummary> watches = await repositoryFor(adapter)
-        .listWatches();
+    final List<WatchSummary> watches = await repositoryFor(
+      adapter,
+    ).listWatches();
 
     expect(
       watches.map((WatchSummary item) => item.status).toList(),
@@ -70,53 +70,57 @@ void main() {
     expect(watches.first.isLive, isTrue);
   });
 
-  test('walks cursor pagination while keeping screen-facing API unchanged', () async {
-    final _FakeAdapter adapter = _FakeAdapter((
-      RequestOptions options,
-      int call,
-    ) {
-      expect(options.path, '/v1/watches');
-      expect(options.queryParameters['limit'], 100);
+  test(
+    'walks cursor pagination while keeping screen-facing API unchanged',
+    () async {
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        expect(options.path, '/v1/watches');
+        expect(options.queryParameters['limit'], 100);
 
-      if (call == 1) {
-        expect(options.queryParameters.containsKey('cursor'), isFalse);
+        if (call == 1) {
+          expect(options.queryParameters.containsKey('cursor'), isFalse);
+          return _jsonResponse(200, <String, Object?>{
+            'items': <Object?>[_watchJson(id: 'watch-1')],
+            'pagination': <String, Object?>{
+              'next_cursor': 'cursor-2',
+              'has_more': true,
+            },
+          });
+        }
+
+        expect(options.queryParameters['cursor'], 'cursor-2');
         return _jsonResponse(200, <String, Object?>{
-          'items': <Object?>[_watchJson(id: 'watch-1')],
+          'items': <Object?>[
+            _watchJson(
+              id: 'watch-2',
+              creator: null,
+              sourceType: 'url',
+              sourceValue: 'https://www.tiktok.com/@fallback_creator',
+            ),
+          ],
           'pagination': <String, Object?>{
-            'next_cursor': 'cursor-2',
-            'has_more': true,
+            'next_cursor': null,
+            'has_more': false,
           },
         });
-      }
-
-      expect(options.queryParameters['cursor'], 'cursor-2');
-      return _jsonResponse(200, <String, Object?>{
-        'items': <Object?>[
-          _watchJson(
-            id: 'watch-2',
-            creator: null,
-            sourceType: 'url',
-            sourceValue: 'https://www.tiktok.com/@fallback_creator',
-          ),
-        ],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
       });
-    });
 
-    final List<WatchSummary> watches = await repositoryFor(adapter)
-        .listWatches();
+      final List<WatchSummary> watches = await repositoryFor(
+        adapter,
+      ).listWatches();
 
-    expect(adapter.calls, 2);
-    expect(watches.map((WatchSummary item) => item.id), <String>[
-      'watch-1',
-      'watch-2',
-    ]);
-    expect(watches.last.creatorUsername, '@fallback_creator');
-    expect(watches.last.creatorDisplayName, 'fallback_creator');
-  });
+      expect(adapter.calls, 2);
+      expect(watches.map((WatchSummary item) => item.id), <String>[
+        'watch-1',
+        'watch-2',
+      ]);
+      expect(watches.last.creatorUsername, '@fallback_creator');
+      expect(watches.last.creatorDisplayName, 'fallback_creator');
+    },
+  );
 
   test('create sends typed source and auto_record payload', () async {
     final _FakeAdapter adapter = _FakeAdapter((
@@ -125,16 +129,12 @@ void main() {
     ) {
       expect(options.method, 'POST');
       expect(options.path, '/v1/watches');
-      final Map<String, Object?> data =
-          options.data! as Map<String, Object?>;
+      final Map<String, Object?> data = options.data! as Map<String, Object?>;
       expect(data['auto_record'], isTrue);
-      expect(
-        data['source'],
-        <String, Object?>{
-          'type': 'username',
-          'value': '@ada_live',
-        },
-      );
+      expect(data['source'], <String, Object?>{
+        'type': 'username',
+        'value': '@ada_live',
+      });
       return _jsonResponse(
         201,
         _watchJson(id: 'watch-new', sourceValue: 'ada_live'),
@@ -271,30 +271,33 @@ void main() {
     );
   });
 
-  test('failed mutation still invalidates list/detail and Home revision', () async {
-    final _ThrowingWatchRepository repository = _ThrowingWatchRepository();
-    int listInvalidations = 0;
-    int detailInvalidations = 0;
-    int revisions = 0;
-    final WatchController controller = WatchController(
-      repository: repository,
-      invalidateList: () => listInvalidations += 1,
-      invalidateDetail: (String id) {
-        expect(id, 'watch-1');
-        detailInvalidations += 1;
-      },
-      notifyChanged: () => revisions += 1,
-    );
+  test(
+    'failed mutation still invalidates list/detail and Home revision',
+    () async {
+      final _ThrowingWatchRepository repository = _ThrowingWatchRepository();
+      int listInvalidations = 0;
+      int detailInvalidations = 0;
+      int revisions = 0;
+      final WatchController controller = WatchController(
+        repository: repository,
+        invalidateList: () => listInvalidations += 1,
+        invalidateDetail: (String id) {
+          expect(id, 'watch-1');
+          detailInvalidations += 1;
+        },
+        notifyChanged: () => revisions += 1,
+      );
 
-    await expectLater(
-      controller.resume('watch-1'),
-      throwsA(isA<ApiException>()),
-    );
+      await expectLater(
+        controller.resume('watch-1'),
+        throwsA(isA<ApiException>()),
+      );
 
-    expect(listInvalidations, 1);
-    expect(detailInvalidations, 1);
-    expect(revisions, 1);
-  });
+      expect(listInvalidations, 1);
+      expect(detailInvalidations, 1);
+      expect(revisions, 1);
+    },
+  );
 }
 
 Map<String, Object?> _watchJson({
@@ -308,10 +311,7 @@ Map<String, Object?> _watchJson({
 }) {
   return <String, Object?>{
     'id': id,
-    'source': <String, Object?>{
-      'type': sourceType,
-      'value': sourceValue,
-    },
+    'source': <String, Object?>{'type': sourceType, 'value': sourceValue},
     'creator': creator,
     'status': status,
     'live_status': liveStatus,
@@ -393,10 +393,7 @@ final class _ThrowingWatchRepository implements WatchRepository {
   }
 
   @override
-  Future<WatchSummary?> setAutoRecord(
-    String id, {
-    required bool enabled,
-  }) {
+  Future<WatchSummary?> setAutoRecord(String id, {required bool enabled}) {
     throw UnimplementedError();
   }
 

@@ -47,10 +47,7 @@ final class WatchApiModel {
     final WatchSourceType sourceType = _sourceType(
       _requiredString(source['type'], 'source.type'),
     );
-    final String sourceValue = _requiredString(
-      source['value'],
-      'source.value',
-    );
+    final String sourceValue = _requiredString(source['value'], 'source.value');
 
     final Object? rawCreator = map['creator'];
     String? creatorUsername;
@@ -71,10 +68,7 @@ final class WatchApiModel {
       );
     }
 
-    final String fallbackUsername = _fallbackUsername(
-      sourceType,
-      sourceValue,
-    );
+    final String fallbackUsername = _fallbackUsername(sourceType, sourceValue);
     final String normalizedUsername = _displayUsername(
       creatorUsername ?? fallbackUsername,
     );

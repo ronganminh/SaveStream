@@ -82,10 +82,7 @@ final class ApiWatchRepository implements WatchRepository {
     String id, {
     required bool enabled,
   }) async {
-    return _patchWatch(
-      id,
-      <String, Object?>{'auto_record': enabled},
-    );
+    return _patchWatch(id, <String, Object?>{'auto_record': enabled});
   }
 
   @override
@@ -111,10 +108,7 @@ final class ApiWatchRepository implements WatchRepository {
 
   @override
   Future<void> deleteWatch(String id) async {
-    await _apiClient.delete<Object?>(
-      '/v1/watches/$id',
-      decoder: (_) => null,
-    );
+    await _apiClient.delete<Object?>('/v1/watches/$id', decoder: (_) => null);
   }
 
   Future<WatchSummary?> _patchWatch(
