@@ -38,6 +38,18 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show Phase 13 formatting
+        run: >-
+          dart format --output=show
+          lib/app/savestream_app.dart
+          lib/features/billing/data/remote/billing_api_models.dart
+          lib/features/billing/presentation/billing_return_screen.dart
+          lib/features/billing/presentation/billing_screen.dart
+          lib/features/credits/data/remote/credit_api_models.dart
+          lib/features/credits/domain/models/credit_models.dart
+          lib/features/credits/presentation/credits_screen.dart
+          test/credits_billing_phase13_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
