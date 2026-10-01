@@ -43,7 +43,9 @@ void main() {
     await openSettings(tester, mockScenario: MockScenario.empty);
 
     await tester.tap(find.text('Profile'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('SaveStream user'), findsOneWidget);
@@ -58,7 +60,13 @@ void main() {
     final AppSettingsController settings = AppSettingsController();
 
     await openSettings(tester, settings: settings);
-    await tester.tap(find.text('Theme'));
+    final Finder themeTile = find.ancestor(
+      of: find.text('Theme'),
+      matching: find.byType(ListTile),
+    );
+    await tester.ensureVisible(themeTile);
+    await tester.pumpAndSettle();
+    await tester.tap(themeTile);
     await tester.pumpAndSettle();
 
     expect(find.text('System'), findsOneWidget);
@@ -115,12 +123,13 @@ void main() {
     await openSettings(tester);
 
     Future<void> openInfo(String label) async {
-      await tester.scrollUntilVisible(
-        find.text(label),
-        260,
-        scrollable: find.byType(Scrollable).last,
+      final Finder tile = find.ancestor(
+        of: find.text(label),
+        matching: find.byType(ListTile),
       );
-      await tester.tap(find.text(label));
+      await tester.ensureVisible(tile);
+      await tester.pumpAndSettle();
+      await tester.tap(tile);
       await tester.pumpAndSettle();
 
       expect(find.byType(SettingsInfoScreen), findsOneWidget);
