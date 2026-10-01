@@ -1,0 +1,42 @@
+name: Backend E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-e2e.yml"
+
+jobs:
+  staging-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate E2E Compose
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml config --quiet
+
+      - name: Start real dependencies and backend workers
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build             postgres redis minio minio-init mail-debug fake-stream api worker outbox-dispatcher
+
+      - name: Run register-to-delete E2E flow
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm e2e-runner
+
+      - name: Dump E2E service logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml ps
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml logs             api worker outbox-dispatcher fake-stream mail-debug minio postgres redis
+
+      - name: Tear down E2E stack
+        if: always()
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml down -v --remove-orphans

@@ -65,7 +65,7 @@ services:
       redis:
         condition: service_healthy
       minio:
-        condition: service_started
+        condition: service_healthy
 
   worker:
     build: .
@@ -123,8 +123,8 @@ services:
       retries: 20
 
   minio:
-    image: minio/minio:latest
-    command: ["server", "/data", "--console-address", ":9001"]
+    build:
+      context: ./e2e/minio
     environment:
       MINIO_ROOT_USER: savestream
       MINIO_ROOT_PASSWORD: savestream-local-only
@@ -133,13 +133,19 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
 
   minio-init:
-    image: minio/mc:latest
+    build: .
+    command: ["python", "-m", "app.e2e.init_minio"]
+    environment: *backend-env
     depends_on:
-      - minio
-    entrypoint: >-
-      /bin/sh -c "until mc alias set local http://minio:9000 savestream savestream-local-only; do sleep 1; done; mc mb --ignore-existing local/savestream-recordings; mc anonymous set none local/savestream-recordings;"
+      minio:
+        condition: service_healthy
 
   mail-debug:
     image: mailhog/mailhog:v1.0.1
