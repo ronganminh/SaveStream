@@ -98,17 +98,11 @@ import { usePreferences, type ThemePreference } from "@/lib/preferences";
 import { isDemoMode, isProductionMode, productionBackendConnected } from "@/lib/app-config";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
+import { buildSeoHead } from "@/lib/seo";
+import { canAccessPath, getFrontendIdentity } from "@/lib/route-meta";
 
-export const meta = (title: string, description: string) => ({
-  meta: [
-    { title: `${title} — SaveStream` },
-    { name: "description", content: description },
-    { property: "og:title", content: `${title} — SaveStream` },
-    { property: "og:description", content: description },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ],
-});
+export const meta = (title: string, description: string, path?: string) =>
+  buildSeoHead(title, description, path);
 
 const mainNav = [
   { to: "/overview", label: "Overview", icon: LayoutDashboard },
@@ -216,12 +210,20 @@ export function UsageProgress({
   label?: string;
   tone?: "primary" | "warning";
 }) {
+  const safeValue = Math.max(0, Math.min(value, 100));
   return (
     <div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+      <div
+        className="h-1.5 overflow-hidden rounded-full bg-muted"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(safeValue)}
+        aria-label={label}
+      >
         <div
           className={cn("h-full rounded-full", tone === "warning" ? "bg-warning" : "bg-primary")}
-          style={{ width: `${Math.min(value, 100)}%` }}
+          style={{ width: `${safeValue}%` }}
         />
       </div>
       {label && <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>}
@@ -353,6 +355,9 @@ export function LanguageMenu({ full = false }: { full?: boolean }) {
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
+  const identity = getFrontendIdentity();
+  const visibleMainNav = mainNav.filter((entry) => canAccessPath(entry.to, identity));
+  const visibleAdminNav = adminNav.filter((entry) => canAccessPath(entry.to, identity));
   const item = (
     it:
       | (typeof mainNav)[number]
@@ -382,6 +387,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         className={cn("fixed inset-0 z-[var(--z-drawer-overlay)] bg-overlay lg:hidden", open ? "block" : "hidden")}
       />
       <aside
+        id="app-sidebar"
         aria-label={t("Main navigation")}
         className={cn(
           "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-64 flex-col border-r bg-sidebar transition-transform lg:translate-x-0",
@@ -401,7 +407,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           </Button>
         </div>
         <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-3">
-          <div className="space-y-1">{mainNav.map(item)}</div>
+          <div className="space-y-1">{visibleMainNav.map(item)}</div>
           <div>
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
               {t("Workspace")}
@@ -410,13 +416,15 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             {item({ to: "/settings", label: "Settings", icon: Settings })}
             {item({ to: "/help", label: "Help", icon: CircleHelp })}
           </div>
-          <div className="border-t pt-5">
-            <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
-              <ShieldCheck className="size-3" />
-              {t("Admin")}
-            </p>
-            {adminNav.map(item)}
-          </div>
+          {visibleAdminNav.length > 0 && (
+            <div className="border-t pt-5">
+              <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
+                <ShieldCheck className="size-3" />
+                {t("Admin")}
+              </p>
+              {visibleAdminNav.map(item)}
+            </div>
+          )}
         </nav>
         <div className="border-t p-3">
           <div className="mb-2 grid grid-cols-2 gap-1 lg:hidden">
@@ -442,7 +450,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     </>
   );
 }
-export function AppTopbar({ onMenu }: { onMenu: () => void }) {
+export function AppTopbar({ onMenu, menuOpen }: { onMenu: () => void; menuOpen: boolean }) {
   const [cmd, setCmd] = useState(false);
   const navigate = useNavigate();
   const { t } = usePreferences();
@@ -466,6 +474,8 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
         onClick={onMenu}
         className="lg:hidden"
         aria-label={t("Open menu")}
+        aria-expanded={menuOpen}
+        aria-controls="app-sidebar"
       >
         <Menu />
       </Button>
@@ -615,10 +625,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
+        <a
+          href="#main-content"
+          className="sr-only fixed left-3 top-3 z-[var(--z-toast)] rounded-md bg-background px-3 py-2 text-sm font-medium text-foreground shadow-lg focus:not-sr-only"
+        >
+          {t("Skip to content")}
+        </a>
         <AppSidebar open={open} onClose={() => setOpen(false)} />
         <div className="lg:pl-64">
-          <AppTopbar onMenu={() => setOpen(true)} />
-          <main className="mx-auto min-w-0 max-w-[1440px] overflow-x-clip p-4 pb-24 sm:p-6 lg:p-8">{children}</main>
+          <AppTopbar onMenu={() => setOpen(true)} menuOpen={open} />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className="mx-auto min-w-0 max-w-[1440px] overflow-x-clip p-4 pb-24 outline-none sm:p-6 lg:p-8"
+          >
+            {children}
+          </main>
           <nav
             aria-label={t("Primary")}
             className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] grid grid-cols-3 border-t bg-background px-1 pt-1 pb-[max(.25rem,env(safe-area-inset-bottom))] lg:hidden"
