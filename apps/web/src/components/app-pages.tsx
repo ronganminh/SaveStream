@@ -394,8 +394,9 @@ export function LandingPage() {
               {t("Automatic TikTok livestream recording in the cloud.")}
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Add a channel once. We monitor it 24/7 and automatically record every livestream —
-              even when your computer is offline.
+              {t(
+                "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected.",
+              )}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
