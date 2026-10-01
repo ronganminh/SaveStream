@@ -1095,13 +1095,20 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 
 export function ChannelsPage() {
   const { t } = usePreferences();
+  const { data, screenState, error, retry, setFixtureState } = useChannelsResource();
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState("All");
-  const filtered = channels.filter(
-    (c) =>
-      (filter === "All" || c.status === filter) &&
-      (c.name + c.handle).toLowerCase().includes(q.toLowerCase()),
+  const [filter, setFilter] = useState<"all" | ChannelStatus>("all");
+  const filtered = data.filter(
+    (channel) =>
+      (filter === "all" || channel.status === filter) &&
+      (channel.name + channel.handle).toLowerCase().includes(q.toLowerCase()),
   );
+
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
   return (
     <AppShell>
       <PageHeader
@@ -1109,59 +1116,178 @@ export function ChannelsPage() {
         subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live."
         action={<AddChannelDialog />}
       />
-      <FilterBar>
-        <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
-        <div className="flex gap-1 overflow-x-auto">
-          {["All", "Recording", "Waiting", "Offline", "Paused", "Error"].map((f) => (
-            <Button
-              key={f}
-              size="sm"
-              variant={filter === f ? "secondary" : "ghost"}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </Button>
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={setFixtureState}
+      />
+
+      {screenState === "loading" ? (
+        <div className="space-y-3" aria-label={t("Loading")}>
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-20 animate-pulse rounded-lg border bg-muted/50" />
           ))}
         </div>
-      </FilterBar>
-      {filtered.length ? (
-        <>
-          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
-            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>{t("Creator")}</span>
-              <span>{t("Platform")}</span>
-              <span>{t("Monitoring")}</span>
-              <span>{t("Status")}</span>
-              <span>{t("Last checked")}</span>
-              <span />
-            </div>
-            {filtered.map((c) => (
-              <ChannelRow key={c.id} channel={c} />
-            ))}
-          </div>
-          <div className="space-y-3 md:hidden">
-            {filtered.map((c) => (
-              <ChannelCard key={c.id} channel={c} />
-            ))}
-          </div>
-        </>
-      ) : (
-        <EmptyState
-          icon={Search}
-          title="No channels found"
-          body="Try another search or clear the current filter."
+      ) : screenState === "error" || screenState === "offline" ? (
+        <ErrorState
+          title={error?.title ?? "We couldn’t load channels"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
         />
+      ) : screenState === "idle" ? (
+        <StateBanner
+          tone="info"
+          title="Channel data is idle"
+          body="Use the demo control to load the repository-backed channel list."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {screenState === "retrying" && (
+            <div className="mb-4">
+              <StateBanner
+                tone="info"
+                title="Retrying channel request"
+                body="The previous request is being retried. Existing data remains visible."
+              />
+            </div>
+          )}
+          <FilterBar>
+            <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
+            <div className="flex gap-1 overflow-x-auto">
+              {(["all", ...channelStates.map((item) => item.value)] as const).map((value) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={filter === value ? "secondary" : "ghost"}
+                  onClick={() => setFilter(value)}
+                >
+                  {value === "all" ? t("All") : t(channelStatusLabels[value])}
+                </Button>
+              ))}
+            </div>
+          </FilterBar>
+          {screenState === "empty" || filtered.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title={q || filter !== "all" ? "No channels found" : "No channels yet"}
+              body={
+                q || filter !== "all"
+                  ? "Try another search or clear the current filter."
+                  : "Add an authorized channel to start monitoring."
+              }
+              action={!q && filter === "all" ? <AddChannelDialog /> : undefined}
+            />
+          ) : (
+            <>
+              <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
+                <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+                  <span>{t("Creator")}</span>
+                  <span>{t("Platform")}</span>
+                  <span>{t("Monitoring")}</span>
+                  <span>{t("Status")}</span>
+                  <span>{t("Last checked")}</span>
+                  <span />
+                </div>
+                {filtered.map((channel) => (
+                  <ChannelRow key={channel.id} channel={channel} />
+                ))}
+              </div>
+              <div className="space-y-3 md:hidden">
+                {filtered.map((channel) => (
+                  <ChannelCard key={channel.id} channel={channel} />
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
     </AppShell>
   );
 }
+
 export function ChannelDetailPage() {
   const { id } = useParams({ strict: false }) as { id?: string };
-  const channel = channels.find((c) => c.id === id);
-  if (!channel)
+  const { data: channel, screenState, error, retry, setFixtureState } = useChannelResource(id);
+
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted/50" />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <ErrorState
+          title={error?.title ?? "We couldn’t load this channel"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Channel detail is idle"
+          body="Load the repository-backed detail fixture to continue."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              Load data
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "empty" || !channel) {
     return (
       <AppShell>
         <PageHeader title="Channel not found" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
         <EmptyState
           icon={Radio}
           title="This channel doesn’t exist"
@@ -1174,8 +1300,20 @@ export function ChannelDetailPage() {
         />
       </AppShell>
     );
-  return <ChannelDetail key={channel.id} channel={channel} />;
+  }
+
+  return (
+    <>
+      {screenState === "retrying" && (
+        <div className="sr-only" role="status">
+          Retrying channel request
+        </div>
+      )}
+      <ChannelDetail key={channel.id} channel={channel} />
+    </>
+  );
 }
+
 export function RecordingsPage() {
   const { t } = usePreferences();
   const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
@@ -2378,6 +2516,30 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </Button>
       </>
     ),
+    checking: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="checking" />
+        </div>
+        <p className="mt-6 font-medium">Checking live status</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The repository state is checking the channel before deciding whether it is offline or live.
+        </p>
+      </>
+    ),
+    live: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="live" pulse />
+        </div>
+        <p className="mt-6 font-medium">Livestream detected</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The channel is live. Recording workers are preparing the recording state.
+        </p>
+      </>
+    ),
     error: (
       <>
         <div className="flex items-center justify-between">
@@ -2397,7 +2559,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           variant="outline"
           onClick={() => {
             toast("Checking live status…");
-            setTimeout(() => setState("Waiting"), 900);
+            setTimeout(() => setState("waiting"), 900);
           }}
         >
           Check now
