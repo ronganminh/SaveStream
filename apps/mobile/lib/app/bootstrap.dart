@@ -6,7 +6,9 @@ import '../core/config/app_config.dart';
 import '../core/errors/app_error_reporter.dart';
 import '../core/storage/shared_preferences_app_settings_store.dart';
 import '../features/auth/data/auth_runtime.dart';
+import '../features/billing/data/repositories/api_billing_repository.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
+import '../features/credits/data/repositories/api_credits_repository.dart';
 import '../features/recordings/data/repositories/api_recording_repository.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
@@ -48,6 +50,12 @@ Future<void> bootstrap() async {
         apiClient: authRuntime.authenticatedApiClient,
       ),
       recordingRepository: ApiRecordingRepository(
+        apiClient: authRuntime.authenticatedApiClient,
+      ),
+      creditsRepository: ApiCreditsRepository(
+        apiClient: authRuntime.authenticatedApiClient,
+      ),
+      billingRepository: ApiBillingRepository(
         apiClient: authRuntime.authenticatedApiClient,
       ),
     ),
