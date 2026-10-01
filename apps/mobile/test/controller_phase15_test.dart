@@ -370,7 +370,10 @@ final class _FakeRecordingRepository implements RecordingRepository {
       actions: RecordingActions(
         canStop: status == RecordingStatus.recording,
         canRetry: status == RecordingStatus.failed,
-        canDelete: !status.isActiveLifecycle,
+        canDelete:
+            status == RecordingStatus.stopped ||
+            status == RecordingStatus.completed ||
+            status == RecordingStatus.failed,
       ),
       startedAt: DateTime.utc(2026, 10, 1, 8),
       durationSeconds: 10,
