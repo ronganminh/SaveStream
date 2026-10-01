@@ -535,11 +535,12 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                       child: SsSecondaryButton(
                         label: l10n.playRecordingAction,
                         icon: Icons.play_arrow_rounded,
-                        isLoading: _isOpening,
-                        onPressed: () => _openArtifact(
-                          artifact,
-                          mode: LaunchMode.platformDefault,
-                        ),
+                        onPressed: _isOpening
+                            ? null
+                            : () => _openArtifact(
+                                artifact,
+                                mode: LaunchMode.platformDefault,
+                              ),
                       ),
                     ),
                     const SizedBox(width: SsSpacing.sm),
@@ -547,11 +548,12 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                       child: SsSecondaryButton(
                         label: l10n.downloadRecordingAction,
                         icon: Icons.download_rounded,
-                        isLoading: _isOpening,
-                        onPressed: () => _openArtifact(
-                          artifact,
-                          mode: LaunchMode.externalApplication,
-                        ),
+                        onPressed: _isOpening
+                            ? null
+                            : () => _openArtifact(
+                                artifact,
+                                mode: LaunchMode.externalApplication,
+                              ),
                       ),
                     ),
                   ],

@@ -6,7 +6,7 @@ export 'api_error_parser.dart';
 export 'api_exception.dart';
 export 'api_request_id.dart';
 export 'api_response.dart';
-export 'api_stream_response.dart';
 export 'api_retry_policy.dart';
+export 'api_stream_response.dart';
 export 'api_timeouts.dart';
 export 'idempotency.dart';
