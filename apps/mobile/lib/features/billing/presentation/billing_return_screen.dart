@@ -43,11 +43,9 @@ class BillingReturnScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(SsSpacing.lg),
           child: order.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (Object error, StackTrace stackTrace) => SsErrorState(
-              title: l10n.errorTitle,
-              message: l10n.errorBody,
-              retryLabel: l10n.retryAction,
+            loading: () => const _BillingReturnSkeleton(),
+            error: (Object error, StackTrace stackTrace) => SsAsyncErrorState(
+              error: error,
               onRetry: () =>
                   ref.invalidate(paymentOrderStatusProvider(orderId)),
             ),
@@ -112,6 +110,23 @@ class BillingReturnScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+class _BillingReturnSkeleton extends StatelessWidget {
+  const _BillingReturnSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: const <Widget>[
+        SsSkeleton(height: 170, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.lg),
+        SsSkeleton(height: 52, radius: SsRadii.md),
+      ],
     );
   }
 }

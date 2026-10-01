@@ -8,8 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../credits/presentation/controllers/credits_providers.dart';
@@ -145,16 +143,16 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     return Scaffold(
       appBar: AppBar(title: Text(l10n.billingTitle)),
       body: SafeArea(
-        child: snapshot.when(
-          loading: () => const _BillingSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(billingSnapshotProvider),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: snapshot.isRefreshing,
+          child: snapshot.when(
+            loading: () => const _BillingSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(billingSnapshotProvider),
+              ),
             ),
-          ),
           data: (BillingSnapshot data) => RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(billingSnapshotProvider);
@@ -171,6 +169,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
               onBuy: _buy,
               onContinueCheckout: _continueCheckout,
               onRefreshOrder: _refreshOrder,
+            ),
             ),
           ),
         ),
@@ -248,10 +247,8 @@ class _BillingBody extends StatelessWidget {
         ],
         if (mutationError != null) ...<Widget>[
           const SizedBox(height: SsSpacing.md),
-          SsErrorState(
-            title: _errorTitle(l10n, mutationError!),
-            message: _errorMessage(l10n, mutationError!),
-            retryLabel: l10n.retryAction,
+          SsInlineAsyncError(
+            error: mutationError!,
             onRetry: activeOrder?.status == PaymentOrderStatus.created
                 ? onContinueCheckout
                 : onRefreshOrder,
@@ -502,22 +499,4 @@ String _formatMoney(BuildContext context, Money money) {
   final int decimalDigits = format.decimalDigits ?? 2;
   final num scale = pow(10, decimalDigits);
   return format.format(money.amountMinor / scale);
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) return l10n.offlineErrorTitle;
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) return l10n.offlineErrorBody;
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
 }

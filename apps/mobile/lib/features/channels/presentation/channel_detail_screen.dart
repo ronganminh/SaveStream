@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../recordings/domain/models/recording_summary.dart';
@@ -101,17 +100,17 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.channelDetailTitle)),
       body: SafeArea(
-        child: detail.when(
-          loading: () => const _ChannelDetailSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () =>
-                  ref.invalidate(channelDetailProvider(widget.watchId)),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: detail.isRefreshing,
+          child: detail.when(
+            loading: () => const _ChannelDetailSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () =>
+                    ref.invalidate(channelDetailProvider(widget.watchId)),
+              ),
             ),
-          ),
           data: (ChannelDetailViewModel? value) {
             if (value == null) {
               return Center(
@@ -139,15 +138,12 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                   _CreatorCard(watch: value.watch),
                   if (_mutationError != null) ...<Widget>[
                     const SizedBox(height: SsSpacing.md),
-                    SsErrorState(
-                      title: _errorTitle(l10n, _mutationError!),
-                      message: _errorMessage(l10n, _mutationError!),
-                      retryLabel: l10n.retryAction,
-                      onRetry: () {
-                        setState(() {
-                          _mutationError = null;
-                        });
-                      },
+                    SsInlineAsyncError(
+                      error: _mutationError!,
+                      messageOverride: _channelMutationMessage(
+                        l10n,
+                        _mutationError!,
+                      ),
                     ),
                   ],
                   const SizedBox(height: SsSpacing.lg),
@@ -184,7 +180,8 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                 ],
               ),
             );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -498,30 +495,15 @@ SsStatusTone _recordingStatusTone(RecordingStatus status) {
   };
 }
 
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
+String? _channelMutationMessage(
+  AppLocalizations l10n,
+  Object error,
+) {
   if (error is ApiException &&
       error.kind == ApiExceptionKind.insufficientCredits) {
     return l10n.watchResumeInsufficientCreditMessage;
   }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
+  return null;
 }
 
 RecordingSourceType _recordingSourceType(WatchSourceType? type) {

@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/recording_summary.dart';
@@ -120,17 +119,23 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recordingDetailTitle)),
       body: SafeArea(
-        child: recording.when(
-          loading: () => const _RecordingDetailSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () =>
-                  ref.invalidate(recordingDetailProvider(widget.recordingId)),
+        child: SsAsyncRefreshFrame(
+          isRefreshing: recording.isRefreshing,
+          child: recording.when(
+            loading: () => const _RecordingDetailSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () {
+                  ref.invalidate(
+                    recordingDetailProvider(widget.recordingId),
+                  );
+                  ref.invalidate(
+                    recordingRealtimeProvider(widget.recordingId),
+                  );
+                },
+              ),
             ),
-          ),
           data: (RecordingSummary? value) {
             if (value == null) {
               return Center(
@@ -144,6 +149,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
             return RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(recordingDetailProvider(widget.recordingId));
+                ref.invalidate(recordingRealtimeProvider(widget.recordingId));
                 await ref.read(
                   recordingDetailProvider(widget.recordingId).future,
                 );
@@ -162,15 +168,12 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                   _LifecycleCard(recording: value),
                   if (_mutationError != null) ...<Widget>[
                     const SizedBox(height: SsSpacing.md),
-                    SsErrorState(
-                      title: _errorTitle(l10n, _mutationError!),
-                      message: _errorMessage(l10n, _mutationError!),
-                      retryLabel: l10n.retryAction,
-                      onRetry: () {
-                        setState(() {
-                          _mutationError = null;
-                        });
-                      },
+                    SsInlineAsyncError(
+                      error: _mutationError!,
+                      messageOverride: _recordingMutationMessage(
+                        l10n,
+                        _mutationError!,
+                      ),
                     ),
                   ],
                   if (value.status == RecordingStatus.failed) ...<Widget>[
@@ -195,7 +198,8 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                 ],
               ),
             );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -484,13 +488,11 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: SsSpacing.sm),
-            Text(_errorMessage(l10n, error)),
-            const SizedBox(height: SsSpacing.sm),
-            TextButton(
-              onPressed: () => ref.invalidate(
+            SsInlineAsyncError(
+              error: error,
+              onRetry: () => ref.invalidate(
                 recordingArtifactsProvider(widget.recording.id),
               ),
-              child: Text(l10n.retryAction),
             ),
           ],
         ),
@@ -723,28 +725,13 @@ IconData _statusIcon(RecordingStatus status) {
   };
 }
 
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
+String? _recordingMutationMessage(
+  AppLocalizations l10n,
+  Object error,
+) {
   if (error is ApiException &&
       error.kind == ApiExceptionKind.insufficientCredits) {
     return l10n.recordingInsufficientCreditMessage;
   }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
+  return null;
 }
