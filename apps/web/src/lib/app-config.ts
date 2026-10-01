@@ -1,7 +1,7 @@
 export type AppMode = "demo" | "production";
 export type AppRole = "guest" | "user" | "admin";
 
-const requestedMode = import.meta.env.VITE_APP_MODE;
+const requestedMode = import.meta.env["VITE_APP_MODE"];
 export const appMode: AppMode = requestedMode === "production" ? "production" : "demo";
 export const isDemoMode = appMode === "demo";
 export const isProductionMode = appMode === "production";
