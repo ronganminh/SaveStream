@@ -302,7 +302,7 @@
       }
     }
   },
-  "settingsCreditsSubtitle": "Số dư, mức sử dụng và giao dịch",
+  "settingsCreditsSubtitle": "Số dư, reservation, pricing và giao dịch",
   "settingsBillingSubtitle": "Mua credit và xem trạng thái thanh toán",
   "creditsLowBalanceTitle": "Credit khả dụng đang thấp",
   "creditsLowBalanceBody": "Một phần credit đang được giữ cho công việc đang chạy. Hãy nạp thêm để giảm nguy cơ Watch hoặc recording bị tạm dừng.",
@@ -402,5 +402,42 @@
   "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại.",
   "recordNowAction": "Ghi ngay",
   "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này.",
-  "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới."
+  "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới.",
+  "creditsReservationsTitle": "Reservation credit",
+  "creditsActiveReservationsLabel": "Reservation đang hoạt động",
+  "creditsLatestReservation": "Gần nhất: recording {recordingId} · {status}",
+  "creditsPricingTitle": "Pricing",
+  "creditsPricingUnavailableBody": "Backend chưa cấu hình pricing.",
+  "creditsPricingVersionLabel": "Phiên bản",
+  "creditsPricingRulesLabel": "Rule công khai",
+  "creditsBalanceAfter": "Số dư sau giao dịch: {balance}",
+  "billingContinueCheckoutAction": "Tiếp tục checkout",
+  "paymentStatusCreated": "Đã tạo",
+  "paymentStatusPartiallyRefunded": "Đã hoàn một phần",
+  "paymentStatusRefunded": "Đã hoàn tiền",
+  "paymentCreatedBody": "Order thanh toán đã được tạo nhưng checkout chưa bắt đầu.",
+  "paymentPartiallyRefundedBody": "Một phần khoản thanh toán này đã được hoàn lại.",
+  "paymentRefundedBody": "Khoản thanh toán này đã được hoàn lại.",
+  "billingReturnTitle": "Xác nhận thanh toán",
+  "billingOrderNotFoundTitle": "Không tìm thấy order thanh toán",
+  "billingOrderNotFoundBody": "SaveStream không tìm thấy order này. Mở Thanh toán để xem các order gần đây.",
+  "backToBillingAction": "Quay lại thanh toán",
+  "billingPollingStatusBody": "SaveStream đang kiểm tra backend để xác nhận thanh toán. Quay lại từ checkout không đồng nghĩa đã thanh toán.",
+  "@creditsLatestReservation": {
+    "placeholders": {
+      "recordingId": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@creditsBalanceAfter": {
+    "placeholders": {
+      "balance": {
+        "type": "int"
+      }
+    }
+  }
 }
