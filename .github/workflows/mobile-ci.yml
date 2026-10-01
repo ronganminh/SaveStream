@@ -38,6 +38,12 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show canonical connectivity format
+        run: >-
+          dart format --output=show
+          lib/app/savestream_app.dart
+          test/backend_connectivity_e2e_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
