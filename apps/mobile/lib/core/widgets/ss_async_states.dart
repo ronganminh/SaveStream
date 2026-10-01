@@ -46,7 +46,7 @@ SsAsyncErrorDetails describeAsyncError(
   final bool apiRetryable = error is ApiException && error.retryable;
   final bool mockRetryable =
       error is MockRepositoryException && error.kind == MockFailureKind.server;
-  final bool retryable = retryableOverride ?? apiRetryable || mockRetryable;
+  final bool retryable = retryableOverride ?? (apiRetryable || mockRetryable);
 
   return SsAsyncErrorDetails(
     kind: retryable
