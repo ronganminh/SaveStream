@@ -2085,10 +2085,87 @@ function ProcessingTimeline() {
 
 export function UsagePage() {
   const { t } = usePreferences();
-  const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
-  const hours = mock === "warning" ? 40.2 : mock === "reached" ? 50 : usage.recordingHours.used;
-  const dl = mock === "download" ? 100 : usage.downloadGb.used;
-  const ch = mock === "channels" ? usage.channels.limit : usage.channels.used;
+  const usageResource = useUsageResource();
+  const { data: recordingItems } = useRecordingsResource();
+  const [quotaState, setQuotaState] = useState<QuotaState>("normal");
+  const screenState = usageResource.screenState;
+  const baseUsage = usageResource.data ?? quotaStateFixtures.normal;
+  const usage = quotaState === "normal" ? baseUsage : quotaStateFixtures[quotaState];
+
+  const retryNow = () => {
+    usageResource.setFixtureState("retrying");
+    void usageResource.retry().finally(() => usageResource.setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-lg border bg-muted/50" />
+          ))}
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <ErrorState
+          title={usageResource.error?.title ?? "We couldn’t load usage"}
+          body={`${usageResource.error?.body ?? "Try again."} ${usageResource.error?.referenceId ? `Reference: ${usageResource.error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Usage data is idle"
+          body="Load the repository-backed quota snapshot to continue."
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => usageResource.setFixtureState("success")}
+            >
+              {t("Load data")}
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  const hours = usage.recordingHours.used;
+  const dl = usage.downloadGb.used;
+  const ch = usage.channels.used;
   const hp = Math.round((hours / usage.recordingHours.limit) * 100);
   const dp = Math.round((dl / usage.downloadGb.limit) * 100);
   const cp = Math.round((ch / usage.channels.limit) * 100);
@@ -2097,6 +2174,7 @@ export function UsagePage() {
       <Link to="/billing">{t("Upgrade plan")}</Link>
     </Button>
   );
+
   return (
     <AppShell>
       <PageHeader
@@ -2106,59 +2184,79 @@ export function UsagePage() {
           <Button variant="outline" asChild>
             <Link to="/billing">
               <CreditCard />
-              Billing
+              {t("Billing")}
             </Link>
           </Button>
         }
       />
-      <PrototypeStateBar value={mock} options={usageStates} onChange={setMock} />
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={usageResource.setFixtureState}
+      />
+      <PrototypeStateBar
+        label="Quota state"
+        value={quotaState}
+        options={[
+          { value: "normal", label: "Normal" },
+          { value: "warning", label: "Warning" },
+          { value: "exhausted", label: "Exhausted" },
+          { value: "resetting", label: "Resetting" },
+          { value: "unavailable", label: "Unavailable" },
+        ]}
+        onChange={setQuotaState}
+      />
+
       <div className="mb-6 space-y-3">
-        {mock === "warning" && (
+        {screenState === "retrying" && (
+          <StateBanner
+            tone="info"
+            title="Retrying usage request"
+            body="The quota snapshot is refreshing while the last known values remain visible."
+          />
+        )}
+        {quotaState === "warning" && (
           <StateBanner
             tone="warning"
-            title="You’ve used 80% of your monthly recording hours."
-            body={`${hours} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit, then pauses until ${usage.resetsOn}.`}
+            title="You’ve used more than 80% of your monthly recording hours."
+            body={`${hours.toFixed(1)} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit.`}
             action={upgradeBtn}
           />
         )}
-        {mock === "reached" && (
+        {quotaState === "exhausted" && (
           <StateBanner
             tone="error"
             title="Recording quota reached"
-            body={
-              <>
-                Automatic recording is paused until your quota resets or you upgrade your plan.
-                Monitoring continues, but new livestreams won’t be recorded until {usage.resetsOn}.
-              </>
-            }
+            body={`Automatic recording is paused until the quota resets on ${usage.resetsOn} or the plan is upgraded.`}
             action={upgradeBtn}
           />
         )}
-        {mock === "download" && (
+        {quotaState === "resetting" && (
           <StateBanner
-            tone="error"
-            title="Download bandwidth exhausted"
-            body={`Downloads are unavailable until your quota resets on ${usage.resetsOn}. Recording and browser playback are not affected.`}
-            action={upgradeBtn}
+            tone="info"
+            title="Quota is resetting"
+            body="Usage counters are refreshing for the new billing period. Avoid submitting duplicate upgrade actions."
           />
         )}
-        {mock === "channels" && (
+        {quotaState === "unavailable" && (
           <StateBanner
             tone="warning"
-            title="Monitored channel limit reached"
-            body={`Your plan allows ${usage.channels.limit} monitored channels. Remove a channel or upgrade to add another.`}
+            title="Quota data unavailable"
+            body="The last known limits are shown, but current usage could not be refreshed."
             action={
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/channels">Manage channels</Link>
+              <Button size="sm" variant="outline" onClick={retryNow}>
+                {t("Try again")}
               </Button>
             }
           />
         )}
       </div>
+
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Recording hours"
-          value={`${hours} / ${usage.recordingHours.limit}`}
+          value={`${hours.toFixed(1)} / ${usage.recordingHours.limit}`}
           detail={`${hp}% used`}
           icon={Clock3}
           progress={hp}
@@ -2171,7 +2269,7 @@ export function UsagePage() {
         />
         <StatCard
           label="Download bandwidth"
-          value={`${dl} / ${usage.downloadGb.limit} GB`}
+          value={`${dl.toFixed(1)} / ${usage.downloadGb.limit} GB`}
           detail={`${dp}% used`}
           icon={Download}
           progress={dp}
@@ -2183,6 +2281,7 @@ export function UsagePage() {
           icon={HardDrive}
         />
       </div>
+
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
         <section className="rounded-lg border bg-surface p-5">
           <div className="flex items-center justify-between">
@@ -2192,91 +2291,103 @@ export function UsagePage() {
           <div
             className="mt-8 flex h-56 items-end gap-1 border-b border-l px-2 sm:gap-2"
             role="img"
-            aria-label="Bar chart of daily recording hours in September"
+            aria-label={t("Bar chart of daily recording hours in September")}
           >
-            {dailyRecordingHours.map((v, i) => (
+            {dailyRecordingHours.map((value, index) => (
               <div
-                key={i}
-                title={`Sep ${i + 1}: ${v}h`}
+                key={index}
+                title={`Sep ${index + 1}: ${value}h`}
                 className="group relative flex-1 rounded-t-sm bg-primary/75 hover:bg-primary"
-                style={{ height: `${(v / 5) * 100}%` }}
+                style={{ height: `${(value / 5) * 100}%` }}
               >
                 <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-1 font-mono text-[9px] text-background group-hover:block">
-                  {v}h
+                  {value}h
                 </span>
               </div>
             ))}
           </div>
         </section>
+
         <section className="rounded-lg border bg-surface p-5">
           <h2 className="font-medium">{t("Plan limits")}</h2>
           <div className="mt-6 space-y-6">
             {(
               [
-                ["Recording hours", `${hours} of ${usage.recordingHours.limit} hours`, hp],
-                ["Download bandwidth", `${dl} of ${usage.downloadGb.limit} GB`, dp],
+                ["Recording hours", `${hours.toFixed(1)} of ${usage.recordingHours.limit} hours`, hp],
+                ["Download bandwidth", `${dl.toFixed(1)} of ${usage.downloadGb.limit} GB`, dp],
                 ["Monitored channels", `${ch} of ${usage.channels.limit} channels`, cp],
               ] as const
-            ).map(([a, b, c]) => (
-              <div key={a}>
+            ).map(([label, value, percent]) => (
+              <div key={label}>
                 <div className="mb-2 flex justify-between text-xs">
-                  <span>{a}</span>
+                  <span>{t(label)}</span>
                   <span
                     className={cn(
                       "font-mono text-muted-foreground",
-                      c >= 100 && "text-destructive",
-                      c >= 80 && c < 100 && "text-warning-foreground",
+                      percent >= 100 && "text-destructive",
+                      percent >= 80 && percent < 100 && "text-warning-foreground",
                     )}
                   >
-                    {b}
+                    {value}
                   </span>
                 </div>
-                <UsageProgress value={c} tone={c >= 80 ? "warning" : "primary"} />
+                <UsageProgress value={percent} tone={percent >= 80 ? "warning" : "primary"} />
               </div>
             ))}
           </div>
           <div className="mt-6 border-t pt-5 text-xs leading-5 text-muted-foreground">
-            <p className="font-medium text-foreground">About concurrent recordings</p>
+            <p className="font-medium text-foreground">{t("About concurrent recordings")}</p>
             <p className="mt-1">
-              Up to {usage.concurrent.limit} livestreams can record at the same time. If another
-              monitored channel goes live while both slots are in use, it waits for a free slot —
-              the start of that livestream may not be recorded.
+              {t("Simultaneous recordings are limited separately from saved or monitored channels.")}
             </p>
           </div>
         </section>
       </div>
+
       <section className="mt-8">
         <SectionTitle title="Usage by recording" />
-        <div className="hidden overflow-hidden rounded-lg border sm:block">
-          <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
-            <span>{t("Date")}</span>
-            <span>Channel</span>
-            <span>{t("Duration")}</span>
-            <span>{t("Size")}</span>
-          </div>
-          {recordings.map((r) => (
-            <div className="grid grid-cols-4 border-t px-4 py-3 text-sm" key={r.id}>
-              <span>{r.date}</span>
-              <span>{r.handle}</span>
-              <span className="font-mono">{r.duration}</span>
-              <span className="font-mono">{r.size}</span>
-            </div>
-          ))}
-        </div>
-        <div className="divide-y rounded-lg border sm:hidden">
-          {recordings.map((r) => (
-            <div key={r.id} className="flex justify-between p-3 text-sm">
-              <div>
-                <p className="font-medium">{r.handle}</p>
-                <p className="text-xs text-muted-foreground">{r.date}</p>
+        {screenState === "empty" || recordingItems.length === 0 ? (
+          <EmptyState
+            title="No usage records"
+            body="Recording usage will appear after a recording is created."
+          />
+        ) : (
+          <>
+            <div className="hidden overflow-hidden rounded-lg border sm:block">
+              <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
+                <span>{t("Date")}</span>
+                <span>{t("Channel")}</span>
+                <span>{t("Duration")}</span>
+                <span>{t("Size")}</span>
               </div>
-              <div className="text-right font-mono text-xs">
-                <p>{r.duration}</p>
-                <p className="text-muted-foreground">{r.size}</p>
-              </div>
+              {recordingItems.map((recording) => (
+                <div
+                  className="grid grid-cols-4 border-t px-4 py-3 text-sm"
+                  key={recording.id}
+                >
+                  <span>{recording.date}</span>
+                  <span>{recording.handle}</span>
+                  <span className="font-mono">{recording.duration}</span>
+                  <span className="font-mono">{recording.size}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="divide-y rounded-lg border sm:hidden">
+              {recordingItems.map((recording) => (
+                <div key={recording.id} className="flex justify-between p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{recording.handle}</p>
+                    <p className="text-xs text-muted-foreground">{recording.date}</p>
+                  </div>
+                  <div className="text-right font-mono text-xs">
+                    <p>{recording.duration}</p>
+                    <p className="text-muted-foreground">{recording.size}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     </AppShell>
   );
@@ -3009,19 +3120,6 @@ function RecordingHeader() {
     </div>
   );
 }
-const libraryStates = [
-  { value: "populated", label: "Populated" },
-  { value: "loading", label: "Loading" },
-  { value: "empty", label: "Empty library" },
-  { value: "error", label: "API retrying" },
-] as const;
-const usageStates = [
-  { value: "normal", label: "Normal" },
-  { value: "warning", label: "80% warning" },
-  { value: "reached", label: "Quota reached" },
-  { value: "download", label: "Downloads exhausted" },
-  { value: "channels", label: "Channel limit" },
-] as const;
 const billingStates = [
   { value: "active", label: "Pro active" },
   { value: "free", label: "Free plan" },
