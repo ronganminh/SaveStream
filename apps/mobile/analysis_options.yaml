@@ -1,0 +1,16 @@
+analyzer:
+  exclude:
+    - build/**
+  errors:
+    invalid_use_of_visible_for_testing_member: error
+    invalid_use_of_protected_member: error
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_print
+    - directives_ordering
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - require_trailing_commas
+    - use_super_parameters

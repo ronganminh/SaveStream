@@ -1,0 +1,269 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/app_settings_controller.dart';
+import '../../../app/router/app_routes.dart';
+import '../../../app/session/app_session_controller.dart';
+import '../../../app/theme/ss_tokens.dart';
+import '../../../core/widgets/savestream_widgets.dart';
+import '../../../l10n/l10n.dart';
+import 'controllers/settings_providers.dart';
+
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({
+    required this.settings,
+    required this.session,
+    super.key,
+  });
+
+  final AppSettingsController settings;
+  final AppSessionController session;
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _accountBusy = false;
+  bool _accountError = false;
+
+  Future<void> _logout() async {
+    await _runAccountAction(
+      () =>
+          ref.read(settingsAccountControllerProvider(widget.session)).logout(),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await SsConfirmDialog.show(
+      context,
+      title: l10n.deleteAccountTitle,
+      message: l10n.deleteAccountMessage,
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAccountAction,
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await _runAccountAction(
+      () => ref
+          .read(settingsAccountControllerProvider(widget.session))
+          .deleteAccount(),
+    );
+  }
+
+  Future<void> _runAccountAction(Future<void> Function() action) async {
+    setState(() {
+      _accountBusy = true;
+      _accountError = false;
+    });
+
+    try {
+      await action();
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _accountError = true;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _accountBusy = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(SsSpacing.lg),
+          children: <Widget>[
+            if (_accountError) ...<Widget>[
+              SsCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.error_outline_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: SsSpacing.md),
+                    Expanded(child: Text(l10n.accountActionError)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: SsSpacing.lg),
+            ],
+            _SectionLabel(label: l10n.settingsAccountSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: Column(
+                children: <Widget>[
+                  SsListTile(
+                    title: l10n.profileTitle,
+                    subtitle: l10n.settingsProfileSubtitle,
+                    leading: const Icon(Icons.person_outline_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.profile),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.creditsTitle,
+                    subtitle: l10n.settingsCreditsSubtitle,
+                    leading: const Icon(Icons.account_balance_wallet_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.credits),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.billingTitle,
+                    subtitle: l10n.settingsBillingSubtitle,
+                    leading: const Icon(Icons.credit_card_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.billing),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsPreferencesSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: Column(
+                children: <Widget>[
+                  SsListTile(
+                    title: l10n.languageTitle,
+                    subtitle: widget.settings.locale.languageCode == 'vi'
+                        ? l10n.languageVietnamese
+                        : l10n.languageEnglish,
+                    leading: const Icon(Icons.language_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.language),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.themeLabel,
+                    subtitle: _themeLabel(l10n, widget.settings.themeMode),
+                    leading: const Icon(Icons.contrast_rounded),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.theme),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.notificationsTitle,
+                    subtitle: l10n.notificationsPlaceholderSubtitle,
+                    leading: const Icon(Icons.notifications_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.notifications),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsLegalSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: Column(
+                children: <Widget>[
+                  SsListTile(
+                    title: l10n.privacyPolicyTitle,
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.privacy),
+                  ),
+                  const Divider(),
+                  SsListTile(
+                    title: l10n.termsOfUseTitle,
+                    leading: const Icon(Icons.description_outlined),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push(AppRoutes.terms),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsAccountActionsSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: Column(
+                children: <Widget>[
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.logout_rounded),
+                    title: Text(l10n.logoutAction),
+                    subtitle: Text(l10n.logoutDescription),
+                    enabled: !_accountBusy,
+                    onTap: _accountBusy ? null : _logout,
+                  ),
+                  const Divider(),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.delete_forever_outlined,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(
+                      l10n.deleteAccountAction,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    subtitle: Text(l10n.deleteAccountDescription),
+                    enabled: !_accountBusy,
+                    onTap: _accountBusy ? null : _deleteAccount,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsDeveloperSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: SsListTile(
+                title: l10n.designSystemTitle,
+                leading: const Icon(Icons.palette_outlined),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push(AppRoutes.componentGallery),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+String _themeLabel(AppLocalizations l10n, ThemeMode mode) {
+  return switch (mode) {
+    ThemeMode.system => l10n.themeSystem,
+    ThemeMode.light => l10n.themeLight,
+    ThemeMode.dark => l10n.themeDark,
+  };
+}
