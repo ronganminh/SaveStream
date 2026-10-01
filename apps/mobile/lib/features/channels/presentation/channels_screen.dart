@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -314,17 +315,23 @@ class _ChannelsSkeleton extends StatelessWidget {
 }
 
 String _errorTitle(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
+  if (_isOfflineLike(error)) {
     return l10n.offlineErrorTitle;
   }
   return l10n.errorTitle;
 }
 
 String _errorMessage(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
+  if (_isOfflineLike(error)) {
     return l10n.offlineErrorBody;
   }
   return l10n.errorBody;
+}
+
+bool _isOfflineLike(Object error) {
+  return (error is MockRepositoryException &&
+          error.kind == MockFailureKind.offlineLike) ||
+      (error is ApiException &&
+          (error.kind == ApiExceptionKind.network ||
+              error.kind == ApiExceptionKind.timeout));
 }

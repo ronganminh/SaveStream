@@ -109,9 +109,9 @@ class WatchController {
     return _runMutation(id, () => _repository.deleteWatch(id));
   }
 
-  Future<void> _runMutation(
+  Future<void> _runMutation<T>(
     String id,
-    Future<Object?> Function() action,
+    Future<T> Function() action,
   ) async {
     try {
       await action();

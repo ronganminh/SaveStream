@@ -80,7 +80,7 @@
   "offlineErrorBody": "SaveStream không thể kết nối dịch vụ. Hãy kiểm tra mạng rồi thử lại.",
   "channelDetailTitle": "Chi tiết kênh",
   "channelNotFoundTitle": "Không tìm thấy kênh",
-  "channelNotFoundBody": "Kênh mock này không khả dụng.",
+  "channelNotFoundBody": "Watch của kênh này không còn khả dụng.",
   "watchStatusLabel": "Trạng thái theo dõi",
   "watchStatusActive": "Đang hoạt động",
   "watchStatusPaused": "Đã tạm dừng",
@@ -202,7 +202,7 @@
   "watchReasonDisabled": "Watch này đã bị tắt.",
   "addChannelTitle": "Thêm kênh",
   "addChannelHeading": "Theo dõi một creator TikTok",
-  "addChannelBody": "Nhập username TikTok hoặc URL hồ sơ. SaveStream sẽ resolve creator khi backend Watch API được kết nối.",
+  "addChannelBody": "Nhập username TikTok hoặc URL hồ sơ. SaveStream sẽ resolve creator và bắt đầu theo dõi qua dịch vụ Watch.",
   "channelSourceLabel": "Username TikTok hoặc URL hồ sơ",
   "channelSourceHint": "@creator hoặc https://www.tiktok.com/@creator",
   "channelSourceRequired": "Nhập username TikTok hoặc URL hồ sơ.",
@@ -397,5 +397,7 @@
   "enterResetTokenAction": "Tôi có token đặt lại",
   "authInvalidTokenMessage": "Token xác minh hoặc đặt lại không hợp lệ hoặc đã hết hạn.",
   "authValidationErrorMessage": "Kiểm tra thông tin đã nhập rồi thử lại.",
-  "authSessionExpiredMessage": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
+  "authSessionExpiredMessage": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
+  "watchAlreadyExistsMessage": "Đã có Watch cho creator này.",
+  "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại."
 }

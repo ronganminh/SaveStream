@@ -95,11 +95,18 @@ final class ApiWatchRepository implements WatchRepository {
 
   @override
   Future<WatchSummary?> resumeWatch(String id) async {
-    final response = await _apiClient.post<WatchApiModel>(
-      '/v1/watches/$id/resume',
-      decoder: WatchApiModel.fromJson,
-    );
-    return response.data.toDomain();
+    try {
+      final response = await _apiClient.post<WatchApiModel>(
+        '/v1/watches/$id/resume',
+        decoder: WatchApiModel.fromJson,
+      );
+      return response.data.toDomain();
+    } on ApiException catch (error) {
+      if (error.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
   }
 
   @override
