@@ -130,6 +130,7 @@ import {
 } from "@/components/app-components";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
+import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 
 export { meta } from "@/components/app-components";
 
@@ -214,11 +215,18 @@ export function PublicHeader() {
   );
 }
 
+function formatSampleDuration(seconds?: number) {
+  if (!seconds) return "—";
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remaining = total % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${remaining}s`;
+}
+
 function RecordingExamples() {
-  const [selected, setSelected] = useState<(typeof recordings)[number] | null>(null);
-  const examples = ["lina-sep27", "mike-sep26", "lina-sep24"]
-    .map((id) => recordings.find((recording) => recording.id === id))
-    .filter((recording): recording is (typeof recordings)[number] => Boolean(recording));
+  const [selected, setSelected] = useState<SampleMediaItem | null>(null);
+
   return (
     <section id="examples" className="scroll-mt-16 border-b bg-surface-subtle py-20">
       <div className="mx-auto max-w-6xl px-4">
@@ -226,45 +234,52 @@ function RecordingExamples() {
           <p className="text-sm font-semibold text-primary">Completed recordings</p>
           <h2 className="mt-2 text-3xl font-semibold">Recording Examples</h2>
           <p className="mt-3 text-muted-foreground">
-            See what a completed cloud recording looks like. These samples use prototype data.
+            See what a completed cloud recording looks like. These are preserved SaveStream sample videos.
           </p>
         </div>
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {examples.map((recording) => (
+
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {sampleMedia.map((item, index) => (
             <button
-              key={recording.id}
+              key={item.id}
               type="button"
-              onClick={() => setSelected(recording)}
+              onClick={() => setSelected(item)}
               className="group overflow-hidden rounded-lg border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-dashboard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Watch sample recording ${index + 1}`}
             >
-              <div className={cn("relative aspect-video overflow-hidden", recording.color)}>
-                <div className="absolute inset-0 bg-thumbnail-grid" />
-                <span className="absolute left-3 top-3 rounded-md border border-player-foreground/15 bg-player-overlay px-2 py-1 text-[10px] font-medium text-player-foreground">
+              <div className="relative aspect-[9/16] overflow-hidden bg-black">
+                <img
+                  src={item.thumbnailUrl}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5" />
+                <span className="absolute left-3 top-3 rounded-md border border-white/15 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
                   SAMPLE
                 </span>
-                <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-player-foreground text-player shadow-lg transition group-hover:scale-105">
+                <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition group-hover:scale-105">
                   <Play className="ml-0.5 size-4 fill-current" />
                 </span>
-                <span className="absolute bottom-3 right-3 rounded bg-player-overlay px-1.5 py-0.5 font-mono text-[10px] text-player-foreground">
-                  {recording.duration}
+                <span className="absolute bottom-3 right-3 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-white">
+                  {formatSampleDuration(item.durationSeconds)}
                 </span>
               </div>
               <div className="p-4">
                 <div className="flex min-w-0 items-center justify-between gap-3">
-                  <p className="truncate text-sm font-semibold">{recording.handle}</p>
+                  <p className="truncate text-sm font-semibold">Sample {String(index + 1).padStart(2, "0")}</p>
                   <StatusBadge status="Ready" />
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{recording.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{item.title}</p>
                 <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-                  <span>{recording.date}</span>
-                  <span className="font-mono">
-                    {recording.duration} · {recording.resolution}
-                  </span>
+                  <span className="font-mono">{item.width}×{item.height}</span>
+                  <span className="font-mono">{formatSampleDuration(item.durationSeconds)}</span>
                 </div>
               </div>
             </button>
           ))}
         </div>
+
         <div className="mt-10 text-center">
           <Button size="lg" asChild>
             <Link to="/sign-up">
@@ -274,13 +289,14 @@ function RecordingExamples() {
           </Button>
         </div>
       </div>
+
       <Dialog
         open={Boolean(selected)}
         onOpenChange={(open) => {
           if (!open) setSelected(null);
         }}
       >
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <div className="mb-1 flex items-center gap-2">
               <span className="rounded-md bg-primary-subtle px-2 py-1 text-[10px] font-semibold uppercase text-primary">
@@ -288,19 +304,33 @@ function RecordingExamples() {
               </span>
               <StatusBadge status="Ready" />
             </div>
-            <DialogTitle>
-              {selected?.handle} — {selected?.title}
-            </DialogTitle>
+            <DialogTitle>{selected?.title}</DialogTitle>
             <DialogDescription>
-              This is a sample recording preview built from mock data, not public user content.
+              Preserved sample media from the previous SaveStream frontend.
             </DialogDescription>
           </DialogHeader>
-          <VideoPlayerShell />
+
+          <div className="overflow-hidden rounded-lg bg-black">
+            {selected && (
+              <video
+                key={selected.id}
+                className="mx-auto max-h-[68vh] w-full object-contain"
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                poster={selected.thumbnailUrl}
+              >
+                <source src={selected.mediaUrl} type="video/mp4" />
+              </video>
+            )}
+          </div>
+
           <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
             {[
-              ["Date", selected?.date],
-              ["Duration", selected?.duration],
-              ["Resolution", selected?.resolution],
+              ["Resolution", selected ? `${selected.width}×${selected.height}` : "—"],
+              ["Duration", formatSampleDuration(selected?.durationSeconds)],
+              ["ID", selected?.id ?? "—"],
             ].map(([label, value]) => (
               <div key={label} className="bg-surface p-3">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -308,6 +338,7 @@ function RecordingExamples() {
               </div>
             ))}
           </div>
+
           <DialogFooter>
             <Button asChild>
               <Link to="/sign-up">Start recording your own</Link>
@@ -318,6 +349,7 @@ function RecordingExamples() {
     </section>
   );
 }
+
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
