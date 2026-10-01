@@ -226,7 +226,19 @@ final class ApiRecordingRepository implements RecordingRepository {
           lastEventId = event.id;
           reconnectAttempt = 0;
 
-          current = await getRecording(id);
+          if (current == null) {
+            return;
+          }
+          final RecordingSummary beforeEvent = current;
+          if (beforeEvent.status == event.status) {
+            current = beforeEvent.copyWith(
+              status: event.status,
+              durationSeconds: event.durationSeconds,
+              bytesRecorded: event.bytesRecorded,
+            );
+          } else {
+            current = await getRecording(id);
+          }
           yield current;
           if (current == null || !current.isActiveLifecycle) {
             return;

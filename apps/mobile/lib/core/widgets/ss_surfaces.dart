@@ -55,31 +55,45 @@ class SsStatusChip extends StatelessWidget {
       SsStatusTone.recording => semantic.recording,
     };
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: foreground.withValues(alpha: 0.10),
-        borderRadius: const BorderRadius.all(Radius.circular(SsRadii.pill)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: SsSpacing.md,
-          vertical: 6,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (icon != null) ...<Widget>[
-              Icon(icon, size: 14, color: foreground),
-              const SizedBox(width: SsSpacing.xs),
-            ],
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.w600,
-              ),
+    final double maxWidth = (MediaQuery.sizeOf(context).width - SsSpacing.xxl)
+        .clamp(120, double.infinity);
+
+    return Semantics(
+      container: true,
+      label: label,
+      excludeSemantics: true,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: foreground.withValues(alpha: 0.10),
+            borderRadius: const BorderRadius.all(Radius.circular(SsRadii.pill)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SsSpacing.md,
+              vertical: 6,
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (icon != null) ...<Widget>[
+                  Icon(icon, size: 14, color: foreground),
+                  const SizedBox(width: SsSpacing.xs),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    softWrap: true,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -102,11 +116,13 @@ class SsAvatar extends StatelessWidget {
         .map((String part) => part.substring(0, 1).toUpperCase())
         .join();
 
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      child: Text(initials.isEmpty ? 'S' : initials),
+    return ExcludeSemantics(
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        child: Text(initials.isEmpty ? 'S' : initials),
+      ),
     );
   }
 }
@@ -129,17 +145,67 @@ class SsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: leading,
-        title: Text(title),
-        subtitle: subtitle == null ? null : Text(subtitle!),
-        trailing: trailing,
-        onTap: onTap,
-      ),
-    );
+    final Widget content = trailing is SsStatusChip
+        ? Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: SsSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (leading != null) ...<Widget>[
+                          leading!,
+                          const SizedBox(width: SsSpacing.md),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                title,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              if (subtitle != null) ...<Widget>[
+                                const SizedBox(height: SsSpacing.xs),
+                                Text(
+                                  subtitle!,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: SsSpacing.sm),
+                    Align(alignment: Alignment.centerLeft, child: trailing!),
+                  ],
+                ),
+              ),
+            ),
+          )
+        : Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: leading,
+              title: Text(title),
+              subtitle: subtitle == null ? null : Text(subtitle!),
+              trailing: trailing,
+              onTap: onTap,
+            ),
+          );
+
+    final Widget tile = MergeSemantics(child: content);
+    if (onTap == null) {
+      return tile;
+    }
+    return Semantics(button: true, child: tile);
   }
 }
 
@@ -163,7 +229,12 @@ class SsSectionHeader extends StatelessWidget {
           child: Text(title, style: Theme.of(context).textTheme.titleMedium),
         ),
         if (actionLabel != null)
-          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+          Flexible(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(onPressed: onAction, child: Text(actionLabel!)),
+            ),
+          ),
       ],
     );
   }

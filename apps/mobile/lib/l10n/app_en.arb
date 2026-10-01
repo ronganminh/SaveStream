@@ -22,6 +22,8 @@
   "emailLabel": "Email",
   "emailHint": "name@example.com",
   "passwordLabel": "Password",
+  "showPasswordAction": "Show password",
+  "hidePasswordAction": "Hide password",
   "readyStatus": "Ready",
   "recordingStatus": "Recording",
   "warningStatus": "Low credit",
