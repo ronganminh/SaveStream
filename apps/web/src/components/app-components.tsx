@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -120,10 +120,11 @@ const adminNav = [
   { to: "/admin/errors", label: "Errors", icon: AlertTriangle },
 ] as const;
 export function Logo({ compact = false }: { compact?: boolean }) {
+  const { t } = usePreferences();
   return (
     <Link
       to="/"
-      aria-label="SaveStream home"
+      aria-label={`SaveStream · ${t("Go home")}`}
       className="flex min-w-0 items-center gap-2.5 font-semibold"
     >
       <img src="/savestream-mark.svg" alt="" className="size-8 shrink-0" width="32" height="32" />
@@ -233,19 +234,20 @@ export function StatCard({
   label: string;
   value: string;
   detail: string;
-  icon: any;
+  icon: ElementType;
   progress?: number;
 }) {
+  const { t } = usePreferences();
   return (
-    <div className="border-r border-b bg-surface p-5 last:border-r-0">
+    <div className="border-r border-b bg-surface p-4 last:border-r-0 sm:p-5">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>{label}</span>
+        <span>{t(label)}</span>
         <Icon className="size-4" />
       </div>
       <div className="mt-3 font-mono text-2xl font-semibold tracking-normal text-foreground">
         {value}
       </div>
-      <div className="mt-1 text-xs text-muted-foreground">{detail}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{t(detail)}</div>
       {progress !== undefined && (
         <div className="mt-4">
           <UsageProgress value={progress} />
@@ -263,11 +265,12 @@ export function PageHeader({
   subtitle?: string;
   action?: ReactNode;
 }) {
+  const { t } = usePreferences();
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
-        <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{subtitle}</p>}
+        <h1 className="text-2xl font-semibold tracking-normal">{t(title)}</h1>
+        {subtitle && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t(subtitle)}</p>}
       </div>
       {action}
     </header>
@@ -346,7 +349,12 @@ export function LanguageMenu({ full = false }: { full?: boolean }) {
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
-  const item = (it: any) => (
+  const item = (
+    it:
+      | (typeof mainNav)[number]
+      | (typeof adminNav)[number]
+      | { to: "/notifications" | "/settings" | "/help"; label: string; icon: ElementType },
+  ) => (
     <Link
       key={it.to}
       to={it.to}
@@ -370,7 +378,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         className={cn("fixed inset-0 z-40 bg-overlay lg:hidden", open ? "block" : "hidden")}
       />
       <aside
-        aria-label="Main navigation"
+        aria-label={t("Main navigation")}
         className={cn(
           "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar transition-transform lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
@@ -383,7 +391,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             size="icon"
             className="lg:hidden"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={t("Close menu")}
           >
             <X />
           </Button>
@@ -453,7 +461,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
         size="icon"
         onClick={onMenu}
         className="lg:hidden"
-        aria-label="Open menu"
+        aria-label={t("Open menu")}
       >
         <Menu />
       </Button>
@@ -532,7 +540,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             <Button
               variant="ghost"
               className="ml-0.5 h-9 px-1.5 sm:ml-1 sm:px-2"
-              aria-label="Account menu"
+              aria-label={t("Account menu")}
             >
               <span className="grid size-7 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
                 {user.initials}
@@ -604,6 +612,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
+  const { t } = usePreferences();
   if (empty)
     return (
       <section className="border-y bg-surface px-5 py-8">
@@ -612,10 +621,11 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
             <Radio className="size-4 text-muted-foreground" />
           </span>
           <div>
-            <h2 className="font-semibold">No active recordings</h2>
+            <h2 className="font-semibold">{t("No active recordings")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              We’re monitoring your enabled channels. Recording will start automatically when one
-              goes live.
+              {t(
+                "We’re monitoring your enabled channels. Recording will start automatically when one goes live.",
+              )}
             </p>
           </div>
         </div>
@@ -628,7 +638,7 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
       <div className="flex items-center justify-between border-b border-recording/15 bg-recording-subtle px-5 py-3">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase text-recording">
           <span className="size-2 animate-pulse rounded-full bg-recording" />
-          Active recording
+          {t("Active recording")}
         </div>
         <StatusBadge status="Recording" />
       </div>
@@ -643,26 +653,26 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
             <p className="mt-0.5 text-sm text-muted-foreground">@linastudio</p>
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Cloud className="size-4 text-success" />
-              Recording runs on our servers. You can safely close this page.
+              {t("Recording runs on our servers. You can safely close this page.")}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 md:text-right">
           <div>
-            <p className="text-xs text-muted-foreground">Elapsed</p>
+            <p className="text-xs text-muted-foreground">{t("Elapsed")}</p>
             <p className="font-mono text-2xl font-semibold">01:42:18</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Written</p>
+            <p className="text-xs text-muted-foreground">{t("Written")}</p>
             <p className="font-mono text-lg font-medium">3.8 GB</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Started</p>
+            <p className="text-xs text-muted-foreground">{t("Started")}</p>
             <p className="text-sm font-medium">Today, 13:22</p>
           </div>
           <Button asChild size="sm">
             <Link to="/recordings/active">
-              View recording
+              {t("View recording")}
               <ChevronRight />
             </Link>
           </Button>
@@ -680,6 +690,7 @@ export function SearchInput({
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const { t } = usePreferences();
   return (
     <div className="relative">
       <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
@@ -687,14 +698,15 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9"
-        placeholder={placeholder}
+        placeholder={t(placeholder)}
+        aria-label={t(placeholder)}
       />
     </div>
   );
 }
 export function FilterBar({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-5 flex flex-col gap-3 border-y bg-surface-subtle p-3 sm:flex-row sm:items-center">
+    <div className="mb-4 flex flex-col gap-2 border-y bg-surface-subtle p-2.5 sm:flex-row sm:items-center">
       {children}
     </div>
   );
@@ -735,6 +747,7 @@ export function ChannelRow({ channel }: { channel: Channel }) {
 }
 export function ChannelCard({ channel }: { channel: Channel }) {
   const c = useChannelControls(channel);
+  const { t } = usePreferences();
   if (c.removed) return null;
   return (
     <div className="rounded-lg border bg-surface p-4">
@@ -751,7 +764,7 @@ export function ChannelCard({ channel }: { channel: Channel }) {
       <div className="mt-4 flex items-center justify-between">
         <StatusBadge status={c.on ? channel.status : "Paused"} />
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          Monitoring <Switch checked={c.on} onCheckedChange={c.toggle} />
+          {t("Monitoring")} <Switch checked={c.on} onCheckedChange={c.toggle} />
         </label>
       </div>
       <div className="mt-4 flex justify-between border-t pt-3 text-xs">
@@ -759,7 +772,7 @@ export function ChannelCard({ channel }: { channel: Channel }) {
           {channel.live} · {channel.recordings} recordings
         </span>
         <Link to="/channels/$id" params={{ id: channel.id }} className="font-medium text-primary">
-          View
+          {t("View")}
         </Link>
       </div>
       {c.dialogs}
@@ -774,10 +787,11 @@ function MoreMenu({
   controls: ReturnType<typeof useChannelControls>;
 }) {
   const navigate = useNavigate();
+  const { t } = usePreferences();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`Actions for ${channel.handle}`}>
+        <Button variant="ghost" size="icon" aria-label={`${t("More actions")}: ${channel.handle}`}>
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>
@@ -786,23 +800,23 @@ function MoreMenu({
           onSelect={() => navigate({ to: "/channels/$id", params: { id: channel.id } })}
         >
           <ExternalLink />
-          View channel
+          {t("View channel")}
         </DropdownMenuItem>
         {controls.on ? (
           <DropdownMenuItem onSelect={() => controls.openPause()}>
             <Pause />
-            Pause monitoring
+            {t("Pause monitoring")}
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem onSelect={() => controls.toggle(true)}>
             <Radio />
-            Resume monitoring
+            {t("Resume monitoring")}
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem className="text-destructive" onSelect={() => controls.openRemove()}>
           <Trash2 />
-          Remove channel
+          {t("Remove channel")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -891,11 +905,16 @@ export function RecordingCard({ recording }: { recording: Recording }) {
 function RecordingActions({ recording }: { recording: Recording }) {
   const navigate = useNavigate();
   const [del, setDel] = useState(false);
+  const { t } = usePreferences();
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label={`Actions for ${recording.title}`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`${t("More actions")}: ${recording.title}`}
+          >
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
@@ -904,7 +923,7 @@ function RecordingActions({ recording }: { recording: Recording }) {
             onSelect={() => navigate({ to: "/recordings/$id", params: { id: recording.id } })}
           >
             <ExternalLink />
-            View recording
+            {t("View recording")}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={recording.status !== "Ready"}
@@ -915,12 +934,12 @@ function RecordingActions({ recording }: { recording: Recording }) {
             }
           >
             <Download />
-            Download
+            {t("Download")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-destructive" onSelect={() => setDel(true)}>
             <Trash2 />
-            Delete
+            {t("Delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -933,12 +952,13 @@ export function VideoPlayerShell({
 }: {
   state?: "ready" | "active" | "processing" | "failed";
 }) {
+  const { t } = usePreferences();
   return (
     <div className="relative grid aspect-video max-h-[620px] w-full place-items-center overflow-hidden rounded-lg bg-player text-player-foreground">
       <div className="absolute inset-0 bg-player-grid" />
       {state === "ready" && (
         <button
-          aria-label="Play video"
+          aria-label={t("Play video")}
           className="relative grid size-16 place-items-center rounded-full bg-player-foreground text-player"
         >
           <span className="ml-1 text-2xl">▶</span>
@@ -976,6 +996,7 @@ export function VideoPlayerShell({
 }
 export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const navigate = useNavigate();
+  const { t } = usePreferences();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [state, setState] = useState<LookupState>("idle");
@@ -1069,7 +1090,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
         {trigger || (
           <Button>
             <Plus />
-            Add channel
+            {t("Add channel")}
           </Button>
         )}
       </DialogTrigger>
@@ -1079,7 +1100,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-subtle text-success">
               <CheckCircle2 className="size-6" />
             </span>
-            <DialogTitle className="mt-5">Monitoring started</DialogTitle>
+            <DialogTitle className="mt-5">{t("Monitoring started")}</DialogTitle>
             <DialogDescription className="mt-2">
               {handle} is now monitored. Status:{" "}
               <b className="font-medium text-foreground">Waiting for live</b>. Recording starts
@@ -1092,7 +1113,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                   reset();
                 }}
               >
-                Add another
+                {t("Add another")}
               </Button>
               <Button
                 onClick={() => {
@@ -1100,14 +1121,14 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                   navigate({ to: "/channels" });
                 }}
               >
-                Go to channels
+                {t("Go to channels")}
               </Button>
             </div>
           </div>
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Add TikTok channel</DialogTitle>
+              <DialogTitle>{t("Add TikTok channel")}</DialogTitle>
               <DialogDescription>
                 We’ll monitor this channel continuously and automatically start recording when it
                 goes live.
@@ -1116,7 +1137,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <div className="space-y-4 py-2">
               <div>
                 <label htmlFor="add-channel-input" className="mb-2 block text-sm font-medium">
-                  TikTok username or URL
+                  {t("TikTok username or URL")}
                 </label>
                 <div className="relative">
                   <Input
@@ -1130,7 +1151,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                   />
                   {state === "resolving" && (
                     <span
-                      aria-label="Looking up creator"
+                      aria-label={t("Looking up creator…")}
                       className="absolute right-3 top-2.5 size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
                     />
                   )}
@@ -1146,7 +1167,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                     <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
                     <div className="h-3 w-1/4 animate-pulse rounded bg-muted" />
                   </div>
-                  <span className="text-xs text-muted-foreground">Looking up creator…</span>
+                  <span className="text-xs text-muted-foreground">{t("Looking up creator…")}</span>
                 </div>
               )}
               {state === "found" && (
@@ -1236,16 +1257,16 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
               <Button onClick={submit} disabled={state !== "found" || phase === "submitting"}>
                 {phase === "submitting" ? (
                   <>
                     <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Adding…
+                    {t("Adding")}…
                   </>
                 ) : (
-                  "Add & start monitoring"
+                  t("Add & start monitoring")
                 )}
               </Button>
             </DialogFooter>
@@ -1339,19 +1360,20 @@ export function EmptyState({
   body,
   action,
 }: {
-  icon?: any;
+  icon?: ElementType;
   title: string;
   body: string;
   action?: ReactNode;
 }) {
+  const { t } = usePreferences();
   return (
     <div className="grid min-h-64 place-items-center border-y bg-surface-subtle px-6 py-12 text-center">
       <div>
         <span className="mx-auto grid size-10 place-items-center rounded-full border bg-background">
           <Icon className="size-4 text-muted-foreground" />
         </span>
-        <h3 className="mt-4 font-medium">{title}</h3>
-        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{body}</p>
+        <h3 className="mt-4 font-medium">{t(title)}</h3>
+        <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">{t(body)}</p>
         {action && <div className="mt-5">{action}</div>}
       </div>
     </div>
@@ -1392,6 +1414,7 @@ export function Skeleton({ rows = 3 }: { rows?: number }) {
   );
 }
 export function NotificationItem({ notification: n }: { notification: Notification }) {
+  const { t } = usePreferences();
   const dot =
     n.status === "Recording" || n.status === "Error"
       ? "bg-recording"
@@ -1400,7 +1423,7 @@ export function NotificationItem({ notification: n }: { notification: Notificati
         : "bg-warning";
   return (
     <Link
-      {...(n.link as any)}
+      {...n.link}
       onClick={() => notificationStore.markRead(n.id)}
       className={cn(
         "flex gap-3 border-b p-4 text-left last:border-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
@@ -1410,8 +1433,10 @@ export function NotificationItem({ notification: n }: { notification: Notificati
       <span className={cn("mt-1.5 size-2 shrink-0 rounded-full", dot)} />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 text-sm font-medium">
-          {n.title}
-          {!n.read && <span className="text-[10px] font-semibold uppercase text-primary">New</span>}
+          {t(n.title)}
+          {!n.read && (
+            <span className="text-[10px] font-semibold uppercase text-primary">{t("New")}</span>
+          )}
         </p>
         <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{n.body}</p>
         <p className="mt-1 text-[10px] text-muted-foreground">{n.time}</p>
@@ -1436,6 +1461,7 @@ export function PlanCard({
   action?: ReactNode;
   note?: string | undefined;
 }) {
+  const { t } = usePreferences();
   return (
     <div
       className={cn(
@@ -1445,27 +1471,27 @@ export function PlanCard({
     >
       {current && (
         <span className="absolute right-4 top-4 rounded-md bg-primary-subtle px-2 py-1 text-xs font-medium text-primary">
-          Current plan
+          {t("Current plan")}
         </span>
       )}
       <h3 className="text-lg font-semibold">{name}</h3>
       <p className="mt-3">
         <span className="font-mono text-3xl font-semibold">{price}</span>
-        {price !== "Free" && <span className="text-sm text-muted-foreground"> {suffix}</span>}
+        {price !== "Free" && <span className="text-sm text-muted-foreground"> {t(suffix)}</span>}
       </p>
       {note && <p className="mt-1 text-xs text-success">{note}</p>}
       <ul className="mt-6 flex-1 space-y-3">
         {features.map((f) => (
           <li key={f} className="flex gap-2 text-sm">
             <CheckCircle2 className="size-4 shrink-0 text-success" />
-            {f}
+            {t(f)}
           </li>
         ))}
       </ul>
       {action ?? (
         <Button variant={current ? "outline" : "default"} className="mt-6 w-full" asChild>
           <Link to={current ? "/billing" : "/sign-up"}>
-            {current ? "Manage plan" : "Choose plan"}
+            {t(current ? "Manage plan" : "Choose plan")}
           </Link>
         </Button>
       )}
@@ -1473,6 +1499,7 @@ export function PlanCard({
   );
 }
 export function AdminHealthBadge({ healthy = true }: { healthy?: boolean }) {
+  const { t } = usePreferences();
   return (
     <span
       className={cn(
@@ -1481,7 +1508,7 @@ export function AdminHealthBadge({ healthy = true }: { healthy?: boolean }) {
       )}
     >
       <span className="size-1.5 rounded-full bg-current" />
-      {healthy ? "Healthy" : "Degraded"}
+      {t(healthy ? "Healthy" : "Degraded")}
     </span>
   );
 }
@@ -1520,23 +1547,24 @@ export function CommandSearch({
   onOpenChange: (o: boolean) => void;
 }) {
   const navigate = useNavigate();
+  const { t } = usePreferences();
   const go = (fn: () => void) => {
     onOpenChange(false);
     fn();
   };
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="Search channels or recordings…" />
+      <CommandInput placeholder={t("Search channels or recordings…")} />
       <CommandList>
         <CommandEmpty>
           <div className="py-4">
-            <p className="text-sm font-medium">No results found</p>
+            <p className="text-sm font-medium">{t("No results found")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
               Try a creator name, @handle, or recording date.
             </p>
           </div>
         </CommandEmpty>
-        <CommandGroup heading="Channels">
+        <CommandGroup heading={t("Channels")}>
           {channels.map((c) => (
             <CommandItem
               key={c.id}
@@ -1551,7 +1579,7 @@ export function CommandSearch({
             </CommandItem>
           ))}
         </CommandGroup>
-        <CommandGroup heading="Recordings">
+        <CommandGroup heading={t("Recordings")}>
           {recordings.map((r) => (
             <CommandItem
               key={r.id}
@@ -1677,16 +1705,17 @@ export function ConfirmDialog({
   children?: ReactNode;
   confirmDisabled?: boolean;
 }) {
+  const { t } = usePreferences();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="w-[calc(100vw-2rem)] rounded-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{body}</AlertDialogDescription>
+          <AlertDialogTitle>{t(title)}</AlertDialogTitle>
+          <AlertDialogDescription>{t(body)}</AlertDialogDescription>
         </AlertDialogHeader>
         {children}
         <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={confirmDisabled}
             onClick={(e) => {
@@ -1695,7 +1724,7 @@ export function ConfirmDialog({
             }}
             className={cn(destructive && buttonVariants({ variant: "destructive" }))}
           >
-            {confirmLabel}
+            {t(confirmLabel)}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -1713,8 +1742,9 @@ export function StateBanner({
   title: string;
   body?: ReactNode;
   action?: ReactNode;
-  icon?: any;
+  icon?: ElementType;
 }) {
+  const { t } = usePreferences();
   const I = icon ?? (tone === "success" ? CheckCircle2 : tone === "info" ? Info : AlertTriangle);
   const styles = {
     info: "border-info/25 bg-info-subtle [&>svg]:text-info",
@@ -1729,8 +1759,12 @@ export function StateBanner({
     >
       <I className="size-4 shrink-0 sm:mt-0.5" />
       <div className="flex-1">
-        <p className="text-sm font-medium">{title}</p>
-        {body && <div className="mt-1 text-xs leading-5 text-muted-foreground">{body}</div>}
+        <p className="text-sm font-medium">{t(title)}</p>
+        {body && (
+          <div className="mt-1 text-xs leading-5 text-muted-foreground">
+            {typeof body === "string" ? t(body) : body}
+          </div>
+        )}
       </div>
       {action && <div className="shrink-0">{action}</div>}
     </div>
@@ -1747,10 +1781,11 @@ export function PrototypeStateBar<T extends string>({
   options: readonly { value: T; label: string }[];
   onChange: (v: T) => void;
 }) {
+  const { t } = usePreferences();
   return (
     <div className="mb-5 flex flex-col gap-2 rounded-lg border border-dashed bg-surface-subtle p-2 sm:flex-row sm:items-center">
       <span className="px-2 text-[10px] font-semibold uppercase text-muted-foreground">
-        {label}
+        {t(label)}
       </span>
       <div role="radiogroup" aria-label={label} className="flex gap-1 overflow-x-auto">
         {options.map((o) => (
@@ -1765,7 +1800,7 @@ export function PrototypeStateBar<T extends string>({
               value === o.value && "bg-background text-foreground shadow-sm ring-1 ring-border",
             )}
           >
-            {o.label}
+            {t(o.label)}
           </button>
         ))}
       </div>
@@ -1781,13 +1816,14 @@ export function SuccessState({
   body: string;
   action?: ReactNode;
 }) {
+  const { t } = usePreferences();
   return (
     <div className="text-center">
       <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-subtle text-success">
         <CheckCircle2 className="size-6" />
       </span>
-      <h1 className="mt-5 text-2xl font-semibold">{title}</h1>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{body}</p>
+      <h1 className="mt-5 text-2xl font-semibold">{t(title)}</h1>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{t(body)}</p>
       {action && (
         <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">{action}</div>
       )}
@@ -1807,6 +1843,7 @@ export function PasswordField({
   onChange: (v: string) => void;
   showStrength?: boolean;
 }) {
+  const { t } = usePreferences();
   const score = [
     value.length >= 8,
     /[A-Z]/.test(value) && /[a-z]/.test(value),
@@ -1817,7 +1854,7 @@ export function PasswordField({
   return (
     <div>
       <label htmlFor={id} className="block text-sm font-medium">
-        {label}
+        {t(label)}
       </label>
       <Input
         id={id}
