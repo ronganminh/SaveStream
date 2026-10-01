@@ -61,16 +61,16 @@ void main() {
   test(
     'attaches bearer token without exposing token to typed errors',
     () async {
-    final _FakeAdapter adapter = _FakeAdapter(
-      (RequestOptions options, int call) {
-        expect(options.headers['Authorization'], 'Bearer secret-token');
-        return _jsonResponse(200, <String, Object?>{'name': 'ok'});
-      },
-    );
-    final ApiClient client = clientFor(
-      adapter,
-      accessTokenProvider: const _StaticTokenProvider('secret-token'),
-    );
+      final _FakeAdapter adapter = _FakeAdapter(
+        (RequestOptions options, int call) {
+          expect(options.headers['Authorization'], 'Bearer secret-token');
+          return _jsonResponse(200, <String, Object?>{'name': 'ok'});
+        },
+      );
+      final ApiClient client = clientFor(
+        adapter,
+        accessTokenProvider: const _StaticTokenProvider('secret-token'),
+      );
 
       await client.get<_Payload>(
         '/v1/auth-check',
