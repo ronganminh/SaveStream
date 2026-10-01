@@ -414,14 +414,6 @@ const vi: Record<string, string> = {
     "Xem một bản ghi đám mây hoàn chỉnh trông như thế nào. Đây là các video mẫu SaveStream được giữ lại.",
   "Preserved sample media from the previous SaveStream frontend.":
     "Video mẫu được giữ lại từ giao diện SaveStream trước đó.",
-};
-
-type Preferences = {
-  language: Language;
-  setLanguage: (language: Language) => void;
-  theme: ThemePreference;
-  setTheme: (theme: ThemePreference) => void;
-  t: (text: string) => string;,
   "Demo — illustrative data": "Bản demo — dữ liệu minh họa",
     Demo: "Bản demo",
     "Demo controls": "Điều khiển bản demo",
@@ -598,6 +590,15 @@ type Preferences = {
     "Close your laptop. Recording continues.": "Đóng máy tính. Việc ghi hình vẫn tiếp tục.",
     "Monitoring and recording run on our servers, not in your browser.": "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn."
 };
+
+type Preferences = {
+  language: Language;
+  setLanguage: (language: Language) => void;
+  theme: ThemePreference;
+  setTheme: (theme: ThemePreference) => void;
+  t: (text: string) => string;
+};
+
 const Context = createContext<Preferences | null>(null);
 
 function translate(text: string, language: Language) {
