@@ -45,10 +45,10 @@ export const adaptRecording = (recording: LegacyRecording): Recording => ({
   status: recordingStatusMap[recording.status],
 });
 
-const baseChannels = legacyChannels.map(adaptChannel);
-const baseRecordings = legacyRecordings.map(adaptRecording);
+export const mockChannels = legacyChannels.map(adaptChannel);
+export const mockRecordings = legacyRecordings.map(adaptRecording);
 
-const channelSeed = baseChannels[0]!;
+const channelSeed = mockChannels[0]!;
 export const channelStatusFixtures: Record<ChannelStatus, Channel> = {
   offline: { ...channelSeed, id: "fixture-offline", status: "offline", live: "Offline" },
   checking: { ...channelSeed, id: "fixture-checking", status: "checking", checked: "Checking now" },
@@ -59,8 +59,8 @@ export const channelStatusFixtures: Record<ChannelStatus, Channel> = {
   error: { ...channelSeed, id: "fixture-error", status: "error", checked: "Check failed" },
 };
 
-const readySeed = baseRecordings.find((recording) => recording.status === "ready") ?? baseRecordings[0]!;
-const failedSeed = baseRecordings.find((recording) => recording.status === "failed") ?? readySeed;
+const readySeed = mockRecordings.find((recording) => recording.status === "ready") ?? mockRecordings[0]!;
+const failedSeed = mockRecordings.find((recording) => recording.status === "failed") ?? readySeed;
 export const recordingStatusFixtures: Record<RecordingStatus, Recording> = {
   queued: { ...readySeed, id: "fixture-queued", status: "queued", duration: "—", size: "—", sizeGb: 0, expires: "—", expiresDays: null },
   recording: { ...readySeed, id: "fixture-recording", status: "recording", title: "Live now", expires: "—", expiresDays: null },
@@ -72,8 +72,10 @@ export const recordingStatusFixtures: Record<RecordingStatus, Recording> = {
   deleting: { ...readySeed, id: "fixture-deleting", status: "deleting" },
 };
 
+export const mockUsage: UsageSummary = { ...legacyUsage, quotaState: "normal" };
+
 export const quotaStateFixtures: Record<UsageSummary["quotaState"], UsageSummary> = {
-  normal: { ...legacyUsage, quotaState: "normal" },
+  normal: mockUsage,
   warning: {
     ...legacyUsage,
     recordingHours: { ...legacyUsage.recordingHours, used: legacyUsage.recordingHours.limit * 0.82 },
@@ -100,23 +102,23 @@ function normalizeHandle(input: string) {
 export class MockSaveStreamRepository implements SaveStreamRepository {
   async listChannels() {
     await wait();
-    return baseChannels.map((channel) => ({ ...channel }));
+    return mockChannels.map((channel) => ({ ...channel }));
   }
 
   async getChannel(id: string) {
     await wait();
-    return baseChannels.find((channel) => channel.id === id) ?? null;
+    return mockChannels.find((channel) => channel.id === id) ?? null;
   }
 
   async listRecordings() {
     await wait();
-    return baseRecordings.map((recording) => ({ ...recording }));
+    return mockRecordings.map((recording) => ({ ...recording }));
   }
 
   async getRecording(id: string) {
     await wait();
     if (id === "lina-live") return recordingStatusFixtures.recording;
-    return baseRecordings.find((recording) => recording.id === id) ?? null;
+    return mockRecordings.find((recording) => recording.id === id) ?? null;
   }
 
   async getUsage() {
@@ -129,7 +131,7 @@ export class MockSaveStreamRepository implements SaveStreamRepository {
     if (!input.trim()) return { state: "empty" };
     const handle = normalizeHandle(input);
     if (!handle) return { state: "invalid" };
-    const existing = baseChannels.find((channel) => channel.handle.toLowerCase() === handle);
+    const existing = mockChannels.find((channel) => channel.handle.toLowerCase() === handle);
     if (existing) return { state: "already_added" };
     if (handle.includes("notfound")) return { state: "not_found" };
     if (handle.includes("limit")) return { state: "limit_reached" };
@@ -195,13 +197,13 @@ export class MockSaveStreamRepository implements SaveStreamRepository {
 
   async retryRecordingProcessing(id: string): Promise<MutationResult<Recording>> {
     await wait(650);
-    const recording = baseRecordings.find((item) => item.id === id) ?? recordingStatusFixtures.failed;
+    const recording = mockRecordings.find((item) => item.id === id) ?? recordingStatusFixtures.failed;
     return { ok: true, data: { ...recording, status: "processing" } };
   }
 
   async prepareDownload(id: string): Promise<DownloadResult> {
     await wait(450);
-    const recording = baseRecordings.find((item) => item.id === id);
+    const recording = mockRecordings.find((item) => item.id === id);
     if (!recording || recording.status === "expired") {
       return {
         state: "file_unavailable",

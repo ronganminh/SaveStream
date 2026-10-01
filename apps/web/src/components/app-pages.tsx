@@ -89,17 +89,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { dailyRecordingHours, invoices, subscription, user } from "@/mocks/fixtures";
 import {
-  channels as legacyChannels,
-  dailyRecordingHours,
-  invoices,
-  recordings as legacyRecordings,
-  subscription,
-  user,
-} from "@/mocks/fixtures";
-import {
-  adaptChannel,
-  adaptRecording,
+  mockChannels as channels,
+  mockRecordings as recordings,
+  mockUsage as usage,
   quotaStateFixtures,
   recordingStatusFixtures,
 } from "@/data/mock-repository";
@@ -170,9 +164,6 @@ import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 
 export { meta, publicMeta } from "@/components/app-components";
 
-const channels = legacyChannels.map(adaptChannel);
-const recordings = legacyRecordings.map(adaptRecording);
-const usage = quotaStateFixtures.normal;
 const activeRecording = recordingStatusFixtures.recording;
 
 const publicLinks = [
