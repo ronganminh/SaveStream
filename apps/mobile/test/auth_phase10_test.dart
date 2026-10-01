@@ -156,7 +156,10 @@ void main() {
         appSession: session,
       );
 
-      await expectLater(manager.refreshAccessToken(), throwsA(isA<StateError>()));
+      await expectLater(
+        manager.refreshAccessToken(),
+        throwsA(isA<StateError>()),
+      );
 
       expect(await accessStore.getAccessToken(), isNull);
       expect(await refreshStore.read(), isNull);
