@@ -499,7 +499,7 @@ const vi: Record<string, string> = {
     "Add channel": "Thêm kênh",
     "Stored": "Dung lượng đã lưu",
     "Close your laptop. Recording continues.": "Đóng máy tính. Việc ghi hình vẫn tiếp tục.",
-    "Monitoring and recording run on our servers, not in your browser.": "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn."
+    "Monitoring and recording run on our servers, not in your browser.": "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn.",
   "Skip to content": "Bỏ qua để đến nội dung",
   "Progress": "Tiến trình",
   "Sign in required": "Cần đăng nhập",
