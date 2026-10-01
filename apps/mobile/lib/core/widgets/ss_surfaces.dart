@@ -55,11 +55,8 @@ class SsStatusChip extends StatelessWidget {
       SsStatusTone.recording => semantic.recording,
     };
 
-    final double maxWidth =
-        (MediaQuery.sizeOf(context).width - SsSpacing.xxl).clamp(
-          120,
-          double.infinity,
-        );
+    final double maxWidth = (MediaQuery.sizeOf(context).width - SsSpacing.xxl)
+        .clamp(120, double.infinity);
 
     return Semantics(
       container: true,
