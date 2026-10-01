@@ -12,6 +12,7 @@ enum WatchStatus {
 
 enum WatchSourceType {
   username('username'),
+  roomId('room_id'),
   url('url');
 
   const WatchSourceType(this.apiValue);

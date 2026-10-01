@@ -10,6 +10,8 @@ import '../core/mock/mock_scenario.dart';
 import '../features/auth/data/auth_providers.dart';
 import '../features/auth/data/repositories/mock_auth_repository.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
+import '../features/channels/domain/repositories/watch_repository.dart';
+import '../features/channels/presentation/controllers/watch_providers.dart';
 import '../l10n/l10n.dart';
 import 'app_settings_controller.dart';
 import 'lifecycle/app_lifecycle_controller.dart';
@@ -24,6 +26,7 @@ class SaveStreamApp extends StatefulWidget {
     this.session,
     this.authRepository,
     this.apiClient,
+    this.watchRepository,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     super.key,
@@ -34,6 +37,7 @@ class SaveStreamApp extends StatefulWidget {
   final AppSessionController? session;
   final AuthRepository? authRepository;
   final ApiClient? apiClient;
+  final WatchRepository? watchRepository;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
 
@@ -83,6 +87,8 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
           authRepositoryProvider.overrideWithValue(widget.authRepository!),
         if (widget.apiClient != null)
           apiClientProvider.overrideWithValue(widget.apiClient!),
+        if (widget.watchRepository != null)
+          watchRepositoryProvider.overrideWithValue(widget.watchRepository!),
       ],
       child: AnimatedBuilder(
         animation: _settings,

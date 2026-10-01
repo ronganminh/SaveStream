@@ -90,24 +90,37 @@ class WatchController {
     return created;
   }
 
-  Future<void> setAutoRecord(String id, {required bool enabled}) async {
-    await _repository.setAutoRecord(id, enabled: enabled);
-    _invalidate(id);
+  Future<void> setAutoRecord(String id, {required bool enabled}) {
+    return _runMutation(
+      id,
+      () => _repository.setAutoRecord(id, enabled: enabled),
+    );
   }
 
-  Future<void> pause(String id) async {
-    await _repository.pauseWatch(id);
-    _invalidate(id);
+  Future<void> pause(String id) {
+    return _runMutation(id, () => _repository.pauseWatch(id));
   }
 
-  Future<void> resume(String id) async {
-    await _repository.resumeWatch(id);
-    _invalidate(id);
+  Future<void> resume(String id) {
+    return _runMutation(id, () => _repository.resumeWatch(id));
   }
 
-  Future<void> delete(String id) async {
-    await _repository.deleteWatch(id);
-    _invalidate(id);
+  Future<void> delete(String id) {
+    return _runMutation(id, () => _repository.deleteWatch(id));
+  }
+
+  Future<void> _runMutation(
+    String id,
+    Future<Object?> Function() action,
+  ) async {
+    try {
+      await action();
+    } finally {
+      // Always reconcile with the backend after a mutation attempt. This is
+      // especially important for resume: the backend can persist
+      // paused_insufficient_credit and then return 402.
+      _invalidate(id);
+    }
   }
 
   void _invalidate(String id) {
