@@ -10,6 +10,7 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
+import '../../features/billing/presentation/billing_return_screen.dart';
 import '../../features/billing/presentation/billing_screen.dart';
 import '../../features/channels/presentation/add_channel_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
@@ -163,6 +164,18 @@ GoRouter createAppRouter({
         builder: (BuildContext context, GoRouterState state) {
           return const BillingScreen();
         },
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'return',
+            builder: (BuildContext context, GoRouterState state) {
+              final String? orderId = state.uri.queryParameters['order_id'];
+              if (orderId == null || orderId.trim().isEmpty) {
+                return const _RouteErrorScreen();
+              }
+              return BillingReturnScreen(orderId: orderId);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.componentGallery,

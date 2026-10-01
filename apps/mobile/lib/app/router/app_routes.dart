@@ -15,6 +15,7 @@ abstract final class AppRoutes {
   static const String recordings = '/recordings';
   static const String credits = '/credits';
   static const String billing = '/billing';
+  static const String billingReturn = '/billing/return';
 
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
@@ -28,4 +29,12 @@ abstract final class AppRoutes {
 
   static String channelDetail(String id) => '/channels/' + id;
   static String recordingDetail(String id) => '/recordings/' + id;
+
+  static Uri billingReturnUri(String orderId) {
+    return Uri(
+      scheme: 'savestream',
+      path: billingReturn,
+      queryParameters: <String, String>{'order_id': orderId},
+    );
+  }
 }
