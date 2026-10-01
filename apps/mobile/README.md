@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 9 includes:
+Phase 10 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -58,9 +58,23 @@ Phase 9 includes:
 - request ID extraction from the backend envelope or response headers;
 - controlled retry for safe GET/HEAD requests only; mutation commands are not retried automatically;
 - `IdempotencyContext` / key-generator foundation so one logical command can reuse one key across retries;
-- fake Dio adapter tests covering 2xx decode, 401, 402, 409, 429, 5xx, timeout, offline/network failure, malformed envelopes, request IDs, auth headers, retry behavior, and idempotency reuse.
+- fake Dio adapter tests covering 2xx decode, 401, 402, 409, 429, 5xx, timeout, offline/network failure, malformed envelopes, request IDs, auth headers, retry behavior, and idempotency reuse;
+- real mobile authentication against the frozen `/v1` identity contract;
+- Register, Verify Email, Resend Verification, Login, Refresh, Logout, Forgot Password, Reset Password, and Delete Account wired to backend APIs;
+- login explicitly sends `client_type=mobile` and consumes the mobile refresh token response;
+- access tokens are held only in memory through `MemoryAccessTokenStore`;
+- rotating refresh tokens are persisted through `FlutterSecureStorage`, not SharedPreferences;
+- app bootstrap attempts secure refresh-token session restore before `runApp`;
+- concurrent refresh attempts are serialized so one refresh rotation is in flight at a time;
+- authenticated requests get one automatic 401 refresh-and-replay attempt;
+- revoked/reused refresh sessions clear local access/refresh credentials and return the app to unauthenticated routing;
+- a failed secure-storage write after refresh rotation invalidates local credentials so the stale refresh token is never reused;
+- Android secure-storage requirements are configured with API 23 minimum and Auto Backup disabled;
+- iOS Keychain Sharing entitlements are configured for Debug/Profile and Release;
+- Verify Email and Reset Password screens use backend one-time tokens and can accept a `token` query parameter;
+- Phase 10 auth/session unit tests cover mobile login payloads, token rotation, restart restore, serialized refresh, 401 replay, session revocation, logout cleanup, storage failure, and backend error-code mapping.
 
-Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile remain functional with mock repositories. Phase 9 adds the typed API infrastructure underneath the repository boundary; real Auth/Watch/Recording/Credits/Billing repository migration is intentionally deferred to Phases 10–13.
+Authentication now uses the real backend API in production bootstrap while mock auth remains available for tests/previews. Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile keep their existing mock repositories; their real repository migration remains scoped to Phases 11–13.
 
 ## Requirements
 
@@ -94,12 +108,18 @@ flutter run \
 ## Current architecture
 
 ```text
-Screen
+Auth screen
+  -> AuthController
+  -> AuthRepository
+     -> ApiAuthRepository
+        -> AuthPublicApi / AuthProtectedApi
+        -> AuthSessionManager
+        -> ApiClient
+
+Feature screen
   -> Riverpod provider/controller
   -> Repository interface
-     -> Mock repository
-     -> future ApiRepository
-        -> ApiClient
+  -> Mock repository (until Phases 11-13)
 
 MaterialApp.router
   -> guards
@@ -107,9 +127,9 @@ MaterialApp.router
   -> four preserved tab stacks
 ```
 
-The mock layer is replaceable by API repositories in later phases without moving raw HTTP into presentation code.
+The mock layer remains replaceable by API repositories in later phases without moving raw HTTP into presentation code.
 
-Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are intentionally not stored here and remain part of the secure session work in Phase 10.
+Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are separate: access tokens stay in memory and refresh tokens use platform secure storage.
 
 ## API client foundation
 
@@ -131,7 +151,15 @@ Backend errors are expected in this shape:
 
 Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
 
-Phase 9 does not integrate real authentication, secure refresh-token storage, or replace feature mock repositories. Those remain scoped to Phases 10–13.
+Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication; Watch, Recording, Credits, Billing, and other feature repository migrations remain scoped to Phases 11–13.
+
+## Secure authentication session
+
+Production bootstrap starts unauthenticated, creates an `AuthRuntime`, then attempts `AuthSessionManager.restoreSession()` before building the app. A successful refresh rotates the backend refresh token, writes the new token to secure storage, stores the new access token only in RAM, and marks the app session authenticated.
+
+The authenticated Dio client attaches the current access token and uses `ApiSessionRefreshInterceptor` for one 401 refresh-and-replay attempt. `AuthSessionManager` serializes concurrent refresh calls so a rotating refresh token cannot be consumed by multiple requests at once. If the backend reports `AUTH_SESSION_REVOKED`, or if the rotated refresh token cannot be persisted safely, the local session is invalidated instead of reusing stale credentials.
+
+Platform setup for secure refresh-token storage is committed with the app: Android uses minimum API 23 and disables Auto Backup; iOS Runner configurations use Keychain Sharing entitlements. No access or refresh token is written to SharedPreferences.
 
 ## Validation
 
@@ -143,6 +171,6 @@ flutter analyze --fatal-infos
 flutter test
 ```
 
-CI runs the same checks on `feat/flutter-mobile`.
+CI runs the same mobile checks for pull requests and for pushes to the long-lived `feat/flutter-mobile` branch.
 
 Phase 8 settings validation additionally covers unverified profile fallback, all Theme options, VI/EN round-trip switching, Notifications/Privacy/Terms navigation, and Delete Account cancellation.
