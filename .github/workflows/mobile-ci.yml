@@ -38,6 +38,12 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show Phase 15 formatting
+        run: >-
+          dart format --output=show
+          test/controller_phase15_test.dart
+          test/critical_flows_phase15_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
