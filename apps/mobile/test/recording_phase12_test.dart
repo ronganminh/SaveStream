@@ -368,7 +368,7 @@ void main() {
       int call,
     ) {
       getCalls += 1;
-      final bool terminal = getCalls >= 4;
+      final bool terminal = getCalls >= 3;
       return _jsonResponse(
         200,
         _recordingJson(
@@ -386,6 +386,7 @@ void main() {
     ).watchRecording('rec-1').toList();
 
     expect(eventSource.lastEventIds, <String?>[null, 'event-1']);
+    expect(getCalls, 3);
     expect(
       snapshots.whereType<RecordingSummary>().last.status,
       RecordingStatus.completed,

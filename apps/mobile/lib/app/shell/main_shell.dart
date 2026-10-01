@@ -12,14 +12,24 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final bool compactFab =
+        MediaQuery.sizeOf(context).width < 360 ||
+        MediaQuery.textScalerOf(context).scale(1) >= 1.4;
 
     return Scaffold(
       body: navigationShell,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push(AppRoutes.addChannel),
-        icon: const Icon(Icons.add_rounded),
-        label: Text(l10n.addChannelAction),
-      ),
+      floatingActionButton: compactFab
+          ? FloatingActionButton(
+              tooltip: l10n.addChannelAction,
+              onPressed: () => context.push(AppRoutes.addChannel),
+              child: const Icon(Icons.add_rounded),
+            )
+          : FloatingActionButton.extended(
+              tooltip: l10n.addChannelAction,
+              onPressed: () => context.push(AppRoutes.addChannel),
+              icon: const Icon(Icons.add_rounded),
+              label: Text(l10n.addChannelAction),
+            ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (int index) {

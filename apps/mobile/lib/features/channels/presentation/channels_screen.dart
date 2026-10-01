@@ -200,24 +200,38 @@ class _ChannelCard extends StatelessWidget {
                 ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               ),
               const SizedBox(height: SsSpacing.md),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: _TimestampLine(
-                      icon: Icons.sync_rounded,
-                      label: l10n.lastCheckedLabel,
-                      value: watchTimestamp(context, watch.lastCheckedAt),
-                    ),
-                  ),
-                  const SizedBox(width: SsSpacing.md),
-                  Expanded(
-                    child: _TimestampLine(
-                      icon: Icons.podcasts_rounded,
-                      label: l10n.lastLiveLabel,
-                      value: watchTimestamp(context, watch.lastLiveAt),
-                    ),
-                  ),
-                ],
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool stack =
+                      constraints.maxWidth < 420 ||
+                      MediaQuery.textScalerOf(context).scale(1) >= 1.4;
+                  final double itemWidth = stack
+                      ? constraints.maxWidth
+                      : (constraints.maxWidth - SsSpacing.md) / 2;
+
+                  return Wrap(
+                    spacing: SsSpacing.md,
+                    runSpacing: SsSpacing.sm,
+                    children: <Widget>[
+                      SizedBox(
+                        width: itemWidth,
+                        child: _TimestampLine(
+                          icon: Icons.sync_rounded,
+                          label: l10n.lastCheckedLabel,
+                          value: watchTimestamp(context, watch.lastCheckedAt),
+                        ),
+                      ),
+                      SizedBox(
+                        width: itemWidth,
+                        child: _TimestampLine(
+                          icon: Icons.podcasts_rounded,
+                          label: l10n.lastLiveLabel,
+                          value: watchTimestamp(context, watch.lastLiveAt),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),

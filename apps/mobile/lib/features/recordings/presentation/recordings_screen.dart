@@ -175,14 +175,18 @@ class _RecordingCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  SsStatusChip(
-                    label: recordingStatusLabel(l10n, recording.status),
-                    tone: recordingStatusTone(recording.status),
-                    icon: recording.status == RecordingStatus.recording
-                        ? Icons.fiber_manual_record_rounded
-                        : null,
-                  ),
                 ],
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: SsStatusChip(
+                  label: recordingStatusLabel(l10n, recording.status),
+                  tone: recordingStatusTone(recording.status),
+                  icon: recording.status == RecordingStatus.recording
+                      ? Icons.fiber_manual_record_rounded
+                      : null,
+                ),
               ),
               const SizedBox(height: SsSpacing.md),
               Text(

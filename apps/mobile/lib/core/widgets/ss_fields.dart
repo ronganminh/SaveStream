@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
+
 class SsTextField extends StatelessWidget {
   const SsTextField({
     required this.label,
@@ -83,6 +85,9 @@ class _SsPasswordFieldState extends State<SsPasswordField> {
         labelText: widget.label,
         prefixIcon: const Icon(Icons.lock_outline_rounded),
         suffixIcon: IconButton(
+          tooltip: _obscureText
+              ? context.l10n.showPasswordAction
+              : context.l10n.hidePasswordAction,
           onPressed: () {
             setState(() {
               _obscureText = !_obscureText;

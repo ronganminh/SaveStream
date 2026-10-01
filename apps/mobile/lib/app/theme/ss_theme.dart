@@ -87,7 +87,7 @@ abstract final class SsTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size(48, 44),
+          minimumSize: const Size(48, 48),
           shape: const RoundedRectangleBorder(borderRadius: SsRadii.field),
           textStyle: textTheme.labelLarge,
         ),
