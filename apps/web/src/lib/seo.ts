@@ -14,13 +14,14 @@ const titlePathMap: Record<string, string> = {
   "System status preview": "/status",
   "Terms of Service": "/terms",
   "Privacy Policy": "/privacy",
-  "Acceptable Use": "/acceptable-use",
+  "Acceptable Use Policy": "/acceptable-use",
   "Sign in": "/sign-in",
   "Create account": "/sign-up",
-  "Reset password": "/reset-password",
+  "Reset password": "/forgot-password",
   "Choose new password": "/reset-password",
   "Check your email": "/verify-email",
   "Email verified": "/verify-email/success",
+  "Link problem": "/auth/error",
 };
 
 const normalizePath = (path: string) => (path.startsWith("/") ? path : `/${path}`);
@@ -32,11 +33,14 @@ export function canonicalUrl(path: string) {
 export function buildSeoHead(
   title: string,
   description: string,
-  path = titlePathMap[title] ?? "/",
+  path = titlePathMap[title] ?? "/__private",
 ) {
   const access = getRouteAccess(path);
   const fullTitle = title === "SaveStream" ? title : `${title} — SaveStream`;
   const url = canonicalUrl(path);
+
+  const links =
+    access.visibility === "public" ? [{ rel: "canonical", href: url }] : [];
 
   return {
     meta: [
@@ -56,7 +60,7 @@ export function buildSeoHead(
       { name: "twitter:description", content: description },
       { name: "twitter:image", content: ogImageUrl },
     ],
-    links: [{ rel: "canonical", href: url }],
+    links,
   };
 }
 
