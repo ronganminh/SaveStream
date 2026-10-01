@@ -1587,25 +1587,107 @@ export function RecordingDetailPage({
 }: {
   state?: "ready" | "active" | "processing" | "failed";
 }) {
+  const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
   const navigate = useNavigate();
-  const [quota, setQuota] = useState<"normal" | "low">("normal");
+  const recordingResource = useRecordingResource(id);
+  const { data: channelItems } = useChannelsResource();
+  const { data: usageData } = useUsageResource();
+  const { retryRecordingProcessing, prepareDownload } = useRepositoryActions();
+  const [lifecycleOverride, setLifecycleOverride] = useState<RecordingLifecycleState | null>(null);
+  const [downloadState, setDownloadState] = useState<DownloadLifecycleState>("eligible");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
-  const rec =
+  const [retryingProcessing, setRetryingProcessing] = useState(false);
+
+  const forcedRecording =
     forced === "active"
-      ? activeRecording
+      ? recordingStatusFixtures.recording
       : forced === "processing"
-        ? recordings.find((r) => r.id === "nora-processing")
+        ? recordingStatusFixtures.processing
         : forced === "failed"
-          ? recordings.find((r) => r.id === "nora-failed")
+          ? recordingStatusFixtures.failed
           : forced === "ready"
-            ? recordings[0]
-            : recordings.find((r) => r.id === id);
-  if (!rec)
+            ? recordingStatusFixtures.ready
+            : null;
+  const rec = forcedRecording ?? recordingResource.data;
+  const screenState = forced ? "success" : recordingResource.screenState;
+  const error = recordingResource.error;
+  const setFixtureState = recordingResource.setFixtureState;
+
+  const retryScreen = () => {
+    setFixtureState("retrying");
+    void recordingResource.retry().finally(() => setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <div className="aspect-video animate-pulse rounded-lg bg-muted/60" />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <ErrorState
+          title={error?.title ?? "We couldn’t load this recording"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryScreen}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Recording detail is idle"
+          body="Load the repository-backed detail fixture to continue."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "empty" || !rec) {
     return (
       <AppShell>
         <PageHeader title="Recording not found" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
         <EmptyState
           title="This recording isn’t available"
           body="It may have been deleted or removed after its retention period ended."
@@ -1617,34 +1699,115 @@ export function RecordingDetailPage({
         />
       </AppShell>
     );
-  const state =
-    forced ??
-    ({ Ready: "ready", Processing: "processing", Error: "failed", Recording: "active" } as const)[
-      rec.status
-    ];
-  const channel = channels.find((c) => c.id === rec.channelId);
-  const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
-  const download = () => {
-    if (quota === "low") setUpgrade(true);
-    else
-      toast.success("Download started", {
+  }
+
+  const baseLifecycle: RecordingLifecycleState =
+    forced === "active"
+      ? "recording_active"
+      : forced === "processing"
+        ? "processing"
+        : forced === "failed"
+          ? "processing_failed"
+          : rec.status === "queued"
+            ? "waiting_for_live"
+            : rec.status === "recording"
+              ? "recording_active"
+              : rec.status === "processing"
+                ? "processing"
+                : rec.status === "partial"
+                  ? "partial"
+                  : rec.status === "failed"
+                    ? "processing_failed"
+                    : rec.status === "expired"
+                      ? "expired"
+                      : rec.status === "ready" &&
+                          rec.expiresDays !== null &&
+                          rec.expiresDays <= 3
+                        ? "expiring_soon"
+                        : "ready";
+  const lifecycle = lifecycleOverride ?? baseLifecycle;
+  const lifecycleCopy = recordingLifecycleCopy[lifecycle];
+  const downloadCopy = downloadLifecycleCopy[downloadState];
+  const channel = channelItems.find((item) => item.id === rec.channelId);
+  const currentUsage = usageData ?? usage;
+
+  const runDownload = async () => {
+    if (downloadState === "quota_insufficient") {
+      setUpgrade(true);
+      return;
+    }
+    if (downloadState === "file_unavailable") {
+      toast.error(t("File unavailable"));
+      return;
+    }
+    if (downloadState === "preparing") return;
+
+    setDownloadState("preparing");
+    const result = await prepareDownload(rec.id);
+    setDownloadState(result.state);
+    if (result.state === "started") {
+      toast.success(t("Download started"), {
         description: `${rec.size} · ${rec.handle} — ${rec.title}`,
       });
+    } else if (result.state === "quota_insufficient") {
+      setUpgrade(true);
+    } else if (result.state === "file_unavailable") {
+      toast.error(t("File unavailable"), {
+        description: result.error?.referenceId
+          ? `${t("Reference")}: ${result.error.referenceId}`
+          : undefined,
+      });
+    }
   };
-  const actions =
-    state === "ready" ? (
-      <div className="flex gap-2">
-        <Button onClick={download}>
-          <Download />
-          Download video
-        </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
-          <Trash2 />
-          Delete
-        </Button>
+
+  const retryProcessing = async () => {
+    if (retryingProcessing) return;
+    setRetryingProcessing(true);
+    const result = await retryRecordingProcessing(rec.id);
+    if (result.ok) {
+      setLifecycleOverride("processing");
+      toast.success(t("Processing queued"));
+    } else {
+      toast.error(t("Retry failed"), {
+        description: `${result.error.body} · ${t("Reference")}: ${result.error.referenceId}`,
+      });
+    }
+    setRetryingProcessing(false);
+  };
+
+  const canDownload =
+    lifecycle === "ready" || lifecycle === "expiring_soon" || lifecycle === "partial";
+  const playerState: "ready" | "active" | "processing" | "failed" =
+    lifecycle === "processing" || lifecycle === "stream_ended"
+      ? "processing"
+      : lifecycle === "recording_started" ||
+          lifecycle === "recording_active" ||
+          lifecycle === "waiting_for_live"
+        ? "active"
+        : lifecycle === "partial" ||
+            lifecycle === "processing_failed" ||
+            lifecycle === "expired"
+          ? "failed"
+          : "ready";
+
+  const actions = canDownload ? (
+    <div className="flex flex-wrap gap-2">
+      <Button onClick={() => void runDownload()} disabled={downloadState === "preparing"}>
+        <Download />
+        {downloadState === "preparing"
+          ? t("Preparing download")
+          : lifecycle === "partial"
+            ? t("Download partial")
+            : t("Download video")}
+      </Button>
+      <Button variant="outline" onClick={() => setDel(true)}>
+        <Trash2 />
+        {t(lifecycle === "partial" ? "Delete partial file" : "Delete")}
+      </Button>
+      {lifecycle !== "partial" && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="More actions">
+            <Button variant="outline" size="icon" aria-label={t("More actions")}>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
@@ -1652,47 +1815,53 @@ export function RecordingDetailPage({
             <DropdownMenuItem
               onSelect={() => {
                 void navigator.clipboard?.writeText(window.location.href);
-                toast.success("Link copied");
+                toast.success(t("Link copied"));
               }}
             >
-              Copy link
+              {t("Copy link")}
             </DropdownMenuItem>
             {channel && (
               <DropdownMenuItem
                 onSelect={() => navigate({ to: "/channels/$id", params: { id: channel.id } })}
               >
-                View channel
+                {t("View channel")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    ) : state === "failed" ? (
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          onClick={() =>
-            toast.success("Partial download started", {
-              description: `${rec.partialDuration} · ${rec.size}`,
-            })
-          }
-        >
-          <Download />
-          Download partial
-        </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
-          <Trash2 />
-          Delete partial file
-        </Button>
-      </div>
-    ) : state === "processing" ? (
-      <Button disabled>
-        <Download />
-        Download available soon
-      </Button>
-    ) : null;
+      )}
+    </div>
+  ) : lifecycle === "processing_failed" ? (
+    <Button
+      variant="outline"
+      disabled={retryingProcessing}
+      onClick={() => void retryProcessing()}
+    >
+      <RotateCcw />
+      {retryingProcessing ? t("Retrying") : t("Retry processing")}
+    </Button>
+  ) : lifecycle === "processing" || lifecycle === "stream_ended" ? (
+    <Button disabled>
+      <Download />
+      {t("Download available soon")}
+    </Button>
+  ) : lifecycle === "expired" ? (
+    <Button variant="outline" asChild>
+      <Link to="/recordings">{t("Back to recordings")}</Link>
+    </Button>
+  ) : null;
+
   return (
     <AppShell>
+      {screenState === "retrying" && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Retrying recording request"
+            body="The detail query is refreshing while existing data remains visible."
+          />
+        </div>
+      )}
       {channel && (
         <Link
           to="/channels/$id"
@@ -1703,25 +1872,99 @@ export function RecordingDetailPage({
           {channel.name}
         </Link>
       )}
-      {state === "ready" && (
-        <PrototypeStateBar
-          label="Download quota"
-          value={quota}
-          options={
-            [
-              { value: "normal", label: "Available" },
-              { value: "low", label: "Not enough" },
-            ] as const
-          }
-          onChange={setQuota}
-        />
-      )}
+
+      <PrototypeStateBar
+        label="Recording lifecycle"
+        value={lifecycle}
+        options={recordingLifecycleStates.map((value) => ({
+          value,
+          label: recordingLifecycleCopy[value].title,
+        }))}
+        onChange={setLifecycleOverride}
+      />
+      <PrototypeStateBar
+        label="Download lifecycle"
+        value={downloadState}
+        options={downloadLifecycleStates.map((value) => ({
+          value,
+          label: downloadLifecycleCopy[value].title,
+        }))}
+        onChange={setDownloadState}
+      />
+
       <PageHeader
-        title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
-        subtitle={`TikTok · ${state === "active" ? "Started today" : rec.date} at ${rec.time}`}
+        title={
+          lifecycle === "recording_active"
+            ? `${rec.handle} — Live now`
+            : `${rec.handle} — ${rec.title}`
+        }
+        subtitle={`TikTok · ${rec.date} at ${rec.time}`}
         action={actions}
       />
-      {expiringSoon && (
+
+      <div className="mb-4">
+        <StateBanner
+          tone={
+            lifecycle === "processing_failed" || lifecycle === "expired"
+              ? "error"
+              : lifecycle === "partial" || lifecycle === "expiring_soon"
+                ? "warning"
+                : lifecycle === "ready"
+                  ? "success"
+                  : "info"
+          }
+          title={lifecycleCopy.title}
+          body={lifecycleCopy.body}
+          action={
+            lifecycle === "processing_failed" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={retryingProcessing}
+                onClick={() => void retryProcessing()}
+              >
+                {retryingProcessing ? t("Retrying") : t("Retry processing")}
+              </Button>
+            ) : lifecycle === "expired" ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/recordings">{t("Back to recordings")}</Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+
+      {downloadState !== "eligible" && (
+        <div className="mb-4">
+          <StateBanner
+            tone={
+              downloadState === "quota_insufficient" || downloadState === "file_unavailable"
+                ? "warning"
+                : "info"
+            }
+            title={downloadCopy.title}
+            body={downloadCopy.body}
+            action={
+              downloadState === "network_retry" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void runDownload()}
+                  disabled={downloadState === "preparing"}
+                >
+                  {t("Try again")}
+                </Button>
+              ) : downloadState === "quota_insufficient" ? (
+                <Button size="sm" onClick={() => setUpgrade(true)}>
+                  {t("Upgrade plan")}
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
+      )}
+
+      {lifecycle === "expiring_soon" && (
         <div className="mb-4">
           <StateBanner
             tone={rec.expireTone === "critical" ? "error" : "warning"}
@@ -1731,93 +1974,68 @@ export function RecordingDetailPage({
                 ? "This recording expires tomorrow"
                 : `This recording expires in ${rec.expires}`
             }
-            body={`It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`}
+            body={`It will be removed from cloud storage when your ${currentUsage.retentionDays}-day retention period ends. Download it to keep a copy.`}
             action={
-              <Button size="sm" variant="outline" onClick={download}>
-                Download
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void runDownload()}
+                disabled={downloadState === "preparing"}
+              >
+                {t("Download")}
               </Button>
             }
           />
         </div>
       )}
-      <VideoPlayerShell state={state} />
-      {state === "active" && (
+
+      <VideoPlayerShell state={playerState} />
+
+      {lifecycle === "recording_active" && (
         <div className="mt-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success-subtle p-4 text-sm">
           <Cloud className="size-5 shrink-0 text-success" />
           <div>
-            <p className="font-medium">
-              Recording runs on our servers. You can safely close this page.
-            </p>
+            <p className="font-medium">{t("Recording in progress")}</p>
             <p className="text-muted-foreground">
-              Playback will be available after the livestream ends.
+              {t("Live timer")}: <span className="font-mono">{rec.duration}</span> ·{" "}
+              {t("Bytes saved")}: <span className="font-mono">{rec.size}</span>
             </p>
           </div>
         </div>
       )}
-      {state === "processing" && <ProcessingTimeline />}
-      {state === "failed" && (
-        <div className="mt-4 space-y-3">
-          <StateBanner
-            tone="error"
-            title="Recording couldn’t be completed"
-            body={
-              <>
-                The stream connection was lost ({rec.error?.toLowerCase()}). {rec.partialDuration}{" "}
-                were successfully saved before the stream connection was lost. The partial file is
-                available to watch or download.
-              </>
-            }
-            action={
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    toast.success("Processing queued", {
-                      description: "We’ll notify you when the partial recording is ready.",
-                    })
-                  }
-                >
-                  <RotateCcw />
-                  Retry processing
-                </Button>
-                <Button size="sm" variant="ghost" asChild>
-                  <Link to="/help" hash="contact">
-                    Contact support
-                  </Link>
-                </Button>
-              </div>
-            }
-          />
-        </div>
-      )}
+
+      {lifecycle === "processing" && <ProcessingTimeline />}
+
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 lg:grid-cols-6">
         {[
           ["Platform", "TikTok"],
           ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
-          ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
-          [state === "active" ? "Written" : "File size", rec.size],
+          ["Duration", lifecycle === "partial" ? `${rec.duration} (partial)` : rec.duration],
+          [lifecycle === "recording_active" ? "Written" : "File size", rec.size],
           ["Resolution", rec.resolution],
           [
             "Stored until",
-            state === "active" || state === "processing"
+            lifecycle === "recording_active" || lifecycle === "processing"
               ? "After processing"
-              : rec.expireTone === "critical"
-                ? "Tomorrow"
-                : `${rec.expires} left`,
+              : lifecycle === "expired"
+                ? "Expired"
+                : rec.expireTone === "critical"
+                  ? "Tomorrow"
+                  : `${rec.expires} left`,
           ],
-        ].map(([a, b]) => (
-          <div key={a} className="bg-surface p-4">
-            <p className="text-xs text-muted-foreground">{a}</p>
-            <p className="mt-2 font-mono text-sm font-medium">{b}</p>
+        ].map(([label, value]) => (
+          <div key={label} className="bg-surface p-4">
+            <p className="text-xs text-muted-foreground">{t(label)}</p>
+            <p className="mt-2 font-mono text-sm font-medium">{t(value)}</p>
           </div>
         ))}
       </div>
+
       <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
       <ConfirmDeleteDialog
         open={del}
         onOpenChange={setDel}
-        partial={state === "failed"}
+        partial={lifecycle === "partial"}
         onDeleted={() => navigate({ to: "/recordings" })}
       />
     </AppShell>
