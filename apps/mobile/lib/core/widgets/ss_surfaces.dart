@@ -180,10 +180,7 @@ class SsSectionHeader extends StatelessWidget {
           Flexible(
             child: Align(
               alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
+              child: TextButton(onPressed: onAction, child: Text(actionLabel!)),
             ),
           ),
       ],
