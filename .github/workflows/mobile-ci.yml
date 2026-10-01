@@ -38,6 +38,14 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show Phase 11 formatting
+        run: >-
+          dart format --output=show
+          lib/features/channels/data/remote/watch_api_models.dart
+          lib/features/channels/data/repositories/api_watch_repository.dart
+          lib/features/channels/presentation/controllers/watch_providers.dart
+          test/watch_phase11_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
