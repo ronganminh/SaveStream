@@ -21,5 +21,8 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      - run: npm --workspace apps/web run format
+      - run: npm --workspace apps/web run lint
       - run: npm run typecheck
+      - run: npm --workspace apps/web run test:p0
       - run: npm run build

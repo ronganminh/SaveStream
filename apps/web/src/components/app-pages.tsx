@@ -94,14 +94,13 @@ import {
   channels,
   dailyRecordingHours,
   invoices,
-  plans,
   recordings,
   subscription,
   usage,
   user,
   type Channel,
   type ChannelStatus,
-} from "@/lib/mock-data";
+} from "@/mocks/fixtures";
 import {
   ActiveRecordingCard,
   AddChannelDialog,
@@ -137,6 +136,8 @@ import {
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
+import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/lib/plan-catalog";
+import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 
 export { meta } from "@/components/app-components";
 
@@ -150,7 +151,7 @@ const publicLinks = [
 export function PublicHeader() {
   const { t } = usePreferences();
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b bg-background/90 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
         <Logo />
         <nav className="ml-8 hidden items-center gap-5 text-sm text-muted-foreground lg:flex">
@@ -358,7 +359,7 @@ function RecordingExamples() {
 }
 
 export function LandingPage() {
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
@@ -367,10 +368,10 @@ export function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
             <span className="inline-flex items-center gap-2 rounded-full border bg-surface-subtle px-3 py-1 text-xs text-muted-foreground">
               <Cloud className="size-3 text-primary" />
-              Automatic cloud recording
+              {t("Automatic cloud recording")}
             </span>
             <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
-              Automatic TikTok livestream recording in the cloud.
+              {t("Automatic TikTok livestream recording in the cloud.")}
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
               Add a channel once. We monitor it 24/7 and automatically record every livestream —
@@ -379,7 +380,7 @@ export function LandingPage() {
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
                 <Link to="/sign-up">
-                  Start for free
+                  {t("Start for free")}
                   <ArrowRight />
                 </Link>
               </Button>
@@ -424,10 +425,10 @@ export function LandingPage() {
                     </div>
                     <Button size="sm">
                       <Plus />
-                      Add channel
+                      {t("Add channel")}
                     </Button>
                   </div>
-                  <div className="mt-5 grid grid-cols-3 border-l border-t">
+                  <div className="mt-5 grid grid-cols-1 border-l border-t sm:grid-cols-3">
                     <StatCard
                       label="Recording hours"
                       value="12.6 / 50 h"
@@ -517,22 +518,18 @@ export function LandingPage() {
           <div className="mx-auto max-w-5xl px-4 text-center">
             <h2 className="text-3xl font-semibold">{t("Simple plans, clear limits.")}</h2>
             <div className="mt-10 grid gap-5 text-left md:grid-cols-2">
-              <PlanCard
-                name="Free"
-                price="Free"
-                features={["10 minutes recording", "1 monitored channel", "3-day retention"]}
-              />
-              <PlanCard
-                name="Pro"
-                price="$9.99"
-                features={[
-                  "50 recording hours",
-                  "2 simultaneous recordings",
-                  "100 GB download",
-                  "30-day retention",
-                ]}
-              />
+              {planList.map((plan) => (
+                <PlanCard
+                  key={plan.id}
+                  name={plan.name}
+                  price={plan.priceMonthlyUsd === 0 ? "Free" : formatCurrencyUsd(plan.priceMonthlyUsd, language)}
+                  features={[...plan.features]}
+                />
+              ))}
             </div>
+            <p className="mx-auto mt-5 max-w-2xl text-xs text-muted-foreground">
+              {t(planMediaFootnote)}
+            </p>
           </div>
         </section>
       </main>
@@ -1173,7 +1170,7 @@ export function RecordingsPage() {
           action={
             <div className="flex flex-col justify-center gap-2 sm:flex-row">
               <Button variant="outline" asChild>
-                <Link to="/channels">View channels</Link>
+                <Link to="/channels">{t("View channels")}</Link>
               </Button>
               <AddChannelDialog />
             </div>
@@ -1227,9 +1224,9 @@ export function RecordingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All statuses")}</SelectItem>
-                  <SelectItem value="Ready">Ready</SelectItem>
-                  <SelectItem value="Processing">Processing</SelectItem>
-                  <SelectItem value="Error">Failed</SelectItem>
+                  <SelectItem value="Ready">{t("Ready")}</SelectItem>
+                  <SelectItem value="Processing">{t("Processing")}</SelectItem>
+                  <SelectItem value="Error">{t("Failed")}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={range} onValueChange={setRange}>
@@ -1248,7 +1245,7 @@ export function RecordingsPage() {
                 onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
               >
                 <ArrowUpDown />
-                {sort === "newest" ? "Newest first" : "Oldest first"}
+                {t(sort === "newest" ? "Newest first" : "Oldest first")}
               </Button>
             </div>
             <div className="hidden rounded-md border sm:flex">
@@ -1256,7 +1253,7 @@ export function RecordingsPage() {
                 size="icon"
                 variant={view === "list" ? "secondary" : "ghost"}
                 onClick={() => setView("list")}
-                aria-label="List view"
+                aria-label={t("List view")}
                 aria-pressed={view === "list"}
               >
                 <List />
@@ -1265,7 +1262,7 @@ export function RecordingsPage() {
                 size="icon"
                 variant={view === "grid" ? "secondary" : "ghost"}
                 onClick={() => setView("grid")}
-                aria-label="Grid view"
+                aria-label={t("Grid view")}
                 aria-pressed={view === "grid"}
               >
                 <Grid2X2 />
@@ -1292,7 +1289,7 @@ export function RecordingsPage() {
                 body="Check the spelling or search by @handle or date."
                 action={
                   <Button variant="outline" onClick={() => setQ("")}>
-                    Clear search
+                    {t("Clear search")}
                   </Button>
                 }
               />
@@ -1305,7 +1302,7 @@ export function RecordingsPage() {
                 }
                 action={
                   <Button variant="outline" onClick={clear}>
-                    Clear filters
+                    {t("Clear filters")}
                   </Button>
                 }
               />
@@ -1818,21 +1815,18 @@ export function UsagePage() {
   );
 }
 export function BillingPage() {
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
   const navigate = useNavigate();
   const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
-  const [interval, setInterval] = useState<"month" | "year">(subscription.interval);
   const [upgrade, setUpgrade] = useState(false);
   const [cancel, setCancel] = useState(false);
   const isPro = mock !== "free";
-  const pro = plans[1]!;
-  const free = plans[0]!;
+  const pro = planCatalog.pro;
+  const free = planCatalog.free;
   const pm = subscription.paymentMethod;
-  const proPrice =
-    interval === "month" ? `$${pro.priceMonthly}` : `$${(pro.priceYearly / 12).toFixed(2)}`;
   const manage = () =>
-    toast("Opens the secure billing portal", {
-      description: "Payment provider isn’t connected in this prototype.",
+    toast(t("Demo function"), {
+      description: t("Payment provider isn’t connected in this prototype."),
     });
   const invoiceRows =
     mock === "payment_failed" || mock === "past_due"
@@ -1841,7 +1835,7 @@ export function BillingPage() {
             id: "INV-2026-0010",
             date: "Sep 27, 2026",
             description: "Pro · Monthly",
-            amount: "$9.99",
+            amount: formatCurrencyUsd(pro.priceMonthlyUsd, language),
             status: "Failed" as const,
           },
           ...invoices,
@@ -1849,6 +1843,7 @@ export function BillingPage() {
       : mock === "free"
         ? []
         : invoices;
+
   return (
     <AppShell>
       <PageHeader title="Billing" subtitle="Manage your plan, payment method, and invoices." />
@@ -1858,240 +1853,155 @@ export function BillingPage() {
           <StateBanner
             tone="error"
             title="Payment failed"
-            body={`We couldn’t charge your ${pm?.brand} ending in ${pm?.last4} on Sep 27. We’ll retry automatically on Sep 30. Update your payment method to keep Pro.`}
-            action={
-              <Button size="sm" onClick={manage}>
-                Update payment method
-              </Button>
-            }
+            body="This is an illustrative payment-failure state. No real charge was attempted."
+            action={<Button size="sm" onClick={manage}>{t("Update payment method")}</Button>}
           />
         )}
         {mock === "past_due" && (
           <StateBanner
             tone="error"
-            title="Your subscription is past due"
-            body="Pro features stay on until Oct 4, 2026. After that your account moves to Free and automatic recording is limited to Free plan quotas."
-            action={
-              <Button size="sm" onClick={manage}>
-                Pay now
-              </Button>
-            }
+            title="Past due"
+            body="This is an illustrative past-due state for the frontend demo."
+            action={<Button size="sm" onClick={manage}>{t("Pay now")}</Button>}
           />
         )}
         {mock === "canceling" && (
           <StateBanner
             tone="info"
-            title={`Pro is canceled and stays active until ${subscription.currentPeriodEnd}`}
-            body="You won’t be charged again. After that date your plan changes to Free."
+            title="Cancellation scheduled"
+            body={`${t("Demo function")}: ${formatDate(subscription.currentPeriodEnd, language)}`}
             action={
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => {
                   setMock("active");
-                  toast.success("Subscription resumed");
+                  toast.success(t("Subscription resumed"));
                 }}
               >
-                Resume subscription
+                {t("Resume subscription")}
               </Button>
             }
           />
         )}
       </div>
+
       <section className="mb-8 rounded-lg border bg-surface">
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
           <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Current subscription</p>
+            <p className="text-xs text-muted-foreground">{t("Current subscription")}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold">{isPro ? "Pro" : "Free"}</h2>
-              <span
-                className={cn(
-                  "rounded-md border px-2 py-0.5 text-xs font-medium",
-                  mock === "active" && "border-success/25 bg-success-subtle text-success",
-                  (mock === "payment_failed" || mock === "past_due") &&
-                    "border-destructive/25 bg-recording-subtle text-destructive",
-                  (mock === "canceling" || mock === "free") && "bg-muted text-muted-foreground",
-                )}
-              >
-                {
-                  {
-                    active: "Active",
-                    free: "Free",
-                    payment_failed: "Payment failed",
-                    past_due: "Past due",
-                    canceling: "Cancels Oct 1",
-                  }[mock]
-                }
+              <span className="rounded-md border bg-muted px-2 py-0.5 text-xs font-medium">
+                {t(mock === "active" ? "Active" : mock === "free" ? "Free" : mock === "past_due" ? "Past due" : mock === "payment_failed" ? "Payment failed" : "Demo")}
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {mock === "free"
-                ? "10 minutes of recording, 1 monitored channel, 3-day retention."
-                : mock === "canceling"
-                  ? `Access until ${subscription.currentPeriodEnd}. No further charges.`
-                  : mock === "active"
-                    ? `$${subscription.priceMonthly} billed monthly · Next billing date ${subscription.currentPeriodEnd}`
-                    : "Payment overdue since Sep 27, 2026"}
+              {isPro
+                ? `${formatCurrencyUsd(pro.priceMonthlyUsd, language)} · ${t("Monthly")}`
+                : t("Free")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {isPro ? (
               <>
-                <Button variant="outline" onClick={manage}>
-                  Manage subscription
-                </Button>
+                <Button variant="outline" onClick={manage}>{t("Manage subscription")}</Button>
                 {mock !== "canceling" && (
-                  <Button variant="ghost" onClick={() => setCancel(true)}>
-                    Cancel subscription
-                  </Button>
+                  <Button variant="ghost" onClick={() => setCancel(true)}>{t("Cancel subscription")}</Button>
                 )}
               </>
             ) : (
-              <Button onClick={() => setUpgrade(true)}>
-                <Sparkles />
-                Upgrade to Pro
-              </Button>
+              <Button onClick={() => setUpgrade(true)}><Sparkles />{t("Upgrade to Pro")}</Button>
             )}
           </div>
         </div>
       </section>
-      <div className="mb-4 flex items-center justify-between">
+
+      <div className="mb-4">
         <h2 className="text-sm font-semibold">{t("Plans")}</h2>
-        <div
-          role="radiogroup"
-          aria-label="Billing interval"
-          className="flex rounded-md border bg-surface p-1 text-xs"
-        >
-          {(["month", "year"] as const).map((i) => (
-            <button
-              key={i}
-              type="button"
-              role="radio"
-              aria-checked={interval === i}
-              onClick={() => setInterval(i)}
-              className={cn(
-                "rounded px-3 py-1.5 font-medium text-muted-foreground",
-                interval === i && "bg-accent text-foreground",
-              )}
-            >
-              {i === "month" ? (
-                "Monthly"
-              ) : (
-                <>
-                  Yearly <span className="text-success">· Save 20%</span>
-                </>
-              )}
-            </button>
-          ))}
-        </div>
+        <p className="mt-1 text-xs text-muted-foreground">{t("Simple plans with one monthly source of truth.")}</p>
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <PlanCard
-          name="Free"
+          name={free.name}
           price="Free"
           current={!isPro}
-          features={free.features}
+          features={[...free.features]}
           action={
             isPro ? (
-              <Button
-                variant="outline"
-                className="mt-6 w-full"
-                onClick={() => setCancel(true)}
-                disabled={mock === "canceling"}
-              >
-                {mock === "canceling" ? "Switching Oct 1" : "Downgrade to Free"}
+              <Button variant="outline" className="mt-6 w-full" onClick={() => setCancel(true)} disabled={mock === "canceling"}>
+                {t(mock === "canceling" ? "Switching Oct 1" : "Downgrade to Free")}
               </Button>
             ) : (
-              <Button variant="outline" className="mt-6 w-full" disabled>
-                Current plan
-              </Button>
+              <Button variant="outline" className="mt-6 w-full" disabled>{t("Current plan")}</Button>
             )
           }
         />
         <PlanCard
-          name="Pro"
-          price={proPrice}
+          name={pro.name}
+          price={formatCurrencyUsd(pro.priceMonthlyUsd, language)}
           current={isPro}
-          features={pro.features}
-          note={interval === "year" ? `$${pro.priceYearly} billed yearly` : undefined}
+          features={[...pro.features]}
           action={
             isPro ? (
-              <Button variant="outline" className="mt-6 w-full" onClick={manage}>
-                Manage plan
-              </Button>
+              <Button variant="outline" className="mt-6 w-full" onClick={manage}>{t("Manage plan")}</Button>
             ) : (
-              <Button className="mt-6 w-full" onClick={() => setUpgrade(true)}>
-                Upgrade to Pro
-              </Button>
+              <Button className="mt-6 w-full" onClick={() => setUpgrade(true)}>{t("Upgrade to Pro")}</Button>
             )
           }
         />
       </div>
+      <div className="mt-4 rounded-md border bg-surface-subtle p-4 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">{t("Plan limits")}</p>
+        <dl className="mt-2 grid gap-2 sm:grid-cols-3">
+          {planLimitDefinitions.map((item) => (
+            <div key={item.key}>
+              <dt className="font-medium">{t(item.label)}</dt>
+              <dd>{t(item.description)}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3">{t(planMediaFootnote)}</p>
+      </div>
+
       <div className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
         <section className="rounded-lg border bg-surface">
           <div className="border-b p-5">
             <h2 className="font-medium">{t("Payment method")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Used for your Pro subscription.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t("Used for your Pro subscription.")}</p>
           </div>
           {isPro && pm ? (
             <div className="flex items-center gap-3 p-5">
-              <span className="grid size-10 place-items-center rounded-md border">
-                <CreditCard className="size-4" />
-              </span>
+              <span className="grid size-10 place-items-center rounded-md border"><CreditCard className="size-4" /></span>
               <div>
-                <p className="text-sm font-medium">
-                  {pm.brand} ending in {pm.last4}
-                </p>
-                <p
-                  className={cn(
-                    "text-xs text-muted-foreground",
-                    mock === "payment_failed" && "text-destructive",
-                  )}
-                >
-                  {mock === "payment_failed" ? "Last charge declined" : `Expires ${pm.exp}`}
-                </p>
+                <p className="text-sm font-medium">{pm.brand} •••• {pm.last4}</p>
+                <p className="text-xs text-muted-foreground">{pm.exp}</p>
               </div>
-              <Button className="ml-auto" variant="outline" onClick={manage}>
-                Update
-              </Button>
+              <Button className="ml-auto" variant="outline" onClick={manage}>{t("Update")}</Button>
             </div>
           ) : (
-            <p className="p-5 text-sm text-muted-foreground">No payment method on file.</p>
+            <p className="p-5 text-sm text-muted-foreground">{t("No payment method on file.")}</p>
           )}
         </section>
         <section className="rounded-lg border bg-surface">
-          <div className="border-b p-5">
-            <h2 className="font-medium">{t("Billing history")}</h2>
-          </div>
+          <div className="border-b p-5"><h2 className="font-medium">{t("Billing history")}</h2></div>
           {invoiceRows.length ? (
             <ul className="divide-y">
               {invoiceRows.map((inv) => (
-                <li
-                  key={inv.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 text-sm sm:grid-cols-[1fr_1fr_auto_auto_auto]"
-                >
+                <li key={inv.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 text-sm sm:grid-cols-[1fr_1fr_auto_auto_auto]">
                   <div>
-                    <p className="font-medium">{inv.date}</p>
+                    <p className="font-medium">{formatDate(inv.date, language)}</p>
                     <p className="font-mono text-xs text-muted-foreground">{inv.id}</p>
                   </div>
                   <span className="hidden text-muted-foreground sm:block">{inv.description}</span>
                   <span className="font-mono">{inv.amount}</span>
-                  <span
-                    className={cn(
-                      "hidden rounded-md px-2 py-0.5 text-xs font-medium sm:inline",
-                      inv.status === "Paid"
-                        ? "bg-success-subtle text-success"
-                        : "bg-recording-subtle text-destructive",
-                    )}
-                  >
-                    {inv.status}
-                  </span>
+                  <span className="hidden rounded-md bg-muted px-2 py-0.5 text-xs font-medium sm:inline">{t(inv.status)}</span>
                   <Button
                     variant="ghost"
                     size="icon"
-                    aria-label={`Download invoice ${inv.id}`}
+                    aria-label={`${t("Download invoice")} ${inv.id}`}
                     className="hidden sm:inline-flex"
-                    onClick={() => toast("Invoice download is mocked")}
+                    onClick={() => toast(t("Invoice download is mocked"))}
                   >
                     <Download />
                   </Button>
@@ -2103,59 +2013,40 @@ export function BillingPage() {
           )}
         </section>
       </div>
+
       <Dialog open={upgrade} onOpenChange={setUpgrade}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Upgrade to Pro?</DialogTitle>
+            <DialogTitle>{t("Upgrade to Pro?")}</DialogTitle>
             <DialogDescription>
-              {interval === "month"
-                ? `$${pro.priceMonthly} billed monthly`
-                : `$${pro.priceYearly} billed yearly (save 20%)`}
-              , starting today. Cancel anytime.
+              {formatCurrencyUsd(pro.priceMonthlyUsd, language)} {t("/ month")}. {t("Secure checkout is not connected in this frontend demo.")}
             </DialogDescription>
           </DialogHeader>
           <ul className="space-y-2 rounded-md border bg-surface-subtle p-4 text-sm">
-            {pro.features.map((f) => (
-              <li key={f} className="flex gap-2">
-                <CheckCircle2 className="size-4 text-success" />
-                {f}
-              </li>
+            {pro.features.map((feature) => (
+              <li key={feature} className="flex gap-2"><CheckCircle2 className="size-4 text-success" />{t(feature)}</li>
             ))}
           </ul>
-          <p className="text-xs text-muted-foreground">
-            You’ll be taken to secure checkout. Prototype:{" "}
-            <Link to="/billing/canceled" className="text-primary underline underline-offset-4">
-              simulate canceled checkout
-            </Link>
-          </p>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setUpgrade(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                setUpgrade(false);
-                navigate({ to: "/billing/success" });
-              }}
-            >
-              Continue to checkout
+            <Button variant="outline" onClick={() => setUpgrade(false)}>{t("Cancel")}</Button>
+            <Button onClick={() => { setUpgrade(false); navigate({ to: "/billing/success" }); }}>
+              {t("Continue to checkout")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <ConfirmDialog
         destructive
         open={cancel}
         onOpenChange={setCancel}
         title="Cancel Pro subscription?"
-        body={`You’ll keep Pro until ${subscription.currentPeriodEnd}. After that your plan changes to Free: 1 monitored channel, 10 minutes of recording, and 3-day retention. Recordings older than 3 days will expire.`}
+        body="This demo only changes local UI state. No subscription or payment service is connected."
         confirmLabel="Cancel subscription"
         onConfirm={() => {
           setCancel(false);
           setMock("canceling");
-          toast("Subscription canceled", {
-            description: `Pro stays active until ${subscription.currentPeriodEnd}.`,
-          });
+          toast(t("Subscription canceled"));
         }}
       />
     </AppShell>
@@ -2167,7 +2058,7 @@ export function AdminSystemPage() {
     <AppShell>
       <PageHeader
         title="System"
-        subtitle="Live operational health across recording infrastructure."
+        subtitle="Illustrative admin metrics for the frontend demo."
       />
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-3">
         {[
@@ -2182,7 +2073,7 @@ export function AdminSystemPage() {
             key={String(a)}
             label={String(a)}
             value={String(b)}
-            detail="Updated just now"
+            detail="Demo fixture"
             icon={I as ElementType}
           />
         ))}
@@ -2207,44 +2098,48 @@ export function AdminSystemPage() {
   );
 }
 export function PricingPage() {
-  const { t } = usePreferences();
+  const { t, language } = usePreferences();
   return (
     <>
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
         <div className="text-center">
           <h1 className="text-4xl font-semibold">{t("Plans that scale with your livestreams.")}</h1>
-          <p className="mt-4 text-muted-foreground">
-            Start free. Upgrade when you need more recording time.
-          </p>
+          <p className="mt-4 text-muted-foreground">{t("Start free. Upgrade when you need more recording time.")}</p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2">
-          {plans.map((p) => (
+          {planList.map((plan) => (
             <PlanCard
-              key={p.id}
-              name={p.name}
-              price={p.priceMonthly ? `$${p.priceMonthly}` : "Free"}
-              features={p.features}
+              key={plan.id}
+              name={plan.name}
+              price={plan.priceMonthlyUsd ? formatCurrencyUsd(plan.priceMonthlyUsd, language) : "Free"}
+              features={[...plan.features]}
               action={
-                <Button
-                  variant={p.id === "pro" ? "default" : "outline"}
-                  className="mt-6 w-full"
-                  asChild
-                >
-                  <Link to="/sign-up">{p.id === "pro" ? "Start with Pro" : "Start for free"}</Link>
+                <Button variant={plan.id === "pro" ? "default" : "outline"} className="mt-6 w-full" asChild>
+                  <Link to="/sign-up">{t(plan.id === "pro" ? "Start with Pro" : "Start for free")}</Link>
                 </Button>
               }
             />
           ))}
         </div>
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          Yearly billing saves 20%. Cancel anytime from Billing.
-        </p>
+        <section className="mt-8 rounded-lg border bg-surface-subtle p-5">
+          <h2 className="text-sm font-semibold">{t("Plan limits")}</h2>
+          <dl className="mt-3 grid gap-4 sm:grid-cols-3">
+            {planLimitDefinitions.map((item) => (
+              <div key={item.key}>
+                <dt className="text-sm font-medium">{t(item.label)}</dt>
+                <dd className="mt-1 text-xs leading-5 text-muted-foreground">{t(item.description)}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-4 text-xs text-muted-foreground">{t(planMediaFootnote)}</p>
+        </section>
       </main>
       <PublicFooter />
     </>
   );
 }
+
 export function PublicFooter() {
   const { t } = usePreferences();
   const cols: [string, [string, string][]][] = [
@@ -2611,11 +2506,11 @@ function RecordingHeader() {
   const { t } = usePreferences();
   return (
     <div className="grid grid-cols-[1.7fr_1fr_.7fr_.7fr_.8fr_.7fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-      <span>Recording</span>
-      <span>Streamer</span>
+      <span>{t("Recording")}</span>
+      <span>{t("Streamer")}</span>
       <span>{t("Duration")}</span>
       <span>{t("Size")}</span>
-      <span>Expires</span>
+      <span>{t("Expires")}</span>
       <span>{t("Status")}</span>
       <span className="w-9" />
     </div>

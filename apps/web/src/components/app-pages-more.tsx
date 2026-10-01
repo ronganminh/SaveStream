@@ -91,7 +91,7 @@ import {
   type RecordingJob,
   type Worker,
   type WorkerStatus,
-} from "@/lib/mock-data";
+} from "@/mocks/fixtures";
 import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
@@ -114,8 +114,8 @@ export function VerifyEmailPage() {
       </span>
       <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        We sent a verification link to <b className="font-medium text-foreground">{user.email}</b>.
-        Open it to activate your account. The link expires in 24 hours.
+        {t("We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.")}{" "}
+        <b className="font-medium text-foreground">{user.email}</b>
       </p>
       <div className="mt-8 space-y-2">
         <Button
@@ -124,15 +124,15 @@ export function VerifyEmailPage() {
           disabled={cooldown > 0}
           onClick={() => {
             setCooldown(30);
-            toast.success("Verification email sent", { description: user.email });
+            toast.success(t("Verification email sent"), { description: user.email });
           }}
         >
           {cooldown > 0 ? (
             <>
-              Resend available in <span className="font-mono">{cooldown}s</span>
+              {t("Resend available in")} <span className="font-mono">{cooldown}s</span>
             </>
           ) : (
-            "Resend verification email"
+            t("Resend verification email")
           )}
         </Button>
         <Button className="w-full" variant="ghost" asChild>
@@ -317,7 +317,7 @@ function AccountSettings() {
       toast.success("Verification email sent", {
         description: `Confirm ${email} to finish changing your email.`,
       });
-    } else toast.success("Changes saved");
+    } else toast.success(t("Changes saved"));
   };
   return (
     <>
@@ -399,7 +399,7 @@ function AccountSettings() {
           variant="outline"
           className="w-fit"
           onClick={() =>
-            toast.success("Export requested", {
+            toast.success(t("Export requested"), {
               description: "We’ll email you a download link when it’s ready.",
             })
           }
@@ -431,7 +431,7 @@ function AccountSettings() {
         confirmDisabled={confirmText !== "DELETE"}
         onConfirm={() => {
           setDel(false);
-          toast.success("Account deleted");
+          toast.success(t("Account deleted"));
           navigate({ to: "/" });
         }}
       >
@@ -475,16 +475,16 @@ function NotificationSettings() {
       body={`Sent to ${user.email}. In-app notifications are always on.`}
     >
       <div>
-        {notifPrefs.map(([k, t, d]) => (
+        {notifPrefs.map(([k, label, description]) => (
           <div
             key={k}
             className="flex items-center justify-between gap-4 border-b py-4 last:border-0"
           >
             <div>
               <label htmlFor={`np-${k}`} className="text-sm font-medium">
-                {t}
+                {t(label)}
               </label>
-              <p className="text-xs text-muted-foreground">{d}</p>
+              <p className="text-xs text-muted-foreground">{t(description)}</p>
             </div>
             <Switch
               id={`np-${k}`}
@@ -503,7 +503,7 @@ function NotificationSettings() {
           onClick={() => {
             setSaved(prefs);
             setJustSaved(true);
-            toast.success("Notification preferences saved");
+            toast.success(t("Notification preferences saved"));
           }}
         >
           {t("Save preferences")}
@@ -550,7 +550,7 @@ function SecuritySettings() {
             setCur("");
             setPw("");
             setPw2("");
-            toast.success("Password updated");
+            toast.success(t("Password updated"));
           }}
         >
           {t("Update password")}
@@ -663,14 +663,14 @@ export function NotificationsPage() {
             disabled={!unread}
             onClick={() => {
               notificationStore.markAllRead();
-              toast.success("All notifications marked as read");
+              toast.success(t("All notifications marked as read"));
             }}
           >
             {t("Mark all as read")}
           </Button>
         }
       />
-      <div role="tablist" aria-label="Filter notifications" className="mb-4 flex gap-1">
+      <div role="tablist" aria-label={t("Filter notifications")} className="mb-4 flex gap-1">
         {(["all", "unread"] as const).map((f) => (
           <Button
             key={f}
@@ -681,10 +681,10 @@ export function NotificationsPage() {
             onClick={() => setFilter(f)}
           >
             {f === "all" ? (
-              "All"
+              t("All")
             ) : (
               <>
-                Unread <span className="font-mono text-xs text-muted-foreground">{unread}</span>
+                {t("Unread")} <span className="font-mono text-xs text-muted-foreground">{unread}</span>
               </>
             )}
           </Button>
@@ -700,11 +700,7 @@ export function NotificationsPage() {
         <EmptyState
           icon={Bell}
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
-          body={
-            filter === "unread"
-              ? "You’re all caught up."
-              : "We’ll notify you when recordings start, finish, or need attention."
-          }
+          body={filter === "unread" ? "You’re all caught up." : "We’ll notify you when recordings start, finish, or need attention."}
         />
       )}
       <p className="mt-4 text-xs text-muted-foreground">
@@ -1800,78 +1796,52 @@ export function AcceptableUsePage() {
 }
 export function StatusPage() {
   const { t } = usePreferences();
-  const degraded = publicServices.some((s) => s.state !== "Operational");
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">{t("System status")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Live status of SaveStream services. Updated every minute.
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl font-semibold">{t("System status")}</h1>
+          <span className="rounded-md border border-warning/30 bg-warning-subtle px-2 py-1 text-xs font-semibold text-warning-foreground">
+            {t("Demo data")}
+          </span>
+        </div>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          {t("This status page is a frontend preview. It is not connected to live monitoring or incident data.")}
         </p>
         <div className="mt-6">
-          {degraded ? (
-            <StateBanner
-              tone="warning"
-              title="Some systems are degraded"
-              body="Live status checks are slower than usual. Recordings that already started are not affected."
-            />
-          ) : (
-            <StateBanner tone="success" title="All systems operational" />
-          )}
+          <StateBanner
+            tone="warning"
+            title="Preview only — not live status"
+            body="All values below are illustrative demo data."
+          />
         </div>
         <section className="mt-8 overflow-hidden rounded-lg border bg-surface">
-          {publicServices.map((s) => (
-            <div key={s.name} className="border-b p-4 last:border-0">
+          {publicServices.map((service) => (
+            <div key={service.name} className="border-b p-4 last:border-0">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium">{s.name}</p>
-                  <p className="text-xs text-muted-foreground">{s.note}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium">{service.name}</p>
+                    <span className="rounded border px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      {t("Demo")}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{t("Illustrative service state")}</p>
                 </div>
-                <span
-                  className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 text-xs font-medium",
-                    s.state === "Operational"
-                      ? "text-success"
-                      : s.state === "Degraded"
-                        ? "text-warning-foreground"
-                        : "text-destructive",
-                  )}
-                >
-                  {s.state === "Operational" ? (
-                    <CheckCircle2 className="size-3.5" />
-                  ) : (
-                    <AlertTriangle className="size-3.5" />
-                  )}
-                  {s.state}
-                </span>
+                <span className="text-xs font-medium text-muted-foreground">{t(service.state)}</span>
               </div>
-              <div className="mt-3 flex gap-px" aria-hidden>
-                {Array.from({ length: 45 }).map((_, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      "h-6 flex-1 rounded-[2px] bg-success/70",
-                      s.state === "Degraded" && i === 44 && "bg-warning",
-                      s.name === "Storage" && i === 21 && "bg-warning",
-                    )}
-                  />
+              <div className="mt-3 flex gap-px opacity-50" aria-hidden>
+                {Array.from({ length: 30 }).map((_, i) => (
+                  <span key={i} className="h-5 flex-1 rounded-[2px] bg-muted" />
                 ))}
-              </div>
-              <div className="mt-1 flex justify-between text-[10px] text-muted-foreground">
-                <span>45 days ago</span>
-                <span>Today</span>
               </div>
             </div>
           ))}
         </section>
         <section className="mt-10">
-          <SectionTitle title="Recent incidents" />
-          <EmptyState
-            icon={ShieldCheck}
-            title="No incidents in the last 14 days"
-            body="Past incidents and maintenance notices will appear here."
-          />
+          <SectionTitle title="Incident history preview" />
+          <EmptyState icon={ShieldCheck} title="Demo data" body="No live incident source is connected." />
         </section>
       </main>
       <PublicFooter />
@@ -1880,136 +1850,57 @@ export function StatusPage() {
 }
 
 /* ---------------- Help ---------------- */
-const helpTopics: { id: string; icon: typeof Cloud; title: string; body: ReactNode }[] = [
+const helpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
   {
     id: "getting-started",
     icon: Radio,
     title: "Getting started",
-    body: (
-      <>
-        <p>
-          1. Create an account and verify your email. 2. Add a TikTok channel. 3. Leave monitoring
-          on — recording starts automatically when the channel goes live.
-        </p>
-        <p>
-          Adding a channel takes under a minute: paste the @username or profile URL, review the
-          creator, and choose <b>Add & start monitoring</b>.
-        </p>
-      </>
-    ),
+    body: "Create an account, add an authorized TikTok channel, and leave monitoring enabled. Recording starts automatically when the channel goes live.",
   },
   {
     id: "cloud-monitoring",
     icon: Cloud,
     title: "How cloud monitoring works",
-    body: (
-      <p>
-        Our servers check the live status of every channel with monitoring turned on. When a channel
-        goes live, a cloud worker starts recording within seconds. Nothing runs in your browser.
-      </p>
-    ),
+    body: "SaveStream checks enabled channels from cloud infrastructure. Nothing needs to keep running in your browser.",
   },
   {
     id: "browser-closed",
     icon: Monitor,
     title: "What happens if I close my browser or computer?",
-    body: (
-      <p>
-        Nothing changes. Monitoring and recording continue on our servers. You’ll find the finished
-        recording in your library, and we’ll email you if you’ve enabled notifications.
-      </p>
-    ),
+    body: "In the product flow, monitoring and recording continue in the cloud. This frontend demo does not connect to a real recorder.",
   },
   {
     id: "lifecycle",
     icon: FileVideo,
     title: "Recording lifecycle",
-    body: (
-      <p>
-        <b>Added</b> → <b>Waiting for live</b> → <b>Recording</b> → <b>Processing</b> → <b>Ready</b>
-        . A channel can also be <b>Offline</b> (not live), <b>Paused</b> (monitoring off —
-        livestreams won’t be recorded), or show an <b>Error</b> when we can’t check its status.
-        Processing usually takes a few minutes after the livestream ends.
-      </p>
-    ),
+    body: "The UI models waiting, recording, processing, ready, partial, failed, expiring, and expired states so the future API can map to clear user feedback.",
   },
   {
     id: "quotas",
     icon: Gauge,
     title: "Quotas",
-    body: (
-      <p>
-        Each plan includes monthly recording hours, download bandwidth, monitored channels, and
-        simultaneous recordings. We warn you at 80%. At 100%, automatic recording pauses until your
-        quota resets on the first of the month or you upgrade. See{" "}
-        <Link to="/usage" className="text-primary underline underline-offset-4">
-          Usage
-        </Link>
-        .
-      </p>
-    ),
+    body: "Monthly limits include recording time, monitored channels, simultaneous recordings, download bandwidth, and retention. The current frontend values come from one plan catalog.",
   },
   {
     id: "retention",
     icon: Clock3,
     title: "Retention",
-    body: (
-      <p>
-        Recordings are kept for {usage.retentionDays} days on Pro and 3 days on Free, then deleted
-        automatically. Recordings close to expiring are highlighted in amber, and those expiring
-        within a day in red. Download anything you want to keep.
-      </p>
-    ),
+    body: "Recordings are shown with an expiry state based on the selected plan. Download anything you are authorized to keep before its retention period ends.",
   },
   {
     id: "troubleshooting",
     icon: AlertTriangle,
     title: "Failed recording troubleshooting",
-    body: (
-      <>
-        <p>
-          Most failures happen when the livestream connection drops. When that happens we keep
-          everything recorded up to that point as a partial file you can watch or download.
-        </p>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>
-            <b>Stream disconnected</b> — the platform ended the connection. We reconnect
-            automatically while the stream is live.
-          </li>
-          <li>
-            <b>Processing failed</b> — use <b>Retry processing</b> on the recording page.
-          </li>
-          <li>
-            <b>Live check failed</b> — the platform didn’t respond. We retry automatically; no
-            action needed.
-          </li>
-          <li>
-            <b>Quota reached</b> — recording pauses until reset or upgrade.
-          </li>
-        </ul>
-      </>
-    ),
+    body: "Failed and partial recordings should explain what was kept, whether retry is available, and what the user can do next.",
   },
   {
     id: "authorized",
     icon: ShieldCheck,
     title: "Authorized recording policy",
-    body: (
-      <p>
-        Only add channels you own, manage, or have permission to record. You’re responsible for that
-        authorization. Read the{" "}
-        <Link to="/acceptable-use" className="text-primary underline underline-offset-4">
-          Acceptable Use Policy
-        </Link>{" "}
-        and{" "}
-        <Link to="/terms" className="text-primary underline underline-offset-4">
-          Terms
-        </Link>
-        .
-      </p>
-    ),
+    body: "Only add channels you own, manage, or have explicit permission to record and archive.",
   },
 ];
+
 export function HelpPage() {
   const { t } = usePreferences();
   const [contact, setContact] = useState(false);
@@ -2026,27 +1917,27 @@ export function HelpPage() {
           </Button>
         }
       />
-      <nav aria-label="Help topics" className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {helpTopics.map((t) => (
+      <nav aria-label={t("Help topics")} className="mb-6 flex gap-2 overflow-x-auto pb-1">
+        {helpTopics.map((topic) => (
           <a
-            key={t.id}
-            href={`#${t.id}`}
+            key={topic.id}
+            href={`#${topic.id}`}
             className="shrink-0 rounded-md border bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            {t.title.replace("What happens if I close my browser or computer?", "Browser closed")}
+            {t(topic.title === "What happens if I close my browser or computer?" ? "Browser closed" : topic.title)}
           </a>
         ))}
       </nav>
       <div className="grid gap-4 lg:grid-cols-2">
-        {helpTopics.map((t) => {
-          const I = t.icon;
+        {helpTopics.map((topic) => {
+          const I = topic.icon;
           return (
-            <section key={t.id} id={t.id} className="scroll-mt-24 rounded-lg border bg-surface p-5">
+            <section key={topic.id} id={topic.id} className="scroll-mt-24 rounded-lg border bg-surface p-5">
               <div className="flex items-center gap-2">
                 <I className="size-4 text-primary" />
-                <h2 className="font-medium">{t.title}</h2>
+                <h2 className="font-medium">{t(topic.title)}</h2>
               </div>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">{t.body}</div>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">{t(topic.body)}</div>
             </section>
           );
         })}
@@ -2058,25 +1949,20 @@ export function HelpPage() {
         <CircleHelp className="size-5 text-primary" />
         <div className="flex-1">
           <h2 className="font-medium">{t("Still need help?")}</h2>
-          <p className="text-sm text-muted-foreground">
-            Send us a message and include the recording or channel link. We usually reply within one
-            business day.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("This demo does not send support messages.")}</p>
         </div>
         <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
       </section>
       <p className="mt-4 text-xs text-muted-foreground">
-        Service issues? Check the{" "}
         <Link to="/status" className="text-primary underline underline-offset-4">
-          status page
+          {t("Service issues? Check the status page.")}
         </Link>
-        .
       </p>
       <Dialog open={contact} onOpenChange={setContact}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Contact support")}</DialogTitle>
-            <DialogDescription>We’ll reply to {user.email}.</DialogDescription>
+            <DialogDescription>{t("This demo does not send support messages.")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -2086,7 +1972,7 @@ export function HelpPage() {
               <Input
                 id="sup-subject"
                 className="mt-2"
-                placeholder="e.g. Recording failed for @norashop"
+                placeholder={t("e.g. Recording failed for @norashop")}
               />
             </div>
             <div>
@@ -2099,7 +1985,7 @@ export function HelpPage() {
                 rows={5}
                 value={msg}
                 onChange={(e) => setMsg(e.target.value)}
-                placeholder="What happened, and when?"
+                placeholder={t("What happened, and when?")}
               />
             </div>
           </div>
@@ -2112,7 +1998,7 @@ export function HelpPage() {
               onClick={() => {
                 setContact(false);
                 setMsg("");
-                toast.success("Message sent", { description: "Support will reply by email." });
+                toast.success(t("Demo function"), { description: t("This demo does not send support messages.") });
               }}
             >
               {t("Send message")}

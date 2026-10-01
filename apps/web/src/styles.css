@@ -66,6 +66,13 @@
 
 :root {
   --radius: .5rem;
+  --z-sticky: 30;
+  --z-floating: 35;
+  --z-drawer-overlay: 40;
+  --z-drawer: 45;
+  --z-dialog-overlay: 50;
+  --z-dialog: 55;
+  --z-toast: 60;
   --background: oklch(.985 .003 265);
   --foreground: oklch(.18 .018 270);
   --card: oklch(1 0 0);
@@ -160,8 +167,9 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html { scroll-behavior: smooth; }
-  body { background: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); letter-spacing: 0; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body { min-width: 0; overflow-x: clip; background: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); letter-spacing: 0; }
+  img, video { max-width: 100%; }
   button, a { -webkit-tap-highlight-color: transparent; }
 }
 
