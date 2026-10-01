@@ -77,12 +77,24 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     if (checkout == null) return;
 
     _activeOrder = checkout.paymentOrder;
-    final bool opened = await launchUrl(
-      checkout.checkoutUri,
-      mode: LaunchMode.externalApplication,
-    );
-    if (!opened) {
-      throw StateError('Unable to launch checkout URL.');
+    unawaited(_launchCheckoutUri(checkout.checkoutUri));
+  }
+
+  Future<void> _launchCheckoutUri(Uri uri) async {
+    try {
+      final bool opened = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened) {
+        throw StateError('Unable to launch checkout URL.');
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        setState(() {
+          _mutationError = error;
+        });
+      }
     }
   }
 
