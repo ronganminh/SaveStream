@@ -1,3 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PricingPage, meta } from "@/components/app-pages";
-export const Route = createFileRoute("/pricing")({ head:()=>meta("Pricing","Simple Free and Pro plans for automatic cloud livestream recording."), component:PricingPage });
+import { PricingPage } from "@/components/app-pages";
+import { publicMeta } from "@/components/app-pages";
+
+export const Route = createFileRoute("/pricing")({
+  head: () => publicMeta("/pricing", "Pricing", "Simple Free and Pro monthly plans for SaveStream recording workflows."),
+  component: PricingPage,
+});

@@ -1,4 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { meta } from "@/components/app-pages";
-import { TermsPage } from "@/components/app-pages-more";
-export const Route = createFileRoute("/terms")({ head:()=>meta("Terms of Service","The terms for using SaveStream cloud livestream recording."), component:TermsPage });
+import {  } from "@/components/app-pages-more";
+import { publicMeta } from "@/components/app-pages";
+
+export const Route = createFileRoute("/terms")({
+  head: () => publicMeta("/terms", "Terms of Service", "Draft terms for the SaveStream frontend product preview."),
+  component: undefined,
+});

@@ -1,4 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { meta } from "@/components/app-pages";
-import { PrivacyPage } from "@/components/app-pages-more";
-export const Route = createFileRoute("/privacy")({ head:()=>meta("Privacy Policy","How SaveStream handles account data and recordings."), component:PrivacyPage });
+import {  } from "@/components/app-pages-more";
+import { publicMeta } from "@/components/app-pages";
+
+export const Route = createFileRoute("/privacy")({
+  head: () => publicMeta("/privacy", "Privacy Policy", "Draft information about how SaveStream is intended to handle account data and recordings."),
+  component: undefined,
+});

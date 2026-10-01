@@ -1,3 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { LandingPage, meta } from "@/components/app-pages";
-export const Route = createFileRoute("/")({ head:()=>meta("Automatic TikTok livestream recording","Monitor TikTok channels and record livestreams automatically in the cloud."), component:LandingPage });
+import { LandingPage } from "@/components/app-pages";
+import { publicMeta } from "@/components/app-pages";
+
+export const Route = createFileRoute("/")({
+  head: () => publicMeta("/", "Automatic TikTok livestream recording", "Monitor authorized TikTok channel workflows and preview automatic cloud recording with SaveStream."),
+  component: LandingPage,
+});
