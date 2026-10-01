@@ -63,8 +63,8 @@ void main() {
         await authApi.verifyEmail(token: verificationToken);
 
         final tokens = await authApi.login(email: email, password: password);
-        final MemoryAccessTokenStore accessTokenStore =
-            MemoryAccessTokenStore()..setAccessToken(tokens.accessToken);
+        final MemoryAccessTokenStore accessTokenStore = MemoryAccessTokenStore()
+          ..setAccessToken(tokens.accessToken);
         authenticatedClient = ApiClient(
           config: config,
           accessTokenProvider: accessTokenStore,
