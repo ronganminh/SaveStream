@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: 3.4.3
   go_router: 18.0.2
+  dio: ^5.11.1
   intl: ^0.20.3
   shared_preferences: ^2.5.5
 
