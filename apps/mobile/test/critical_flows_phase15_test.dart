@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +58,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(session.isAuthenticated, isTrue);
     expect(find.text('Welcome back, Alex'), findsOneWidget);
@@ -96,6 +100,8 @@ void main() {
     await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
     expect(find.text('@phase15_creator'), findsOneWidget);
@@ -132,6 +138,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(repository.stopCalls, 1);
     expect(find.text('Stopped'), findsWidgets);
@@ -169,6 +177,7 @@ void main() {
       'Check payment status',
     );
     await tester.ensureVisible(checkStatus);
+    await tester.pumpAndSettle();
     await tester.tap(checkStatus);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
@@ -204,6 +213,8 @@ final class _TerminalStopRecordingRepository implements RecordingRepository {
       );
 
   RecordingSummary _recording;
+  final StreamController<RecordingSummary?> _updates =
+      StreamController<RecordingSummary?>.broadcast(sync: true);
   int stopCalls = 0;
 
   @override
@@ -245,6 +256,7 @@ final class _TerminalStopRecordingRepository implements RecordingRepository {
       ),
       endedAt: DateTime.utc(2026, 10, 1, 8, 5),
     );
+    _updates.add(_recording);
     return _recording;
   }
 
@@ -274,5 +286,6 @@ final class _TerminalStopRecordingRepository implements RecordingRepository {
   @override
   Stream<RecordingSummary?> watchRecording(String id) async* {
     yield _recording;
+    yield* _updates.stream;
   }
 }
