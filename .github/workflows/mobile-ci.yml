@@ -38,6 +38,17 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show Phase 10 formatting
+        run: >-
+          dart format --output=show
+          lib/core/api/memory_access_token_store.dart
+          lib/features/auth/data/remote/auth_public_api.dart
+          lib/features/auth/data/repositories/api_auth_repository.dart
+          lib/features/auth/data/session/flutter_secure_refresh_token_store.dart
+          lib/features/auth/data/session/refresh_token_store.dart
+          lib/features/auth/domain/repositories/auth_repository.dart
+          test/auth_phase10_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
