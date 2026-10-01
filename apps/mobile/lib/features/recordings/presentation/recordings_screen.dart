@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/recording_summary.dart';
@@ -28,10 +26,8 @@ class RecordingsScreen extends ConsumerWidget {
         child: recordings.when(
           loading: () => const _RecordingsSkeleton(),
           error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
+            child: SsAsyncErrorState(
+              error: error,
               onRetry: () =>
                   ref.read(recordingListControllerProvider.notifier).refresh(),
             ),
@@ -54,6 +50,25 @@ class _RecordingListBody extends ConsumerWidget {
 
     return Column(
       children: <Widget>[
+        if (state.isRefreshing)
+          Semantics(
+            label: l10n.refreshingLabel,
+            child: const LinearProgressIndicator(minHeight: 2),
+          ),
+        if (state.refreshError != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              SsSpacing.lg,
+              SsSpacing.sm,
+              SsSpacing.lg,
+              0,
+            ),
+            child: SsInlineAsyncError(
+              error: state.refreshError!,
+              onRetry: () =>
+                  ref.read(recordingListControllerProvider.notifier).refresh(),
+            ),
+          ),
         SizedBox(
           height: 58,
           child: ListView.separated(
@@ -277,7 +292,7 @@ class _LoadMoreSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
 
-    if (state.nextCursor == null && !state.loadMoreFailed) {
+    if (state.nextCursor == null && state.loadMoreError == null) {
       return Padding(
         padding: const EdgeInsets.only(top: SsSpacing.sm),
         child: Center(
@@ -296,19 +311,23 @@ class _LoadMoreSection extends ConsumerWidget {
       );
     }
 
-    return Column(
-      children: <Widget>[
-        if (state.loadMoreFailed) ...<Widget>[
-          Text(l10n.recordingLoadMoreFailed),
-          const SizedBox(height: SsSpacing.sm),
-        ],
-        TextButton.icon(
-          onPressed: () =>
+    if (state.loadMoreError != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: SsSpacing.sm),
+        child: SsInlineAsyncError(
+          error: state.loadMoreError!,
+          messageOverride: l10n.recordingLoadMoreFailed,
+          onRetry: () =>
               ref.read(recordingListControllerProvider.notifier).loadMore(),
-          icon: const Icon(Icons.expand_more_rounded),
-          label: Text(l10n.loadMoreAction),
         ),
-      ],
+      );
+    }
+
+    return TextButton.icon(
+      onPressed: () =>
+          ref.read(recordingListControllerProvider.notifier).loadMore(),
+      icon: const Icon(Icons.expand_more_rounded),
+      label: Text(l10n.loadMoreAction),
     );
   }
 }
@@ -340,26 +359,4 @@ String _emptyMessage(AppLocalizations l10n, RecordingFilter filter) {
     RecordingFilter.completed => l10n.emptyCompletedRecordingsBody,
     RecordingFilter.failed => l10n.emptyFailedRecordingsBody,
   };
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
 }

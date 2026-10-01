@@ -29,30 +29,42 @@ class RecordingListState {
     required this.filter,
     required this.items,
     required this.nextCursor,
+    this.isRefreshing = false,
+    this.refreshError,
     this.isLoadingMore = false,
-    this.loadMoreFailed = false,
+    this.loadMoreError,
   });
 
   final RecordingFilter filter;
   final List<RecordingSummary> items;
   final String? nextCursor;
+  final bool isRefreshing;
+  final Object? refreshError;
   final bool isLoadingMore;
-  final bool loadMoreFailed;
+  final Object? loadMoreError;
 
   RecordingListState copyWith({
     RecordingFilter? filter,
     List<RecordingSummary>? items,
     String? nextCursor,
     bool clearNextCursor = false,
+    bool? isRefreshing,
+    Object? refreshError,
+    bool clearRefreshError = false,
     bool? isLoadingMore,
-    bool? loadMoreFailed,
+    Object? loadMoreError,
+    bool clearLoadMoreError = false,
   }) {
     return RecordingListState(
       filter: filter ?? this.filter,
       items: items ?? this.items,
       nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      refreshError: clearRefreshError ? null : refreshError ?? this.refreshError,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
+      loadMoreError: clearLoadMoreError
+          ? null
+          : loadMoreError ?? this.loadMoreError,
     );
   }
 }
@@ -81,11 +93,36 @@ class RecordingListController extends AsyncNotifier<RecordingListState> {
   }
 
   Future<void> refresh() async {
-    final RecordingFilter filter = state.value?.filter ?? RecordingFilter.all;
-    state = const AsyncLoading<RecordingListState>();
-    state = await AsyncValue.guard<RecordingListState>(
-      () => _loadFirstPage(filter),
+    final RecordingListState? current = state.value;
+    final RecordingFilter filter = current?.filter ?? RecordingFilter.all;
+
+    if (current == null) {
+      state = const AsyncLoading<RecordingListState>();
+      state = await AsyncValue.guard<RecordingListState>(
+        () => _loadFirstPage(filter),
+      );
+      return;
+    }
+
+    state = AsyncData<RecordingListState>(
+      current.copyWith(
+        isRefreshing: true,
+        clearRefreshError: true,
+        clearLoadMoreError: true,
+      ),
     );
+
+    try {
+      state = AsyncData<RecordingListState>(await _loadFirstPage(filter));
+    } on Object catch (error) {
+      state = AsyncData<RecordingListState>(
+        current.copyWith(
+          isRefreshing: false,
+          refreshError: error,
+          clearLoadMoreError: true,
+        ),
+      );
+    }
   }
 
   Future<void> loadMore() async {
@@ -97,7 +134,11 @@ class RecordingListController extends AsyncNotifier<RecordingListState> {
     }
 
     state = AsyncData<RecordingListState>(
-      current.copyWith(isLoadingMore: true, loadMoreFailed: false),
+      current.copyWith(
+        isLoadingMore: true,
+        clearLoadMoreError: true,
+        clearRefreshError: true,
+      ),
     );
 
     try {
@@ -114,9 +155,13 @@ class RecordingListController extends AsyncNotifier<RecordingListState> {
           nextCursor: page.nextCursor,
         ),
       );
-    } on Object {
+    } on Object catch (error) {
       state = AsyncData<RecordingListState>(
-        current.copyWith(isLoadingMore: false, loadMoreFailed: true),
+        current.copyWith(
+          isLoadingMore: false,
+          loadMoreError: error,
+          clearRefreshError: true,
+        ),
       );
     }
   }
