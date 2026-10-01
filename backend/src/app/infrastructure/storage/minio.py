@@ -5,7 +5,6 @@ from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
-import requests
 from minio import Minio
 
 from app.settings import AppSettings
@@ -23,7 +22,6 @@ class MinioStorageClient:
             secret_key=settings.minio_secret_key,
             secure=secure,
         )
-        self.endpoint = settings.minio_endpoint.rstrip("/")
 
     def ensure_bucket(self) -> None:
         if not self.client.bucket_exists(self.settings.minio_bucket):
@@ -55,11 +53,7 @@ class MinioStorageClient:
         self.client.remove_object(self.settings.minio_bucket, storage_key)
 
     def _ping_sync(self) -> bool:
-        response = requests.get(
-            f"{self.endpoint}/minio/health/live",
-            timeout=self.settings.dependency_timeout_seconds,
-        )
-        return response.status_code == 200
+        return self.client.bucket_exists(self.settings.minio_bucket)
 
     async def ping(self) -> bool:
         return await asyncio.to_thread(self._ping_sync)

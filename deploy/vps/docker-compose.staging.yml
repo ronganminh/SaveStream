@@ -1,0 +1,226 @@
+name: savestream-staging
+
+x-app-env: &app-env
+  SAVESTREAM_ENVIRONMENT: staging
+  SAVESTREAM_LOG_FORMAT: json
+  SAVESTREAM_LOG_LEVEL: INFO
+  SAVESTREAM_DATABASE_URL_FILE: /run/secrets/database_url
+  SAVESTREAM_REDIS_URL_FILE: /run/secrets/redis_url
+  SAVESTREAM_CELERY_BROKER_URL_FILE: /run/secrets/celery_broker_url
+  SAVESTREAM_CELERY_RESULT_BACKEND_FILE: /run/secrets/celery_result_backend
+  SAVESTREAM_MINIO_ENDPOINT: ${SAVESTREAM_R2_ENDPOINT:?set R2 S3 API endpoint}
+  SAVESTREAM_MINIO_ACCESS_KEY_FILE: /run/secrets/r2_access_key
+  SAVESTREAM_MINIO_SECRET_KEY_FILE: /run/secrets/r2_secret_key
+  SAVESTREAM_MINIO_BUCKET: ${SAVESTREAM_R2_BUCKET:?set R2 bucket}
+  SAVESTREAM_MINIO_SECURE: "true"
+  SAVESTREAM_JWT_SECRET_FILE: /run/secrets/jwt_secret
+  SAVESTREAM_FRONTEND_BASE_URL: https://savestream.online
+  SAVESTREAM_CORS_ALLOW_ORIGINS: https://savestream.online,https://www.savestream.online
+  SAVESTREAM_SMTP_HOST: mail-debug
+  SAVESTREAM_SMTP_PORT: 1025
+  SAVESTREAM_EMAIL_FROM: SaveStream Staging <no-reply@staging.savestream.online>
+  SAVESTREAM_PAYMENT_PROVIDER: fake
+  SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
+  SAVESTREAM_METRICS_TOKEN_FILE: /run/secrets/metrics_token
+  SAVESTREAM_TRUSTED_PROXY_CIDRS: 172.16.0.0/12
+  SAVESTREAM_FORCE_HTTPS: "true"
+  SAVESTREAM_API_RATE_LIMIT: "300"
+  SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: "100"
+  SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: "100"
+  SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: "2"
+  SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+  SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+  SAVESTREAM_RECORDING_HEARTBEAT_SECONDS: "1"
+  SAVESTREAM_RECORDING_STALE_AFTER_SECONDS: "20"
+  SAVESTREAM_RECORDING_RETENTION_DAYS: "0"
+  SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS: "0"
+
+x-app-secrets: &app-secrets
+  - database_url
+  - redis_url
+  - celery_broker_url
+  - celery_result_backend
+  - r2_access_key
+  - r2_secret_key
+  - jwt_secret
+  - payment_webhook_secret
+  - metrics_token
+
+services:
+  staging-api:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment: *app-env
+    secrets: *app-secrets
+    ports:
+      - "127.0.0.1:18000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-H", "X-Forwarded-Proto: https", "http://localhost:8000/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      fake-stream:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.infrastructure.queue.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --concurrency=2
+    environment: *app-env
+    secrets: *app-secrets
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      fake-stream:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.infrastructure.queue.celery_app:celery_app
+      - beat
+      - --loglevel=INFO
+    environment: *app-env
+    secrets: *app-secrets
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  outbox-dispatcher:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command: ["python", "-m", "app.infrastructure.queue.outbox"]
+    environment: *app-env
+    secrets: *app-secrets
+    networks:
+      - backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: savestream_staging
+      POSTGRES_USER: savestream
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U savestream -d savestream_staging"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - backend
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --requirepass "$$(cat /run/secrets/redis_password)"
+    secrets:
+      - redis_password
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - redis-cli -a "$$(cat /run/secrets/redis_password)" ping 2>/dev/null | grep -q PONG
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - backend
+
+  fake-stream:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command: ["python", "-m", "app.e2e.fake_stream_server"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8090/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks:
+      - backend
+
+  mail-debug:
+    image: mailhog/mailhog:v1.0.1
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:18025:8025"
+    networks:
+      - backend
+
+networks:
+  backend: {}
+
+volumes:
+  postgres_data: {}
+  redis_data: {}
+
+secrets:
+  postgres_password:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/postgres_password
+  database_url:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/database_url
+  redis_password:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/redis_password
+  redis_url:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/redis_url
+  celery_broker_url:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/celery_broker_url
+  celery_result_backend:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/celery_result_backend
+  r2_access_key:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/r2_access_key
+  r2_secret_key:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/r2_secret_key
+  jwt_secret:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/jwt_secret
+  payment_webhook_secret:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/payment_webhook_secret
+  metrics_token:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/metrics_token
