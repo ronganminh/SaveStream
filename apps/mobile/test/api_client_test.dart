@@ -52,7 +52,10 @@ void main() {
     expect(response.data.name, 'SaveStream');
     expect(response.statusCode, 200);
     expect(response.requestId, 'req_success');
-    expect(adapter.requests.single.uri.toString(), 'http://localhost:8000/v1/example');
+    expect(
+      adapter.requests.single.uri.toString(),
+      'http://localhost:8000/v1/example',
+    );
   });
 
   test('attaches bearer token without exposing token to typed errors', () async {
