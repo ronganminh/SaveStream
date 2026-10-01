@@ -20,6 +20,7 @@ class ProviderEvent:
     event_id: str
     event_type: str
     provider_reference: str
+    payment_order_id: str | None = None
     amount_minor: int | None = None
     currency: str | None = None
     refund_reference: str | None = None
