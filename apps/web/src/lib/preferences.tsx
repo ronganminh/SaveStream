@@ -1,391 +1,468 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
-export type Locale = "en" | "vi";
-export type ThemePreference = "system" | "light" | "dark";
+export type Language = "en" | "vi";
+export type ThemePreference = "light" | "dark" | "system";
 
-const en = {
-  "preferences.language": "Language",
-  "preferences.theme": "Theme",
-  "preferences.english": "English",
-  "preferences.vietnamese": "Vietnamese",
-  "theme.system": "System",
-  "theme.light": "Light",
-  "theme.dark": "Dark",
-  "nav.features": "Features",
-  "nav.how": "How it works",
-  "nav.platforms": "Platforms",
-  "nav.examples": "Examples",
-  "nav.pricing": "Pricing",
-  "nav.signIn": "Sign in",
-  "nav.signUp": "Sign up",
-  "nav.overview": "Overview",
-  "nav.channels": "Channels",
-  "nav.recordings": "Recordings",
-  "nav.usage": "Usage & Billing",
-  "nav.notifications": "Notifications",
-  "nav.settings": "Settings",
-  "nav.help": "Help",
-  "nav.openMenu": "Open menu",
-  "nav.closeMenu": "Close menu",
-  "nav.toggleTheme": "Change theme",
-  "nav.plan": "plan",
-  "cta.startRecording": "Start recording free",
-  "cta.seeHow": "See how it works",
-  "cta.visitPartner": "Visit partner channel",
-  "hero.badge": "Automatic cloud recording",
-  "hero.title": "Automatic TikTok livestream recording in the cloud.",
-  "hero.body": "Add a channel once. SaveStream monitors it continuously and automatically records every livestream — even when your computer is offline.",
-  "hero.noCard": "No credit card required.",
-  "preview.overview": "Overview",
-  "preview.workspace": "Your recording workspace",
-  "preview.addChannel": "Add channel",
-  "preview.recordingHours": "Recording hours",
-  "preview.activeChannels": "Active channels",
-  "preview.stored": "Stored",
-  "preview.used": "25% used",
-  "preview.monitoring": "3 monitoring",
-  "preview.recordings": "4 recordings",
-  "preview.activeRecording": "ACTIVE RECORDING",
-  "preview.written": "3.8 GB written",
-  "how.eyebrow": "How it works",
-  "how.title": "Set it once. We handle the rest.",
-  "how.add.title": "Add a channel",
-  "how.add.body": "Paste a TikTok username or profile URL.",
-  "how.monitor.title": "We monitor it",
-  "how.monitor.body": "Cloud workers check the channel continuously.",
-  "how.record.title": "Recording starts",
-  "how.record.body": "Recording begins automatically when the channel goes live.",
-  "how.watch.title": "Watch later",
-  "how.watch.body": "The completed video appears in your library.",
-  "features.eyebrow": "Cloud by design",
-  "features.title": "Close your laptop. Recording continues.",
-  "features.body": "Monitoring and recording run on our servers, not in your browser.",
-  "features.liveDetection": "Automatic live detection",
-  "features.cloudRecording": "Cloud recording",
-  "features.multiChannel": "Multiple monitored channels",
-  "features.library": "Recording library",
-  "features.playback": "Browser playback",
-  "features.downloads": "Fast downloads",
-  "features.usage": "Usage tracking",
-  "features.retention": "Retention cleanup",
-  "platforms.eyebrow": "Supported Platforms",
-  "platforms.title": "TikTok Live first. Douyin is planned next.",
-  "platforms.body": "The MVP focuses on a reliable TikTok recording workflow before expanding the same cloud automation model to Douyin.",
-  "platforms.available": "Available",
-  "platforms.planned": "Planned",
-  "platforms.tiktok.body": "Automatic monitoring, server-side recording, processing, playback and download are the core SaveStream MVP workflow.",
-  "platforms.douyin.body": "Douyin support is planned after the TikTok MVP, worker reliability and recording lifecycle are stable.",
-  "examples.eyebrow": "Recording Examples",
-  "examples.title": "See what a completed cloud recording looks like.",
-  "partner.eyebrow": "Partner Recording Archive",
-  "partner.title": "Explore a large archive of recorded livestream videos.",
-  "partner.body": "Visit our partner's YouTube archive to see long-form recorded livestream content and the review workflow SaveStream is being built to support.",
-  "partner.long": "Long livestream",
-  "partner.creator": "Creator archive",
-  "partner.review": "Review footage",
-  "partner.library": "Recorded library",
-  "faq.title": "Frequently asked questions",
-  "faq.computer.q": "Do I need to keep my computer on?",
-  "faq.computer.a": "No. Monitoring and recording run on our cloud servers. You can close your browser or turn off your computer.",
-  "faq.channels.q": "Which channels can I add?",
-  "faq.channels.a": "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.",
-  "faq.retention.q": "How long are recordings kept?",
-  "faq.retention.a": "Recordings are kept for your plan’s retention period — 3 days on Free and 30 days on Pro — then deleted automatically.",
-  "faq.quota.q": "What happens if I reach my quota?",
-  "faq.quota.a": "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.",
-  "bottom.title": "Ready to stop missing livestreams?",
-  "bottom.body": "Add your channels and let SaveStream record automatically in the cloud.",
-  "footer.help": "Help",
-  "footer.terms": "Terms",
-  "footer.privacy": "Privacy",
-  "footer.acceptable": "Acceptable Use",
-  "auth.backHome": "Back to SaveStream",
-  "auth.welcomeBack": "Welcome back",
-  "auth.createAccountTitle": "Create your account",
-  "auth.resetTitle": "Reset your password",
-  "auth.newPasswordTitle": "Choose a new password",
-  "auth.signInBody": "Sign in to continue to your SaveStream workspace.",
-  "auth.signUpBody": "Create an account and start monitoring your first TikTok channel.",
-  "auth.recoveryBody": "We'll help you recover access to your account.",
-  "auth.newUser": "New to SaveStream?",
-  "auth.haveAccount": "Already have an account?",
-  "auth.continueGoogle": "Continue with Google",
-  "auth.continueApple": "Continue with Apple",
-  "auth.continueGitHub": "Continue with GitHub",
-  "auth.continueEmail": "or continue with email",
-  "auth.fullName": "Full name",
-  "auth.email": "Email",
-  "auth.password": "Password",
-  "auth.newPassword": "New password",
-  "auth.remember": "Remember me",
-  "auth.forgot": "Forgot password?",
-  "auth.createAccount": "Create account",
-  "auth.sendReset": "Send reset link",
-  "auth.resetPassword": "Reset password",
-  "auth.signingIn": "Signing in…",
-  "auth.creating": "Creating account…",
-  "auth.sending": "Sending reset link…",
-  "auth.resetting": "Resetting password…",
-  "auth.required": "Please complete all required fields.",
-  "auth.invalidEmail": "Enter a valid email address.",
-  "auth.passwordShort": "Use at least 8 characters for your password.",
-  "auth.genericError": "We couldn't continue. Check the form and try again.",
-  "auth.termsPrefix": "By creating an account, you agree to the",
-  "auth.terms": "Terms of Service",
-  "auth.and": "and",
-  "auth.privacy": "Privacy Policy",
-  "auth.passwordStrength": "Password strength",
-  "auth.strengthWeak": "Weak",
-  "auth.strengthGood": "Good",
-  "auth.strengthStrong": "Strong",
-  "auth.ruleLength": "At least 8 characters",
-  "auth.ruleNumber": "At least one number",
-  "auth.ruleUppercase": "At least one uppercase letter",
-  "auth.showPassword": "Show password",
-  "auth.hidePassword": "Hide password",
-  "auth.hero": "We monitor. We record. You can close the browser.",
-  "auth.recordingNow": "Recording now",
-  "auth.recordingContinues": "Recording continues on our servers.",
-  "status.Recording": "Recording",
-  "status.Processing": "Processing",
-  "status.Ready": "Ready",
-  "status.Waiting": "Waiting",
-  "status.Offline": "Offline",
-  "status.Paused": "Paused",
-  "status.Error": "Error",
-} as const;
-
-type MessageKey = keyof typeof en;
-
-const vi: Record<MessageKey, string> = {
-  "preferences.language": "Ngôn ngữ",
-  "preferences.theme": "Giao diện",
-  "preferences.english": "Tiếng Anh",
-  "preferences.vietnamese": "Tiếng Việt",
-  "theme.system": "Theo hệ thống",
-  "theme.light": "Sáng",
-  "theme.dark": "Tối",
-  "nav.features": "Tính năng",
-  "nav.how": "Cách hoạt động",
-  "nav.platforms": "Nền tảng",
-  "nav.examples": "Video mẫu",
-  "nav.pricing": "Bảng giá",
-  "nav.signIn": "Đăng nhập",
-  "nav.signUp": "Đăng ký",
-  "nav.overview": "Tổng quan",
-  "nav.channels": "Kênh",
-  "nav.recordings": "Bản ghi",
-  "nav.usage": "Sử dụng & thanh toán",
-  "nav.notifications": "Thông báo",
-  "nav.settings": "Cài đặt",
-  "nav.help": "Trợ giúp",
-  "nav.openMenu": "Mở menu",
-  "nav.closeMenu": "Đóng menu",
-  "nav.toggleTheme": "Đổi giao diện",
-  "nav.plan": "gói",
-  "cta.startRecording": "Bắt đầu ghi miễn phí",
-  "cta.seeHow": "Xem cách hoạt động",
-  "cta.visitPartner": "Xem kênh đối tác",
-  "hero.badge": "Tự động ghi trên cloud",
-  "hero.title": "Tự động ghi livestream TikTok trên cloud.",
-  "hero.body": "Chỉ cần thêm kênh một lần. SaveStream liên tục theo dõi và tự động ghi mọi livestream — kể cả khi máy tính của bạn đang tắt.",
-  "hero.noCard": "Không cần thẻ thanh toán.",
-  "preview.overview": "Tổng quan",
-  "preview.workspace": "Không gian ghi livestream của bạn",
-  "preview.addChannel": "Thêm kênh",
-  "preview.recordingHours": "Giờ đã ghi",
-  "preview.activeChannels": "Kênh đang hoạt động",
-  "preview.stored": "Đã lưu",
-  "preview.used": "Đã dùng 25%",
-  "preview.monitoring": "Đang theo dõi 3 kênh",
-  "preview.recordings": "4 bản ghi",
-  "preview.activeRecording": "ĐANG GHI",
-  "preview.written": "Đã ghi 3,8 GB",
-  "how.eyebrow": "Cách hoạt động",
-  "how.title": "Thiết lập một lần. Phần còn lại để chúng tôi xử lý.",
-  "how.add.title": "Thêm kênh",
-  "how.add.body": "Dán username hoặc URL hồ sơ TikTok.",
-  "how.monitor.title": "Hệ thống theo dõi",
-  "how.monitor.body": "Worker trên cloud liên tục kiểm tra trạng thái kênh.",
-  "how.record.title": "Tự động bắt đầu ghi",
-  "how.record.body": "Quá trình ghi bắt đầu ngay khi kênh livestream.",
-  "how.watch.title": "Xem lại sau",
-  "how.watch.body": "Video hoàn tất sẽ xuất hiện trong thư viện của bạn.",
-  "features.eyebrow": "Thiết kế dành cho cloud",
-  "features.title": "Đóng máy tính. Recording vẫn tiếp tục.",
-  "features.body": "Monitoring và recording chạy trên server, không phụ thuộc trình duyệt của bạn.",
-  "features.liveDetection": "Tự động phát hiện livestream",
-  "features.cloudRecording": "Ghi hoàn toàn trên cloud",
-  "features.multiChannel": "Theo dõi nhiều kênh",
-  "features.library": "Thư viện bản ghi",
-  "features.playback": "Phát video trên trình duyệt",
-  "features.downloads": "Tải xuống nhanh",
-  "features.usage": "Theo dõi quota sử dụng",
-  "features.retention": "Tự động dọn theo thời hạn lưu",
-  "platforms.eyebrow": "Nền tảng hỗ trợ",
-  "platforms.title": "TikTok Live trước. Douyin sẽ được bổ sung sau.",
-  "platforms.body": "MVP tập trung hoàn thiện luồng recording TikTok đáng tin cậy trước khi mở rộng mô hình cloud automation sang Douyin.",
-  "platforms.available": "Đang hỗ trợ",
-  "platforms.planned": "Dự kiến",
-  "platforms.tiktok.body": "Tự động theo dõi, ghi trên server, xử lý, phát lại và tải xuống là luồng cốt lõi của SaveStream MVP.",
-  "platforms.douyin.body": "Douyin sẽ được phát triển sau khi TikTok MVP, độ ổn định worker và vòng đời recording đã hoàn thiện.",
-  "examples.eyebrow": "Video ghi mẫu",
-  "examples.title": "Xem thử một bản ghi cloud hoàn chỉnh trông như thế nào.",
-  "partner.eyebrow": "Kho video của đối tác",
-  "partner.title": "Khám phá kho lớn các livestream đã được ghi lại.",
-  "partner.body": "Xem kho YouTube của đối tác để tham khảo nội dung livestream dài và quy trình review mà SaveStream đang được xây dựng để hỗ trợ.",
-  "partner.long": "Livestream dài",
-  "partner.creator": "Kho creator",
-  "partner.review": "Video review",
-  "partner.library": "Thư viện đã ghi",
-  "faq.title": "Câu hỏi thường gặp",
-  "faq.computer.q": "Tôi có cần bật máy tính không?",
-  "faq.computer.a": "Không. Monitoring và recording chạy trên server cloud. Bạn có thể đóng trình duyệt hoặc tắt máy tính.",
-  "faq.channels.q": "Tôi có thể thêm những kênh nào?",
-  "faq.channels.a": "Chỉ thêm các kênh TikTok mà bạn sở hữu, quản lý hoặc có quyền ghi lại. Hỗ trợ Douyin sẽ được bổ sung sau.",
-  "faq.retention.q": "Bản ghi được lưu trong bao lâu?",
-  "faq.retention.a": "Bản ghi được giữ theo thời hạn lưu của gói — 3 ngày với Free và 30 ngày với Pro — sau đó sẽ tự động xóa.",
-  "faq.quota.q": "Điều gì xảy ra khi tôi dùng hết quota?",
-  "faq.quota.a": "Tự động recording sẽ tạm dừng cho đến khi quota được reset hoặc bạn nâng cấp gói. Các bản ghi hiện có vẫn được giữ.",
-  "bottom.title": "Sẵn sàng không bỏ lỡ livestream nào nữa?",
-  "bottom.body": "Thêm kênh và để SaveStream tự động ghi trên cloud.",
-  "footer.help": "Trợ giúp",
-  "footer.terms": "Điều khoản",
-  "footer.privacy": "Quyền riêng tư",
-  "footer.acceptable": "Chính sách sử dụng",
-  "auth.backHome": "Quay lại SaveStream",
-  "auth.welcomeBack": "Chào mừng trở lại",
-  "auth.createAccountTitle": "Tạo tài khoản",
-  "auth.resetTitle": "Đặt lại mật khẩu",
-  "auth.newPasswordTitle": "Chọn mật khẩu mới",
-  "auth.signInBody": "Đăng nhập để tiếp tục vào không gian SaveStream của bạn.",
-  "auth.signUpBody": "Tạo tài khoản và bắt đầu theo dõi kênh TikTok đầu tiên.",
-  "auth.recoveryBody": "Chúng tôi sẽ giúp bạn lấy lại quyền truy cập tài khoản.",
-  "auth.newUser": "Bạn chưa có tài khoản?",
-  "auth.haveAccount": "Bạn đã có tài khoản?",
-  "auth.continueGoogle": "Tiếp tục với Google",
-  "auth.continueApple": "Tiếp tục với Apple",
-  "auth.continueGitHub": "Tiếp tục với GitHub",
-  "auth.continueEmail": "hoặc tiếp tục bằng email",
-  "auth.fullName": "Họ và tên",
-  "auth.email": "Email",
-  "auth.password": "Mật khẩu",
-  "auth.newPassword": "Mật khẩu mới",
-  "auth.remember": "Ghi nhớ đăng nhập",
-  "auth.forgot": "Quên mật khẩu?",
-  "auth.createAccount": "Tạo tài khoản",
-  "auth.sendReset": "Gửi liên kết đặt lại",
-  "auth.resetPassword": "Đặt lại mật khẩu",
-  "auth.signingIn": "Đang đăng nhập…",
-  "auth.creating": "Đang tạo tài khoản…",
-  "auth.sending": "Đang gửi liên kết…",
-  "auth.resetting": "Đang đặt lại mật khẩu…",
-  "auth.required": "Vui lòng điền đầy đủ các trường bắt buộc.",
-  "auth.invalidEmail": "Vui lòng nhập địa chỉ email hợp lệ.",
-  "auth.passwordShort": "Mật khẩu cần có ít nhất 8 ký tự.",
-  "auth.genericError": "Không thể tiếp tục. Hãy kiểm tra thông tin và thử lại.",
-  "auth.termsPrefix": "Khi tạo tài khoản, bạn đồng ý với",
-  "auth.terms": "Điều khoản dịch vụ",
-  "auth.and": "và",
-  "auth.privacy": "Chính sách quyền riêng tư",
-  "auth.passwordStrength": "Độ mạnh mật khẩu",
-  "auth.strengthWeak": "Yếu",
-  "auth.strengthGood": "Tốt",
-  "auth.strengthStrong": "Mạnh",
-  "auth.ruleLength": "Ít nhất 8 ký tự",
-  "auth.ruleNumber": "Có ít nhất một chữ số",
-  "auth.ruleUppercase": "Có ít nhất một chữ in hoa",
-  "auth.showPassword": "Hiện mật khẩu",
-  "auth.hidePassword": "Ẩn mật khẩu",
-  "auth.hero": "Chúng tôi theo dõi. Chúng tôi ghi. Bạn có thể đóng trình duyệt.",
-  "auth.recordingNow": "Đang ghi",
-  "auth.recordingContinues": "Recording vẫn tiếp tục trên server.",
-  "status.Recording": "Đang ghi",
-  "status.Processing": "Đang xử lý",
-  "status.Ready": "Sẵn sàng",
-  "status.Waiting": "Đang chờ",
-  "status.Offline": "Ngoại tuyến",
-  "status.Paused": "Đã tạm dừng",
-  "status.Error": "Lỗi",
+const vi: Record<string, string> = {
+  Features: "Tính năng",
+  "How it works": "Cách hoạt động",
+  Examples: "Bản ghi mẫu",
+  Pricing: "Bảng giá",
+  FAQ: "Hỏi đáp",
+  "Sign in": "Đăng nhập",
+  "Sign up": "Đăng ký",
+  "Create account": "Tạo tài khoản",
+  "Sign out": "Đăng xuất",
+  "Go home": "Về trang chủ",
+  Overview: "Tổng quan",
+  Channels: "Kênh",
+  Recordings: "Bản ghi",
+  "Usage & Billing": "Sử dụng & Thanh toán",
+  Usage: "Mức sử dụng",
+  Billing: "Thanh toán",
+  Workspace: "Không gian làm việc",
+  Notifications: "Thông báo",
+  Settings: "Cài đặt",
+  Help: "Trợ giúp",
+  Admin: "Quản trị",
+  System: "Hệ thống",
+  Workers: "Tiến trình",
+  Jobs: "Tác vụ",
+  Errors: "Lỗi",
+  "Search channels or recordings": "Tìm kênh hoặc bản ghi",
+  "Search channels or recordings…": "Tìm kênh hoặc bản ghi…",
+  Search: "Tìm kiếm",
+  Account: "Tài khoản",
+  "View all notifications": "Xem tất cả thông báo",
+  "Mark all read": "Đánh dấu đã đọc",
+  Light: "Sáng",
+  Dark: "Tối",
+  "System theme": "Hệ thống",
+  Theme: "Giao diện",
+  Language: "Ngôn ngữ",
+  English: "English",
+  "Tiếng Việt": "Tiếng Việt",
+  "Automatic cloud recording": "Tự động ghi hình trên đám mây",
+  "Automatic TikTok livestream recording in the cloud.":
+    "Tự động ghi livestream TikTok trên đám mây.",
+  "Add a channel once. We monitor it 24/7 and automatically record every livestream — even when your computer is offline.":
+    "Chỉ cần thêm kênh một lần. Chúng tôi theo dõi 24/7 và tự động ghi mọi livestream — kể cả khi máy tính của bạn đang tắt.",
+  "Start for free": "Bắt đầu miễn phí",
+  "Start recording free": "Ghi hình miễn phí",
+  "See how it works": "Xem cách hoạt động",
+  "No credit card required.": "Không cần thẻ thanh toán.",
+  "Set it once. We handle the rest.": "Thiết lập một lần. Chúng tôi lo phần còn lại.",
+  "Add a channel": "Thêm kênh",
+  "We monitor it": "Chúng tôi theo dõi",
+  "Recording starts": "Bắt đầu ghi hình",
+  "Watch later": "Xem lại sau",
+  "Cloud by design": "Được xây dựng cho đám mây",
+  "Close your laptop. Recording continues.": "Đóng máy tính. Việc ghi hình vẫn tiếp tục.",
+  "Monitoring and recording run on our servers, not in your browser.":
+    "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn.",
+  "Automatic live detection": "Tự động phát hiện livestream",
+  "Cloud recording": "Ghi hình đám mây",
+  "Multiple monitored channels": "Theo dõi nhiều kênh",
+  "Recording library": "Thư viện bản ghi",
+  "Browser playback": "Phát trong trình duyệt",
+  "Fast downloads": "Tải xuống nhanh",
+  "Usage tracking": "Theo dõi mức sử dụng",
+  "Retention cleanup": "Tự động dọn theo thời hạn",
+  "Completed recordings": "Bản ghi đã hoàn tất",
+  "Recording Examples": "Bản ghi mẫu",
+  "See what a completed cloud recording looks like. These samples use prototype data.":
+    "Xem một bản ghi đám mây hoàn chỉnh trông như thế nào. Các mẫu này sử dụng dữ liệu mô phỏng.",
+  "Start recording your own livestreams": "Bắt đầu ghi livestream của bạn",
+  "Demo preview": "Bản xem thử",
+  SAMPLE: "BẢN MẪU",
+  "Simple plans, clear limits.": "Gói đơn giản, giới hạn rõ ràng.",
+  "Frequently asked questions": "Câu hỏi thường gặp",
+  Product: "Sản phẩm",
+  Legal: "Pháp lý",
+  Status: "Trạng thái",
+  Privacy: "Quyền riêng tư",
+  Terms: "Điều khoản",
+  "Acceptable use": "Sử dụng chấp nhận được",
+  "Welcome back": "Chào mừng bạn trở lại",
+  "Sign in to manage your recordings.": "Đăng nhập để quản lý các bản ghi.",
+  "Create your account": "Tạo tài khoản",
+  "Start monitoring your first TikTok channel.": "Bắt đầu theo dõi kênh TikTok đầu tiên.",
+  "Reset your password": "Đặt lại mật khẩu",
+  "Choose a new password": "Chọn mật khẩu mới",
+  Email: "Email",
+  Password: "Mật khẩu",
+  "Full name": "Họ và tên",
+  "Forgot password?": "Quên mật khẩu?",
+  "Continue with Google": "Tiếp tục với Google",
+  "or continue with email": "hoặc tiếp tục bằng email",
+  "Back to sign in": "Quay lại đăng nhập",
+  "Check your email": "Kiểm tra email",
+  "Password updated": "Đã cập nhật mật khẩu",
+  "Let’s record your first livestream.": "Hãy ghi livestream đầu tiên của bạn.",
+  "Add my first channel": "Thêm kênh đầu tiên",
+  "Coming soon": "Sắp ra mắt",
+  Available: "Khả dụng",
+  "Resolving creator…": "Đang tìm nhà sáng tạo…",
+  "Add & start monitoring": "Thêm & bắt đầu theo dõi",
+  "Monitoring on": "Đang theo dõi",
+  "Go to dashboard": "Đi tới bảng điều khiển",
+  "Add channel": "Thêm kênh",
+  "Active channels": "Kênh đang hoạt động",
+  "Stored recordings": "Bản ghi đã lưu",
+  "Recording hours": "Giờ ghi hình",
+  "Download usage": "Lưu lượng tải xuống",
+  "Channel monitoring": "Theo dõi kênh",
+  "Recent recordings": "Bản ghi gần đây",
+  "View all": "Xem tất cả",
+  "View library": "Xem thư viện",
+  Creator: "Nhà sáng tạo",
+  Platform: "Nền tảng",
+  Monitoring: "Theo dõi",
+  "Last checked": "Kiểm tra gần nhất",
+  All: "Tất cả",
+  Recording: "Đang ghi",
+  Processing: "Đang xử lý",
+  Ready: "Sẵn sàng",
+  Waiting: "Đang chờ",
+  Offline: "Ngoại tuyến",
+  Paused: "Tạm dừng",
+  Error: "Lỗi",
+  New: "Mới",
+  "No channels found": "Không tìm thấy kênh",
+  View: "Xem",
+  "View channel": "Xem kênh",
+  "Pause monitoring": "Tạm dừng theo dõi",
+  "Resume monitoring": "Tiếp tục theo dõi",
+  "Remove channel": "Xóa kênh",
+  Cancel: "Hủy",
+  "Try again": "Thử lại",
+  "Upgrade plan": "Nâng cấp gói",
+  "Watch and download your completed livestream recordings.":
+    "Xem và tải xuống các bản ghi livestream đã hoàn tất.",
+  "Search recordings": "Tìm bản ghi",
+  "All streamers": "Tất cả kênh",
+  "All statuses": "Tất cả trạng thái",
+  "All time": "Mọi thời điểm",
+  "Newest first": "Mới nhất trước",
+  "Oldest first": "Cũ nhất trước",
+  "List view": "Dạng danh sách",
+  "Grid view": "Dạng lưới",
+  Duration: "Thời lượng",
+  Size: "Dung lượng",
+  Expires: "Hết hạn",
+  Download: "Tải xuống",
+  Delete: "Xóa",
+  "Download video": "Tải video",
+  "Delete recording": "Xóa bản ghi",
+  "No recordings yet": "Chưa có bản ghi",
+  "Finalizing your recording": "Đang hoàn thiện bản ghi",
+  "Current plan": "Gói hiện tại",
+  "Current subscription": "Gói đăng ký hiện tại",
+  "Manage plan": "Quản lý gói",
+  "Manage subscription": "Quản lý đăng ký",
+  "Upgrade to Pro": "Nâng cấp lên Pro",
+  Monthly: "Hàng tháng",
+  Yearly: "Hàng năm",
+  "Save 20%": "Tiết kiệm 20%",
+  "Payment method": "Phương thức thanh toán",
+  "Billing history": "Lịch sử thanh toán",
+  "No invoices yet.": "Chưa có hóa đơn.",
+  Active: "Đang hoạt động",
+  "Payment failed": "Thanh toán thất bại",
+  "Past due": "Quá hạn",
+  "Manage your account, notifications, and security.": "Quản lý tài khoản, thông báo và bảo mật.",
+  Security: "Bảo mật",
+  Profile: "Hồ sơ",
+  Name: "Tên",
+  "Save changes": "Lưu thay đổi",
+  "Export your data": "Xuất dữ liệu",
+  "Request data export": "Yêu cầu xuất dữ liệu",
+  "Delete account": "Xóa tài khoản",
+  "Email notifications": "Thông báo qua email",
+  "Save preferences": "Lưu tùy chọn",
+  Saved: "Đã lưu",
+  "Change password": "Đổi mật khẩu",
+  "Current password": "Mật khẩu hiện tại",
+  "New password": "Mật khẩu mới",
+  "Confirm new password": "Xác nhận mật khẩu mới",
+  "Update password": "Cập nhật mật khẩu",
+  "Active sessions": "Phiên đang hoạt động",
+  "Sign-in methods": "Phương thức đăng nhập",
+  Connected: "Đã kết nối",
+  "Not connected": "Chưa kết nối",
+  Connect: "Kết nối",
+  "Recording activity, failures, and quota alerts.": "Hoạt động ghi hình, lỗi và cảnh báo hạn mức.",
+  Unread: "Chưa đọc",
+  "Mark all as read": "Đánh dấu tất cả đã đọc",
+  "No unread notifications": "Không có thông báo chưa đọc",
+  "No notifications yet": "Chưa có thông báo",
+  "You’re all caught up.": "Bạn đã xem hết thông báo.",
+  "System status": "Trạng thái hệ thống",
+  "All systems operational": "Tất cả hệ thống hoạt động bình thường",
+  "Some systems are degraded": "Một số hệ thống đang suy giảm",
+  "Recent incidents": "Sự cố gần đây",
+  Operational: "Hoạt động",
+  Degraded: "Suy giảm",
+  Today: "Hôm nay",
+  "Terms of Service": "Điều khoản dịch vụ",
+  "Privacy Policy": "Chính sách quyền riêng tư",
+  "Acceptable Use Policy": "Chính sách sử dụng chấp nhận được",
+  "Last updated September 27, 2026": "Cập nhật lần cuối ngày 27 tháng 9, 2026",
+  "The service": "Dịch vụ",
+  "Your responsibility for content": "Trách nhiệm của bạn với nội dung",
+  "Retention and deletion": "Lưu giữ và xóa",
+  Availability: "Khả dụng",
+  Termination: "Chấm dứt",
+  Contact: "Liên hệ",
+  Allowed: "Được phép",
+  "Not allowed": "Không được phép",
+  Enforcement: "Thực thi",
+  Reporting: "Báo cáo",
+  "Getting started": "Bắt đầu",
+  "How cloud monitoring works": "Cách theo dõi đám mây hoạt động",
+  "Recording lifecycle": "Vòng đời bản ghi",
+  Quotas: "Hạn mức",
+  Retention: "Thời hạn lưu",
+  "Failed recording troubleshooting": "Khắc phục lỗi ghi hình",
+  "Authorized recording policy": "Chính sách ghi hình được phép",
+  "Contact support": "Liên hệ hỗ trợ",
+  "Still need help?": "Vẫn cần trợ giúp?",
+  Subject: "Chủ đề",
+  Message: "Nội dung",
+  "Send message": "Gửi tin nhắn",
+  Online: "Trực tuyến",
+  Idle: "Rảnh",
+  "Service health": "Tình trạng dịch vụ",
+  "Recording jobs": "Tác vụ ghi hình",
+  "Job ID": "Mã tác vụ",
+  Worker: "Tiến trình",
+  Started: "Bắt đầu",
+  Retries: "Số lần thử",
+  Heartbeat: "Nhịp hoạt động",
+  Failed: "Thất bại",
+  Stuck: "Bị kẹt",
+  "Errors & events": "Lỗi & sự kiện",
+  Severity: "Mức độ",
+  Service: "Dịch vụ",
+  State: "Trạng thái",
+  Open: "Đang mở",
+  Resolved: "Đã xử lý",
+  Retrying: "Đang thử lại",
+  Timeline: "Dòng thời gian",
+  "Job context": "Ngữ cảnh tác vụ",
+  "Page not found": "Không tìm thấy trang",
+  "This page didn't load": "Trang này không tải được",
+  Loading: "Đang tải",
+  "No results found": "Không tìm thấy kết quả",
+  "Clear filters": "Xóa bộ lọc",
+  "Clear search": "Xóa tìm kiếm",
+  "More actions": "Thao tác khác",
+  "Do I need to keep my computer on?": "Tôi có cần bật máy tính không?",
+  "Which channels can I add?": "Tôi có thể thêm những kênh nào?",
+  "How long are recordings kept?": "Bản ghi được lưu trong bao lâu?",
+  "What happens if I reach my quota?": "Điều gì xảy ra khi tôi đạt hạn mức?",
+  "Plans that scale with your livestreams.": "Các gói linh hoạt theo livestream của bạn.",
+  "Start free. Upgrade when you need more recording time.":
+    "Bắt đầu miễn phí. Nâng cấp khi bạn cần thêm thời gian ghi hình.",
+  "Start with Pro": "Bắt đầu với Pro",
+  "Yearly billing saves 20%. Cancel anytime from Billing.":
+    "Thanh toán hàng năm tiết kiệm 20%. Có thể hủy bất cứ lúc nào trong mục Thanh toán.",
+  "Channel details": "Chi tiết kênh",
+  "Channel not found": "Không tìm thấy kênh",
+  "Recording details": "Chi tiết bản ghi",
+  "Active recording": "Bản ghi đang chạy",
+  "Failed recording": "Bản ghi thất bại",
+  "Processing recording": "Đang xử lý bản ghi",
+  "Recording not found": "Không tìm thấy bản ghi",
+  "Current period": "Kỳ hiện tại",
+  "Concurrent limit": "Giới hạn đồng thời",
+  "Download bandwidth": "Băng thông tải xuống",
+  "Plan limits": "Giới hạn gói",
+  "Daily recording hours": "Giờ ghi hình hằng ngày",
+  "Usage by recording": "Mức sử dụng theo bản ghi",
+  "Monitored channels": "Kênh đang theo dõi",
+  "Manage your plan, payment method, and invoices.":
+    "Quản lý gói, phương thức thanh toán và hóa đơn.",
+  Plans: "Các gói",
+  Free: "Miễn phí",
+  "Choose plan": "Chọn gói",
+  "Downgrade to Free": "Hạ xuống gói Free",
+  "Cancel subscription": "Hủy đăng ký",
+  "Update payment method": "Cập nhật thanh toán",
+  "Pay now": "Thanh toán ngay",
+  "Resume subscription": "Tiếp tục đăng ký",
+  "Verification email sent": "Đã gửi email xác minh",
+  "Resend verification email": "Gửi lại email xác minh",
+  "Change email": "Đổi email",
+  "Email verified": "Email đã được xác minh",
+  "Continue to setup": "Tiếp tục thiết lập",
+  "Request a new link": "Yêu cầu liên kết mới",
+  "This link has expired": "Liên kết đã hết hạn",
+  "This link isn’t valid": "Liên kết không hợp lệ",
+  "We couldn’t verify your email": "Không thể xác minh email của bạn",
+  "Recording started": "Đã bắt đầu ghi",
+  "Recording ready": "Bản ghi đã sẵn sàng",
+  "Recording failed": "Ghi hình thất bại",
+  "Quota warning": "Cảnh báo hạn mức",
+  "Recording completed": "Ghi hình hoàn tất",
+  "Retention / expiration warning": "Cảnh báo lưu giữ / hết hạn",
+  "Draft — for legal review before launch": "Bản nháp — cần pháp lý duyệt trước khi ra mắt",
+  "Authorized recording only": "Chỉ ghi hình khi được phép",
+  "Information we collect": "Thông tin chúng tôi thu thập",
+  "How we use it": "Cách chúng tôi sử dụng",
+  "Your choices": "Lựa chọn của bạn",
+  "Service providers": "Nhà cung cấp dịch vụ",
+  "Your responsibility": "Trách nhiệm của bạn",
+  "Plans, quotas, and billing": "Gói, hạn mức và thanh toán",
+  "Live operational health across recording infrastructure.":
+    "Tình trạng vận hành trực tiếp của hạ tầng ghi hình.",
+  "Active workers": "Tiến trình hoạt động",
+  "Active recordings": "Bản ghi đang chạy",
+  "Queue depth": "Độ dài hàng đợi",
+  "Failed jobs · 24h": "Tác vụ lỗi · 24 giờ",
+  "Storage used": "Dung lượng đã dùng",
+  "API errors · 1h": "Lỗi API · 1 giờ",
+  "Updated just now": "Vừa cập nhật",
+  "Recorder and processor worker health.": "Tình trạng các tiến trình ghi và xử lý.",
+  "Current job": "Tác vụ hiện tại",
+  Memory: "Bộ nhớ",
+  Version: "Phiên bản",
+  "Drain worker": "Ngừng nhận tác vụ",
+  "View details & logs": "Xem chi tiết & nhật ký",
+  Inspect: "Kiểm tra",
+  "Retry job": "Thử lại tác vụ",
+  "Mark as failed": "Đánh dấu thất bại",
+  "System events across monitoring, workers, processing, and storage.":
+    "Sự kiện hệ thống trong theo dõi, tiến trình, xử lý và lưu trữ.",
+  "All severities": "Mọi mức độ",
+  "All states": "Mọi trạng thái",
+  "No events match": "Không có sự kiện phù hợp",
+  "Details / stack (placeholder)": "Chi tiết / ngăn xếp (mẫu)",
 };
 
-const messages: Record<Locale, Record<MessageKey, string>> = { en, vi };
-
-interface PreferencesContextValue {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
+type Preferences = {
+  language: Language;
+  setLanguage: (language: Language) => void;
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
-  resolvedTheme: "light" | "dark";
-  t: (key: MessageKey) => string;
+  t: (text: string) => string;
+};
+const Context = createContext<Preferences | null>(null);
+const originalText = new WeakMap<Node, string>();
+
+function translate(text: string, language: Language) {
+  if (language === "en") return text;
+  const exact = vi[text];
+  if (exact) return exact;
+  return text
+    .replace(/\brecordings\b/gi, (match) => (match[0] === "R" ? "Bản ghi" : "bản ghi"))
+    .replace(/\bchannels\b/gi, (match) => (match[0] === "C" ? "Kênh" : "kênh"))
+    .replace(/\bminutes\b/gi, "phút")
+    .replace(/\bhours\b/gi, "giờ")
+    .replace(/\bdays\b/gi, "ngày")
+    .replace(/\bago\b/gi, "trước");
 }
 
-const PreferencesContext = createContext<PreferencesContextValue | null>(null);
-
-function initialLocale(): Locale {
-  if (typeof window === "undefined") return "en";
-  const stored = window.localStorage.getItem("savestream.locale");
-  if (stored === "en" || stored === "vi") return stored;
-  return window.navigator.language.toLowerCase().startsWith("vi") ? "vi" : "en";
-}
-
-function initialTheme(): ThemePreference {
-  if (typeof window === "undefined") return "system";
-  const stored = window.localStorage.getItem("savestream.theme");
-  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+function applyTheme(theme: ThemePreference) {
+  const dark =
+    theme === "dark" ||
+    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.dataset["theme"] = theme;
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(initialLocale);
-  const [theme, setTheme] = useState<ThemePreference>(initialTheme);
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
-
+  const [language, setLanguageState] = useState<Language>("en");
+  const [theme, setThemeState] = useState<ThemePreference>("system");
   useEffect(() => {
-    document.documentElement.lang = locale === "vi" ? "vi" : "en";
-    window.localStorage.setItem("savestream.locale", locale);
-  }, [locale]);
-
+    const savedLanguage = localStorage.getItem("savestream-language");
+    const nextLanguage: Language =
+      savedLanguage === "vi" || savedLanguage === "en"
+        ? savedLanguage
+        : navigator.language.toLowerCase().startsWith("vi")
+          ? "vi"
+          : "en";
+    const savedTheme = localStorage.getItem("savestream-theme");
+    const nextTheme: ThemePreference =
+      savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
+        ? savedTheme
+        : "system";
+    setLanguageState(nextLanguage);
+    setThemeState(nextTheme);
+    applyTheme(nextTheme);
+  }, []);
   useEffect(() => {
+    applyTheme(theme);
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const applyTheme = () => {
-      const next = theme === "system" ? (media.matches ? "dark" : "light") : theme;
-      setResolvedTheme(next);
-      document.documentElement.classList.toggle("dark", next === "dark");
-      document.documentElement.style.colorScheme = next;
-    };
-
-    applyTheme();
-    window.localStorage.setItem("savestream.theme", theme);
-    media.addEventListener("change", applyTheme);
-    return () => media.removeEventListener("change", applyTheme);
+    const update = () => theme === "system" && applyTheme("system");
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, [theme]);
-
-  const value = useMemo<PreferencesContextValue>(
+  useEffect(() => {
+    document.documentElement.lang = language;
+    const localize = (root: Node) => {
+      const nodes: Node[] = [];
+      if (root.nodeType === Node.TEXT_NODE) nodes.push(root);
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        const parent = node.parentElement;
+        if (!parent || ["SCRIPT", "STYLE", "CODE", "PRE"].includes(parent.tagName)) continue;
+        const original = originalText.get(node) ?? node.textContent ?? "";
+        originalText.set(node, original);
+        const trimmed = original.trim();
+        if (!trimmed) continue;
+        const translated = translate(trimmed, language);
+        node.textContent = original.replace(trimmed, translated);
+      }
+      const elements: HTMLElement[] =
+        root instanceof HTMLElement
+          ? [root, ...root.querySelectorAll<HTMLElement>("[placeholder],[aria-label],[title]")]
+          : [];
+      for (const element of elements)
+        for (const attr of ["placeholder", "aria-label", "title"]) {
+          const value = element.getAttribute(attr);
+          if (!value) continue;
+          const key = `i18n${attr.replace(/(^|-)(\w)/g, (_, _dash, char) => char.toUpperCase())}`;
+          const original = element.dataset[key] ?? value;
+          element.dataset[key] = original;
+          element.setAttribute(attr, translate(original, language));
+        }
+    };
+    localize(document.body);
+    const observer = new MutationObserver((records) => {
+      observer.disconnect();
+      records.forEach((record) => record.addedNodes.forEach(localize));
+      localize(document.body);
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [language]);
+  const value = useMemo<Preferences>(
     () => ({
-      locale,
-      setLocale,
+      language,
+      setLanguage: (next) => {
+        localStorage.setItem("savestream-language", next);
+        setLanguageState(next);
+      },
       theme,
-      setTheme,
-      resolvedTheme,
-      t: (key) => messages[locale][key],
+      setTheme: (next) => {
+        localStorage.setItem("savestream-theme", next);
+        setThemeState(next);
+      },
+      t: (text) => translate(text, language),
     }),
-    [locale, theme, resolvedTheme],
+    [language, theme],
   );
-
-  return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 
 export function usePreferences() {
-  const value = useContext(PreferencesContext);
+  const value = useContext(Context);
   if (!value) throw new Error("usePreferences must be used inside PreferencesProvider");
   return value;
 }
 
-export type { MessageKey };
+export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;

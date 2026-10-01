@@ -1,0 +1,2612 @@
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpDown,
+  RotateCcw,
+  ExternalLink,
+  Bell,
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Cloud,
+  CreditCard,
+  Download,
+  FileVideo,
+  Filter,
+  Gauge,
+  Grid2X2,
+  HardDrive,
+  KeyRound,
+  List,
+  LockKeyhole,
+  Mail,
+  Menu,
+  Monitor,
+  MoreHorizontal,
+  Pause,
+  Play,
+  Plus,
+  Radio,
+  Search,
+  Server,
+  Settings,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+  Upload,
+  UserRound,
+  Users,
+  Video,
+  Wifi,
+  XCircle,
+  Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  activeRecording,
+  channels,
+  dailyRecordingHours,
+  invoices,
+  plans,
+  recordings,
+  subscription,
+  usage,
+  user,
+  type Channel,
+  type ChannelStatus,
+} from "@/lib/mock-data";
+import {
+  ActiveRecordingCard,
+  AddChannelDialog,
+  AdminHealthBadge,
+  AppShell,
+  ChannelCard,
+  ChannelRow,
+  ConfirmDeleteDialog,
+  ConfirmDialog,
+  CreatorAvatar,
+  EmptyState,
+  ErrorState,
+  FilterBar,
+  LanguageMenu,
+  Logo,
+  PageHeader,
+  PasswordField,
+  PlanCard,
+  PlatformBadge,
+  PrototypeStateBar,
+  RecordingCard,
+  RecordingRow,
+  SearchInput,
+  StatCard,
+  StateBanner,
+  StatusBadge,
+  SuccessState,
+  ThemeMenu,
+  UpgradeDialog,
+  UsageProgress,
+  VideoPlayerShell,
+} from "@/components/app-components";
+import { cn } from "@/lib/utils";
+import { usePreferences } from "@/lib/preferences";
+import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
+
+export { meta } from "@/components/app-components";
+
+const publicLinks = [
+  { href: "/#features", label: "Features" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#examples", label: "Examples" },
+  { to: "/pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
+] as const;
+export function PublicHeader() {
+  const { t } = usePreferences();
+  return (
+    <header className="fixed inset-x-0 top-0 z-40 border-b bg-background/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
+        <Logo />
+        <nav className="ml-8 hidden items-center gap-5 text-sm text-muted-foreground lg:flex">
+          {publicLinks.map((link) =>
+            "to" in link ? (
+              <Link key={link.label} to={link.to}>
+                {t(link.label)}
+              </Link>
+            ) : (
+              <a key={link.label} href={link.href}>
+                {t(link.label)}
+              </a>
+            ),
+          )}
+        </nav>
+        <div className="ml-auto hidden items-center gap-1 sm:flex">
+          <LanguageMenu />
+          <ThemeMenu />
+          <Button variant="ghost" asChild>
+            <Link to="/sign-in">{t("Sign in")}</Link>
+          </Button>
+          <Button asChild>
+            <Link to="/sign-up">{t("Sign up")}</Link>
+          </Button>
+        </div>
+        <div className="ml-auto flex items-center gap-0.5 sm:hidden">
+          <LanguageMenu />
+          <ThemeMenu />
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open menu">
+                <Menu />
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[min(22rem,90vw)]">
+              <SheetHeader>
+                <SheetTitle>
+                  <Logo />
+                </SheetTitle>
+                <SheetDescription className="sr-only">Public navigation</SheetDescription>
+              </SheetHeader>
+              <nav className="mt-8 flex flex-col gap-1">
+                {publicLinks.map((link) =>
+                  "to" in link ? (
+                    <Button key={link.label} variant="ghost" className="justify-start" asChild>
+                      <Link to={link.to}>{t(link.label)}</Link>
+                    </Button>
+                  ) : (
+                    <Button key={link.label} variant="ghost" className="justify-start" asChild>
+                      <a href={link.href}>{t(link.label)}</a>
+                    </Button>
+                  ),
+                )}
+              </nav>
+              <div className="mt-6 grid gap-2 border-t pt-6">
+                <Button variant="outline" asChild>
+                  <Link to="/sign-in">{t("Sign in")}</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/sign-up">{t("Sign up")}</Link>
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function formatSampleDuration(seconds?: number) {
+  if (!seconds) return "—";
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const remaining = total % 60;
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${remaining}s`;
+}
+
+function RecordingExamples() {
+  const [selected, setSelected] = useState<SampleMediaItem | null>(null);
+
+  return (
+    <section id="examples" className="scroll-mt-16 border-b bg-surface-subtle py-20">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="max-w-xl">
+          <p className="text-sm font-semibold text-primary">Completed recordings</p>
+          <h2 className="mt-2 text-3xl font-semibold">Recording Examples</h2>
+          <p className="mt-3 text-muted-foreground">
+            See what a completed cloud recording looks like. These are preserved SaveStream sample videos.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {sampleMedia.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setSelected(item)}
+              className="group overflow-hidden rounded-lg border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-dashboard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Watch sample recording ${index + 1}`}
+            >
+              <div className="relative aspect-[9/16] overflow-hidden bg-black">
+                <img
+                  src={item.thumbnailUrl}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+                />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5" />
+                <span className="absolute left-3 top-3 rounded-md border border-white/15 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
+                  SAMPLE
+                </span>
+                <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition group-hover:scale-105">
+                  <Play className="ml-0.5 size-4 fill-current" />
+                </span>
+                <span className="absolute bottom-3 right-3 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-white">
+                  {formatSampleDuration(item.durationSeconds)}
+                </span>
+              </div>
+              <div className="p-4">
+                <div className="flex min-w-0 items-center justify-between gap-3">
+                  <p className="truncate text-sm font-semibold">Sample {String(index + 1).padStart(2, "0")}</p>
+                  <StatusBadge status="Ready" />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{item.title}</p>
+                <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
+                  <span className="font-mono">{item.width}×{item.height}</span>
+                  <span className="font-mono">{formatSampleDuration(item.durationSeconds)}</span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-10 text-center">
+          <Button size="lg" asChild>
+            <Link to="/sign-up">
+              Start recording your own livestreams
+              <ArrowRight />
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <Dialog
+        open={Boolean(selected)}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <div className="mb-1 flex items-center gap-2">
+              <span className="rounded-md bg-primary-subtle px-2 py-1 text-[10px] font-semibold uppercase text-primary">
+                Demo preview
+              </span>
+              <StatusBadge status="Ready" />
+            </div>
+            <DialogTitle>{selected?.title}</DialogTitle>
+            <DialogDescription>
+              Preserved sample media from the previous SaveStream frontend.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="overflow-hidden rounded-lg bg-black">
+            {selected && (
+              <video
+                key={selected.id}
+                className="mx-auto max-h-[68vh] w-full object-contain"
+                controls
+                autoPlay
+                playsInline
+                preload="metadata"
+                poster={selected.thumbnailUrl}
+              >
+                <source src={selected.mediaUrl} type="video/mp4" />
+              </video>
+            )}
+          </div>
+
+          <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
+            {[
+              ["Resolution", selected ? `${selected.width}×${selected.height}` : "—"],
+              ["Duration", formatSampleDuration(selected?.durationSeconds)],
+              ["ID", selected?.id ?? "—"],
+            ].map(([label, value]) => (
+              <div key={label} className="bg-surface p-3">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="mt-1 font-mono font-medium">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button asChild>
+              <Link to="/sign-up">Start recording your own</Link>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+export function LandingPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+      <main>
+        <section className="overflow-hidden border-b pb-20 pt-32">
+          <div className="mx-auto max-w-7xl px-4 text-center sm:px-6">
+            <span className="inline-flex items-center gap-2 rounded-full border bg-surface-subtle px-3 py-1 text-xs text-muted-foreground">
+              <Cloud className="size-3 text-primary" />
+              Automatic cloud recording
+            </span>
+            <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
+              Automatic TikTok livestream recording in the cloud.
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+              Add a channel once. We monitor it 24/7 and automatically record every livestream —
+              even when your computer is offline.
+            </p>
+            <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+              <Button size="lg" asChild>
+                <Link to="/sign-up">
+                  Start for free
+                  <ArrowRight />
+                </Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <a href="#how">See how it works</a>
+              </Button>
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">No credit card required.</p>
+            <div className="relative mx-auto mt-16 max-w-6xl overflow-hidden rounded-xl border bg-surface p-2 shadow-dashboard">
+              <div className="flex h-10 items-center gap-2 border-b px-3">
+                <span className="size-2.5 rounded-full bg-border" />
+                <span className="size-2.5 rounded-full bg-border" />
+                <span className="size-2.5 rounded-full bg-border" />
+                <span className="mx-auto rounded border bg-background px-20 py-1 text-[9px] text-muted-foreground">
+                  app.savestream.app/overview
+                </span>
+              </div>
+              <div className="grid text-left md:grid-cols-[180px_1fr]">
+                <div className="hidden border-r p-4 md:block">
+                  <Logo />
+                  <div className="mt-8 space-y-2">
+                    {["Overview", "Channels", "Recordings", "Usage & Billing"].map((x, i) => (
+                      <div
+                        key={x}
+                        className={cn(
+                          "rounded px-3 py-2 text-xs",
+                          i === 0 ? "bg-accent font-medium" : "text-muted-foreground",
+                        )}
+                      >
+                        {x}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-lg font-semibold">Overview</p>
+                      <p className="text-xs text-muted-foreground">Your recording workspace</p>
+                    </div>
+                    <Button size="sm">
+                      <Plus />
+                      Add channel
+                    </Button>
+                  </div>
+                  <div className="mt-5 grid grid-cols-3 border-l border-t">
+                    <StatCard
+                      label="Recording hours"
+                      value="12.6 / 50 h"
+                      detail="25% used"
+                      icon={Clock3}
+                      progress={25}
+                    />
+                    <StatCard
+                      label="Active channels"
+                      value="3 / 5"
+                      detail="3 monitoring"
+                      icon={Radio}
+                    />
+                    <StatCard
+                      label="Stored"
+                      value="18.4 GB"
+                      detail="4 recordings"
+                      icon={HardDrive}
+                    />
+                  </div>
+                  <div className="mt-5">
+                    <ActiveRecordingCard />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="how" className="border-b py-20">
+          <div className="mx-auto max-w-6xl px-4">
+            <p className="text-sm font-semibold text-primary">How it works</p>
+            <h2 className="mt-2 text-3xl font-semibold">Set it once. We handle the rest.</h2>
+            <div className="mt-10 grid gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
+              {[
+                [Plus, "Add a channel", "Enter a TikTok username or profile URL."],
+                [Radio, "We monitor it", "Live status is checked continuously."],
+                [Video, "Recording starts", "Cloud servers record automatically."],
+                [Play, "Watch later", "Play or download when it’s ready."],
+              ].map(([I, t, b], i) => (
+                <div className="bg-background p-6" key={String(t)}>
+                  <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
+                  {I
+                    ? (() => {
+                        const Icon = I;
+                        return <Icon className="mt-8 size-5 text-primary" />;
+                      })()
+                    : null}
+                  <h3 className="mt-4 font-medium">{String(t)}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{String(b)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section id="features" className="border-b py-20">
+          <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-[.8fr_1.2fr]">
+            <div>
+              <p className="text-sm font-semibold text-primary">Cloud by design</p>
+              <h2 className="mt-2 text-3xl font-semibold">
+                Close your laptop. Recording continues.
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Monitoring and recording run on our servers, not in your browser.
+              </p>
+            </div>
+            <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
+              {[
+                "Automatic live detection",
+                "Cloud recording",
+                "Multiple monitored channels",
+                "Recording library",
+                "Browser playback",
+                "Fast downloads",
+                "Usage tracking",
+                "Retention cleanup",
+              ].map((x, i) => (
+                <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
+                  <Check className="size-4 text-success" />
+                  {x}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <RecordingExamples />
+        <section className="py-20">
+          <div className="mx-auto max-w-5xl px-4 text-center">
+            <h2 className="text-3xl font-semibold">Simple plans, clear limits.</h2>
+            <div className="mt-10 grid gap-5 text-left md:grid-cols-2">
+              <PlanCard
+                name="Free"
+                price="Free"
+                features={["10 minutes recording", "1 monitored channel", "3-day retention"]}
+              />
+              <PlanCard
+                name="Pro"
+                price="$9.99"
+                features={[
+                  "50 recording hours",
+                  "2 simultaneous recordings",
+                  "100 GB download",
+                  "30-day retention",
+                ]}
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+      <section id="faq" className="border-t py-20">
+        <div className="mx-auto max-w-3xl px-4">
+          <h2 className="text-3xl font-semibold">Frequently asked questions</h2>
+          <dl className="mt-8 divide-y border-y">
+            {[
+              [
+                "Do I need to keep my computer on?",
+                "No. Monitoring and recording run on our cloud servers. You can close your browser or turn off your computer.",
+              ],
+              [
+                "Which channels can I add?",
+                "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.",
+              ],
+              [
+                "How long are recordings kept?",
+                "Recordings are kept for your plan’s retention period — 3 days on Free, 30 days on Pro — then deleted automatically.",
+              ],
+              [
+                "What happens if I reach my quota?",
+                "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.",
+              ],
+            ].map(([q, a]) => (
+              <div key={q} className="py-5">
+                <dt className="font-medium">{q}</dt>
+                <dd className="mt-2 text-sm leading-6 text-muted-foreground">{a}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+      <PublicFooter />
+    </div>
+  );
+}
+
+export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "reset" }) {
+  const navigate = useNavigate();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const copy = {
+    "sign-in": ["Welcome back", "Sign in to manage your recordings.", "Sign in"],
+    "sign-up": [
+      "Create your account",
+      "Start monitoring your first TikTok channel.",
+      "Create account",
+    ],
+    forgot: [
+      "Reset your password",
+      "Enter your email and we’ll send you a reset link.",
+      "Send reset link",
+    ],
+    reset: ["Choose a new password", "Use at least 8 characters.", "Reset password"],
+  }[mode];
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    setErr(null);
+    if (mode !== "reset" && !/^\S+@\S+\.\S+$/.test(email)) {
+      setErr("Enter a valid email address.");
+      return;
+    }
+    if (mode === "sign-in" && !pw) {
+      setErr("Enter your password.");
+      return;
+    }
+    if ((mode === "sign-up" || mode === "reset") && pw.length < 8) {
+      setErr("Password must be at least 8 characters.");
+      return;
+    }
+    if (mode === "reset" && pw !== pw2) {
+      setErr("Passwords don’t match.");
+      return;
+    }
+    setBusy(true);
+    setTimeout(() => {
+      setBusy(false);
+      if (mode === "sign-in") navigate({ to: "/overview" });
+      else if (mode === "sign-up") navigate({ to: "/verify-email" });
+      else setDone(true);
+    }, 700);
+  };
+  if (done && mode === "forgot")
+    return (
+      <AuthLayout>
+        <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
+          <Mail className="size-5" />
+        </span>
+        <h1 className="mt-6 text-2xl font-semibold">Check your email</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          If an account exists for <b className="font-medium text-foreground">{email}</b>, we sent a
+          password reset link. It expires in 60 minutes.
+        </p>
+        <div className="mt-8 space-y-2">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => toast.success("Reset link sent again")}
+          >
+            Resend link
+          </Button>
+          <Button variant="ghost" className="w-full" asChild>
+            <Link to="/sign-in">Back to sign in</Link>
+          </Button>
+        </div>
+        <p className="mt-6 text-xs text-muted-foreground">
+          Prototype:{" "}
+          <Link to="/reset-password" className="text-primary underline underline-offset-4">
+            open the reset link
+          </Link>
+        </p>
+      </AuthLayout>
+    );
+  if (done && mode === "reset")
+    return (
+      <AuthLayout>
+        <SuccessState
+          title="Password updated"
+          body="Your password has been changed. Other sessions were signed out for your security."
+          action={
+            <Button asChild className="w-full">
+              <Link to="/sign-in">Back to sign in</Link>
+            </Button>
+          }
+        />
+      </AuthLayout>
+    );
+  return (
+    <AuthLayout>
+      <h1 className="text-2xl font-semibold">{copy[0]}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{copy[1]}</p>
+      {(mode === "sign-in" || mode === "sign-up") && (
+        <>
+          <Button
+            variant="outline"
+            className="mt-8 w-full"
+            onClick={() => toast("Google sign-in isn’t connected in this prototype.")}
+          >
+            <span className="font-bold">G</span>Continue with Google
+          </Button>
+          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or continue with email
+            <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
+      <form
+        className={cn("space-y-4", (mode === "forgot" || mode === "reset") && "mt-8")}
+        onSubmit={submit}
+        noValidate
+      >
+        {mode === "sign-up" && (
+          <Field
+            label="Full name"
+            placeholder="Alex Nguyen"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+          />
+        )}
+        {mode !== "reset" && (
+          <Field
+            label="Email"
+            placeholder="you@company.com"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+          />
+        )}
+        {mode === "sign-in" && (
+          <Field
+            label="Password"
+            placeholder="••••••••"
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            autoComplete="current-password"
+          />
+        )}
+        {(mode === "sign-up" || mode === "reset") && (
+          <PasswordField
+            id="pw"
+            label={mode === "reset" ? "New password" : "Password"}
+            value={pw}
+            onChange={setPw}
+            showStrength
+          />
+        )}
+        {mode === "reset" && (
+          <PasswordField id="pw2" label="Confirm password" value={pw2} onChange={setPw2} />
+        )}
+        {mode === "sign-in" && (
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs font-medium text-primary">
+              Forgot password?
+            </Link>
+          </div>
+        )}
+        {err && (
+          <p role="alert" className="text-sm text-destructive">
+            {err}
+          </p>
+        )}
+        <Button className="w-full" type="submit" disabled={busy}>
+          {busy && (
+            <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          )}
+          {copy[2]}
+        </Button>
+        {mode === "sign-up" && (
+          <p className="text-xs leading-5 text-muted-foreground">
+            By creating an account you agree to the{" "}
+            <Link to="/terms" className="underline underline-offset-4">
+              Terms
+            </Link>
+            ,{" "}
+            <Link to="/privacy" className="underline underline-offset-4">
+              Privacy Policy
+            </Link>
+            , and{" "}
+            <Link to="/acceptable-use" className="underline underline-offset-4">
+              Acceptable Use Policy
+            </Link>
+            .
+          </p>
+        )}
+      </form>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        {mode === "sign-in" ? (
+          <>
+            New to SaveStream?{" "}
+            <Link to="/sign-up" className="font-medium text-primary">
+              Create account
+            </Link>
+          </>
+        ) : mode === "sign-up" ? (
+          <>
+            Already have an account?{" "}
+            <Link to="/sign-in" className="font-medium text-primary">
+              Sign in
+            </Link>
+          </>
+        ) : (
+          <Link to="/sign-in" className="font-medium text-primary">
+            Back to sign in
+          </Link>
+        )}
+      </p>
+    </AuthLayout>
+  );
+}
+function Field({ label, id, ...props }: { label: string } & ComponentProps<typeof Input>) {
+  const fid = id ?? label.toLowerCase().replace(/\s+/g, "-");
+  return (
+    <div>
+      <label htmlFor={fid} className="block text-sm font-medium">
+        {label}
+      </label>
+      <Input id={fid} className="mt-2" {...props} />
+    </div>
+  );
+}
+export function OnboardingPage() {
+  const [step, setStep] = useState(1);
+  const [username, setUsername] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const onboardingChannel = channels[1] ?? channels[0];
+  const valid = /^@?[A-Za-z0-9._]{2,24}$/.test(username.trim());
+  if (!onboardingChannel) return null;
+  const addChannel = () => {
+    if (!valid) return;
+    setResolving(true);
+    setTimeout(() => {
+      setResolving(false);
+      setStep(3);
+    }, 700);
+  };
+  return (
+    <div className="min-h-screen bg-surface-subtle">
+      <header className="border-b bg-background p-5">
+        <div className="mx-auto max-w-3xl">
+          <Logo />
+        </div>
+      </header>
+      <main className="mx-auto max-w-2xl px-4 py-12">
+        <div className="mb-8 flex items-center gap-2">
+          {[1, 2, 3].map((n) => (
+            <span
+              key={n}
+              className={cn("h-1 flex-1 rounded-full", n <= step ? "bg-primary" : "bg-border")}
+            />
+          ))}
+        </div>
+        <div className="rounded-lg border bg-background p-6 sm:p-10">
+          {step === 1 && (
+            <>
+              <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
+                <Radio />
+              </span>
+              <h1 className="mt-6 text-2xl font-semibold">Let’s record your first livestream.</h1>
+              <p className="mt-2 text-muted-foreground">
+                Add a TikTok channel and we’ll monitor it automatically.
+              </p>
+              <Button className="mt-8" onClick={() => setStep(2)}>
+                Add my first channel
+                <ArrowRight />
+              </Button>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <h1 className="text-2xl font-semibold">Add a channel</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enter a TikTok username or profile URL.
+              </p>
+              <div className="mt-8 grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-primary bg-primary-subtle p-4">
+                  <PlatformBadge />
+                  <p className="mt-3 text-sm font-medium">Available</p>
+                </div>
+                <div className="rounded-lg border p-4 opacity-60">
+                  <PlatformBadge soon />
+                  <p className="mt-3 text-sm">Coming soon</p>
+                </div>
+              </div>
+              <div className="mt-6">
+                <Field
+                  label="TikTok username or URL"
+                  placeholder="@mikefitness"
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  aria-invalid={Boolean(username) && !valid}
+                />
+                {username && !valid && (
+                  <p className="mt-2 text-xs text-destructive">Enter a valid TikTok username.</p>
+                )}
+                {valid && (
+                  <div className="mt-4 flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
+                    <CreatorAvatar channel={onboardingChannel} />
+                    <div>
+                      <p className="text-sm font-medium">Mike Fitness</p>
+                      <p className="text-xs text-muted-foreground">@mikefitness</p>
+                    </div>
+                    <CheckCircle2 className="ml-auto size-4 text-success" />
+                  </div>
+                )}
+              </div>
+              <div className="mt-6 flex justify-end">
+                <Button disabled={!valid || resolving} onClick={addChannel}>
+                  {resolving ? (
+                    <>
+                      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Resolving creator…
+                    </>
+                  ) : (
+                    <>
+                      Add &amp; start monitoring
+                      <ArrowRight />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <div className="flex items-center gap-4">
+                <CreatorAvatar channel={onboardingChannel} size="lg" />
+                <div>
+                  <h1 className="text-xl font-semibold">Mike Fitness</h1>
+                  <p className="text-sm text-muted-foreground">@mikefitness</p>
+                </div>
+                <Switch className="ml-auto" checked />
+              </div>
+              <div className="mt-8 rounded-lg border bg-success-subtle p-5">
+                <div className="flex items-center gap-2 font-medium text-success">
+                  <CheckCircle2 className="size-5" />
+                  Monitoring on
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You’re all set. We’ll automatically start recording the next time this channel
+                  goes live.
+                </p>
+              </div>
+              <Button className="mt-8" asChild>
+                <Link to="/overview">
+                  Go to dashboard
+                  <ArrowRight />
+                </Link>
+              </Button>
+            </>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export function OverviewPage({ empty = false }: { empty?: boolean }) {
+  return (
+    <AppShell>
+      <PageHeader title="Overview" subtitle="Sunday, September 27" action={<AddChannelDialog />} />
+      <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Recording hours"
+          value="12.6 / 50 h"
+          detail="25% used · resets Oct 1"
+          icon={Clock3}
+          progress={25}
+        />
+        <StatCard
+          label="Active channels"
+          value="3 / 5"
+          detail="3 currently monitoring"
+          icon={Radio}
+        />
+        <StatCard
+          label="Stored recordings"
+          value="18.4 GB"
+          detail="4 recordings"
+          icon={HardDrive}
+        />
+        <StatCard
+          label="Download usage"
+          value="24.8 / 100 GB"
+          detail="25% used this month"
+          icon={Download}
+          progress={25}
+        />
+      </div>
+      <ActiveRecordingCard empty={empty} />
+      <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
+        <section>
+          <SectionTitle title="Channel monitoring" action={<Link to="/channels">View all</Link>} />
+          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
+            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+              <span>Creator</span>
+              <span>Platform</span>
+              <span>Monitoring</span>
+              <span>Status</span>
+              <span>Checked</span>
+              <span />
+            </div>
+            {channels.map((c) => (
+              <ChannelRow key={c.id} channel={c} />
+            ))}
+          </div>
+          <div className="space-y-3 md:hidden">
+            {channels.map((c) => (
+              <ChannelCard key={c.id} channel={c} />
+            ))}
+          </div>
+        </section>
+        <section>
+          <SectionTitle
+            title="Recent recordings"
+            action={<Link to="/recordings">View library</Link>}
+          />
+          <div className="divide-y rounded-lg border bg-surface">
+            {recordings.slice(0, 3).map((r) => (
+              <Link
+                key={r.id}
+                to="/recordings/$id"
+                params={{ id: r.id }}
+                className="flex items-center gap-3 p-3"
+              >
+                <div className={cn("aspect-video w-20 rounded", r.color)} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{r.handle}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.date} · {r.duration}
+                  </p>
+                </div>
+                <StatusBadge status={r.status} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}
+export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center justify-between">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      {action && <span className="text-xs font-medium text-primary">{action}</span>}
+    </div>
+  );
+}
+
+export function ChannelsPage() {
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("All");
+  const filtered = channels.filter(
+    (c) =>
+      (filter === "All" || c.status === filter) &&
+      (c.name + c.handle).toLowerCase().includes(q.toLowerCase()),
+  );
+  return (
+    <AppShell>
+      <PageHeader
+        title="Channels"
+        subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live."
+        action={<AddChannelDialog />}
+      />
+      <FilterBar>
+        <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
+        <div className="flex gap-1 overflow-x-auto">
+          {["All", "Recording", "Waiting", "Offline", "Paused", "Error"].map((f) => (
+            <Button
+              key={f}
+              size="sm"
+              variant={filter === f ? "secondary" : "ghost"}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </Button>
+          ))}
+        </div>
+      </FilterBar>
+      {filtered.length ? (
+        <>
+          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
+            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+              <span>Creator</span>
+              <span>Platform</span>
+              <span>Monitoring</span>
+              <span>Status</span>
+              <span>Last checked</span>
+              <span />
+            </div>
+            {filtered.map((c) => (
+              <ChannelRow key={c.id} channel={c} />
+            ))}
+          </div>
+          <div className="space-y-3 md:hidden">
+            {filtered.map((c) => (
+              <ChannelCard key={c.id} channel={c} />
+            ))}
+          </div>
+        </>
+      ) : (
+        <EmptyState
+          icon={Search}
+          title="No channels found"
+          body="Try another search or clear the current filter."
+        />
+      )}
+    </AppShell>
+  );
+}
+export function ChannelDetailPage() {
+  const { id } = useParams({ strict: false }) as { id?: string };
+  const channel = channels.find((c) => c.id === id);
+  if (!channel)
+    return (
+      <AppShell>
+        <PageHeader title="Channel not found" />
+        <EmptyState
+          icon={Radio}
+          title="This channel doesn’t exist"
+          body="It may have been removed from your account."
+          action={
+            <Button asChild variant="outline">
+              <Link to="/channels">Back to channels</Link>
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  return <ChannelDetail key={channel.id} channel={channel} />;
+}
+export function RecordingsPage() {
+  const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
+  const [q, setQ] = useState("");
+  const [view, setView] = useState<"list" | "grid">("list");
+  const [status, setStatus] = useState("all");
+  const [streamer, setStreamer] = useState("all");
+  const [range, setRange] = useState("all");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const today = new Date("Sep 27, 2026").getTime();
+  const list = recordings
+    .filter(
+      (r) =>
+        (status === "all" || r.status === status) &&
+        (streamer === "all" || r.channelId === streamer) &&
+        (range === "all" || today - new Date(r.date).getTime() <= Number(range) * 864e5) &&
+        (r.title + r.handle).toLowerCase().includes(q.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const d =
+        new Date(`${a.date} ${a.time}`).getTime() - new Date(`${b.date} ${b.time}`).getTime();
+      return sort === "newest" ? -d : d;
+    });
+  const filtered = status !== "all" || streamer !== "all" || range !== "all";
+  const clear = () => {
+    setQ("");
+    setStatus("all");
+    setStreamer("all");
+    setRange("all");
+  };
+  const expiring = recordings.filter(
+    (r) => r.status === "Ready" && r.expiresDays !== null && r.expiresDays <= 3,
+  );
+  return (
+    <AppShell>
+      <PageHeader
+        title="Recordings"
+        subtitle="Watch and download your completed livestream recordings."
+      />
+      <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />
+      {mock === "empty" ? (
+        <EmptyState
+          title="No recordings yet"
+          body="Once one of your monitored channels goes live, the recording will automatically appear here."
+          action={
+            <div className="flex flex-col justify-center gap-2 sm:flex-row">
+              <Button variant="outline" asChild>
+                <Link to="/channels">View channels</Link>
+              </Button>
+              <AddChannelDialog />
+            </div>
+          }
+        />
+      ) : (
+        <>
+          {mock === "error" && (
+            <div className="mb-4">
+              <ErrorState
+                title="We’re having trouble loading your library"
+                body="Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe."
+                onRetry={() => {
+                  toast("Retrying…");
+                  setTimeout(() => setMock("populated"), 800);
+                }}
+              />
+            </div>
+          )}
+          {mock === "populated" && expiring.length > 0 && (
+            <div className="mb-4">
+              <StateBanner
+                tone="warning"
+                icon={Clock3}
+                title={`${expiring.length} recordings expire soon`}
+                body="Recordings are removed automatically when your plan’s retention period ends. Download any you want to keep."
+              />
+            </div>
+          )}
+          <FilterBar>
+            <div className="flex-1">
+              <SearchInput value={q} onChange={setQ} placeholder="Search recordings" />
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Select value={streamer} onValueChange={setStreamer}>
+                <SelectTrigger className="sm:w-36" aria-label="Streamer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All streamers</SelectItem>
+                  {channels.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.handle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="sm:w-32" aria-label="Status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="Ready">Ready</SelectItem>
+                  <SelectItem value="Processing">Processing</SelectItem>
+                  <SelectItem value="Error">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={range} onValueChange={setRange}>
+                <SelectTrigger className="sm:w-36" aria-label="Date range">
+                  <Calendar className="size-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
+              >
+                <ArrowUpDown />
+                {sort === "newest" ? "Newest first" : "Oldest first"}
+              </Button>
+            </div>
+            <div className="hidden rounded-md border sm:flex">
+              <Button
+                size="icon"
+                variant={view === "list" ? "secondary" : "ghost"}
+                onClick={() => setView("list")}
+                aria-label="List view"
+                aria-pressed={view === "list"}
+              >
+                <List />
+              </Button>
+              <Button
+                size="icon"
+                variant={view === "grid" ? "secondary" : "ghost"}
+                onClick={() => setView("grid")}
+                aria-label="Grid view"
+                aria-pressed={view === "grid"}
+              >
+                <Grid2X2 />
+              </Button>
+            </div>
+          </FilterBar>
+          {mock === "loading" ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="animate-pulse overflow-hidden rounded-lg border">
+                  <div className="aspect-video bg-muted" />
+                  <div className="space-y-2 p-4">
+                    <div className="h-3 w-2/3 rounded bg-muted" />
+                    <div className="h-3 w-1/3 rounded bg-muted" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : list.length === 0 ? (
+            q ? (
+              <EmptyState
+                icon={Search}
+                title={`No results for “${q}”`}
+                body="Check the spelling or search by @handle or date."
+                action={
+                  <Button variant="outline" onClick={() => setQ("")}>
+                    Clear search
+                  </Button>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon={Filter}
+                title="No recordings match these filters"
+                body={
+                  filtered ? "Try a different streamer, status, or date range." : "Nothing to show."
+                }
+                action={
+                  <Button variant="outline" onClick={clear}>
+                    Clear filters
+                  </Button>
+                }
+              />
+            )
+          ) : view === "list" ? (
+            <>
+              <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
+                <RecordingHeader />
+                {list.map((r) => (
+                  <RecordingRow key={r.id} recording={r} />
+                ))}
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:hidden">
+                {list.map((r) => (
+                  <RecordingCard key={r.id} recording={r} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {list.map((r) => (
+                <RecordingCard key={r.id} recording={r} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </AppShell>
+  );
+}
+export function RecordingDetailPage({
+  state: forced,
+}: {
+  state?: "ready" | "active" | "processing" | "failed";
+}) {
+  const { id } = useParams({ strict: false }) as { id?: string };
+  const navigate = useNavigate();
+  const [quota, setQuota] = useState<"normal" | "low">("normal");
+  const [upgrade, setUpgrade] = useState(false);
+  const [del, setDel] = useState(false);
+  const rec =
+    forced === "active"
+      ? activeRecording
+      : forced === "processing"
+        ? recordings.find((r) => r.id === "nora-processing")
+        : forced === "failed"
+          ? recordings.find((r) => r.id === "nora-failed")
+          : forced === "ready"
+            ? recordings[0]
+            : recordings.find((r) => r.id === id);
+  if (!rec)
+    return (
+      <AppShell>
+        <PageHeader title="Recording not found" />
+        <EmptyState
+          title="This recording isn’t available"
+          body="It may have been deleted or removed after its retention period ended."
+          action={
+            <Button asChild variant="outline">
+              <Link to="/recordings">Back to recordings</Link>
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  const state =
+    forced ??
+    ({ Ready: "ready", Processing: "processing", Error: "failed", Recording: "active" } as const)[
+      rec.status
+    ];
+  const channel = channels.find((c) => c.id === rec.channelId);
+  const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
+  const download = () => {
+    if (quota === "low") setUpgrade(true);
+    else
+      toast.success("Download started", {
+        description: `${rec.size} · ${rec.handle} — ${rec.title}`,
+      });
+  };
+  const actions =
+    state === "ready" ? (
+      <div className="flex gap-2">
+        <Button onClick={download}>
+          <Download />
+          Download video
+        </Button>
+        <Button variant="outline" onClick={() => setDel(true)}>
+          <Trash2 />
+          Delete
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" aria-label="More actions">
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onSelect={() => {
+                void navigator.clipboard?.writeText(window.location.href);
+                toast.success("Link copied");
+              }}
+            >
+              Copy link
+            </DropdownMenuItem>
+            {channel && (
+              <DropdownMenuItem
+                onSelect={() => navigate({ to: "/channels/$id", params: { id: channel.id } })}
+              >
+                View channel
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ) : state === "failed" ? (
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          onClick={() =>
+            toast.success("Partial download started", {
+              description: `${rec.partialDuration} · ${rec.size}`,
+            })
+          }
+        >
+          <Download />
+          Download partial
+        </Button>
+        <Button variant="outline" onClick={() => setDel(true)}>
+          <Trash2 />
+          Delete partial file
+        </Button>
+      </div>
+    ) : state === "processing" ? (
+      <Button disabled>
+        <Download />
+        Download available soon
+      </Button>
+    ) : null;
+  return (
+    <AppShell>
+      {channel && (
+        <Link
+          to="/channels/$id"
+          params={{ id: channel.id }}
+          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" />
+          {channel.name}
+        </Link>
+      )}
+      {state === "ready" && (
+        <PrototypeStateBar
+          label="Download quota"
+          value={quota}
+          options={
+            [
+              { value: "normal", label: "Available" },
+              { value: "low", label: "Not enough" },
+            ] as const
+          }
+          onChange={setQuota}
+        />
+      )}
+      <PageHeader
+        title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
+        subtitle={`TikTok · ${state === "active" ? "Started today" : rec.date} at ${rec.time}`}
+        action={actions}
+      />
+      {expiringSoon && (
+        <div className="mb-4">
+          <StateBanner
+            tone={rec.expireTone === "critical" ? "error" : "warning"}
+            icon={Clock3}
+            title={
+              rec.expireTone === "critical"
+                ? "This recording expires tomorrow"
+                : `This recording expires in ${rec.expires}`
+            }
+            body={`It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`}
+            action={
+              <Button size="sm" variant="outline" onClick={download}>
+                Download
+              </Button>
+            }
+          />
+        </div>
+      )}
+      <VideoPlayerShell state={state} />
+      {state === "active" && (
+        <div className="mt-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success-subtle p-4 text-sm">
+          <Cloud className="size-5 shrink-0 text-success" />
+          <div>
+            <p className="font-medium">
+              Recording runs on our servers. You can safely close this page.
+            </p>
+            <p className="text-muted-foreground">
+              Playback will be available after the livestream ends.
+            </p>
+          </div>
+        </div>
+      )}
+      {state === "processing" && <ProcessingTimeline />}
+      {state === "failed" && (
+        <div className="mt-4 space-y-3">
+          <StateBanner
+            tone="error"
+            title="Recording couldn’t be completed"
+            body={
+              <>
+                The stream connection was lost ({rec.error?.toLowerCase()}). {rec.partialDuration}{" "}
+                were successfully saved before the stream connection was lost. The partial file is
+                available to watch or download.
+              </>
+            }
+            action={
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    toast.success("Processing queued", {
+                      description: "We’ll notify you when the partial recording is ready.",
+                    })
+                  }
+                >
+                  <RotateCcw />
+                  Retry processing
+                </Button>
+                <Button size="sm" variant="ghost" asChild>
+                  <Link to="/help" hash="contact">
+                    Contact support
+                  </Link>
+                </Button>
+              </div>
+            }
+          />
+        </div>
+      )}
+      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 lg:grid-cols-6">
+        {[
+          ["Platform", "TikTok"],
+          ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
+          ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
+          [state === "active" ? "Written" : "File size", rec.size],
+          ["Resolution", rec.resolution],
+          [
+            "Stored until",
+            state === "active" || state === "processing"
+              ? "After processing"
+              : rec.expireTone === "critical"
+                ? "Tomorrow"
+                : `${rec.expires} left`,
+          ],
+        ].map(([a, b]) => (
+          <div key={a} className="bg-surface p-4">
+            <p className="text-xs text-muted-foreground">{a}</p>
+            <p className="mt-2 font-mono text-sm font-medium">{b}</p>
+          </div>
+        ))}
+      </div>
+      <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
+      <ConfirmDeleteDialog
+        open={del}
+        onOpenChange={setDel}
+        partial={state === "failed"}
+        onDeleted={() => navigate({ to: "/recordings" })}
+      />
+    </AppShell>
+  );
+}
+function ProcessingTimeline() {
+  return (
+    <div className="mt-5 rounded-lg border p-5">
+      <h2 className="font-medium">Finalizing your recording</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        The livestream has ended. We’re preparing the video for playback and download.
+      </p>
+      <div className="mt-5 grid gap-3 sm:grid-cols-4">
+        {[
+          [Check, "Recording completed", "done"],
+          [Activity, "Processing video", "active"],
+          [Upload, "Uploading", "next"],
+          [CheckCircle2, "Ready", "next"],
+        ].map(([I, l, s]) => (
+          <div className="flex items-center gap-2" key={String(l)}>
+            {I
+              ? (() => {
+                  const Icon = I;
+                  return (
+                    <Icon
+                      className={cn(
+                        "size-4",
+                        s === "done"
+                          ? "text-success"
+                          : s === "active"
+                            ? "animate-pulse text-info"
+                            : "text-muted-foreground",
+                      )}
+                    />
+                  );
+                })()
+              : null}
+            <span className={cn("text-sm", s === "next" && "text-muted-foreground")}>
+              {String(l)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function UsagePage() {
+  const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
+  const hours = mock === "warning" ? 40.2 : mock === "reached" ? 50 : usage.recordingHours.used;
+  const dl = mock === "download" ? 100 : usage.downloadGb.used;
+  const ch = mock === "channels" ? usage.channels.limit : usage.channels.used;
+  const hp = Math.round((hours / usage.recordingHours.limit) * 100);
+  const dp = Math.round((dl / usage.downloadGb.limit) * 100);
+  const cp = Math.round((ch / usage.channels.limit) * 100);
+  const upgradeBtn = (
+    <Button size="sm" asChild>
+      <Link to="/billing">Upgrade plan</Link>
+    </Button>
+  );
+  return (
+    <AppShell>
+      <PageHeader
+        title="Usage"
+        subtitle={`Current period: ${usage.periodStart.replace(", 2026", "")} – ${usage.periodEnd} · Resets ${usage.resetsOn}`}
+        action={
+          <Button variant="outline" asChild>
+            <Link to="/billing">
+              <CreditCard />
+              Billing
+            </Link>
+          </Button>
+        }
+      />
+      <PrototypeStateBar value={mock} options={usageStates} onChange={setMock} />
+      <div className="mb-6 space-y-3">
+        {mock === "warning" && (
+          <StateBanner
+            tone="warning"
+            title="You’ve used 80% of your monthly recording hours."
+            body={`${hours} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit, then pauses until ${usage.resetsOn}.`}
+            action={upgradeBtn}
+          />
+        )}
+        {mock === "reached" && (
+          <StateBanner
+            tone="error"
+            title="Recording quota reached"
+            body={
+              <>
+                Automatic recording is paused until your quota resets or you upgrade your plan.
+                Monitoring continues, but new livestreams won’t be recorded until {usage.resetsOn}.
+              </>
+            }
+            action={upgradeBtn}
+          />
+        )}
+        {mock === "download" && (
+          <StateBanner
+            tone="error"
+            title="Download bandwidth exhausted"
+            body={`Downloads are unavailable until your quota resets on ${usage.resetsOn}. Recording and browser playback are not affected.`}
+            action={upgradeBtn}
+          />
+        )}
+        {mock === "channels" && (
+          <StateBanner
+            tone="warning"
+            title="Monitored channel limit reached"
+            body={`Your plan allows ${usage.channels.limit} monitored channels. Remove a channel or upgrade to add another.`}
+            action={
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/channels">Manage channels</Link>
+              </Button>
+            }
+          />
+        )}
+      </div>
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Recording hours"
+          value={`${hours} / ${usage.recordingHours.limit}`}
+          detail={`${hp}% used`}
+          icon={Clock3}
+          progress={hp}
+        />
+        <StatCard
+          label="Concurrent limit"
+          value={`${usage.concurrent.limit} streams`}
+          detail={`${usage.concurrent.active} recording now`}
+          icon={Radio}
+        />
+        <StatCard
+          label="Download bandwidth"
+          value={`${dl} / ${usage.downloadGb.limit} GB`}
+          detail={`${dp}% used`}
+          icon={Download}
+          progress={dp}
+        />
+        <StatCard
+          label="Retention"
+          value={`${usage.retentionDays} days`}
+          detail={`${user.plan} plan`}
+          icon={HardDrive}
+        />
+      </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
+        <section className="rounded-lg border bg-surface p-5">
+          <div className="flex items-center justify-between">
+            <h2 className="font-medium">Daily recording hours</h2>
+            <span className="text-xs text-muted-foreground">September 2026</span>
+          </div>
+          <div
+            className="mt-8 flex h-56 items-end gap-1 border-b border-l px-2 sm:gap-2"
+            role="img"
+            aria-label="Bar chart of daily recording hours in September"
+          >
+            {dailyRecordingHours.map((v, i) => (
+              <div
+                key={i}
+                title={`Sep ${i + 1}: ${v}h`}
+                className="group relative flex-1 rounded-t-sm bg-primary/75 hover:bg-primary"
+                style={{ height: `${(v / 5) * 100}%` }}
+              >
+                <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-1 font-mono text-[9px] text-background group-hover:block">
+                  {v}h
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-lg border bg-surface p-5">
+          <h2 className="font-medium">Plan limits</h2>
+          <div className="mt-6 space-y-6">
+            {(
+              [
+                ["Recording hours", `${hours} of ${usage.recordingHours.limit} hours`, hp],
+                ["Download bandwidth", `${dl} of ${usage.downloadGb.limit} GB`, dp],
+                ["Monitored channels", `${ch} of ${usage.channels.limit} channels`, cp],
+              ] as const
+            ).map(([a, b, c]) => (
+              <div key={a}>
+                <div className="mb-2 flex justify-between text-xs">
+                  <span>{a}</span>
+                  <span
+                    className={cn(
+                      "font-mono text-muted-foreground",
+                      c >= 100 && "text-destructive",
+                      c >= 80 && c < 100 && "text-warning-foreground",
+                    )}
+                  >
+                    {b}
+                  </span>
+                </div>
+                <UsageProgress value={c} tone={c >= 80 ? "warning" : "primary"} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 border-t pt-5 text-xs leading-5 text-muted-foreground">
+            <p className="font-medium text-foreground">About concurrent recordings</p>
+            <p className="mt-1">
+              Up to {usage.concurrent.limit} livestreams can record at the same time. If another
+              monitored channel goes live while both slots are in use, it waits for a free slot —
+              the start of that livestream may not be recorded.
+            </p>
+          </div>
+        </section>
+      </div>
+      <section className="mt-8">
+        <SectionTitle title="Usage by recording" />
+        <div className="hidden overflow-hidden rounded-lg border sm:block">
+          <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
+            <span>Date</span>
+            <span>Channel</span>
+            <span>Duration</span>
+            <span>Size</span>
+          </div>
+          {recordings.map((r) => (
+            <div className="grid grid-cols-4 border-t px-4 py-3 text-sm" key={r.id}>
+              <span>{r.date}</span>
+              <span>{r.handle}</span>
+              <span className="font-mono">{r.duration}</span>
+              <span className="font-mono">{r.size}</span>
+            </div>
+          ))}
+        </div>
+        <div className="divide-y rounded-lg border sm:hidden">
+          {recordings.map((r) => (
+            <div key={r.id} className="flex justify-between p-3 text-sm">
+              <div>
+                <p className="font-medium">{r.handle}</p>
+                <p className="text-xs text-muted-foreground">{r.date}</p>
+              </div>
+              <div className="text-right font-mono text-xs">
+                <p>{r.duration}</p>
+                <p className="text-muted-foreground">{r.size}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </AppShell>
+  );
+}
+export function BillingPage() {
+  const navigate = useNavigate();
+  const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
+  const [interval, setInterval] = useState<"month" | "year">(subscription.interval);
+  const [upgrade, setUpgrade] = useState(false);
+  const [cancel, setCancel] = useState(false);
+  const isPro = mock !== "free";
+  const pro = plans[1]!;
+  const free = plans[0]!;
+  const pm = subscription.paymentMethod;
+  const proPrice =
+    interval === "month" ? `$${pro.priceMonthly}` : `$${(pro.priceYearly / 12).toFixed(2)}`;
+  const manage = () =>
+    toast("Opens the secure billing portal", {
+      description: "Payment provider isn’t connected in this prototype.",
+    });
+  const invoiceRows =
+    mock === "payment_failed" || mock === "past_due"
+      ? [
+          {
+            id: "INV-2026-0010",
+            date: "Sep 27, 2026",
+            description: "Pro · Monthly",
+            amount: "$9.99",
+            status: "Failed" as const,
+          },
+          ...invoices,
+        ]
+      : mock === "free"
+        ? []
+        : invoices;
+  return (
+    <AppShell>
+      <PageHeader title="Billing" subtitle="Manage your plan, payment method, and invoices." />
+      <PrototypeStateBar value={mock} options={billingStates} onChange={setMock} />
+      <div className="mb-6 space-y-3">
+        {mock === "payment_failed" && (
+          <StateBanner
+            tone="error"
+            title="Payment failed"
+            body={`We couldn’t charge your ${pm?.brand} ending in ${pm?.last4} on Sep 27. We’ll retry automatically on Sep 30. Update your payment method to keep Pro.`}
+            action={
+              <Button size="sm" onClick={manage}>
+                Update payment method
+              </Button>
+            }
+          />
+        )}
+        {mock === "past_due" && (
+          <StateBanner
+            tone="error"
+            title="Your subscription is past due"
+            body="Pro features stay on until Oct 4, 2026. After that your account moves to Free and automatic recording is limited to Free plan quotas."
+            action={
+              <Button size="sm" onClick={manage}>
+                Pay now
+              </Button>
+            }
+          />
+        )}
+        {mock === "canceling" && (
+          <StateBanner
+            tone="info"
+            title={`Pro is canceled and stays active until ${subscription.currentPeriodEnd}`}
+            body="You won’t be charged again. After that date your plan changes to Free."
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setMock("active");
+                  toast.success("Subscription resumed");
+                }}
+              >
+                Resume subscription
+              </Button>
+            }
+          />
+        )}
+      </div>
+      <section className="mb-8 rounded-lg border bg-surface">
+        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+          <div className="flex-1">
+            <p className="text-xs text-muted-foreground">Current subscription</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold">{isPro ? "Pro" : "Free"}</h2>
+              <span
+                className={cn(
+                  "rounded-md border px-2 py-0.5 text-xs font-medium",
+                  mock === "active" && "border-success/25 bg-success-subtle text-success",
+                  (mock === "payment_failed" || mock === "past_due") &&
+                    "border-destructive/25 bg-recording-subtle text-destructive",
+                  (mock === "canceling" || mock === "free") && "bg-muted text-muted-foreground",
+                )}
+              >
+                {
+                  {
+                    active: "Active",
+                    free: "Free",
+                    payment_failed: "Payment failed",
+                    past_due: "Past due",
+                    canceling: "Cancels Oct 1",
+                  }[mock]
+                }
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {mock === "free"
+                ? "10 minutes of recording, 1 monitored channel, 3-day retention."
+                : mock === "canceling"
+                  ? `Access until ${subscription.currentPeriodEnd}. No further charges.`
+                  : mock === "active"
+                    ? `$${subscription.priceMonthly} billed monthly · Next billing date ${subscription.currentPeriodEnd}`
+                    : "Payment overdue since Sep 27, 2026"}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {isPro ? (
+              <>
+                <Button variant="outline" onClick={manage}>
+                  Manage subscription
+                </Button>
+                {mock !== "canceling" && (
+                  <Button variant="ghost" onClick={() => setCancel(true)}>
+                    Cancel subscription
+                  </Button>
+                )}
+              </>
+            ) : (
+              <Button onClick={() => setUpgrade(true)}>
+                <Sparkles />
+                Upgrade to Pro
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Plans</h2>
+        <div
+          role="radiogroup"
+          aria-label="Billing interval"
+          className="flex rounded-md border bg-surface p-1 text-xs"
+        >
+          {(["month", "year"] as const).map((i) => (
+            <button
+              key={i}
+              type="button"
+              role="radio"
+              aria-checked={interval === i}
+              onClick={() => setInterval(i)}
+              className={cn(
+                "rounded px-3 py-1.5 font-medium text-muted-foreground",
+                interval === i && "bg-accent text-foreground",
+              )}
+            >
+              {i === "month" ? (
+                "Monthly"
+              ) : (
+                <>
+                  Yearly <span className="text-success">· Save 20%</span>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <PlanCard
+          name="Free"
+          price="Free"
+          current={!isPro}
+          features={free.features}
+          action={
+            isPro ? (
+              <Button
+                variant="outline"
+                className="mt-6 w-full"
+                onClick={() => setCancel(true)}
+                disabled={mock === "canceling"}
+              >
+                {mock === "canceling" ? "Switching Oct 1" : "Downgrade to Free"}
+              </Button>
+            ) : (
+              <Button variant="outline" className="mt-6 w-full" disabled>
+                Current plan
+              </Button>
+            )
+          }
+        />
+        <PlanCard
+          name="Pro"
+          price={proPrice}
+          current={isPro}
+          features={pro.features}
+          note={interval === "year" ? `$${pro.priceYearly} billed yearly` : undefined}
+          action={
+            isPro ? (
+              <Button variant="outline" className="mt-6 w-full" onClick={manage}>
+                Manage plan
+              </Button>
+            ) : (
+              <Button className="mt-6 w-full" onClick={() => setUpgrade(true)}>
+                Upgrade to Pro
+              </Button>
+            )
+          }
+        />
+      </div>
+      <div className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
+        <section className="rounded-lg border bg-surface">
+          <div className="border-b p-5">
+            <h2 className="font-medium">Payment method</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Used for your Pro subscription.</p>
+          </div>
+          {isPro && pm ? (
+            <div className="flex items-center gap-3 p-5">
+              <span className="grid size-10 place-items-center rounded-md border">
+                <CreditCard className="size-4" />
+              </span>
+              <div>
+                <p className="text-sm font-medium">
+                  {pm.brand} ending in {pm.last4}
+                </p>
+                <p
+                  className={cn(
+                    "text-xs text-muted-foreground",
+                    mock === "payment_failed" && "text-destructive",
+                  )}
+                >
+                  {mock === "payment_failed" ? "Last charge declined" : `Expires ${pm.exp}`}
+                </p>
+              </div>
+              <Button className="ml-auto" variant="outline" onClick={manage}>
+                Update
+              </Button>
+            </div>
+          ) : (
+            <p className="p-5 text-sm text-muted-foreground">No payment method on file.</p>
+          )}
+        </section>
+        <section className="rounded-lg border bg-surface">
+          <div className="border-b p-5">
+            <h2 className="font-medium">Billing history</h2>
+          </div>
+          {invoiceRows.length ? (
+            <ul className="divide-y">
+              {invoiceRows.map((inv) => (
+                <li
+                  key={inv.id}
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 text-sm sm:grid-cols-[1fr_1fr_auto_auto_auto]"
+                >
+                  <div>
+                    <p className="font-medium">{inv.date}</p>
+                    <p className="font-mono text-xs text-muted-foreground">{inv.id}</p>
+                  </div>
+                  <span className="hidden text-muted-foreground sm:block">{inv.description}</span>
+                  <span className="font-mono">{inv.amount}</span>
+                  <span
+                    className={cn(
+                      "hidden rounded-md px-2 py-0.5 text-xs font-medium sm:inline",
+                      inv.status === "Paid"
+                        ? "bg-success-subtle text-success"
+                        : "bg-recording-subtle text-destructive",
+                    )}
+                  >
+                    {inv.status}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Download invoice ${inv.id}`}
+                    className="hidden sm:inline-flex"
+                    onClick={() => toast("Invoice download is mocked")}
+                  >
+                    <Download />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="p-5 text-sm text-muted-foreground">No invoices yet.</p>
+          )}
+        </section>
+      </div>
+      <Dialog open={upgrade} onOpenChange={setUpgrade}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upgrade to Pro?</DialogTitle>
+            <DialogDescription>
+              {interval === "month"
+                ? `$${pro.priceMonthly} billed monthly`
+                : `$${pro.priceYearly} billed yearly (save 20%)`}
+              , starting today. Cancel anytime.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2 rounded-md border bg-surface-subtle p-4 text-sm">
+            {pro.features.map((f) => (
+              <li key={f} className="flex gap-2">
+                <CheckCircle2 className="size-4 text-success" />
+                {f}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            You’ll be taken to secure checkout. Prototype:{" "}
+            <Link to="/billing/canceled" className="text-primary underline underline-offset-4">
+              simulate canceled checkout
+            </Link>
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setUpgrade(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setUpgrade(false);
+                navigate({ to: "/billing/success" });
+              }}
+            >
+              Continue to checkout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <ConfirmDialog
+        destructive
+        open={cancel}
+        onOpenChange={setCancel}
+        title="Cancel Pro subscription?"
+        body={`You’ll keep Pro until ${subscription.currentPeriodEnd}. After that your plan changes to Free: 1 monitored channel, 10 minutes of recording, and 3-day retention. Recordings older than 3 days will expire.`}
+        confirmLabel="Cancel subscription"
+        onConfirm={() => {
+          setCancel(false);
+          setMock("canceling");
+          toast("Subscription canceled", {
+            description: `Pro stays active until ${subscription.currentPeriodEnd}.`,
+          });
+        }}
+      />
+    </AppShell>
+  );
+}
+export function AdminSystemPage() {
+  return (
+    <AppShell>
+      <PageHeader
+        title="System"
+        subtitle="Live operational health across recording infrastructure."
+      />
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-3">
+        {[
+          ["Active workers", "4 / 4", Server],
+          ["Active recordings", "1", Radio],
+          ["Queue depth", "2", List],
+          ["Failed jobs · 24h", "1", AlertTriangle],
+          ["Storage used", "8.2 TB", HardDrive],
+          ["API errors · 1h", "0.08%", Activity],
+        ].map(([a, b, I]) => (
+          <StatCard
+            key={String(a)}
+            label={String(a)}
+            value={String(b)}
+            detail="Updated just now"
+            icon={I}
+          />
+        ))}
+      </div>
+      <section className="mt-8 rounded-lg border bg-surface">
+        <div className="border-b p-5">
+          <h2 className="font-medium">Service health</h2>
+        </div>
+        <div className="grid sm:grid-cols-2">
+          {["API", "Redis", "Database", "Storage", "Workers 4/4 online"].map((x) => (
+            <div
+              key={x}
+              className="flex items-center justify-between border-b p-4 text-sm sm:odd:border-r"
+            >
+              <span>{x}</span>
+              <AdminHealthBadge />
+            </div>
+          ))}
+        </div>
+      </section>
+    </AppShell>
+  );
+}
+export function PricingPage() {
+  return (
+    <>
+      <PublicHeader />
+      <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
+        <div className="text-center">
+          <h1 className="text-4xl font-semibold">Plans that scale with your livestreams.</h1>
+          <p className="mt-4 text-muted-foreground">
+            Start free. Upgrade when you need more recording time.
+          </p>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-2">
+          {plans.map((p) => (
+            <PlanCard
+              key={p.id}
+              name={p.name}
+              price={p.priceMonthly ? `$${p.priceMonthly}` : "Free"}
+              features={p.features}
+              action={
+                <Button
+                  variant={p.id === "pro" ? "default" : "outline"}
+                  className="mt-6 w-full"
+                  asChild
+                >
+                  <Link to="/sign-up">{p.id === "pro" ? "Start with Pro" : "Start for free"}</Link>
+                </Button>
+              }
+            />
+          ))}
+        </div>
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Yearly billing saves 20%. Cancel anytime from Billing.
+        </p>
+      </main>
+      <PublicFooter />
+    </>
+  );
+}
+export function PublicFooter() {
+  const cols: [string, [string, string][]][] = [
+    [
+      "Product",
+      [
+        ["/pricing", "Pricing"],
+        ["/status", "Status"],
+        ["/help", "Help"],
+      ],
+    ],
+    [
+      "Legal",
+      [
+        ["/terms", "Terms"],
+        ["/privacy", "Privacy"],
+        ["/acceptable-use", "Acceptable use"],
+      ],
+    ],
+    [
+      "Account",
+      [
+        ["/sign-in", "Sign in"],
+        ["/sign-up", "Create account"],
+      ],
+    ],
+  ];
+  return (
+    <footer className="border-t py-12">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+        <div>
+          <Logo />
+          <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
+            Cloud recording for TikTok channels you own, manage, or have permission to record.
+          </p>
+        </div>
+        {cols.map(([h, links]) => (
+          <div key={h}>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">{h}</p>
+            <ul className="mt-3 space-y-2 text-sm">
+              {links.map(([to, l]) => (
+                <li key={to}>
+                  <Link
+                    to={to as "/pricing"}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {l}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-muted-foreground sm:px-6">
+        © 2026 SaveStream. Record only channels you’re authorized to manage.
+      </p>
+    </footer>
+  );
+}
+export function AuthLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid min-h-screen bg-surface-subtle lg:grid-cols-[1fr_1.1fr]">
+      <div className="flex flex-col bg-background p-6 sm:p-10">
+        <Logo />
+        <div className="m-auto w-full max-w-sm py-12">{children}</div>
+      </div>
+      <div className="hidden place-items-center overflow-hidden bg-auth lg:grid">
+        <div className="max-w-lg px-10">
+          <Cloud className="size-10 text-primary" />
+          <p className="mt-8 text-3xl font-medium leading-tight">
+            “We monitor. We record. You can close the browser.”
+          </p>
+          <div className="mt-8 flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="size-2 animate-pulse rounded-full bg-recording" />
+            Recording @linastudio · 01:42:18
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+const channelStates = [
+  { value: "Recording", label: "Recording" },
+  { value: "Waiting", label: "Waiting" },
+  { value: "Offline", label: "Offline" },
+  { value: "Paused", label: "Paused" },
+  { value: "Error", label: "Error" },
+] as const;
+function ChannelDetail({ channel }: { channel: Channel }) {
+  const navigate = useNavigate();
+  const [state, setState] = useState<ChannelStatus>(channel.status);
+  const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
+  const monitoring = state !== "Paused";
+  const history = recordings.filter((r) => r.channelId === channel.id);
+  const toggle = (v: boolean) => {
+    if (v) {
+      setState("Waiting");
+      toast.success(`Monitoring resumed for ${channel.handle}`);
+    } else setDialog("pause");
+  };
+  const card = {
+    Recording: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Recording" />
+        </div>
+        <p className="mt-6 text-sm font-medium text-recording">Recording now</p>
+        <p className="mt-1 font-mono text-3xl font-semibold">01:42:18</p>
+        <p className="mt-1 text-sm text-muted-foreground">Started today at 13:22 · checked now</p>
+        <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+          <Cloud className="size-4 text-success" />
+          Recording runs on our servers. You can safely close this page.
+        </p>
+        <Button className="mt-5" asChild>
+          <Link to="/recordings/active">View active recording</Link>
+        </Button>
+      </>
+    ),
+    Waiting: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Waiting" />
+        </div>
+        <p className="mt-6 font-medium">Waiting for the next livestream</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Monitoring is on. Recording starts automatically when {channel.handle} goes live.
+        </p>
+        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-xs text-muted-foreground">Last checked</dt>
+            <dd className="mt-1 font-mono">{channel.checked}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Last live</dt>
+            <dd className="mt-1">{channel.live}</dd>
+          </div>
+        </dl>
+      </>
+    ),
+    Offline: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Offline" />
+        </div>
+        <p className="mt-6 font-medium">Channel is offline</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Monitoring is on. We check live status continuously and record the next livestream.
+        </p>
+        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-xs text-muted-foreground">Last checked</dt>
+            <dd className="mt-1 font-mono">{channel.checked}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">Last live</dt>
+            <dd className="mt-1">{channel.live}</dd>
+          </div>
+        </dl>
+      </>
+    ),
+    Paused: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Paused" />
+        </div>
+        <p className="mt-6 font-medium">Monitoring is paused</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Future livestreams from {channel.handle} will not be recorded until you resume monitoring.
+          Existing recordings are not affected.
+        </p>
+        <Button className="mt-5" onClick={() => toggle(true)}>
+          <Radio />
+          Resume monitoring
+        </Button>
+      </>
+    ),
+    Error: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Error" />
+        </div>
+        <p className="mt-6 font-medium">We couldn’t check live status</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          TikTok didn’t respond to our last 3 checks. We’re retrying automatically every 60 seconds
+          — no action needed.
+        </p>
+        <p className="mt-3 font-mono text-xs text-muted-foreground">
+          LIVE_CHECK_FAILED · last attempt 12s ago
+        </p>
+        <Button
+          className="mt-5"
+          variant="outline"
+          onClick={() => {
+            toast("Checking live status…");
+            setTimeout(() => setState("Waiting"), 900);
+          }}
+        >
+          Check now
+        </Button>
+      </>
+    ),
+  }[state];
+  return (
+    <AppShell>
+      <Link
+        to="/channels"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Channels
+      </Link>
+      <PrototypeStateBar
+        label="Preview channel state"
+        value={state}
+        options={channelStates}
+        onChange={setState}
+      />
+      <div className="mb-6 flex flex-col gap-4 border-y bg-surface px-5 py-4 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-4">
+          <CreatorAvatar channel={channel} size="lg" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">{channel.name}</h1>
+              <PlatformBadge />
+            </div>
+            <p className="text-sm text-muted-foreground">{channel.handle}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-sm sm:ml-auto">
+          <label htmlFor="detail-monitoring">Monitoring</label>
+          <Switch id="detail-monitoring" checked={monitoring} onCheckedChange={toggle} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="More channel actions">
+                <MoreHorizontal />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={() =>
+                  window.open(`https://www.tiktok.com/${channel.handle}`, "_blank", "noopener")
+                }
+              >
+                <ExternalLink />
+                Open on TikTok
+              </DropdownMenuItem>
+              {monitoring ? (
+                <DropdownMenuItem onSelect={() => setDialog("pause")}>
+                  <Pause />
+                  Pause monitoring
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onSelect={() => toggle(true)}>
+                  <Radio />
+                  Resume monitoring
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive" onSelect={() => setDialog("remove")}>
+                <Trash2 />
+                Remove channel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
+        <section
+          className={cn(
+            "rounded-lg border bg-surface p-5",
+            state === "Recording" && "border-recording/30",
+            state === "Error" && "border-destructive/30",
+          )}
+        >
+          {card}
+        </section>
+        <div className="grid grid-cols-2 overflow-hidden rounded-lg border">
+          <StatCard
+            label="Total recordings"
+            value={String(channel.recordings)}
+            detail="All time"
+            icon={FileVideo}
+          />
+          <StatCard
+            label="Recorded hours"
+            value={channel.recordedHours}
+            detail="All time"
+            icon={Clock3}
+          />
+          <StatCard
+            label="Last livestream"
+            value={state === "Recording" ? "Now" : channel.live.split(",")[0]!}
+            detail={state === "Recording" ? "Currently recording" : channel.live}
+            icon={Radio}
+          />
+          <StatCard
+            label="Storage used"
+            value={channel.storage}
+            detail={`${history.length} retained files`}
+            icon={HardDrive}
+          />
+        </div>
+      </div>
+      <section className="mt-8">
+        <SectionTitle title="Recording history" />
+        {history.length ? (
+          <>
+            <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
+              <RecordingHeader />
+              {history.map((r) => (
+                <RecordingRow key={r.id} recording={r} />
+              ))}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
+              {history.map((r) => (
+                <RecordingCard key={r.id} recording={r} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <EmptyState
+            title="No recordings yet"
+            body="The next livestream from this channel will appear here automatically."
+          />
+        )}
+      </section>
+      <ConfirmDialog
+        open={dialog === "pause"}
+        onOpenChange={(o) => !o && setDialog(null)}
+        title="Pause monitoring?"
+        body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
+        confirmLabel="Pause monitoring"
+        onConfirm={() => {
+          setState("Paused");
+          setDialog(null);
+          toast(`Monitoring paused for ${channel.handle}`);
+        }}
+      />
+      <ConfirmDialog
+        destructive
+        open={dialog === "remove"}
+        onOpenChange={(o) => !o && setDialog(null)}
+        title="Remove channel?"
+        body={`We’ll stop monitoring ${channel.handle}. Existing recordings stay in your library until you delete them or they expire.`}
+        confirmLabel="Remove channel"
+        onConfirm={() => {
+          setDialog(null);
+          toast.success(`${channel.handle} removed`);
+          navigate({ to: "/channels" });
+        }}
+      />
+    </AppShell>
+  );
+}
+function RecordingHeader() {
+  return (
+    <div className="grid grid-cols-[1.7fr_1fr_.7fr_.7fr_.8fr_.7fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+      <span>Recording</span>
+      <span>Streamer</span>
+      <span>Duration</span>
+      <span>Size</span>
+      <span>Expires</span>
+      <span>Status</span>
+      <span className="w-9" />
+    </div>
+  );
+}
+const libraryStates = [
+  { value: "populated", label: "Populated" },
+  { value: "loading", label: "Loading" },
+  { value: "empty", label: "Empty library" },
+  { value: "error", label: "API retrying" },
+] as const;
+const usageStates = [
+  { value: "normal", label: "Normal" },
+  { value: "warning", label: "80% warning" },
+  { value: "reached", label: "Quota reached" },
+  { value: "download", label: "Downloads exhausted" },
+  { value: "channels", label: "Channel limit" },
+] as const;
+const billingStates = [
+  { value: "active", label: "Pro active" },
+  { value: "free", label: "Free plan" },
+  { value: "payment_failed", label: "Payment failed" },
+  { value: "past_due", label: "Past due" },
+  { value: "canceling", label: "Canceled, active until" },
+] as const;
