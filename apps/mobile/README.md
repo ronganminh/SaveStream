@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 12 includes:
+Phase 13 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -29,11 +29,11 @@ Phase 12 includes:
 - Stop / Retry / Delete actions driven by backend-aligned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete` flags;
 - mutable mock recording actions for stop, retry, and delete, with Home and Channel recording history refresh signals;
 - artifact Play / Download UI gated by artifact readiness and reserved for real backend integration in Phase 12;
-- Credits / Usage screen with backend-aligned posted, reserved, and available balances;
-- low-credit explanation, recording usage totals, recent credit transactions, empty/loading/error states, and pull-to-refresh;
-- Billing screen with credit packages, recommended package treatment, recent payment orders, and buy CTA;
-- payment order status coverage for pending, paid, failed, cancelled, and expired;
-- mock checkout flow that creates pending orders and only transitions to paid after a repository status refetch, matching the backend-confirmation rule;
+- Credits screen with backend-authoritative integer posted, reserved, and available balances;
+- real credit ledger, reservation history, active reservation count, pricing metadata, empty/loading/error states, and pull-to-refresh;
+- Billing screen with backend credit packages, exact minor-unit money values, recent payment orders, and buy CTA;
+- payment order status coverage for created, pending, paid, failed, cancelled, expired, partially_refunded, and refunded;
+- real checkout flow that creates an order, creates provider checkout, returns through the `savestream:` deep link, and only treats payment as successful after backend status becomes `paid`;
 - Settings sections for Profile, Credits/Billing, Preferences, Legal, Account actions, and Developer tools;
 - Profile screen backed by `ProfileRepository`, including email and verified/unverified state;
 - dedicated Language screen for English / Vietnamese and Theme screen for Light / Dark / System;
@@ -99,9 +99,20 @@ Phase 12 includes:
 - terminal Recording state invalidates artifact data so completed/stopped artifacts can appear without restarting the screen;
 - artifact Play / Download now lists real artifacts and requests a fresh presigned download URL for every action instead of persisting expiring URLs;
 - Recording mutations invalidate list, canonical detail, realtime detail, artifacts, Home, and Channel history signals so UI state reconciles after commands;
-- Phase 12 tests cover UUID idempotency, all Recording statuses/action flags, cursor pagination, Active filtering, stop/delete endpoints, retry semantics, artifact URLs, authenticated SSE parsing, `Last-Event-ID`, reconnect, and sequence deduplication.
+- Phase 12 tests cover UUID idempotency, all Recording statuses/action flags, cursor pagination, Active filtering, stop/delete endpoints, retry semantics, artifact URLs, authenticated SSE parsing, `Last-Event-ID`, reconnect, and sequence deduplication;
+- real Credits integration against `/v1/credits/balance`, `/v1/credits/transactions`, `/v1/credits/reservations`, and `/v1/pricing`;
+- Credits remain integer-only end-to-end; the app never calculates final recording charges client-side;
+- cursor pagination for credit transactions and reservations stays inside `ApiCreditsRepository`;
+- an unconfigured backend pricing rule (`503 SERVICE_UNAVAILABLE`) leaves balance/ledger/reservations usable and displays pricing as unavailable;
+- Home available-credit metric now comes from the real credit balance while unrelated account metrics keep their existing repository boundary;
+- real Billing integration against packages, payment-order list/detail, create-order, and checkout endpoints;
+- create-order and checkout reuse one UUID idempotency key across retries of the same logical operation;
+- checkout opens the provider externally and returns through the `savestream:` custom URL scheme configured on Android and iOS;
+- returning from checkout never marks an order paid; the app polls/refetches backend payment status until a terminal state;
+- Credits/Home state is invalidated only after backend-confirmed `paid`, so the backend/webhook remains authoritative for posted credit;
+- Phase 13 tests cover integer credit mapping, ledger/reservation pagination, pricing-unavailable behavior, all payment statuses, money minor units, idempotency reuse, absolute checkout return URIs, backend polling, and no client-side credit mutation.
 
-Authentication, Channels/Watch management, and Recordings now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch and Recording repositories; Credits/Usage, Billing, and Profile keep their current mock repositories until later integration phases.
+Authentication, Channels/Watch management, Recordings, Credits, and Billing now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch/Recording data and the real available-credit balance; Profile remains on its current repository until a later integration phase.
 
 ## Requirements
 
@@ -191,7 +202,7 @@ Backend errors are expected in this shape:
 
 Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
 
-Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, Phase 11 for Watch/Channel data, and Phase 12 for Recording REST + SSE. Credits, Billing, and other remaining feature repository migrations stay scoped to later phases.
+Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, Phase 11 for Watch/Channel data, Phase 12 for Recording REST + SSE, and Phase 13 for Credits + Billing. Remaining feature repository migrations stay scoped to later phases.
 
 ## Secure authentication session
 
@@ -237,6 +248,35 @@ Recording creation sends a UUID v4 `Idempotency-Key`. Backend action flags remai
 Realtime detail uses authenticated SSE at `GET /v1/recordings/{id}/events`. The client forwards `Last-Event-ID`, ignores duplicate/out-of-order sequences, refetches the canonical Recording snapshot after accepted events, and reconnects with bounded exponential backoff. If SSE is unavailable, the repository falls back to the canonical Recording GET. Recording Detail only holds the SSE subscription while foregrounded; backgrounding releases it and foregrounding reconnects from a fresh snapshot.
 
 Artifact URLs are treated as short-lived capabilities. The app fetches the current artifact list, requests a new presigned URL for each Play/Download action, checks its expiry, and never persists the URL.
+
+## Credits and billing API integration
+
+Phase 13 replaces the production Credits and Billing mocks with authenticated API repositories while preserving mock implementations for tests/previews.
+
+Credits use the frozen integer contract:
+
+```text
+GET /v1/credits/balance
+GET /v1/credits/transactions
+GET /v1/credits/reservations
+GET /v1/pricing
+```
+
+The client never derives the final charge from pricing rules and never converts balances to floating point. Ledger and reservation cursors are consumed inside the repository. If pricing is not configured, the backend can return `503 SERVICE_UNAVAILABLE`; balance, transactions, and reservations still render while pricing is shown as unavailable.
+
+Billing uses:
+
+```text
+GET  /v1/billing/packages
+GET  /v1/billing/payment-orders
+POST /v1/billing/payment-orders
+GET  /v1/billing/payment-orders/{id}
+POST /v1/billing/payment-orders/{id}/checkout
+```
+
+Create-order and checkout commands use UUID idempotency keys and retain the same key when retrying the same logical operation after transport failure. Checkout opens the provider externally and returns through `savestream:/billing/return?order_id=...`, registered on Android and iOS.
+
+A browser/deep-link return is never considered proof of payment. The app reads/polls the payment order until the backend reports a terminal state, and only backend-confirmed `paid` invalidates/refetches Credits and Home balance state. Credit posting remains owned by verified backend webhook/reconciliation.
 
 ## Validation
 
