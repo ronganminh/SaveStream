@@ -106,6 +106,7 @@ import {
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
+import { trackEvent } from "@/lib/analytics";
 
 export { meta, publicMeta };
 const mainNav = [
@@ -905,7 +906,12 @@ export function RecordingThumb({ recording }: { recording: Recording }) {
 export function RecordingRow({ recording }: { recording: Recording }) {
   return (
     <div className="grid grid-cols-[1.7fr_1fr_.7fr_.7fr_.8fr_.7fr_auto] items-center gap-4 border-b px-4 py-3 text-sm last:border-0">
-      <Link to="/recordings/$id" params={{ id: recording.id }} className="flex items-center gap-3">
+      <Link
+        to="/recordings/$id"
+        params={{ id: recording.id }}
+        className="flex items-center gap-3"
+        onClick={() => trackEvent("recording_opened", { source: "list" })}
+      >
         <RecordingThumb recording={recording} />
         <span>
           <b className="block font-medium">
@@ -934,6 +940,7 @@ export function RecordingCard({ recording }: { recording: Recording }) {
         to="/recordings/$id"
         params={{ id: recording.id }}
         aria-label={`${recording.handle} — ${recording.title}`}
+        onClick={() => trackEvent("recording_opened", { source: "grid" })}
       >
         <div className={cn("relative aspect-video", recording.color)}>
           <div className="absolute inset-0 bg-thumbnail-grid" />
@@ -991,11 +998,12 @@ function RecordingActions({ recording }: { recording: Recording }) {
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={recording.status !== "Ready"}
-            onSelect={() =>
+            onSelect={() => {
+              trackEvent("download_clicked", { kind: "recording", result: "eligible" });
               toast.success("Download started", {
                 description: `${recording.size} · ${recording.handle} — ${recording.title}`,
-              })
-            }
+              });
+            }}
           >
             <Download />
             {t("Download")}
@@ -1082,6 +1090,9 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       return;
     }
     setState("resolving");
+    trackEvent("channel_lookup_started", {
+      input_kind: input.includes("tiktok.com/") ? "profile_url" : "username",
+    });
     const t = setTimeout(() => {
       if (channels.some((c) => c.handle === handle)) setState("exists");
       else if (handle.includes("notfound")) setState("notfound");
@@ -1100,6 +1111,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     if (state !== "found") return;
     setPhase("submitting");
     setTimeout(() => {
+      trackEvent("channel_added", { source: "dialog" });
       setPhase("success");
       toast.success(`Monitoring ${handle}`, {
         description: "We’ll record automatically when this channel goes live.",
@@ -1146,6 +1158,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     <Dialog
       open={open}
       onOpenChange={(o) => {
+        if (o) trackEvent("add_channel_opened", { source: "dialog" });
         setOpen(o);
         if (!o) setTimeout(reset, 200);
       }}
@@ -1671,6 +1684,7 @@ export function useChannelControls(channel: Channel) {
   const [removed, setRemoved] = useState(false);
   const toggle = (next: boolean) => {
     if (next) {
+      trackEvent("monitoring_toggled", { enabled: true, source: "list" });
       setOn(true);
       toast.success(`Monitoring resumed for ${channel.handle}`, {
         description: "We’ll record the next livestream automatically.",
@@ -1686,6 +1700,7 @@ export function useChannelControls(channel: Channel) {
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
         onConfirm={() => {
+          trackEvent("monitoring_toggled", { enabled: false, source: "list" });
           setOn(false);
           setDialog(null);
           toast(`Monitoring paused for ${channel.handle}`, {

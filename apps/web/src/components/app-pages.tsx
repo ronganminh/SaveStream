@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  useEffect,
   useState,
   type ComponentProps,
   type ElementType,
@@ -140,6 +141,7 @@ import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 import { isDemoMode } from "@/lib/app-config";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
+import { trackEvent } from "@/lib/analytics";
 import { useChannelsData, useRecordingsData, useUsageData } from "@/hooks/use-domain-data";
 
 export { meta, publicMeta } from "@/components/app-components";
@@ -252,7 +254,10 @@ function RecordingExamples() {
             <button
               key={item.id}
               type="button"
-              onClick={() => setSelected(item)}
+              onClick={() => {
+                trackEvent("sample_recording_played", { sample_id: item.id });
+                setSelected(item);
+              }}
               className="group overflow-hidden rounded-lg border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-dashboard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`${t("Watch sample recording")} ${index + 1}`}
             >
@@ -260,7 +265,10 @@ function RecordingExamples() {
                 <img
                   src={item.thumbnailUrl}
                   alt=""
+                  width={item.width}
+                  height={item.height}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5" />
@@ -401,7 +409,12 @@ export function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
-                <Link to="/sign-up">
+                <Link
+                  to="/sign-up"
+                  onClick={() =>
+                    trackEvent("landing_cta_clicked", { location: "hero", destination: "signup" })
+                  }
+                >
                   {t("Start for free")}
                   <ArrowRight />
                 </Link>
@@ -633,11 +646,17 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
       setErr("Passwords don’t match.");
       return;
     }
+    if (mode === "sign-up") {
+      trackEvent("signup_started", { method: "email" });
+    }
     setBusy(true);
     setTimeout(() => {
       setBusy(false);
       if (mode === "sign-in") navigate({ to: "/overview" });
-      else if (mode === "sign-up") navigate({ to: "/verify-email" });
+      else if (mode === "sign-up") {
+        trackEvent("signup_completed", { method: "email" });
+        navigate({ to: "/verify-email" });
+      }
       else setDone(true);
     }, 700);
   };
@@ -695,7 +714,10 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
           <Button
             variant="outline"
             className="mt-8 w-full"
-            onClick={() => toast("Google sign-in isn’t connected in this prototype.")}
+            onClick={() => {
+              trackEvent("signup_started", { method: "google" });
+              toast("Google sign-in isn’t connected in this prototype.");
+            }}
           >
             <span className="font-bold">G</span>Continue with Google
           </Button>
@@ -1428,11 +1450,15 @@ export function RecordingDetailPage({
   const channel = channels.find((c) => c.id === rec.channelId);
   const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
   const download = () => {
-    if (quota === "low") setUpgrade(true);
-    else
+    if (quota === "low") {
+      trackEvent("download_clicked", { kind: "recording", result: "quota_insufficient" });
+      setUpgrade(true);
+    } else {
+      trackEvent("download_clicked", { kind: "recording", result: "eligible" });
       toast.success("Download started", {
         description: `${rec.size} · ${rec.handle} — ${rec.title}`,
       });
+    }
   };
   const actions =
     state === "ready" ? (
@@ -1474,11 +1500,12 @@ export function RecordingDetailPage({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          onClick={() =>
+          onClick={() => {
+            trackEvent("download_clicked", { kind: "partial", result: "eligible" });
             toast.success("Partial download started", {
               description: `${rec.partialDuration} · ${rec.size}`,
-            })
-          }
+            });
+          }}
         >
           <Download />
           Download partial
@@ -1673,6 +1700,16 @@ export function UsagePage() {
   const { query: usageQuery, state: usageState } = useUsageData();
   const { query: recordingsQuery } = useRecordingsData();
   const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
+
+  useEffect(() => {
+    if (mock === "warning" || mock === "reached") {
+      trackEvent("quota_warning_viewed", { kind: "recording_hours" });
+    } else if (mock === "download") {
+      trackEvent("quota_warning_viewed", { kind: "download" });
+    } else if (mock === "channels") {
+      trackEvent("quota_warning_viewed", { kind: "channels" });
+    }
+  }, [mock]);
 
   if (usageState.kind === "loading" || !usageQuery.data) {
     return (
@@ -2179,6 +2216,11 @@ export function AdminSystemPage() {
 }
 export function PricingPage() {
   const { t, language } = usePreferences();
+
+  useEffect(() => {
+    trackEvent("pricing_viewed", { source: "route" });
+  }, []);
+
   return (
     <>
       <PublicHeader />
@@ -2196,7 +2238,14 @@ export function PricingPage() {
               features={[...plan.features]}
               action={
                 <Button variant={plan.id === "pro" ? "default" : "outline"} className="mt-6 w-full" asChild>
-                  <Link to="/sign-up">{t(plan.id === "pro" ? "Start with Pro" : "Start for free")}</Link>
+                  <Link
+                    to="/sign-up"
+                    onClick={() =>
+                      trackEvent("plan_selected", { plan: plan.id, source: "pricing" })
+                    }
+                  >
+                    {t(plan.id === "pro" ? "Start with Pro" : "Start for free")}
+                  </Link>
                 </Button>
               }
             />
@@ -2319,6 +2368,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
   const history = recordings.filter((r) => r.channelId === channel.id);
   const toggle = (v: boolean) => {
     if (v) {
+      trackEvent("monitoring_toggled", { enabled: true, source: "detail" });
       setState("Waiting");
       toast.success(`Monitoring resumed for ${channel.handle}`);
     } else setDialog("pause");
@@ -2561,6 +2611,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
         onConfirm={() => {
+          trackEvent("monitoring_toggled", { enabled: false, source: "detail" });
           setState("Paused");
           setDialog(null);
           toast(`Monitoring paused for ${channel.handle}`);
