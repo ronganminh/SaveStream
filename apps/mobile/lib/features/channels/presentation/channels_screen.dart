@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/watch_summary.dart';
@@ -32,51 +30,52 @@ class ChannelsScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: watches.when(
-          loading: () => const _ChannelsSkeleton(),
-          error: (Object error, StackTrace stackTrace) => Center(
-            child: SsErrorState(
-              title: _errorTitle(l10n, error),
-              message: _errorMessage(l10n, error),
-              retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(watchListProvider),
-            ),
-          ),
-          data: (List<WatchSummary> items) {
-            if (items.isEmpty) {
-              return _EmptyChannels(
-                onAdd: () => context.push(AppRoutes.addChannel),
-              );
-            }
-
-            return RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(watchListProvider);
-                await ref.read(watchListProvider.future);
-              },
-              child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(
-                  SsSpacing.lg,
-                  SsSpacing.md,
-                  SsSpacing.lg,
-                  SsSpacing.xxl,
-                ),
-                itemCount: items.length + 1,
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: SsSpacing.md),
-                itemBuilder: (BuildContext context, int index) {
-                  if (index == 0) {
-                    return _ChannelsHeader(
-                      count: items.length,
-                      onAdd: () => context.push(AppRoutes.addChannel),
-                    );
-                  }
-                  return _ChannelCard(watch: items[index - 1]);
-                },
+        child: SsAsyncRefreshFrame(
+          isRefreshing: watches.isRefreshing,
+          child: watches.when(
+            loading: () => const _ChannelsSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(watchListProvider),
               ),
-            );
-          },
+            ),
+            data: (List<WatchSummary> items) {
+              if (items.isEmpty) {
+                return _EmptyChannels(
+                  onAdd: () => context.push(AppRoutes.addChannel),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(watchListProvider);
+                  await ref.read(watchListProvider.future);
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(
+                    SsSpacing.lg,
+                    SsSpacing.md,
+                    SsSpacing.lg,
+                    SsSpacing.xxl,
+                  ),
+                  itemCount: items.length + 1,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: SsSpacing.md),
+                  itemBuilder: (BuildContext context, int index) {
+                    if (index == 0) {
+                      return _ChannelsHeader(
+                        count: items.length,
+                        onAdd: () => context.push(AppRoutes.addChannel),
+                      );
+                    }
+                    return _ChannelCard(watch: items[index - 1]);
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -312,26 +311,4 @@ class _ChannelsSkeleton extends StatelessWidget {
       ],
     );
   }
-}
-
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
 }

@@ -25,15 +25,17 @@ class SsErrorState extends StatelessWidget {
   const SsErrorState({
     required this.title,
     required this.message,
-    required this.retryLabel,
-    required this.onRetry,
+    this.retryLabel,
+    this.onRetry,
+    this.details,
     super.key,
   });
 
   final String title;
   final String message;
-  final String retryLabel;
+  final String? retryLabel;
   final VoidCallback? onRetry;
+  final String? details;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +44,10 @@ class SsErrorState extends StatelessWidget {
       iconColor: Theme.of(context).colorScheme.error,
       title: title,
       message: message,
-      action: SsSecondaryButton(label: retryLabel, onPressed: onRetry),
+      details: details,
+      action: retryLabel != null && onRetry != null
+          ? SsSecondaryButton(label: retryLabel!, onPressed: onRetry)
+          : null,
     );
   }
 }
@@ -109,6 +114,7 @@ class _StateLayout extends StatelessWidget {
     required this.message,
     this.iconColor,
     this.action,
+    this.details,
   });
 
   final IconData icon;
@@ -116,6 +122,7 @@ class _StateLayout extends StatelessWidget {
   final String message;
   final Color? iconColor;
   final Widget? action;
+  final String? details;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +148,16 @@ class _StateLayout extends StatelessWidget {
             ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
+          if (details != null) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            SelectableText(
+              details!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
           if (action != null) ...<Widget>[
             const SizedBox(height: SsSpacing.lg),
             action!,

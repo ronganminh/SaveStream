@@ -439,5 +439,16 @@
         "type": "int"
       }
     }
-  }
+  },
+  "nonRetryableErrorTitle": "This can’t be completed",
+  "nonRetryableErrorBody": "SaveStream can’t retry this request automatically. Try again later or contact support if the issue continues.",
+  "requestIdLabel": "Request ID: {requestId}",
+  "@requestIdLabel": {
+    "placeholders": {
+      "requestId": {
+        "type": "String"
+      }
+    }
+  },
+  "refreshingLabel": "Refreshing…"
 }

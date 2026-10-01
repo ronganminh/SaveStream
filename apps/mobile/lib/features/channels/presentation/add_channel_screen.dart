@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
-import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/models/watch_summary.dart';
@@ -105,10 +104,9 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
                     Text(l10n.addChannelBody),
                     const SizedBox(height: SsSpacing.xl),
                     if (_error != null) ...<Widget>[
-                      SsErrorState(
-                        title: _errorTitle(l10n, _error!),
-                        message: _errorMessage(l10n, _error!),
-                        retryLabel: l10n.retryAction,
+                      SsAsyncErrorState(
+                        error: _error!,
+                        messageOverride: _addChannelErrorMessage(l10n, _error!),
                         onRetry: _submit,
                       ),
                       const SizedBox(height: SsSpacing.lg),
@@ -193,27 +191,9 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
   }
 }
 
-String _errorTitle(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorTitle;
-  }
-  return l10n.errorTitle;
-}
-
-String _errorMessage(AppLocalizations l10n, Object error) {
-  if (_isOfflineLike(error)) {
-    return l10n.offlineErrorBody;
-  }
+String? _addChannelErrorMessage(AppLocalizations l10n, Object error) {
   if (error is ApiException && error.kind == ApiExceptionKind.conflict) {
     return l10n.watchAlreadyExistsMessage;
   }
-  return l10n.errorBody;
-}
-
-bool _isOfflineLike(Object error) {
-  return (error is MockRepositoryException &&
-          error.kind == MockFailureKind.offlineLike) ||
-      (error is ApiException &&
-          (error.kind == ApiExceptionKind.network ||
-              error.kind == ApiExceptionKind.timeout));
+  return null;
 }
