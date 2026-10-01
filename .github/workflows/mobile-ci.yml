@@ -38,6 +38,9 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show auth test formatting
+        run: dart format --output=show test/auth_phase10_test.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
