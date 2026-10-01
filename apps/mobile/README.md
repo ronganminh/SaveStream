@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 10 includes:
+Phase 11 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -72,9 +72,21 @@ Phase 10 includes:
 - Android secure-storage requirements are configured with API 23 minimum and Auto Backup disabled;
 - iOS Keychain Sharing entitlements are configured for Debug/Profile and Release;
 - Verify Email and Reset Password screens use backend one-time tokens and can accept a `token` query parameter;
-- Phase 10 auth/session unit tests cover mobile login payloads, token rotation, restart restore, serialized refresh, 401 replay, session revocation, logout cleanup, storage failure, and backend error-code mapping.
+- Phase 10 auth/session unit tests cover mobile login payloads, token rotation, restart restore, serialized refresh, 401 replay, session revocation, logout cleanup, storage failure, and backend error-code mapping;
+- real Channels / Watch integration against `/v1/watches`;
+- typed Watch response mapping for `active`, `paused`, `paused_insufficient_credit`, `paused_error`, and `disabled`;
+- typed live-status mapping for `unknown`, `offline`, and `live`;
+- backend Watch source mapping for username, profile URL, and room ID responses while the Add Channel UI keeps its existing username/URL inputs;
+- cursor pagination is consumed inside `ApiWatchRepository` so existing Channels/Home screens keep the same `listWatches()` contract;
+- create, detail, auto-record update, pause, resume, and delete now call the real authenticated Watch API in production;
+- `RESOURCE_NOT_FOUND` detail responses map to the existing nullable repository contract without exposing JSON to presentation code;
+- duplicate Watch conflicts and resume `INSUFFICIENT_CREDITS` use typed API categories instead of message parsing;
+- Watch mutations always invalidate/refetch list, detail, and Home Watch state after success or failure, reconciling server-side partial state such as a 402 resume that persists `paused_insufficient_credit`;
+- Home automatically uses real Watch data through the existing shared `watchRepositoryProvider`;
+- Watch state remains REST-based with refresh/refetch; no Watch-specific SSE contract is invented;
+- Phase 11 tests cover status mapping, creator fallback, cursor pagination, create/mutation payloads, 404 handling, 402 handling, malformed status rejection, and failed-mutation reconciliation.
 
-Authentication now uses the real backend API in production bootstrap while mock auth remains available for tests/previews. Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile keep their existing mock repositories; their real repository migration remains scoped to Phases 11–13.
+Authentication and Channels/Watch management now use real backend APIs in production bootstrap while their mock implementations remain available for tests/previews. Home consumes the real Watch repository for monitored-channel data; Recordings, Credits/Usage, Billing, and Profile keep their current mock repositories until their later integration phases.
 
 ## Requirements
 
@@ -116,10 +128,16 @@ Auth screen
         -> AuthSessionManager
         -> ApiClient
 
-Feature screen
+Channels / Home Watch slice
+  -> Riverpod provider/controller
+  -> WatchRepository
+     -> ApiWatchRepository
+        -> authenticated ApiClient
+
+Other feature screen
   -> Riverpod provider/controller
   -> Repository interface
-  -> Mock repository (until Phases 11-13)
+  -> Mock repository (until later phases)
 
 MaterialApp.router
   -> guards
@@ -127,7 +145,7 @@ MaterialApp.router
   -> four preserved tab stacks
 ```
 
-The mock layer remains replaceable by API repositories in later phases without moving raw HTTP into presentation code.
+Repository boundaries remain intact: Watch has moved from `MockWatchRepository` to `ApiWatchRepository` in production without moving raw HTTP into presentation code, and the remaining mock-backed features can follow the same pattern.
 
 Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are separate: access tokens stay in memory and refresh tokens use platform secure storage.
 
@@ -151,7 +169,7 @@ Backend errors are expected in this shape:
 
 Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
 
-Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication; Watch, Recording, Credits, Billing, and other feature repository migrations remain scoped to Phases 11–13.
+Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, and Phase 11 consumes the authenticated client for real Watch/Channel data. Recording, Credits, Billing, and other feature repository migrations remain scoped to later phases.
 
 ## Secure authentication session
 
@@ -160,6 +178,23 @@ Production bootstrap starts unauthenticated, creates an `AuthRuntime`, then atte
 The authenticated Dio client attaches the current access token and uses `ApiSessionRefreshInterceptor` for one 401 refresh-and-replay attempt. `AuthSessionManager` serializes concurrent refresh calls so a rotating refresh token cannot be consumed by multiple requests at once. If the backend reports `AUTH_SESSION_REVOKED`, or if the rotated refresh token cannot be persisted safely, the local session is invalidated instead of reusing stale credentials.
 
 Platform setup for secure refresh-token storage is committed with the app: Android uses minimum API 23 and disables Auto Backup; iOS Runner configurations use Keychain Sharing entitlements. No access or refresh token is written to SharedPreferences.
+
+## Watch API integration
+
+Phase 11 replaces the production `MockWatchRepository` with `ApiWatchRepository` while keeping the existing screen and controller contracts. The repository maps the frozen Watch schema into `WatchSummary` and owns cursor traversal for `GET /v1/watches`, so presentation code never handles cursors or raw JSON.
+
+Production Watch operations now use:
+
+```text
+POST   /v1/watches
+GET    /v1/watches
+GET    /v1/watches/{id}
+PATCH  /v1/watches/{id}
+DELETE /v1/watches/{id}
+POST   /v1/watches/{id}/resume
+```
+
+The backend has no Watch-specific SSE endpoint. Watch/Channel state therefore uses the REST GET contract and normal provider refresh/refetch behavior. Mutation controllers invalidate list, detail, and Home Watch state in a `finally` path, so a failed mutation is reconciled with server truth. This matters for resume: the backend may persist `paused_insufficient_credit` before returning `402 INSUFFICIENT_CREDITS`.
 
 ## Validation
 

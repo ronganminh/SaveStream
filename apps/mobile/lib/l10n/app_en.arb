@@ -80,7 +80,7 @@
   "offlineErrorBody": "SaveStream could not reach the service. Check your connection and try again.",
   "channelDetailTitle": "Channel detail",
   "channelNotFoundTitle": "Channel not found",
-  "channelNotFoundBody": "This mock channel is not available.",
+  "channelNotFoundBody": "This channel Watch is no longer available.",
   "watchStatusLabel": "Watch status",
   "watchStatusActive": "Active",
   "watchStatusPaused": "Paused",
@@ -202,7 +202,7 @@
   "watchReasonDisabled": "This Watch is disabled.",
   "addChannelTitle": "Add channel",
   "addChannelHeading": "Monitor a TikTok creator",
-  "addChannelBody": "Enter a TikTok username or profile URL. SaveStream will resolve the creator when the backend Watch API is connected.",
+  "addChannelBody": "Enter a TikTok username or profile URL. SaveStream will resolve the creator and begin monitoring through the Watch service.",
   "channelSourceLabel": "TikTok username or profile URL",
   "channelSourceHint": "@creator or https://www.tiktok.com/@creator",
   "channelSourceRequired": "Enter a TikTok username or profile URL.",
@@ -397,5 +397,7 @@
   "enterResetTokenAction": "I have a reset token",
   "authInvalidTokenMessage": "This verification or reset token is invalid or expired.",
   "authValidationErrorMessage": "Check the entered information and try again.",
-  "authSessionExpiredMessage": "Your session has expired. Sign in again."
+  "authSessionExpiredMessage": "Your session has expired. Sign in again.",
+  "watchAlreadyExistsMessage": "A Watch for this creator already exists.",
+  "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again."
 }
