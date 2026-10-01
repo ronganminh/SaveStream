@@ -133,39 +133,33 @@ void main() {
     expect(await refreshStore.read(), 'refresh-new');
   });
 
-  test(
-    'refresh storage failure invalidates old rotated credentials',
-    () async {
-      final _StubPublicApi api = _StubPublicApi()
-        ..refreshHandler = (String token) async {
-          return const AuthTokenPair(
-            accessToken: 'access-new',
-            refreshToken: 'refresh-new',
-            expiresIn: 900,
-          );
-        };
-      final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore()
-        ..setAccessToken('access-old');
-      final _FailingWriteRefreshTokenStore refreshStore =
-          _FailingWriteRefreshTokenStore('refresh-old');
-      final AppSessionController session = AppSessionController();
-      final AuthSessionManager manager = AuthSessionManager(
-        publicApi: api,
-        accessTokenStore: accessStore,
-        refreshTokenStore: refreshStore,
-        appSession: session,
-      );
+  test('refresh storage failure invalidates old rotated credentials', () async {
+    final _StubPublicApi api = _StubPublicApi()
+      ..refreshHandler = (String token) async {
+        return const AuthTokenPair(
+          accessToken: 'access-new',
+          refreshToken: 'refresh-new',
+          expiresIn: 900,
+        );
+      };
+    final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore()
+      ..setAccessToken('access-old');
+    final _FailingWriteRefreshTokenStore refreshStore =
+        _FailingWriteRefreshTokenStore('refresh-old');
+    final AppSessionController session = AppSessionController();
+    final AuthSessionManager manager = AuthSessionManager(
+      publicApi: api,
+      accessTokenStore: accessStore,
+      refreshTokenStore: refreshStore,
+      appSession: session,
+    );
 
-      await expectLater(
-        manager.refreshAccessToken(),
-        throwsA(isA<StateError>()),
-      );
+    await expectLater(manager.refreshAccessToken(), throwsA(isA<StateError>()));
 
-      expect(await accessStore.getAccessToken(), isNull);
-      expect(await refreshStore.read(), isNull);
-      expect(session.isAuthenticated, isFalse);
-    },
-  );
+    expect(await accessStore.getAccessToken(), isNull);
+    expect(await refreshStore.read(), isNull);
+    expect(session.isAuthenticated, isFalse);
+  });
 
   test('refresh reuse or revoked session clears local credentials', () async {
     final _StubPublicApi api = _StubPublicApi()
