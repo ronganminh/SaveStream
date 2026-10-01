@@ -28,7 +28,10 @@ x-app-env: &app-env
   SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: "100"
   SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: "100"
   SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: "2"
-  SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
+  SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+  SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+  SAVESTREAM_RECORDING_HEARTBEAT_SECONDS: "1"
+  SAVESTREAM_RECORDING_STALE_AFTER_SECONDS: "20"
   SAVESTREAM_RECORDING_RETENTION_DAYS: "0"
   SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS: "0"
 
@@ -69,6 +72,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      fake-stream:
+        condition: service_healthy
 
   worker:
     build:
@@ -89,6 +94,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      fake-stream:
         condition: service_healthy
 
   scheduler:
@@ -163,6 +170,19 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    networks:
+      - backend
+
+  fake-stream:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command: ["python", "-m", "app.e2e.fake_stream_server"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8090/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
     networks:
       - backend
 
