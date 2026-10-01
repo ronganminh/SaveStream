@@ -111,3 +111,5 @@ flutter test
 ```
 
 CI runs the same checks on `feat/flutter-mobile`.
+
+Phase 8 settings validation additionally covers unverified profile fallback, all Theme options, VI/EN round-trip switching, Notifications/Privacy/Terms navigation, and Delete Account cancellation.
