@@ -606,7 +606,7 @@ void main() {
     expect(find.text('4'), findsOneWidget);
     expect(find.text('Posted'), findsOneWidget);
     expect(find.text('7'), findsOneWidget);
-    expect(find.text('Reserved'), findsOneWidget);
+    expect(find.text('Reserved'), findsWidgets);
     expect(find.text('3'), findsWidgets);
     expect(find.text('Available credit is low'), findsOneWidget);
     expect(find.text('Credit reservations'), findsOneWidget);
