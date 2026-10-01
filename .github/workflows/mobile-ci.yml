@@ -38,6 +38,9 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show billing provider formatting
+        run: dart format --output=show lib/features/billing/presentation/controllers/billing_providers.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
