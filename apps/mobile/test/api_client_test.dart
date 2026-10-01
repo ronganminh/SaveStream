@@ -61,21 +61,19 @@ void main() {
   test(
     'attaches bearer token without exposing token to typed errors',
     () async {
-      final _FakeAdapter adapter = _FakeAdapter(
-        (RequestOptions options, int call) {
-          expect(options.headers['Authorization'], 'Bearer secret-token');
-          return _jsonResponse(200, <String, Object?>{'name': 'ok'});
-        },
-      );
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        expect(options.headers['Authorization'], 'Bearer secret-token');
+        return _jsonResponse(200, <String, Object?>{'name': 'ok'});
+      });
       final ApiClient client = clientFor(
         adapter,
         accessTokenProvider: const _StaticTokenProvider('secret-token'),
       );
 
-      await client.get<_Payload>(
-        '/v1/auth-check',
-        decoder: _Payload.fromJson,
-      );
+      await client.get<_Payload>('/v1/auth-check', decoder: _Payload.fromJson);
     },
   );
 
@@ -83,11 +81,8 @@ void main() {
     final ApiException exception = await _capture(
       clientFor(
         _FakeAdapter(
-          (RequestOptions options, int call) => _errorResponse(
-            401,
-            code: 'AUTH_REQUIRED',
-            requestId: 'req_401',
-          ),
+          (RequestOptions options, int call) =>
+              _errorResponse(401, code: 'AUTH_REQUIRED', requestId: 'req_401'),
         ),
       ).get<_Payload>('/v1/private', decoder: _Payload.fromJson),
     );
@@ -136,11 +131,8 @@ void main() {
     final ApiException exception = await _capture(
       clientFor(
         _FakeAdapter(
-          (RequestOptions options, int call) => _errorResponse(
-            429,
-            code: 'RATE_LIMITED',
-            retryable: true,
-          ),
+          (RequestOptions options, int call) =>
+              _errorResponse(429, code: 'RATE_LIMITED', retryable: true),
         ),
       ).get<_Payload>('/v1/limited', decoder: _Payload.fromJson),
     );
@@ -216,18 +208,15 @@ void main() {
   });
 
   test('retries GET once for retryable server failure', () async {
-    final _FakeAdapter adapter = _FakeAdapter(
-      (RequestOptions options, int call) {
-        if (call == 1) {
-          return _errorResponse(
-            503,
-            code: 'TEMPORARY_FAILURE',
-            retryable: true,
-          );
-        }
-        return _jsonResponse(200, <String, Object?>{'name': 'recovered'});
-      },
-    );
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      if (call == 1) {
+        return _errorResponse(503, code: 'TEMPORARY_FAILURE', retryable: true);
+      }
+      return _jsonResponse(200, <String, Object?>{'name': 'recovered'});
+    });
     final ApiClient client = clientFor(
       adapter,
       retryPolicy: const ApiRetryPolicy(
@@ -311,11 +300,7 @@ Future<ApiException> _capture(Future<Object?> future) async {
   }
 }
 
-ResponseBody _jsonResponse(
-  int statusCode,
-  Object body, {
-  String? requestId,
-}) {
+ResponseBody _jsonResponse(int statusCode, Object body, {String? requestId}) {
   return ResponseBody.fromString(
     jsonEncode(body),
     statusCode,
