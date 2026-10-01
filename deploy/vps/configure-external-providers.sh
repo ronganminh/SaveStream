@@ -41,6 +41,11 @@ IFS= read -r LEMON_VARIANT_ID
 [ -n "$SMTP_PASSWORD" ] || { echo 'Brevo SMTP key is required.' >&2; exit 2; }
 [ -n "$PAYMENT_API_KEY" ] || { echo 'Lemon Squeezy API key is required.' >&2; exit 2; }
 [ -n "$PAYMENT_WEBHOOK_SECRET" ] || { echo 'Lemon Squeezy webhook secret is required.' >&2; exit 2; }
+WEBHOOK_SECRET_LENGTH=${#PAYMENT_WEBHOOK_SECRET}
+if [ "$WEBHOOK_SECRET_LENGTH" -lt 6 ] || [ "$WEBHOOK_SECRET_LENGTH" -gt 40 ]; then
+  echo 'Lemon Squeezy webhook secret must be 6 to 40 characters.' >&2
+  exit 2
+fi
 [ -n "$LEMON_STORE_ID" ] || { echo 'Lemon Squeezy Store ID is required.' >&2; exit 2; }
 [ -n "$LEMON_VARIANT_ID" ] || { echo 'Lemon Squeezy Variant ID is required.' >&2; exit 2; }
 
