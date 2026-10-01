@@ -236,7 +236,7 @@ Future<String> _waitForVerificationToken(
 String _decodeQuotedPrintable(String input) {
   final String joined = input.replaceAll('=\r\n', '').replaceAll('=\n', '');
   return joined.replaceAllMapped(RegExp(r'=([0-9A-Fa-f]{2})'), (
-    RegExpMatch match,
+    Match match,
   ) {
     return String.fromCharCode(int.parse(match.group(1)!, radix: 16));
   });
