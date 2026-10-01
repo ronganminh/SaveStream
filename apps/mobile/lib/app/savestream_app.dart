@@ -118,7 +118,9 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
             widget.billingRepository!,
           ),
         if (widget.profileRepository != null)
-          profileRepositoryProvider.overrideWithValue(widget.profileRepository!),
+          profileRepositoryProvider.overrideWithValue(
+            widget.profileRepository!,
+          ),
       ],
       child: AnimatedBuilder(
         animation: _settings,

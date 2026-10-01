@@ -101,14 +101,14 @@ void main() {
         final initialBalance = await creditsRepository.getBalance();
         expect(initialBalance.posted, 0);
 
-        final PaymentOrder? created = await billingRepository.createPaymentOrder(
-          package.id,
-        );
+        final PaymentOrder? created = await billingRepository
+            .createPaymentOrder(package.id);
         expect(created, isNotNull);
-        final CheckoutSession? checkout = await billingRepository.createCheckout(
-          orderId: created!.id,
-          returnUri: Uri.parse('https://example.test/payment-return'),
-        );
+        final CheckoutSession? checkout = await billingRepository
+            .createCheckout(
+              orderId: created!.id,
+              returnUri: Uri.parse('https://example.test/payment-return'),
+            );
         expect(checkout, isNotNull);
         expect(checkout!.paymentOrder.status, PaymentOrderStatus.pending);
 
@@ -234,9 +234,7 @@ Future<String> _waitForVerificationToken(
 }
 
 String _decodeQuotedPrintable(String input) {
-  final String joined = input
-      .replaceAll('=\r\n', '')
-      .replaceAll('=\n', '');
+  final String joined = input.replaceAll('=\r\n', '').replaceAll('=\n', '');
   return joined.replaceAllMapped(RegExp(r'=([0-9A-Fa-f]{2})'), (
     RegExpMatch match,
   ) {
