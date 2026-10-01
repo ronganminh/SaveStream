@@ -83,17 +83,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { user, type Notification, type Status as LegacyStatus } from "@/mocks/fixtures";
 import {
-  channelLookupExamples,
-  channels,
-  recordings,
-  usage,
-  user,
+  channelStatusLabels,
+  recordingStatusLabels,
   type Channel,
-  type Notification,
+  type ChannelStatus,
   type Recording,
-  type Status,
-} from "@/mocks/fixtures";
+  type RecordingStatus,
+} from "@/domain/models";
+import { addChannelCopy, type AddChannelState } from "@/domain/lifecycles";
+import {
+  useChannelsResource,
+  useRecordingsResource,
+  useRepositoryActions,
+  useUsageResource,
+} from "@/data/repository-hooks";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
 import {
   canAccessRoute,
@@ -165,31 +170,60 @@ export function PlatformBadge({ soon = false }: { soon?: boolean }) {
     </span>
   );
 }
-const statusStyles: Record<Status, string> = {
-  Recording: "border-recording/20 bg-recording-subtle text-recording",
-  Processing: "border-info/20 bg-info-subtle text-info",
-  Ready: "border-success/20 bg-success-subtle text-success",
-  Waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
-  Offline: "border-border bg-muted text-muted-foreground",
-  Paused: "border-border bg-muted text-muted-foreground",
-  Error: "border-recording/20 bg-recording-subtle text-recording",
+type BadgeStatus = ChannelStatus | RecordingStatus | LegacyStatus;
+
+const statusStyles: Record<ChannelStatus | RecordingStatus, string> = {
+  offline: "border-border bg-muted text-muted-foreground",
+  checking: "border-info/20 bg-info-subtle text-info",
+  waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
+  live: "border-success/20 bg-success-subtle text-success",
+  recording: "border-recording/20 bg-recording-subtle text-recording",
+  paused: "border-border bg-muted text-muted-foreground",
+  error: "border-recording/20 bg-recording-subtle text-recording",
+  queued: "border-border bg-muted text-muted-foreground",
+  processing: "border-info/20 bg-info-subtle text-info",
+  ready: "border-success/20 bg-success-subtle text-success",
+  partial: "border-warning/30 bg-warning-subtle text-warning-foreground",
+  failed: "border-recording/20 bg-recording-subtle text-recording",
+  expired: "border-border bg-muted text-muted-foreground",
+  deleting: "border-warning/30 bg-warning-subtle text-warning-foreground",
 };
-export function StatusBadge({ status, pulse = false }: { status: Status; pulse?: boolean }) {
+
+function normalizeBadgeStatus(status: BadgeStatus): ChannelStatus | RecordingStatus {
+  const legacy: Record<LegacyStatus, ChannelStatus | RecordingStatus> = {
+    Recording: "recording",
+    Processing: "processing",
+    Ready: "ready",
+    Waiting: "waiting",
+    Offline: "offline",
+    Paused: "paused",
+    Error: "error",
+  };
+  return status in legacy ? legacy[status as LegacyStatus] : (status as ChannelStatus | RecordingStatus);
+}
+
+function badgeLabel(status: ChannelStatus | RecordingStatus) {
+  if (status in channelStatusLabels) return channelStatusLabels[status as ChannelStatus];
+  return recordingStatusLabels[status as RecordingStatus];
+}
+
+export function StatusBadge({ status, pulse = false }: { status: BadgeStatus; pulse?: boolean }) {
   const { t } = usePreferences();
+  const normalized = normalizeBadgeStatus(status);
   const icon =
-    status === "Ready" ? (
+    normalized === "ready" ? (
       <Check className="size-3" />
-    ) : status === "Processing" ? (
+    ) : normalized === "processing" || normalized === "checking" || normalized === "deleting" ? (
       <span className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
-    ) : status === "Paused" ? (
+    ) : normalized === "paused" ? (
       <Pause className="size-3" />
-    ) : status === "Error" ? (
+    ) : normalized === "error" || normalized === "failed" ? (
       <AlertTriangle className="size-3" />
     ) : (
       <span
         className={cn(
           "size-1.5 rounded-full bg-current",
-          (pulse || status === "Recording") && "animate-pulse",
+          (pulse || normalized === "recording" || normalized === "live") && "animate-pulse",
         )}
       />
     );
@@ -197,14 +231,15 @@ export function StatusBadge({ status, pulse = false }: { status: Status; pulse?:
     <span
       className={cn(
         "inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-xs font-medium",
-        statusStyles[status],
+        statusStyles[normalized],
       )}
     >
       {icon}
-      {t(status)}
+      {t(badgeLabel(normalized))}
     </span>
   );
 }
+
 export function UsageProgress({
   value,
   label,
@@ -677,6 +712,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
+  const { data: channels } = useChannelsResource();
   if (empty)
     return (
       <section className="border-y bg-surface px-5 py-8">
@@ -704,7 +740,7 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
           <span className="size-2 animate-pulse rounded-full bg-recording" />
           {t("Active recording")}
         </div>
-        <StatusBadge status="Recording" />
+        <StatusBadge status="recording" />
       </div>
       <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:items-center">
         <div className="flex items-center gap-4">
@@ -802,7 +838,7 @@ export function ChannelRow({ channel }: { channel: Channel }) {
           When monitoring is on, we’ll automatically record the next livestream.
         </TooltipContent>
       </Tooltip>
-      <StatusBadge status={c.on ? channel.status : "Paused"} />
+      <StatusBadge status={c.on ? channel.status : "paused"} />
       <span className="text-muted-foreground">{channel.checked}</span>
       <MoreMenu channel={channel} controls={c} />
       {c.dialogs}
@@ -969,6 +1005,8 @@ export function RecordingCard({ recording }: { recording: Recording }) {
 function RecordingActions({ recording }: { recording: Recording }) {
   const navigate = useNavigate();
   const [del, setDel] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const { prepareDownload } = useRepositoryActions();
   const { t } = usePreferences();
   return (
     <>
@@ -990,12 +1028,24 @@ function RecordingActions({ recording }: { recording: Recording }) {
             {t("View recording")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={recording.status !== "Ready"}
-            onSelect={() =>
-              toast.success("Download started", {
-                description: `${recording.size} · ${recording.handle} — ${recording.title}`,
-              })
-            }
+            disabled={recording.status !== "ready" || downloading}
+            onSelect={() => {
+              if (downloading) return;
+              setDownloading(true);
+              void prepareDownload(recording.id)
+                .then((result) => {
+                  if (result.state === "started") {
+                    toast.success(t("Download started"), {
+                      description: `${recording.size} · ${recording.handle} — ${recording.title}`,
+                    });
+                  } else if (result.state === "quota_insufficient") {
+                    toast.error(t("Not enough download quota"));
+                  } else {
+                    toast.error(t("File unavailable"));
+                  }
+                })
+                .finally(() => setDownloading(false));
+            }}
           >
             <Download />
             {t("Download")}
@@ -1030,7 +1080,7 @@ export function VideoPlayerShell({
       )}
       {state === "active" && (
         <div className="relative text-center">
-          <StatusBadge status="Recording" />
+          <StatusBadge status="recording" />
           <p className="mt-5 font-mono text-4xl font-semibold">01:42:18</p>
           <p className="mt-2 text-sm text-player-muted">
             Playback will be available after the livestream ends.
@@ -1061,93 +1111,87 @@ export function VideoPlayerShell({
 export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const navigate = useNavigate();
   const { t } = usePreferences();
+  const { data: channels } = useChannelsResource();
+  const { data: usage } = useUsageResource();
+  const { lookupChannel, addChannel } = useRepositoryActions();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [state, setState] = useState<LookupState>("idle");
-  const [phase, setPhase] = useState<"form" | "submitting" | "success">("form");
-  const handle = useMemo(() => {
-    const t = input.trim();
-    const m = t.match(/tiktok\.com\/@([A-Za-z0-9._]{2,24})/i);
-    if (m) return "@" + m[1]!.toLowerCase();
-    const h = t.replace(/^@/, "");
-    return /^[A-Za-z0-9._]{2,24}$/.test(h) ? "@" + h.toLowerCase() : null;
-  }, [input]);
+  const [flow, setFlow] = useState<AddChannelState>("empty");
+  const [profile, setProfile] = useState<{
+    name: string;
+    handle: string;
+    initials: string;
+    platform: "tiktok";
+  } | null>(null);
+  const [authorized, setAuthorized] = useState(false);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
+
   useEffect(() => {
+    setAuthorized(false);
+    setReferenceId(null);
+    setProfile(null);
     if (!input.trim()) {
-      setState("idle");
+      setFlow("empty");
       return;
     }
-    if (!handle) {
-      setState("invalid");
-      return;
-    }
-    setState("resolving");
-    const t = setTimeout(() => {
-      if (channels.some((c) => c.handle === handle)) setState("exists");
-      else if (handle.includes("notfound")) setState("notfound");
-      else if (handle.includes("unavailable")) setState("unavailable");
-      else if (handle.includes("limit")) setState("limit");
-      else setState("found");
-    }, 700);
-    return () => clearTimeout(t);
-  }, [input, handle]);
+    let cancelled = false;
+    setFlow("looking_up");
+    const timer = window.setTimeout(() => {
+      void lookupChannel(input).then((result) => {
+        if (cancelled) return;
+        if (result.state === "found") {
+          setProfile(result.channel);
+          setFlow("found");
+        } else {
+          setFlow(result.state);
+        }
+      });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [input, lookupChannel]);
+
   const reset = () => {
     setInput("");
-    setState("idle");
-    setPhase("form");
+    setFlow("empty");
+    setProfile(null);
+    setAuthorized(false);
+    setReferenceId(null);
   };
-  const submit = () => {
-    if (state !== "found") return;
-    setPhase("submitting");
-    setTimeout(() => {
-      setPhase("success");
-      toast.success(`Monitoring ${handle}`, {
-        description: "We’ll record automatically when this channel goes live.",
+
+  const submit = async () => {
+    if (flow === "found") {
+      setFlow("permission_required");
+      return;
+    }
+    if (flow !== "permission_required" || !profile || !authorized) return;
+    setFlow("adding");
+    const result = await addChannel(profile.handle, authorized);
+    if (result.ok) {
+      setFlow("success");
+      toast.success(t("Monitoring started"), {
+        description: t("The channel is now waiting for its next livestream."),
       });
-    }, 900);
+    } else {
+      setReferenceId(result.error.referenceId);
+      setFlow("error");
+    }
   };
-  const name = handle
-    ? handle
-        .slice(1)
-        .replace(/[._]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    : "";
-  const msg: Partial<
-    Record<LookupState, { tone: "error" | "warning" | "info"; title: string; body: string }>
-  > = {
-    invalid: {
-      tone: "error",
-      title: "Enter a valid TikTok username or URL",
-      body: "Use @username or a link like https://www.tiktok.com/@username.",
-    },
-    notfound: {
-      tone: "error",
-      title: "We couldn’t find this TikTok account",
-      body: "Check the spelling. Private or banned accounts can’t be monitored.",
-    },
-    exists: {
-      tone: "info",
-      title: "This channel is already monitored",
-      body: "It’s in your channel list. Open it to change monitoring.",
-    },
-    unavailable: {
-      tone: "warning",
-      title: "TikTok is temporarily unavailable",
-      body: "We couldn’t reach TikTok to verify this account. We’re retrying automatically — you can also try again in a minute.",
-    },
-    limit: {
-      tone: "warning",
-      title: "Monitored channel limit reached",
-      body: `Your plan allows ${usage.channels.limit} monitored channels. Upgrade to add another.`,
-    },
-  };
-  const m = msg[state];
+
+  const copy = addChannelCopy[flow];
+  const existing = profile
+    ? channels.find((channel) => channel.handle.toLowerCase() === profile.handle.toLowerCase())
+    : null;
+  const channelLimit = usage?.channels.limit ?? planCatalog.pro.quotas.monitoredChannels;
+
   return (
     <Dialog
       open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) setTimeout(reset, 200);
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) window.setTimeout(reset, 200);
       }}
     >
       <DialogTrigger asChild>
@@ -1159,24 +1203,17 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
         )}
       </DialogTrigger>
       <DialogContent className="inset-0 top-0 h-dvh max-w-none translate-x-0 translate-y-0 content-start overflow-y-auto rounded-none sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
-        {phase === "success" ? (
+        {flow === "success" ? (
           <div className="py-4 text-center">
             <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-subtle text-success">
               <CheckCircle2 className="size-6" />
             </span>
-            <DialogTitle className="mt-5">{t("Monitoring started")}</DialogTitle>
+            <DialogTitle className="mt-5">{t(copy.title)}</DialogTitle>
             <DialogDescription className="mt-2">
-              {handle} is now monitored. Status:{" "}
-              <b className="font-medium text-foreground">Waiting for live</b>. Recording starts
-              automatically on our servers when the channel goes live.
+              {profile?.handle} · {t(copy.body)}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  reset();
-                }}
-              >
+              <Button variant="outline" onClick={reset}>
                 {t("Add another")}
               </Button>
               <Button
@@ -1194,8 +1231,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogHeader>
               <DialogTitle>{t("Add TikTok channel")}</DialogTitle>
               <DialogDescription>
-                We’ll monitor this channel continuously and automatically start recording when it
-                goes live.
+                {t("Only add channels you own, manage, or have explicit permission to record.")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
@@ -1208,69 +1244,96 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                     id="add-channel-input"
                     autoFocus
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    aria-invalid={state === "invalid" || state === "notfound"}
+                    disabled={flow === "adding"}
+                    onChange={(event) => setInput(event.target.value)}
+                    aria-invalid={flow === "invalid" || flow === "not_found"}
                     placeholder="@username or https://www.tiktok.com/@username"
                     className="pr-9"
                   />
-                  {state === "resolving" && (
+                  {flow === "looking_up" && (
                     <span
                       aria-label={t("Looking up creator…")}
                       className="absolute right-3 top-2.5 size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
                     />
                   )}
-                  {state === "found" && (
+                  {(flow === "found" || flow === "permission_required") && (
                     <Check className="absolute right-3 top-2.5 size-4 text-success" />
                   )}
                 </div>
               </div>
-              {state === "resolving" && (
+
+              {flow === "looking_up" && (
                 <div className="flex items-center gap-3 rounded-md border p-3">
                   <div className="size-10 animate-pulse rounded-full bg-muted" />
                   <div className="flex-1 space-y-2">
                     <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
                     <div className="h-3 w-1/4 animate-pulse rounded bg-muted" />
                   </div>
-                  <span className="text-xs text-muted-foreground">{t("Looking up creator…")}</span>
+                  <span className="text-xs text-muted-foreground">{t(copy.title)}</span>
                 </div>
               )}
-              {state === "found" && (
+
+              {profile && ["found", "permission_required", "adding", "error"].includes(flow) && (
                 <div className="flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
                   <div className="grid size-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                    {name
-                      .split(" ")
-                      .map((w) => w[0])
-                      .join("")
-                      .slice(0, 2)}
+                    {profile.initials}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{name}</p>
-                    <p className="text-xs text-muted-foreground">{handle}</p>
+                    <p className="truncate text-sm font-medium">{profile.name}</p>
+                    <p className="text-xs text-muted-foreground">{profile.handle}</p>
                   </div>
                   <div className="ml-auto">
                     <PlatformBadge />
                   </div>
                 </div>
               )}
-              {m && (
+
+              {flow === "permission_required" && (
+                <label className="flex items-start gap-3 rounded-md border border-warning/30 bg-warning-subtle p-4 text-sm">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4"
+                    checked={authorized}
+                    onChange={(event) => setAuthorized(event.target.checked)}
+                  />
+                  <span>
+                    <span className="block font-medium">{t(copy.title)}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">{t(copy.body)}</span>
+                  </span>
+                </label>
+              )}
+
+              {["invalid", "not_found", "already_added", "limit_reached", "error"].includes(flow) && (
                 <StateBanner
-                  tone={m.tone}
-                  title={m.title}
-                  body={m.body}
+                  tone={flow === "limit_reached" ? "warning" : flow === "already_added" ? "info" : "error"}
+                  title={copy.title}
+                  body={
+                    <div>
+                      <p>
+                        {flow === "limit_reached"
+                          ? `${t(copy.body)} ${t("Current limit")}: ${channelLimit}.`
+                          : t(copy.body)}
+                      </p>
+                      {referenceId && (
+                        <p className="mt-2 font-mono text-[11px]">
+                          {t("Reference")}: {referenceId}
+                        </p>
+                      )}
+                    </div>
+                  }
                   action={
-                    state === "exists" ? (
+                    flow === "already_added" ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const c = channels.find((x) => x.handle === handle);
                           setOpen(false);
-                          if (c) navigate({ to: "/channels/$id", params: { id: c.id } });
+                          if (existing) navigate({ to: "/channels/$id", params: { id: existing.id } });
                         }}
                       >
-                        View channel
+                        {t("View channel")}
                       </Button>
-                    ) : state === "limit" ? (
+                    ) : flow === "limit_reached" ? (
                       <Button
                         size="sm"
                         onClick={() => {
@@ -1278,35 +1341,45 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                           navigate({ to: "/billing" });
                         }}
                       >
-                        Upgrade plan
+                        {t("Upgrade plan")}
                       </Button>
-                    ) : state === "unavailable" ? (
+                    ) : flow === "error" ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setState("resolving");
-                          setTimeout(() => setState("found"), 900);
+                          setReferenceId(null);
+                          setFlow(profile ? "permission_required" : "empty");
                         }}
                       >
-                        Try again
+                        {t("Try again")}
                       </Button>
                     ) : undefined
                   }
                 />
               )}
+
+              {flow === "adding" && (
+                <StateBanner tone="info" title={copy.title} body={copy.body} />
+              )}
+
               <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                <summary className="cursor-pointer">Prototype: try lookup states</summary>
+                <summary className="cursor-pointer">{t("Demo controls")}</summary>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {channelLookupExamples.map((x) => (
+                  {[
+                    ["@creatorstudio", "Profile found"],
+                    ["@linastudio", "Already added"],
+                    ["@notfound", "Not found"],
+                    ["@limit", "Plan limit"],
+                    ["@adderror", "Add error"],
+                  ].map(([value, label]) => (
                     <button
                       type="button"
-                      key={x.input}
-                      onClick={() => setInput(x.input)}
+                      key={value}
+                      onClick={() => setInput(value)}
                       className="rounded border bg-background px-2 py-1 font-mono hover:bg-accent"
                     >
-                      {x.input}{" "}
-                      <span className="font-sans text-muted-foreground">· {x.result}</span>
+                      {value} <span className="font-sans text-muted-foreground">· {t(label)}</span>
                     </button>
                   ))}
                   <button
@@ -1314,25 +1387,31 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                     onClick={() => setInput("not a url!")}
                     className="rounded border bg-background px-2 py-1 hover:bg-accent"
                   >
-                    Invalid input
+                    {t("Invalid input")}
                   </button>
                 </div>
               </details>
             </div>
+
             <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
+              <Button variant="outline" onClick={() => setOpen(false)} disabled={flow === "adding"}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={submit} disabled={state !== "found" || phase === "submitting"}>
-                {phase === "submitting" ? (
-                  <>
-                    <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    {t("Adding")}…
-                  </>
-                ) : (
-                  t("Add & start monitoring")
-                )}
-              </Button>
+              {(flow === "found" || flow === "permission_required" || flow === "adding") && (
+                <Button
+                  onClick={() => void submit()}
+                  disabled={flow === "adding" || (flow === "permission_required" && !authorized)}
+                >
+                  {flow === "adding" ? (
+                    <>
+                      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      {t("Adding")}…
+                    </>
+                  ) : (
+                    t(flow === "found" ? "Continue" : "Add & start monitoring")
+                  )}
+                </Button>
+              )}
             </DialogFooter>
           </>
         )}
@@ -1340,6 +1419,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     </Dialog>
   );
 }
+
 export function UpgradeDialog({
   open,
   onOpenChange,
@@ -1353,6 +1433,7 @@ export function UpgradeDialog({
 }) {
   const navigate = useNavigate();
   const { t, language } = usePreferences();
+  const { data: usage } = useUsageResource();
   const limit = planCatalog.pro.quotas.downloadGb;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1365,7 +1446,7 @@ export function UpgradeDialog({
           <DialogDescription>
             {t("This demo file is larger than the remaining monthly download quota.")}{" "}
             <span className="font-mono">{fileSize}</span> / <span className="font-mono">{remaining}</span>.
-            {" "}{t("Quota resets on")} {formatDate(usage.resetsOn, language)}.
+            {" "}{t("Quota resets on")} {usage ? formatDate(usage.resetsOn, language) : "—"}.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border bg-surface-subtle p-3">
@@ -1615,6 +1696,8 @@ export function CommandSearch({
 }) {
   const navigate = useNavigate();
   const { t } = usePreferences();
+  const { data: channels } = useChannelsResource();
+  const { data: recordings } = useRecordingsResource();
   const go = (fn: () => void) => {
     onOpenChange(false);
     fn();
@@ -1666,7 +1749,7 @@ export function CommandSearch({
   );
 }
 export function useChannelControls(channel: Channel) {
-  const [on, setOn] = useState(channel.monitoring && channel.status !== "Paused");
+  const [on, setOn] = useState(channel.monitoring && channel.status !== "paused");
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
   const [removed, setRemoved] = useState(false);
   const toggle = (next: boolean) => {
@@ -1749,8 +1832,6 @@ export function ExpiryText({
     </span>
   );
 }
-type LookupState =
-  "idle" | "resolving" | "found" | "invalid" | "notfound" | "exists" | "unavailable" | "limit";
 export function ConfirmDialog({
   open,
   onOpenChange,

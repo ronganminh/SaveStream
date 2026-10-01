@@ -89,18 +89,39 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { dailyRecordingHours, invoices, subscription, user } from "@/mocks/fixtures";
 import {
-  activeRecording,
-  channels,
-  dailyRecordingHours,
-  invoices,
-  recordings,
-  subscription,
-  usage,
-  user,
+  mockChannels as channels,
+  mockRecordings as recordings,
+  mockUsage as usage,
+  quotaStateFixtures,
+  recordingStatusFixtures,
+} from "@/data/mock-repository";
+import {
+  asyncFixtureOptions,
+  useChannelResource,
+  useChannelsResource,
+  useRecordingResource,
+  useRecordingsResource,
+  useRepositoryActions,
+  useUsageResource,
+} from "@/data/repository-hooks";
+import {
+  channelStatusLabels,
+  recordingStatusLabels,
   type Channel,
   type ChannelStatus,
-} from "@/mocks/fixtures";
+  type QuotaState,
+  type Recording,
+} from "@/domain/models";
+import {
+  downloadLifecycleCopy,
+  downloadLifecycleStates,
+  recordingLifecycleCopy,
+  recordingLifecycleStates,
+  type DownloadLifecycleState,
+  type RecordingLifecycleState,
+} from "@/domain/lifecycles";
 import {
   ActiveRecordingCard,
   AddChannelDialog,
@@ -142,6 +163,8 @@ import { isDemoMode } from "@/lib/app-config";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 
 export { meta, publicMeta } from "@/components/app-components";
+
+const activeRecording = recordingStatusFixtures.recording;
 
 const publicLinks = [
   { href: "/#features", label: "Features" },
@@ -1063,13 +1086,20 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 
 export function ChannelsPage() {
   const { t } = usePreferences();
+  const { data, screenState, error, retry, setFixtureState } = useChannelsResource();
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState("All");
-  const filtered = channels.filter(
-    (c) =>
-      (filter === "All" || c.status === filter) &&
-      (c.name + c.handle).toLowerCase().includes(q.toLowerCase()),
+  const [filter, setFilter] = useState<"all" | ChannelStatus>("all");
+  const filtered = data.filter(
+    (channel) =>
+      (filter === "all" || channel.status === filter) &&
+      (channel.name + channel.handle).toLowerCase().includes(q.toLowerCase()),
   );
+
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
   return (
     <AppShell>
       <PageHeader
@@ -1077,59 +1107,178 @@ export function ChannelsPage() {
         subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live."
         action={<AddChannelDialog />}
       />
-      <FilterBar>
-        <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
-        <div className="flex gap-1 overflow-x-auto">
-          {["All", "Recording", "Waiting", "Offline", "Paused", "Error"].map((f) => (
-            <Button
-              key={f}
-              size="sm"
-              variant={filter === f ? "secondary" : "ghost"}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </Button>
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={setFixtureState}
+      />
+
+      {screenState === "loading" ? (
+        <div className="space-y-3" aria-label={t("Loading")}>
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="h-20 animate-pulse rounded-lg border bg-muted/50" />
           ))}
         </div>
-      </FilterBar>
-      {filtered.length ? (
-        <>
-          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
-            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>{t("Creator")}</span>
-              <span>{t("Platform")}</span>
-              <span>{t("Monitoring")}</span>
-              <span>{t("Status")}</span>
-              <span>{t("Last checked")}</span>
-              <span />
-            </div>
-            {filtered.map((c) => (
-              <ChannelRow key={c.id} channel={c} />
-            ))}
-          </div>
-          <div className="space-y-3 md:hidden">
-            {filtered.map((c) => (
-              <ChannelCard key={c.id} channel={c} />
-            ))}
-          </div>
-        </>
-      ) : (
-        <EmptyState
-          icon={Search}
-          title="No channels found"
-          body="Try another search or clear the current filter."
+      ) : screenState === "error" || screenState === "offline" ? (
+        <ErrorState
+          title={error?.title ?? "We couldn’t load channels"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
         />
+      ) : screenState === "idle" ? (
+        <StateBanner
+          tone="info"
+          title="Channel data is idle"
+          body="Use the demo control to load the repository-backed channel list."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          {screenState === "retrying" && (
+            <div className="mb-4">
+              <StateBanner
+                tone="info"
+                title="Retrying channel request"
+                body="The previous request is being retried. Existing data remains visible."
+              />
+            </div>
+          )}
+          <FilterBar>
+            <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
+            <div className="flex gap-1 overflow-x-auto">
+              {(["all", ...channelStates.map((item) => item.value)] as const).map((value) => (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant={filter === value ? "secondary" : "ghost"}
+                  onClick={() => setFilter(value)}
+                >
+                  {value === "all" ? t("All") : t(channelStatusLabels[value])}
+                </Button>
+              ))}
+            </div>
+          </FilterBar>
+          {screenState === "empty" || filtered.length === 0 ? (
+            <EmptyState
+              icon={Search}
+              title={q || filter !== "all" ? "No channels found" : "No channels yet"}
+              body={
+                q || filter !== "all"
+                  ? "Try another search or clear the current filter."
+                  : "Add an authorized channel to start monitoring."
+              }
+              action={!q && filter === "all" ? <AddChannelDialog /> : undefined}
+            />
+          ) : (
+            <>
+              <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
+                <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+                  <span>{t("Creator")}</span>
+                  <span>{t("Platform")}</span>
+                  <span>{t("Monitoring")}</span>
+                  <span>{t("Status")}</span>
+                  <span>{t("Last checked")}</span>
+                  <span />
+                </div>
+                {filtered.map((channel) => (
+                  <ChannelRow key={channel.id} channel={channel} />
+                ))}
+              </div>
+              <div className="space-y-3 md:hidden">
+                {filtered.map((channel) => (
+                  <ChannelCard key={channel.id} channel={channel} />
+                ))}
+              </div>
+            </>
+          )}
+        </>
       )}
     </AppShell>
   );
 }
+
 export function ChannelDetailPage() {
   const { id } = useParams({ strict: false }) as { id?: string };
-  const channel = channels.find((c) => c.id === id);
-  if (!channel)
+  const { data: channel, screenState, error, retry, setFixtureState } = useChannelResource(id);
+
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted/50" />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <ErrorState
+          title={error?.title ?? "We couldn’t load this channel"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Channel detail is idle"
+          body="Load the repository-backed detail fixture to continue."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              Load data
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "empty" || !channel) {
     return (
       <AppShell>
         <PageHeader title="Channel not found" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
         <EmptyState
           icon={Radio}
           title="This channel doesn’t exist"
@@ -1142,49 +1291,103 @@ export function ChannelDetailPage() {
         />
       </AppShell>
     );
-  return <ChannelDetail key={channel.id} channel={channel} />;
+  }
+
+  return (
+    <>
+      {screenState === "retrying" && (
+        <div className="sr-only" role="status">
+          Retrying channel request
+        </div>
+      )}
+      <ChannelDetail key={channel.id} channel={channel} />
+    </>
+  );
 }
+
 export function RecordingsPage() {
   const { t } = usePreferences();
-  const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
+  const {
+    data: recordingItems,
+    screenState,
+    error,
+    retry,
+    setFixtureState,
+  } = useRecordingsResource();
+  const { data: channelItems } = useChannelsResource();
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState<"all" | Recording["status"]>("all");
   const [streamer, setStreamer] = useState("all");
   const [range, setRange] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const today = new Date("Sep 27, 2026").getTime();
-  const list = recordings
+
+  const list = recordingItems
     .filter(
-      (r) =>
-        (status === "all" || r.status === status) &&
-        (streamer === "all" || r.channelId === streamer) &&
-        (range === "all" || today - new Date(r.date).getTime() <= Number(range) * 864e5) &&
-        (r.title + r.handle).toLowerCase().includes(q.toLowerCase()),
+      (recording) =>
+        (status === "all" || recording.status === status) &&
+        (streamer === "all" || recording.channelId === streamer) &&
+        (range === "all" ||
+          today - new Date(recording.date).getTime() <= Number(range) * 864e5) &&
+        (recording.title + recording.handle).toLowerCase().includes(q.toLowerCase()),
     )
-    .sort((a, b) => {
-      const d =
-        new Date(`${a.date} ${a.time}`).getTime() - new Date(`${b.date} ${b.time}`).getTime();
-      return sort === "newest" ? -d : d;
+    .sort((left, right) => {
+      const delta =
+        new Date(`${left.date} ${left.time}`).getTime() -
+        new Date(`${right.date} ${right.time}`).getTime();
+      return sort === "newest" ? -delta : delta;
     });
-  const filtered = status !== "all" || streamer !== "all" || range !== "all";
+
+  const hasFilters = status !== "all" || streamer !== "all" || range !== "all";
   const clear = () => {
     setQ("");
     setStatus("all");
     setStreamer("all");
     setRange("all");
   };
-  const expiring = recordings.filter(
-    (r) => r.status === "Ready" && r.expiresDays !== null && r.expiresDays <= 3,
+  const expiring = recordingItems.filter(
+    (recording) =>
+      recording.status === "ready" &&
+      recording.expiresDays !== null &&
+      recording.expiresDays <= 3,
   );
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
   return (
     <AppShell>
       <PageHeader
         title="Recordings"
         subtitle="Watch and download your completed livestream recordings."
       />
-      <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />
-      {mock === "empty" ? (
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={setFixtureState}
+      />
+
+      {screenState === "error" || screenState === "offline" ? (
+        <ErrorState
+          title={error?.title ?? "We’re having trouble loading your library"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      ) : screenState === "idle" ? (
+        <StateBanner
+          tone="info"
+          title="Recording library is idle"
+          body="Load the repository-backed fixture to show recordings."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      ) : screenState === "empty" ? (
         <EmptyState
           title="No recordings yet"
           body="Once one of your monitored channels goes live, the recording will automatically appear here."
@@ -1199,19 +1402,16 @@ export function RecordingsPage() {
         />
       ) : (
         <>
-          {mock === "error" && (
+          {screenState === "retrying" && (
             <div className="mb-4">
-              <ErrorState
-                title="We’re having trouble loading your library"
-                body="Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe."
-                onRetry={() => {
-                  toast("Retrying…");
-                  setTimeout(() => setMock("populated"), 800);
-                }}
+              <StateBanner
+                tone="info"
+                title="Retrying recording request"
+                body="The repository is refreshing the library. Existing data stays visible while retrying."
               />
             </div>
           )}
-          {mock === "populated" && expiring.length > 0 && (
+          {screenState === "success" && expiring.length > 0 && (
             <div className="mb-4">
               <StateBanner
                 tone="warning"
@@ -1221,37 +1421,52 @@ export function RecordingsPage() {
               />
             </div>
           )}
+
           <FilterBar>
             <div className="flex-1">
               <SearchInput value={q} onChange={setQ} placeholder="Search recordings" />
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
               <Select value={streamer} onValueChange={setStreamer}>
-                <SelectTrigger className="sm:w-36" aria-label="Streamer">
+                <SelectTrigger className="sm:w-36" aria-label={t("Streamer")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All streamers")}</SelectItem>
-                  {channels.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.handle}
+                  {channelItems.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.handle}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="sm:w-32" aria-label="Status">
+              <Select
+                value={status}
+                onValueChange={(value) => setStatus(value as "all" | Recording["status"])}
+              >
+                <SelectTrigger className="sm:w-36" aria-label={t("Status")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All statuses")}</SelectItem>
-                  <SelectItem value="Ready">{t("Ready")}</SelectItem>
-                  <SelectItem value="Processing">{t("Processing")}</SelectItem>
-                  <SelectItem value="Error">{t("Failed")}</SelectItem>
+                  {[
+                    "queued",
+                    "recording",
+                    "processing",
+                    "ready",
+                    "partial",
+                    "failed",
+                    "expired",
+                    "deleting",
+                  ].map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(recordingStatusLabels[value as Recording["status"]])}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="sm:w-36" aria-label="Date range">
+                <SelectTrigger className="sm:w-36" aria-label={t("Date range")}>
                   <Calendar className="size-4" />
                   <SelectValue />
                 </SelectTrigger>
@@ -1263,7 +1478,7 @@ export function RecordingsPage() {
               </Select>
               <Button
                 variant="outline"
-                onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
+                onClick={() => setSort((current) => (current === "newest" ? "oldest" : "newest"))}
               >
                 <ArrowUpDown />
                 {t(sort === "newest" ? "Newest first" : "Oldest first")}
@@ -1290,10 +1505,11 @@ export function RecordingsPage() {
               </Button>
             </div>
           </FilterBar>
-          {mock === "loading" ? (
+
+          {screenState === "loading" ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="animate-pulse overflow-hidden rounded-lg border">
+              {[0, 1, 2, 3, 4, 5].map((item) => (
+                <div key={item} className="animate-pulse overflow-hidden rounded-lg border">
                   <div className="aspect-video bg-muted" />
                   <div className="space-y-2 p-4">
                     <div className="h-3 w-2/3 rounded bg-muted" />
@@ -1319,7 +1535,9 @@ export function RecordingsPage() {
                 icon={Filter}
                 title="No recordings match these filters"
                 body={
-                  filtered ? "Try a different streamer, status, or date range." : "Nothing to show."
+                  hasFilters
+                    ? "Try a different streamer, status, or date range."
+                    : "Nothing to show."
                 }
                 action={
                   <Button variant="outline" onClick={clear}>
@@ -1332,20 +1550,20 @@ export function RecordingsPage() {
             <>
               <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
                 <RecordingHeader />
-                {list.map((r) => (
-                  <RecordingRow key={r.id} recording={r} />
+                {list.map((recording) => (
+                  <RecordingRow key={recording.id} recording={recording} />
                 ))}
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:hidden">
-                {list.map((r) => (
-                  <RecordingCard key={r.id} recording={r} />
+                {list.map((recording) => (
+                  <RecordingCard key={recording.id} recording={recording} />
                 ))}
               </div>
             </>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {list.map((r) => (
-                <RecordingCard key={r.id} recording={r} />
+              {list.map((recording) => (
+                <RecordingCard key={recording.id} recording={recording} />
               ))}
             </div>
           )}
@@ -1354,30 +1572,113 @@ export function RecordingsPage() {
     </AppShell>
   );
 }
+
 export function RecordingDetailPage({
   state: forced,
 }: {
   state?: "ready" | "active" | "processing" | "failed";
 }) {
+  const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
   const navigate = useNavigate();
-  const [quota, setQuota] = useState<"normal" | "low">("normal");
+  const recordingResource = useRecordingResource(id);
+  const { data: channelItems } = useChannelsResource();
+  const { data: usageData } = useUsageResource();
+  const { retryRecordingProcessing, prepareDownload } = useRepositoryActions();
+  const [lifecycleOverride, setLifecycleOverride] = useState<RecordingLifecycleState | null>(null);
+  const [downloadState, setDownloadState] = useState<DownloadLifecycleState>("eligible");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
-  const rec =
+  const [retryingProcessing, setRetryingProcessing] = useState(false);
+
+  const forcedRecording =
     forced === "active"
-      ? activeRecording
+      ? recordingStatusFixtures.recording
       : forced === "processing"
-        ? recordings.find((r) => r.id === "nora-processing")
+        ? recordingStatusFixtures.processing
         : forced === "failed"
-          ? recordings.find((r) => r.id === "nora-failed")
+          ? recordingStatusFixtures.failed
           : forced === "ready"
-            ? recordings[0]
-            : recordings.find((r) => r.id === id);
-  if (!rec)
+            ? recordingStatusFixtures.ready
+            : null;
+  const rec = forcedRecording ?? recordingResource.data;
+  const screenState = forced ? "success" : recordingResource.screenState;
+  const error = recordingResource.error;
+  const setFixtureState = recordingResource.setFixtureState;
+
+  const retryScreen = () => {
+    setFixtureState("retrying");
+    void recordingResource.retry().finally(() => setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <div className="aspect-video animate-pulse rounded-lg bg-muted/60" />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <ErrorState
+          title={error?.title ?? "We couldn’t load this recording"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryScreen}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Recording detail is idle"
+          body="Load the repository-backed detail fixture to continue."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "empty" || !rec) {
     return (
       <AppShell>
         <PageHeader title="Recording not found" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={setFixtureState}
+        />
         <EmptyState
           title="This recording isn’t available"
           body="It may have been deleted or removed after its retention period ended."
@@ -1389,34 +1690,115 @@ export function RecordingDetailPage({
         />
       </AppShell>
     );
-  const state =
-    forced ??
-    ({ Ready: "ready", Processing: "processing", Error: "failed", Recording: "active" } as const)[
-      rec.status
-    ];
-  const channel = channels.find((c) => c.id === rec.channelId);
-  const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
-  const download = () => {
-    if (quota === "low") setUpgrade(true);
-    else
-      toast.success("Download started", {
+  }
+
+  const baseLifecycle: RecordingLifecycleState =
+    forced === "active"
+      ? "recording_active"
+      : forced === "processing"
+        ? "processing"
+        : forced === "failed"
+          ? "processing_failed"
+          : rec.status === "queued"
+            ? "waiting_for_live"
+            : rec.status === "recording"
+              ? "recording_active"
+              : rec.status === "processing"
+                ? "processing"
+                : rec.status === "partial"
+                  ? "partial"
+                  : rec.status === "failed"
+                    ? "processing_failed"
+                    : rec.status === "expired"
+                      ? "expired"
+                      : rec.status === "ready" &&
+                          rec.expiresDays !== null &&
+                          rec.expiresDays <= 3
+                        ? "expiring_soon"
+                        : "ready";
+  const lifecycle = lifecycleOverride ?? baseLifecycle;
+  const lifecycleCopy = recordingLifecycleCopy[lifecycle];
+  const downloadCopy = downloadLifecycleCopy[downloadState];
+  const channel = channelItems.find((item) => item.id === rec.channelId);
+  const currentUsage = usageData ?? usage;
+
+  const runDownload = async () => {
+    if (downloadState === "quota_insufficient") {
+      setUpgrade(true);
+      return;
+    }
+    if (downloadState === "file_unavailable") {
+      toast.error(t("File unavailable"));
+      return;
+    }
+    if (downloadState === "preparing") return;
+
+    setDownloadState("preparing");
+    const result = await prepareDownload(rec.id);
+    setDownloadState(result.state);
+    if (result.state === "started") {
+      toast.success(t("Download started"), {
         description: `${rec.size} · ${rec.handle} — ${rec.title}`,
       });
+    } else if (result.state === "quota_insufficient") {
+      setUpgrade(true);
+    } else if (result.state === "file_unavailable") {
+      toast.error(t("File unavailable"), {
+        description: result.error?.referenceId
+          ? `${t("Reference")}: ${result.error.referenceId}`
+          : undefined,
+      });
+    }
   };
-  const actions =
-    state === "ready" ? (
-      <div className="flex gap-2">
-        <Button onClick={download}>
-          <Download />
-          Download video
-        </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
-          <Trash2 />
-          Delete
-        </Button>
+
+  const retryProcessing = async () => {
+    if (retryingProcessing) return;
+    setRetryingProcessing(true);
+    const result = await retryRecordingProcessing(rec.id);
+    if (result.ok) {
+      setLifecycleOverride("processing");
+      toast.success(t("Processing queued"));
+    } else {
+      toast.error(t("Retry failed"), {
+        description: `${result.error.body} · ${t("Reference")}: ${result.error.referenceId}`,
+      });
+    }
+    setRetryingProcessing(false);
+  };
+
+  const canDownload =
+    lifecycle === "ready" || lifecycle === "expiring_soon" || lifecycle === "partial";
+  const playerState: "ready" | "active" | "processing" | "failed" =
+    lifecycle === "processing" || lifecycle === "stream_ended"
+      ? "processing"
+      : lifecycle === "recording_started" ||
+          lifecycle === "recording_active" ||
+          lifecycle === "waiting_for_live"
+        ? "active"
+        : lifecycle === "partial" ||
+            lifecycle === "processing_failed" ||
+            lifecycle === "expired"
+          ? "failed"
+          : "ready";
+
+  const actions = canDownload ? (
+    <div className="flex flex-wrap gap-2">
+      <Button onClick={() => void runDownload()} disabled={downloadState === "preparing"}>
+        <Download />
+        {downloadState === "preparing"
+          ? t("Preparing download")
+          : lifecycle === "partial"
+            ? t("Download partial")
+            : t("Download video")}
+      </Button>
+      <Button variant="outline" onClick={() => setDel(true)}>
+        <Trash2 />
+        {t(lifecycle === "partial" ? "Delete partial file" : "Delete")}
+      </Button>
+      {lifecycle !== "partial" && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="More actions">
+            <Button variant="outline" size="icon" aria-label={t("More actions")}>
               <MoreHorizontal />
             </Button>
           </DropdownMenuTrigger>
@@ -1424,47 +1806,53 @@ export function RecordingDetailPage({
             <DropdownMenuItem
               onSelect={() => {
                 void navigator.clipboard?.writeText(window.location.href);
-                toast.success("Link copied");
+                toast.success(t("Link copied"));
               }}
             >
-              Copy link
+              {t("Copy link")}
             </DropdownMenuItem>
             {channel && (
               <DropdownMenuItem
                 onSelect={() => navigate({ to: "/channels/$id", params: { id: channel.id } })}
               >
-                View channel
+                {t("View channel")}
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    ) : state === "failed" ? (
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          onClick={() =>
-            toast.success("Partial download started", {
-              description: `${rec.partialDuration} · ${rec.size}`,
-            })
-          }
-        >
-          <Download />
-          Download partial
-        </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
-          <Trash2 />
-          Delete partial file
-        </Button>
-      </div>
-    ) : state === "processing" ? (
-      <Button disabled>
-        <Download />
-        Download available soon
-      </Button>
-    ) : null;
+      )}
+    </div>
+  ) : lifecycle === "processing_failed" ? (
+    <Button
+      variant="outline"
+      disabled={retryingProcessing}
+      onClick={() => void retryProcessing()}
+    >
+      <RotateCcw />
+      {retryingProcessing ? t("Retrying") : t("Retry processing")}
+    </Button>
+  ) : lifecycle === "processing" || lifecycle === "stream_ended" ? (
+    <Button disabled>
+      <Download />
+      {t("Download available soon")}
+    </Button>
+  ) : lifecycle === "expired" ? (
+    <Button variant="outline" asChild>
+      <Link to="/recordings">{t("Back to recordings")}</Link>
+    </Button>
+  ) : null;
+
   return (
     <AppShell>
+      {screenState === "retrying" && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Retrying recording request"
+            body="The detail query is refreshing while existing data remains visible."
+          />
+        </div>
+      )}
       {channel && (
         <Link
           to="/channels/$id"
@@ -1475,25 +1863,99 @@ export function RecordingDetailPage({
           {channel.name}
         </Link>
       )}
-      {state === "ready" && (
-        <PrototypeStateBar
-          label="Download quota"
-          value={quota}
-          options={
-            [
-              { value: "normal", label: "Available" },
-              { value: "low", label: "Not enough" },
-            ] as const
-          }
-          onChange={setQuota}
-        />
-      )}
+
+      <PrototypeStateBar
+        label="Recording lifecycle"
+        value={lifecycle}
+        options={recordingLifecycleStates.map((value) => ({
+          value,
+          label: recordingLifecycleCopy[value].title,
+        }))}
+        onChange={setLifecycleOverride}
+      />
+      <PrototypeStateBar
+        label="Download lifecycle"
+        value={downloadState}
+        options={downloadLifecycleStates.map((value) => ({
+          value,
+          label: downloadLifecycleCopy[value].title,
+        }))}
+        onChange={setDownloadState}
+      />
+
       <PageHeader
-        title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
-        subtitle={`TikTok · ${state === "active" ? "Started today" : rec.date} at ${rec.time}`}
+        title={
+          lifecycle === "recording_active"
+            ? `${rec.handle} — Live now`
+            : `${rec.handle} — ${rec.title}`
+        }
+        subtitle={`TikTok · ${rec.date} at ${rec.time}`}
         action={actions}
       />
-      {expiringSoon && (
+
+      <div className="mb-4">
+        <StateBanner
+          tone={
+            lifecycle === "processing_failed" || lifecycle === "expired"
+              ? "error"
+              : lifecycle === "partial" || lifecycle === "expiring_soon"
+                ? "warning"
+                : lifecycle === "ready"
+                  ? "success"
+                  : "info"
+          }
+          title={lifecycleCopy.title}
+          body={lifecycleCopy.body}
+          action={
+            lifecycle === "processing_failed" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={retryingProcessing}
+                onClick={() => void retryProcessing()}
+              >
+                {retryingProcessing ? t("Retrying") : t("Retry processing")}
+              </Button>
+            ) : lifecycle === "expired" ? (
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/recordings">{t("Back to recordings")}</Link>
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+
+      {downloadState !== "eligible" && (
+        <div className="mb-4">
+          <StateBanner
+            tone={
+              downloadState === "quota_insufficient" || downloadState === "file_unavailable"
+                ? "warning"
+                : "info"
+            }
+            title={downloadCopy.title}
+            body={downloadCopy.body}
+            action={
+              downloadState === "network_retry" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void runDownload()}
+                  disabled={downloadState === "preparing"}
+                >
+                  {t("Try again")}
+                </Button>
+              ) : downloadState === "quota_insufficient" ? (
+                <Button size="sm" onClick={() => setUpgrade(true)}>
+                  {t("Upgrade plan")}
+                </Button>
+              ) : undefined
+            }
+          />
+        </div>
+      )}
+
+      {lifecycle === "expiring_soon" && (
         <div className="mb-4">
           <StateBanner
             tone={rec.expireTone === "critical" ? "error" : "warning"}
@@ -1503,93 +1965,68 @@ export function RecordingDetailPage({
                 ? "This recording expires tomorrow"
                 : `This recording expires in ${rec.expires}`
             }
-            body={`It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`}
+            body={`It will be removed from cloud storage when your ${currentUsage.retentionDays}-day retention period ends. Download it to keep a copy.`}
             action={
-              <Button size="sm" variant="outline" onClick={download}>
-                Download
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void runDownload()}
+                disabled={downloadState === "preparing"}
+              >
+                {t("Download")}
               </Button>
             }
           />
         </div>
       )}
-      <VideoPlayerShell state={state} />
-      {state === "active" && (
+
+      <VideoPlayerShell state={playerState} />
+
+      {lifecycle === "recording_active" && (
         <div className="mt-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success-subtle p-4 text-sm">
           <Cloud className="size-5 shrink-0 text-success" />
           <div>
-            <p className="font-medium">
-              Recording runs on our servers. You can safely close this page.
-            </p>
+            <p className="font-medium">{t("Recording in progress")}</p>
             <p className="text-muted-foreground">
-              Playback will be available after the livestream ends.
+              {t("Live timer")}: <span className="font-mono">{rec.duration}</span> ·{" "}
+              {t("Bytes saved")}: <span className="font-mono">{rec.size}</span>
             </p>
           </div>
         </div>
       )}
-      {state === "processing" && <ProcessingTimeline />}
-      {state === "failed" && (
-        <div className="mt-4 space-y-3">
-          <StateBanner
-            tone="error"
-            title="Recording couldn’t be completed"
-            body={
-              <>
-                The stream connection was lost ({rec.error?.toLowerCase()}). {rec.partialDuration}{" "}
-                were successfully saved before the stream connection was lost. The partial file is
-                available to watch or download.
-              </>
-            }
-            action={
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    toast.success("Processing queued", {
-                      description: "We’ll notify you when the partial recording is ready.",
-                    })
-                  }
-                >
-                  <RotateCcw />
-                  Retry processing
-                </Button>
-                <Button size="sm" variant="ghost" asChild>
-                  <Link to="/help" hash="contact">
-                    Contact support
-                  </Link>
-                </Button>
-              </div>
-            }
-          />
-        </div>
-      )}
+
+      {lifecycle === "processing" && <ProcessingTimeline />}
+
       <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 lg:grid-cols-6">
         {[
           ["Platform", "TikTok"],
           ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
-          ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
-          [state === "active" ? "Written" : "File size", rec.size],
+          ["Duration", lifecycle === "partial" ? `${rec.duration} (partial)` : rec.duration],
+          [lifecycle === "recording_active" ? "Written" : "File size", rec.size],
           ["Resolution", rec.resolution],
           [
             "Stored until",
-            state === "active" || state === "processing"
+            lifecycle === "recording_active" || lifecycle === "processing"
               ? "After processing"
-              : rec.expireTone === "critical"
-                ? "Tomorrow"
-                : `${rec.expires} left`,
+              : lifecycle === "expired"
+                ? "Expired"
+                : rec.expireTone === "critical"
+                  ? "Tomorrow"
+                  : `${rec.expires} left`,
           ],
-        ].map(([a, b]) => (
-          <div key={a} className="bg-surface p-4">
-            <p className="text-xs text-muted-foreground">{a}</p>
-            <p className="mt-2 font-mono text-sm font-medium">{b}</p>
+        ].map(([label, value]) => (
+          <div key={label} className="bg-surface p-4">
+            <p className="text-xs text-muted-foreground">{t(label)}</p>
+            <p className="mt-2 font-mono text-sm font-medium">{t(value)}</p>
           </div>
         ))}
       </div>
+
       <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
       <ConfirmDeleteDialog
         open={del}
         onOpenChange={setDel}
-        partial={state === "failed"}
+        partial={lifecycle === "partial"}
         onDeleted={() => navigate({ to: "/recordings" })}
       />
     </AppShell>
@@ -1639,10 +2076,87 @@ function ProcessingTimeline() {
 
 export function UsagePage() {
   const { t } = usePreferences();
-  const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
-  const hours = mock === "warning" ? 40.2 : mock === "reached" ? 50 : usage.recordingHours.used;
-  const dl = mock === "download" ? 100 : usage.downloadGb.used;
-  const ch = mock === "channels" ? usage.channels.limit : usage.channels.used;
+  const usageResource = useUsageResource();
+  const { data: recordingItems } = useRecordingsResource();
+  const [quotaState, setQuotaState] = useState<QuotaState>("normal");
+  const screenState = usageResource.screenState;
+  const baseUsage = usageResource.data ?? quotaStateFixtures.normal;
+  const usage = quotaState === "normal" ? baseUsage : quotaStateFixtures[quotaState];
+
+  const retryNow = () => {
+    usageResource.setFixtureState("retrying");
+    void usageResource.retry().finally(() => usageResource.setFixtureState("success"));
+  };
+
+  if (screenState === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-lg border bg-muted/50" />
+          ))}
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (screenState === "error" || screenState === "offline") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <ErrorState
+          title={usageResource.error?.title ?? "We couldn’t load usage"}
+          body={`${usageResource.error?.body ?? "Try again."} ${usageResource.error?.referenceId ? `Reference: ${usageResource.error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      </AppShell>
+    );
+  }
+
+  if (screenState === "idle") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <PrototypeStateBar
+          label="Async screen state"
+          value={screenState}
+          options={asyncFixtureOptions}
+          onChange={usageResource.setFixtureState}
+        />
+        <StateBanner
+          tone="info"
+          title="Usage data is idle"
+          body="Load the repository-backed quota snapshot to continue."
+          action={
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => usageResource.setFixtureState("success")}
+            >
+              {t("Load data")}
+            </Button>
+          }
+        />
+      </AppShell>
+    );
+  }
+
+  const hours = usage.recordingHours.used;
+  const dl = usage.downloadGb.used;
+  const ch = usage.channels.used;
   const hp = Math.round((hours / usage.recordingHours.limit) * 100);
   const dp = Math.round((dl / usage.downloadGb.limit) * 100);
   const cp = Math.round((ch / usage.channels.limit) * 100);
@@ -1651,6 +2165,7 @@ export function UsagePage() {
       <Link to="/billing">{t("Upgrade plan")}</Link>
     </Button>
   );
+
   return (
     <AppShell>
       <PageHeader
@@ -1660,59 +2175,79 @@ export function UsagePage() {
           <Button variant="outline" asChild>
             <Link to="/billing">
               <CreditCard />
-              Billing
+              {t("Billing")}
             </Link>
           </Button>
         }
       />
-      <PrototypeStateBar value={mock} options={usageStates} onChange={setMock} />
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={usageResource.setFixtureState}
+      />
+      <PrototypeStateBar
+        label="Quota state"
+        value={quotaState}
+        options={[
+          { value: "normal", label: "Normal" },
+          { value: "warning", label: "Warning" },
+          { value: "exhausted", label: "Exhausted" },
+          { value: "resetting", label: "Resetting" },
+          { value: "unavailable", label: "Unavailable" },
+        ]}
+        onChange={setQuotaState}
+      />
+
       <div className="mb-6 space-y-3">
-        {mock === "warning" && (
+        {screenState === "retrying" && (
+          <StateBanner
+            tone="info"
+            title="Retrying usage request"
+            body="The quota snapshot is refreshing while the last known values remain visible."
+          />
+        )}
+        {quotaState === "warning" && (
           <StateBanner
             tone="warning"
-            title="You’ve used 80% of your monthly recording hours."
-            body={`${hours} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit, then pauses until ${usage.resetsOn}.`}
+            title="You’ve used more than 80% of your monthly recording hours."
+            body={`${hours.toFixed(1)} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit.`}
             action={upgradeBtn}
           />
         )}
-        {mock === "reached" && (
+        {quotaState === "exhausted" && (
           <StateBanner
             tone="error"
             title="Recording quota reached"
-            body={
-              <>
-                Automatic recording is paused until your quota resets or you upgrade your plan.
-                Monitoring continues, but new livestreams won’t be recorded until {usage.resetsOn}.
-              </>
-            }
+            body={`Automatic recording is paused until the quota resets on ${usage.resetsOn} or the plan is upgraded.`}
             action={upgradeBtn}
           />
         )}
-        {mock === "download" && (
+        {quotaState === "resetting" && (
           <StateBanner
-            tone="error"
-            title="Download bandwidth exhausted"
-            body={`Downloads are unavailable until your quota resets on ${usage.resetsOn}. Recording and browser playback are not affected.`}
-            action={upgradeBtn}
+            tone="info"
+            title="Quota is resetting"
+            body="Usage counters are refreshing for the new billing period. Avoid submitting duplicate upgrade actions."
           />
         )}
-        {mock === "channels" && (
+        {quotaState === "unavailable" && (
           <StateBanner
             tone="warning"
-            title="Monitored channel limit reached"
-            body={`Your plan allows ${usage.channels.limit} monitored channels. Remove a channel or upgrade to add another.`}
+            title="Quota data unavailable"
+            body="The last known limits are shown, but current usage could not be refreshed."
             action={
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/channels">Manage channels</Link>
+              <Button size="sm" variant="outline" onClick={retryNow}>
+                {t("Try again")}
               </Button>
             }
           />
         )}
       </div>
+
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Recording hours"
-          value={`${hours} / ${usage.recordingHours.limit}`}
+          value={`${hours.toFixed(1)} / ${usage.recordingHours.limit}`}
           detail={`${hp}% used`}
           icon={Clock3}
           progress={hp}
@@ -1725,7 +2260,7 @@ export function UsagePage() {
         />
         <StatCard
           label="Download bandwidth"
-          value={`${dl} / ${usage.downloadGb.limit} GB`}
+          value={`${dl.toFixed(1)} / ${usage.downloadGb.limit} GB`}
           detail={`${dp}% used`}
           icon={Download}
           progress={dp}
@@ -1737,6 +2272,7 @@ export function UsagePage() {
           icon={HardDrive}
         />
       </div>
+
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
         <section className="rounded-lg border bg-surface p-5">
           <div className="flex items-center justify-between">
@@ -1746,91 +2282,103 @@ export function UsagePage() {
           <div
             className="mt-8 flex h-56 items-end gap-1 border-b border-l px-2 sm:gap-2"
             role="img"
-            aria-label="Bar chart of daily recording hours in September"
+            aria-label={t("Bar chart of daily recording hours in September")}
           >
-            {dailyRecordingHours.map((v, i) => (
+            {dailyRecordingHours.map((value, index) => (
               <div
-                key={i}
-                title={`Sep ${i + 1}: ${v}h`}
+                key={index}
+                title={`Sep ${index + 1}: ${value}h`}
                 className="group relative flex-1 rounded-t-sm bg-primary/75 hover:bg-primary"
-                style={{ height: `${(v / 5) * 100}%` }}
+                style={{ height: `${(value / 5) * 100}%` }}
               >
                 <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 rounded bg-foreground px-1 font-mono text-[9px] text-background group-hover:block">
-                  {v}h
+                  {value}h
                 </span>
               </div>
             ))}
           </div>
         </section>
+
         <section className="rounded-lg border bg-surface p-5">
           <h2 className="font-medium">{t("Plan limits")}</h2>
           <div className="mt-6 space-y-6">
             {(
               [
-                ["Recording hours", `${hours} of ${usage.recordingHours.limit} hours`, hp],
-                ["Download bandwidth", `${dl} of ${usage.downloadGb.limit} GB`, dp],
+                ["Recording hours", `${hours.toFixed(1)} of ${usage.recordingHours.limit} hours`, hp],
+                ["Download bandwidth", `${dl.toFixed(1)} of ${usage.downloadGb.limit} GB`, dp],
                 ["Monitored channels", `${ch} of ${usage.channels.limit} channels`, cp],
               ] as const
-            ).map(([a, b, c]) => (
-              <div key={a}>
+            ).map(([label, value, percent]) => (
+              <div key={label}>
                 <div className="mb-2 flex justify-between text-xs">
-                  <span>{a}</span>
+                  <span>{t(label)}</span>
                   <span
                     className={cn(
                       "font-mono text-muted-foreground",
-                      c >= 100 && "text-destructive",
-                      c >= 80 && c < 100 && "text-warning-foreground",
+                      percent >= 100 && "text-destructive",
+                      percent >= 80 && percent < 100 && "text-warning-foreground",
                     )}
                   >
-                    {b}
+                    {value}
                   </span>
                 </div>
-                <UsageProgress value={c} tone={c >= 80 ? "warning" : "primary"} />
+                <UsageProgress value={percent} tone={percent >= 80 ? "warning" : "primary"} />
               </div>
             ))}
           </div>
           <div className="mt-6 border-t pt-5 text-xs leading-5 text-muted-foreground">
-            <p className="font-medium text-foreground">About concurrent recordings</p>
+            <p className="font-medium text-foreground">{t("About concurrent recordings")}</p>
             <p className="mt-1">
-              Up to {usage.concurrent.limit} livestreams can record at the same time. If another
-              monitored channel goes live while both slots are in use, it waits for a free slot —
-              the start of that livestream may not be recorded.
+              {t("Simultaneous recordings are limited separately from saved or monitored channels.")}
             </p>
           </div>
         </section>
       </div>
+
       <section className="mt-8">
         <SectionTitle title="Usage by recording" />
-        <div className="hidden overflow-hidden rounded-lg border sm:block">
-          <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
-            <span>{t("Date")}</span>
-            <span>Channel</span>
-            <span>{t("Duration")}</span>
-            <span>{t("Size")}</span>
-          </div>
-          {recordings.map((r) => (
-            <div className="grid grid-cols-4 border-t px-4 py-3 text-sm" key={r.id}>
-              <span>{r.date}</span>
-              <span>{r.handle}</span>
-              <span className="font-mono">{r.duration}</span>
-              <span className="font-mono">{r.size}</span>
-            </div>
-          ))}
-        </div>
-        <div className="divide-y rounded-lg border sm:hidden">
-          {recordings.map((r) => (
-            <div key={r.id} className="flex justify-between p-3 text-sm">
-              <div>
-                <p className="font-medium">{r.handle}</p>
-                <p className="text-xs text-muted-foreground">{r.date}</p>
+        {screenState === "empty" || recordingItems.length === 0 ? (
+          <EmptyState
+            title="No usage records"
+            body="Recording usage will appear after a recording is created."
+          />
+        ) : (
+          <>
+            <div className="hidden overflow-hidden rounded-lg border sm:block">
+              <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
+                <span>{t("Date")}</span>
+                <span>{t("Channel")}</span>
+                <span>{t("Duration")}</span>
+                <span>{t("Size")}</span>
               </div>
-              <div className="text-right font-mono text-xs">
-                <p>{r.duration}</p>
-                <p className="text-muted-foreground">{r.size}</p>
-              </div>
+              {recordingItems.map((recording) => (
+                <div
+                  className="grid grid-cols-4 border-t px-4 py-3 text-sm"
+                  key={recording.id}
+                >
+                  <span>{recording.date}</span>
+                  <span>{recording.handle}</span>
+                  <span className="font-mono">{recording.duration}</span>
+                  <span className="font-mono">{recording.size}</span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <div className="divide-y rounded-lg border sm:hidden">
+              {recordingItems.map((recording) => (
+                <div key={recording.id} className="flex justify-between p-3 text-sm">
+                  <div>
+                    <p className="font-medium">{recording.handle}</p>
+                    <p className="text-xs text-muted-foreground">{recording.date}</p>
+                  </div>
+                  <div className="text-right font-mono text-xs">
+                    <p>{recording.duration}</p>
+                    <p className="text-muted-foreground">{recording.size}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     </AppShell>
   );
@@ -2245,31 +2793,33 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   );
 }
 const channelStates = [
-  { value: "Recording", label: "Recording" },
-  { value: "Waiting", label: "Waiting" },
-  { value: "Offline", label: "Offline" },
-  { value: "Paused", label: "Paused" },
-  { value: "Error", label: "Error" },
+  { value: "recording", label: "Recording" },
+  { value: "waiting", label: "Waiting" },
+  { value: "offline", label: "Offline" },
+  { value: "paused", label: "Paused" },
+  { value: "error", label: "Error" },
+  { value: "checking", label: "Checking" },
+  { value: "live", label: "Live" },
 ] as const;
 function ChannelDetail({ channel }: { channel: Channel }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [state, setState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
-  const monitoring = state !== "Paused";
+  const monitoring = state !== "paused";
   const history = recordings.filter((r) => r.channelId === channel.id);
   const toggle = (v: boolean) => {
     if (v) {
-      setState("Waiting");
+      setState("waiting");
       toast.success(`Monitoring resumed for ${channel.handle}`);
     } else setDialog("pause");
   };
   const card = {
-    Recording: (
+    recording: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Recording" />
+          <StatusBadge status="recording" />
         </div>
         <p className="mt-6 text-sm font-medium text-recording">Recording now</p>
         <p className="mt-1 font-mono text-3xl font-semibold">01:42:18</p>
@@ -2283,11 +2833,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </Button>
       </>
     ),
-    Waiting: (
+    waiting: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Waiting" />
+          <StatusBadge status="waiting" />
         </div>
         <p className="mt-6 font-medium">Waiting for the next livestream</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2305,11 +2855,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </dl>
       </>
     ),
-    Offline: (
+    offline: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Offline" />
+          <StatusBadge status="offline" />
         </div>
         <p className="mt-6 font-medium">Channel is offline</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2327,11 +2877,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </dl>
       </>
     ),
-    Paused: (
+    paused: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Paused" />
+          <StatusBadge status="paused" />
         </div>
         <p className="mt-6 font-medium">Monitoring is paused</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2344,11 +2894,35 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </Button>
       </>
     ),
-    Error: (
+    checking: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Error" />
+          <StatusBadge status="checking" />
+        </div>
+        <p className="mt-6 font-medium">Checking live status</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The repository state is checking the channel before deciding whether it is offline or live.
+        </p>
+      </>
+    ),
+    live: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="live" pulse />
+        </div>
+        <p className="mt-6 font-medium">Livestream detected</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The channel is live. Recording workers are preparing the recording state.
+        </p>
+      </>
+    ),
+    error: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="error" />
         </div>
         <p className="mt-6 font-medium">We couldn’t check live status</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2363,7 +2937,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           variant="outline"
           onClick={() => {
             toast("Checking live status…");
-            setTimeout(() => setState("Waiting"), 900);
+            setTimeout(() => setState("waiting"), 900);
           }}
         >
           Check now
@@ -2439,8 +3013,8 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         <section
           className={cn(
             "rounded-lg border bg-surface p-5",
-            state === "Recording" && "border-recording/30",
-            state === "Error" && "border-destructive/30",
+            state === "recording" && "border-recording/30",
+            state === "error" && "border-destructive/30",
           )}
         >
           {card}
@@ -2460,8 +3034,8 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           />
           <StatCard
             label="Last livestream"
-            value={state === "Recording" ? "Now" : channel.live.split(",")[0]!}
-            detail={state === "Recording" ? "Currently recording" : channel.live}
+            value={state === "recording" ? "Now" : channel.live.split(",")[0]!}
+            detail={state === "recording" ? "Currently recording" : channel.live}
             icon={Radio}
           />
           <StatCard
@@ -2502,7 +3076,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
         onConfirm={() => {
-          setState("Paused");
+          setState("paused");
           setDialog(null);
           toast(`Monitoring paused for ${channel.handle}`);
         }}
@@ -2537,19 +3111,6 @@ function RecordingHeader() {
     </div>
   );
 }
-const libraryStates = [
-  { value: "populated", label: "Populated" },
-  { value: "loading", label: "Loading" },
-  { value: "empty", label: "Empty library" },
-  { value: "error", label: "API retrying" },
-] as const;
-const usageStates = [
-  { value: "normal", label: "Normal" },
-  { value: "warning", label: "80% warning" },
-  { value: "reached", label: "Quota reached" },
-  { value: "download", label: "Downloads exhausted" },
-  { value: "channels", label: "Channel limit" },
-] as const;
 const billingStates = [
   { value: "active", label: "Pro active" },
   { value: "free", label: "Free plan" },

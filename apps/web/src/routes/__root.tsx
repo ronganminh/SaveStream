@@ -18,6 +18,7 @@ import {
 } from "@/lib/preferences";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { RepositoryProvider } from "@/data/repository-hooks";
 
 function NotFoundComponent() {
   const { t } = usePreferences();
@@ -145,12 +146,14 @@ function RootComponent() {
   return (
     <PreferencesProvider>
       <QueryClientProvider client={queryClient}>
-        <SkipLink />
-        <div id="main-content" tabIndex={-1}>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </div>
-        <Toaster position="bottom-right" />
+        <RepositoryProvider>
+          <SkipLink />
+          <div id="main-content" tabIndex={-1}>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+          </div>
+          <Toaster position="bottom-right" />
+        </RepositoryProvider>
       </QueryClientProvider>
     </PreferencesProvider>
   );
