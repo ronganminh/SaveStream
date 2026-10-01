@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 14 includes:
+Phase 15 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -120,7 +120,15 @@ Phase 14 includes:
 - Billing Return uses a layout-matched skeleton instead of a full-screen spinner while payment status loads;
 - mutation failures use shared inline feedback; actions that cannot be safely replayed no longer show a misleading Retry button;
 - async state localization covers refreshing, non-retryable failures, and Request ID support detail in EN/VI;
-- Phase 14 widget tests cover offline retry behavior, non-retryable behavior, request IDs, authoritative retry overrides, and stale-content refresh progress.
+- Phase 14 widget tests cover offline retry behavior, non-retryable behavior, request IDs, authoritative retry overrides, and stale-content refresh progress;
+- controller unit coverage for Auth, Watch, Recording, and Billing state transitions/invalidation;
+- Auth controller tests cover successful sign-in and unverified-email routing state;
+- Watch/Recording controller tests verify list/detail/revision reconciliation after both successful and failed mutations;
+- Billing controller tests verify create-order, checkout, refresh, and snapshot-change notifications;
+- full-app critical-flow tests exercise navigation and state through the real app shell/router with repository boundaries;
+- critical automated flows cover launch -> onboarding -> login -> home, add channel -> channel detail, active recording -> stop -> stopped, and billing -> pending -> paid;
+- the Phase 15 suite reuses prior DTO/domain mapper, error/status mapping, idempotency, auth session/token, auth form, status-variant, credit, theme/language, and async-state coverage instead of duplicating those cases;
+- final Phase 15 validation runs 96 passing Flutter tests under the same CI format/analyze/test gates.
 
 Authentication, Channels/Watch management, Recordings, Credits, and Billing now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch/Recording data and the real available-credit balance; Profile remains on its current repository until a later integration phase.
 
@@ -297,6 +305,25 @@ Phase 14 standardizes async presentation without changing backend contracts. Dat
 `SsAsyncRefreshFrame` keeps already-rendered data on screen while a provider refreshes and adds a thin progress indicator. Recording pagination uses the same principle explicitly in `RecordingListState`: refresh and load-more failures remain inline so a transient request does not replace usable content with a full-screen error.
 
 Initial loading remains screen-specific. Home, Channels, Channel Detail, Recordings, Recording Detail, Credits, Billing, Billing Return, and Profile use skeleton layouts close to their final structure. The only remaining `CircularProgressIndicator` in feature screens is the inline Recording Load More indicator.
+
+## Automated test coverage
+
+Phase 15 treats the existing Phase 9-14 tests as one cumulative test pyramid rather than rebuilding duplicate suites.
+
+Unit coverage includes DTO/domain decoding, typed API error mapping, Watch/Recording/payment status mapping, idempotency behavior, secure auth session/token rotation, and controller mutation/reconciliation behavior.
+
+Widget coverage includes auth forms, Watch and Recording lifecycle variants, Credits/Billing states, theme/language switching, and loading/refresh/error/empty states.
+
+Critical flow coverage runs the complete `SaveStreamApp` and router against controlled repository boundaries:
+
+```text
+launch -> onboarding -> login -> home
+add channel -> channel detail
+active recording -> stop -> stopped
+billing -> pending -> paid
+```
+
+These critical-path tests intentionally live in the normal Flutter test suite so they run deterministically in CI without requiring an emulator. They cross screens, router state, provider state, and repository behavior while keeping external network/provider systems mocked or faked at the boundary.
 
 ## Validation
 
