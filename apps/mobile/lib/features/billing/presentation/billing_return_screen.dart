@@ -119,7 +119,7 @@ class _BillingReturnSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: const <Widget>[
         SsSkeleton(height: 170, radius: SsRadii.lg),
