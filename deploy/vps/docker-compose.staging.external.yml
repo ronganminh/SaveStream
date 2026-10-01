@@ -1,0 +1,43 @@
+x-external-env: &external-env
+  SAVESTREAM_SMTP_HOST: smtp-relay.brevo.com
+  SAVESTREAM_SMTP_PORT: "587"
+  SAVESTREAM_SMTP_USERNAME_FILE: /run/secrets/smtp_username
+  SAVESTREAM_SMTP_PASSWORD_FILE: /run/secrets/smtp_password
+  SAVESTREAM_SMTP_STARTTLS: "true"
+  SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@savestream.online>
+  SAVESTREAM_PAYMENT_PROVIDER: lemonsqueezy
+  SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://api.lemonsqueezy.com/v1
+  SAVESTREAM_PAYMENT_PROVIDER_API_KEY_FILE: /run/secrets/payment_api_key
+  SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
+  SAVESTREAM_LEMON_SQUEEZY_STORE_ID: ${SAVESTREAM_LEMON_SQUEEZY_STORE_ID:?set Lemon Squeezy store id}
+  SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: ${SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID:?set Lemon Squeezy variant id}
+
+x-external-secrets: &external-secrets
+  - smtp_username
+  - smtp_password
+  - payment_api_key
+
+services:
+  staging-api:
+    environment: *external-env
+    secrets: *external-secrets
+
+  worker:
+    environment: *external-env
+    secrets: *external-secrets
+
+  scheduler:
+    environment: *external-env
+    secrets: *external-secrets
+
+  outbox-dispatcher:
+    environment: *external-env
+    secrets: *external-secrets
+
+secrets:
+  smtp_username:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/smtp_username
+  smtp_password:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/smtp_password
+  payment_api_key:
+    file: ${SAVESTREAM_SECRETS_DIR:?set secrets dir}/payment_api_key
