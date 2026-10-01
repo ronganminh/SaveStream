@@ -30,7 +30,10 @@ final class ApiAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> register({required String email, required String password}) async {
+  Future<void> register({
+    required String email,
+    required String password,
+  }) async {
     try {
       await _publicApi.register(email: email, password: password);
     } on ApiException catch (error) {

@@ -2,10 +2,7 @@ import '../../../../core/api/api_client.dart';
 import 'auth_tokens.dart';
 
 abstract interface class AuthPublicApi {
-  Future<void> register({
-    required String email,
-    required String password,
-  });
+  Future<void> register({required String email, required String password});
   Future<void> verifyEmail({required String token});
   Future<void> resendVerification({required String email});
   Future<AuthTokenPair> login({
@@ -14,10 +11,7 @@ abstract interface class AuthPublicApi {
   });
   Future<AuthTokenPair> refresh({required String refreshToken});
   Future<void> forgotPassword({required String email});
-  Future<void> resetPassword({
-    required String token,
-    required String password,
-  });
+  Future<void> resetPassword({required String token, required String password});
 }
 
 final class DioAuthPublicApi implements AuthPublicApi {

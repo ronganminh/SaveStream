@@ -16,7 +16,11 @@ final class MemoryRefreshTokenStore implements RefreshTokenStore {
   Future<void> write(String token) async {
     final String normalized = token.trim();
     if (normalized.isEmpty) {
-      throw ArgumentError.value(token, 'token', 'Refresh token cannot be empty.');
+      throw ArgumentError.value(
+        token,
+        'token',
+        'Refresh token cannot be empty.',
+      );
     }
     _token = normalized;
   }

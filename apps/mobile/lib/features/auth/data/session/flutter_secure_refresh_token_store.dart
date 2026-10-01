@@ -17,7 +17,11 @@ final class FlutterSecureRefreshTokenStore implements RefreshTokenStore {
   Future<void> write(String token) {
     final String normalized = token.trim();
     if (normalized.isEmpty) {
-      throw ArgumentError.value(token, 'token', 'Refresh token cannot be empty.');
+      throw ArgumentError.value(
+        token,
+        'token',
+        'Refresh token cannot be empty.',
+      );
     }
     return _storage.write(key: _key, value: normalized);
   }

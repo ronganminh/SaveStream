@@ -9,7 +9,11 @@ final class MemoryAccessTokenStore implements AccessTokenProvider {
   void setAccessToken(String token) {
     final String normalized = token.trim();
     if (normalized.isEmpty) {
-      throw ArgumentError.value(token, 'token', 'Access token cannot be empty.');
+      throw ArgumentError.value(
+        token,
+        'token',
+        'Access token cannot be empty.',
+      );
     }
     _token = normalized;
   }

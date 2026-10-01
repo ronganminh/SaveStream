@@ -29,23 +29,23 @@ void main() {
   }
 
   test('mobile login sends client_type and decodes refresh token', () async {
-    final _FakeAdapter adapter = _FakeAdapter(
-      (RequestOptions options, int call) {
-        expect(options.path, '/v1/auth/login');
-        expect(options.data, isA<Map<String, Object?>>());
-        final Map<String, Object?> data =
-            options.data! as Map<String, Object?>;
-        expect(data['client_type'], 'mobile');
-        expect(data['email'], 'alex@example.com');
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      expect(options.path, '/v1/auth/login');
+      expect(options.data, isA<Map<String, Object?>>());
+      final Map<String, Object?> data = options.data! as Map<String, Object?>;
+      expect(data['client_type'], 'mobile');
+      expect(data['email'], 'alex@example.com');
 
-        return _jsonResponse(200, <String, Object?>{
-          'access_token': 'access-1',
-          'token_type': 'Bearer',
-          'expires_in': 900,
-          'refresh_token': 'refresh-1',
-        });
-      },
-    );
+      return _jsonResponse(200, <String, Object?>{
+        'access_token': 'access-1',
+        'token_type': 'Bearer',
+        'expires_in': 900,
+        'refresh_token': 'refresh-1',
+      });
+    });
     final Dio dio = Dio()..httpClientAdapter = adapter;
     final DioAuthPublicApi api = DioAuthPublicApi(
       ApiClient(config: config(), dio: dio),
@@ -61,36 +61,39 @@ void main() {
     expect(tokens.expiresIn, 900);
   });
 
-  test('restore rotates refresh token and restores authenticated session', () async {
-    final _StubPublicApi api = _StubPublicApi()
-      ..refreshHandler = (String token) async {
-        expect(token, 'refresh-old');
-        return const AuthTokenPair(
-          accessToken: 'access-new',
-          refreshToken: 'refresh-new',
-          expiresIn: 900,
-        );
-      };
-    final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore();
-    final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore(
-      'refresh-old',
-    );
-    final AppSessionController session = AppSessionController(
-      authStatus: AppAuthStatus.unauthenticated,
-    );
-    final AuthSessionManager manager = AuthSessionManager(
-      publicApi: api,
-      accessTokenStore: accessStore,
-      refreshTokenStore: refreshStore,
-      appSession: session,
-    );
+  test(
+    'restore rotates refresh token and restores authenticated session',
+    () async {
+      final _StubPublicApi api = _StubPublicApi()
+        ..refreshHandler = (String token) async {
+          expect(token, 'refresh-old');
+          return const AuthTokenPair(
+            accessToken: 'access-new',
+            refreshToken: 'refresh-new',
+            expiresIn: 900,
+          );
+        };
+      final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore();
+      final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore(
+        'refresh-old',
+      );
+      final AppSessionController session = AppSessionController(
+        authStatus: AppAuthStatus.unauthenticated,
+      );
+      final AuthSessionManager manager = AuthSessionManager(
+        publicApi: api,
+        accessTokenStore: accessStore,
+        refreshTokenStore: refreshStore,
+        appSession: session,
+      );
 
-    expect(await manager.restoreSession(), isTrue);
-    expect(await accessStore.getAccessToken(), 'access-new');
-    expect(await refreshStore.read(), 'refresh-new');
-    expect(session.isAuthenticated, isTrue);
-    expect(api.refreshCalls, 1);
-  });
+      expect(await manager.restoreSession(), isTrue);
+      expect(await accessStore.getAccessToken(), 'access-new');
+      expect(await refreshStore.read(), 'refresh-new');
+      expect(session.isAuthenticated, isTrue);
+      expect(api.refreshCalls, 1);
+    },
+  );
 
   test('concurrent refresh requests serialize into one rotation', () async {
     final Completer<AuthTokenPair> completer = Completer<AuthTokenPair>();
@@ -158,101 +161,105 @@ void main() {
     expect(session.isAuthenticated, isFalse);
   });
 
-  test('authenticated client refreshes one expired request and replays it', () async {
-    final _StubPublicApi publicApi = _StubPublicApi()
-      ..refreshHandler = (String token) async {
-        return const AuthTokenPair(
-          accessToken: 'access-fresh',
-          refreshToken: 'refresh-fresh',
-          expiresIn: 900,
-        );
-      };
-    final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore()
-      ..setAccessToken('access-expired');
-    final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore(
-      'refresh-old',
-    );
-    final AppSessionController session = AppSessionController();
-    final AuthSessionManager manager = AuthSessionManager(
-      publicApi: publicApi,
-      accessTokenStore: accessStore,
-      refreshTokenStore: refreshStore,
-      appSession: session,
-    );
-
-    final _FakeAdapter adapter = _FakeAdapter(
-      (RequestOptions options, int call) {
-        if (options.headers['Authorization'] == 'Bearer access-expired') {
-          return _errorResponse(
-            401,
-            code: 'AUTH_SESSION_REVOKED',
+  test(
+    'authenticated client refreshes one expired request and replays it',
+    () async {
+      final _StubPublicApi publicApi = _StubPublicApi()
+        ..refreshHandler = (String token) async {
+          return const AuthTokenPair(
+            accessToken: 'access-fresh',
+            refreshToken: 'refresh-fresh',
+            expiresIn: 900,
           );
+        };
+      final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore()
+        ..setAccessToken('access-expired');
+      final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore(
+        'refresh-old',
+      );
+      final AppSessionController session = AppSessionController();
+      final AuthSessionManager manager = AuthSessionManager(
+        publicApi: publicApi,
+        accessTokenStore: accessStore,
+        refreshTokenStore: refreshStore,
+        appSession: session,
+      );
+
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        if (options.headers['Authorization'] == 'Bearer access-expired') {
+          return _errorResponse(401, code: 'AUTH_SESSION_REVOKED');
         }
         expect(options.headers['Authorization'], 'Bearer access-fresh');
         return _jsonResponse(200, <String, Object?>{'ok': true});
-      },
-    );
-    final Dio dio = Dio()..httpClientAdapter = adapter;
-    final ApiClient client = ApiClient(
-      config: config(),
-      dio: dio,
-      accessTokenProvider: accessStore,
-    );
-    dio.interceptors.add(
-      ApiSessionRefreshInterceptor(dio: dio, sessionManager: manager),
-    );
-
-    final response = await client.get<bool>(
-      '/v1/me',
-      decoder: (Object? json) {
-        if (json is! Map || json['ok'] is! bool) {
-          throw const FormatException();
-        }
-        return json['ok'] as bool;
-      },
-    );
-
-    expect(response.data, isTrue);
-    expect(publicApi.refreshCalls, 1);
-    expect(adapter.calls, 2);
-    expect(await refreshStore.read(), 'refresh-fresh');
-  });
-
-  test('logout clears local credentials even when remote revoke fails', () async {
-    final _StubPublicApi publicApi = _StubPublicApi();
-    final _StubProtectedApi protectedApi = _StubProtectedApi()
-      ..logoutError = const ApiException(
-        kind: ApiExceptionKind.network,
-        retryable: true,
+      });
+      final Dio dio = Dio()..httpClientAdapter = adapter;
+      final ApiClient client = ApiClient(
+        config: config(),
+        dio: dio,
+        accessTokenProvider: accessStore,
       );
-    final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore();
-    final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore();
-    final AppSessionController session = AppSessionController();
-    final AuthSessionManager manager = AuthSessionManager(
-      publicApi: publicApi,
-      accessTokenStore: accessStore,
-      refreshTokenStore: refreshStore,
-      appSession: session,
-    );
-    await manager.storeAuthenticatedTokens(
-      const AuthTokenPair(
-        accessToken: 'access',
-        refreshToken: 'refresh',
-        expiresIn: 900,
-      ),
-    );
-    final ApiAuthRepository repository = ApiAuthRepository(
-      publicApi: publicApi,
-      protectedApi: protectedApi,
-      sessionManager: manager,
-    );
+      dio.interceptors.add(
+        ApiSessionRefreshInterceptor(dio: dio, sessionManager: manager),
+      );
 
-    await repository.logout();
+      final response = await client.get<bool>(
+        '/v1/me',
+        decoder: (Object? json) {
+          if (json is! Map || json['ok'] is! bool) {
+            throw const FormatException();
+          }
+          return json['ok'] as bool;
+        },
+      );
 
-    expect(await accessStore.getAccessToken(), isNull);
-    expect(await refreshStore.read(), isNull);
-    expect(session.isAuthenticated, isFalse);
-  });
+      expect(response.data, isTrue);
+      expect(publicApi.refreshCalls, 1);
+      expect(adapter.calls, 2);
+      expect(await refreshStore.read(), 'refresh-fresh');
+    },
+  );
+
+  test(
+    'logout clears local credentials even when remote revoke fails',
+    () async {
+      final _StubPublicApi publicApi = _StubPublicApi();
+      final _StubProtectedApi protectedApi = _StubProtectedApi()
+        ..logoutError = const ApiException(
+          kind: ApiExceptionKind.network,
+          retryable: true,
+        );
+      final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore();
+      final MemoryRefreshTokenStore refreshStore = MemoryRefreshTokenStore();
+      final AppSessionController session = AppSessionController();
+      final AuthSessionManager manager = AuthSessionManager(
+        publicApi: publicApi,
+        accessTokenStore: accessStore,
+        refreshTokenStore: refreshStore,
+        appSession: session,
+      );
+      await manager.storeAuthenticatedTokens(
+        const AuthTokenPair(
+          accessToken: 'access',
+          refreshToken: 'refresh',
+          expiresIn: 900,
+        ),
+      );
+      final ApiAuthRepository repository = ApiAuthRepository(
+        publicApi: publicApi,
+        protectedApi: protectedApi,
+        sessionManager: manager,
+      );
+
+      await repository.logout();
+
+      expect(await accessStore.getAccessToken(), isNull);
+      expect(await refreshStore.read(), isNull);
+      expect(session.isAuthenticated, isFalse);
+    },
+  );
 
   test('backend auth error codes map without parsing message text', () async {
     final _StubPublicApi publicApi = _StubPublicApi()
@@ -283,10 +290,7 @@ void main() {
     );
 
     await expectLater(
-      repository.signIn(
-        email: 'alex@example.com',
-        password: 'password-123',
-      ),
+      repository.signIn(email: 'alex@example.com', password: 'password-123'),
       throwsA(
         isA<AuthException>().having(
           (AuthException error) => error.code,
