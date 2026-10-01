@@ -38,6 +38,9 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show canonical Phase 16 format
+        run: dart format --output=show lib/core/widgets/ss_surfaces.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
