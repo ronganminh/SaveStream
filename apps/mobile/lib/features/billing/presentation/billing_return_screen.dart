@@ -53,12 +53,20 @@ class BillingReturnScreen extends ConsumerWidget {
             ),
             data: (PaymentOrder? value) {
               if (value == null) {
-                return SsEmptyState(
-                  icon: Icons.receipt_long_outlined,
-                  title: l10n.billingOrderNotFoundTitle,
-                  message: l10n.billingOrderNotFoundBody,
-                  actionLabel: l10n.backToBillingAction,
-                  onAction: () => context.go(AppRoutes.billing),
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SsEmptyState(
+                      icon: Icons.receipt_long_outlined,
+                      title: l10n.billingOrderNotFoundTitle,
+                      message: l10n.billingOrderNotFoundBody,
+                    ),
+                    const SizedBox(height: SsSpacing.md),
+                    SsPrimaryButton(
+                      label: l10n.backToBillingAction,
+                      onPressed: () => context.go(AppRoutes.billing),
+                    ),
+                  ],
                 );
               }
               return Column(
