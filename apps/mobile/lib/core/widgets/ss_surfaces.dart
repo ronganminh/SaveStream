@@ -136,20 +136,63 @@ class SsListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget tile = MergeSemantics(
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: leading,
-          title: Text(title),
-          subtitle: subtitle == null ? null : Text(subtitle!),
-          trailing: trailing,
-          onTap: onTap,
-        ),
-      ),
-    );
+    final Widget content = trailing is SsStatusChip
+        ? Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: SsSpacing.sm),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (leading != null) ...<Widget>[
+                          leading!,
+                          const SizedBox(width: SsSpacing.md),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                title,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              if (subtitle != null) ...<Widget>[
+                                const SizedBox(height: SsSpacing.xs),
+                                Text(
+                                  subtitle!,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: SsSpacing.sm),
+                    Align(alignment: Alignment.centerLeft, child: trailing!),
+                  ],
+                ),
+              ),
+            ),
+          )
+        : Material(
+            type: MaterialType.transparency,
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: leading,
+              title: Text(title),
+              subtitle: subtitle == null ? null : Text(subtitle!),
+              trailing: trailing,
+              onTap: onTap,
+            ),
+          );
 
+    final Widget tile = MergeSemantics(child: content);
     if (onTap == null) {
       return tile;
     }

@@ -27,7 +27,13 @@ class HomeScreen extends ConsumerWidget {
           children: <Widget>[
             const SsLogoMark(size: 32),
             const SizedBox(width: SsSpacing.md),
-            Text(l10n.appTitle),
+            Expanded(
+              child: Text(
+                l10n.appTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
