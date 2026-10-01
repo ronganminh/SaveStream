@@ -140,6 +140,7 @@ import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 import { isDemoMode } from "@/lib/app-config";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
+import { useChannelsData, useRecordingsData, useUsageData } from "@/hooks/use-domain-data";
 
 export { meta, publicMeta } from "@/components/app-components";
 
@@ -965,6 +966,10 @@ export function OnboardingPage() {
 
 export function OverviewPage({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
+  const { query: recordingsQuery } = useRecordingsData();
+  const overviewChannels = channelsQuery.data ?? [];
+  const overviewRecordings = recordingsQuery.data ?? [];
   return (
     <AppShell>
       <PageHeader title="Overview" subtitle="Sunday, September 27" action={<AddChannelDialog />} />
@@ -1012,12 +1017,12 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
               <span>{t("Checked")}</span>
               <span />
             </div>
-            {channels.map((c) => (
+            {overviewChannels.map((c) => (
               <ChannelRow key={c.id} channel={c} />
             ))}
           </div>
           <div className="space-y-3 md:hidden">
-            {channels.map((c) => (
+            {overviewChannels.map((c) => (
               <ChannelCard key={c.id} channel={c} />
             ))}
           </div>
@@ -1028,7 +1033,7 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
             action={<Link to="/recordings">{t("View library")}</Link>}
           />
           <div className="divide-y rounded-lg border bg-surface">
-            {recordings.slice(0, 3).map((r) => (
+            {overviewRecordings.slice(0, 3).map((r) => (
               <Link
                 key={r.id}
                 to="/recordings/$id"
@@ -1063,9 +1068,11 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 
 export function ChannelsPage() {
   const { t } = usePreferences();
+  const { query: channelsQuery, state: channelsState } = useChannelsData();
+  const channelItems = channelsQuery.data ?? [];
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
-  const filtered = channels.filter(
+  const filtered = channelItems.filter(
     (c) =>
       (filter === "All" || c.status === filter) &&
       (c.name + c.handle).toLowerCase().includes(q.toLowerCase()),
@@ -1092,7 +1099,19 @@ export function ChannelsPage() {
           ))}
         </div>
       </FilterBar>
-      {filtered.length ? (
+      {channelsState.kind === "loading" ? (
+        <div className="space-y-3" aria-busy="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-20 animate-pulse rounded-lg border bg-muted" />
+          ))}
+        </div>
+      ) : channelsState.kind === "error" ? (
+        <ErrorState
+          title="Could not load channels"
+          body="The channel repository returned an error. Retry when the data source is available."
+          onRetry={() => channelsQuery.refetch()}
+        />
+      ) : filtered.length ? (
         <>
           <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
             <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
@@ -1146,7 +1165,19 @@ export function ChannelDetailPage() {
 }
 export function RecordingsPage() {
   const { t } = usePreferences();
+  const { query: recordingsQuery, state: recordingsState } = useRecordingsData();
+  const { query: channelsQuery } = useChannelsData();
+  const recordingItems = recordingsQuery.data ?? [];
+  const channelItems = channelsQuery.data ?? [];
   const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
+  const viewState =
+    recordingsState.kind === "loading"
+      ? "loading"
+      : recordingsState.kind === "error"
+        ? "error"
+        : recordingsState.kind === "empty"
+          ? "empty"
+          : mock;
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
   const [status, setStatus] = useState("all");
@@ -1154,7 +1185,7 @@ export function RecordingsPage() {
   const [range, setRange] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const today = new Date("Sep 27, 2026").getTime();
-  const list = recordings
+  const list = recordingItems
     .filter(
       (r) =>
         (status === "all" || r.status === status) &&
@@ -1174,7 +1205,7 @@ export function RecordingsPage() {
     setStreamer("all");
     setRange("all");
   };
-  const expiring = recordings.filter(
+  const expiring = recordingItems.filter(
     (r) => r.status === "Ready" && r.expiresDays !== null && r.expiresDays <= 3,
   );
   return (
@@ -1184,7 +1215,7 @@ export function RecordingsPage() {
         subtitle="Watch and download your completed livestream recordings."
       />
       <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />
-      {mock === "empty" ? (
+      {viewState === "empty" ? (
         <EmptyState
           title="No recordings yet"
           body="Once one of your monitored channels goes live, the recording will automatically appear here."
@@ -1199,19 +1230,19 @@ export function RecordingsPage() {
         />
       ) : (
         <>
-          {mock === "error" && (
+          {viewState === "error" && (
             <div className="mb-4">
               <ErrorState
                 title="We’re having trouble loading your library"
                 body="Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe."
                 onRetry={() => {
-                  toast("Retrying…");
-                  setTimeout(() => setMock("populated"), 800);
+                  void recordingsQuery.refetch();
+                  setMock("populated");
                 }}
               />
             </div>
           )}
-          {mock === "populated" && expiring.length > 0 && (
+          {viewState === "populated" && expiring.length > 0 && (
             <div className="mb-4">
               <StateBanner
                 tone="warning"
@@ -1232,7 +1263,7 @@ export function RecordingsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All streamers")}</SelectItem>
-                  {channels.map((c) => (
+                  {channelItems.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.handle}
                     </SelectItem>
@@ -1290,7 +1321,7 @@ export function RecordingsPage() {
               </Button>
             </div>
           </FilterBar>
-          {mock === "loading" ? (
+          {viewState === "loading" ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="animate-pulse overflow-hidden rounded-lg border">
@@ -1639,7 +1670,35 @@ function ProcessingTimeline() {
 
 export function UsagePage() {
   const { t } = usePreferences();
+  const { query: usageQuery, state: usageState } = useUsageData();
+  const { query: recordingsQuery } = useRecordingsData();
   const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
+
+  if (usageState.kind === "loading" || !usageQuery.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" subtitle="Loading current usage…" />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (usageState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Usage" />
+        <ErrorState
+          title="Could not load usage"
+          body="The usage repository returned an error."
+          onRetry={() => usageQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const usage = usageQuery.data.summary;
+  const dailyRecordingHours = usageQuery.data.dailyRecordingHours;
+  const usageRecordings = recordingsQuery.data ?? [];
   const hours = mock === "warning" ? 40.2 : mock === "reached" ? 50 : usage.recordingHours.used;
   const dl = mock === "download" ? 100 : usage.downloadGb.used;
   const ch = mock === "channels" ? usage.channels.limit : usage.channels.used;
@@ -1808,7 +1867,7 @@ export function UsagePage() {
             <span>{t("Duration")}</span>
             <span>{t("Size")}</span>
           </div>
-          {recordings.map((r) => (
+          {usageRecordings.map((r) => (
             <div className="grid grid-cols-4 border-t px-4 py-3 text-sm" key={r.id}>
               <span>{r.date}</span>
               <span>{r.handle}</span>
@@ -1818,7 +1877,7 @@ export function UsagePage() {
           ))}
         </div>
         <div className="divide-y rounded-lg border sm:hidden">
-          {recordings.map((r) => (
+          {usageRecordings.map((r) => (
             <div key={r.id} className="flex justify-between p-3 text-sm">
               <div>
                 <p className="font-medium">{r.handle}</p>
