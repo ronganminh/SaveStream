@@ -52,4 +52,9 @@ async def payment_webhook(
         raw_payload=raw_payload,
         signature_verified=True,
     )
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    response_status = (
+        status.HTTP_200_OK
+        if provider.strip().lower() == "lemonsqueezy"
+        else status.HTTP_204_NO_CONTENT
+    )
+    return Response(status_code=response_status)
