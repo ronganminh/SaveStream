@@ -690,14 +690,13 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.scrollUntilVisible(
-      find.text('Check payment status'),
-      240,
-      scrollable: find.byType(Scrollable).last,
+    final Finder checkStatusButton = find.widgetWithText(
+      OutlinedButton,
+      'Check payment status',
     );
-    await tester.tap(
-      find.widgetWithText(OutlinedButton, 'Check payment status'),
-    );
+    await tester.ensureVisible(checkStatusButton);
+    await tester.pump();
+    await tester.tap(checkStatusButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
