@@ -24,18 +24,18 @@ class BillingReturnScreen extends ConsumerWidget {
       paymentOrderStatusProvider(orderId),
     );
 
-    ref.listen<AsyncValue<PaymentOrder?>>(
-      paymentOrderStatusProvider(orderId),
-      (AsyncValue<PaymentOrder?>? previous, AsyncValue<PaymentOrder?> next) {
-        next.whenData((PaymentOrder? value) {
-          if (value?.status == PaymentOrderStatus.paid) {
-            ref.invalidate(creditsOverviewProvider);
-            ref.invalidate(homeDashboardProvider);
-            ref.invalidate(billingSnapshotProvider);
-          }
-        });
-      },
-    );
+    ref.listen<AsyncValue<PaymentOrder?>>(paymentOrderStatusProvider(orderId), (
+      AsyncValue<PaymentOrder?>? previous,
+      AsyncValue<PaymentOrder?> next,
+    ) {
+      next.whenData((PaymentOrder? value) {
+        if (value?.status == PaymentOrderStatus.paid) {
+          ref.invalidate(creditsOverviewProvider);
+          ref.invalidate(homeDashboardProvider);
+          ref.invalidate(billingSnapshotProvider);
+        }
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.billingReturnTitle)),
@@ -48,9 +48,8 @@ class BillingReturnScreen extends ConsumerWidget {
               title: l10n.errorTitle,
               message: l10n.errorBody,
               retryLabel: l10n.retryAction,
-              onRetry: () => ref.invalidate(
-                paymentOrderStatusProvider(orderId),
-              ),
+              onRetry: () =>
+                  ref.invalidate(paymentOrderStatusProvider(orderId)),
             ),
             data: (PaymentOrder? value) {
               if (value == null) {

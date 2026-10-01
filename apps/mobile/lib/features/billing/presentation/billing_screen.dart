@@ -260,12 +260,14 @@ class _BillingBody extends StatelessWidget {
             ),
           )
         else
-          ...data.orders.take(20).map(
-            (PaymentOrder order) => Padding(
-              padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-              child: _OrderCard(order: order),
-            ),
-          ),
+          ...data.orders
+              .take(20)
+              .map(
+                (PaymentOrder order) => Padding(
+                  padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                  child: _OrderCard(order: order),
+                ),
+              ),
       ],
     );
   }
@@ -449,8 +451,7 @@ String paymentStatusLabel(AppLocalizations l10n, PaymentOrderStatus status) {
     PaymentOrderStatus.failed => l10n.paymentStatusFailed,
     PaymentOrderStatus.cancelled => l10n.paymentStatusCancelled,
     PaymentOrderStatus.expired => l10n.paymentStatusExpired,
-    PaymentOrderStatus.partiallyRefunded =>
-      l10n.paymentStatusPartiallyRefunded,
+    PaymentOrderStatus.partiallyRefunded => l10n.paymentStatusPartiallyRefunded,
     PaymentOrderStatus.refunded => l10n.paymentStatusRefunded,
   };
 }
@@ -463,8 +464,7 @@ String paymentStatusBody(AppLocalizations l10n, PaymentOrderStatus status) {
     PaymentOrderStatus.failed => l10n.paymentFailedBody,
     PaymentOrderStatus.cancelled => l10n.paymentCancelledBody,
     PaymentOrderStatus.expired => l10n.paymentExpiredBody,
-    PaymentOrderStatus.partiallyRefunded =>
-      l10n.paymentPartiallyRefundedBody,
+    PaymentOrderStatus.partiallyRefunded => l10n.paymentPartiallyRefundedBody,
     PaymentOrderStatus.refunded => l10n.paymentRefundedBody,
   };
 }

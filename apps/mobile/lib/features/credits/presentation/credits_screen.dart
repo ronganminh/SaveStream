@@ -119,12 +119,14 @@ class _CreditsBody extends StatelessWidget {
             ),
           )
         else
-          ...data.transactions.take(20).map(
-            (CreditTransaction transaction) => Padding(
-              padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-              child: _TransactionCard(transaction: transaction),
-            ),
-          ),
+          ...data.transactions
+              .take(20)
+              .map(
+                (CreditTransaction transaction) => Padding(
+                  padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                  child: _TransactionCard(transaction: transaction),
+                ),
+              ),
       ],
     );
   }

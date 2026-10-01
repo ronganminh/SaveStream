@@ -18,9 +18,9 @@ List<CreditPackage> creditPackagesFromJson(Object? json) {
   if (rawItems is! List) {
     throw const FormatException('Credit packages must be an array.');
   }
-  return rawItems.map<CreditPackage>(creditPackageFromJson).toList(
-    growable: false,
-  );
+  return rawItems
+      .map<CreditPackage>(creditPackageFromJson)
+      .toList(growable: false);
 }
 
 CreditPackage creditPackageFromJson(Object? json) {
@@ -42,9 +42,9 @@ BillingApiPage<PaymentOrder> paymentOrdersFromJson(Object? json) {
   }
   final _Pagination pagination = _pagination(map['pagination']);
   return BillingApiPage<PaymentOrder>(
-    items: rawItems.map<PaymentOrder>(paymentOrderFromJson).toList(
-      growable: false,
-    ),
+    items: rawItems
+        .map<PaymentOrder>(paymentOrderFromJson)
+        .toList(growable: false),
     nextCursor: pagination.nextCursor,
     hasMore: pagination.hasMore,
   );
@@ -54,10 +54,7 @@ PaymentOrder paymentOrderFromJson(Object? json) {
   final Map<Object?, Object?> map = _requiredMap(json, 'payment order');
   return PaymentOrder(
     id: _requiredString(map['id'], 'payment_order.id'),
-    packageId: _requiredString(
-      map['package_id'],
-      'payment_order.package_id',
-    ),
+    packageId: _requiredString(map['package_id'], 'payment_order.package_id'),
     status: _paymentStatus(
       _requiredString(map['status'], 'payment_order.status'),
     ),
@@ -68,14 +65,8 @@ PaymentOrder paymentOrderFromJson(Object? json) {
       map['provider_reference'],
       'payment_order.provider_reference',
     ),
-    createdAt: _requiredDateTime(
-      map['created_at'],
-      'payment_order.created_at',
-    ),
-    updatedAt: _requiredDateTime(
-      map['updated_at'],
-      'payment_order.updated_at',
-    ),
+    createdAt: _requiredDateTime(map['created_at'], 'payment_order.created_at'),
+    updatedAt: _requiredDateTime(map['updated_at'], 'payment_order.updated_at'),
   );
 }
 

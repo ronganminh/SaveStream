@@ -29,35 +29,37 @@ CreditApiPage<CreditTransaction> creditTransactionsFromJson(Object? json) {
   }
   final _Pagination pagination = _pagination(map['pagination']);
   return CreditApiPage<CreditTransaction>(
-    items: rawItems.map<CreditTransaction>((Object? raw) {
-      final Map<Object?, Object?> item = _requiredMap(
-        raw,
-        'credit transaction',
-      );
-      return CreditTransaction(
-        id: _requiredString(item['id'], 'transaction.id'),
-        type: _transactionType(
-          _requiredString(item['type'], 'transaction.type'),
-        ),
-        amount: _requiredSignedInt(item['amount'], 'transaction.amount'),
-        balanceAfter: _requiredSignedInt(
-          item['balance_after'],
-          'transaction.balance_after',
-        ),
-        referenceType: _requiredString(
-          item['reference_type'],
-          'transaction.reference_type',
-        ),
-        referenceId: _optionalString(
-          item['reference_id'],
-          'transaction.reference_id',
-        ),
-        occurredAt: _requiredDateTime(
-          item['created_at'],
-          'transaction.created_at',
-        ),
-      );
-    }).toList(growable: false),
+    items: rawItems
+        .map<CreditTransaction>((Object? raw) {
+          final Map<Object?, Object?> item = _requiredMap(
+            raw,
+            'credit transaction',
+          );
+          return CreditTransaction(
+            id: _requiredString(item['id'], 'transaction.id'),
+            type: _transactionType(
+              _requiredString(item['type'], 'transaction.type'),
+            ),
+            amount: _requiredSignedInt(item['amount'], 'transaction.amount'),
+            balanceAfter: _requiredSignedInt(
+              item['balance_after'],
+              'transaction.balance_after',
+            ),
+            referenceType: _requiredString(
+              item['reference_type'],
+              'transaction.reference_type',
+            ),
+            referenceId: _optionalString(
+              item['reference_id'],
+              'transaction.reference_id',
+            ),
+            occurredAt: _requiredDateTime(
+              item['created_at'],
+              'transaction.created_at',
+            ),
+          );
+        })
+        .toList(growable: false),
     nextCursor: pagination.nextCursor,
     hasMore: pagination.hasMore,
   );
@@ -71,29 +73,31 @@ CreditApiPage<CreditReservation> creditReservationsFromJson(Object? json) {
   }
   final _Pagination pagination = _pagination(map['pagination']);
   return CreditApiPage<CreditReservation>(
-    items: rawItems.map<CreditReservation>((Object? raw) {
-      final Map<Object?, Object?> item = _requiredMap(
-        raw,
-        'credit reservation',
-      );
-      return CreditReservation(
-        id: _requiredString(item['id'], 'reservation.id'),
-        recordingId: _requiredString(
-          item['recording_id'],
-          'reservation.recording_id',
-        ),
-        reserved: _requiredInt(item['reserved'], 'reservation.reserved'),
-        settled: _requiredInt(item['settled'], 'reservation.settled'),
-        released: _requiredInt(item['released'], 'reservation.released'),
-        status: _reservationStatus(
-          _requiredString(item['status'], 'reservation.status'),
-        ),
-        createdAt: _requiredDateTime(
-          item['created_at'],
-          'reservation.created_at',
-        ),
-      );
-    }).toList(growable: false),
+    items: rawItems
+        .map<CreditReservation>((Object? raw) {
+          final Map<Object?, Object?> item = _requiredMap(
+            raw,
+            'credit reservation',
+          );
+          return CreditReservation(
+            id: _requiredString(item['id'], 'reservation.id'),
+            recordingId: _requiredString(
+              item['recording_id'],
+              'reservation.recording_id',
+            ),
+            reserved: _requiredInt(item['reserved'], 'reservation.reserved'),
+            settled: _requiredInt(item['settled'], 'reservation.settled'),
+            released: _requiredInt(item['released'], 'reservation.released'),
+            status: _reservationStatus(
+              _requiredString(item['status'], 'reservation.status'),
+            ),
+            createdAt: _requiredDateTime(
+              item['created_at'],
+              'reservation.created_at',
+            ),
+          );
+        })
+        .toList(growable: false),
     nextCursor: pagination.nextCursor,
     hasMore: pagination.hasMore,
   );
@@ -111,17 +115,20 @@ PricingSnapshot pricingFromJson(Object? json) {
   return PricingSnapshot(
     version: _requiredString(map['version'], 'pricing.version'),
     creditUnit: 'credit',
-    rules: rawRules.map<Map<String, Object?>>((Object? raw) {
-      final Map<Object?, Object?> source = _requiredMap(raw, 'pricing rule');
-      return Map<String, Object?>.unmodifiable(
-        source.map<String, Object?>(
-          (Object? key, Object? value) => MapEntry<String, Object?>(
-            key.toString(),
-            value,
-          ),
-        ),
-      );
-    }).toList(growable: false),
+    rules: rawRules
+        .map<Map<String, Object?>>((Object? raw) {
+          final Map<Object?, Object?> source = _requiredMap(
+            raw,
+            'pricing rule',
+          );
+          return Map<String, Object?>.unmodifiable(
+            source.map<String, Object?>(
+              (Object? key, Object? value) =>
+                  MapEntry<String, Object?>(key.toString(), value),
+            ),
+          );
+        })
+        .toList(growable: false),
   );
 }
 

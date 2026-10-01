@@ -106,9 +106,13 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
             widget.recordingRepository!,
           ),
         if (widget.creditsRepository != null)
-          creditsRepositoryProvider.overrideWithValue(widget.creditsRepository!),
+          creditsRepositoryProvider.overrideWithValue(
+            widget.creditsRepository!,
+          ),
         if (widget.billingRepository != null)
-          billingRepositoryProvider.overrideWithValue(widget.billingRepository!),
+          billingRepositoryProvider.overrideWithValue(
+            widget.billingRepository!,
+          ),
       ],
       child: AnimatedBuilder(
         animation: _settings,

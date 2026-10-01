@@ -53,8 +53,7 @@ class CreditTransaction {
 
   bool get isCredit => amount >= 0;
 
-  String? get recordingId =>
-      referenceType == 'recording' ? referenceId : null;
+  String? get recordingId => referenceType == 'recording' ? referenceId : null;
 }
 
 class CreditReservation {
@@ -107,9 +106,8 @@ class CreditsOverview {
   bool get isLowCredit =>
       balance.available > 0 && balance.available <= lowCreditThreshold;
 
-  int get activeReservationCount => reservations
-      .where((CreditReservation item) {
+  int get activeReservationCount =>
+      reservations.where((CreditReservation item) {
         return item.status == CreditReservationStatus.active;
-      })
-      .length;
+      }).length;
 }
