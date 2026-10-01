@@ -12,6 +12,7 @@ final class ApiErrorParser {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
+      case DioExceptionType.transformTimeout:
         return const ApiException(
           kind: ApiExceptionKind.timeout,
           retryable: true,
