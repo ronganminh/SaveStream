@@ -510,6 +510,22 @@ const vi: Record<string, string> = {
   "Recording workers are designed to start automatically when backend services are connected.": "Tiến trình ghi hình được thiết kế để tự động bắt đầu khi dịch vụ backend được kết nối.",
   "Production monitoring and recording are designed to run on backend services rather than in your browser.": "Theo dõi và ghi hình ở môi trường production được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
   "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.": "Trong sản phẩm production, theo dõi và ghi hình được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
+  "Back to billing": "Quay lại thanh toán",
+  Checked: "Đã kiểm tra",
+  "Checkout canceled": "Đã hủy thanh toán",
+  "Email and password": "Email và mật khẩu",
+  "Enter a valid TikTok username.": "Nhập tên người dùng TikTok hợp lệ.",
+  Google: "Google",
+  "Not enough download quota": "Không đủ hạn mức tải xuống",
+  "Play video": "Phát video",
+  "Quota resets on": "Hạn mức đặt lại vào",
+  Revoke: "Thu hồi",
+  "Sign out all other devices": "Đăng xuất khỏi tất cả thiết bị khác",
+  "This demo file is larger than the remaining monthly download quota.": "Tệp demo này lớn hơn hạn mức tải xuống còn lại trong tháng.",
+  "This device": "Thiết bị này",
+  Update: "Cập nhật",
+  "What happened, and when?": "Điều gì đã xảy ra và vào lúc nào?",
+  "e.g. Recording failed for @norashop": "Ví dụ: Ghi hình thất bại cho @norashop",
 
 };
 
