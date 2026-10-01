@@ -466,6 +466,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setLanguageState(nextLanguage);
     setThemeState(nextTheme);
     applyTheme(nextTheme);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.documentElement.classList.remove("language-preload");
+      });
+    });
   }, []);
   useEffect(() => {
     applyTheme(theme);
