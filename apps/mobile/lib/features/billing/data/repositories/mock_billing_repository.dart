@@ -8,41 +8,67 @@ final class MockBillingRepository extends MockRepositoryBase
     : _orders = List<PaymentOrder>.of(_seedOrders);
 
   static const List<CreditPackage> _packages = <CreditPackage>[
-    CreditPackage(id: 'pkg_10', credits: 10, price: 4.99, currency: 'USD'),
+    CreditPackage(
+      id: 'pkg_10',
+      name: 'Starter',
+      credits: 10,
+      price: Money(amountMinor: 499, currency: 'USD'),
+      active: true,
+    ),
     CreditPackage(
       id: 'pkg_25',
+      name: 'Plus',
       credits: 25,
-      price: 9.99,
-      currency: 'USD',
-      recommended: true,
+      price: Money(amountMinor: 999, currency: 'USD'),
+      active: true,
     ),
-    CreditPackage(id: 'pkg_60', credits: 60, price: 19.99, currency: 'USD'),
+    CreditPackage(
+      id: 'pkg_60',
+      name: 'Pro',
+      credits: 60,
+      price: Money(amountMinor: 1999, currency: 'USD'),
+      active: true,
+    ),
   ];
 
   static final List<PaymentOrder> _seedOrders = <PaymentOrder>[
     PaymentOrder(
       id: 'order_paid',
-      package: _packages[1],
+      packageId: 'pkg_25',
       status: PaymentOrderStatus.paid,
+      credits: 25,
+      amount: const Money(amountMinor: 999, currency: 'USD'),
+      provider: 'mock',
+      providerReference: 'provider_paid',
       createdAt: DateTime.utc(2026, 9, 28, 15, 2),
+      updatedAt: DateTime.utc(2026, 9, 28, 15, 3),
     ),
     PaymentOrder(
       id: 'order_failed',
-      package: _packages[0],
+      packageId: 'pkg_10',
       status: PaymentOrderStatus.failed,
+      credits: 10,
+      amount: const Money(amountMinor: 499, currency: 'USD'),
       createdAt: DateTime.utc(2026, 9, 20, 9, 15),
+      updatedAt: DateTime.utc(2026, 9, 20, 9, 20),
     ),
     PaymentOrder(
       id: 'order_cancelled',
-      package: _packages[2],
+      packageId: 'pkg_60',
       status: PaymentOrderStatus.cancelled,
+      credits: 60,
+      amount: const Money(amountMinor: 1999, currency: 'USD'),
       createdAt: DateTime.utc(2026, 9, 16, 11, 40),
+      updatedAt: DateTime.utc(2026, 9, 16, 11, 45),
     ),
     PaymentOrder(
       id: 'order_expired',
-      package: _packages[0],
+      packageId: 'pkg_10',
       status: PaymentOrderStatus.expired,
+      credits: 10,
+      amount: const Money(amountMinor: 499, currency: 'USD'),
       createdAt: DateTime.utc(2026, 9, 12, 7, 30),
+      updatedAt: DateTime.utc(2026, 9, 12, 8, 30),
     ),
   ];
 
@@ -68,18 +94,48 @@ final class MockBillingRepository extends MockRepositoryBase
     return respond<PaymentOrder?>(
       success: () {
         final CreditPackage? package = _findPackage(packageId);
-        if (package == null) {
-          return null;
-        }
+        if (package == null) return null;
 
+        final DateTime now = DateTime.now().toUtc();
         final PaymentOrder order = PaymentOrder(
           id: 'order_mock_${_nextOrder++}',
-          package: package,
-          status: PaymentOrderStatus.pending,
-          createdAt: DateTime.now().toUtc(),
+          packageId: package.id,
+          status: PaymentOrderStatus.created,
+          credits: package.credits,
+          amount: package.price,
+          createdAt: now,
+          updatedAt: now,
         );
         _orders.insert(0, order);
         return order;
+      },
+      empty: () => null,
+    );
+  }
+
+  @override
+  Future<CheckoutSession?> createCheckout({
+    required String orderId,
+    required Uri returnUri,
+  }) {
+    return respond<CheckoutSession?>(
+      success: () {
+        final int index = _orders.indexWhere(
+          (PaymentOrder order) => order.id == orderId,
+        );
+        if (index < 0) return null;
+        final PaymentOrder current = _orders[index];
+        final PaymentOrder pending = _copyOrder(
+          current,
+          status: PaymentOrderStatus.pending,
+          provider: 'mock',
+          providerReference: 'provider_$orderId',
+        );
+        _orders[index] = pending;
+        return CheckoutSession(
+          checkoutUri: Uri.parse('https://example.com/checkout/$orderId'),
+          paymentOrder: pending,
+        );
       },
       empty: () => null,
     );
@@ -92,14 +148,11 @@ final class MockBillingRepository extends MockRepositoryBase
         final int index = _orders.indexWhere(
           (PaymentOrder order) => order.id == orderId,
         );
-        if (index < 0) {
-          return null;
-        }
-
+        if (index < 0) return null;
         final PaymentOrder current = _orders[index];
         final PaymentOrder refreshed =
             current.status == PaymentOrderStatus.pending
-            ? current.copyWith(status: PaymentOrderStatus.paid)
+            ? _copyOrder(current, status: PaymentOrderStatus.paid)
             : current;
         _orders[index] = refreshed;
         return refreshed;
@@ -108,12 +161,34 @@ final class MockBillingRepository extends MockRepositoryBase
     );
   }
 
+  @override
+  Stream<PaymentOrder?> watchPaymentOrder(String orderId) async* {
+    yield await refreshPaymentOrder(orderId);
+  }
+
   CreditPackage? _findPackage(String id) {
     for (final CreditPackage package in _packages) {
-      if (package.id == id) {
-        return package;
-      }
+      if (package.id == id) return package;
     }
     return null;
+  }
+
+  PaymentOrder _copyOrder(
+    PaymentOrder order, {
+    required PaymentOrderStatus status,
+    String? provider,
+    String? providerReference,
+  }) {
+    return PaymentOrder(
+      id: order.id,
+      packageId: order.packageId,
+      status: status,
+      credits: order.credits,
+      amount: order.amount,
+      provider: provider ?? order.provider,
+      providerReference: providerReference ?? order.providerReference,
+      createdAt: order.createdAt,
+      updatedAt: DateTime.now().toUtc(),
+    );
   }
 }

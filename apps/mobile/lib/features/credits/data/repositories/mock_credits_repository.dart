@@ -6,54 +6,77 @@ final class MockCreditsRepository extends MockRepositoryBase
     implements CreditsRepository {
   const MockCreditsRepository(super.behavior);
 
+  static const CreditBalance _balance = CreditBalance(
+    posted: 7,
+    reserved: 3,
+    available: 4,
+  );
+
+  @override
+  Future<CreditBalance> getBalance() {
+    return respond<CreditBalance>(
+      success: () => _balance,
+      empty: () => const CreditBalance(posted: 0, reserved: 0, available: 0),
+    );
+  }
+
   @override
   Future<CreditsOverview> getOverview() {
     return respond<CreditsOverview>(
       success: () => CreditsOverview(
-        balance: const CreditBalance(
-          posted: 7.4,
-          reserved: 2.6,
-          available: 4.8,
+        balance: _balance,
+        pricing: const PricingSnapshot(
+          version: 'mock-v1',
+          creditUnit: 'credit',
+          rules: <Map<String, Object?>>[
+            <String, Object?>{'label': 'Mock recording pricing'},
+          ],
         ),
-        usage: const CreditUsageSummary(
-          recordingHours: 12.6,
-          recordingCount: 4,
-          recordingCost: 2.4,
-        ),
+        reservations: <CreditReservation>[
+          CreditReservation(
+            id: 'reservation_001',
+            recordingId: 'rec_001',
+            reserved: 3,
+            settled: 0,
+            released: 0,
+            status: CreditReservationStatus.active,
+            createdAt: DateTime.utc(2026, 9, 30, 13, 30),
+          ),
+        ],
         transactions: <CreditTransaction>[
           CreditTransaction(
             id: 'txn_004',
-            amountCredits: -1.8,
+            type: CreditTransactionType.charge,
+            amount: -2,
+            balanceAfter: 7,
+            referenceType: 'recording',
+            referenceId: 'rec_002',
             occurredAt: DateTime.utc(2026, 9, 30, 13, 35),
-            recordingId: 'rec_002',
           ),
           CreditTransaction(
             id: 'txn_003',
-            amountCredits: -0.6,
+            type: CreditTransactionType.release,
+            amount: 0,
+            balanceAfter: 9,
+            referenceType: 'recording',
+            referenceId: 'rec_003',
             occurredAt: DateTime.utc(2026, 9, 29, 8, 42),
-            recordingId: 'rec_003',
           ),
           CreditTransaction(
             id: 'txn_002',
-            amountCredits: 10,
+            type: CreditTransactionType.grant,
+            amount: 10,
+            balanceAfter: 9,
+            referenceType: 'payment_order',
+            referenceId: 'order_paid',
             occurredAt: DateTime.utc(2026, 9, 28, 15, 5),
-          ),
-          CreditTransaction(
-            id: 'txn_001',
-            amountCredits: -0.2,
-            occurredAt: DateTime.utc(2026, 9, 27, 10, 20),
-            recordingId: 'rec_010',
           ),
         ],
       ),
       empty: () => const CreditsOverview(
         balance: CreditBalance(posted: 0, reserved: 0, available: 0),
-        usage: CreditUsageSummary(
-          recordingHours: 0,
-          recordingCount: 0,
-          recordingCost: 0,
-        ),
         transactions: <CreditTransaction>[],
+        reservations: <CreditReservation>[],
       ),
     );
   }

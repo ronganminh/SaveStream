@@ -302,7 +302,7 @@
       }
     }
   },
-  "settingsCreditsSubtitle": "Balance, usage, and transactions",
+  "settingsCreditsSubtitle": "Balance, reservations, pricing, and transactions",
   "settingsBillingSubtitle": "Buy credits and review payment orders",
   "creditsLowBalanceTitle": "Available credit is low",
   "creditsLowBalanceBody": "Some credit is reserved for active work. Add more credit to reduce the risk of monitoring or recording pauses.",
@@ -402,5 +402,42 @@
   "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again.",
   "recordNowAction": "Record now",
   "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
-  "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link."
+  "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link.",
+  "creditsReservationsTitle": "Credit reservations",
+  "creditsActiveReservationsLabel": "Active reservations",
+  "creditsLatestReservation": "Latest: recording {recordingId} · {status}",
+  "creditsPricingTitle": "Pricing",
+  "creditsPricingUnavailableBody": "Pricing is not configured on the backend yet.",
+  "creditsPricingVersionLabel": "Version",
+  "creditsPricingRulesLabel": "Public rules",
+  "creditsBalanceAfter": "Balance after: {balance}",
+  "billingContinueCheckoutAction": "Continue checkout",
+  "paymentStatusCreated": "Created",
+  "paymentStatusPartiallyRefunded": "Partially refunded",
+  "paymentStatusRefunded": "Refunded",
+  "paymentCreatedBody": "The payment order exists, but checkout has not started yet.",
+  "paymentPartiallyRefundedBody": "Part of this payment has been refunded.",
+  "paymentRefundedBody": "This payment has been refunded.",
+  "billingReturnTitle": "Payment confirmation",
+  "billingOrderNotFoundTitle": "Payment order not found",
+  "billingOrderNotFoundBody": "SaveStream could not find this payment order. Open Billing to review recent orders.",
+  "backToBillingAction": "Back to billing",
+  "billingPollingStatusBody": "SaveStream is checking the backend for payment confirmation. Returning from checkout is not proof of payment.",
+  "@creditsLatestReservation": {
+    "placeholders": {
+      "recordingId": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "@creditsBalanceAfter": {
+    "placeholders": {
+      "balance": {
+        "type": "int"
+      }
+    }
+  }
 }

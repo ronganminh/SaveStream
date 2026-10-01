@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -100,7 +101,9 @@ class _CreditsBody extends StatelessWidget {
           onPressed: () => context.push(AppRoutes.billing),
         ),
         const SizedBox(height: SsSpacing.xl),
-        _UsageCard(usage: data.usage),
+        _ReservationCard(data: data),
+        const SizedBox(height: SsSpacing.md),
+        _PricingCard(pricing: data.pricing),
         const SizedBox(height: SsSpacing.xl),
         Text(
           l10n.creditsRecentTransactionsTitle,
@@ -116,12 +119,14 @@ class _CreditsBody extends StatelessWidget {
             ),
           )
         else
-          ...data.transactions.map(
-            (CreditTransaction transaction) => Padding(
-              padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-              child: _TransactionCard(transaction: transaction),
-            ),
-          ),
+          ...data.transactions
+              .take(20)
+              .map(
+                (CreditTransaction transaction) => Padding(
+                  padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                  child: _TransactionCard(transaction: transaction),
+                ),
+              ),
       ],
     );
   }
@@ -149,7 +154,7 @@ class _BalanceCard extends StatelessWidget {
           ),
           const SizedBox(height: SsSpacing.xs),
           Text(
-            data.balance.available.toStringAsFixed(1),
+            data.balance.available.toString(),
             style: Theme.of(context).textTheme.displaySmall?.copyWith(
               color: colors.primary,
               fontWeight: FontWeight.w700,
@@ -161,14 +166,14 @@ class _BalanceCard extends StatelessWidget {
               Expanded(
                 child: _BalanceMetric(
                   label: l10n.creditsPostedBalanceLabel,
-                  value: data.balance.posted.toStringAsFixed(1),
+                  value: data.balance.posted.toString(),
                 ),
               ),
               const SizedBox(width: SsSpacing.md),
               Expanded(
                 child: _BalanceMetric(
                   label: l10n.creditsReservedBalanceLabel,
-                  value: data.balance.reserved.toStringAsFixed(1),
+                  value: data.balance.reserved.toString(),
                 ),
               ),
             ],
@@ -195,7 +200,6 @@ class _BalanceMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.all(SsSpacing.md),
       decoration: BoxDecoration(
@@ -219,44 +223,85 @@ class _BalanceMetric extends StatelessWidget {
   }
 }
 
-class _UsageCard extends StatelessWidget {
-  const _UsageCard({required this.usage});
+class _ReservationCard extends StatelessWidget {
+  const _ReservationCard({required this.data});
 
-  final CreditUsageSummary usage;
+  final CreditsOverview data;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-
     return SsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            l10n.creditsUsageTitle,
+            l10n.creditsReservationsTitle,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: SsSpacing.md),
-          _UsageRow(
-            label: l10n.creditsRecordingHoursLabel,
-            value: usage.recordingHours.toStringAsFixed(1),
+          _MetricRow(
+            label: l10n.creditsActiveReservationsLabel,
+            value: data.activeReservationCount.toString(),
           ),
-          _UsageRow(
-            label: l10n.creditsRecordingCountLabel,
-            value: usage.recordingCount.toString(),
+          _MetricRow(
+            label: l10n.creditsReservedBalanceLabel,
+            value: data.balance.reserved.toString(),
           ),
-          _UsageRow(
-            label: l10n.creditsRecordingCostLabel,
-            value: usage.recordingCost.toStringAsFixed(1),
-          ),
+          if (data.reservations.isNotEmpty) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            Text(
+              l10n.creditsLatestReservation(
+                data.reservations.first.recordingId,
+                data.reservations.first.status.apiValue,
+              ),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _UsageRow extends StatelessWidget {
-  const _UsageRow({required this.label, required this.value});
+class _PricingCard extends StatelessWidget {
+  const _PricingCard({required this.pricing});
+
+  final PricingSnapshot? pricing;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final PricingSnapshot? value = pricing;
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.creditsPricingTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsSpacing.sm),
+          if (value == null)
+            Text(l10n.creditsPricingUnavailableBody)
+          else ...<Widget>[
+            _MetricRow(
+              label: l10n.creditsPricingVersionLabel,
+              value: value.version,
+            ),
+            _MetricRow(
+              label: l10n.creditsPricingRulesLabel,
+              value: value.rules.length.toString(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  const _MetricRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -290,7 +335,7 @@ class _TransactionCard extends StatelessWidget {
         ? l10n.creditsAddedLabel
         : l10n.creditsTransactionLabel;
     final String amount =
-        '${transaction.isCredit ? '+' : ''}${transaction.amountCredits.toStringAsFixed(1)}';
+        '${transaction.isCredit ? '+' : ''}${transaction.amount}';
 
     return SsCard(
       child: Row(
@@ -319,11 +364,15 @@ class _TransactionCard extends StatelessWidget {
                     color: colors.onSurfaceVariant,
                   ),
                 ),
-                if (transaction.recordingId != null)
+                if (transaction.referenceId != null)
                   Text(
-                    transaction.recordingId!,
+                    transaction.referenceId!,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
+                Text(
+                  l10n.creditsBalanceAfter(transaction.balanceAfter),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -351,10 +400,10 @@ class _CreditsSkeleton extends StatelessWidget {
         SizedBox(height: SsSpacing.md),
         SsSkeleton(height: 52, radius: SsRadii.md),
         SizedBox(height: SsSpacing.xl),
-        SsSkeleton(height: 160, radius: SsRadii.lg),
+        SsSkeleton(height: 150, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 120, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.xl),
-        SsSkeleton(height: 92, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.sm),
         SsSkeleton(height: 92, radius: SsRadii.lg),
       ],
     );
@@ -368,17 +417,19 @@ String _formatTimestamp(BuildContext context, DateTime value) {
 }
 
 String _errorTitle(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
-    return l10n.offlineErrorTitle;
-  }
+  if (_isOfflineLike(error)) return l10n.offlineErrorTitle;
   return l10n.errorTitle;
 }
 
 String _errorMessage(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
-    return l10n.offlineErrorBody;
-  }
+  if (_isOfflineLike(error)) return l10n.offlineErrorBody;
   return l10n.errorBody;
+}
+
+bool _isOfflineLike(Object error) {
+  return (error is MockRepositoryException &&
+          error.kind == MockFailureKind.offlineLike) ||
+      (error is ApiException &&
+          (error.kind == ApiExceptionKind.network ||
+              error.kind == ApiExceptionKind.timeout));
 }

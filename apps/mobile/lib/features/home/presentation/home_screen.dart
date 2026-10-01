@@ -223,7 +223,7 @@ class _MetricGrid extends StatelessWidget {
               width: width,
               icon: Icons.account_balance_wallet_outlined,
               label: l10n.homeAvailableCreditLabel,
-              value: data.metrics.availableCredit.toStringAsFixed(1),
+              value: data.metrics.availableCredit.toString(),
             ),
             _MetricCard(
               width: width,

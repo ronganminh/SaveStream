@@ -68,7 +68,7 @@ void main() {
 
     expect(find.text('Welcome back, Alex'), findsOneWidget);
     expect(find.text('Available credit'), findsOneWidget);
-    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
     expect(find.text('Recording now'), findsOneWidget);
     expect(find.text('Credit is running low'), findsOneWidget);
     expect(find.text('A recording needs attention'), findsOneWidget);
@@ -590,7 +590,7 @@ void main() {
     expect(updated?.actions.canRetry, isFalse);
   });
 
-  testWidgets('renders Phase 7 credit balances usage and transactions', (
+  testWidgets('renders credit balances reservations pricing and transactions', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
@@ -603,14 +603,14 @@ void main() {
 
     expect(find.byType(CreditsScreen), findsOneWidget);
     expect(find.text('Available'), findsOneWidget);
-    expect(find.text('4.8'), findsOneWidget);
+    expect(find.text('4'), findsOneWidget);
     expect(find.text('Posted'), findsOneWidget);
-    expect(find.text('7.4'), findsOneWidget);
-    expect(find.text('Reserved'), findsOneWidget);
-    expect(find.text('2.6'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Reserved'), findsWidgets);
+    expect(find.text('3'), findsWidgets);
     expect(find.text('Available credit is low'), findsOneWidget);
-    expect(find.text('Recording usage'), findsOneWidget);
-    expect(find.text('12.6'), findsOneWidget);
+    expect(find.text('Credit reservations'), findsOneWidget);
+    expect(find.text('Active reservations'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Recent transactions'),
       260,
@@ -633,7 +633,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(CreditsScreen), findsOneWidget);
-    expect(find.text('0.0'), findsWidgets);
+    expect(find.text('0'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('No transactions yet'),
       260,
@@ -690,14 +690,13 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.scrollUntilVisible(
-      find.text('Check payment status'),
-      240,
-      scrollable: find.byType(Scrollable).last,
+    final Finder checkStatusButton = find.widgetWithText(
+      OutlinedButton,
+      'Check payment status',
     );
-    await tester.tap(
-      find.widgetWithText(OutlinedButton, 'Check payment status'),
-    );
+    await tester.ensureVisible(checkStatusButton);
+    await tester.pump();
+    await tester.tap(checkStatusButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 

@@ -10,8 +10,12 @@ import '../core/mock/mock_scenario.dart';
 import '../features/auth/data/auth_providers.dart';
 import '../features/auth/data/repositories/mock_auth_repository.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
+import '../features/billing/domain/repositories/billing_repository.dart';
+import '../features/billing/presentation/controllers/billing_providers.dart';
 import '../features/channels/domain/repositories/watch_repository.dart';
 import '../features/channels/presentation/controllers/watch_providers.dart';
+import '../features/credits/domain/repositories/credits_repository.dart';
+import '../features/credits/presentation/controllers/credits_providers.dart';
 import '../features/recordings/domain/repositories/recording_repository.dart';
 import '../features/recordings/presentation/controllers/recording_providers.dart';
 import '../l10n/l10n.dart';
@@ -30,6 +34,8 @@ class SaveStreamApp extends StatefulWidget {
     this.apiClient,
     this.watchRepository,
     this.recordingRepository,
+    this.creditsRepository,
+    this.billingRepository,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     super.key,
@@ -42,6 +48,8 @@ class SaveStreamApp extends StatefulWidget {
   final ApiClient? apiClient;
   final WatchRepository? watchRepository;
   final RecordingRepository? recordingRepository;
+  final CreditsRepository? creditsRepository;
+  final BillingRepository? billingRepository;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
 
@@ -96,6 +104,14 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
         if (widget.recordingRepository != null)
           recordingRepositoryProvider.overrideWithValue(
             widget.recordingRepository!,
+          ),
+        if (widget.creditsRepository != null)
+          creditsRepositoryProvider.overrideWithValue(
+            widget.creditsRepository!,
+          ),
+        if (widget.billingRepository != null)
+          billingRepositoryProvider.overrideWithValue(
+            widget.billingRepository!,
           ),
       ],
       child: AnimatedBuilder(

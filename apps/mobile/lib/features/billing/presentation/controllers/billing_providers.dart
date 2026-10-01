@@ -28,6 +28,11 @@ final FutureProvider<BillingSnapshot> billingSnapshotProvider =
       return ref.watch(billingRepositoryProvider).getSnapshot();
     });
 
+final paymentOrderStatusProvider = StreamProvider.autoDispose
+    .family<PaymentOrder?, String>((ref, orderId) {
+      return ref.watch(billingRepositoryProvider).watchPaymentOrder(orderId);
+    });
+
 final Provider<BillingController> billingControllerProvider =
     Provider<BillingController>((ref) {
       return BillingController(
@@ -50,6 +55,18 @@ class BillingController {
     final PaymentOrder? order = await _repository.createPaymentOrder(packageId);
     _onChanged();
     return order;
+  }
+
+  Future<CheckoutSession?> createCheckout({
+    required String orderId,
+    required Uri returnUri,
+  }) async {
+    final CheckoutSession? checkout = await _repository.createCheckout(
+      orderId: orderId,
+      returnUri: returnUri,
+    );
+    _onChanged();
+    return checkout;
   }
 
   Future<PaymentOrder?> refreshOrder(String orderId) async {

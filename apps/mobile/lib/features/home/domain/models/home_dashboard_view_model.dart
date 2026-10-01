@@ -10,9 +10,18 @@ class HomeAccountMetrics {
   });
 
   final String displayName;
-  final double availableCredit;
+  final int availableCredit;
   final double recordingHoursUsed;
   final double recordingHoursLimit;
+
+  HomeAccountMetrics copyWith({int? availableCredit}) {
+    return HomeAccountMetrics(
+      displayName: displayName,
+      availableCredit: availableCredit ?? this.availableCredit,
+      recordingHoursUsed: recordingHoursUsed,
+      recordingHoursLimit: recordingHoursLimit,
+    );
+  }
 }
 
 class HomeDashboardViewModel {
@@ -26,7 +35,7 @@ class HomeDashboardViewModel {
   final List<WatchSummary> watches;
   final List<RecordingSummary> recordings;
 
-  static const double lowCreditThreshold = 5;
+  static const int lowCreditThreshold = 5;
 
   List<RecordingSummary> get activeRecordings => recordings
       .where(
