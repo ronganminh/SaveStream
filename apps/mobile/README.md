@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 15 includes:
+Phase 16 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -306,9 +306,27 @@ Phase 14 standardizes async presentation without changing backend contracts. Dat
 
 Initial loading remains screen-specific. Home, Channels, Channel Detail, Recordings, Recording Detail, Credits, Billing, Billing Return, and Profile use skeleton layouts close to their final structure. The only remaining `CircularProgressIndicator` in feature screens is the inline Recording Load More indicator.
 
+## Accessibility, responsive, and performance
+
+Phase 16 hardens the existing phone-first UI without changing backend contracts.
+
+Accessibility improvements include semantic status labels, decorative avatar semantics exclusion, localized password-visibility tooltips, and a 48dp minimum touch target for shared text actions. Status meaning continues to be conveyed with text/icons in addition to color.
+
+Responsive coverage now exercises 320x640, 390x844, and 430x932 phone viewports plus 2x text scaling. Narrow layouts use a compact Add Channel FAB, reduce bottom-navigation label density, stack status content instead of forcing it into ListTile trailing space, and allow timestamp/usage/status content to wrap without horizontal overflow. Tablet-specific polish remains deferred, but the shared layouts remain bounded instead of assuming a fixed phone width.
+
+Performance audit results:
+
+- long Channels and Recordings surfaces already use lazy list builders and cursor pagination;
+- the mobile UI currently does not render remote images, so no unused image-cache layer is introduced;
+- same-status Recording SSE progress updates now apply the structured event payload directly instead of performing a REST fetch for every progress event;
+- status transitions, reconnects, and fallback paths still reconcile against the canonical Recording REST resource;
+- existing startup/session restoration behavior is preserved with no new blocking startup work.
+
+Phase 16 tests live in `test/accessibility_responsive_phase16_test.dart`, while the Recording realtime test also locks the reduced REST reconciliation frequency.
+
 ## Automated test coverage
 
-Phase 15 treats the existing Phase 9-14 tests as one cumulative test pyramid rather than rebuilding duplicate suites.
+Phase 16 keeps the Phase 15 cumulative test pyramid and adds accessibility, constrained-layout, text-scaling, and realtime-frequency regression coverage.
 
 Unit coverage includes DTO/domain decoding, typed API error mapping, Watch/Recording/payment status mapping, idempotency behavior, secure auth session/token rotation, and controller mutation/reconciliation behavior.
 
