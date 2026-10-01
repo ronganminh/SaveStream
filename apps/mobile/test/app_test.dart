@@ -417,6 +417,10 @@ void main() {
     expect(find.text('Monitoring settings'), findsOneWidget);
     expect(find.text('Pause monitoring'), findsOneWidget);
 
+    await tester.ensureVisible(
+      find.widgetWithText(OutlinedButton, 'Pause monitoring'),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
@@ -424,6 +428,10 @@ void main() {
     expect(find.text('Paused'), findsOneWidget);
     expect(find.text('Resume monitoring'), findsOneWidget);
 
+    await tester.ensureVisible(
+      find.widgetWithText(OutlinedButton, 'Resume monitoring'),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(OutlinedButton, 'Resume monitoring'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
@@ -573,7 +581,7 @@ void main() {
       tester.element(find.byType(RecordingDetailScreen)),
     );
     final RecordingSummary? updated = container
-        .read(recordingDetailProvider('rec_003'))
+        .read(recordingRealtimeProvider('rec_003'))
         .value;
 
     expect(updated?.status, RecordingStatus.queued);

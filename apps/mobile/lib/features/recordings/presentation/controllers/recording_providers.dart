@@ -161,8 +161,11 @@ final Provider<RecordingController> recordingControllerProvider =
       return RecordingController(
         repository: ref.watch(recordingRepositoryProvider),
         refreshList: () => ref.invalidate(recordingListControllerProvider),
-        refreshDetail: (String id) =>
-            ref.invalidate(recordingDetailProvider(id)),
+        refreshDetail: (String id) {
+          ref.invalidate(recordingDetailProvider(id));
+          ref.invalidate(recordingRealtimeProvider(id));
+          ref.invalidate(recordingArtifactsProvider(id));
+        },
         notifyChanged: () =>
             ref.read(recordingRevisionProvider.notifier).bump(),
       );
