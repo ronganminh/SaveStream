@@ -152,9 +152,9 @@ class _StateLayout extends StatelessWidget {
             const SizedBox(height: SsSpacing.sm),
             SelectableText(
               details!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
           ],

@@ -1,279 +1,415 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../core/mock/mock_providers.dart';
-import '../../data/repositories/mock_recording_repository.dart';
-import '../../domain/models/recording_summary.dart';
-import '../../domain/repositories/recording_repository.dart';
+import '../../../app/router/app_routes.dart';
+import '../../../app/theme/ss_tokens.dart';
+import '../../../core/widgets/savestream_widgets.dart';
+import '../../../l10n/l10n.dart';
+import '../domain/models/credit_models.dart';
+import 'controllers/credits_providers.dart';
 
-final Provider<RecordingRepository> recordingRepositoryProvider =
-    Provider<RecordingRepository>(
-      (ref) => MockRecordingRepository(ref.watch(mockBehaviorProvider)),
-    );
+class CreditsScreen extends ConsumerWidget {
+  const CreditsScreen({super.key});
 
-final NotifierProvider<RecordingRevisionNotifier, int>
-recordingRevisionProvider = NotifierProvider<RecordingRevisionNotifier, int>(
-  RecordingRevisionNotifier.new,
-);
-
-class RecordingRevisionNotifier extends Notifier<int> {
   @override
-  int build() => 0;
-
-  void bump() {
-    state += 1;
-  }
-}
-
-class RecordingListState {
-  const RecordingListState({
-    required this.filter,
-    required this.items,
-    required this.nextCursor,
-    this.isRefreshing = false,
-    this.refreshError,
-    this.isLoadingMore = false,
-    this.loadMoreError,
-  });
-
-  final RecordingFilter filter;
-  final List<RecordingSummary> items;
-  final String? nextCursor;
-  final bool isRefreshing;
-  final Object? refreshError;
-  final bool isLoadingMore;
-  final Object? loadMoreError;
-
-  RecordingListState copyWith({
-    RecordingFilter? filter,
-    List<RecordingSummary>? items,
-    String? nextCursor,
-    bool clearNextCursor = false,
-    bool? isRefreshing,
-    Object? refreshError,
-    bool clearRefreshError = false,
-    bool? isLoadingMore,
-    Object? loadMoreError,
-    bool clearLoadMoreError = false,
-  }) {
-    return RecordingListState(
-      filter: filter ?? this.filter,
-      items: items ?? this.items,
-      nextCursor: clearNextCursor ? null : nextCursor ?? this.nextCursor,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      refreshError: clearRefreshError ? null : refreshError ?? this.refreshError,
-      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      loadMoreError: clearLoadMoreError
-          ? null
-          : loadMoreError ?? this.loadMoreError,
-    );
-  }
-}
-
-final AsyncNotifierProvider<RecordingListController, RecordingListState>
-recordingListControllerProvider =
-    AsyncNotifierProvider<RecordingListController, RecordingListState>(
-      RecordingListController.new,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<CreditsOverview> overview = ref.watch(
+      creditsOverviewProvider,
     );
 
-class RecordingListController extends AsyncNotifier<RecordingListState> {
-  @override
-  Future<RecordingListState> build() {
-    return _loadFirstPage(RecordingFilter.all);
-  }
-
-  Future<void> setFilter(RecordingFilter filter) async {
-    final RecordingListState? current = state.value;
-    if (current?.filter == filter) {
-      return;
-    }
-    state = const AsyncLoading<RecordingListState>();
-    state = await AsyncValue.guard<RecordingListState>(
-      () => _loadFirstPage(filter),
-    );
-  }
-
-  Future<void> refresh() async {
-    final RecordingListState? current = state.value;
-    final RecordingFilter filter = current?.filter ?? RecordingFilter.all;
-
-    if (current == null) {
-      state = const AsyncLoading<RecordingListState>();
-      state = await AsyncValue.guard<RecordingListState>(
-        () => _loadFirstPage(filter),
-      );
-      return;
-    }
-
-    state = AsyncData<RecordingListState>(
-      current.copyWith(
-        isRefreshing: true,
-        clearRefreshError: true,
-        clearLoadMoreError: true,
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.creditsTitle)),
+      body: SafeArea(
+        child: SsAsyncRefreshFrame(
+          isRefreshing: overview.isRefreshing,
+          child: overview.when(
+            loading: () => const _CreditsSkeleton(),
+            error: (Object error, StackTrace stackTrace) => Center(
+              child: SsAsyncErrorState(
+                error: error,
+                onRetry: () => ref.invalidate(creditsOverviewProvider),
+              ),
+            ),
+            data: (CreditsOverview data) => RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(creditsOverviewProvider);
+                await ref.read(creditsOverviewProvider.future);
+              },
+              child: _CreditsBody(data: data),
+            ),
+          ),
+        ),
       ),
     );
-
-    try {
-      state = AsyncData<RecordingListState>(await _loadFirstPage(filter));
-    } on Object catch (error) {
-      state = AsyncData<RecordingListState>(
-        current.copyWith(
-          isRefreshing: false,
-          refreshError: error,
-          clearLoadMoreError: true,
-        ),
-      );
-    }
   }
+}
 
-  Future<void> loadMore() async {
-    final RecordingListState? current = state.value;
-    if (current == null ||
-        current.nextCursor == null ||
-        current.isLoadingMore) {
-      return;
-    }
+class _CreditsBody extends StatelessWidget {
+  const _CreditsBody({required this.data});
 
-    state = AsyncData<RecordingListState>(
-      current.copyWith(
-        isLoadingMore: true,
-        clearLoadMoreError: true,
-        clearRefreshError: true,
+  final CreditsOverview data;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        SsSpacing.lg,
+        SsSpacing.md,
+        SsSpacing.lg,
+        SsSpacing.xxl,
       ),
-    );
-
-    try {
-      final RecordingPage page = await ref
-          .read(recordingRepositoryProvider)
-          .listRecordingPage(
-            filter: current.filter,
-            cursor: current.nextCursor,
-          );
-      state = AsyncData<RecordingListState>(
-        RecordingListState(
-          filter: current.filter,
-          items: <RecordingSummary>[...current.items, ...page.items],
-          nextCursor: page.nextCursor,
+      children: <Widget>[
+        _BalanceCard(data: data),
+        if (data.isLowCredit) ...<Widget>[
+          const SizedBox(height: SsSpacing.md),
+          SsCard(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.tertiary,
+                ),
+                const SizedBox(width: SsSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        l10n.creditsLowBalanceTitle,
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: SsSpacing.xs),
+                      Text(l10n.creditsLowBalanceBody),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+        const SizedBox(height: SsSpacing.lg),
+        SsPrimaryButton(
+          label: l10n.buyCreditsAction,
+          icon: Icons.add_card_rounded,
+          onPressed: () => context.push(AppRoutes.billing),
         ),
-      );
-    } on Object catch (error) {
-      state = AsyncData<RecordingListState>(
-        current.copyWith(
-          isLoadingMore: false,
-          loadMoreError: error,
-          clearRefreshError: true,
+        const SizedBox(height: SsSpacing.xl),
+        _ReservationCard(data: data),
+        const SizedBox(height: SsSpacing.md),
+        _PricingCard(pricing: data.pricing),
+        const SizedBox(height: SsSpacing.xl),
+        Text(
+          l10n.creditsRecentTransactionsTitle,
+          style: Theme.of(context).textTheme.titleMedium,
         ),
-      );
-    }
-  }
-
-  Future<RecordingListState> _loadFirstPage(RecordingFilter filter) async {
-    final RecordingPage page = await ref
-        .read(recordingRepositoryProvider)
-        .listRecordingPage(filter: filter);
-    return RecordingListState(
-      filter: filter,
-      items: page.items,
-      nextCursor: page.nextCursor,
+        const SizedBox(height: SsSpacing.sm),
+        if (data.transactions.isEmpty)
+          SsCard(
+            child: SsEmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: l10n.creditsNoTransactionsTitle,
+              message: l10n.creditsNoTransactionsBody,
+            ),
+          )
+        else
+          ...data.transactions
+              .take(20)
+              .map(
+                (CreditTransaction transaction) => Padding(
+                  padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                  child: _TransactionCard(transaction: transaction),
+                ),
+              ),
+      ],
     );
   }
 }
 
-final recordingDetailProvider =
-    FutureProvider.family<RecordingSummary?, String>((ref, id) {
-      ref.watch(recordingRevisionProvider);
-      return ref.watch(recordingRepositoryProvider).getRecording(id);
-    });
+class _BalanceCard extends StatelessWidget {
+  const _BalanceCard({required this.data});
 
-final recordingRealtimeProvider = StreamProvider.autoDispose
-    .family<RecordingSummary?, String>((ref, id) async* {
-      await for (final RecordingSummary? recording
-          in ref.watch(recordingRepositoryProvider).watchRecording(id)) {
-        if (recording != null && !recording.isActiveLifecycle) {
-          ref.invalidate(recordingArtifactsProvider(id));
-        }
-        yield recording;
-      }
-    });
+  final CreditsOverview data;
 
-final recordingArtifactsProvider =
-    FutureProvider.family<List<RecordingArtifactSummary>, String>((ref, id) {
-      ref.watch(recordingRevisionProvider);
-      return ref.watch(recordingRepositoryProvider).listArtifacts(id);
-    });
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colors = Theme.of(context).colorScheme;
 
-final Provider<RecordingController> recordingControllerProvider =
-    Provider<RecordingController>((ref) {
-      return RecordingController(
-        repository: ref.watch(recordingRepositoryProvider),
-        refreshList: () => ref.invalidate(recordingListControllerProvider),
-        refreshDetail: (String id) {
-          ref.invalidate(recordingDetailProvider(id));
-          ref.invalidate(recordingRealtimeProvider(id));
-          ref.invalidate(recordingArtifactsProvider(id));
-        },
-        notifyChanged: () =>
-            ref.read(recordingRevisionProvider.notifier).bump(),
-      );
-    });
-
-class RecordingController {
-  RecordingController({
-    required RecordingRepository repository,
-    required void Function() refreshList,
-    required void Function(String id) refreshDetail,
-    required void Function() notifyChanged,
-  }) : _repository = repository,
-       _refreshList = refreshList,
-       _refreshDetail = refreshDetail,
-       _notifyChanged = notifyChanged;
-
-  final RecordingRepository _repository;
-  final void Function() _refreshList;
-  final void Function(String id) _refreshDetail;
-  final void Function() _notifyChanged;
-
-  Future<RecordingSummary> create(CreateRecordingCommand command) async {
-    final RecordingSummary created = await _repository.createRecording(command);
-    _invalidate(created.id);
-    return created;
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.creditsAvailableBalanceLabel,
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: colors.onSurfaceVariant),
+          ),
+          const SizedBox(height: SsSpacing.xs),
+          Text(
+            data.balance.available.toString(),
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: colors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: SsSpacing.lg),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _BalanceMetric(
+                  label: l10n.creditsPostedBalanceLabel,
+                  value: data.balance.posted.toString(),
+                ),
+              ),
+              const SizedBox(width: SsSpacing.md),
+              Expanded(
+                child: _BalanceMetric(
+                  label: l10n.creditsReservedBalanceLabel,
+                  value: data.balance.reserved.toString(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SsSpacing.md),
+          Text(
+            l10n.creditsReservedExplanation,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  Future<void> stop(String id) {
-    return _mutate(id, () => _repository.stopRecording(id));
-  }
+class _BalanceMetric extends StatelessWidget {
+  const _BalanceMetric({required this.label, required this.value});
 
-  Future<RecordingSummary?> retry(String id) async {
-    RecordingSummary? retried;
-    try {
-      retried = await _repository.retryRecording(id);
-      return retried;
-    } finally {
-      _invalidate(id);
-      if (retried != null && retried.id != id) {
-        _invalidate(retried.id);
-      }
-    }
-  }
+  final String label;
+  final String value;
 
-  Future<void> delete(String id) {
-    return _mutate(id, () => _repository.deleteRecording(id));
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(SsSpacing.md),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(SsRadii.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(value, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: SsSpacing.xs),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(String artifactId) {
-    return _repository.createArtifactDownloadUrl(artifactId);
-  }
+class _ReservationCard extends StatelessWidget {
+  const _ReservationCard({required this.data});
 
-  Future<void> _mutate<T>(String id, Future<T> Function() action) async {
-    try {
-      await action();
-    } finally {
-      _invalidate(id);
-    }
-  }
+  final CreditsOverview data;
 
-  void _invalidate(String id) {
-    _refreshList();
-    _refreshDetail(id);
-    _notifyChanged();
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.creditsReservationsTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsSpacing.md),
+          _MetricRow(
+            label: l10n.creditsActiveReservationsLabel,
+            value: data.activeReservationCount.toString(),
+          ),
+          _MetricRow(
+            label: l10n.creditsReservedBalanceLabel,
+            value: data.balance.reserved.toString(),
+          ),
+          if (data.reservations.isNotEmpty) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            Text(
+              l10n.creditsLatestReservation(
+                data.reservations.first.recordingId,
+                data.reservations.first.status.apiValue,
+              ),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
   }
+}
+
+class _PricingCard extends StatelessWidget {
+  const _PricingCard({required this.pricing});
+
+  final PricingSnapshot? pricing;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final PricingSnapshot? value = pricing;
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            l10n.creditsPricingTitle,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsSpacing.sm),
+          if (value == null)
+            Text(l10n.creditsPricingUnavailableBody)
+          else ...<Widget>[
+            _MetricRow(
+              label: l10n.creditsPricingVersionLabel,
+              value: value.version,
+            ),
+            _MetricRow(
+              label: l10n.creditsPricingRulesLabel,
+              value: value.rules.length.toString(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricRow extends StatelessWidget {
+  const _MetricRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+      child: Row(
+        children: <Widget>[
+          Expanded(child: Text(label)),
+          Text(value, style: Theme.of(context).textTheme.titleSmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransactionCard extends StatelessWidget {
+  const _TransactionCard({required this.transaction});
+
+  final CreditTransaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final String title = transaction.recordingId != null
+        ? l10n.creditsRecordingChargeLabel
+        : transaction.isCredit
+        ? l10n.creditsAddedLabel
+        : l10n.creditsTransactionLabel;
+    final String amount =
+        '${transaction.isCredit ? '+' : ''}${transaction.amount}';
+
+    return SsCard(
+      child: Row(
+        children: <Widget>[
+          CircleAvatar(
+            backgroundColor: transaction.isCredit
+                ? colors.primaryContainer
+                : colors.surfaceContainerHighest,
+            child: Icon(
+              transaction.isCredit ? Icons.add_rounded : Icons.remove_rounded,
+              color: transaction.isCredit
+                  ? colors.onPrimaryContainer
+                  : colors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: SsSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: SsSpacing.xs),
+                Text(
+                  _formatTimestamp(context, transaction.occurredAt),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+                if (transaction.referenceId != null)
+                  Text(
+                    transaction.referenceId!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                Text(
+                  l10n.creditsBalanceAfter(transaction.balanceAfter),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Text(
+            amount,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: transaction.isCredit ? colors.primary : colors.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CreditsSkeleton extends StatelessWidget {
+  const _CreditsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      children: const <Widget>[
+        SsSkeleton(height: 220, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 52, radius: SsRadii.md),
+        SizedBox(height: SsSpacing.xl),
+        SsSkeleton(height: 150, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 120, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.xl),
+        SsSkeleton(height: 92, radius: SsRadii.lg),
+      ],
+    );
+  }
+}
+
+String _formatTimestamp(BuildContext context, DateTime value) {
+  final MaterialLocalizations material = MaterialLocalizations.of(context);
+  final DateTime local = value.toLocal();
+  return '${material.formatMediumDate(local)} · ${material.formatTimeOfDay(TimeOfDay.fromDateTime(local))}';
 }

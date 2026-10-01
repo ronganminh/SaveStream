@@ -45,18 +45,18 @@ SsAsyncErrorDetails describeAsyncError(
 
   final bool apiRetryable = error is ApiException && error.retryable;
   final bool mockRetryable =
-      error is MockRepositoryException &&
-      error.kind == MockFailureKind.server;
-  final bool retryable =
-      retryableOverride ?? apiRetryable || mockRetryable;
+      error is MockRepositoryException && error.kind == MockFailureKind.server;
+  final bool retryable = retryableOverride ?? apiRetryable || mockRetryable;
 
   return SsAsyncErrorDetails(
     kind: retryable
         ? SsAsyncErrorKind.recoverable
         : SsAsyncErrorKind.nonRecoverable,
-    title: titleOverride ??
+    title:
+        titleOverride ??
         (retryable ? l10n.errorTitle : l10n.nonRetryableErrorTitle),
-    message: messageOverride ??
+    message:
+        messageOverride ??
         (retryable ? l10n.errorBody : l10n.nonRetryableErrorBody),
     retryable: retryable,
     requestId: error is ApiException ? error.requestId : null,
@@ -188,10 +188,7 @@ class SsInlineAsyncError extends StatelessWidget {
           ],
           if (details.retryable && onRetry != null) ...<Widget>[
             const SizedBox(height: SsSpacing.sm),
-            TextButton(
-              onPressed: onRetry,
-              child: Text(l10n.retryAction),
-            ),
+            TextButton(onPressed: onRetry, child: Text(l10n.retryAction)),
           ],
         ],
       ),
