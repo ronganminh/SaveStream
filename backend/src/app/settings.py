@@ -89,6 +89,9 @@ class AppSettings:
     frontend_base_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
+    smtp_username: str = field(default="", repr=False)
+    smtp_password: str = field(default="", repr=False)
+    smtp_starttls: bool = False
     email_from: str = "SaveStream <no-reply@savestream.local>"
     login_rate_limit: int = 5
     login_rate_window_seconds: int = 60
@@ -116,6 +119,8 @@ class AppSettings:
     payment_provider_base_url: str = ""
     payment_provider_api_key: str = field(default="", repr=False)
     payment_webhook_secret: str = field(default="savestream-fake-payment-secret", repr=False)
+    lemon_squeezy_store_id: str = ""
+    lemon_squeezy_variant_id: str = ""
     payment_timeout_seconds: float = 15.0
     payment_reconcile_seconds: int = 300
     metrics_token: str = field(default="savestream-local-metrics", repr=False)
@@ -164,12 +169,24 @@ class AppSettings:
         if environment_raw == "production" and jwt_secret == "savestream-dev-only-change-me":
             raise ValueError("SAVESTREAM_JWT_SECRET must be configured in production")
         payment_provider = _env("PAYMENT_PROVIDER", "fake").lower()
-        payment_provider_base_url = _env("PAYMENT_PROVIDER_BASE_URL", "").rstrip("/")
+        payment_provider_base_url = _env(
+            "PAYMENT_PROVIDER_BASE_URL",
+            (
+                "https://api.lemonsqueezy.com/v1"
+                if payment_provider == "lemonsqueezy"
+                else ""
+            ),
+        ).rstrip("/")
         payment_provider_api_key = _secret_env("PAYMENT_PROVIDER_API_KEY", "")
         payment_webhook_secret = _secret_env(
             "PAYMENT_WEBHOOK_SECRET",
             "savestream-fake-payment-secret",
         )
+        lemon_squeezy_store_id = _env("LEMON_SQUEEZY_STORE_ID", "")
+        lemon_squeezy_variant_id = _env("LEMON_SQUEEZY_VARIANT_ID", "")
+        smtp_username = _secret_env("SMTP_USERNAME", "")
+        smtp_password = _secret_env("SMTP_PASSWORD", "")
+        smtp_starttls = _bool_env("SMTP_STARTTLS", False)
         metrics_token = _secret_env("METRICS_TOKEN", "savestream-local-metrics")
         trusted_proxy_cidrs = _csv_env("TRUSTED_PROXY_CIDRS", "")
         force_https = _bool_env("FORCE_HTTPS", environment_raw == "production")
@@ -216,6 +233,12 @@ class AppSettings:
             if payment_webhook_secret == "savestream-fake-payment-secret":
                 raise ValueError(
                     "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                )
+            if payment_provider == "lemonsqueezy" and (
+                not lemon_squeezy_store_id or not lemon_squeezy_variant_id
+            ):
+                raise ValueError(
+                    "Lemon Squeezy store and variant IDs must be configured in production"
                 )
             if metrics_token == "savestream-local-metrics":
                 raise ValueError(
@@ -280,6 +303,9 @@ class AppSettings:
             frontend_base_url=frontend_base_url,
             smtp_host=_env("SMTP_HOST", "localhost"),
             smtp_port=_int_env("SMTP_PORT", 1025),
+            smtp_username=smtp_username,
+            smtp_password=smtp_password,
+            smtp_starttls=smtp_starttls,
             email_from=_env("EMAIL_FROM", "SaveStream <no-reply@savestream.local>"),
             login_rate_limit=_int_env("LOGIN_RATE_LIMIT", 5),
             login_rate_window_seconds=_int_env("LOGIN_RATE_WINDOW_SECONDS", 60),
@@ -313,6 +339,8 @@ class AppSettings:
             payment_provider_base_url=payment_provider_base_url,
             payment_provider_api_key=payment_provider_api_key,
             payment_webhook_secret=payment_webhook_secret,
+            lemon_squeezy_store_id=lemon_squeezy_store_id,
+            lemon_squeezy_variant_id=lemon_squeezy_variant_id,
             payment_timeout_seconds=_float_env("PAYMENT_TIMEOUT_SECONDS", 15.0),
             payment_reconcile_seconds=_int_env("PAYMENT_RECONCILE_SECONDS", 300),
             metrics_token=metrics_token,
