@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { notifications as seed, type Notification } from "./mock-data";
+import { notifications as seed, type Notification } from "@/mocks/fixtures";
 
 // In-memory notification state shared by the topbar bell and /notifications.
 // Replace with an API-backed query once the backend exists.

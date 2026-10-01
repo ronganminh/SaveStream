@@ -93,8 +93,11 @@ import {
   type Notification,
   type Recording,
   type Status,
-} from "@/lib/mock-data";
+} from "@/mocks/fixtures";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
+import { isDemoMode, isProductionMode, productionBackendConnected } from "@/lib/app-config";
+import { planCatalog } from "@/lib/plan-catalog";
+import { formatDate } from "@/lib/formatters";
 
 export const meta = (title: string, description: string) => ({
   meta: [
@@ -156,10 +159,11 @@ export function CreatorAvatar({
   );
 }
 export function PlatformBadge({ soon = false }: { soon?: boolean }) {
+  const { t } = usePreferences();
   return (
     <span className="inline-flex items-center gap-1 rounded-md border bg-surface-subtle px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
       <span className="font-bold text-foreground">♪</span>
-      {soon ? "Douyin · Soon" : "TikTok"}
+      {soon ? `Douyin · ${t("Coming soon")}` : "TikTok"}
     </span>
   );
 }
@@ -375,12 +379,12 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     <>
       <div
         onClick={onClose}
-        className={cn("fixed inset-0 z-40 bg-overlay lg:hidden", open ? "block" : "hidden")}
+        className={cn("fixed inset-0 z-[var(--z-drawer-overlay)] bg-overlay lg:hidden", open ? "block" : "hidden")}
       />
       <aside
         aria-label={t("Main navigation")}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r bg-sidebar transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-64 flex-col border-r bg-sidebar transition-transform lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -455,7 +459,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
   const list = useNotifications();
   const unread = list.filter((n) => !n.read).length;
   return (
-    <div className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-4 lg:px-6">
+    <div className="sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-4 lg:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -476,7 +480,16 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
           ⌘ K
         </kbd>
       </button>
-      <div className="ml-auto flex items-center gap-0.5 sm:gap-1">
+      <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
+        {isDemoMode && (
+          <span
+            className="mr-0.5 inline-flex shrink-0 items-center rounded-md border border-warning/30 bg-warning-subtle px-1.5 py-1 text-[10px] font-semibold text-warning-foreground sm:px-2"
+            aria-label={t("Demo — illustrative data")}
+          >
+            <span className="sm:hidden">{t("Demo")}</span>
+            <span className="hidden sm:inline">{t("Demo — illustrative data")}</span>
+          </span>
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -581,16 +594,34 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
+
+  if (isProductionMode && !productionBackendConnected) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="max-w-lg rounded-xl border bg-surface p-8 text-center shadow-dashboard">
+          <div className="mx-auto w-fit"><Logo /></div>
+          <h1 className="mt-6 text-2xl font-semibold">{t("Backend not connected")}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {t("This screen is unavailable in production until authentication and API services are connected.")}
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/sign-in">{t("Back to sign in")}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <AppSidebar open={open} onClose={() => setOpen(false)} />
         <div className="lg:pl-64">
           <AppTopbar onMenu={() => setOpen(true)} />
-          <main className="mx-auto max-w-[1440px] p-4 pb-24 sm:p-6 lg:p-8">{children}</main>
+          <main className="mx-auto min-w-0 max-w-[1440px] overflow-x-clip p-4 pb-24 sm:p-6 lg:p-8">{children}</main>
           <nav
-            aria-label="Primary"
-            className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t bg-background p-1 lg:hidden"
+            aria-label={t("Primary")}
+            className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] grid grid-cols-3 border-t bg-background px-1 pt-1 pb-[max(.25rem,env(safe-area-inset-bottom))] lg:hidden"
           >
             {mainNav.slice(0, 3).map((i) => (
               <Link
@@ -1288,6 +1319,8 @@ export function UpgradeDialog({
   remaining?: string;
 }) {
   const navigate = useNavigate();
+  const { t, language } = usePreferences();
+  const limit = planCatalog.pro.quotas.downloadGb;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -1295,22 +1328,23 @@ export function UpgradeDialog({
           <span className="mb-2 grid size-10 place-items-center rounded-full bg-warning-subtle text-warning-foreground">
             <Download className="size-4" />
           </span>
-          <DialogTitle>Not enough download quota</DialogTitle>
+          <DialogTitle>{t("Not enough download quota")}</DialogTitle>
           <DialogDescription>
-            This file is {fileSize}, but your plan has {remaining} remaining this month. Your quota
-            resets on {usage.resetsOn}.
+            {t("This demo file is larger than the remaining monthly download quota.")}{" "}
+            <span className="font-mono">{fileSize}</span> / <span className="font-mono">{remaining}</span>.
+            {" "}{t("Quota resets on")} {formatDate(usage.resetsOn, language)}.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border bg-surface-subtle p-3">
           <div className="mb-2 flex justify-between text-xs">
-            <span>Download bandwidth</span>
-            <span className="font-mono text-muted-foreground">97.9 / 100 GB</span>
+            <span>{t("Download bandwidth")}</span>
+            <span className="font-mono text-muted-foreground">97.9 / {limit ?? "—"} GB</span>
           </div>
           <UsageProgress value={98} tone="warning" />
         </div>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button
             onClick={() => {
@@ -1318,7 +1352,7 @@ export function UpgradeDialog({
               navigate({ to: "/billing" });
             }}
           >
-            Upgrade plan
+            {t("Upgrade plan")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1771,7 +1805,7 @@ export function StateBanner({
   );
 }
 export function PrototypeStateBar<T extends string>({
-  label = "Prototype state",
+  label = "Demo controls",
   value,
   options,
   onChange,
@@ -1782,12 +1816,13 @@ export function PrototypeStateBar<T extends string>({
   onChange: (v: T) => void;
 }) {
   const { t } = usePreferences();
+  if (!isDemoMode) return null;
   return (
-    <div className="mb-5 flex flex-col gap-2 rounded-lg border border-dashed bg-surface-subtle p-2 sm:flex-row sm:items-center">
+    <div className="mb-5 flex flex-col gap-2 rounded-lg border border-dashed border-warning/40 bg-warning-subtle/40 p-2 sm:flex-row sm:items-center">
       <span className="px-2 text-[10px] font-semibold uppercase text-muted-foreground">
         {t(label)}
       </span>
-      <div role="radiogroup" aria-label={label} className="flex gap-1 overflow-x-auto">
+      <div role="radiogroup" aria-label={t(label)} className="flex gap-1 overflow-x-auto">
         {options.map((o) => (
           <button
             type="button"
