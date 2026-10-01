@@ -146,7 +146,6 @@ const vi: Record<string, string> = {
   "Delete recording": "Xóa bản ghi",
   "Finalizing your recording": "Đang hoàn thiện bản ghi",
   Yearly: "Hàng năm",
-  "Save 20%": "Tiết kiệm 20%",
   "No invoices yet.": "Chưa có hóa đơn.",
   "Manage your account, notifications, and security.": "Quản lý tài khoản, thông báo và bảo mật.",
   Security: "Bảo mật",
@@ -202,8 +201,6 @@ const vi: Record<string, string> = {
   "How long are recordings kept?": "Bản ghi được lưu trong bao lâu?",
   "What happens if I reach my quota?": "Điều gì xảy ra khi tôi đạt hạn mức?",
   "Plans that scale with your livestreams.": "Các gói linh hoạt theo livestream của bạn.",
-  "Yearly billing saves 20%. Cancel anytime from Billing.":
-    "Thanh toán hàng năm tiết kiệm 20%. Có thể hủy bất cứ lúc nào trong mục Thanh toán.",
   "Channel details": "Chi tiết kênh",
   "Channel not found": "Không tìm thấy kênh",
   "Recording details": "Chi tiết bản ghi",
