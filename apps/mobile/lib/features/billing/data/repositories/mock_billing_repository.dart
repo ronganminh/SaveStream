@@ -52,6 +52,24 @@ final class MockBillingRepository extends MockRepositoryBase
       createdAt: DateTime.utc(2026, 9, 20, 9, 15),
       updatedAt: DateTime.utc(2026, 9, 20, 9, 20),
     ),
+    PaymentOrder(
+      id: 'order_cancelled',
+      packageId: 'pkg_60',
+      status: PaymentOrderStatus.cancelled,
+      credits: 60,
+      amount: const Money(amountMinor: 1999, currency: 'USD'),
+      createdAt: DateTime.utc(2026, 9, 16, 11, 40),
+      updatedAt: DateTime.utc(2026, 9, 16, 11, 45),
+    ),
+    PaymentOrder(
+      id: 'order_expired',
+      packageId: 'pkg_10',
+      status: PaymentOrderStatus.expired,
+      credits: 10,
+      amount: const Money(amountMinor: 499, currency: 'USD'),
+      createdAt: DateTime.utc(2026, 9, 12, 7, 30),
+      updatedAt: DateTime.utc(2026, 9, 12, 8, 30),
+    ),
   ];
 
   final List<PaymentOrder> _orders;
