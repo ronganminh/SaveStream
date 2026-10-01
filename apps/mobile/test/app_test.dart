@@ -424,10 +424,7 @@ void main() {
     await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.drag(
-      find.byType(Scrollable).first,
-      const Offset(0, 1000),
-    );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
     await tester.pumpAndSettle();
 
     expect(find.text('Paused'), findsOneWidget);
