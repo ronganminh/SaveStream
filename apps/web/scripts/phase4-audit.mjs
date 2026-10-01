@@ -24,6 +24,15 @@ must("src/lib/analytics-schema.ts", '"support_opened"');
 must("src/lib/analytics-schema.ts", "forbiddenPropertyKey");
 must("src/lib/analytics.ts", 'CustomEvent("savestream:analytics"');
 forbid("src/lib/analytics.ts", "fetch(");
+must("src/components/app-pages.tsx", 'trackEvent("landing_cta_clicked"');
+must("src/components/app-pages.tsx", 'trackEvent("pricing_viewed"');
+must("src/components/app-pages.tsx", 'trackEvent("signup_started"');
+must("src/components/app-pages.tsx", 'trackEvent("download_clicked"');
+must("src/components/app-components.tsx", 'trackEvent("add_channel_opened"');
+must("src/components/app-components.tsx", 'trackEvent("channel_lookup_started"');
+must("src/components/app-components.tsx", 'trackEvent("channel_added"');
+must("src/components/app-components.tsx", 'trackEvent("monitoring_toggled"');
+must("src/components/app-pages-more.tsx", 'trackEvent("support_opened"');
 
 for (const route of [
   "src/routes/overview.tsx",
