@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 8 includes:
+Phase 9 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -49,9 +49,18 @@ Phase 8 includes:
 - usage summary, Add Channel CTA, low-credit and failed-recording alerts;
 - active recording, monitored channel, and recent recording cards linked to detail routes;
 - Home skeleton, empty-account, retryable error, and pull-to-refresh states;
-- the Phase 1 component gallery retained at `/dev/components`.
+- the Phase 1 component gallery retained at `/dev/components`;
+- typed Dio `ApiClient` foundation using `AppConfig.apiBaseUrl`;
+- centralized connect/send/receive timeouts with no infinite timeout path;
+- access-token provider abstraction plus bearer auth interceptor, without persisting auth tokens in SharedPreferences;
+- backend error-envelope mapping into typed `ApiError` / `ApiException`, branching on `error.code` rather than message text;
+- typed categories for unauthorized, insufficient credits, conflict, rate limit, server, network, timeout, and malformed responses;
+- request ID extraction from the backend envelope or response headers;
+- controlled retry for safe GET/HEAD requests only; mutation commands are not retried automatically;
+- `IdempotencyContext` / key-generator foundation so one logical command can reuse one key across retries;
+- fake Dio adapter tests covering 2xx decode, 401, 402, 409, 429, 5xx, timeout, offline/network failure, malformed envelopes, request IDs, auth headers, retry behavior, and idempotency reuse.
 
-Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile are now functional with mock repositories. Phase 0–8 FULL UI MOCK milestone is complete.
+Auth, onboarding, Home, Channels/Watch management, Recordings, Credits/Usage, Billing, Settings, and Profile remain functional with mock repositories. Phase 9 adds the typed API infrastructure underneath the repository boundary; real Auth/Watch/Recording/Credits/Billing repository migration is intentionally deferred to Phases 10–13.
 
 ## Requirements
 
@@ -88,7 +97,9 @@ flutter run \
 Screen
   -> Riverpod provider/controller
   -> Repository interface
-  -> Mock repository
+     -> Mock repository
+     -> future ApiRepository
+        -> ApiClient
 
 MaterialApp.router
   -> guards
@@ -99,6 +110,28 @@ MaterialApp.router
 The mock layer is replaceable by API repositories in later phases without moving raw HTTP into presentation code.
 
 Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are intentionally not stored here and remain part of the secure session work in Phase 10.
+
+## API client foundation
+
+Phase 9 adds Dio as the HTTP transport under `lib/core/api/`. The client takes its base URL from `AppConfig.apiBaseUrl`, applies centralized timeouts, can attach an access token through an `AccessTokenProvider`, and maps backend failures into typed exceptions before they reach repositories or presentation code.
+
+Backend errors are expected in this shape:
+
+```json
+{
+  "error": {
+    "code": "INSUFFICIENT_CREDITS",
+    "message": "...",
+    "request_id": "req_...",
+    "retryable": false,
+    "details": {}
+  }
+}
+```
+
+Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
+
+Phase 9 does not integrate real authentication, secure refresh-token storage, or replace feature mock repositories. Those remain scoped to Phases 10–13.
 
 ## Validation
 
