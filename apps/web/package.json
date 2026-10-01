@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "deploy": "wrangler deploy",
     "preview:cloudflare": "wrangler dev",
-    "test:p0": "node scripts/p0-audit.mjs"
+    "test:p0": "node scripts/p0-audit.mjs",
+    "test:p2": "node scripts/phase2-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

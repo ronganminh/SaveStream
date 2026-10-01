@@ -195,3 +195,14 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px s
 .language-preload body {
   visibility: hidden;
 }
+
+#main-content:focus {
+  outline: none;
+}
+
+@media (pointer: coarse) {
+  [data-slot="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

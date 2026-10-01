@@ -499,7 +499,18 @@ const vi: Record<string, string> = {
     "Add channel": "Thêm kênh",
     "Stored": "Dung lượng đã lưu",
     "Close your laptop. Recording continues.": "Đóng máy tính. Việc ghi hình vẫn tiếp tục.",
-    "Monitoring and recording run on our servers, not in your browser.": "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn."
+    "Monitoring and recording run on our servers, not in your browser.": "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn.",
+  "Skip to content": "Bỏ qua để đến nội dung",
+  "Progress": "Tiến trình",
+  "Sign in required": "Cần đăng nhập",
+  "This route requires an authenticated account with the appropriate role.": "Tuyến đường này yêu cầu tài khoản đã xác thực với vai trò phù hợp.",
+  "Product preview — backend recording services are not connected.": "Bản xem trước sản phẩm — dịch vụ ghi hình backend chưa được kết nối.",
+  "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected.": "SaveStream được thiết kế để theo dõi các kênh được ủy quyền và tự động hóa ghi hình đám mây. Bản công khai này là demo frontend; dịch vụ ghi hình backend chưa được kết nối.",
+  "Backend monitoring is designed to check live status automatically.": "Hệ thống theo dõi backend được thiết kế để tự động kiểm tra trạng thái phát trực tiếp.",
+  "Recording workers are designed to start automatically when backend services are connected.": "Tiến trình ghi hình được thiết kế để tự động bắt đầu khi dịch vụ backend được kết nối.",
+  "Production monitoring and recording are designed to run on backend services rather than in your browser.": "Theo dõi và ghi hình ở môi trường production được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
+  "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.": "Trong sản phẩm production, theo dõi và ghi hình được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
+
 };
 
 type Preferences = {

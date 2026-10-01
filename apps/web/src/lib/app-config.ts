@@ -28,4 +28,32 @@ export function canAccessRoute(access: RouteAccess, identity: FrontendIdentity) 
   return true;
 }
 
+const protectedPrefixes = [
+  "/overview",
+  "/channels",
+  "/recordings",
+  "/usage",
+  "/billing",
+  "/notifications",
+  "/settings",
+  "/help",
+  "/onboarding",
+] as const;
+
+export function getRouteAccess(pathname: string): RouteAccess {
+  if (pathname.startsWith("/admin")) {
+    return { visibility: "admin", requiresAuth: true, requiredRole: "admin", indexable: false };
+  }
+  if (protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+    return { visibility: "authenticated", requiresAuth: true, indexable: false };
+  }
+  const indexable = ["/", "/pricing", "/privacy", "/terms", "/acceptable-use"].includes(pathname);
+  return { visibility: "public", requiresAuth: false, indexable };
+}
+
+export function getFrontendIdentity(): FrontendIdentity {
+  if (isDemoMode) return { authenticated: true, role: "admin" };
+  return { authenticated: false, role: "guest" };
+}
+
 export const productionBackendConnected = false;

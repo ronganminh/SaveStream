@@ -95,21 +95,19 @@ import {
   type Status,
 } from "@/mocks/fixtures";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
-import { isDemoMode, isProductionMode, productionBackendConnected } from "@/lib/app-config";
+import {
+  canAccessRoute,
+  getFrontendIdentity,
+  getRouteAccess,
+  isDemoMode,
+  isProductionMode,
+  productionBackendConnected,
+} from "@/lib/app-config";
+import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
 
-export const meta = (title: string, description: string) => ({
-  meta: [
-    { title: `${title} — SaveStream` },
-    { name: "description", content: description },
-    { property: "og:title", content: `${title} — SaveStream` },
-    { property: "og:description", content: description },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ],
-});
-
+export { meta, publicMeta };
 const mainNav = [
   { to: "/overview", label: "Overview", icon: LayoutDashboard },
   { to: "/channels", label: "Channels", icon: Radio },
@@ -218,7 +216,14 @@ export function UsageProgress({
 }) {
   return (
     <div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+      <div
+        role="progressbar"
+        aria-label={label ?? "Progress"}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.min(Math.max(value, 0), 100)}
+        className="h-1.5 overflow-hidden rounded-full bg-muted"
+      >
         <div
           className={cn("h-full rounded-full", tone === "warning" ? "bg-warning" : "bg-primary")}
           style={{ width: `${Math.min(value, 100)}%` }}
@@ -353,6 +358,8 @@ export function LanguageMenu({ full = false }: { full?: boolean }) {
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
+  const identity = getFrontendIdentity();
+  const canSeeAdmin = canAccessRoute(getRouteAccess("/admin/system"), identity);
   const item = (
     it:
       | (typeof mainNav)[number]
@@ -377,9 +384,14 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   );
   return (
     <>
-      <div
+      <button
+        type="button"
+        aria-label={t("Close menu")}
         onClick={onClose}
-        className={cn("fixed inset-0 z-[var(--z-drawer-overlay)] bg-overlay lg:hidden", open ? "block" : "hidden")}
+        className={cn(
+          "fixed inset-0 z-[var(--z-drawer-overlay)] bg-overlay lg:hidden",
+          open ? "block" : "hidden",
+        )}
       />
       <aside
         aria-label={t("Main navigation")}
@@ -410,13 +422,15 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             {item({ to: "/settings", label: "Settings", icon: Settings })}
             {item({ to: "/help", label: "Help", icon: CircleHelp })}
           </div>
-          <div className="border-t pt-5">
-            <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
-              <ShieldCheck className="size-3" />
-              {t("Admin")}
-            </p>
-            {adminNav.map(item)}
-          </div>
+          {canSeeAdmin && (
+            <div className="border-t pt-5">
+              <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
+                <ShieldCheck className="size-3" />
+                {t("Admin")}
+              </p>
+              {adminNav.map(item)}
+            </div>
+          )}
         </nav>
         <div className="border-t p-3">
           <div className="mb-2 grid grid-cols-2 gap-1 lg:hidden">
@@ -594,6 +608,25 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
+  const identity = getFrontendIdentity();
+  const access = getRouteAccess(path);
+
+  if (!canAccessRoute(access, identity)) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-background px-4">
+        <div className="max-w-lg rounded-xl border bg-surface p-8 text-center shadow-dashboard">
+          <div className="mx-auto w-fit"><Logo /></div>
+          <h1 className="mt-6 text-2xl font-semibold">{t("Sign in required")}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+            {t("This route requires an authenticated account with the appropriate role.")}
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/sign-in">{t("Back to sign in")}</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isProductionMode && !productionBackendConnected) {
     return (

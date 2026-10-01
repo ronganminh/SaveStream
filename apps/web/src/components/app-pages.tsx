@@ -138,8 +138,10 @@ import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/lib/plan-catalog";
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
+import { isDemoMode } from "@/lib/app-config";
+import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 
-export { meta } from "@/components/app-components";
+export { meta, publicMeta } from "@/components/app-components";
 
 const publicLinks = [
   { href: "/#features", label: "Features" },
@@ -360,8 +362,21 @@ function RecordingExamples() {
 
 export function LandingPage() {
   const { t, language } = usePreferences();
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "SaveStream",
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Web",
+    url: PUBLIC_SITE_URL,
+    description: "Frontend preview for authorized livestream recording workflows.",
+  };
   return (
     <div className="min-h-screen bg-background">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <PublicHeader />
       <main>
         <section className="overflow-hidden border-b pb-20 pt-32">
@@ -370,12 +385,18 @@ export function LandingPage() {
               <Cloud className="size-3 text-primary" />
               {t("Automatic cloud recording")}
             </span>
+            {isDemoMode && (
+              <p className="mx-auto mt-3 w-fit rounded-md border border-warning/30 bg-warning-subtle px-3 py-1 text-xs text-warning-foreground">
+                {t("Product preview — backend recording services are not connected.")}
+              </p>
+            )}
             <h1 className="mx-auto mt-6 max-w-4xl text-4xl font-semibold tracking-normal sm:text-6xl">
               {t("Automatic TikTok livestream recording in the cloud.")}
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              Add a channel once. We monitor it 24/7 and automatically record every livestream —
-              even when your computer is offline.
+              {t(
+                "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected.",
+              )}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
@@ -464,8 +485,8 @@ export function LandingPage() {
             <div className="mt-10 grid gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
               {[
                 [Plus, "Add a channel", "Enter a TikTok username or profile URL."],
-                [Radio, "We monitor it", "Live status is checked continuously."],
-                [Video, "Recording starts", "Cloud servers record automatically."],
+                [Radio, "We monitor it", "Backend monitoring is designed to check live status automatically."],
+                [Video, "Recording starts", "Recording workers are designed to start automatically when backend services are connected."],
                 [Play, "Watch later", "Play or download when it’s ready."],
               ].map(([I, stepTitle, b], i) => (
                 <div className="bg-background p-6" key={String(stepTitle)}>
@@ -488,10 +509,10 @@ export function LandingPage() {
             <div>
               <p className="text-sm font-semibold text-primary">{t("Cloud by design")}</p>
               <h2 className="mt-2 text-3xl font-semibold">
-                Close your laptop. Recording continues.
+                {t("Close your laptop. Recording continues.")}
               </h2>
               <p className="mt-4 text-muted-foreground">
-                Monitoring and recording run on our servers, not in your browser.
+                {t("Production monitoring and recording are designed to run on backend services rather than in your browser.")}
               </p>
             </div>
             <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
@@ -540,7 +561,7 @@ export function LandingPage() {
             {[
               [
                 "Do I need to keep my computer on?",
-                "No. Monitoring and recording run on our cloud servers. You can close your browser or turn off your computer.",
+                "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.",
               ],
               [
                 "Which channels can I add?",
