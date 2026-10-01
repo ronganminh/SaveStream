@@ -133,6 +133,37 @@ void main() {
     expect(await refreshStore.read(), 'refresh-new');
   });
 
+  test(
+    'refresh storage failure invalidates old rotated credentials',
+    () async {
+      final _StubPublicApi api = _StubPublicApi()
+        ..refreshHandler = (String token) async {
+          return const AuthTokenPair(
+            accessToken: 'access-new',
+            refreshToken: 'refresh-new',
+            expiresIn: 900,
+          );
+        };
+      final MemoryAccessTokenStore accessStore = MemoryAccessTokenStore()
+        ..setAccessToken('access-old');
+      final _FailingWriteRefreshTokenStore refreshStore =
+          _FailingWriteRefreshTokenStore('refresh-old');
+      final AppSessionController session = AppSessionController();
+      final AuthSessionManager manager = AuthSessionManager(
+        publicApi: api,
+        accessTokenStore: accessStore,
+        refreshTokenStore: refreshStore,
+        appSession: session,
+      );
+
+      await expectLater(manager.refreshAccessToken(), throwsA(isA<StateError>()));
+
+      expect(await accessStore.getAccessToken(), isNull);
+      expect(await refreshStore.read(), isNull);
+      expect(session.isAuthenticated, isFalse);
+    },
+  );
+
   test('refresh reuse or revoked session clears local credentials', () async {
     final _StubPublicApi api = _StubPublicApi()
       ..refreshHandler = (String token) async {
@@ -415,6 +446,25 @@ final class _StubPublicApi implements AuthPublicApi {
     required String token,
     required String password,
   }) async {}
+}
+
+final class _FailingWriteRefreshTokenStore implements RefreshTokenStore {
+  _FailingWriteRefreshTokenStore(this._token);
+
+  String? _token;
+
+  @override
+  Future<String?> read() async => _token;
+
+  @override
+  Future<void> write(String token) async {
+    throw StateError('secure storage write failed');
+  }
+
+  @override
+  Future<void> clear() async {
+    _token = null;
+  }
 }
 
 final class _StubProtectedApi implements AuthProtectedApi {

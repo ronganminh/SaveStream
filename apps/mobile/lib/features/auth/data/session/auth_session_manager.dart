@@ -44,8 +44,7 @@ final class AuthSessionManager {
     try {
       await _refreshTokenStore.write(tokens.refreshToken);
     } on Object {
-      _accessTokenStore.clear();
-      _appSession.markUnauthenticated();
+      await _invalidateLocalSessionBestEffort();
       rethrow;
     }
 
@@ -79,14 +78,19 @@ final class AuthSessionManager {
       final AuthTokenPair rotated = await _publicApi.refresh(
         refreshToken: refreshToken,
       );
-      await _refreshTokenStore.write(rotated.refreshToken);
+      try {
+        await _refreshTokenStore.write(rotated.refreshToken);
+      } on Object {
+        await _invalidateLocalSessionBestEffort();
+        rethrow;
+      }
       _accessTokenStore.setAccessToken(rotated.accessToken);
       _appSession.markAuthenticated();
       return rotated.accessToken;
     } on ApiException catch (error) {
       if (error.code == 'AUTH_SESSION_REVOKED' ||
           error.kind == ApiExceptionKind.unauthorized) {
-        await _clearRevokedSession();
+        await _invalidateLocalSessionBestEffort();
       }
       rethrow;
     }
@@ -98,7 +102,7 @@ final class AuthSessionManager {
     await _refreshTokenStore.clear();
   }
 
-  Future<void> _clearRevokedSession() async {
+  Future<void> _invalidateLocalSessionBestEffort() async {
     _accessTokenStore.clear();
     _appSession.markUnauthenticated();
     try {
