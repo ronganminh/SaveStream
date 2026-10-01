@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type Language = "en" | "vi";
 export type ThemePreference = "light" | "dark" | "system";
@@ -253,7 +261,6 @@ const vi: Record<string, string> = {
   "Page not found": "Không tìm thấy trang",
   "This page didn't load": "Trang này không tải được",
   Loading: "Đang tải",
-  "No results found": "Không tìm thấy kết quả",
   "Clear filters": "Xóa bộ lọc",
   "Clear search": "Xóa tìm kiếm",
   "More actions": "Thao tác khác",
@@ -338,6 +345,75 @@ const vi: Record<string, string> = {
   "All states": "Mọi trạng thái",
   "No events match": "Không có sự kiện phù hợp",
   "Details / stack (placeholder)": "Chi tiết / ngăn xếp (mẫu)",
+  "Open menu": "Mở menu",
+  "Close menu": "Đóng menu",
+  "Main navigation": "Điều hướng chính",
+  "Public navigation": "Điều hướng công khai",
+  "Account menu": "Menu tài khoản",
+  "Your recording workspace": "Không gian ghi hình của bạn",
+  "Sunday, September 27": "Chủ nhật, ngày 27 tháng 9",
+  "25% used": "Đã dùng 25%",
+  "25% used · resets Oct 1": "Đã dùng 25% · đặt lại ngày 1 tháng 10",
+  "3 currently monitoring": "Đang theo dõi 3 kênh",
+  "4 recordings": "4 bản ghi",
+  "25% used this month": "Đã dùng 25% tháng này",
+  "Cloud recording for TikTok channels you own, manage, or have permission to record.":
+    "Ghi hình đám mây cho các kênh TikTok bạn sở hữu, quản lý hoặc được phép ghi.",
+  "Record only channels you’re authorized to manage.": "Chỉ ghi các kênh bạn được phép quản lý.",
+  "Enter a TikTok username or profile URL.": "Nhập tên người dùng hoặc URL hồ sơ TikTok.",
+  "Live status is checked continuously.": "Trạng thái trực tiếp được kiểm tra liên tục.",
+  "Cloud servers record automatically.": "Máy chủ đám mây tự động ghi hình.",
+  "Play or download when it’s ready.": "Phát hoặc tải xuống khi bản ghi sẵn sàng.",
+  "This is a sample recording preview built from mock data, not public user content.":
+    "Đây là bản xem thử dùng dữ liệu mô phỏng, không phải nội dung công khai của người dùng.",
+  Date: "Ngày",
+  Resolution: "Độ phân giải",
+  "Start recording your own": "Bắt đầu ghi livestream của bạn",
+  "No. Monitoring and recording run on our cloud servers. You can close your browser or turn off your computer.":
+    "Không. Việc theo dõi và ghi hình chạy trên máy chủ đám mây. Bạn có thể đóng trình duyệt hoặc tắt máy tính.",
+  "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.":
+    "Chỉ các kênh TikTok bạn sở hữu, quản lý hoặc được phép ghi. Douyin sẽ sớm được hỗ trợ.",
+  "Recordings are kept for your plan’s retention period — 3 days on Free, 30 days on Pro — then deleted automatically.":
+    "Bản ghi được giữ theo thời hạn của gói — 3 ngày với Free, 30 ngày với Pro — rồi tự động xóa.",
+  "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.":
+    "Ghi hình tự động sẽ tạm dừng đến khi hạn mức được đặt lại hoặc bạn nâng cấp. Bản ghi hiện có vẫn khả dụng.",
+  "Channels are monitored automatically. Recording begins when an enabled channel goes live.":
+    "Các kênh được theo dõi tự động. Ghi hình bắt đầu khi một kênh đã bật phát trực tiếp.",
+  "Search channels": "Tìm kênh",
+  "Try another search or clear the current filter.": "Thử tìm kiếm khác hoặc xóa bộ lọc hiện tại.",
+  Streamer: "Kênh",
+  "Date range": "Khoảng ngày",
+  "Last 7 days": "7 ngày qua",
+  "Last 30 days": "30 ngày qua",
+  "No recordings match these filters": "Không có bản ghi phù hợp với bộ lọc",
+  "Try a different streamer, status, or date range.": "Thử kênh, trạng thái hoặc khoảng ngày khác.",
+  "Nothing to show.": "Không có nội dung để hiển thị.",
+  "View channels": "Xem kênh",
+  "Recording runs on our servers. You can safely close this page.":
+    "Ghi hình chạy trên máy chủ của chúng tôi. Bạn có thể đóng trang này.",
+  Elapsed: "Đã ghi",
+  Written: "Đã lưu",
+  "View recording": "Xem bản ghi",
+  "No active recordings": "Không có bản ghi đang chạy",
+  "We’re monitoring your enabled channels. Recording will start automatically when one goes live.":
+    "Chúng tôi đang theo dõi các kênh đã bật. Ghi hình sẽ tự động bắt đầu khi có kênh phát trực tiếp.",
+  "TikTok username or URL": "Tên người dùng hoặc URL TikTok",
+  "Looking up creator…": "Đang tìm nhà sáng tạo…",
+  "Add TikTok channel": "Thêm kênh TikTok",
+  "Add another": "Thêm kênh khác",
+  "Go to channels": "Đi tới Kênh",
+  "Monitoring started": "Đã bắt đầu theo dõi",
+  Adding: "Đang thêm",
+  "No results found": "Không tìm thấy kết quả",
+  "Try a creator name, @handle, or recording date.":
+    "Thử tên nhà sáng tạo, @tên_kênh hoặc ngày ghi.",
+  Healthy: "Ổn định",
+  Sample: "Bản mẫu",
+  "Watch sample recording": "Xem bản ghi mẫu",
+  "See what a completed cloud recording looks like. These are preserved SaveStream sample videos.":
+    "Xem một bản ghi đám mây hoàn chỉnh trông như thế nào. Đây là các video mẫu SaveStream được giữ lại.",
+  "Preserved sample media from the previous SaveStream frontend.":
+    "Video mẫu được giữ lại từ giao diện SaveStream trước đó.",
 };
 
 type Preferences = {
@@ -348,7 +424,6 @@ type Preferences = {
   t: (text: string) => string;
 };
 const Context = createContext<Preferences | null>(null);
-const originalText = new WeakMap<Node, string>();
 
 function translate(text: string, language: Language) {
   if (language === "en") return text;
@@ -391,6 +466,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     setLanguageState(nextLanguage);
     setThemeState(nextTheme);
     applyTheme(nextTheme);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        document.documentElement.classList.remove("language-preload");
+      });
+    });
   }, []);
   useEffect(() => {
     applyTheme(theme);
@@ -401,45 +481,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   }, [theme]);
   useEffect(() => {
     document.documentElement.lang = language;
-    const localize = (root: Node) => {
-      const nodes: Node[] = [];
-      if (root.nodeType === Node.TEXT_NODE) nodes.push(root);
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      while (walker.nextNode()) nodes.push(walker.currentNode);
-      for (const node of nodes) {
-        const parent = node.parentElement;
-        if (!parent || ["SCRIPT", "STYLE", "CODE", "PRE"].includes(parent.tagName)) continue;
-        const original = originalText.get(node) ?? node.textContent ?? "";
-        originalText.set(node, original);
-        const trimmed = original.trim();
-        if (!trimmed) continue;
-        const translated = translate(trimmed, language);
-        node.textContent = original.replace(trimmed, translated);
-      }
-      const elements: HTMLElement[] =
-        root instanceof HTMLElement
-          ? [root, ...root.querySelectorAll<HTMLElement>("[placeholder],[aria-label],[title]")]
-          : [];
-      for (const element of elements)
-        for (const attr of ["placeholder", "aria-label", "title"]) {
-          const value = element.getAttribute(attr);
-          if (!value) continue;
-          const key = `i18n${attr.replace(/(^|-)(\w)/g, (_, _dash, char) => char.toUpperCase())}`;
-          const original = element.dataset[key] ?? value;
-          element.dataset[key] = original;
-          element.setAttribute(attr, translate(original, language));
-        }
-    };
-    localize(document.body);
-    const observer = new MutationObserver((records) => {
-      observer.disconnect();
-      records.forEach((record) => record.addedNodes.forEach(localize));
-      localize(document.body);
-      observer.observe(document.body, { childList: true, subtree: true });
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+    document.documentElement.dataset["language"] = language;
   }, [language]);
+  const t = useCallback((text: string) => translate(text, language), [language]);
   const value = useMemo<Preferences>(
     () => ({
       language,
@@ -452,9 +496,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("savestream-theme", next);
         setThemeState(next);
       },
-      t: (text) => translate(text, language),
+      t,
     }),
-    [language, theme],
+    [language, theme, t],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
@@ -466,3 +510,4 @@ export function usePreferences() {
 }
 
 export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;
+export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream-language');if(l!=='en'&&l!=='vi')l=(navigator.language||'').toLowerCase().indexOf('vi')===0?'vi':'en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;

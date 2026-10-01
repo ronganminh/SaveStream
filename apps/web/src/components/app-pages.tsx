@@ -15,7 +15,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
+import {
+  useState,
+  type ComponentProps,
+  type ElementType,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import {
   Activity,
   AlertTriangle,
@@ -160,22 +166,20 @@ export function PublicHeader() {
             ),
           )}
         </nav>
-        <div className="ml-auto hidden items-center gap-1 sm:flex">
+        <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
           <LanguageMenu />
           <ThemeMenu />
-          <Button variant="ghost" asChild>
+          <Button variant="ghost" asChild className="hidden md:inline-flex">
             <Link to="/sign-in">{t("Sign in")}</Link>
           </Button>
-          <Button asChild>
+          <Button asChild className="hidden md:inline-flex">
             <Link to="/sign-up">{t("Sign up")}</Link>
           </Button>
         </div>
-        <div className="ml-auto flex items-center gap-0.5 sm:hidden">
-          <LanguageMenu />
-          <ThemeMenu />
+        <div className="lg:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Open menu">
+              <Button variant="ghost" size="icon" aria-label={t("Open menu")}>
                 <Menu />
               </Button>
             </SheetTrigger>
@@ -184,7 +188,7 @@ export function PublicHeader() {
                 <SheetTitle>
                   <Logo />
                 </SheetTitle>
-                <SheetDescription className="sr-only">Public navigation</SheetDescription>
+                <SheetDescription className="sr-only">{t("Public navigation")}</SheetDescription>
               </SheetHeader>
               <nav className="mt-8 flex flex-col gap-1">
                 {publicLinks.map((link) =>
@@ -225,16 +229,17 @@ function formatSampleDuration(seconds?: number) {
 }
 
 function RecordingExamples() {
+  const { t } = usePreferences();
   const [selected, setSelected] = useState<SampleMediaItem | null>(null);
 
   return (
     <section id="examples" className="scroll-mt-16 border-b bg-surface-subtle py-20">
       <div className="mx-auto max-w-6xl px-4">
         <div className="max-w-xl">
-          <p className="text-sm font-semibold text-primary">Completed recordings</p>
-          <h2 className="mt-2 text-3xl font-semibold">Recording Examples</h2>
+          <p className="text-sm font-semibold text-primary">{t("Completed recordings")}</p>
+          <h2 className="mt-2 text-3xl font-semibold">{t("Recording Examples")}</h2>
           <p className="mt-3 text-muted-foreground">
-            See what a completed cloud recording looks like. These are preserved SaveStream sample videos.
+            {t("See what a completed cloud recording looks like. These are preserved SaveStream sample videos.")}
           </p>
         </div>
 
@@ -245,7 +250,7 @@ function RecordingExamples() {
               type="button"
               onClick={() => setSelected(item)}
               className="group overflow-hidden rounded-lg border bg-surface text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-dashboard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`Watch sample recording ${index + 1}`}
+              aria-label={`${t("Watch sample recording")} ${index + 1}`}
             >
               <div className="relative aspect-[9/16] overflow-hidden bg-black">
                 <img
@@ -256,7 +261,7 @@ function RecordingExamples() {
                 />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5" />
                 <span className="absolute left-3 top-3 rounded-md border border-white/15 bg-black/60 px-2 py-1 text-[10px] font-medium text-white">
-                  SAMPLE
+                  {t("SAMPLE")}
                 </span>
                 <span className="absolute left-1/2 top-1/2 grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-black shadow-lg transition group-hover:scale-105">
                   <Play className="ml-0.5 size-4 fill-current" />
@@ -267,7 +272,9 @@ function RecordingExamples() {
               </div>
               <div className="p-4">
                 <div className="flex min-w-0 items-center justify-between gap-3">
-                  <p className="truncate text-sm font-semibold">Sample {String(index + 1).padStart(2, "0")}</p>
+                  <p className="truncate text-sm font-semibold">
+                    {t("Sample")} {String(index + 1).padStart(2, "0")}
+                  </p>
                   <StatusBadge status="Ready" />
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{item.title}</p>
@@ -283,7 +290,7 @@ function RecordingExamples() {
         <div className="mt-10 text-center">
           <Button size="lg" asChild>
             <Link to="/sign-up">
-              Start recording your own livestreams
+              {t("Start recording your own livestreams")}
               <ArrowRight />
             </Link>
           </Button>
@@ -300,13 +307,13 @@ function RecordingExamples() {
           <DialogHeader>
             <div className="mb-1 flex items-center gap-2">
               <span className="rounded-md bg-primary-subtle px-2 py-1 text-[10px] font-semibold uppercase text-primary">
-                Demo preview
+                {t("Demo preview")}
               </span>
               <StatusBadge status="Ready" />
             </div>
             <DialogTitle>{selected?.title}</DialogTitle>
             <DialogDescription>
-              Preserved sample media from the previous SaveStream frontend.
+              {t("Preserved sample media from the previous SaveStream frontend.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -328,8 +335,8 @@ function RecordingExamples() {
 
           <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
             {[
-              ["Resolution", selected ? `${selected.width}×${selected.height}` : "—"],
-              ["Duration", formatSampleDuration(selected?.durationSeconds)],
+              [t("Resolution"), selected ? `${selected.width}×${selected.height}` : "—"],
+              [t("Duration"), formatSampleDuration(selected?.durationSeconds)],
               ["ID", selected?.id ?? "—"],
             ].map(([label, value]) => (
               <div key={label} className="bg-surface p-3">
@@ -341,7 +348,7 @@ function RecordingExamples() {
 
           <DialogFooter>
             <Button asChild>
-              <Link to="/sign-up">Start recording your own</Link>
+              <Link to="/sign-up">{t("Start recording your own")}</Link>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -351,6 +358,7 @@ function RecordingExamples() {
 }
 
 export function LandingPage() {
+  const { t } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
@@ -376,10 +384,10 @@ export function LandingPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>
-                <a href="#how">See how it works</a>
+                <a href="#how">{t("See how it works")}</a>
               </Button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">No credit card required.</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t("No credit card required.")}</p>
             <div className="relative mx-auto mt-16 max-w-6xl overflow-hidden rounded-xl border bg-surface p-2 shadow-dashboard">
               <div className="flex h-10 items-center gap-2 border-b px-3">
                 <span className="size-2.5 rounded-full bg-border" />
@@ -409,8 +417,10 @@ export function LandingPage() {
                 <div className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-lg font-semibold">Overview</p>
-                      <p className="text-xs text-muted-foreground">Your recording workspace</p>
+                      <p className="text-lg font-semibold">{t("Overview")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("Your recording workspace")}
+                      </p>
                     </div>
                     <Button size="sm">
                       <Plus />
@@ -448,16 +458,16 @@ export function LandingPage() {
         </section>
         <section id="how" className="border-b py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-sm font-semibold text-primary">How it works</p>
-            <h2 className="mt-2 text-3xl font-semibold">Set it once. We handle the rest.</h2>
+            <p className="text-sm font-semibold text-primary">{t("How it works")}</p>
+            <h2 className="mt-2 text-3xl font-semibold">{t("Set it once. We handle the rest.")}</h2>
             <div className="mt-10 grid gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
               {[
                 [Plus, "Add a channel", "Enter a TikTok username or profile URL."],
                 [Radio, "We monitor it", "Live status is checked continuously."],
                 [Video, "Recording starts", "Cloud servers record automatically."],
                 [Play, "Watch later", "Play or download when it’s ready."],
-              ].map(([I, t, b], i) => (
-                <div className="bg-background p-6" key={String(t)}>
+              ].map(([I, stepTitle, b], i) => (
+                <div className="bg-background p-6" key={String(stepTitle)}>
                   <span className="font-mono text-xs text-muted-foreground">0{i + 1}</span>
                   {I
                     ? (() => {
@@ -465,8 +475,8 @@ export function LandingPage() {
                         return <Icon className="mt-8 size-5 text-primary" />;
                       })()
                     : null}
-                  <h3 className="mt-4 font-medium">{String(t)}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{String(b)}</p>
+                  <h3 className="mt-4 font-medium">{t(String(stepTitle))}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{t(String(b))}</p>
                 </div>
               ))}
             </div>
@@ -475,7 +485,7 @@ export function LandingPage() {
         <section id="features" className="border-b py-20">
           <div className="mx-auto grid max-w-6xl gap-12 px-4 md:grid-cols-[.8fr_1.2fr]">
             <div>
-              <p className="text-sm font-semibold text-primary">Cloud by design</p>
+              <p className="text-sm font-semibold text-primary">{t("Cloud by design")}</p>
               <h2 className="mt-2 text-3xl font-semibold">
                 Close your laptop. Recording continues.
               </h2>
@@ -496,7 +506,7 @@ export function LandingPage() {
               ].map((x, i) => (
                 <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
                   <Check className="size-4 text-success" />
-                  {x}
+                  {t(x)}
                 </div>
               ))}
             </div>
@@ -505,7 +515,7 @@ export function LandingPage() {
         <RecordingExamples />
         <section className="py-20">
           <div className="mx-auto max-w-5xl px-4 text-center">
-            <h2 className="text-3xl font-semibold">Simple plans, clear limits.</h2>
+            <h2 className="text-3xl font-semibold">{t("Simple plans, clear limits.")}</h2>
             <div className="mt-10 grid gap-5 text-left md:grid-cols-2">
               <PlanCard
                 name="Free"
@@ -528,7 +538,7 @@ export function LandingPage() {
       </main>
       <section id="faq" className="border-t py-20">
         <div className="mx-auto max-w-3xl px-4">
-          <h2 className="text-3xl font-semibold">Frequently asked questions</h2>
+          <h2 className="text-3xl font-semibold">{t("Frequently asked questions")}</h2>
           <dl className="mt-8 divide-y border-y">
             {[
               [
@@ -549,8 +559,8 @@ export function LandingPage() {
               ],
             ].map(([q, a]) => (
               <div key={q} className="py-5">
-                <dt className="font-medium">{q}</dt>
-                <dd className="mt-2 text-sm leading-6 text-muted-foreground">{a}</dd>
+                <dt className="font-medium">{t(q ?? "")}</dt>
+                <dd className="mt-2 text-sm leading-6 text-muted-foreground">{t(a ?? "")}</dd>
               </div>
             ))}
           </dl>
@@ -562,6 +572,7 @@ export function LandingPage() {
 }
 
 export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "reset" }) {
+  const { t } = usePreferences();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -617,7 +628,7 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
         <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
           <Mail className="size-5" />
         </span>
-        <h1 className="mt-6 text-2xl font-semibold">Check your email</h1>
+        <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           If an account exists for <b className="font-medium text-foreground">{email}</b>, we sent a
           password reset link. It expires in 60 minutes.
@@ -631,7 +642,7 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
             Resend link
           </Button>
           <Button variant="ghost" className="w-full" asChild>
-            <Link to="/sign-in">Back to sign in</Link>
+            <Link to="/sign-in">{t("Back to sign in")}</Link>
           </Button>
         </div>
         <p className="mt-6 text-xs text-muted-foreground">
@@ -650,7 +661,7 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
           body="Your password has been changed. Other sessions were signed out for your security."
           action={
             <Button asChild className="w-full">
-              <Link to="/sign-in">Back to sign in</Link>
+              <Link to="/sign-in">{t("Back to sign in")}</Link>
             </Button>
           }
         />
@@ -794,6 +805,7 @@ function Field({ label, id, ...props }: { label: string } & ComponentProps<typeo
   );
 }
 export function OnboardingPage() {
+  const { t } = usePreferences();
   const [step, setStep] = useState(1);
   const [username, setUsername] = useState("");
   const [resolving, setResolving] = useState(false);
@@ -830,7 +842,9 @@ export function OnboardingPage() {
               <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
                 <Radio />
               </span>
-              <h1 className="mt-6 text-2xl font-semibold">Let’s record your first livestream.</h1>
+              <h1 className="mt-6 text-2xl font-semibold">
+                {t("Let’s record your first livestream.")}
+              </h1>
               <p className="mt-2 text-muted-foreground">
                 Add a TikTok channel and we’ll monitor it automatically.
               </p>
@@ -849,11 +863,11 @@ export function OnboardingPage() {
               <div className="mt-8 grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-primary bg-primary-subtle p-4">
                   <PlatformBadge />
-                  <p className="mt-3 text-sm font-medium">Available</p>
+                  <p className="mt-3 text-sm font-medium">{t("Available")}</p>
                 </div>
                 <div className="rounded-lg border p-4 opacity-60">
                   <PlatformBadge soon />
-                  <p className="mt-3 text-sm">Coming soon</p>
+                  <p className="mt-3 text-sm">{t("Coming soon")}</p>
                 </div>
               </div>
               <div className="mt-6">
@@ -865,7 +879,9 @@ export function OnboardingPage() {
                   aria-invalid={Boolean(username) && !valid}
                 />
                 {username && !valid && (
-                  <p className="mt-2 text-xs text-destructive">Enter a valid TikTok username.</p>
+                  <p className="mt-2 text-xs text-destructive">
+                    {t("Enter a valid TikTok username.")}
+                  </p>
                 )}
                 {valid && (
                   <div className="mt-4 flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
@@ -930,6 +946,7 @@ export function OnboardingPage() {
 }
 
 export function OverviewPage({ empty = false }: { empty?: boolean }) {
+  const { t } = usePreferences();
   return (
     <AppShell>
       <PageHeader title="Overview" subtitle="Sunday, September 27" action={<AddChannelDialog />} />
@@ -964,14 +981,17 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
       <ActiveRecordingCard empty={empty} />
       <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
         <section>
-          <SectionTitle title="Channel monitoring" action={<Link to="/channels">View all</Link>} />
+          <SectionTitle
+            title="Channel monitoring"
+            action={<Link to="/channels">{t("View all")}</Link>}
+          />
           <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
             <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>Creator</span>
-              <span>Platform</span>
-              <span>Monitoring</span>
-              <span>Status</span>
-              <span>Checked</span>
+              <span>{t("Creator")}</span>
+              <span>{t("Platform")}</span>
+              <span>{t("Monitoring")}</span>
+              <span>{t("Status")}</span>
+              <span>{t("Checked")}</span>
               <span />
             </div>
             {channels.map((c) => (
@@ -987,7 +1007,7 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
         <section>
           <SectionTitle
             title="Recent recordings"
-            action={<Link to="/recordings">View library</Link>}
+            action={<Link to="/recordings">{t("View library")}</Link>}
           />
           <div className="divide-y rounded-lg border bg-surface">
             {recordings.slice(0, 3).map((r) => (
@@ -1014,15 +1034,17 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
   );
 }
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
+  const { t } = usePreferences();
   return (
     <div className="mb-3 flex items-center justify-between">
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="text-sm font-semibold">{t(title)}</h2>
       {action && <span className="text-xs font-medium text-primary">{action}</span>}
     </div>
   );
 }
 
 export function ChannelsPage() {
+  const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
   const filtered = channels.filter(
@@ -1056,11 +1078,11 @@ export function ChannelsPage() {
         <>
           <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
             <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>Creator</span>
-              <span>Platform</span>
-              <span>Monitoring</span>
-              <span>Status</span>
-              <span>Last checked</span>
+              <span>{t("Creator")}</span>
+              <span>{t("Platform")}</span>
+              <span>{t("Monitoring")}</span>
+              <span>{t("Status")}</span>
+              <span>{t("Last checked")}</span>
               <span />
             </div>
             {filtered.map((c) => (
@@ -1105,6 +1127,7 @@ export function ChannelDetailPage() {
   return <ChannelDetail key={channel.id} channel={channel} />;
 }
 export function RecordingsPage() {
+  const { t } = usePreferences();
   const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
@@ -1190,7 +1213,7 @@ export function RecordingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All streamers</SelectItem>
+                  <SelectItem value="all">{t("All streamers")}</SelectItem>
                   {channels.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.handle}
@@ -1203,7 +1226,7 @@ export function RecordingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
+                  <SelectItem value="all">{t("All statuses")}</SelectItem>
                   <SelectItem value="Ready">Ready</SelectItem>
                   <SelectItem value="Processing">Processing</SelectItem>
                   <SelectItem value="Error">Failed</SelectItem>
@@ -1215,9 +1238,9 @@ export function RecordingsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All time</SelectItem>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
+                  <SelectItem value="all">{t("All time")}</SelectItem>
+                  <SelectItem value="7">{t("Last 7 days")}</SelectItem>
+                  <SelectItem value="30">{t("Last 30 days")}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -1597,6 +1620,7 @@ function ProcessingTimeline() {
 }
 
 export function UsagePage() {
+  const { t } = usePreferences();
   const [mock, setMock] = useState<(typeof usageStates)[number]["value"]>("normal");
   const hours = mock === "warning" ? 40.2 : mock === "reached" ? 50 : usage.recordingHours.used;
   const dl = mock === "download" ? 100 : usage.downloadGb.used;
@@ -1606,7 +1630,7 @@ export function UsagePage() {
   const cp = Math.round((ch / usage.channels.limit) * 100);
   const upgradeBtn = (
     <Button size="sm" asChild>
-      <Link to="/billing">Upgrade plan</Link>
+      <Link to="/billing">{t("Upgrade plan")}</Link>
     </Button>
   );
   return (
@@ -1698,7 +1722,7 @@ export function UsagePage() {
       <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
         <section className="rounded-lg border bg-surface p-5">
           <div className="flex items-center justify-between">
-            <h2 className="font-medium">Daily recording hours</h2>
+            <h2 className="font-medium">{t("Daily recording hours")}</h2>
             <span className="text-xs text-muted-foreground">September 2026</span>
           </div>
           <div
@@ -1721,7 +1745,7 @@ export function UsagePage() {
           </div>
         </section>
         <section className="rounded-lg border bg-surface p-5">
-          <h2 className="font-medium">Plan limits</h2>
+          <h2 className="font-medium">{t("Plan limits")}</h2>
           <div className="mt-6 space-y-6">
             {(
               [
@@ -1761,10 +1785,10 @@ export function UsagePage() {
         <SectionTitle title="Usage by recording" />
         <div className="hidden overflow-hidden rounded-lg border sm:block">
           <div className="grid grid-cols-4 bg-surface-subtle px-4 py-2 text-[11px] uppercase text-muted-foreground">
-            <span>Date</span>
+            <span>{t("Date")}</span>
             <span>Channel</span>
-            <span>Duration</span>
-            <span>Size</span>
+            <span>{t("Duration")}</span>
+            <span>{t("Size")}</span>
           </div>
           {recordings.map((r) => (
             <div className="grid grid-cols-4 border-t px-4 py-3 text-sm" key={r.id}>
@@ -1794,6 +1818,7 @@ export function UsagePage() {
   );
 }
 export function BillingPage() {
+  const { t } = usePreferences();
   const navigate = useNavigate();
   const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
   const [interval, setInterval] = useState<"month" | "year">(subscription.interval);
@@ -1931,7 +1956,7 @@ export function BillingPage() {
         </div>
       </section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Plans</h2>
+        <h2 className="text-sm font-semibold">{t("Plans")}</h2>
         <div
           role="radiogroup"
           aria-label="Billing interval"
@@ -2005,7 +2030,7 @@ export function BillingPage() {
       <div className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
         <section className="rounded-lg border bg-surface">
           <div className="border-b p-5">
-            <h2 className="font-medium">Payment method</h2>
+            <h2 className="font-medium">{t("Payment method")}</h2>
             <p className="mt-1 text-sm text-muted-foreground">Used for your Pro subscription.</p>
           </div>
           {isPro && pm ? (
@@ -2036,7 +2061,7 @@ export function BillingPage() {
         </section>
         <section className="rounded-lg border bg-surface">
           <div className="border-b p-5">
-            <h2 className="font-medium">Billing history</h2>
+            <h2 className="font-medium">{t("Billing history")}</h2>
           </div>
           {invoiceRows.length ? (
             <ul className="divide-y">
@@ -2074,7 +2099,7 @@ export function BillingPage() {
               ))}
             </ul>
           ) : (
-            <p className="p-5 text-sm text-muted-foreground">No invoices yet.</p>
+            <p className="p-5 text-sm text-muted-foreground">{t("No invoices yet.")}</p>
           )}
         </section>
       </div>
@@ -2137,6 +2162,7 @@ export function BillingPage() {
   );
 }
 export function AdminSystemPage() {
+  const { t } = usePreferences();
   return (
     <AppShell>
       <PageHeader
@@ -2157,13 +2183,13 @@ export function AdminSystemPage() {
             label={String(a)}
             value={String(b)}
             detail="Updated just now"
-            icon={I}
+            icon={I as ElementType}
           />
         ))}
       </div>
       <section className="mt-8 rounded-lg border bg-surface">
         <div className="border-b p-5">
-          <h2 className="font-medium">Service health</h2>
+          <h2 className="font-medium">{t("Service health")}</h2>
         </div>
         <div className="grid sm:grid-cols-2">
           {["API", "Redis", "Database", "Storage", "Workers 4/4 online"].map((x) => (
@@ -2181,12 +2207,13 @@ export function AdminSystemPage() {
   );
 }
 export function PricingPage() {
+  const { t } = usePreferences();
   return (
     <>
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
         <div className="text-center">
-          <h1 className="text-4xl font-semibold">Plans that scale with your livestreams.</h1>
+          <h1 className="text-4xl font-semibold">{t("Plans that scale with your livestreams.")}</h1>
           <p className="mt-4 text-muted-foreground">
             Start free. Upgrade when you need more recording time.
           </p>
@@ -2219,6 +2246,7 @@ export function PricingPage() {
   );
 }
 export function PublicFooter() {
+  const { t } = usePreferences();
   const cols: [string, [string, string][]][] = [
     [
       "Product",
@@ -2255,7 +2283,7 @@ export function PublicFooter() {
         </div>
         {cols.map(([h, links]) => (
           <div key={h}>
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{h}</p>
+            <p className="text-xs font-semibold uppercase text-muted-foreground">{t(h)}</p>
             <ul className="mt-3 space-y-2 text-sm">
               {links.map(([to, l]) => (
                 <li key={to}>
@@ -2263,7 +2291,7 @@ export function PublicFooter() {
                     to={to as "/pricing"}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    {l}
+                    {t(l)}
                   </Link>
                 </li>
               ))}
@@ -2278,6 +2306,7 @@ export function PublicFooter() {
   );
 }
 export function AuthLayout({ children }: { children: ReactNode }) {
+  const { t } = usePreferences();
   return (
     <div className="grid min-h-screen bg-surface-subtle lg:grid-cols-[1fr_1.1fr]">
       <div className="flex flex-col bg-background p-6 sm:p-10">
@@ -2307,6 +2336,7 @@ const channelStates = [
   { value: "Error", label: "Error" },
 ] as const;
 function ChannelDetail({ channel }: { channel: Channel }) {
+  const { t } = usePreferences();
   const navigate = useNavigate();
   const [state, setState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
@@ -2349,7 +2379,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">Last checked</dt>
+            <dt className="text-xs text-muted-foreground">{t("Last checked")}</dt>
             <dd className="mt-1 font-mono">{channel.checked}</dd>
           </div>
           <div>
@@ -2371,7 +2401,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <dt className="text-xs text-muted-foreground">Last checked</dt>
+            <dt className="text-xs text-muted-foreground">{t("Last checked")}</dt>
             <dd className="mt-1 font-mono">{channel.checked}</dd>
           </div>
           <div>
@@ -2452,7 +2482,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           </div>
         </div>
         <div className="flex items-center gap-3 text-sm sm:ml-auto">
-          <label htmlFor="detail-monitoring">Monitoring</label>
+          <label htmlFor="detail-monitoring">{t("Monitoring")}</label>
           <Switch id="detail-monitoring" checked={monitoring} onCheckedChange={toggle} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -2578,14 +2608,15 @@ function ChannelDetail({ channel }: { channel: Channel }) {
   );
 }
 function RecordingHeader() {
+  const { t } = usePreferences();
   return (
     <div className="grid grid-cols-[1.7fr_1fr_.7fr_.7fr_.8fr_.7fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
       <span>Recording</span>
       <span>Streamer</span>
-      <span>Duration</span>
-      <span>Size</span>
+      <span>{t("Duration")}</span>
+      <span>{t("Size")}</span>
       <span>Expires</span>
-      <span>Status</span>
+      <span>{t("Status")}</span>
       <span className="w-9" />
     </div>
   );
