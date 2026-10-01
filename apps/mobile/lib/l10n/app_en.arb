@@ -401,5 +401,6 @@
   "watchAlreadyExistsMessage": "A Watch for this creator already exists.",
   "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again.",
   "recordNowAction": "Record now",
-  "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording."
+  "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
+  "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link."
 }

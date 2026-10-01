@@ -401,5 +401,6 @@
   "watchAlreadyExistsMessage": "Đã có Watch cho creator này.",
   "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại.",
   "recordNowAction": "Ghi ngay",
-  "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này."
+  "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này.",
+  "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới."
 }

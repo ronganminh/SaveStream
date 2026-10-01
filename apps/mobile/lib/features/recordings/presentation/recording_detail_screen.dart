@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -21,9 +23,37 @@ class RecordingDetailScreen extends ConsumerStatefulWidget {
       _RecordingDetailScreenState();
 }
 
-class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
+class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
+    with WidgetsBindingObserver {
   bool _isMutating = false;
   Object? _mutationError;
+  bool _isForeground = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final AppLifecycleState? state = WidgetsBinding.instance.lifecycleState;
+    _isForeground =
+        state == null || state == AppLifecycleState.resumed;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final bool foreground = state == AppLifecycleState.resumed;
+    if (foreground == _isForeground) {
+      return;
+    }
+    setState(() {
+      _isForeground = foreground;
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   Future<void> _runMutation(Future<void> Function() action) async {
     setState(() {
@@ -44,6 +74,21 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
           _isMutating = false;
         });
       }
+    }
+  }
+
+  Future<void> _retry(RecordingSummary recording) async {
+    RecordingSummary? retried;
+    await _runMutation(() async {
+      retried = await ref
+          .read(recordingControllerProvider)
+          .retry(recording.id);
+    });
+    if (_mutationError == null &&
+        retried != null &&
+        retried!.id != recording.id &&
+        mounted) {
+      context.go(AppRoutes.recordingDetail(retried!.id));
     }
   }
 
@@ -71,9 +116,9 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<RecordingSummary?> recording = ref.watch(
-      recordingDetailProvider(widget.recordingId),
-    );
+    final AsyncValue<RecordingSummary?> recording = _isForeground
+        ? ref.watch(recordingRealtimeProvider(widget.recordingId))
+        : ref.watch(recordingDetailProvider(widget.recordingId));
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recordingDetailTitle)),
@@ -147,10 +192,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen> {
                       () =>
                           ref.read(recordingControllerProvider).stop(value.id),
                     ),
-                    onRetry: () => _runMutation(
-                      () =>
-                          ref.read(recordingControllerProvider).retry(value.id),
-                    ),
+                    onRetry: () => _retry(value),
                     onDelete: () => _delete(value),
                   ),
                 ],
@@ -384,78 +426,143 @@ class _MetadataCard extends StatelessWidget {
   }
 }
 
-class _ArtifactCard extends StatelessWidget {
+class _ArtifactCard extends ConsumerStatefulWidget {
   const _ArtifactCard({required this.recording});
 
   final RecordingSummary recording;
 
   @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
+  ConsumerState<_ArtifactCard> createState() => _ArtifactCardState();
+}
 
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.recordingArtifactTitle,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: SsSpacing.md),
-          Wrap(
-            spacing: SsSpacing.sm,
-            runSpacing: SsSpacing.sm,
-            children: <Widget>[
-              SsStatusChip(
-                label: recording.artifactReady
-                    ? l10n.artifactReadyLabel
-                    : l10n.artifactPendingLabel,
-                tone: recording.artifactReady
-                    ? SsStatusTone.success
-                    : SsStatusTone.neutral,
-                icon: Icons.inventory_2_outlined,
-              ),
-              SsStatusChip(
-                label: recording.thumbnailReady
-                    ? l10n.thumbnailReadyLabel
-                    : l10n.thumbnailPendingLabel,
-                tone: recording.thumbnailReady
-                    ? SsStatusTone.success
-                    : SsStatusTone.neutral,
-                icon: Icons.image_outlined,
-              ),
-            ],
-          ),
-          if (recording.artifactReady) ...<Widget>[
-            const SizedBox(height: SsSpacing.lg),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: SsSecondaryButton(
-                    label: l10n.playRecordingAction,
-                    icon: Icons.play_arrow_rounded,
-                    onPressed: () => _showMockArtifactMessage(context),
-                  ),
-                ),
-                const SizedBox(width: SsSpacing.sm),
-                Expanded(
-                  child: SsSecondaryButton(
-                    label: l10n.downloadRecordingAction,
-                    icon: Icons.download_rounded,
-                    onPressed: () => _showMockArtifactMessage(context),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
+class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
+  bool _isOpening = false;
+
+  Future<void> _openArtifact(
+    RecordingArtifactSummary artifact, {
+    required LaunchMode mode,
+  }) async {
+    setState(() {
+      _isOpening = true;
+    });
+    try {
+      final ArtifactDownloadUrl download = await ref
+          .read(recordingControllerProvider)
+          .createArtifactDownloadUrl(artifact.id);
+      if (download.isExpired) {
+        throw StateError('Artifact URL expired before use.');
+      }
+      final bool opened = await launchUrl(download.uri, mode: mode);
+      if (!opened) {
+        throw StateError('Unable to open artifact URL.');
+      }
+    } on Object {
+      if (mounted) {
+        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpening = false;
+        });
+      }
+    }
   }
 
-  void _showMockArtifactMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.artifactMockActionMessage)),
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<List<RecordingArtifactSummary>> artifacts = ref.watch(
+      recordingArtifactsProvider(widget.recording.id),
+    );
+
+    return SsCard(
+      child: artifacts.when(
+        loading: () => const SsSkeleton(height: 96, radius: SsRadii.md),
+        error: (Object error, StackTrace stackTrace) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              l10n.recordingArtifactTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: SsSpacing.sm),
+            Text(_errorMessage(l10n, error)),
+            const SizedBox(height: SsSpacing.sm),
+            TextButton(
+              onPressed: () => ref.invalidate(
+                recordingArtifactsProvider(widget.recording.id),
+              ),
+              child: Text(l10n.retryAction),
+            ),
+          ],
+        ),
+        data: (List<RecordingArtifactSummary> items) {
+          final RecordingArtifactSummary? artifact =
+              items.isEmpty ? null : items.first;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.recordingArtifactTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.md),
+              Wrap(
+                spacing: SsSpacing.sm,
+                runSpacing: SsSpacing.sm,
+                children: <Widget>[
+                  SsStatusChip(
+                    label: artifact != null
+                        ? l10n.artifactReadyLabel
+                        : l10n.artifactPendingLabel,
+                    tone: artifact != null
+                        ? SsStatusTone.success
+                        : SsStatusTone.neutral,
+                    icon: Icons.inventory_2_outlined,
+                  ),
+                  if (artifact != null)
+                    SsStatusChip(
+                      label: formatBytes(artifact.sizeBytes),
+                      tone: SsStatusTone.neutral,
+                      icon: Icons.data_usage_rounded,
+                    ),
+                ],
+              ),
+              if (artifact != null) ...<Widget>[
+                const SizedBox(height: SsSpacing.lg),
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: SsSecondaryButton(
+                        label: l10n.playRecordingAction,
+                        icon: Icons.play_arrow_rounded,
+                        isLoading: _isOpening,
+                        onPressed: () => _openArtifact(
+                          artifact,
+                          mode: LaunchMode.platformDefault,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: SsSpacing.sm),
+                    Expanded(
+                      child: SsSecondaryButton(
+                        label: l10n.downloadRecordingAction,
+                        icon: Icons.download_rounded,
+                        isLoading: _isOpening,
+                        onPressed: () => _openArtifact(
+                          artifact,
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -617,17 +724,27 @@ IconData _statusIcon(RecordingStatus status) {
 }
 
 String _errorTitle(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
+  if (_isOfflineLike(error)) {
     return l10n.offlineErrorTitle;
   }
   return l10n.errorTitle;
 }
 
 String _errorMessage(AppLocalizations l10n, Object error) {
-  if (error is MockRepositoryException &&
-      error.kind == MockFailureKind.offlineLike) {
+  if (_isOfflineLike(error)) {
     return l10n.offlineErrorBody;
   }
+  if (error is ApiException &&
+      error.kind == ApiExceptionKind.insufficientCredits) {
+    return l10n.recordingInsufficientCreditMessage;
+  }
   return l10n.errorBody;
+}
+
+bool _isOfflineLike(Object error) {
+  return (error is MockRepositoryException &&
+          error.kind == MockFailureKind.offlineLike) ||
+      (error is ApiException &&
+          (error.kind == ApiExceptionKind.network ||
+              error.kind == ApiExceptionKind.timeout));
 }

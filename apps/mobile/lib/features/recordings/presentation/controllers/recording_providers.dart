@@ -140,8 +140,14 @@ final recordingDetailProvider =
     });
 
 final recordingRealtimeProvider =
-    StreamProvider.autoDispose.family<RecordingSummary?, String>((ref, id) {
-      return ref.watch(recordingRepositoryProvider).watchRecording(id);
+    StreamProvider.autoDispose.family<RecordingSummary?, String>((ref, id) async* {
+      await for (final RecordingSummary? recording
+          in ref.watch(recordingRepositoryProvider).watchRecording(id)) {
+        if (recording != null && !recording.isActiveLifecycle) {
+          ref.invalidate(recordingArtifactsProvider(id));
+        }
+        yield recording;
+      }
     });
 
 final recordingArtifactsProvider =
