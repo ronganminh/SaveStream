@@ -58,7 +58,9 @@ void main() {
     );
   });
 
-  test('attaches bearer token without exposing token to typed errors', () async {
+  test(
+    'attaches bearer token without exposing token to typed errors',
+    () async {
     final _FakeAdapter adapter = _FakeAdapter(
       (RequestOptions options, int call) {
         expect(options.headers['Authorization'], 'Bearer secret-token');
@@ -70,8 +72,12 @@ void main() {
       accessTokenProvider: const _StaticTokenProvider('secret-token'),
     );
 
-    await client.get<_Payload>('/v1/auth-check', decoder: _Payload.fromJson);
-  });
+      await client.get<_Payload>(
+        '/v1/auth-check',
+        decoder: _Payload.fromJson,
+      );
+    },
+  );
 
   test('maps 401 to unauthorized and preserves envelope request ID', () async {
     final ApiException exception = await _capture(
