@@ -28,8 +28,8 @@ final FutureProvider<BillingSnapshot> billingSnapshotProvider =
       return ref.watch(billingRepositoryProvider).getSnapshot();
     });
 
-final paymentOrderStatusProvider =
-    StreamProvider.autoDispose.family<PaymentOrder?, String>((ref, orderId) {
+final paymentOrderStatusProvider = StreamProvider.autoDispose
+    .family<PaymentOrder?, String>((ref, orderId) {
       return ref.watch(billingRepositoryProvider).watchPaymentOrder(orderId);
     });
 
