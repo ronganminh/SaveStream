@@ -24,7 +24,7 @@ Lemon Squeezy Test Mode:
 - Webhook URL:
   `https://staging-api.savestream.online/v1/webhooks/payments/lemonsqueezy`
 - Subscribe to `order_created` and `order_refunded`.
-- Use a dedicated webhook signing secret.
+- Use a dedicated webhook signing secret between 6 and 40 characters. A convenient strong test secret is `openssl rand -hex 20`, which produces 40 hex characters.
 
 ## Store secrets on the VPS
 
