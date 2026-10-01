@@ -55,35 +55,47 @@ class SsStatusChip extends StatelessWidget {
       SsStatusTone.recording => semantic.recording,
     };
 
+    final double maxWidth =
+        (MediaQuery.sizeOf(context).width - SsSpacing.xxl).clamp(
+          120,
+          double.infinity,
+        );
+
     return Semantics(
       container: true,
       label: label,
       excludeSemantics: true,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: foreground.withValues(alpha: 0.10),
-          borderRadius: const BorderRadius.all(Radius.circular(SsRadii.pill)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: SsSpacing.md,
-            vertical: 6,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: foreground.withValues(alpha: 0.10),
+            borderRadius: const BorderRadius.all(Radius.circular(SsRadii.pill)),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              if (icon != null) ...<Widget>[
-                Icon(icon, size: 14, color: foreground),
-                const SizedBox(width: SsSpacing.xs),
-              ],
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: foreground,
-                  fontWeight: FontWeight.w600,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: SsSpacing.md,
+              vertical: 6,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (icon != null) ...<Widget>[
+                  Icon(icon, size: 14, color: foreground),
+                  const SizedBox(width: SsSpacing.xs),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    softWrap: true,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

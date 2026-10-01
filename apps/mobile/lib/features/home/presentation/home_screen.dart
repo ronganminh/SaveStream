@@ -353,19 +353,38 @@ class _UsageCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  l10n.homeUsageTitle,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              TextButton(
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool stack =
+                  constraints.maxWidth < 360 ||
+                  MediaQuery.textScalerOf(context).scale(1) >= 1.4;
+              final Widget title = Text(
+                l10n.homeUsageTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              );
+              final Widget action = TextButton(
                 onPressed: () => context.push(AppRoutes.credits),
                 child: Text(l10n.homeViewUsageAction),
-              ),
-            ],
+              );
+
+              if (stack) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    title,
+                    const SizedBox(height: SsSpacing.xs),
+                    Align(alignment: Alignment.centerLeft, child: action),
+                  ],
+                );
+              }
+
+              return Row(
+                children: <Widget>[
+                  Expanded(child: title),
+                  action,
+                ],
+              );
+            },
           ),
           const SizedBox(height: SsSpacing.md),
           LinearProgressIndicator(value: data.usageProgress),

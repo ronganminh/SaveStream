@@ -12,9 +12,10 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool compactFab =
-        MediaQuery.sizeOf(context).width < 360 ||
-        MediaQuery.textScalerOf(context).scale(1) >= 1.4;
+    final double width = MediaQuery.sizeOf(context).width;
+    final double textScale = MediaQuery.textScalerOf(context).scale(1);
+    final bool compactFab = width < 360 || textScale >= 1.4;
+    final bool compactNavigation = width < 440 || textScale >= 1.4;
 
     return Scaffold(
       body: navigationShell,
@@ -31,6 +32,9 @@ class MainShell extends StatelessWidget {
               label: Text(l10n.addChannelAction),
             ),
       bottomNavigationBar: NavigationBar(
+        labelBehavior: compactNavigation
+            ? NavigationDestinationLabelBehavior.onlyShowSelected
+            : NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (int index) {
           navigationShell.goBranch(
