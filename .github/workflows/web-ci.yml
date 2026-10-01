@@ -26,4 +26,5 @@ jobs:
       - run: npm run typecheck
       - run: npm --workspace apps/web run test:p0
       - run: npm --workspace apps/web run test:p2
+      - run: npm --workspace apps/web run test:p3
       - run: npm run build
