@@ -184,9 +184,12 @@ class AppSettings:
         )
         lemon_squeezy_store_id = _env("LEMON_SQUEEZY_STORE_ID", "")
         lemon_squeezy_variant_id = _env("LEMON_SQUEEZY_VARIANT_ID", "")
+        smtp_host = _env("SMTP_HOST", "localhost")
+        smtp_port = _int_env("SMTP_PORT", 1025)
         smtp_username = _secret_env("SMTP_USERNAME", "")
         smtp_password = _secret_env("SMTP_PASSWORD", "")
         smtp_starttls = _bool_env("SMTP_STARTTLS", False)
+        email_from = _env("EMAIL_FROM", "SaveStream <no-reply@savestream.local>")
         metrics_token = _secret_env("METRICS_TOKEN", "savestream-local-metrics")
         trusted_proxy_cidrs = _csv_env("TRUSTED_PROXY_CIDRS", "")
         force_https = _bool_env("FORCE_HTTPS", environment_raw == "production")
@@ -239,6 +242,19 @@ class AppSettings:
             ):
                 raise ValueError(
                     "Lemon Squeezy store and variant IDs must be configured in production"
+                )
+            if (
+                smtp_host in {"localhost", "mail-debug"}
+                or not smtp_username
+                or not smtp_password
+                or not smtp_starttls
+            ):
+                raise ValueError(
+                    "Authenticated STARTTLS SMTP must be configured in production"
+                )
+            if "savestream.local" in email_from:
+                raise ValueError(
+                    "SAVESTREAM_EMAIL_FROM must be configured in production"
                 )
             if metrics_token == "savestream-local-metrics":
                 raise ValueError(
@@ -301,12 +317,12 @@ class AppSettings:
             one_time_token_ttl_seconds=_int_env("ONE_TIME_TOKEN_TTL_SECONDS", 1_800),
             refresh_cookie_name=_env("REFRESH_COOKIE_NAME", "savestream_refresh"),
             frontend_base_url=frontend_base_url,
-            smtp_host=_env("SMTP_HOST", "localhost"),
-            smtp_port=_int_env("SMTP_PORT", 1025),
+            smtp_host=smtp_host,
+            smtp_port=smtp_port,
             smtp_username=smtp_username,
             smtp_password=smtp_password,
             smtp_starttls=smtp_starttls,
-            email_from=_env("EMAIL_FROM", "SaveStream <no-reply@savestream.local>"),
+            email_from=email_from,
             login_rate_limit=_int_env("LOGIN_RATE_LIMIT", 5),
             login_rate_window_seconds=_int_env("LOGIN_RATE_WINDOW_SECONDS", 60),
             auth_write_rate_limit=_int_env("AUTH_WRITE_RATE_LIMIT", 5),
