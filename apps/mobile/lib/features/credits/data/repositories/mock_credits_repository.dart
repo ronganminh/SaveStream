@@ -7,9 +7,9 @@ final class MockCreditsRepository extends MockRepositoryBase
   const MockCreditsRepository(super.behavior);
 
   static const CreditBalance _balance = CreditBalance(
-    posted: 12,
+    posted: 7,
     reserved: 3,
-    available: 9,
+    available: 4,
   );
 
   @override
@@ -48,7 +48,7 @@ final class MockCreditsRepository extends MockRepositoryBase
             id: 'txn_004',
             type: CreditTransactionType.charge,
             amount: -2,
-            balanceAfter: 12,
+            balanceAfter: 7,
             referenceType: 'recording',
             referenceId: 'rec_002',
             occurredAt: DateTime.utc(2026, 9, 30, 13, 35),
@@ -57,7 +57,7 @@ final class MockCreditsRepository extends MockRepositoryBase
             id: 'txn_003',
             type: CreditTransactionType.release,
             amount: 0,
-            balanceAfter: 14,
+            balanceAfter: 9,
             referenceType: 'recording',
             referenceId: 'rec_003',
             occurredAt: DateTime.utc(2026, 9, 29, 8, 42),
@@ -66,7 +66,7 @@ final class MockCreditsRepository extends MockRepositoryBase
             id: 'txn_002',
             type: CreditTransactionType.grant,
             amount: 10,
-            balanceAfter: 14,
+            balanceAfter: 9,
             referenceType: 'payment_order',
             referenceId: 'order_paid',
             occurredAt: DateTime.utc(2026, 9, 28, 15, 5),
