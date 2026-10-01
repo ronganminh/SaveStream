@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/api/api_client.dart';
+import '../core/api/api_providers.dart';
 import '../core/config/app_config.dart';
 import '../core/mock/mock_providers.dart';
 import '../core/mock/mock_scenario.dart';
 import '../features/auth/data/auth_providers.dart';
 import '../features/auth/data/repositories/mock_auth_repository.dart';
+import '../features/auth/domain/repositories/auth_repository.dart';
 import '../l10n/l10n.dart';
 import 'app_settings_controller.dart';
 import 'lifecycle/app_lifecycle_controller.dart';
@@ -19,6 +22,8 @@ class SaveStreamApp extends StatefulWidget {
     required this.config,
     this.settings,
     this.session,
+    this.authRepository,
+    this.apiClient,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     super.key,
@@ -27,6 +32,8 @@ class SaveStreamApp extends StatefulWidget {
   final AppConfig config;
   final AppSettingsController? settings;
   final AppSessionController? session;
+  final AuthRepository? authRepository;
+  final ApiClient? apiClient;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
 
@@ -61,12 +68,8 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
   void dispose() {
     _router.dispose();
     _lifecycle.dispose();
-    if (_ownsSettings) {
-      _settings.dispose();
-    }
-    if (_ownsSession) {
-      _session.dispose();
-    }
+    if (_ownsSettings) _settings.dispose();
+    if (_ownsSession) _session.dispose();
     super.dispose();
   }
 
@@ -76,6 +79,10 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
       overrides: [
         mockScenarioProvider.overrideWithValue(widget.mockScenario),
         authMockScenarioProvider.overrideWithValue(widget.authMockScenario),
+        if (widget.authRepository != null)
+          authRepositoryProvider.overrideWithValue(widget.authRepository!),
+        if (widget.apiClient != null)
+          apiClientProvider.overrideWithValue(widget.apiClient!),
       ],
       child: AnimatedBuilder(
         animation: _settings,

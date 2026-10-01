@@ -85,6 +85,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               label: l10n.backToSignIn,
               onPressed: () => context.go(AppRoutes.signIn),
             ),
+            const SizedBox(height: SsSpacing.sm),
+            SsTextAction(
+              label: l10n.enterResetTokenAction,
+              onPressed: () => context.go(AppRoutes.resetPassword),
+            ),
           ],
         ),
       );

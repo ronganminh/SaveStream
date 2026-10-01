@@ -1,7 +1,10 @@
 enum AuthFailureCode {
   invalidCredentials,
   emailNotVerified,
+  invalidToken,
+  validation,
   rateLimited,
+  sessionExpired,
   server,
   offlineLike,
 }
@@ -17,11 +20,16 @@ abstract interface class AuthRepository {
 
   Future<void> register({required String email, required String password});
 
-  Future<void> verifyEmail({required String email, required String code});
+  Future<void> verifyEmail({required String token});
 
   Future<void> resendVerification({required String email});
 
   Future<void> forgotPassword({required String email});
+
+  Future<void> resetPassword({
+    required String token,
+    required String password,
+  });
 
   Future<void> logout();
 

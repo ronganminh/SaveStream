@@ -7,6 +7,7 @@ import '../../core/widgets/savestream_widgets.dart';
 import '../../features/auth/data/auth_providers.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/billing/presentation/billing_screen.dart';
@@ -118,6 +119,7 @@ GoRouter createAppRouter({
               return VerifyEmailScreen(
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
+                initialToken: state.uri.queryParameters['token'],
               );
             },
           );
@@ -131,6 +133,20 @@ GoRouter createAppRouter({
               return ForgotPasswordScreen(
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
+              );
+            },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (BuildContext context, GoRouterState state) {
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return ResetPasswordScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+                initialToken: state.uri.queryParameters['token'],
               );
             },
           );
