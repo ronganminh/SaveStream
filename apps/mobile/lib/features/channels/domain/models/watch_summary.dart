@@ -39,6 +39,8 @@ class WatchSummary {
     required this.creatorUsername,
     required this.status,
     required this.isLive,
+    this.sourceType,
+    this.sourceValue,
     this.autoRecord = true,
     this.lastCheckedAt,
     this.lastLiveAt,
@@ -49,6 +51,8 @@ class WatchSummary {
   final String creatorUsername;
   final WatchStatus status;
   final bool isLive;
+  final WatchSourceType? sourceType;
+  final String? sourceValue;
   final bool autoRecord;
   final DateTime? lastCheckedAt;
   final DateTime? lastLiveAt;
@@ -58,6 +62,8 @@ class WatchSummary {
     String? creatorUsername,
     WatchStatus? status,
     bool? isLive,
+    WatchSourceType? sourceType,
+    String? sourceValue,
     bool? autoRecord,
     DateTime? lastCheckedAt,
     DateTime? lastLiveAt,
@@ -68,6 +74,8 @@ class WatchSummary {
       creatorUsername: creatorUsername ?? this.creatorUsername,
       status: status ?? this.status,
       isLive: isLive ?? this.isLive,
+      sourceType: sourceType ?? this.sourceType,
+      sourceValue: sourceValue ?? this.sourceValue,
       autoRecord: autoRecord ?? this.autoRecord,
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
       lastLiveAt: lastLiveAt ?? this.lastLiveAt,

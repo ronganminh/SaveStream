@@ -91,7 +91,7 @@
   "offlineStatus": "Offline",
   "recordingDetailTitle": "Chi tiết bản ghi",
   "recordingNotFoundTitle": "Không tìm thấy bản ghi",
-  "recordingNotFoundBody": "Bản ghi mock này không khả dụng.",
+  "recordingNotFoundBody": "Recording này không còn khả dụng.",
   "recordingStatusQueued": "Đang xếp hàng",
   "recordingStatusResolving": "Đang phân giải nguồn",
   "recordingStatusWaitingLive": "Đang chờ LIVE",
@@ -399,5 +399,8 @@
   "authValidationErrorMessage": "Kiểm tra thông tin đã nhập rồi thử lại.",
   "authSessionExpiredMessage": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
   "watchAlreadyExistsMessage": "Đã có Watch cho creator này.",
-  "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại."
+  "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại.",
+  "recordNowAction": "Ghi ngay",
+  "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này.",
+  "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới."
 }

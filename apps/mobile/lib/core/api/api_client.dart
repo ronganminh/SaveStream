@@ -8,6 +8,7 @@ import 'api_exception.dart';
 import 'api_request_id.dart';
 import 'api_response.dart';
 import 'api_retry_policy.dart';
+import 'api_stream_response.dart';
 import 'api_timeouts.dart';
 import 'idempotency.dart';
 
@@ -109,6 +110,58 @@ final class ApiClient {
       idempotency: idempotency,
       cancelToken: cancelToken,
     );
+  }
+
+  Future<ApiStreamResponse> getStream(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? headers,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final Response<ResponseBody> response = await _dio.get<ResponseBody>(
+        path,
+        queryParameters: queryParameters,
+        cancelToken: cancelToken,
+        options: Options(responseType: ResponseType.stream, headers: headers),
+      );
+      final ResponseBody? body = response.data;
+      if (body == null) {
+        throw ApiException(
+          kind: ApiExceptionKind.malformedResponse,
+          statusCode: response.statusCode,
+          requestId: requestIdFromHeaders(response.headers),
+          retryable: false,
+        );
+      }
+      return ApiStreamResponse(
+        stream: body.stream,
+        statusCode: response.statusCode ?? 0,
+        requestId: requestIdFromHeaders(response.headers),
+      );
+    } on ApiException {
+      rethrow;
+    } on DioException catch (exception) {
+      final int? statusCode = exception.response?.statusCode;
+      if (statusCode != null) {
+        throw ApiException(
+          kind: switch (statusCode) {
+            401 => ApiExceptionKind.unauthorized,
+            402 => ApiExceptionKind.insufficientCredits,
+            409 => ApiExceptionKind.conflict,
+            429 => ApiExceptionKind.rateLimited,
+            final int status when status >= 500 => ApiExceptionKind.server,
+            _ => ApiExceptionKind.api,
+          },
+          statusCode: statusCode,
+          requestId: exception.response == null
+              ? null
+              : requestIdFromHeaders(exception.response!.headers),
+          retryable: statusCode == 429 || statusCode >= 500,
+        );
+      }
+      throw _errorParser.fromDioException(exception);
+    }
   }
 
   Future<ApiResponse<T>> delete<T>(

@@ -106,6 +106,8 @@ final class WatchApiModel {
       creatorUsername: creatorUsername,
       status: status,
       isLive: liveStatus == WatchLiveStatus.live,
+      sourceType: sourceType,
+      sourceValue: sourceValue,
       autoRecord: autoRecord,
       lastCheckedAt: lastCheckedAt,
       lastLiveAt: lastLiveAt,

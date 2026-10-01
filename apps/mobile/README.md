@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 11 includes:
+Phase 12 includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -84,9 +84,24 @@ Phase 11 includes:
 - Watch mutations always invalidate/refetch list, detail, and Home Watch state after success or failure, reconciling server-side partial state such as a 402 resume that persists `paused_insufficient_credit`;
 - Home automatically uses real Watch data through the existing shared `watchRepositoryProvider`;
 - Watch state remains REST-based with refresh/refetch; no Watch-specific SSE contract is invented;
-- Phase 11 tests cover status mapping, creator fallback, cursor pagination, create/mutation payloads, 404 handling, 402 handling, malformed status rejection, and failed-mutation reconciliation.
+- Phase 11 tests cover status mapping, creator fallback, cursor pagination, create/mutation payloads, 404 handling, 402 handling, malformed status rejection, and failed-mutation reconciliation;
+- real Recordings integration against the frozen `/v1/recordings` contract;
+- typed Recording response mapping for every lifecycle status plus backend-owned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete`;
+- cursor pagination remains behind `RecordingRepository`, including client-side Active filtering without dropping later cursor pages;
+- real create, detail, stop, delete, artifact list, and artifact download-URL calls through the authenticated API client;
+- recording creation uses UUID v4 `Idempotency-Key` values because the backend validates the header as a UUID;
+- Retry follows the available backend contract by creating a new Recording from the failed Recording source when `actions.can_retry` is true; no nonexistent retry endpoint is invented;
+- Channel Detail adds Record now and creates a Recording from the resolved Watch source;
+- Channel recording history reconciles by Watch source/creator because backend Recording responses do not expose a `watch_id`;
+- authenticated SSE is consumed from `GET /v1/recordings/{id}/events` with Bearer auth, `Last-Event-ID`, event sequence deduplication, and canonical REST refetch after events;
+- realtime streams reconnect with bounded exponential backoff and fall back to `GET /v1/recordings/{id}` when SSE disconnects or fails;
+- Recording Detail subscribes to realtime only while the app is foregrounded; backgrounding releases the auto-disposed stream and foregrounding reconnects from a fresh REST snapshot;
+- terminal Recording state invalidates artifact data so completed/stopped artifacts can appear without restarting the screen;
+- artifact Play / Download now lists real artifacts and requests a fresh presigned download URL for every action instead of persisting expiring URLs;
+- Recording mutations invalidate list, canonical detail, realtime detail, artifacts, Home, and Channel history signals so UI state reconciles after commands;
+- Phase 12 tests cover UUID idempotency, all Recording statuses/action flags, cursor pagination, Active filtering, stop/delete endpoints, retry semantics, artifact URLs, authenticated SSE parsing, `Last-Event-ID`, reconnect, and sequence deduplication.
 
-Authentication and Channels/Watch management now use real backend APIs in production bootstrap while their mock implementations remain available for tests/previews. Home consumes the real Watch repository for monitored-channel data; Recordings, Credits/Usage, Billing, and Profile keep their current mock repositories until their later integration phases.
+Authentication, Channels/Watch management, and Recordings now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch and Recording repositories; Credits/Usage, Billing, and Profile keep their current mock repositories until later integration phases.
 
 ## Requirements
 
@@ -134,6 +149,13 @@ Channels / Home Watch slice
      -> ApiWatchRepository
         -> authenticated ApiClient
 
+Recordings / Home Recording slice
+  -> Riverpod provider/controller
+  -> RecordingRepository
+     -> ApiRecordingRepository
+        -> authenticated ApiClient
+        -> RecordingEventSource (SSE)
+
 Other feature screen
   -> Riverpod provider/controller
   -> Repository interface
@@ -145,7 +167,7 @@ MaterialApp.router
   -> four preserved tab stacks
 ```
 
-Repository boundaries remain intact: Watch has moved from `MockWatchRepository` to `ApiWatchRepository` in production without moving raw HTTP into presentation code, and the remaining mock-backed features can follow the same pattern.
+Repository boundaries remain intact: Watch and Recording production paths now use `ApiWatchRepository` and `ApiRecordingRepository` without moving raw HTTP/SSE parsing into presentation code, and the remaining mock-backed features can follow the same pattern.
 
 Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are separate: access tokens stay in memory and refresh tokens use platform secure storage.
 
@@ -169,7 +191,7 @@ Backend errors are expected in this shape:
 
 Feature logic must branch on `error.code`, never on localized/free-form `message`. Request IDs are retained for support context. Safe GET/HEAD requests may use controlled retry; mutation commands are not automatically retried. Command features that require retry safety can carry an explicit `IdempotencyContext`, preserving one key for one logical operation.
 
-Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, and Phase 11 consumes the authenticated client for real Watch/Channel data. Recording, Credits, Billing, and other feature repository migrations remain scoped to later phases.
+Phase 9 remains the shared transport/error foundation. Phase 10 consumes it for real authentication, Phase 11 for Watch/Channel data, and Phase 12 for Recording REST + SSE. Credits, Billing, and other remaining feature repository migrations stay scoped to later phases.
 
 ## Secure authentication session
 
@@ -195,6 +217,26 @@ POST   /v1/watches/{id}/resume
 ```
 
 The backend has no Watch-specific SSE endpoint. Watch/Channel state therefore uses the REST GET contract and normal provider refresh/refetch behavior. Mutation controllers invalidate list, detail, and Home Watch state in a `finally` path, so a failed mutation is reconciled with server truth. This matters for resume: the backend may persist `paused_insufficient_credit` before returning `402 INSUFFICIENT_CREDITS`.
+
+## Recording API and realtime integration
+
+Phase 12 replaces the production `MockRecordingRepository` with `ApiRecordingRepository` while preserving the existing Recordings list/detail and Home repository boundaries. REST operations use the authenticated client:
+
+```text
+POST   /v1/recordings
+GET    /v1/recordings
+GET    /v1/recordings/{id}
+POST   /v1/recordings/{id}/stop
+DELETE /v1/recordings/{id}
+GET    /v1/recordings/{id}/artifacts
+POST   /v1/artifacts/{id}/download-url
+```
+
+Recording creation sends a UUID v4 `Idempotency-Key`. Backend action flags remain authoritative: Stop, Retry, and Delete are shown and executed only according to `actions.can_stop`, `actions.can_retry`, and `actions.can_delete`. Because the frozen backend exposes no retry endpoint, an allowed retry creates a new Recording from the prior Recording source with a new idempotency key.
+
+Realtime detail uses authenticated SSE at `GET /v1/recordings/{id}/events`. The client forwards `Last-Event-ID`, ignores duplicate/out-of-order sequences, refetches the canonical Recording snapshot after accepted events, and reconnects with bounded exponential backoff. If SSE is unavailable, the repository falls back to the canonical Recording GET. Recording Detail only holds the SSE subscription while foregrounded; backgrounding releases it and foregrounding reconnects from a fresh snapshot.
+
+Artifact URLs are treated as short-lived capabilities. The app fetches the current artifact list, requests a new presigned URL for each Play/Download action, checks its expiry, and never persists the URL.
 
 ## Validation
 

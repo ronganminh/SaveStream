@@ -9,6 +9,7 @@ import '../../../core/mock/mock_repository_base.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../recordings/domain/models/recording_summary.dart';
+import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
 import 'controllers/watch_providers.dart';
@@ -47,6 +48,25 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
           _isMutating = false;
         });
       }
+    }
+  }
+
+  Future<void> _recordNow(WatchSummary watch) async {
+    RecordingSummary? created;
+    await _runMutation(() async {
+      created = await ref
+          .read(recordingControllerProvider)
+          .create(
+            CreateRecordingCommand(
+              sourceType: _recordingSourceType(watch.sourceType),
+              sourceValue:
+                  watch.sourceValue ??
+                  watch.creatorUsername.replaceFirst('@', ''),
+            ),
+          );
+    });
+    if (_mutationError == null && created != null && mounted) {
+      context.push(AppRoutes.recordingDetail(created!.id));
     }
   }
 
@@ -134,6 +154,7 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                   _MonitoringCard(
                     watch: value.watch,
                     isMutating: _isMutating,
+                    onRecordNow: () => _recordNow(value.watch),
                     onAutoRecordChanged: (bool enabled) {
                       _runMutation(
                         () => ref
@@ -255,6 +276,7 @@ class _MonitoringCard extends StatelessWidget {
   const _MonitoringCard({
     required this.watch,
     required this.isMutating,
+    required this.onRecordNow,
     required this.onAutoRecordChanged,
     required this.onPauseResume,
     required this.onDelete,
@@ -262,6 +284,7 @@ class _MonitoringCard extends StatelessWidget {
 
   final WatchSummary watch;
   final bool isMutating;
+  final VoidCallback onRecordNow;
   final ValueChanged<bool> onAutoRecordChanged;
   final VoidCallback onPauseResume;
   final VoidCallback onDelete;
@@ -287,6 +310,12 @@ class _MonitoringCard extends StatelessWidget {
             onChanged: isMutating ? null : onAutoRecordChanged,
           ),
           const Divider(),
+          const SizedBox(height: SsSpacing.sm),
+          SsPrimaryButton(
+            label: l10n.recordNowAction,
+            icon: Icons.fiber_manual_record_rounded,
+            onPressed: isMutating ? null : onRecordNow,
+          ),
           const SizedBox(height: SsSpacing.sm),
           SsSecondaryButton(
             label: watch.status == WatchStatus.active
@@ -493,4 +522,12 @@ bool _isOfflineLike(Object error) {
       (error is ApiException &&
           (error.kind == ApiExceptionKind.network ||
               error.kind == ApiExceptionKind.timeout));
+}
+
+RecordingSourceType _recordingSourceType(WatchSourceType? type) {
+  return switch (type) {
+    WatchSourceType.roomId => RecordingSourceType.roomId,
+    WatchSourceType.url => RecordingSourceType.url,
+    WatchSourceType.username || null => RecordingSourceType.username,
+  };
 }

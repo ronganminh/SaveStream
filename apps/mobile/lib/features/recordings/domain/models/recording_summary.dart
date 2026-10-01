@@ -15,7 +15,29 @@ enum RecordingStatus {
   final String apiValue;
 }
 
+enum RecordingSourceType {
+  username('username'),
+  roomId('room_id'),
+  url('url');
+
+  const RecordingSourceType(this.apiValue);
+
+  final String apiValue;
+}
+
 enum RecordingFilter { all, active, completed, failed }
+
+class CreateRecordingCommand {
+  const CreateRecordingCommand({
+    required this.sourceType,
+    required this.sourceValue,
+    this.maxDurationSeconds,
+  });
+
+  final RecordingSourceType sourceType;
+  final String sourceValue;
+  final int? maxDurationSeconds;
+}
 
 class RecordingActions {
   const RecordingActions({
@@ -29,6 +51,53 @@ class RecordingActions {
   final bool canDelete;
 }
 
+class RecordingArtifactSummary {
+  const RecordingArtifactSummary({
+    required this.id,
+    required this.recordingId,
+    required this.sizeBytes,
+    required this.checksumSha256,
+    required this.createdAt,
+  });
+
+  final String id;
+  final String recordingId;
+  final int sizeBytes;
+  final String checksumSha256;
+  final DateTime createdAt;
+}
+
+class ArtifactDownloadUrl {
+  const ArtifactDownloadUrl({required this.uri, required this.expiresAt});
+
+  final Uri uri;
+  final DateTime expiresAt;
+
+  bool get isExpired => !expiresAt.isAfter(DateTime.now().toUtc());
+}
+
+class RecordingEvent {
+  const RecordingEvent({
+    required this.id,
+    required this.sequence,
+    required this.type,
+    required this.recordingId,
+    required this.createdAt,
+    required this.status,
+    required this.durationSeconds,
+    required this.bytesRecorded,
+  });
+
+  final String id;
+  final int sequence;
+  final String type;
+  final String recordingId;
+  final DateTime createdAt;
+  final RecordingStatus status;
+  final int durationSeconds;
+  final int bytesRecorded;
+}
+
 class RecordingPage {
   const RecordingPage({required this.items, required this.nextCursor});
 
@@ -39,13 +108,16 @@ class RecordingPage {
 class RecordingSummary {
   const RecordingSummary({
     required this.id,
-    required this.watchId,
     required this.creatorDisplayName,
     required this.creatorUsername,
     required this.status,
     required this.actions,
     required this.startedAt,
     required this.durationSeconds,
+    this.watchId,
+    this.sourceType = RecordingSourceType.username,
+    this.sourceValue = '',
+    this.endedAt,
     this.sizeBytes,
     this.costCredits,
     this.bytesRecorded,
@@ -57,12 +129,15 @@ class RecordingSummary {
   });
 
   final String id;
-  final String watchId;
+  final String? watchId;
+  final RecordingSourceType sourceType;
+  final String sourceValue;
   final String creatorDisplayName;
   final String creatorUsername;
   final RecordingStatus status;
   final RecordingActions actions;
   final DateTime? startedAt;
+  final DateTime? endedAt;
   final int durationSeconds;
   final int? sizeBytes;
   final double? costCredits;
@@ -89,8 +164,10 @@ class RecordingSummary {
   }
 
   RecordingSummary copyWith({
+    String? watchId,
     RecordingStatus? status,
     RecordingActions? actions,
+    DateTime? endedAt,
     int? durationSeconds,
     int? sizeBytes,
     double? costCredits,
@@ -103,12 +180,15 @@ class RecordingSummary {
   }) {
     return RecordingSummary(
       id: id,
-      watchId: watchId,
+      watchId: watchId ?? this.watchId,
+      sourceType: sourceType,
+      sourceValue: sourceValue,
       creatorDisplayName: creatorDisplayName,
       creatorUsername: creatorUsername,
       status: status ?? this.status,
       actions: actions ?? this.actions,
       startedAt: startedAt,
+      endedAt: endedAt ?? this.endedAt,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       costCredits: costCredits ?? this.costCredits,

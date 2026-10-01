@@ -139,13 +139,33 @@ final recordingDetailProvider =
       return ref.watch(recordingRepositoryProvider).getRecording(id);
     });
 
+final recordingRealtimeProvider = StreamProvider.autoDispose
+    .family<RecordingSummary?, String>((ref, id) async* {
+      await for (final RecordingSummary? recording
+          in ref.watch(recordingRepositoryProvider).watchRecording(id)) {
+        if (recording != null && !recording.isActiveLifecycle) {
+          ref.invalidate(recordingArtifactsProvider(id));
+        }
+        yield recording;
+      }
+    });
+
+final recordingArtifactsProvider =
+    FutureProvider.family<List<RecordingArtifactSummary>, String>((ref, id) {
+      ref.watch(recordingRevisionProvider);
+      return ref.watch(recordingRepositoryProvider).listArtifacts(id);
+    });
+
 final Provider<RecordingController> recordingControllerProvider =
     Provider<RecordingController>((ref) {
       return RecordingController(
         repository: ref.watch(recordingRepositoryProvider),
         refreshList: () => ref.invalidate(recordingListControllerProvider),
-        refreshDetail: (String id) =>
-            ref.invalidate(recordingDetailProvider(id)),
+        refreshDetail: (String id) {
+          ref.invalidate(recordingDetailProvider(id));
+          ref.invalidate(recordingRealtimeProvider(id));
+          ref.invalidate(recordingArtifactsProvider(id));
+        },
         notifyChanged: () =>
             ref.read(recordingRevisionProvider.notifier).bump(),
       );
@@ -167,19 +187,43 @@ class RecordingController {
   final void Function(String id) _refreshDetail;
   final void Function() _notifyChanged;
 
-  Future<void> stop(String id) async {
-    await _repository.stopRecording(id);
-    _invalidate(id);
+  Future<RecordingSummary> create(CreateRecordingCommand command) async {
+    final RecordingSummary created = await _repository.createRecording(command);
+    _invalidate(created.id);
+    return created;
   }
 
-  Future<void> retry(String id) async {
-    await _repository.retryRecording(id);
-    _invalidate(id);
+  Future<void> stop(String id) {
+    return _mutate(id, () => _repository.stopRecording(id));
   }
 
-  Future<void> delete(String id) async {
-    await _repository.deleteRecording(id);
-    _invalidate(id);
+  Future<RecordingSummary?> retry(String id) async {
+    RecordingSummary? retried;
+    try {
+      retried = await _repository.retryRecording(id);
+      return retried;
+    } finally {
+      _invalidate(id);
+      if (retried != null && retried.id != id) {
+        _invalidate(retried.id);
+      }
+    }
+  }
+
+  Future<void> delete(String id) {
+    return _mutate(id, () => _repository.deleteRecording(id));
+  }
+
+  Future<ArtifactDownloadUrl> createArtifactDownloadUrl(String artifactId) {
+    return _repository.createArtifactDownloadUrl(artifactId);
+  }
+
+  Future<void> _mutate<T>(String id, Future<T> Function() action) async {
+    try {
+      await action();
+    } finally {
+      _invalidate(id);
+    }
   }
 
   void _invalidate(String id) {

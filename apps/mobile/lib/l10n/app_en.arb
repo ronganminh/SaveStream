@@ -91,7 +91,7 @@
   "offlineStatus": "Offline",
   "recordingDetailTitle": "Recording detail",
   "recordingNotFoundTitle": "Recording not found",
-  "recordingNotFoundBody": "This mock recording is not available.",
+  "recordingNotFoundBody": "This recording is no longer available.",
   "recordingStatusQueued": "Queued",
   "recordingStatusResolving": "Resolving",
   "recordingStatusWaitingLive": "Waiting for LIVE",
@@ -399,5 +399,8 @@
   "authValidationErrorMessage": "Check the entered information and try again.",
   "authSessionExpiredMessage": "Your session has expired. Sign in again.",
   "watchAlreadyExistsMessage": "A Watch for this creator already exists.",
-  "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again."
+  "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again.",
+  "recordNowAction": "Record now",
+  "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
+  "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link."
 }
