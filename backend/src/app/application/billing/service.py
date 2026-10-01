@@ -372,12 +372,15 @@ class PaymentEventProcessor:
         if existing is not None:
             return False
 
+        stored_payload = dict(raw_payload)
+        if event.payment_order_id is not None:
+            stored_payload["_payment_order_id"] = event.payment_order_id
         row = PaymentEvent(
             provider=self.provider.name,
             provider_event_id=event.event_id,
             event_type=event.event_type,
             provider_reference=event.provider_reference,
-            payload=raw_payload,
+            payload=stored_payload,
             signature_verified=signature_verified,
         )
         self.session.add(row)
@@ -403,6 +406,11 @@ class PaymentEventProcessor:
                 event_id=row.provider_event_id,
                 event_type=row.event_type,
                 provider_reference=row.provider_reference,
+                payment_order_id=(
+                    str(row.payload["_payment_order_id"])
+                    if row.payload.get("_payment_order_id") is not None
+                    else None
+                ),
                 amount_minor=(
                     int(row.payload["amount_minor"])
                     if row.payload.get("amount_minor") is not None
@@ -431,19 +439,41 @@ class PaymentEventProcessor:
         row: PaymentEvent,
         event: ProviderEvent,
     ) -> None:
-        order = await self.session.scalar(
-            select(PaymentOrder)
-            .where(
-                PaymentOrder.provider == self.provider.name,
-                PaymentOrder.provider_reference
-                == event.provider_reference,
+        order = None
+        if event.payment_order_id is not None:
+            try:
+                parsed_order_id = uuid.UUID(event.payment_order_id)
+            except ValueError:
+                parsed_order_id = None
+            if parsed_order_id is not None:
+                order = await self.session.scalar(
+                    select(PaymentOrder)
+                    .where(
+                        PaymentOrder.provider == self.provider.name,
+                        PaymentOrder.id == parsed_order_id,
+                    )
+                    .with_for_update()
+                )
+        if order is None:
+            order = await self.session.scalar(
+                select(PaymentOrder)
+                .where(
+                    PaymentOrder.provider == self.provider.name,
+                    PaymentOrder.provider_reference
+                    == event.provider_reference,
+                )
+                .with_for_update()
             )
-            .with_for_update()
-        )
         if order is None:
             row.processing_error = "payment_order_not_found_or_not_ready"
             return
         row.payment_order_id = order.id
+        if (
+            event.payment_order_id is not None
+            and event.provider_reference
+            and order.provider_reference != event.provider_reference
+        ):
+            order.provider_reference = event.provider_reference
 
         if event.event_type == "payment.paid":
             if (
