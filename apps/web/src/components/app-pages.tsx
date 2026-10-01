@@ -260,7 +260,10 @@ function RecordingExamples() {
                 <img
                   src={item.thumbnailUrl}
                   alt=""
+                  width={item.width}
+                  height={item.height}
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
                 />
                 <span className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/5" />

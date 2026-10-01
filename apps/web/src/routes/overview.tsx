@@ -1,3 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { OverviewPage, meta } from "@/components/app-pages";
-export const Route = createFileRoute("/overview")({ head:()=>meta("Overview","Monitor active cloud recordings, channel health, and monthly usage."), component:OverviewPage });
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
+import { meta } from "@/components/app-components";
+
+const OverviewPage = lazyRouteComponent(() => import("@/components/app-pages"), "OverviewPage");
+
+export const Route = createFileRoute("/overview")({
+  head: () => meta("Overview", "Monitor active cloud recordings, channel health, and monthly usage."),
+  component: OverviewPage,
+});

@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { AsyncResourceState } from "@/domain/resource-state";
-import { repositories } from "@/repositories";
+import { getRepositories } from "@/repositories";
 
 export const domainQueryKeys = {
   channels: ["channels"] as const,
@@ -24,7 +24,7 @@ function toResourceState<T>(
 export function useChannelsData() {
   const query = useQuery({
     queryKey: domainQueryKeys.channels,
-    queryFn: () => repositories.channels.list(),
+    queryFn: async () => (await getRepositories()).channels.list(),
   });
   return { query, state: toResourceState(query, (data) => data.length === 0) };
 }
@@ -32,7 +32,7 @@ export function useChannelsData() {
 export function useRecordingsData() {
   const query = useQuery({
     queryKey: domainQueryKeys.recordings,
-    queryFn: () => repositories.recordings.list(),
+    queryFn: async () => (await getRepositories()).recordings.list(),
   });
   return { query, state: toResourceState(query, (data) => data.length === 0) };
 }
@@ -40,7 +40,7 @@ export function useRecordingsData() {
 export function useActiveRecordingData() {
   const query = useQuery({
     queryKey: domainQueryKeys.activeRecording,
-    queryFn: () => repositories.recordings.getActive(),
+    queryFn: async () => (await getRepositories()).recordings.getActive(),
   });
   return { query, state: toResourceState(query, (data) => data === null) };
 }
@@ -48,7 +48,7 @@ export function useActiveRecordingData() {
 export function useUsageData() {
   const query = useQuery({
     queryKey: domainQueryKeys.usage,
-    queryFn: () => repositories.usage.getCurrent(),
+    queryFn: async () => (await getRepositories()).usage.getCurrent(),
   });
   return { query, state: toResourceState(query) };
 }
