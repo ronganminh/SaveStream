@@ -38,6 +38,23 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
+      - name: Show Phase 14 formatting
+        run: >-
+          dart format --output=show
+          lib/core/widgets/ss_async_states.dart
+          lib/core/widgets/ss_states.dart
+          lib/features/billing/presentation/billing_return_screen.dart
+          lib/features/billing/presentation/billing_screen.dart
+          lib/features/channels/presentation/add_channel_screen.dart
+          lib/features/channels/presentation/channel_detail_screen.dart
+          lib/features/channels/presentation/channels_screen.dart
+          lib/features/credits/presentation/credits_screen.dart
+          lib/features/home/presentation/home_screen.dart
+          lib/features/recordings/presentation/controllers/recording_providers.dart
+          lib/features/recordings/presentation/recording_detail_screen.dart
+          lib/features/recordings/presentation/recordings_screen.dart
+          lib/features/settings/presentation/profile_screen.dart
+
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
