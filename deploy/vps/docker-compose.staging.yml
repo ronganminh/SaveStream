@@ -45,9 +45,6 @@ x-app-secrets: &app-secrets
 
 services:
   staging-api:
-        condition: service_healthy
-
-  staging-api:
     build:
       context: ../../backend
     restart: unless-stopped
