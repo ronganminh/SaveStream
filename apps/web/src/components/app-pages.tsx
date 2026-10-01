@@ -90,17 +90,44 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  activeRecording,
-  channels,
+  channels as legacyChannels,
   dailyRecordingHours,
   invoices,
-  recordings,
+  recordings as legacyRecordings,
   subscription,
-  usage,
   user,
+} from "@/mocks/fixtures";
+import {
+  adaptChannel,
+  adaptRecording,
+  quotaStateFixtures,
+  recordingStatusFixtures,
+} from "@/data/mock-repository";
+import {
+  asyncFixtureOptions,
+  useChannelResource,
+  useChannelsResource,
+  useRecordingResource,
+  useRecordingsResource,
+  useRepositoryActions,
+  useUsageResource,
+} from "@/data/repository-hooks";
+import {
+  channelStatusLabels,
+  recordingStatusLabels,
   type Channel,
   type ChannelStatus,
-} from "@/mocks/fixtures";
+  type QuotaState,
+  type Recording,
+} from "@/domain/models";
+import {
+  downloadLifecycleCopy,
+  downloadLifecycleStates,
+  recordingLifecycleCopy,
+  recordingLifecycleStates,
+  type DownloadLifecycleState,
+  type RecordingLifecycleState,
+} from "@/domain/lifecycles";
 import {
   ActiveRecordingCard,
   AddChannelDialog,
@@ -142,6 +169,11 @@ import { isDemoMode } from "@/lib/app-config";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 
 export { meta, publicMeta } from "@/components/app-components";
+
+const channels = legacyChannels.map(adaptChannel);
+const recordings = legacyRecordings.map(adaptRecording);
+const usage = quotaStateFixtures.normal;
+const activeRecording = recordingStatusFixtures.recording;
 
 const publicLinks = [
   { href: "/#features", label: "Features" },
@@ -2245,31 +2277,33 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   );
 }
 const channelStates = [
-  { value: "Recording", label: "Recording" },
-  { value: "Waiting", label: "Waiting" },
-  { value: "Offline", label: "Offline" },
-  { value: "Paused", label: "Paused" },
-  { value: "Error", label: "Error" },
+  { value: "recording", label: "Recording" },
+  { value: "waiting", label: "Waiting" },
+  { value: "offline", label: "Offline" },
+  { value: "paused", label: "Paused" },
+  { value: "error", label: "Error" },
+  { value: "checking", label: "Checking" },
+  { value: "live", label: "Live" },
 ] as const;
 function ChannelDetail({ channel }: { channel: Channel }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [state, setState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
-  const monitoring = state !== "Paused";
+  const monitoring = state !== "paused";
   const history = recordings.filter((r) => r.channelId === channel.id);
   const toggle = (v: boolean) => {
     if (v) {
-      setState("Waiting");
+      setState("waiting");
       toast.success(`Monitoring resumed for ${channel.handle}`);
     } else setDialog("pause");
   };
   const card = {
-    Recording: (
+    recording: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Recording" />
+          <StatusBadge status="recording" />
         </div>
         <p className="mt-6 text-sm font-medium text-recording">Recording now</p>
         <p className="mt-1 font-mono text-3xl font-semibold">01:42:18</p>
@@ -2283,11 +2317,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </Button>
       </>
     ),
-    Waiting: (
+    waiting: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Waiting" />
+          <StatusBadge status="waiting" />
         </div>
         <p className="mt-6 font-medium">Waiting for the next livestream</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2305,11 +2339,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </dl>
       </>
     ),
-    Offline: (
+    offline: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Offline" />
+          <StatusBadge status="offline" />
         </div>
         <p className="mt-6 font-medium">Channel is offline</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2327,11 +2361,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </dl>
       </>
     ),
-    Paused: (
+    paused: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Paused" />
+          <StatusBadge status="paused" />
         </div>
         <p className="mt-6 font-medium">Monitoring is paused</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2344,11 +2378,11 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </Button>
       </>
     ),
-    Error: (
+    error: (
       <>
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Error" />
+          <StatusBadge status="error" />
         </div>
         <p className="mt-6 font-medium">We couldn’t check live status</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -2439,8 +2473,8 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         <section
           className={cn(
             "rounded-lg border bg-surface p-5",
-            state === "Recording" && "border-recording/30",
-            state === "Error" && "border-destructive/30",
+            state === "recording" && "border-recording/30",
+            state === "error" && "border-destructive/30",
           )}
         >
           {card}
@@ -2460,8 +2494,8 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           />
           <StatCard
             label="Last livestream"
-            value={state === "Recording" ? "Now" : channel.live.split(",")[0]!}
-            detail={state === "Recording" ? "Currently recording" : channel.live}
+            value={state === "recording" ? "Now" : channel.live.split(",")[0]!}
+            detail={state === "recording" ? "Currently recording" : channel.live}
             icon={Radio}
           />
           <StatCard
@@ -2502,7 +2536,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
         onConfirm={() => {
-          setState("Paused");
+          setState("paused");
           setDialog(null);
           toast(`Monitoring paused for ${channel.handle}`);
         }}
