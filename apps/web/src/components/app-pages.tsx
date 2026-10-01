@@ -1316,45 +1316,87 @@ export function ChannelDetailPage() {
 
 export function RecordingsPage() {
   const { t } = usePreferences();
-  const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
+  const {
+    data: recordingItems,
+    screenState,
+    error,
+    retry,
+    setFixtureState,
+  } = useRecordingsResource();
+  const { data: channelItems } = useChannelsResource();
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState<"all" | Recording["status"]>("all");
   const [streamer, setStreamer] = useState("all");
   const [range, setRange] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
   const today = new Date("Sep 27, 2026").getTime();
-  const list = recordings
+
+  const list = recordingItems
     .filter(
-      (r) =>
-        (status === "all" || r.status === status) &&
-        (streamer === "all" || r.channelId === streamer) &&
-        (range === "all" || today - new Date(r.date).getTime() <= Number(range) * 864e5) &&
-        (r.title + r.handle).toLowerCase().includes(q.toLowerCase()),
+      (recording) =>
+        (status === "all" || recording.status === status) &&
+        (streamer === "all" || recording.channelId === streamer) &&
+        (range === "all" ||
+          today - new Date(recording.date).getTime() <= Number(range) * 864e5) &&
+        (recording.title + recording.handle).toLowerCase().includes(q.toLowerCase()),
     )
-    .sort((a, b) => {
-      const d =
-        new Date(`${a.date} ${a.time}`).getTime() - new Date(`${b.date} ${b.time}`).getTime();
-      return sort === "newest" ? -d : d;
+    .sort((left, right) => {
+      const delta =
+        new Date(`${left.date} ${left.time}`).getTime() -
+        new Date(`${right.date} ${right.time}`).getTime();
+      return sort === "newest" ? -delta : delta;
     });
-  const filtered = status !== "all" || streamer !== "all" || range !== "all";
+
+  const hasFilters = status !== "all" || streamer !== "all" || range !== "all";
   const clear = () => {
     setQ("");
     setStatus("all");
     setStreamer("all");
     setRange("all");
   };
-  const expiring = recordings.filter(
-    (r) => r.status === "Ready" && r.expiresDays !== null && r.expiresDays <= 3,
+  const expiring = recordingItems.filter(
+    (recording) =>
+      recording.status === "ready" &&
+      recording.expiresDays !== null &&
+      recording.expiresDays <= 3,
   );
+  const retryNow = () => {
+    setFixtureState("retrying");
+    void retry().finally(() => setFixtureState("success"));
+  };
+
   return (
     <AppShell>
       <PageHeader
         title="Recordings"
         subtitle="Watch and download your completed livestream recordings."
       />
-      <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />
-      {mock === "empty" ? (
+      <PrototypeStateBar
+        label="Async screen state"
+        value={screenState}
+        options={asyncFixtureOptions}
+        onChange={setFixtureState}
+      />
+
+      {screenState === "error" || screenState === "offline" ? (
+        <ErrorState
+          title={error?.title ?? "We’re having trouble loading your library"}
+          body={`${error?.body ?? "Try again."} ${error?.referenceId ? `Reference: ${error.referenceId}` : ""}`}
+          onRetry={retryNow}
+        />
+      ) : screenState === "idle" ? (
+        <StateBanner
+          tone="info"
+          title="Recording library is idle"
+          body="Load the repository-backed fixture to show recordings."
+          action={
+            <Button size="sm" variant="outline" onClick={() => setFixtureState("success")}>
+              {t("Load data")}
+            </Button>
+          }
+        />
+      ) : screenState === "empty" ? (
         <EmptyState
           title="No recordings yet"
           body="Once one of your monitored channels goes live, the recording will automatically appear here."
@@ -1369,19 +1411,16 @@ export function RecordingsPage() {
         />
       ) : (
         <>
-          {mock === "error" && (
+          {screenState === "retrying" && (
             <div className="mb-4">
-              <ErrorState
-                title="We’re having trouble loading your library"
-                body="Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe."
-                onRetry={() => {
-                  toast("Retrying…");
-                  setTimeout(() => setMock("populated"), 800);
-                }}
+              <StateBanner
+                tone="info"
+                title="Retrying recording request"
+                body="The repository is refreshing the library. Existing data stays visible while retrying."
               />
             </div>
           )}
-          {mock === "populated" && expiring.length > 0 && (
+          {screenState === "success" && expiring.length > 0 && (
             <div className="mb-4">
               <StateBanner
                 tone="warning"
@@ -1391,37 +1430,52 @@ export function RecordingsPage() {
               />
             </div>
           )}
+
           <FilterBar>
             <div className="flex-1">
               <SearchInput value={q} onChange={setQ} placeholder="Search recordings" />
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
               <Select value={streamer} onValueChange={setStreamer}>
-                <SelectTrigger className="sm:w-36" aria-label="Streamer">
+                <SelectTrigger className="sm:w-36" aria-label={t("Streamer")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All streamers")}</SelectItem>
-                  {channels.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.handle}
+                  {channelItems.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.handle}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="sm:w-32" aria-label="Status">
+              <Select
+                value={status}
+                onValueChange={(value) => setStatus(value as "all" | Recording["status"])}
+              >
+                <SelectTrigger className="sm:w-36" aria-label={t("Status")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("All statuses")}</SelectItem>
-                  <SelectItem value="Ready">{t("Ready")}</SelectItem>
-                  <SelectItem value="Processing">{t("Processing")}</SelectItem>
-                  <SelectItem value="Error">{t("Failed")}</SelectItem>
+                  {[
+                    "queued",
+                    "recording",
+                    "processing",
+                    "ready",
+                    "partial",
+                    "failed",
+                    "expired",
+                    "deleting",
+                  ].map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(recordingStatusLabels[value as Recording["status"]])}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="sm:w-36" aria-label="Date range">
+                <SelectTrigger className="sm:w-36" aria-label={t("Date range")}>
                   <Calendar className="size-4" />
                   <SelectValue />
                 </SelectTrigger>
@@ -1433,7 +1487,7 @@ export function RecordingsPage() {
               </Select>
               <Button
                 variant="outline"
-                onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
+                onClick={() => setSort((current) => (current === "newest" ? "oldest" : "newest"))}
               >
                 <ArrowUpDown />
                 {t(sort === "newest" ? "Newest first" : "Oldest first")}
@@ -1460,10 +1514,11 @@ export function RecordingsPage() {
               </Button>
             </div>
           </FilterBar>
-          {mock === "loading" ? (
+
+          {screenState === "loading" ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="animate-pulse overflow-hidden rounded-lg border">
+              {[0, 1, 2, 3, 4, 5].map((item) => (
+                <div key={item} className="animate-pulse overflow-hidden rounded-lg border">
                   <div className="aspect-video bg-muted" />
                   <div className="space-y-2 p-4">
                     <div className="h-3 w-2/3 rounded bg-muted" />
@@ -1489,7 +1544,9 @@ export function RecordingsPage() {
                 icon={Filter}
                 title="No recordings match these filters"
                 body={
-                  filtered ? "Try a different streamer, status, or date range." : "Nothing to show."
+                  hasFilters
+                    ? "Try a different streamer, status, or date range."
+                    : "Nothing to show."
                 }
                 action={
                   <Button variant="outline" onClick={clear}>
@@ -1502,20 +1559,20 @@ export function RecordingsPage() {
             <>
               <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
                 <RecordingHeader />
-                {list.map((r) => (
-                  <RecordingRow key={r.id} recording={r} />
+                {list.map((recording) => (
+                  <RecordingRow key={recording.id} recording={recording} />
                 ))}
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:hidden">
-                {list.map((r) => (
-                  <RecordingCard key={r.id} recording={r} />
+                {list.map((recording) => (
+                  <RecordingCard key={recording.id} recording={recording} />
                 ))}
               </div>
             </>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {list.map((r) => (
-                <RecordingCard key={r.id} recording={r} />
+              {list.map((recording) => (
+                <RecordingCard key={recording.id} recording={recording} />
               ))}
             </div>
           )}
@@ -1524,6 +1581,7 @@ export function RecordingsPage() {
     </AppShell>
   );
 }
+
 export function RecordingDetailPage({
   state: forced,
 }: {
