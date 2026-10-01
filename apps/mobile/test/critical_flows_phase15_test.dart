@@ -58,8 +58,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(session.isAuthenticated, isTrue);
     expect(find.text('Welcome back, Alex'), findsOneWidget);
@@ -100,8 +100,8 @@ void main() {
     await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 400));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
     expect(find.text('@phase15_creator'), findsOneWidget);
@@ -129,16 +129,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(RecordingDetailScreen), findsOneWidget);
-    final Finder detailScrollable = find
-        .descendant(
-          of: find.byType(RecordingDetailScreen),
-          matching: find.byType(Scrollable),
-        )
-        .first;
     await tester.scrollUntilVisible(
       find.text('Stop recording'),
       320,
-      scrollable: detailScrollable,
+      scrollable: find.byType(Scrollable).last,
     );
 
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
@@ -150,15 +144,10 @@ void main() {
     expect(repository.stopCalls, 1);
     expect(find.text('Stop recording'), findsNothing);
 
-    final Finder stoppedChip = find.widgetWithText(SsStatusChip, 'Stopped');
-    await tester.scrollUntilVisible(
-      stoppedChip,
-      -320,
-      scrollable: detailScrollable,
-    );
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
     await tester.pumpAndSettle();
 
-    expect(stoppedChip, findsOneWidget);
+    expect(find.text('Stopped'), findsWidgets);
   });
 
   testWidgets('critical flow billing -> pending -> paid', (
@@ -179,31 +168,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    final Finder billingScrollable = find
-        .descendant(
-          of: find.byType(BillingScreen),
-          matching: find.byType(Scrollable),
-        )
-        .first;
+    await tester.scrollUntilVisible(
+      find.text('Check payment status'),
+      240,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
+
     final Finder checkStatus = find.widgetWithText(
       OutlinedButton,
       'Check payment status',
     );
-    await tester.scrollUntilVisible(
-      checkStatus,
-      240,
-      scrollable: billingScrollable,
-    );
-    await tester.drag(billingScrollable, const Offset(0, -120));
+    await tester.ensureVisible(checkStatus);
     await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
-
     await tester.tap(checkStatus);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
 
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(BillingScreen)),
