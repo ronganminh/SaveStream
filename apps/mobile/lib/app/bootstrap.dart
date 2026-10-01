@@ -10,6 +10,7 @@ import '../features/billing/data/repositories/api_billing_repository.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
 import '../features/credits/data/repositories/api_credits_repository.dart';
 import '../features/recordings/data/repositories/api_recording_repository.dart';
+import '../features/settings/data/repositories/api_profile_repository.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
 import 'session/app_session_controller.dart';
@@ -56,6 +57,9 @@ Future<void> bootstrap() async {
         apiClient: authRuntime.authenticatedApiClient,
       ),
       billingRepository: ApiBillingRepository(
+        apiClient: authRuntime.authenticatedApiClient,
+      ),
+      profileRepository: ApiProfileRepository(
         apiClient: authRuntime.authenticatedApiClient,
       ),
     ),

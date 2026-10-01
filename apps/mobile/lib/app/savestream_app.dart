@@ -18,6 +18,8 @@ import '../features/credits/domain/repositories/credits_repository.dart';
 import '../features/credits/presentation/controllers/credits_providers.dart';
 import '../features/recordings/domain/repositories/recording_repository.dart';
 import '../features/recordings/presentation/controllers/recording_providers.dart';
+import '../features/settings/domain/repositories/profile_repository.dart';
+import '../features/settings/presentation/controllers/settings_providers.dart';
 import '../l10n/l10n.dart';
 import 'app_settings_controller.dart';
 import 'lifecycle/app_lifecycle_controller.dart';
@@ -36,6 +38,7 @@ class SaveStreamApp extends StatefulWidget {
     this.recordingRepository,
     this.creditsRepository,
     this.billingRepository,
+    this.profileRepository,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     super.key,
@@ -50,6 +53,7 @@ class SaveStreamApp extends StatefulWidget {
   final RecordingRepository? recordingRepository;
   final CreditsRepository? creditsRepository;
   final BillingRepository? billingRepository;
+  final ProfileRepository? profileRepository;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
 
@@ -112,6 +116,10 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
         if (widget.billingRepository != null)
           billingRepositoryProvider.overrideWithValue(
             widget.billingRepository!,
+          ),
+        if (widget.profileRepository != null)
+          profileRepositoryProvider.overrideWithValue(
+            widget.profileRepository!,
           ),
       ],
       child: AnimatedBuilder(

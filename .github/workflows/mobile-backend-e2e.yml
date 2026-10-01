@@ -1,0 +1,69 @@
+name: Mobile Backend E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "apps/mobile/**"
+      - "backend/**"
+      - ".github/workflows/mobile-backend-e2e.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-backend-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+
+      - name: Resolve mobile dependencies
+        working-directory: apps/mobile
+        run: flutter pub get
+
+      - name: Validate backend E2E Compose
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml config --quiet
+
+      - name: Start backend E2E stack
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build \
+            postgres redis minio minio-init mail-debug fake-stream api worker outbox-dispatcher
+
+      - name: Seed pricing and billing fixtures
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm e2e-runner \
+            sh -c 'until curl -fsS http://api:8000/health/ready; do sleep 1; done; python -m app.e2e.seed'
+
+      - name: Run Flutter against the real backend
+        working-directory: apps/mobile
+        env:
+          MOBILE_BACKEND_E2E: "1"
+          MOBILE_BACKEND_API_URL: http://127.0.0.1:8000
+          MOBILE_BACKEND_MAILHOG_URL: http://127.0.0.1:8025
+          MOBILE_BACKEND_PAYMENT_SECRET: savestream-fake-payment-secret
+        run: flutter test test/backend_connectivity_e2e_test.dart --reporter expanded
+
+      - name: Dump backend logs on failure
+        if: failure()
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml ps
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml logs \
+            api worker outbox-dispatcher fake-stream mail-debug minio postgres redis
+
+      - name: Tear down backend E2E stack
+        if: always()
+        working-directory: backend
+        run: docker compose -f docker-compose.yml -f docker-compose.e2e.yml down -v --remove-orphans
