@@ -324,6 +324,29 @@ Performance audit results:
 
 Phase 16 tests live in `test/accessibility_responsive_phase16_test.dart`, while the Recording realtime test also locks the reduced REST reconciliation frequency.
 
+## Backend connectivity hardening
+
+Production bootstrap now replaces the remaining Profile mock with `ApiProfileRepository` against authenticated `GET /v1/me`, so Auth, Profile, Watches, Recordings, Credits, and Billing all use the real backend repositories in a normal app launch.
+
+Network policy is environment-scoped:
+
+- Android release builds declare `INTERNET` permission in the main manifest.
+- Android debug/profile builds allow cleartext traffic for local development only; release does not opt into cleartext HTTP.
+- iOS allows local-network development without globally disabling App Transport Security.
+- Local Android emulator builds default to `http://10.0.2.2:8000`.
+- iOS simulator local development should pass `--dart-define=API_BASE_URL=http://localhost:8000`.
+- Staging and production require an explicit HTTPS `API_BASE_URL`.
+
+Example staging run:
+
+```bash
+flutter run \
+  --dart-define=APP_ENV=staging \
+  --dart-define=API_BASE_URL=https://api.example.com
+```
+
+The `Mobile Backend E2E` workflow boots the repository Docker E2E stack and runs Flutter repositories directly against the real API. Its smoke path covers register, verification, mobile login, `/v1/me`, Watch creation, billing checkout pending state, signed fake-payment confirmation, credit grant, Recording completion, artifact discovery/download URL, and cleanup. This test runs as a normal Flutter test on Linux and does not require an emulator.
+
 ## Automated test coverage
 
 Phase 16 keeps the Phase 15 cumulative test pyramid and adds accessibility, constrained-layout, text-scaling, and realtime-frequency regression coverage.
