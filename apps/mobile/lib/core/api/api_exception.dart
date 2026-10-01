@@ -55,7 +55,8 @@ final class ApiException implements Exception {
     return switch (kind) {
       ApiExceptionKind.network => 'Network request failed.',
       ApiExceptionKind.timeout => 'Network request timed out.',
-      ApiExceptionKind.malformedResponse => 'The server response was malformed.',
+      ApiExceptionKind.malformedResponse =>
+        'The server response was malformed.',
       _ => 'The API request failed.',
     };
   }
