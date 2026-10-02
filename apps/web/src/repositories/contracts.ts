@@ -6,6 +6,7 @@ import type {
   AdminRetryRecordingResponse,
   AdminUserListResponse,
   AdminUserResponse,
+  ArtifactResponse,
   AuditLogListResponse,
   CheckoutResponse,
   CreateRecordingRequest,
@@ -14,6 +15,7 @@ import type {
   CreditPackageListResponse,
   CreditReservationListResponse,
   CreditTransactionListResponse,
+  DownloadUrlResponse,
   LiveStatusResponse,
   OperationalSnapshotResponse,
   PaymentOrderListResponse,
@@ -153,6 +155,8 @@ export interface RecordingRepository {
     pagination: { next_cursor: string | null; has_more: boolean };
   }>;
   getRecording(id: string): Promise<RecordingResponse>;
+  listArtifacts(id: string): Promise<ArtifactResponse[]>;
+  createArtifactDownloadUrl(artifactId: string): Promise<DownloadUrlResponse>;
   getLiveStatus(source: Source): Promise<LiveStatusResponse>;
   create(input: CreateRecordingRequest, idempotencyKey: string): Promise<RecordingResponse>;
   stop(id: string): Promise<RecordingResponse>;
