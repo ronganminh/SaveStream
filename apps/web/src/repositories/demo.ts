@@ -420,7 +420,10 @@ export const demoRepositories: SaveStreamRepositories = {
       return { items: [], pagination: { next_cursor: null, has_more: false } };
     },
     async getPaymentOrder(id) {
-      return { ...demoPaymentOrder("demo-100"), id };
+      const order = { ...demoPaymentOrder("demo-100"), id };
+      if (id === "demo-paid") order.status = "paid";
+      if (id === "demo-cancelled") order.status = "cancelled";
+      return order;
     },
     async createCheckout(id) {
       return {
