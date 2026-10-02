@@ -5,9 +5,9 @@ import uuid
 from datetime import timedelta
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from app.api.dependencies import get_current_principal
-from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.recordings.service import utcnow
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import AuthSession, Base, User
@@ -168,16 +168,11 @@ def test_phase12_idempotency_cursor_pagination_and_sse_resume(tmp_path) -> None:
                     primary.actual_cost = 1
                     primary.ended_at = utcnow()
 
-                    first_event = await session.get(
-                        RecordingEvent,
-                        (
-                            await session.execute(
-                                __import__("sqlalchemy").select(RecordingEvent.id)
-                                .where(RecordingEvent.recording_id == primary.id)
-                                .order_by(RecordingEvent.sequence)
-                                .limit(1)
-                            )
-                        ).scalar_one(),
+                    first_event = await session.scalar(
+                        select(RecordingEvent)
+                        .where(RecordingEvent.recording_id == primary.id)
+                        .order_by(RecordingEvent.sequence)
+                        .limit(1)
                     )
                     assert first_event is not None
                     started = RecordingEvent(
