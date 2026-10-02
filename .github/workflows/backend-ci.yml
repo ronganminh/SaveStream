@@ -102,6 +102,11 @@ jobs:
           SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
         run: |
           python -m app.release.readiness             --api-origin https://api.example.test             --frontend-origin https://app.example.test             --payment-webhook-url https://api.example.test/v1/webhooks/payments/lemonsqueezy
+          SAVESTREAM_PAYMENT_PROVIDER=disabled python -m app.release.readiness \
+            --api-origin https://api.example.test \
+            --frontend-origin https://app.example.test \
+            --payment-webhook-url https://api.example.test/v1/webhooks/payments/lemonsqueezy \
+            --allow-disabled-payments
       - name: Operational script syntax
         run: |
           sh -n scripts/backup.sh
@@ -127,3 +132,5 @@ jobs:
         run: |
           cd ..
           docker compose -f deploy/vps/docker-compose.production.yml config --quiet
+          SAVESTREAM_PAYMENT_PROVIDER=disabled SAVESTREAM_LEMON_SQUEEZY_STORE_ID= SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID= \
+            docker compose -f deploy/vps/docker-compose.production.yml config --quiet

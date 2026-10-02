@@ -25,6 +25,11 @@ def main() -> int:
         default="https://savestream.online",
     )
     parser.add_argument("--timeout", type=float, default=15.0)
+    parser.add_argument(
+        "--payments-disabled",
+        action="store_true",
+        help="Expect the payment webhook to fail closed with 503 (no live provider yet).",
+    )
     args = parser.parse_args()
 
     api = args.api_origin.rstrip("/")
@@ -107,7 +112,13 @@ def main() -> int:
                 "X-Signature": "invalid-release-smoke-signature",
             },
         )
-        if webhook.status_code != 400:
+        if args.payments_disabled:
+            if webhook.status_code != 503:
+                return fail(
+                    "payment webhook must fail closed with 503 while payments are "
+                    f"disabled, got {webhook.status_code}"
+                )
+        elif webhook.status_code != 400:
             return fail(
                 "invalid Lemon Squeezy signature must be rejected with 400, got "
                 f"{webhook.status_code}"

@@ -251,28 +251,30 @@ class AppSettings:
                 )
             if payment_provider == "fake":
                 raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
-            if not payment_provider_base_url:
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must be configured in production"
-                )
-            if not payment_provider_base_url.startswith("https://"):
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must use https in production"
-                )
-            if not payment_provider_api_key:
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
-                )
-            if payment_webhook_secret == "savestream-fake-payment-secret":
-                raise ValueError(
-                    "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
-                )
-            if payment_provider == "lemonsqueezy" and (
-                not lemon_squeezy_store_id or not lemon_squeezy_variant_id
-            ):
-                raise ValueError(
-                    "Lemon Squeezy store and variant IDs must be configured in production"
-                )
+            # "disabled" launches without a payment provider; checkout fails closed.
+            if payment_provider != "disabled":
+                if not payment_provider_base_url:
+                    raise ValueError(
+                        "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must be configured in production"
+                    )
+                if not payment_provider_base_url.startswith("https://"):
+                    raise ValueError(
+                        "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must use https in production"
+                    )
+                if not payment_provider_api_key or payment_provider_api_key == "payments-disabled":
+                    raise ValueError(
+                        "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
+                    )
+                if payment_webhook_secret == "savestream-fake-payment-secret":
+                    raise ValueError(
+                        "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                    )
+                if payment_provider == "lemonsqueezy" and (
+                    not lemon_squeezy_store_id or not lemon_squeezy_variant_id
+                ):
+                    raise ValueError(
+                        "Lemon Squeezy store and variant IDs must be configured in production"
+                    )
             if (
                 smtp_host in {"localhost", "mail-debug"}
                 or not smtp_username

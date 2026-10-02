@@ -15,14 +15,27 @@ Do not put secret values in Git, issue comments, CI logs, or chat.
 A production release must not proceed until all of these are true:
 
 - `main` CI is green.
-- Lemon Squeezy **Live Mode** is approved and a live one-time product/variant exists.
-- Live API key, live Store ID, live Variant ID, and live webhook secret are installed.
+- Lemon Squeezy **Live Mode** is approved and a live one-time product/variant exists,
+  **or** the release runs with payments disabled (see "Launching before Lemon Squeezy Live").
+- When payments are enabled: live API key, live Store ID, live Variant ID, and live webhook secret are installed.
 - Brevo production SMTP credentials and sender are verified.
 - Production R2/S3 bucket and credentials are installed.
 - DNS for `savestream.online` and `api.savestream.online` resolves to the intended production edge.
 - TLS certificates for the API hostname are valid.
 - A database backup exists and the restore drill is current.
 - Operations alert delivery and metrics scraping are configured.
+
+### Launching before Lemon Squeezy Live
+
+Set `SAVESTREAM_PAYMENT_PROVIDER=disabled` (the secrets script asks for it) to ship auth, watches and recording while Live Mode is pending:
+
+- the API starts without Live payment credentials; the payment secret files hold a `payments-disabled` placeholder;
+- credit packages and payment-order history stay readable;
+- checkout, refunds and payment webhooks fail closed with `503`, so no credits can be granted;
+- the web build keeps `VITE_BILLING_CHECKOUT_ENABLED=false`;
+- the release validator and smoke need `--allow-disabled-payments` / `--payments-disabled`.
+
+To enable payments later, re-run the secrets script, answer `lemonsqueezy`, enter the Live credentials (the placeholders are replaced, everything else is kept), restart the stack, then follow section 9.
 
 OAuth is intentionally **disabled** for this release. The current backend does not implement Google or Apple OAuth callbacks, so production web must not expose those entrypoints.
 
@@ -52,7 +65,9 @@ From the repository root on the VPS:
 sh deploy/vps/init-production-secrets.sh
 ```
 
-The script writes secret files under the production secret directory with mode 600 and writes non-secret deployment values to `deploy/vps/production.env`. It never prints secret values.
+The script writes secret files under the production secret directory (default `~/savestream-secrets/production`) with mode 600 and writes non-secret deployment values to `deploy/vps/production.env`. It never prints secret values.
+
+It is safe to re-run: existing secret files are kept (PostgreSQL/Redis passwords, JWT secret and metrics token are never rotated), credentials are only asked for when missing, previous answers are offered as defaults, and an existing `production.env` is backed up first. Connection URLs are rebuilt from the kept passwords.
 
 Review the generated non-secret file:
 
@@ -66,7 +81,8 @@ Confirm:
 - CORS contains only intended HTTPS web origins;
 - trusted proxy CIDRs match the actual reverse-proxy network;
 - R2 endpoint and bucket are production resources;
-- Lemon Squeezy Store/Variant IDs are **Live**, not Test Mode;
+- `SAVESTREAM_PAYMENT_PROVIDER` is `disabled` or `lemonsqueezy` as intended;
+- Lemon Squeezy Store/Variant IDs (when enabled) are **Live**, not Test Mode;
 - operations alert email is correct.
 
 ## 4. Validate configuration before starting services
@@ -95,6 +111,8 @@ docker compose \
     --frontend-origin https://savestream.online \
     --payment-webhook-url https://api.savestream.online/v1/webhooks/payments/lemonsqueezy
 ```
+
+With payments disabled, append `--allow-disabled-payments` to the validator command.
 
 The validator checks production mode, JSON logging, frontend/CORS alignment, HTTPS/security headers, trusted proxy configuration, TLS-backed S3 storage, non-default storage credentials, TikTok recording backend, Lemon Squeezy production adapter, SMTP and operations alerts. It does not print secrets.
 
@@ -141,6 +159,8 @@ python backend/scripts/release_smoke.py \
   --api-origin https://api.savestream.online \
   --frontend-origin https://savestream.online
 ```
+
+With payments disabled, add `--payments-disabled`; the webhook check then expects `503` instead of `400`.
 
 This verifies:
 
