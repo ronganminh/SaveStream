@@ -18,7 +18,6 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OverviewRouteImport } from './routes/overview'
-import { Route as OverviewEmptyRouteImport } from './routes/overview-empty'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecordingsRouteImport } from './routes/recordings'
@@ -97,11 +96,6 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const OverviewRoute = OverviewRouteImport.update({
   id: '/overview',
   path: '/overview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OverviewEmptyRoute = OverviewEmptyRouteImport.update({
-  id: '/overview-empty',
-  path: '/overview-empty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -285,7 +279,6 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
-  '/overview-empty': typeof OverviewEmptyRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
@@ -329,7 +322,6 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
-  '/overview-empty': typeof OverviewEmptyRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -372,7 +364,6 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
-  '/overview-empty': typeof OverviewEmptyRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
@@ -420,7 +411,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/overview'
-    | '/overview-empty'
     | '/pricing'
     | '/privacy'
     | '/recordings'
@@ -464,7 +454,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/overview'
-    | '/overview-empty'
     | '/pricing'
     | '/privacy'
     | '/reset-password'
@@ -506,7 +495,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/onboarding'
     | '/overview'
-    | '/overview-empty'
     | '/pricing'
     | '/privacy'
     | '/recordings'
@@ -553,7 +541,6 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   OverviewRoute: typeof OverviewRoute
-  OverviewEmptyRoute: typeof OverviewEmptyRoute
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RecordingsRoute: typeof RecordingsRouteWithChildren
@@ -635,13 +622,6 @@ declare module '@tanstack/react-router' {
       path: '/overview'
       fullPath: '/overview'
       preLoaderRoute: typeof OverviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/overview-empty': {
-      id: '/overview-empty'
-      path: '/overview-empty'
-      fullPath: '/overview-empty'
-      preLoaderRoute: typeof OverviewEmptyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -990,7 +970,6 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   OverviewRoute: OverviewRoute,
-  OverviewEmptyRoute: OverviewEmptyRoute,
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RecordingsRoute: RecordingsRouteWithChildren,
