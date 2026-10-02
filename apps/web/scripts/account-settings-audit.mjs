@@ -64,7 +64,7 @@ for (const text of [
   'new Blob([JSON.stringify(payload, null, 2)]',
   'anchor.download = "savestream-account-export.json"',
   "readOnly",
-  "Email changes and profile images are not currently supported by the backend.",
+  "To change your email address, contact support@savestream.online.",
   "Account deletion requested",
 ]) mustIn("ProductionAccountSettings", account, text);
 for (const text of [
@@ -81,7 +81,7 @@ for (const text of [
   "useRequestPasswordResetMutation()",
   "signOutEverywhere",
   "Email password reset link",
-  "Not supported by the current SaveStream backend.",
+  "Coming soon.",
 ]) mustIn("ProductionSecuritySettings", security, text);
 for (const text of [
   "<PasswordField",

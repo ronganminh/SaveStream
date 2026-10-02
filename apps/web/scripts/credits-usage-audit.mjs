@@ -62,9 +62,9 @@ for (const text of [
   "usePricingData()",
   "useCreditPackagesData()",
   "Available credits",
-  "Posted credits",
-  "Reserved credits",
-  "Active reservations",
+  "Total balance",
+  "On hold",
+  "Recordings in progress",
 ]) {
   mustIn("CreditsUsagePage", creditsUsage, text);
 }

@@ -133,7 +133,7 @@ import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/mocks/demo-plan-catalog";
-import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
+import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import type {
@@ -644,7 +644,7 @@ export function LandingPage() {
                 "Browser playback",
                 "Fast downloads",
                 "Credit usage history",
-                "Kept until you delete them",
+                "Stored for up to 30 days",
               ].map((x, i) => (
                 <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
                   <Check className="size-4 text-success" />
@@ -749,7 +749,7 @@ export function LandingPage() {
                   ],
                   [
                     "How long are recordings kept?",
-                    "Recordings stay in your account until you delete them. You can watch them in the browser or download them at any time.",
+                    "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial. Watch them in the browser or download any recording you want to keep longer.",
                   ],
                   [
                     "What happens if I run out of credits?",
@@ -1315,13 +1315,13 @@ function ProductionOverviewPage() {
         <StatCard
           label="Monitored channels"
           value={String(monitoredChannels)}
-          detail={`${overviewChannels.length} channels in workspace`}
+          detail={`${pluralize(overviewChannels.length, "channel")} in workspace`}
           icon={Radio}
         />
         <StatCard
           label="Active recordings"
           value={String(activeRecordings)}
-          detail={`${overviewRecordings.length} recordings in library`}
+          detail={`${pluralize(overviewRecordings.length, "recording")} in library`}
           icon={FileVideo}
         />
       </div>
@@ -1723,7 +1723,7 @@ export function RecordingsPage() {
               <StateBanner
                 tone="warning"
                 icon={Clock3}
-                title={`${expiring.length} recordings expire soon`}
+                title={`${pluralize(expiring.length, "recording")} ${expiring.length === 1 ? "expires" : "expire"} soon`}
                 body="Recordings are removed automatically when your plan’s retention period ends. Download any you want to keep."
               />
             </div>
@@ -1901,7 +1901,7 @@ function RecordingRealtimeNotice({
           tone="warning"
           icon={Wifi}
           title="Realtime updates are reconnecting"
-          body="Recording status is still refreshing from the backend every few seconds while the event stream reconnects."
+          body="Live updates are reconnecting. Recording status still refreshes every few seconds."
         />
       </div>
     );
@@ -1985,7 +1985,7 @@ export function RecordingDetailPage({
           }
           body={
             forced
-              ? "The backend does not currently have a recording in this state."
+              ? "There is no recording in this state right now."
               : "It may have been deleted or removed after its retention period ended."
           }
           action={
@@ -2196,7 +2196,11 @@ export function RecordingDetailPage({
                 ? "This recording expires tomorrow"
                 : `This recording expires in ${rec.expires}`
             }
-            body={`It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`}
+            body={
+              isDemoMode
+                ? `It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`
+                : "It will be removed from cloud storage when its storage period ends. Download it to keep a copy."
+            }
             action={
               <Button size="sm" variant="outline" onClick={download}>
                 Download
@@ -2205,7 +2209,28 @@ export function RecordingDetailPage({
           />
         </div>
       )}
-      <VideoPlayerShell state={state} />
+      <VideoPlayerShell
+        state={state}
+        {...(isDemoMode
+          ? {}
+          : {
+              elapsed: rec.duration,
+              failedDetail: rec.partialDuration
+                ? `${rec.partialDuration} was saved before the recording stopped.`
+                : (rec.error ?? "No video was saved for this recording."),
+              ...(artifact
+                ? {
+                    loadSource: () =>
+                      downloadRecording
+                        .mutateAsync(rec.id)
+                        .then(({ download: signed }) => signed.url)
+                        .catch((error: unknown) => {
+                          throw new Error(artifactActionErrorMessage(error));
+                        }),
+                  }
+                : {}),
+            })}
+      />
       {state === "active" && (
         <div className="mt-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success-subtle p-4 text-sm">
           <Cloud className="size-5 shrink-0 text-success" />
@@ -2228,7 +2253,7 @@ export function RecordingDetailPage({
             body={
               rec.backendStatus === "stopped"
                 ? "The recording was stopped before it completed."
-                : rec.error || "The backend reported that this recording failed."
+                : rec.error || "Something went wrong while recording this livestream."
             }
             action={
               isDemoMode ? (
@@ -2342,7 +2367,7 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
     <div className="mt-5 rounded-lg border p-5">
       <h2 className="font-medium">Finalizing your recording</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        The backend is updating this page in realtime as the recording moves through its lifecycle.
+        This page updates automatically as your recording is processed.
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-4">
         {steps.map(([Icon, label], index) => {
@@ -2412,19 +2437,28 @@ function pricingRuleDetail(rule: PricingResponse["rules"][number]) {
         : `${unitSeconds} sec`;
     return `${creditsPerUnit} credit${creditsPerUnit === 1 ? "" : "s"} per ${unit}`;
   }
-  return "The active backend pricing policy defines this rule.";
+  return "See the pricing page for details.";
 }
 
 function creditTransactionTitle(transaction: CreditTransactionResponse) {
   if (transaction.type === "charge" && transaction.reference_type === "recording") {
-    return "Recording charge";
+    return "Recording";
   }
-  if (transaction.type === "grant") return "Credits added";
-  if (transaction.type === "refund") return "Credit refund";
+  if (transaction.type === "grant" && transaction.reference_type === "signup_bonus") {
+    return "Free trial credits";
+  }
+  if (transaction.type === "grant") return "Credits purchased";
+  if (transaction.type === "refund") return "Refund";
   if (transaction.type === "adjustment") return "Credit adjustment";
-  if (transaction.type === "release") return "Reservation released";
-  return "Credit transaction";
+  if (transaction.type === "release") return "Unused credits returned";
+  return "Credit change";
 }
+
+const reservationStatusLabel: Record<CreditReservationResponse["status"], string> = {
+  active: "Recording",
+  settled: "Charged",
+  released: "Returned",
+};
 
 function CreditTransactionRow({ transaction }: { transaction: CreditTransactionResponse }) {
   const amount = transaction.amount > 0 ? `+${transaction.amount}` : String(transaction.amount);
@@ -2434,11 +2468,10 @@ function CreditTransactionRow({ transaction }: { transaction: CreditTransactionR
         <p className="font-medium">{creditTransactionTitle(transaction)}</p>
         <p className="mt-1 text-xs text-muted-foreground">
           {new Date(transaction.created_at).toLocaleString()}
-          {transaction.reference_id ? ` · ${transaction.reference_id}` : ""}
         </p>
       </div>
-      <span className="font-mono">{transaction.type}</span>
-      <span className="font-mono">Balance {transaction.balance_after}</span>
+      <span />
+      <span className="text-muted-foreground">Balance {transaction.balance_after}</span>
       <span className="font-mono font-semibold">{amount}</span>
     </div>
   );
@@ -2452,15 +2485,23 @@ function CreditReservationRow({ reservation }: { reservation: CreditReservationR
   return (
     <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-[1.5fr_repeat(4,.7fr)] sm:items-center">
       <div>
-        <p className="font-medium">Recording {reservation.recording_id}</p>
+        <Link
+          to="/recordings/$id"
+          params={{ id: reservation.recording_id }}
+          className="font-medium hover:underline"
+        >
+          Recording
+        </Link>
         <p className="mt-1 text-xs text-muted-foreground">
           {new Date(reservation.created_at).toLocaleString()}
         </p>
       </div>
-      <span className="font-mono">{reservation.status}</span>
-      <span className="font-mono">Reserved {reservation.reserved}</span>
-      <span className="font-mono">Settled {reservation.settled}</span>
-      <span className="font-mono">Open {outstanding}</span>
+      <span>{reservationStatusLabel[reservation.status]}</span>
+      <span className="text-muted-foreground">Held {reservation.reserved}</span>
+      <span className="text-muted-foreground">Used {reservation.settled}</span>
+      <span className="text-muted-foreground">
+        Returned {reservation.status === "active" ? 0 : reservation.released || outstanding}
+      </span>
     </div>
   );
 }
@@ -2528,8 +2569,8 @@ function CreditsUsagePage() {
         <StateBanner
           tone="info"
           icon={Gauge}
-          title="SaveStream uses credits instead of monthly Free/Pro quotas"
-          body="Available credits equal posted credits minus active reservations. Recording charges are calculated and settled by the backend pricing snapshot; this page does not estimate final charges."
+          title="How credits work"
+          body="Credits are used only while a livestream is being recorded, rounded up to the next minute. When a recording starts, SaveStream holds enough credits for it; after it ends you are charged only for the time recorded and the rest is returned."
         />
       </div>
 
@@ -2537,25 +2578,25 @@ function CreditsUsagePage() {
         <StatCard
           label="Available credits"
           value={String(balance.available)}
-          detail="Usable for new recordings"
+          detail="Ready to use for recordings"
           icon={Zap}
         />
         <StatCard
-          label="Posted credits"
+          label="Total balance"
           value={String(balance.posted)}
-          detail="Ledger balance"
+          detail="Including credits on hold"
           icon={CreditCard}
         />
         <StatCard
-          label="Reserved credits"
+          label="On hold"
           value={String(balance.reserved)}
-          detail="Held for active recordings"
+          detail="For recordings in progress"
           icon={Clock3}
         />
         <StatCard
-          label="Active reservations"
+          label="Recordings in progress"
           value={String(activeReservations.length)}
-          detail="From the latest reservation page"
+          detail="Using credits right now"
           icon={Radio}
         />
       </div>
@@ -2565,22 +2606,15 @@ function CreditsUsagePage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-medium">{t("Current pricing")}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Public rules from the active backend pricing version.
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">What recordings cost.</p>
             </div>
-            {pricing && (
-              <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
-                {pricing.version}
-              </span>
-            )}
           </div>
           {pricingState.kind === "error" ? (
             <div className="mt-5">
               <StateBanner
                 tone="warning"
                 title="Pricing unavailable"
-                body="The backend does not currently have a readable active pricing rule."
+                body="Pricing could not be loaded. Please try again."
                 action={
                   <Button size="sm" variant="outline" onClick={() => void pricingQuery.refetch()}>
                     Retry
@@ -2601,7 +2635,7 @@ function CreditsUsagePage() {
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  No public pricing rules are exposed by the current backend version.
+                  Pricing details are not available right now.
                 </p>
               )}
             </div>
@@ -2613,7 +2647,7 @@ function CreditsUsagePage() {
         <section className="rounded-lg border bg-surface p-5">
           <h2 className="font-medium">Credit packages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Packages currently enabled by the billing backend.
+            Available packages. Credits never expire.
           </p>
           {packagesState.kind === "error" ? (
             <div className="mt-5">
@@ -2638,7 +2672,7 @@ function CreditsUsagePage() {
                   <div>
                     <p className="text-sm font-medium">{item.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {item.credits} credits
+                      {pluralize(item.credits, "credit")}
                     </p>
                   </div>
                   <p className="font-mono font-semibold">
@@ -2646,9 +2680,9 @@ function CreditsUsagePage() {
                   </p>
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground">
-                Checkout is handled separately by the billing flow.
-              </p>
+              <Link to="/billing" className="text-xs font-medium text-primary hover:underline">
+                Buy credits in Billing
+              </Link>
             </div>
           ) : packagesState.kind === "empty" ? (
             <p className="mt-5 text-sm text-muted-foreground">
@@ -2662,18 +2696,17 @@ function CreditsUsagePage() {
 
       <section className="mt-8 rounded-lg border bg-surface">
         <div className="border-b p-5">
-          <h2 className="font-medium">Active and recent reservations</h2>
+          <h2 className="font-medium">Credits held for recordings</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Reservations hold credits while recordings are in progress. Unused reserved credit is
-            released by the backend.
+            Credits held while a recording runs, what it used, and what was returned.
           </p>
         </div>
         {reservationsState.kind === "error" ? (
           <div className="p-5">
             <StateBanner
               tone="warning"
-              title="Reservations unavailable"
-              body="SaveStream could not load recent credit reservations."
+              title="Could not load credit holds"
+              body="Please try again in a moment."
               action={
                 <Button size="sm" variant="outline" onClick={() => void reservationsQuery.refetch()}>
                   Retry
@@ -2686,23 +2719,23 @@ function CreditsUsagePage() {
             <CreditReservationRow key={reservation.id} reservation={reservation} />
           ))
         ) : (
-          <p className="p-5 text-sm text-muted-foreground">No credit reservations yet.</p>
+          <p className="p-5 text-sm text-muted-foreground">No recordings have used credits yet.</p>
         )}
       </section>
 
       <section className="mt-8 rounded-lg border bg-surface">
         <div className="border-b p-5">
-          <h2 className="font-medium">Recent credit transactions</h2>
+          <h2 className="font-medium">Credit history</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Ledger entries returned by the backend. Corrections appear as compensating entries.
+            Credits added to and used from your account.
           </p>
         </div>
         {transactionsState.kind === "error" ? (
           <div className="p-5">
             <StateBanner
               tone="warning"
-              title="Transactions unavailable"
-              body="SaveStream could not load recent credit transactions."
+              title="Could not load credit history"
+              body="Please try again in a moment."
               action={
                 <Button size="sm" variant="outline" onClick={() => void transactionsQuery.refetch()}>
                   Retry
@@ -2715,7 +2748,7 @@ function CreditsUsagePage() {
             <CreditTransactionRow key={transaction.id} transaction={transaction} />
           ))
         ) : (
-          <p className="p-5 text-sm text-muted-foreground">No credit transactions yet.</p>
+          <p className="p-5 text-sm text-muted-foreground">No credit activity yet.</p>
         )}
       </section>
     </AppShell>
@@ -2982,11 +3015,9 @@ function PaymentOrderRow({
   return (
     <div className="grid gap-3 border-t px-5 py-4 text-sm sm:grid-cols-[1.3fr_.7fr_.7fr_auto] sm:items-center">
       <div>
-        <p className="font-medium">{order.credits} credits</p>
-        <p className="mt-1 font-mono text-xs text-muted-foreground">{order.id}</p>
+        <p className="font-medium">{pluralize(order.credits, "credit")}</p>
         <p className="mt-1 text-xs text-muted-foreground">
           {new Date(order.created_at).toLocaleString()}
-          {order.provider ? ` · ${order.provider}` : ""}
         </p>
       </div>
       <span className="font-mono">{formatMoneyValue(order.amount, language)}</span>
@@ -3054,7 +3085,7 @@ function CreditBillingPage() {
         <PageHeader title="Billing" />
         <ErrorState
           title="Could not load billing balance"
-          body="SaveStream could not load the current credit account."
+          body="SaveStream could not load your credit balance. Please try again."
           onRetry={() => balanceQuery.refetch()}
         />
       </AppShell>
@@ -3069,7 +3100,7 @@ function CreditBillingPage() {
     <AppShell>
       <PageHeader
         title="Billing"
-        subtitle="Buy SaveStream credits through secure hosted checkout."
+        subtitle="Buy credits for cloud recording. One-time purchase, no subscription."
         action={
           <Button variant="outline" asChild>
             <Link to="/usage">View credits & usage</Link>
@@ -3082,8 +3113,8 @@ function CreditBillingPage() {
           <StateBanner
             tone="info"
             icon={ShieldCheck}
-            title="Checkout is disabled for this deployment"
-            body="Hosted checkout is enabled only on explicitly configured environments. Staging uses Lemon Squeezy Test Mode; production stays disabled until Live Mode is approved and configured."
+            title="Credit purchases are coming soon"
+            body="Online checkout is not open yet. Your free trial credits work as usual, and you can contact support@savestream.online with any questions."
           />
         </div>
       )}
@@ -3092,19 +3123,19 @@ function CreditBillingPage() {
         <StatCard
           label="Available credits"
           value={String(balance.available)}
-          detail="Available for new recordings"
+          detail="Ready to use for recordings"
           icon={Zap}
         />
         <StatCard
-          label="Posted balance"
+          label="Total balance"
           value={String(balance.posted)}
-          detail="Backend ledger balance"
+          detail="Including credits on hold"
           icon={CreditCard}
         />
         <StatCard
-          label="Reserved"
+          label="On hold"
           value={String(balance.reserved)}
-          detail="Held by active recordings"
+          detail="For recordings in progress"
           icon={Clock3}
         />
       </div>
@@ -3113,7 +3144,7 @@ function CreditBillingPage() {
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Credit packages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose a package, then complete payment on the hosted payment-provider checkout.
+            Choose a package and pay securely with Lemon Squeezy. Credits never expire.
           </p>
         </div>
 
@@ -3138,7 +3169,9 @@ function CreditBillingPage() {
                   <p className="mt-3 font-mono text-3xl font-semibold">
                     {formatCreditMoney(item, language)}
                   </p>
-                  <p className="mt-2 text-sm text-muted-foreground">{item.credits} credits</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {pluralize(item.credits, "credit")}
+                  </p>
                   <Button
                     className="mt-6 w-full"
                     disabled={!billingCheckoutEnabled || checkout.isPending}
@@ -3151,7 +3184,7 @@ function CreditBillingPage() {
                       ? "Opening checkout…"
                       : billingCheckoutEnabled
                         ? "Buy credits"
-                        : "Checkout disabled"}
+                        : "Coming soon"}
                   </Button>
                 </div>
               );
@@ -3160,8 +3193,8 @@ function CreditBillingPage() {
         ) : packagesState.kind === "empty" ? (
           <EmptyState
             icon={CreditCard}
-            title="No active packages"
-            body="The billing backend does not currently expose a package for purchase."
+            title="No packages available"
+            body="Credit packages are not available right now. Please check back soon."
           />
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
@@ -3174,9 +3207,9 @@ function CreditBillingPage() {
       <section className="mt-8 overflow-hidden rounded-lg border bg-surface">
         <div className="flex items-start justify-between gap-4 p-5">
           <div>
-            <h2 className="font-medium">Recent payment orders</h2>
+            <h2 className="font-medium">Purchase history</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Payment status comes from the SaveStream backend, not from the browser redirect.
+              Your credit purchases and their payment status.
             </p>
           </div>
           <Button
@@ -3194,7 +3227,7 @@ function CreditBillingPage() {
             <StateBanner
               tone="warning"
               title="Payment history unavailable"
-              body="SaveStream could not load your recent payment orders."
+              body="Please try again in a moment."
               action={
                 <Button size="sm" variant="outline" onClick={() => void ordersQuery.refetch()}>
                   Retry
@@ -3216,7 +3249,7 @@ function CreditBillingPage() {
           ))
         ) : (
           <p className="border-t p-5 text-sm text-muted-foreground">
-            No payment orders yet.
+            No purchases yet.
           </p>
         )}
       </section>
@@ -3224,8 +3257,8 @@ function CreditBillingPage() {
       <div className="mt-8">
         <StateBanner
           tone="info"
-          title="Payment confirmation is server-side"
-          body="Opening checkout only creates a pending payment order. Credits are added only after a verified payment webhook or reconciliation confirms the order as paid."
+          title="When do credits arrive?"
+          body="Credits are added to your balance as soon as Lemon Squeezy confirms your payment, usually within a minute. Refresh this page if a purchase still shows as pending."
         />
       </div>
     </AppShell>
@@ -3642,7 +3675,7 @@ function minutesPerCredit(rate: PublicRecordingRate) {
 function formatRecordingTime(minutes: number) {
   if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-  return `${minutes} minutes`;
+  return pluralize(minutes, "minute");
 }
 
 function rateSentence(rate: PublicRecordingRate | null) {
@@ -3663,6 +3696,15 @@ function packageLimits(pricing: PublicPricingResponse | undefined) {
         : `Record up to ${parallel} livestreams at the same time`,
     );
   }
+  const paidDays = pricing?.recording_retention_days;
+  const trialDays = pricing?.trial_recording_retention_days;
+  if (paidDays) {
+    lines.push(
+      trialDays && trialDays !== paidDays
+        ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
+        : `Recordings stored for ${pluralize(paidDays, "day")}`,
+    );
+  }
   return lines;
 }
 
@@ -3670,7 +3712,6 @@ const includedInEveryPackage = [
   "Automatic live detection for every channel you add",
   "Cloud recording — no computer or browser needs to stay open",
   "Watch in the browser or download the video file",
-  "Recordings are kept until you delete them",
   "Credits never expire",
 ];
 
@@ -4087,8 +4128,7 @@ function ChannelDetail({
         </div>
         <p className="mt-6 font-medium">We couldn’t check live status</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          The most recent watch check failed. SaveStream will retry according to the backend
-          scheduler.
+          The last live-status check failed. SaveStream will try again automatically.
         </p>
         <Button
           className="mt-5"
@@ -4207,7 +4247,7 @@ function ChannelDetail({
           <StatCard
             label="Storage used"
             value={channel.storage}
-            detail={`${history.length} retained files`}
+            detail={`${pluralize(history.length, "stored file")}`}
             icon={HardDrive}
           />
         </div>

@@ -67,9 +67,9 @@ for (const text of [
   "useBillingCheckoutMutation()",
   "billingCheckoutEnabled",
   "Buy credits",
-  "Recent payment orders",
+  "Purchase history",
   "window.location.assign",
-  "Payment confirmation is server-side",
+  "When do credits arrive?",
 ]) {
   mustIn("CreditBillingPage", billing, text);
 }
@@ -89,10 +89,10 @@ const returns = block(
 for (const text of [
   "useBillingReturnOrder(orderId)",
   'order.status === "paid"',
-  "credits added",
-  "browser redirect is not proof",
+  'pluralize(order.credits, "credit")} added',
+  "We couldn’t confirm your payment yet",
   "export function BillingCanceledPage",
-  "This page does not mark it canceled",
+  "If you completed payment, the credits will be added once it is confirmed",
 ]) {
   mustIn("Billing return pages", returns, text);
 }

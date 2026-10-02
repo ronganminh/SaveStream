@@ -55,3 +55,8 @@ export function formatDurationMinutes(minutes: number, language: Language) {
   }
   return language === "vi" ? `${hours} giờ ${remaining} phút` : `${hours} h ${remaining} min`;
 }
+
+/** "1 channel", "2 channels"; pass `plural` for irregular nouns. */
+export function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return `${count.toLocaleString("en")} ${count === 1 ? singular : plural}`;
+}

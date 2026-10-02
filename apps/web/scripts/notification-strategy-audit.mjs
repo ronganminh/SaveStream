@@ -72,12 +72,12 @@ const prodSettings = block(
 );
 for (const text of [
   "In-app notification preferences",
-  "stored by the backend",
+  "apply on every device you sign in to",
   "useNotificationPreferencesData",
   "useUpdateNotificationPreferencesMutation",
   "<Switch",
   "Save preferences",
-  "In-app delivery only",
+  "In-app notifications",
 ]) {
   mustIn("ProductionNotificationSettings", prodSettings, text);
 }
@@ -95,9 +95,9 @@ const page = block(
   "/* ---------------- Billing return pages",
 );
 for (const text of [
-  "Persisted recording activity",
+  "Updates about your recordings.",
   "Synced across devices",
-  "persisted by the backend",
+  "the same on every device",
   "Could not load notifications",
 ]) {
   mustIn("NotificationsPage", page, text);

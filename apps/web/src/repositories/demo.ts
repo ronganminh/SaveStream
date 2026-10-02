@@ -408,6 +408,8 @@ export const demoRepositories: SaveStreamRepositories = {
         signup_credits: 10,
         max_channels_per_user: 20,
         max_concurrent_recordings_per_user: 2,
+        recording_retention_days: 30,
+        trial_recording_retention_days: 7,
       };
     },
   },
