@@ -2673,6 +2673,286 @@ function LegacyAdminJobDetailPage() {
   );
 }
 
+function adminAuditResource(entry: AuditLogResponse) {
+  if (!entry.resource_type && !entry.resource_id) return "—";
+  return [entry.resource_type, entry.resource_id].filter(Boolean).join(": ");
+}
+
+export function AdminErrorsPage() {
+  return isDemoMode ? <LegacyAdminErrorsPage /> : <ProductionAdminErrorsPage />;
+}
+
+function ProductionAdminErrorsPage() {
+  const audit = useAdminAuditData();
+  const snapshot = useAdminOperationalSnapshotData();
+  const [queryText, setQueryText] = useState("");
+  const [resourceType, setResourceType] = useState("all");
+  const [open, setOpen] = useState<string | null>(null);
+
+  if (audit.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Audit & operations" subtitle="Loading backend audit activity…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (audit.isError || !audit.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Audit & operations" />
+        <ErrorState
+          title="Could not load admin audit log"
+          body="SaveStream could not load backend audit activity."
+          onRetry={() => audit.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const normalizedQuery = queryText.trim().toLowerCase();
+  const resourceTypes = Array.from(
+    new Set(
+      audit.data.items
+        .map((entry) => entry.resource_type)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort();
+
+  const list = audit.data.items.filter((entry) => {
+    if (resourceType !== "all" && entry.resource_type !== resourceType) return false;
+    if (!normalizedQuery) return true;
+    return [
+      entry.action,
+      entry.resource_type ?? "",
+      entry.resource_id ?? "",
+      entry.actor_user_id ?? "",
+      entry.request_id ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  const selected = audit.data.items.find((entry) => entry.id === open) ?? null;
+
+  const refresh = () => {
+    void Promise.all([audit.refetch(), snapshot.refetch()]);
+  };
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Audit & operations"
+        subtitle="Real admin audit activity plus backend operational counters."
+        action={
+          <Button
+            variant="outline"
+            disabled={audit.isFetching || snapshot.isFetching}
+            onClick={refresh}
+          >
+            <RotateCcw />
+            {audit.isFetching || snapshot.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          icon={ShieldCheck}
+          title="Audit log is not a raw service-error stream"
+          body="The backend exposes administrative audit records and aggregate operational counters. Production does not fabricate worker stack traces, severity, or retry state that the API does not provide."
+        />
+      </div>
+
+      {snapshot.data && (
+        <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Recent recording failures"
+            value={String(snapshot.data.failed_recordings_recent)}
+            detail="Backend failure window"
+            icon={AlertTriangle}
+          />
+          <StatCard
+            label="Pending outbox"
+            value={String(snapshot.data.pending_outbox_events)}
+            detail="Events waiting to publish"
+            icon={Clock3}
+          />
+          <StatCard
+            label="Unprocessed payment events"
+            value={String(snapshot.data.unprocessed_payment_events)}
+            detail="Provider events awaiting processing"
+            icon={CreditCard}
+          />
+          <StatCard
+            label="Paused error watches"
+            value={String(snapshot.data.paused_error_watches)}
+            detail="Watches paused after repeated errors"
+            icon={Radio}
+          />
+        </div>
+      )}
+
+      {snapshot.isError && (
+        <div className="mb-6">
+          <StateBanner
+            tone="warning"
+            title="Operational counters unavailable"
+            body="The audit log is available, but the operations snapshot could not be refreshed."
+            action={
+              <Button size="sm" variant="outline" onClick={() => void snapshot.refetch()}>
+                Retry snapshot
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      <FilterBar>
+        <div className="flex-1">
+          <SearchInput
+            value={queryText}
+            onChange={setQueryText}
+            placeholder="Search action, resource, actor, or request ID"
+          />
+        </div>
+        <Select value={resourceType} onValueChange={setResourceType}>
+          <SelectTrigger className="w-44" aria-label="Resource type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All resources</SelectItem>
+            {resourceTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterBar>
+
+      {audit.data.pagination.has_more && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Showing the first 100 audit entries"
+            body="The backend reports additional audit records beyond this page."
+          />
+        </div>
+      )}
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={CheckCircle2}
+          title="No audit entries match"
+          body="Try another search term or resource filter."
+        />
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-lg border bg-surface md:block">
+            <table className="w-full min-w-[900px] text-xs">
+              <thead className="bg-surface-subtle text-left text-[10px] uppercase text-muted-foreground">
+                <tr>
+                  {["Time", "Action", "Resource", "Actor", "Request ID"].map((heading) => (
+                    <th key={heading} className="px-4 py-2 font-medium">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    tabIndex={0}
+                    onClick={() => setOpen(entry.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") setOpen(entry.id);
+                    }}
+                    className="cursor-pointer border-t hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                  >
+                    <td className="whitespace-nowrap px-4 py-3 font-mono">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 font-mono font-medium">{entry.action}</td>
+                    <td className="px-4 py-3 font-mono">{adminAuditResource(entry)}</td>
+                    <td className="max-w-44 truncate px-4 py-3 font-mono">
+                      {entry.actor_user_id ?? "system"}
+                    </td>
+                    <td className="max-w-44 truncate px-4 py-3 font-mono text-muted-foreground">
+                      {entry.request_id ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-3 md:hidden">
+            {list.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => setOpen(entry.id)}
+                className="block w-full rounded-lg border bg-surface p-4 text-left"
+              >
+                <p className="font-mono text-xs font-medium">{entry.action}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {adminAuditResource(entry)}
+                </p>
+                <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                  {new Date(entry.created_at).toLocaleString()}
+                </p>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <Sheet open={Boolean(selected)} onOpenChange={(next) => !next && setOpen(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          {selected && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="font-mono">{selected.action}</SheetTitle>
+                <SheetDescription>
+                  {new Date(selected.created_at).toLocaleString()}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-5">
+                <dl className="grid grid-cols-2 gap-4 text-sm">
+                  {[
+                    ["Audit ID", selected.id],
+                    ["Actor", selected.actor_user_id ?? "system"],
+                    ["Resource", adminAuditResource(selected)],
+                    ["Request ID", selected.request_id ?? "—"],
+                    ["IP hint", selected.ip_address ?? "—"],
+                    ["User agent", selected.user_agent ?? "—"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 break-words font-mono text-xs">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div>
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">Details</p>
+                  <pre className="max-h-80 overflow-auto rounded-md bg-player p-3 font-mono text-[11px] leading-5 text-player-foreground">
+                    {JSON.stringify(selected.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: errors ---------------- */
 const sevStyle: Record<EventSeverity, string> = {
   Critical: "bg-destructive text-destructive-foreground",
