@@ -307,7 +307,7 @@ export function AuthErrorPage() {
           </Button>
         )}
         <Button className="w-full" variant={kind === "failed" ? "outline" : "default"} asChild>
-          <Link to="/verify-email">{t("Request a new link")}</Link>
+          <Link to="/verify-email" search={{ token: "" }}>{t("Request a new link")}</Link>
         </Button>
         <Button className="w-full" variant="ghost" asChild>
           <Link to="/sign-in">{t("Back to sign in")}</Link>
