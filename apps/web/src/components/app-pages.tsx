@@ -141,6 +141,7 @@ import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import {
   useChannelData,
   useChannelsData,
+  useRecordingArtifactsData,
   useRecordingData,
   useRecordingsData,
   useUsageData,
@@ -163,7 +164,10 @@ import {
   parseTikTokSource,
 } from "@/lib/tiktok-source";
 import {
+  artifactActionErrorMessage,
   recordingActionErrorMessage,
+  useDeleteRecordingMutation,
+  useRecordingDownloadMutation,
   useStopRecordingMutation,
 } from "@/hooks/use-recording-mutations";
 import {
@@ -1615,6 +1619,8 @@ export function RecordingDetailPage({
   const { query: recordingsQuery, state: recordingsState } = useRecordingsData();
   const { query: channelsQuery } = useChannelsData();
   const stopRecording = useStopRecordingMutation();
+  const deleteRecording = useDeleteRecordingMutation();
+  const downloadRecording = useRecordingDownloadMutation();
   const [quota, setQuota] = useState<"normal" | "low">("normal");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
@@ -1624,6 +1630,12 @@ export function RecordingDetailPage({
     : recordingQuery.data;
   const sourceState = forced ? recordingsState : recordingState;
   const realtime = useRecordingRealtime(rec?.id, rec?.backendStatus);
+  const artifactState = rec ? (forced ?? recordingDetailState(rec)) : forced ?? null;
+  const shouldLoadArtifacts = artifactState === "ready" || artifactState === "failed";
+  const { query: artifactsQuery, state: artifactsState } = useRecordingArtifactsData(
+    rec?.id,
+    shouldLoadArtifacts,
+  );
 
   if (sourceState.kind === "loading") {
     return (
@@ -1686,12 +1698,29 @@ export function RecordingDetailPage({
       candidate.handle.toLowerCase() === rec.handle.toLowerCase(),
   );
   const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
+  const artifact = artifactsQuery.data?.find(
+    (item) => item.kind === "video" && item.container === "mp4",
+  );
   const download = () => {
-    if (!isDemoMode) return;
-    if (quota === "low") setUpgrade(true);
-    else
-      toast.success("Download started", {
-        description: `${rec.size} · ${rec.handle} — ${rec.title}`,
+    if (isDemoMode) {
+      if (quota === "low") setUpgrade(true);
+      else
+        toast.success("Download started", {
+          description: `${rec.size} · ${rec.handle} — ${rec.title}`,
+        });
+      return;
+    }
+
+    void downloadRecording
+      .mutateAsync(rec.id)
+      .then(({ download: signed }) => {
+        window.location.assign(signed.url);
+      })
+      .catch((error) => {
+        toast.error("Download unavailable", {
+          description: artifactActionErrorMessage(error),
+        });
+        void artifactsQuery.refetch();
       });
   };
   const actions =
@@ -1713,13 +1742,23 @@ export function RecordingDetailPage({
         <Pause />
         {stopRecording.isPending ? "Stopping…" : "Stop recording"}
       </Button>
-    ) : state === "ready" && isDemoMode ? (
+    ) : state === "ready" ? (
       <div className="flex gap-2">
-        <Button onClick={download}>
+        <Button
+          onClick={download}
+          disabled={
+            downloadRecording.isPending ||
+            (!isDemoMode && (artifactsState.kind === "loading" || !artifact))
+          }
+        >
           <Download />
-          Download video
+          {downloadRecording.isPending ? "Preparing…" : "Download video"}
         </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
+        <Button
+          variant="outline"
+          disabled={!rec.actions.can_delete || deleteRecording.isPending}
+          onClick={() => setDel(true)}
+        >
           <Trash2 />
           Delete
         </Button>
@@ -1748,23 +1787,28 @@ export function RecordingDetailPage({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    ) : state === "failed" && isDemoMode ? (
+    ) : state === "failed" ? (
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          onClick={() =>
-            toast.success("Partial download started", {
-              description: `${rec.partialDuration} · ${rec.size}`,
-            })
-          }
-        >
-          <Download />
-          Download partial
-        </Button>
-        <Button variant="outline" onClick={() => setDel(true)}>
-          <Trash2 />
-          Delete partial file
-        </Button>
+        {(isDemoMode || artifact) && (
+          <Button
+            variant="outline"
+            disabled={downloadRecording.isPending}
+            onClick={download}
+          >
+            <Download />
+            {downloadRecording.isPending ? "Preparing…" : "Download partial"}
+          </Button>
+        )}
+        {rec.actions.can_delete && (
+          <Button
+            variant="outline"
+            disabled={deleteRecording.isPending}
+            onClick={() => setDel(true)}
+          >
+            <Trash2 />
+            Delete partial file
+          </Button>
+        )}
       </div>
     ) : state === "processing" ? (
       <Button disabled>
@@ -1806,6 +1850,35 @@ export function RecordingDetailPage({
       {!isDemoMode && (state === "active" || state === "processing") && (
         <RecordingRealtimeNotice state={realtime.state} lastEventAt={realtime.lastEventAt} />
       )}
+      {!isDemoMode &&
+        (state === "ready" || state === "failed") &&
+        artifactsState.kind === "error" && (
+          <div className="mb-4">
+            <StateBanner
+              tone="warning"
+              icon={AlertTriangle}
+              title="Could not load the recording file"
+              body="The recording exists, but SaveStream could not confirm its stored artifact."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void artifactsQuery.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        )}
+      {!isDemoMode &&
+        (state === "ready" || state === "failed") &&
+        artifactsState.kind === "empty" && (
+          <div className="mb-4">
+            <StateBanner
+              tone="warning"
+              icon={AlertTriangle}
+              title="Recording file unavailable"
+              body="The stored file is no longer available. It may have expired or already been cleaned up."
+            />
+          </div>
+        )}
       {expiringSoon && (
         <div className="mb-4">
           <StateBanner
@@ -1906,7 +1979,7 @@ export function RecordingDetailPage({
           </div>
         ))}
       </div>
-      {isDemoMode && (
+      {isDemoMode ? (
         <>
           <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
           <ConfirmDeleteDialog
@@ -1916,6 +1989,30 @@ export function RecordingDetailPage({
             onDeleted={() => navigate({ to: "/recordings" })}
           />
         </>
+      ) : (
+        <ConfirmDialog
+          destructive
+          open={del}
+          onOpenChange={setDel}
+          title="Delete recording?"
+          body="This recording will disappear from your library and its stored artifact will be scheduled for cleanup. This action cannot be undone."
+          confirmLabel="Delete recording"
+          confirmDisabled={deleteRecording.isPending}
+          onConfirm={() => {
+            void deleteRecording
+              .mutateAsync(rec.id)
+              .then(() => {
+                setDel(false);
+                toast.success("Recording deleted");
+                void navigate({ to: "/recordings" });
+              })
+              .catch((error) => {
+                toast.error("Could not delete recording", {
+                  description: recordingActionErrorMessage(error),
+                });
+              });
+          }}
+        />
       )}
     </AppShell>
   );
