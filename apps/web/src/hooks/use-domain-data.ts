@@ -8,6 +8,7 @@ export const domainQueryKeys = {
   channel: (id: string) => ["channels", id] as const,
   recordings: ["recordings"] as const,
   recording: (id: string) => ["recordings", id] as const,
+  recordingArtifacts: (id: string) => ["recordings", id, "artifacts"] as const,
   activeRecording: ["recordings", "active"] as const,
   usage: ["usage", "current"] as const,
 };
@@ -70,6 +71,18 @@ export function useRecordingData(id: string | null | undefined) {
       !isDemoMode && needsRecordingPolling(current.state.data) ? 5000 : false,
   });
   return { query, state: toResourceState(query, (data) => data === null) };
+}
+
+export function useRecordingArtifactsData(
+  id: string | null | undefined,
+  enabled = true,
+) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.recordingArtifacts(id ?? "missing"),
+    queryFn: () => repositories.recordings.listArtifacts(id ?? ""),
+    enabled: Boolean(id) && enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.length === 0) };
 }
 
 export function useActiveRecordingData() {
