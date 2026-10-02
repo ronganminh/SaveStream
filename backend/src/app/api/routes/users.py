@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -27,9 +29,10 @@ def _request_id(request: Request) -> str | None:
 
 
 def _user_response(user: User) -> UserResponse:
+    role: Literal["user", "admin"] = "admin" if user.role == "admin" else "user"
     return UserResponse(
         id=str(user.id),
-        role=user.role,
+        role=role,
         email=user.email,
         email_verified=user.email_verified_at is not None,
         display_name=user.display_name,
