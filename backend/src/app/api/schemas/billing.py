@@ -109,3 +109,5 @@ class PublicPricingResponse(StrictModel):
     signup_credits: int = Field(ge=0)
     max_channels_per_user: int | None = Field(default=None, ge=1)
     max_concurrent_recordings_per_user: int | None = Field(default=None, ge=1)
+    recording_retention_days: int | None = Field(default=None, ge=1)
+    trial_recording_retention_days: int | None = Field(default=None, ge=1)

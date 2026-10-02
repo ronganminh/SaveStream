@@ -55,7 +55,10 @@ x-app-env: &app-env
   SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
   # Recordings run on the dedicated `recorder` service (see below).
   SAVESTREAM_RECORDING_QUEUE: recordings
-  SAVESTREAM_RECORDING_RETENTION_DAYS: "0"
+  # Finished recordings are deleted after 30 days for accounts that bought
+  # credits and after 7 days for trial-only accounts.
+  SAVESTREAM_RECORDING_RETENTION_DAYS: "30"
+  SAVESTREAM_RECORDING_RETENTION_DAYS_FREE: "7"
   # Free trial: credits granted once on first email verification (1 credit = 1 minute).
   SAVESTREAM_SIGNUP_CREDITS: "10"
   SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS: "0"

@@ -76,6 +76,7 @@ class RecordingResponse(StrictModel):
     error: RecordingError | None
     created_at: datetime
     updated_at: datetime
+    expires_at: datetime | None = None
 
 
 class CreateRecordingRequest(StrictModel):
