@@ -451,7 +451,9 @@ export function LandingPage() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
               {t(
-                "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected.",
+                isDemoMode
+                  ? "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected."
+                  : "SaveStream monitors authorized TikTok channels and records livestreams on backend infrastructure, so recording does not depend on keeping this browser open.",
               )}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -506,25 +508,50 @@ export function LandingPage() {
                     </Button>
                   </div>
                   <div className="mt-5 grid grid-cols-1 border-l border-t sm:grid-cols-3">
-                    <StatCard
-                      label="Recording hours"
-                      value="12.6 / 50 h"
-                      detail="25% used"
-                      icon={Clock3}
-                      progress={25}
-                    />
-                    <StatCard
-                      label="Active channels"
-                      value="3 / 5"
-                      detail="3 monitoring"
-                      icon={Radio}
-                    />
-                    <StatCard
-                      label="Stored"
-                      value="18.4 GB"
-                      detail="4 recordings"
-                      icon={HardDrive}
-                    />
+                    {isDemoMode ? (
+                      <>
+                        <StatCard
+                          label="Recording hours"
+                          value="12.6 / 50 h"
+                          detail="25% used"
+                          icon={Clock3}
+                          progress={25}
+                        />
+                        <StatCard
+                          label="Active channels"
+                          value="3 / 5"
+                          detail="3 monitoring"
+                          icon={Radio}
+                        />
+                        <StatCard
+                          label="Stored"
+                          value="18.4 GB"
+                          detail="4 recordings"
+                          icon={HardDrive}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <StatCard
+                          label="Cloud monitoring"
+                          value="Backend"
+                          detail="Runs independently of this browser"
+                          icon={Radio}
+                        />
+                        <StatCard
+                          label="Recording charges"
+                          value="Credits"
+                          detail="Reserved and settled by the backend"
+                          icon={CreditCard}
+                        />
+                        <StatCard
+                          label="Recording library"
+                          value="Synced"
+                          detail="Authoritative account data"
+                          icon={FileVideo}
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="mt-5">
                     <ActiveRecordingCard />
@@ -593,20 +620,46 @@ export function LandingPage() {
         <RecordingExamples />
         <section className="py-20">
           <div className="mx-auto max-w-5xl px-4 text-center">
-            <h2 className="text-3xl font-semibold">{t("Simple plans, clear limits.")}</h2>
-            <div className="mt-10 grid gap-5 text-left md:grid-cols-2">
-              {planList.map((plan) => (
-                <PlanCard
-                  key={plan.id}
-                  name={plan.name}
-                  price={plan.priceMonthlyUsd === 0 ? "Free" : formatCurrencyUsd(plan.priceMonthlyUsd, language)}
-                  features={[...plan.features]}
-                />
-              ))}
-            </div>
-            <p className="mx-auto mt-5 max-w-2xl text-xs text-muted-foreground">
-              {t(planMediaFootnote)}
-            </p>
+            {isDemoMode ? (
+              <>
+                <h2 className="text-3xl font-semibold">{t("Simple plans, clear limits.")}</h2>
+                <div className="mt-10 grid gap-5 text-left md:grid-cols-2">
+                  {planList.map((plan) => (
+                    <PlanCard
+                      key={plan.id}
+                      name={plan.name}
+                      price={plan.priceMonthlyUsd === 0 ? "Free" : formatCurrencyUsd(plan.priceMonthlyUsd, language)}
+                      features={[...plan.features]}
+                    />
+                  ))}
+                </div>
+                <p className="mx-auto mt-5 max-w-2xl text-xs text-muted-foreground">
+                  {t(planMediaFootnote)}
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl font-semibold">{t("Credit-based pricing.")}</h2>
+                <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  {t("Production uses backend-authoritative credits instead of the old Free/Pro monthly quota model.")}
+                </p>
+                <div className="mt-10 grid gap-5 text-left md:grid-cols-3">
+                  {[
+                    ["Posted balance", "Credits added to your account are recorded in the backend ledger."],
+                    ["Reservations", "Active recordings reserve credits before final usage is known."],
+                    ["Settlement", "Final charges and unused-credit releases are settled by the backend."],
+                  ].map(([title, body]) => (
+                    <section key={title} className="rounded-lg border bg-surface p-5">
+                      <h3 className="font-medium">{t(title)}</h3>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{t(body)}</p>
+                    </section>
+                  ))}
+                </div>
+                <Button className="mt-8" variant="outline" asChild>
+                  <Link to="/pricing">{t("View current pricing")}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </section>
       </main>
@@ -614,24 +667,44 @@ export function LandingPage() {
         <div className="mx-auto max-w-3xl px-4">
           <h2 className="text-3xl font-semibold">{t("Frequently asked questions")}</h2>
           <dl className="mt-8 divide-y border-y">
-            {[
-              [
-                "Do I need to keep my computer on?",
-                "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.",
-              ],
-              [
-                "Which channels can I add?",
-                "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.",
-              ],
-              [
-                "How long are recordings kept?",
-                "Recordings are kept for your plan’s retention period — 3 days on Free, 30 days on Pro — then deleted automatically.",
-              ],
-              [
-                "What happens if I reach my quota?",
-                "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.",
-              ],
-            ].map(([q, a]) => (
+            {(isDemoMode
+              ? [
+                  [
+                    "Do I need to keep my computer on?",
+                    "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.",
+                  ],
+                  [
+                    "Which channels can I add?",
+                    "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.",
+                  ],
+                  [
+                    "How long are recordings kept?",
+                    "Recordings are kept for your plan’s retention period — 3 days on Free, 30 days on Pro — then deleted automatically.",
+                  ],
+                  [
+                    "What happens if I reach my quota?",
+                    "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.",
+                  ],
+                ]
+              : [
+                  [
+                    "Do I need to keep my computer on?",
+                    "No. Monitoring and recording run on SaveStream backend services rather than in your browser.",
+                  ],
+                  [
+                    "Which channels can I add?",
+                    "Only TikTok channels you own, manage, or have explicit permission to record and archive.",
+                  ],
+                  [
+                    "How are recording charges handled?",
+                    "Production uses backend-authoritative credits. Credits may be reserved for an active recording and are settled when usage is known.",
+                  ],
+                  [
+                    "How long are recordings kept?",
+                    "Retention is controlled by the backend service policy. The production web app does not invent plan-specific retention periods.",
+                  ],
+                ]
+            ).map(([q, a]) => (
               <div key={q} className="py-5">
                 <dt className="font-medium">{t(q ?? "")}</dt>
                 <dd className="mt-2 text-sm leading-6 text-muted-foreground">{t(a ?? "")}</dd>
@@ -1115,7 +1188,168 @@ export function OnboardingPage() {
     </div>
   );
 }
-export function OverviewPage({ empty = false }: { empty?: boolean }) {
+export function OverviewPage() {
+  return isDemoMode ? <DemoOverviewPage /> : <ProductionOverviewPage />;
+}
+
+function ProductionOverviewPage() {
+  const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
+  const { query: recordingsQuery } = useRecordingsData();
+  const { query: balanceQuery } = useCreditBalanceData();
+
+  if (channelsQuery.isPending || recordingsQuery.isPending || balanceQuery.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Overview" subtitle="Loading workspace status…" action={<AddChannelDialog />} />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (channelsQuery.isError || recordingsQuery.isError || balanceQuery.isError || !balanceQuery.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Overview" action={<AddChannelDialog />} />
+        <ErrorState
+          title="Could not load workspace overview"
+          body="SaveStream could not load one or more authoritative workspace resources."
+          onRetry={() => {
+            void channelsQuery.refetch();
+            void recordingsQuery.refetch();
+            void balanceQuery.refetch();
+          }}
+        />
+      </AppShell>
+    );
+  }
+
+  const overviewChannels = channelsQuery.data ?? [];
+  const overviewRecordings = recordingsQuery.data ?? [];
+  const monitoredChannels = overviewChannels.filter((channel) => channel.monitoring).length;
+  const activeRecordingStatuses = new Set([
+    "queued",
+    "resolving",
+    "waiting_live",
+    "recording",
+    "processing",
+    "uploading",
+    "stop_requested",
+  ]);
+  const activeRecordings = overviewRecordings.filter((recording) =>
+    activeRecordingStatuses.has(recording.backendStatus),
+  ).length;
+  const balance = balanceQuery.data;
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Overview"
+        subtitle="Backend-authoritative workspace status."
+        action={<AddChannelDialog />}
+      />
+      <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Available credits"
+          value={String(balance.available)}
+          detail="Usable for new recordings"
+          icon={Zap}
+        />
+        <StatCard
+          label="Reserved credits"
+          value={String(balance.reserved)}
+          detail="Held for active recordings"
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Monitored channels"
+          value={String(monitoredChannels)}
+          detail={`${overviewChannels.length} channels in workspace`}
+          icon={Radio}
+        />
+        <StatCard
+          label="Active recordings"
+          value={String(activeRecordings)}
+          detail={`${overviewRecordings.length} recordings in library`}
+          icon={FileVideo}
+        />
+      </div>
+      <ActiveRecordingCard />
+      <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
+        <section>
+          <SectionTitle
+            title="Channel monitoring"
+            action={<Link to="/channels">{t("View all")}</Link>}
+          />
+          {overviewChannels.length ? (
+            <>
+              <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
+                <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
+                  <span>{t("Creator")}</span>
+                  <span>{t("Platform")}</span>
+                  <span>{t("Monitoring")}</span>
+                  <span>{t("Status")}</span>
+                  <span>{t("Checked")}</span>
+                  <span />
+                </div>
+                {overviewChannels.map((channel) => (
+                  <ChannelRow key={channel.id} channel={channel} />
+                ))}
+              </div>
+              <div className="space-y-3 md:hidden">
+                {overviewChannels.map((channel) => (
+                  <ChannelCard key={channel.id} channel={channel} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              icon={Radio}
+              title="No channels yet"
+              body="Add an authorized TikTok channel to start monitoring."
+              action={<AddChannelDialog />}
+            />
+          )}
+        </section>
+        <section>
+          <SectionTitle
+            title="Recent recordings"
+            action={<Link to="/recordings">{t("View library")}</Link>}
+          />
+          {overviewRecordings.length ? (
+            <div className="divide-y rounded-lg border bg-surface">
+              {overviewRecordings.slice(0, 3).map((recording) => (
+                <Link
+                  key={recording.id}
+                  to="/recordings/$id"
+                  params={{ id: recording.id }}
+                  className="flex items-center gap-3 p-3"
+                >
+                  <div className={cn("aspect-video w-20 rounded", recording.color)} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{recording.handle}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {recording.date} · {recording.duration}
+                    </p>
+                  </div>
+                  <StatusBadge status={recording.status} />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={FileVideo}
+              title="No recordings yet"
+              body="Completed and in-progress recordings will appear here."
+            />
+          )}
+        </section>
+      </div>
+    </AppShell>
+  );
+}
+
+function DemoOverviewPage() {
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
   const { query: recordingsQuery } = useRecordingsData();
@@ -1152,7 +1386,7 @@ export function OverviewPage({ empty = false }: { empty?: boolean }) {
           progress={25}
         />
       </div>
-      <ActiveRecordingCard empty={empty} />
+      <ActiveRecordingCard />
       <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
         <section>
           <SectionTitle
@@ -2086,7 +2320,7 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
 }
 
 export function UsagePage() {
-  return isDemoMode ? <LegacyUsagePage /> : <CreditsUsagePage />;
+  return isDemoMode ? <DemoUsagePage /> : <CreditsUsagePage />;
 }
 
 function formatMoneyValue(money: Money, language: string) {
@@ -2437,7 +2671,7 @@ function CreditsUsagePage() {
   );
 }
 
-function LegacyUsagePage() {
+function DemoUsagePage() {
   const { t } = usePreferences();
   const { query: usageQuery, state: usageState } = useUsageData();
   const { query: recordingsQuery } = useRecordingsData();
@@ -2664,7 +2898,7 @@ function LegacyUsagePage() {
   );
 }
 export function BillingPage() {
-  return isDemoMode ? <LegacyBillingPage /> : <CreditBillingPage />;
+  return isDemoMode ? <DemoBillingPage /> : <CreditBillingPage />;
 }
 
 function paymentStatusLabel(status: PaymentStatusValue) {
@@ -2947,7 +3181,7 @@ function CreditBillingPage() {
   );
 }
 
-function LegacyBillingPage() {
+function DemoBillingPage() {
   const { t, language } = usePreferences();
   const navigate = useNavigate();
   const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
@@ -3186,7 +3420,7 @@ function LegacyBillingPage() {
   );
 }
 export function AdminSystemPage() {
-  return isDemoMode ? <LegacyAdminSystemPage /> : <ProductionAdminSystemPage />;
+  return isDemoMode ? <DemoAdminSystemPage /> : <ProductionAdminSystemPage />;
 }
 
 function ProductionAdminSystemPage() {
@@ -3300,7 +3534,7 @@ function ProductionAdminSystemPage() {
   );
 }
 
-function LegacyAdminSystemPage() {
+function DemoAdminSystemPage() {
   const { t } = usePreferences();
   return (
     <AppShell>
@@ -3346,7 +3580,7 @@ function LegacyAdminSystemPage() {
   );
 }
 export function PricingPage() {
-  if (isDemoMode) return <LegacyPricingPage />;
+  if (isDemoMode) return <DemoPricingPage />;
   return <CreditPricingPage />;
 }
 
@@ -3520,7 +3754,7 @@ function CreditPricingPage() {
   );
 }
 
-function LegacyPricingPage() {
+function DemoPricingPage() {
   const { t, language } = usePreferences();
   return (
     <>
