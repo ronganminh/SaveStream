@@ -39,6 +39,10 @@ export const apiBaseUrl = resolveApiBaseUrl(import.meta.env["VITE_API_BASE_URL"]
 export const apiConfigured = apiBaseUrl.length > 0;
 export const productionBackendConnected = isProductionMode && apiConfigured;
 
+const requestedBillingCheckout = import.meta.env["VITE_BILLING_CHECKOUT_ENABLED"];
+export const billingCheckoutEnabled =
+  isDemoMode || requestedBillingCheckout?.trim().toLowerCase() === "true";
+
 /**
  * Route-access contract. Real auth/session state is supplied by AuthProvider.
  */

@@ -1,4 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { meta } from "@/components/app-pages";
+
 import { BillingCanceledPage } from "@/components/app-pages-more";
-export const Route = createFileRoute("/billing/canceled")({ head:()=>meta("Checkout canceled","No changes were made to your SaveStream plan."), component:BillingCanceledPage });
+import { meta } from "@/components/app-pages";
+
+type BillingReturnSearch = {
+  order_id: string;
+};
+
+export const Route = createFileRoute("/billing/canceled")({
+  validateSearch: (search: Record<string, unknown>): BillingReturnSearch => ({
+    order_id: typeof search["order_id"] === "string" ? search["order_id"] : "",
+  }),
+  head: () => meta("Checkout status", "Review your SaveStream payment-order status."),
+  component: BillingCanceledRoute,
+});
+
+function BillingCanceledRoute() {
+  const search = Route.useSearch();
+  return <BillingCanceledPage orderId={search.order_id} />;
+}
