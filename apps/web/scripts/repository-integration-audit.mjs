@@ -64,7 +64,10 @@ forbid("src/repositories/mappers/recording.ts", "@/mocks/fixtures");
 
 for (const file of [...walk("src/components"), ...walk("src/routes")]) {
   if (!/\.(ts|tsx)$/.test(file)) continue;
-  forbid(file, "fetch(", "direct fetch call in UI module");
+  const source = read(file);
+  if (/\bfetch\s*\(/.test(source)) {
+    failures.push(`${file}: forbidden direct fetch call in UI module`);
+  }
 }
 
 if (failures.length) {
