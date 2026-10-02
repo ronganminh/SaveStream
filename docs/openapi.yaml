@@ -1763,6 +1763,251 @@
           }
         }
       }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "List notifications",
+        "operationId": "listNotifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "unread_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{notification_id}": {
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Update notification read state",
+        "operationId": "updateNotification",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Notification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/mark-all-read": {
+      "post": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark all notifications read",
+        "operationId": "markAllNotificationsRead",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarkAllReadResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notification-preferences": {
+      "get": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get notification preferences",
+        "operationId": "getNotificationPreferences",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Update notification preferences",
+        "operationId": "updateNotificationPreferences",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationPreferencesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3127,6 +3372,157 @@
           },
           "payment_order": {
             "$ref": "#/components/schemas/PaymentOrder"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationType": {
+        "type": "string",
+        "enum": [
+          "recording_started",
+          "recording_ready",
+          "recording_failed"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "read",
+          "resource_type",
+          "resource_id",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NotificationType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "resource_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "recording",
+              null
+            ]
+          },
+          "resource_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationList": {
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Notification"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "read": {
+            "type": "boolean",
+            "default": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MarkAllReadResponse": {
+        "type": "object",
+        "required": [
+          "updated"
+        ],
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "NotificationPreferences": {
+        "type": "object",
+        "required": [
+          "recording_started",
+          "recording_ready",
+          "recording_failed",
+          "email_supported",
+          "updated_at"
+        ],
+        "properties": {
+          "recording_started": {
+            "type": "boolean"
+          },
+          "recording_ready": {
+            "type": "boolean"
+          },
+          "recording_failed": {
+            "type": "boolean"
+          },
+          "email_supported": {
+            "type": "boolean",
+            "const": false
+          },
+          "updated_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateNotificationPreferencesRequest": {
+        "type": "object",
+        "properties": {
+          "recording_started": {
+            "type": "boolean"
+          },
+          "recording_ready": {
+            "type": "boolean"
+          },
+          "recording_failed": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
