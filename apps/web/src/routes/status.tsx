@@ -5,8 +5,8 @@ import { StatusPage } from "@/components/app-pages-more";
 export const Route = createFileRoute("/status")({
   head: () => {
     const base = meta(
-      "System status preview",
-      "Illustrative SaveStream status UI. This frontend prototype is not connected to live monitoring.",
+      "System status",
+      "Public live incident data is not currently published by the SaveStream production backend.",
     );
     return {
       ...base,

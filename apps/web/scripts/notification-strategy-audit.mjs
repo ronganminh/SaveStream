@@ -68,7 +68,7 @@ const pages = "src/components/app-pages-more.tsx";
 const prodSettings = block(
   pages,
   "function ProductionNotificationSettings()",
-  "function LegacyNotificationSettings()",
+  "function DemoNotificationSettings()",
 );
 for (const text of [
   "In-app notification preferences",

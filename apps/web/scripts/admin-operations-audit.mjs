@@ -61,7 +61,7 @@ const forbidIn = (label, source, text) => {
 const system = block(
   "src/components/app-pages.tsx",
   "function ProductionAdminSystemPage()",
-  "function LegacyAdminSystemPage()",
+  "function DemoAdminSystemPage()",
 );
 [
   "useAdminOperationalSnapshotData()",
@@ -115,7 +115,7 @@ const jobs = block(
 const detail = block(
   pages,
   "function ProductionAdminJobDetailPage()",
-  "function LegacyAdminJobDetailPage()",
+  "function DemoAdminJobDetailPage()",
 );
 [
   "useAdminRecordingData(id)",

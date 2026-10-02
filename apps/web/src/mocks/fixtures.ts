@@ -10,8 +10,8 @@ export type RecordingStatus = "Recording" | "Processing" | "Ready" | "Error";
 export type Status = ChannelStatus | RecordingStatus;
 
 // ---------- User ----------
-import { planCatalog, planList, type PlanId } from "@/lib/plan-catalog";
-export type { PlanId } from "@/lib/plan-catalog";
+import { planCatalog, planList, type PlanId } from "@/mocks/demo-plan-catalog";
+export type { PlanId } from "@/mocks/demo-plan-catalog";
 export type User = {
   id: string;
   name: string;

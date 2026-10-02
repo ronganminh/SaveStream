@@ -98,7 +98,7 @@ import {
 } from "@/lib/app-config";
 import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
-import { planCatalog } from "@/lib/plan-catalog";
+import { planCatalog } from "@/mocks/demo-plan-catalog";
 import { formatDate } from "@/lib/formatters";
 import type { ChannelModel, RecordingModel } from "@/repositories";
 import {
@@ -712,13 +712,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     </TooltipProvider>
   );
 }
-export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
+export function ActiveRecordingCard() {
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
   const { query: activeQuery, state: activeState } = useActiveRecordingData();
   const recording = activeQuery.data;
 
-  if (empty || activeState.kind === "empty")
+  if (activeState.kind === "empty")
     return (
       <section className="border-y bg-surface px-5 py-8">
         <div className="flex items-start gap-4">

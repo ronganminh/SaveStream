@@ -421,7 +421,7 @@ function LabeledInput({
   );
 }
 function AccountSettings() {
-  return isDemoMode ? <LegacyAccountSettings /> : <ProductionAccountSettings />;
+  return isDemoMode ? <DemoAccountSettings /> : <ProductionAccountSettings />;
 }
 
 function ProductionAccountSettings() {
@@ -653,7 +653,7 @@ function ProductionAccountSettings() {
   );
 }
 
-function LegacyAccountSettings() {
+function DemoAccountSettings() {
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [name, setName] = useState(user.name);
@@ -814,7 +814,7 @@ const notifPrefs = [
   ],
 ] as const;
 function NotificationSettings() {
-  return isDemoMode ? <LegacyNotificationSettings /> : <ProductionNotificationSettings />;
+  return isDemoMode ? <DemoNotificationSettings /> : <ProductionNotificationSettings />;
 }
 
 function ProductionNotificationSettings() {
@@ -943,7 +943,7 @@ function ProductionNotificationSettings() {
 }
 
 
-function LegacyNotificationSettings() {
+function DemoNotificationSettings() {
   const { t } = usePreferences();
   const initial = { started: false, completed: true, failed: true, quota: true, expiry: true };
   const [saved, setSaved] = useState(initial);
@@ -1001,7 +1001,7 @@ function LegacyNotificationSettings() {
   );
 }
 function SecuritySettings() {
-  return isDemoMode ? <LegacySecuritySettings /> : <ProductionSecuritySettings />;
+  return isDemoMode ? <DemoSecuritySettings /> : <ProductionSecuritySettings />;
 }
 
 function ProductionSecuritySettings() {
@@ -1171,7 +1171,7 @@ function ProductionSecuritySettings() {
   );
 }
 
-function LegacySecuritySettings() {
+function DemoSecuritySettings() {
   const { t } = usePreferences();
   const [cur, setCur] = useState("");
   const [pw, setPw] = useState("");
@@ -1716,7 +1716,7 @@ function AdminRecordingStatusPill({ status }: { status: RecordingStatusValue }) 
 }
 
 export function AdminWorkersPage() {
-  return isDemoMode ? <LegacyAdminWorkersPage /> : <ProductionAdminWorkersPage />;
+  return isDemoMode ? <DemoAdminWorkersPage /> : <ProductionAdminWorkersPage />;
 }
 
 function ProductionAdminWorkersPage() {
@@ -1834,7 +1834,7 @@ function WorkerBadge({ status }: { status: WorkerStatus }) {
     </span>
   );
 }
-function LegacyAdminWorkersPage() {
+function DemoAdminWorkersPage() {
   const { t } = usePreferences();
   const [list, setList] = useState(workerList);
   const [drain, setDrain] = useState<Worker | null>(null);
@@ -2038,7 +2038,7 @@ const productionJobStatuses = [
 ] as const satisfies readonly RecordingStatusValue[];
 
 export function AdminJobsPage() {
-  return isDemoMode ? <LegacyAdminJobsPage /> : <ProductionAdminJobsPage />;
+  return isDemoMode ? <DemoAdminJobsPage /> : <ProductionAdminJobsPage />;
 }
 
 function ProductionAdminJobsPage() {
@@ -2303,7 +2303,7 @@ function JobStatusCell({ job }: { job: RecordingJob }) {
     </div>
   );
 }
-function LegacyAdminJobsPage() {
+function DemoAdminJobsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [f, setF] = useState<(typeof jobFilters)[number]>("All");
@@ -2497,7 +2497,7 @@ export function JobEventTimeline({ events }: { events: JobEvent[] }) {
   );
 }
 export function AdminJobDetailPage() {
-  return isDemoMode ? <LegacyAdminJobDetailPage /> : <ProductionAdminJobDetailPage />;
+  return isDemoMode ? <DemoAdminJobDetailPage /> : <ProductionAdminJobDetailPage />;
 }
 
 function ProductionAdminJobDetailPage() {
@@ -2655,7 +2655,7 @@ function ProductionAdminJobDetailPage() {
   );
 }
 
-function LegacyAdminJobDetailPage() {
+function DemoAdminJobDetailPage() {
   const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
   const job = jobList.find((j) => j.id === id);
@@ -2803,7 +2803,7 @@ function adminAuditResource(entry: AuditLogResponse) {
 }
 
 export function AdminErrorsPage() {
-  return isDemoMode ? <LegacyAdminErrorsPage /> : <ProductionAdminErrorsPage />;
+  return isDemoMode ? <DemoAdminErrorsPage /> : <ProductionAdminErrorsPage />;
 }
 
 function ProductionAdminErrorsPage() {
@@ -3119,7 +3119,7 @@ function EventState({ s }: { s: "Retrying" | "Resolved" | "Open" }) {
     </span>
   );
 }
-function LegacyAdminErrorsPage() {
+function DemoAdminErrorsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [sev, setSev] = useState("all");
@@ -3548,6 +3548,40 @@ export function AcceptableUsePage() {
   );
 }
 export function StatusPage() {
+  return isDemoMode ? <DemoStatusPage /> : <ProductionStatusPage />;
+}
+
+function ProductionStatusPage() {
+  const { t } = usePreferences();
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
+        <h1 className="text-3xl font-semibold">{t("System status")}</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          SaveStream does not currently publish a public live incident feed from the production backend.
+        </p>
+        <div className="mt-6">
+          <StateBanner
+            tone="info"
+            icon={ShieldCheck}
+            title="Live public status is not available yet"
+            body="This page deliberately does not display illustrative service health, fake uptime bars, or synthetic incidents in production."
+          />
+        </div>
+        <section className="mt-8 rounded-lg border bg-surface p-5">
+          <h2 className="font-medium">What is available</h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.
+          </p>
+        </section>
+      </main>
+      <PublicFooter />
+    </div>
+  );
+}
+
+function DemoStatusPage() {
   const { t } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
@@ -3603,7 +3637,7 @@ export function StatusPage() {
 }
 
 /* ---------------- Help ---------------- */
-const helpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
+const demoHelpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
   {
     id: "getting-started",
     icon: Radio,
@@ -3654,20 +3688,68 @@ const helpTopics: { id: string; icon: typeof Cloud; title: string; body: string 
   },
 ];
 
+const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
+  {
+    id: "getting-started",
+    icon: Radio,
+    title: "Getting started",
+    body: "Create an account, add an authorized TikTok channel, and leave monitoring enabled. The backend checks live status and starts recording according to the watch configuration.",
+  },
+  {
+    id: "cloud-monitoring",
+    icon: Cloud,
+    title: "How cloud monitoring works",
+    body: "Monitoring and recording run on SaveStream backend services. Closing this browser does not stop an active server-side recording.",
+  },
+  {
+    id: "lifecycle",
+    icon: FileVideo,
+    title: "Recording lifecycle",
+    body: "Recordings can move through queued, resolving, waiting live, recording, processing, uploading, completed, failed, stop requested, and stopped states.",
+  },
+  {
+    id: "credits",
+    icon: Gauge,
+    title: "Credits",
+    body: "Production uses backend-authoritative credits. Active recordings can reserve credits, then settle the final charge or release unused reserved credits.",
+  },
+  {
+    id: "retention",
+    icon: Clock3,
+    title: "Retention",
+    body: "Retention is controlled by the backend service policy. The production web app does not invent Free/Pro plan-specific retention periods.",
+  },
+  {
+    id: "troubleshooting",
+    icon: AlertTriangle,
+    title: "Failed recording troubleshooting",
+    body: "Open the failed recording to review the backend error and retry availability. Retry is offered only when the backend marks the recording retryable.",
+  },
+  {
+    id: "authorized",
+    icon: ShieldCheck,
+    title: "Authorized recording policy",
+    body: "Only add channels you own, manage, or have explicit permission to record and archive.",
+  },
+];
+
 export function HelpPage() {
   const { t } = usePreferences();
   const [contact, setContact] = useState(false);
   const [msg, setMsg] = useState("");
+  const helpTopics = isDemoMode ? demoHelpTopics : productionHelpTopics;
   return (
     <AppShell>
       <PageHeader
         title="Help"
         subtitle="Guidance for monitoring and recording authorized TikTok channels."
         action={
-          <Button variant="outline" onClick={() => setContact(true)}>
-            <LifeBuoy />
-            {t("Contact support")}
-          </Button>
+          isDemoMode ? (
+            <Button variant="outline" onClick={() => setContact(true)}>
+              <LifeBuoy />
+              {t("Contact support")}
+            </Button>
+          ) : undefined
         }
       />
       <nav aria-label={t("Help topics")} className="mb-6 flex gap-2 overflow-x-auto pb-1">
@@ -3695,23 +3777,37 @@ export function HelpPage() {
           );
         })}
       </div>
-      <section
-        id="contact"
-        className="mt-8 scroll-mt-24 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-      >
-        <CircleHelp className="size-5 text-primary" />
-        <div className="flex-1">
-          <h2 className="font-medium">{t("Still need help?")}</h2>
-          <p className="text-sm text-muted-foreground">{t("This demo does not send support messages.")}</p>
+      {isDemoMode ? (
+        <>
+                <section
+                  id="contact"
+                  className="mt-8 scroll-mt-24 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
+                >
+                  <CircleHelp className="size-5 text-primary" />
+                  <div className="flex-1">
+                    <h2 className="font-medium">{t("Still need help?")}</h2>
+                    <p className="text-sm text-muted-foreground">{t("This demo does not send support messages.")}</p>
+                  </div>
+                  <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
+                </section>
+          
+        </>
+      ) : (
+        <div className="mt-8">
+          <StateBanner
+            tone="info"
+            icon={LifeBuoy}
+            title="In-app support messaging is not connected"
+            body="The production web app does not pretend to send support requests. Service availability is also not published through a live public incident feed yet."
+          />
         </div>
-        <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
-      </section>
+      )}
       <p className="mt-4 text-xs text-muted-foreground">
         <Link to="/status" className="text-primary underline underline-offset-4">
           {t("Service issues? Check the status page.")}
         </Link>
       </p>
-      <Dialog open={contact} onOpenChange={setContact}>
+      {isDemoMode && <Dialog open={contact} onOpenChange={setContact}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Contact support")}</DialogTitle>
@@ -3758,7 +3854,7 @@ export function HelpPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </AppShell>
   );
 }
