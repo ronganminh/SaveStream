@@ -53,7 +53,7 @@ for (const text of [
 ]) must("src/hooks/use-account-settings.ts", text);
 
 const pages = "src/components/app-pages-more.tsx";
-const account = block(pages, "function ProductionAccountSettings()", "function LegacyAccountSettings()");
+const account = block(pages, "function ProductionAccountSettings()", "function DemoAccountSettings()");
 for (const text of [
   "useCurrentUserData()",
   "useUpdateProfileMutation()",
@@ -74,7 +74,7 @@ for (const text of [
   "We’ll email you a download link",
 ]) forbidIn("ProductionAccountSettings", account, text);
 
-const security = block(pages, "function ProductionSecuritySettings()", "function LegacySecuritySettings()");
+const security = block(pages, "function ProductionSecuritySettings()", "function DemoSecuritySettings()");
 for (const text of [
   "useSessionsData()",
   "useRevokeSessionMutation()",
