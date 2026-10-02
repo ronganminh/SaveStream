@@ -23,6 +23,13 @@ import type {
 } from "@/repositories/contracts";
 
 let notificationState: Notification[] = notifications.map((item) => ({ ...item }));
+let notificationPreferenceState = {
+  recording_started: true,
+  recording_ready: true,
+  recording_failed: true,
+  email_supported: false as const,
+  updated_at: null as string | null,
+};
 
 function emptyRecordingEventStream(): AsyncIterable<RecordingEventResponse> {
   return {
@@ -587,6 +594,17 @@ export const demoRepositories: SaveStreamRepositories = {
     },
     async markAllRead() {
       notificationState = notificationState.map((item) => ({ ...item, read: true }));
+    },
+    async getPreferences() {
+      return { ...notificationPreferenceState };
+    },
+    async updatePreferences(input) {
+      notificationPreferenceState = {
+        ...notificationPreferenceState,
+        ...input,
+        updated_at: new Date().toISOString(),
+      };
+      return { ...notificationPreferenceState };
     },
   },
 };

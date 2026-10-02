@@ -338,3 +338,42 @@ export type OperationalSnapshotResponse = {
   pending_payment_orders: number;
   paused_error_watches: number;
 };
+
+export type NotificationTypeValue =
+  | "recording_started"
+  | "recording_ready"
+  | "recording_failed";
+
+export type NotificationResponse = {
+  id: string;
+  type: NotificationTypeValue;
+  title: string;
+  body: string;
+  read: boolean;
+  resource_type: "recording" | null;
+  resource_id: string | null;
+  created_at: string;
+};
+
+export type NotificationListResponse = {
+  items: NotificationResponse[];
+  pagination: Pagination;
+};
+
+export type NotificationPreferencesResponse = {
+  recording_started: boolean;
+  recording_ready: boolean;
+  recording_failed: boolean;
+  email_supported: false;
+  updated_at: string | null;
+};
+
+export type UpdateNotificationPreferencesRequest = {
+  recording_started?: boolean;
+  recording_ready?: boolean;
+  recording_failed?: boolean;
+};
+
+export type MarkAllNotificationsReadResponse = {
+  updated: number;
+};

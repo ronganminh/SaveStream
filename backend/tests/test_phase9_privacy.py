@@ -8,7 +8,13 @@ from sqlalchemy import select
 
 from app.application.privacy.service import PrivacyService
 from app.application.recordings.service import utcnow
-from app.infrastructure.db.models import Base, OutboxEvent, User
+from app.infrastructure.db.models import (
+    Base,
+    NotificationPreference,
+    OutboxEvent,
+    User,
+    UserNotification,
+)
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import Watch
@@ -61,7 +67,27 @@ def test_phase9_privacy_export_deletion_and_retention(tmp_path) -> None:
                     ended_at=utcnow() - timedelta(days=3),
                     created_at=utcnow() - timedelta(days=3),
                 )
-                session.add_all([watch, recording])
+                notification = UserNotification(
+                    user_id=user.id,
+                    kind="recording_started",
+                    title="Recording started",
+                    body="@creator-private is live and recording has started.",
+                    resource_type="recording",
+                    resource_id=str(recording.id),
+                    dedupe_key=f"recording:{recording.id}:recording_started",
+                )
+                notification_preferences = NotificationPreference(
+                    user_id=user.id,
+                    recording_started=False,
+                    recording_ready=True,
+                    recording_failed=True,
+                )
+                session.add_all([
+                    watch,
+                    recording,
+                    notification,
+                    notification_preferences,
+                ])
                 await session.commit()
                 await session.refresh(user)
                 await session.refresh(watch)
@@ -72,6 +98,11 @@ def test_phase9_privacy_export_deletion_and_retention(tmp_path) -> None:
                 assert exported["profile"]["email"] == "privacy@example.com"
                 assert exported["watches"][0]["source_value"] == "creator-private"
                 assert exported["recordings"][0]["source_value"] == "old-creator"
+                assert exported["notifications"][0]["type"] == "recording_started"
+                assert (
+                    exported["notification_preferences"]["recording_started"]
+                    is False
+                )
 
                 retained = await service.apply_recording_retention(settings)
                 assert retained == 1
@@ -95,6 +126,22 @@ def test_phase9_privacy_export_deletion_and_retention(tmp_path) -> None:
                 assert watch.source_value == "deleted"
                 assert watch.status == "disabled"
                 assert recording.source_value == "deleted"
+
+                remaining_notifications = list(
+                    (
+                        await session.scalars(
+                            select(UserNotification).where(
+                                UserNotification.user_id == user.id
+                            )
+                        )
+                    ).all()
+                )
+                remaining_preferences = await session.get(
+                    NotificationPreference,
+                    user.id,
+                )
+                assert remaining_notifications == []
+                assert remaining_preferences is None
 
                 cleanup = list(
                     (

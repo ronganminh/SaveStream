@@ -15,9 +15,11 @@ from app.infrastructure.db.models import (
     AuditLog,
     AuthSession,
     IdempotencyKey,
+    NotificationPreference,
     OneTimeToken,
     PasswordCredential,
     User,
+    UserNotification,
 )
 from app.infrastructure.db.recording_models import Recording, RecordingArtifact
 from app.infrastructure.db.watch_models import Watch
@@ -116,6 +118,19 @@ class PrivacyService:
                     .order_by(AuditLog.created_at)
                 )
             ).all()
+        )
+        notifications = list(
+            (
+                await self.session.scalars(
+                    select(UserNotification)
+                    .where(UserNotification.user_id == user_id)
+                    .order_by(UserNotification.created_at)
+                )
+            ).all()
+        )
+        notification_preferences = await self.session.get(
+            NotificationPreference,
+            user_id,
         )
         return {
             "schema_version": 1,
@@ -232,6 +247,29 @@ class PrivacyService:
                 }
                 for item in audit
             ],
+            "notifications": [
+                {
+                    "id": str(item.id),
+                    "type": item.kind,
+                    "title": item.title,
+                    "body": item.body,
+                    "resource_type": item.resource_type,
+                    "resource_id": item.resource_id,
+                    "read_at": item.read_at,
+                    "created_at": item.created_at,
+                }
+                for item in notifications
+            ],
+            "notification_preferences": (
+                {
+                    "recording_started": notification_preferences.recording_started,
+                    "recording_ready": notification_preferences.recording_ready,
+                    "recording_failed": notification_preferences.recording_failed,
+                    "updated_at": notification_preferences.updated_at,
+                }
+                if notification_preferences is not None
+                else None
+            ),
         }
 
     async def apply_recording_retention(self, settings: AppSettings) -> int:
@@ -329,6 +367,14 @@ class PrivacyService:
                 delete(OneTimeToken).where(OneTimeToken.user_id == user.id)
             )
             await self.session.execute(delete(ApiKey).where(ApiKey.user_id == user.id))
+            await self.session.execute(
+                delete(UserNotification).where(UserNotification.user_id == user.id)
+            )
+            await self.session.execute(
+                delete(NotificationPreference).where(
+                    NotificationPreference.user_id == user.id
+                )
+            )
             await self.session.execute(
                 update(AuditLog)
                 .where(AuditLog.actor_user_id == user.id)

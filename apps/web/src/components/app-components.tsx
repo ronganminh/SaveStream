@@ -584,16 +584,11 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
               <div className="flex min-w-0 items-center gap-2">
                 <p className="font-medium">{t("Notifications")}</p>
-                {!isDemoMode && (
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    Session only
-                  </span>
-                )}
               </div>
               <button
                 type="button"
                 disabled={!unread}
-                onClick={() => notificationStore.markAllRead()}
+                onClick={() => void notificationStore.markAllRead()}
                 className="text-xs font-medium text-primary disabled:text-muted-foreground"
               >
                 {t("Mark all read")}
@@ -1615,7 +1610,7 @@ export function NotificationItem({ notification: n }: { notification: Notificati
   return (
     <Link
       {...n.link}
-      onClick={() => notificationStore.markRead(n.id)}
+      onClick={() => void notificationStore.markRead(n.id)}
       className={cn(
         "flex gap-3 border-b p-4 text-left last:border-0 hover:bg-accent focus-visible:bg-accent focus-visible:outline-none",
         !n.read && "bg-primary-subtle/40",

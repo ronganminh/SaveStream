@@ -7,7 +7,7 @@ export const Route = createFileRoute("/notifications")({
   head: () =>
     meta(
       "Notifications",
-      "Review temporary in-app recording activity observed during the current browser session.",
+      "Review persisted recording lifecycle notifications and durable read state.",
     ),
   component: NotificationsPage,
 });

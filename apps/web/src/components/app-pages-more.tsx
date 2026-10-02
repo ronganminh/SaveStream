@@ -94,7 +94,7 @@ import {
   type Worker,
   type WorkerStatus,
 } from "@/mocks/fixtures";
-import { notificationStore, useNotifications } from "@/lib/notification-store";
+import { notificationStore, useNotificationFeed } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
@@ -106,6 +106,10 @@ import type {
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
 import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
+import {
+  useNotificationPreferencesData,
+  useUpdateNotificationPreferencesMutation,
+} from "@/hooks/use-notifications";
 import {
   accountActionErrorMessage,
   useDeleteAccountMutation,
@@ -814,45 +818,130 @@ function NotificationSettings() {
 }
 
 function ProductionNotificationSettings() {
+  const preferences = useNotificationPreferencesData();
+  const updatePreferences = useUpdateNotificationPreferencesMutation();
+  const [draft, setDraft] = useState<{
+    recording_started: boolean;
+    recording_ready: boolean;
+    recording_failed: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!preferences.data) return;
+    setDraft({
+      recording_started: preferences.data.recording_started,
+      recording_ready: preferences.data.recording_ready,
+      recording_failed: preferences.data.recording_failed,
+    });
+  }, [preferences.data]);
+
+  if (preferences.isPending) {
+    return <div className="h-56 animate-pulse rounded-lg border bg-muted" aria-busy="true" />;
+  }
+
+  if (preferences.isError || !preferences.data) {
+    return (
+      <ErrorState
+        title="Could not load notification preferences"
+        body="SaveStream could not load your persisted notification settings."
+        onRetry={() => preferences.refetch()}
+      />
+    );
+  }
+
+  const current =
+    draft ?? {
+      recording_started: preferences.data.recording_started,
+      recording_ready: preferences.data.recording_ready,
+      recording_failed: preferences.data.recording_failed,
+    };
+  const dirty =
+    current.recording_started !== preferences.data.recording_started ||
+    current.recording_ready !== preferences.data.recording_ready ||
+    current.recording_failed !== preferences.data.recording_failed;
+  const rows = [
+    [
+      "recording_started",
+      "Recording started",
+      "Create an in-app notification when a recording starts.",
+    ],
+    [
+      "recording_ready",
+      "Recording ready",
+      "Create an in-app notification when a recording finishes successfully.",
+    ],
+    [
+      "recording_failed",
+      "Recording ended",
+      "Create an in-app notification when a recording fails or stops early.",
+    ],
+  ] as const;
+
   return (
     <>
       <Section
-        title="In-app notifications"
-        body="The backend does not expose persisted notifications yet. SaveStream currently derives a temporary in-app feed from real recording lifecycle changes while this browser session is open."
+        title="In-app notification preferences"
+        body="These preferences are stored by the backend and apply across signed-in devices."
       >
-        <StateBanner
-          tone="info"
-          icon={Bell}
-          title="Current-session feed"
-          body="Recording started, recording ready, and recording failed/stopped transitions can appear here while the app is running. These items and their read state are not persisted across reloads, sign-ins, or devices."
-        />
-        <div className="rounded-md border">
-          {[
-            ["Recording started", "Derived when a recording enters the recording state."],
-            ["Recording ready", "Derived when backend recording status becomes completed."],
-            ["Recording ended", "Derived when backend recording status becomes failed or stopped."],
-          ].map(([label, description]) => (
-            <div key={label} className="border-b p-4 last:border-0">
-              <p className="text-sm font-medium">{label}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        <div>
+          {rows.map(([key, label, description]) => (
+            <div
+              key={key}
+              className="flex items-center justify-between gap-4 border-b py-4 last:border-0"
+            >
+              <div>
+                <label htmlFor={`prod-np-${key}`} className="text-sm font-medium">
+                  {label}
+                </label>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </div>
+              <Switch
+                id={`prod-np-${key}`}
+                checked={current[key]}
+                onCheckedChange={(checked) =>
+                  setDraft((previous) => ({
+                    ...(previous ?? current),
+                    [key]: checked,
+                  }))
+                }
+              />
             </div>
           ))}
         </div>
+        <Button
+          disabled={!dirty || updatePreferences.isPending}
+          onClick={() => {
+            void updatePreferences
+              .mutateAsync(current)
+              .then((saved) => {
+                setDraft({
+                  recording_started: saved.recording_started,
+                  recording_ready: saved.recording_ready,
+                  recording_failed: saved.recording_failed,
+                });
+                toast.success("Notification preferences saved");
+              })
+              .catch(() => toast.error("Could not save notification preferences"));
+          }}
+        >
+          {updatePreferences.isPending ? "Saving…" : "Save preferences"}
+        </Button>
       </Section>
       <Section
-        title="Email notification preferences"
-        body="Recording notification preferences are not configurable because the current backend has no notification-preferences API."
+        title="Email notifications"
+        body="Email delivery for recording lifecycle notifications is not supported by the current backend."
       >
         <StateBanner
-          tone="warning"
+          tone="info"
           icon={Mail}
-          title="Backend support required"
-          body="No preference is saved from this screen. Backend follow-up Issue #57 tracks persisted notifications and delivery preferences."
+          title="In-app delivery only"
+          body="Phase 11 persists notification history and in-app preferences. It does not expose email toggles until user-facing email delivery is implemented."
         />
       </Section>
     </>
   );
 }
+
 
 function LegacyNotificationSettings() {
   const { t } = usePreferences();
@@ -1211,10 +1300,39 @@ function LegacySecuritySettings() {
 /* ---------------- Notifications ---------------- */
 export function NotificationsPage() {
   const { t } = usePreferences();
-  const list = useNotifications();
+  const { notifications: list, query } = useNotificationFeed();
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const shown = filter === "all" ? list : list.filter((n) => !n.read);
   const unread = list.filter((n) => !n.read).length;
+
+  if (!isDemoMode && query.isPending) {
+    return (
+      <AppShell>
+        <PageHeader
+          title="Notifications"
+          subtitle="Persisted recording activity from the SaveStream backend."
+        />
+        <div className="h-64 max-w-3xl animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (!isDemoMode && query.isError) {
+    return (
+      <AppShell>
+        <PageHeader
+          title="Notifications"
+          subtitle="Persisted recording activity from the SaveStream backend."
+        />
+        <ErrorState
+          title="Could not load notifications"
+          body="SaveStream could not load your persisted notification history."
+          onRetry={() => query.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <PageHeader
@@ -1222,15 +1340,17 @@ export function NotificationsPage() {
         subtitle={
           isDemoMode
             ? "Recording activity, failures, and quota alerts."
-            : "Temporary recording activity from this browser session."
+            : "Persisted recording activity synced from the SaveStream backend."
         }
         action={
           <Button
             variant="outline"
             disabled={!unread}
             onClick={() => {
-              notificationStore.markAllRead();
-              toast.success(t("All notifications marked as read"));
+              void notificationStore.markAllRead().then((ok) => {
+                if (ok) toast.success(t("All notifications marked as read"));
+                else toast.error("Could not mark notifications as read");
+              });
             }}
           >
             {t("Mark all as read")}
@@ -1242,8 +1362,8 @@ export function NotificationsPage() {
           <StateBanner
             tone="info"
             icon={Bell}
-            title="Temporary in-app notifications"
-            body="This feed is derived from real recording state changes observed while SaveStream is open. It is not stored by the backend yet, so items and read state may disappear after reload, sign-out, or use on another device."
+            title="Synced across devices"
+            body="Notification history and read state are persisted by the backend. New recording lifecycle notifications are refreshed automatically while this page is open."
           />
         </div>
       )}
@@ -1277,7 +1397,11 @@ export function NotificationsPage() {
         <EmptyState
           icon={Bell}
           title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
-          body={filter === "unread" ? "You’re all caught up." : "We’ll notify you when recordings start, finish, or need attention."}
+          body={
+            filter === "unread"
+              ? "You’re all caught up."
+              : "We’ll notify you when recordings start, finish, or need attention."
+          }
         />
       )}
       <p className="mt-4 text-xs text-muted-foreground">
@@ -1294,12 +1418,12 @@ export function NotificationsPage() {
           </>
         ) : (
           <>
-            Persisted notification history and delivery preferences are not available yet.{" "}
+            Choose which recording lifecycle events create in-app notifications in{" "}
             <Link
               to="/settings/notifications"
               className="text-primary underline underline-offset-4"
             >
-              View current notification scope
+              notification settings
             </Link>
             .
           </>

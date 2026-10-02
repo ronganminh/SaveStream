@@ -7,7 +7,7 @@ export const Route = createFileRoute("/settings/notifications")({
   head: () =>
     meta(
       "Notification settings",
-      "Review the current SaveStream notification scope and backend limitations.",
+      "Manage persisted in-app recording notification preferences.",
     ),
   component: () => <SettingsPage section="notifications" />,
 });

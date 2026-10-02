@@ -121,6 +121,14 @@ export type NotificationModel = {
   link: NotificationLink;
 };
 
+export type NotificationPreferenceModel = {
+  recording_started: boolean;
+  recording_ready: boolean;
+  recording_failed: boolean;
+  email_supported: false;
+  updated_at: string | null;
+};
+
 export type PageOptions = {
   limit?: number;
   cursor?: string | null;
@@ -239,6 +247,13 @@ export interface NotificationRepository {
   list(): Promise<NotificationModel[]>;
   markRead(id: string): Promise<void>;
   markAllRead(): Promise<void>;
+  getPreferences(): Promise<NotificationPreferenceModel>;
+  updatePreferences(
+    input: Pick<
+      NotificationPreferenceModel,
+      "recording_started" | "recording_ready" | "recording_failed"
+    >,
+  ): Promise<NotificationPreferenceModel>;
 }
 
 export interface SaveStreamRepositories {
