@@ -66,6 +66,7 @@ import {
   AppShell,
   ConfirmDialog,
   EmptyState,
+  ErrorState,
   FilterBar,
   PageHeader,
   PasswordField,
