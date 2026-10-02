@@ -2372,6 +2372,165 @@ export function JobEventTimeline({ events }: { events: JobEvent[] }) {
     </ol>
   );
 }
+export function AdminJobDetailPage() {
+  return isDemoMode ? <LegacyAdminJobDetailPage /> : <ProductionAdminJobDetailPage />;
+}
+
+function ProductionAdminJobDetailPage() {
+  const { id } = useParams({ strict: false }) as { id?: string };
+  const recording = useAdminRecordingData(id);
+  const retry = useAdminRetryRecordingMutation();
+  const [confirmRetry, setConfirmRetry] = useState(false);
+
+  if (recording.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording job" subtitle="Loading backend recording…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (recording.isError || !recording.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording job unavailable" />
+        <ErrorState
+          title="Could not load recording job"
+          body="The recording may not exist or the admin API could not load it."
+          onRetry={() => recording.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const item = recording.data;
+  const fields: [string, ReactNode][] = [
+    ["Recording ID", item.id],
+    ["Creator / source", adminSourceLabel(item)],
+    ["Source type", item.source.type],
+    ["Source value", item.source.value],
+    ["Started", item.started_at ? new Date(item.started_at).toLocaleString() : "—"],
+    ["Ended", item.ended_at ? new Date(item.ended_at).toLocaleString() : "—"],
+    ["Duration", formatAdminDuration(item.duration_seconds)],
+    ["Output", formatAdminBytes(item.bytes_recorded)],
+    ["Estimated max cost", `${item.estimated_max_cost} credits`],
+    ["Actual cost", item.actual_cost === null ? "—" : `${item.actual_cost} credits`],
+    ["Credit reservation", item.credit_reservation_id ?? "—"],
+    ["Updated", new Date(item.updated_at).toLocaleString()],
+  ];
+
+  const retryRecording = () => {
+    void retry
+      .mutateAsync(item.id)
+      .then((result) => {
+        setConfirmRetry(false);
+        toast.success("Recording retry queued", {
+          description: `New recording ${result.recording.id}`,
+        });
+      })
+      .catch((error) =>
+        toast.error("Could not retry recording", {
+          description:
+            error instanceof Error ? error.message : "The retry request could not be completed.",
+        }),
+      );
+  };
+
+  return (
+    <AppShell>
+      <Link
+        to="/admin/jobs"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Jobs
+      </Link>
+
+      <PageHeader
+        title={item.id}
+        subtitle={adminSourceLabel(item)}
+        action={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={recording.isFetching}
+              onClick={() => void recording.refetch()}
+            >
+              <RotateCcw />
+              Refresh
+            </Button>
+            {item.actions.can_retry && (
+              <Button
+                variant="outline"
+                disabled={retry.isPending}
+                onClick={() => setConfirmRetry(true)}
+              >
+                <RotateCcw />
+                Retry recording
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <AdminRecordingStatusPill status={item.status} />
+        <span className="text-xs text-muted-foreground">
+          Active records refresh every 5 seconds.
+        </span>
+      </div>
+
+      {item.error && (
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-recording-subtle p-4">
+          <p className="text-sm font-medium text-destructive">{item.error.code}</p>
+          <p className="mt-2 text-sm">{item.error.message}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Retryable: {item.error.retryable ? "yes" : "no"}
+          </p>
+        </div>
+      )}
+
+      <section className="rounded-lg border bg-surface p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-medium">Backend recording state</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Only fields returned by the admin recording API are shown.
+            </p>
+          </div>
+        </div>
+        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {fields.map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-1 break-words font-mono text-xs">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="mt-6 rounded-lg border bg-surface p-5">
+        <h2 className="font-medium">Actions exposed by backend</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Retry is available only when the recording response says can_retry. The admin API does
+          not expose a browser action to mark a job failed, kill a worker, or edit hidden job state.
+        </p>
+      </section>
+
+      <ConfirmDialog
+        open={confirmRetry}
+        onOpenChange={setConfirmRetry}
+        title="Retry this recording?"
+        body="SaveStream will create a new recording attempt through the admin retry endpoint. The original recording remains unchanged."
+        confirmLabel={retry.isPending ? "Retrying…" : "Retry recording"}
+        confirmDisabled={retry.isPending}
+        onConfirm={retryRecording}
+      />
+    </AppShell>
+  );
+}
+
 function LegacyAdminJobDetailPage() {
   const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
