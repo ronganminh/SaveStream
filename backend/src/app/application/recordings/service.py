@@ -242,6 +242,15 @@ class RecordingService:
             payload.max_duration_seconds
             or self.settings.recording_max_duration_seconds
         )
+        # Record until the credits run out: cap this recording to what the
+        # balance covers. Unaffordable requests fail in reserve_recording below.
+        affordable = await CreditService(self.session).affordable_duration_seconds(
+            user_id=user_id,
+            max_duration_seconds=max_duration,
+        )
+        if 0 < affordable < max_duration:
+            max_duration = affordable
+            recording.max_duration_seconds = affordable
 
         try:
             async with self.session.begin_nested():
