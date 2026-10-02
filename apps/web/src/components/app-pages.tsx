@@ -193,6 +193,7 @@ import {
   billingActionErrorMessage,
   isAwaitingPaymentConfirmation,
   useBillingCheckoutMutation,
+  type BillingCheckoutInput,
 } from "@/hooks/use-billing";
 
 export { meta, publicMeta } from "@/components/app-components";
@@ -2737,7 +2738,7 @@ function CreditBillingPage() {
   const [activePurchase, setActivePurchase] = useState<string | null>(null);
 
   const redirectToCheckout = async (
-    input: { packageId: string } | { orderId: string },
+    input: BillingCheckoutInput,
     activeId: string,
   ) => {
     setActivePurchase(activeId);
@@ -2856,7 +2857,7 @@ function CreditBillingPage() {
                     className="mt-6 w-full"
                     disabled={!billingCheckoutEnabled || checkout.isPending}
                     onClick={() =>
-                      void redirectToCheckout({ packageId: item.id }, item.id)
+                      void redirectToCheckout({ kind: "package", packageId: item.id }, item.id)
                     }
                   >
                     <CreditCard />
@@ -2923,7 +2924,7 @@ function CreditBillingPage() {
               language={language}
               pending={checkout.isPending}
               onContinue={(orderId) =>
-                void redirectToCheckout({ orderId }, orderId)
+                void redirectToCheckout({ kind: "order", orderId }, orderId)
               }
             />
           ))
