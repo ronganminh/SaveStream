@@ -564,12 +564,8 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<ThemePreference>("system");
   useEffect(() => {
     const savedLanguage = readUiPreference(LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY);
-    const nextLanguage: Language =
-      savedLanguage === "vi" || savedLanguage === "en"
-        ? savedLanguage
-        : navigator.language.toLowerCase().startsWith("vi")
-          ? "vi"
-          : "en";
+    // English is the default; Vietnamese is opt-in from the language menu.
+    const nextLanguage: Language = savedLanguage === "vi" ? "vi" : "en";
     const savedTheme = readUiPreference(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY);
     const nextTheme: ThemePreference =
       savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
@@ -622,4 +618,4 @@ export function usePreferences() {
 }
 
 export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream:ui:theme')||localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;
-export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream:ui:language')||localStorage.getItem('savestream-language');if(l!=='en'&&l!=='vi')l=(navigator.language||'').toLowerCase().indexOf('vi')===0?'vi':'en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;
+export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream:ui:language')||localStorage.getItem('savestream-language');if(l!=='vi')l='en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;

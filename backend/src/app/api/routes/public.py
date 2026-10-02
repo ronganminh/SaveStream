@@ -14,6 +14,7 @@ from app.api.schemas.billing import (
 )
 from app.application.billing.service import BillingService
 from app.application.pricing.service import PricingService
+from app.application.recordings.retention import retention_days
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.payments.disabled import DisabledPaymentProvider
 
@@ -83,4 +84,6 @@ async def get_public_pricing(
             settings.quota_max_active_recordings_per_user,
             settings.watch_max_concurrent_recordings_per_user,
         ),
+        recording_retention_days=retention_days(settings, paid=True) or None,
+        trial_recording_retention_days=retention_days(settings, paid=False) or None,
     )

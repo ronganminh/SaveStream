@@ -93,6 +93,7 @@ export type RecordingResponse = {
   error: RecordingError | null;
   created_at: string;
   updated_at: string;
+  expires_at?: string | null;
 };
 
 export type RecordingListResponse = {
@@ -229,6 +230,8 @@ export type PublicPricingResponse = {
   signup_credits: number;
   max_channels_per_user: number | null;
   max_concurrent_recordings_per_user: number | null;
+  recording_retention_days: number | null;
+  trial_recording_retention_days: number | null;
 };
 
 export type PaymentStatusValue =

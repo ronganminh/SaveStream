@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.recordings.retention import paid_customer_clause, retention_days
 from app.application.recordings.service import utcnow
 from app.infrastructure.db.billing_models import PaymentOrder, Refund
 from app.infrastructure.db.credit_models import CreditLedgerEntry, CreditReservation
@@ -273,20 +274,26 @@ class PrivacyService:
         }
 
     async def apply_recording_retention(self, settings: AppSettings) -> int:
-        if settings.recording_retention_days <= 0:
-            return 0
-        cutoff = utcnow() - timedelta(days=settings.recording_retention_days)
-        rows = list(
-            (
-                await self.session.scalars(
-                    select(Recording).where(
-                        Recording.deleted_at.is_(None),
-                        Recording.status.in_(["completed", "failed", "stopped"]),
-                        Recording.created_at < cutoff,
+        paid_days = retention_days(settings, paid=True)
+        free_days = retention_days(settings, paid=False)
+        rows: list[Recording] = []
+        for days, paid in ((paid_days, True), (free_days, False)):
+            if days <= 0:
+                continue
+            paid_users = paid_customer_clause()
+            owner = Recording.user_id.in_(paid_users) if paid else Recording.user_id.not_in(paid_users)
+            rows.extend(
+                (
+                    await self.session.scalars(
+                        select(Recording).where(
+                            Recording.deleted_at.is_(None),
+                            Recording.status.in_(["completed", "failed", "stopped"]),
+                            Recording.created_at < utcnow() - timedelta(days=days),
+                            owner,
+                        )
                     )
-                )
-            ).all()
-        )
+                ).all()
+            )
         now = utcnow()
         for recording in rows:
             recording.deleted_at = now

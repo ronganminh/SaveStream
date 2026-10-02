@@ -8,11 +8,21 @@ from app.api.schemas.recordings import (
     RecordingResponse,
     Source,
 )
-from app.domain.recordings.state import RecordingStatus, actions_for_status
+from app.application.recordings.retention import expires_at
+from app.domain.recordings.state import (
+    TERMINAL_RECORDING_STATUSES,
+    RecordingStatus,
+    actions_for_status,
+)
 from app.infrastructure.db.recording_models import Recording, RecordingArtifact
 
 
-def recording_response(recording: Recording) -> RecordingResponse:
+def recording_response(
+    recording: Recording,
+    *,
+    retention_days: int = 0,
+) -> RecordingResponse:
+    """retention_days > 0 adds expires_at for finished recordings."""
     status = RecordingStatus(recording.status)
     actions = actions_for_status(status)
     creator = None
@@ -48,6 +58,11 @@ def recording_response(recording: Recording) -> RecordingResponse:
         ),
         error=error,
         created_at=recording.created_at,
+        expires_at=(
+            expires_at(recording.created_at, retention_days)
+            if status in TERMINAL_RECORDING_STATUSES and recording.deleted_at is None
+            else None
+        ),
         updated_at=recording.updated_at,
     )
 

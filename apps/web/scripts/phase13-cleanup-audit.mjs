@@ -139,7 +139,7 @@ const productionHelp = block(
 for (const text of [
   'title: "Credits"',
   "bought once and never expiring",
-  "Recordings stay in your account until you delete them.",
+  "Finished recordings are stored for 30 days after you buy credits",
 ]) {
   mustIn("productionHelpTopics", productionHelp, text);
 }

@@ -107,8 +107,9 @@ async def list_recordings(
         cursor=cursor,
         status=status_filter,
     )
+    days = await service.retention_days_for(principal.user_id)
     return RecordingListResponse(
-        items=[recording_response(item) for item in page.items],
+        items=[recording_response(item, retention_days=days) for item in page.items],
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
     )
 
@@ -123,7 +124,9 @@ async def get_recording(
     principal: AuthPrincipal = Depends(require_scopes("recordings:read")),
     service: RecordingService = Depends(get_recording_service),
 ) -> RecordingResponse:
-    return recording_response(await service.get(principal, recording_id))
+    recording = await service.get(principal, recording_id)
+    days = await service.retention_days_for(principal.user_id)
+    return recording_response(recording, retention_days=days)
 
 
 @router.post(

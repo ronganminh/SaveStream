@@ -95,6 +95,7 @@ import {
   type WorkerStatus,
 } from "@/mocks/fixtures";
 import { notificationStore, useNotificationFeed } from "@/lib/notification-store";
+import { pluralize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
@@ -510,7 +511,7 @@ function ProductionAccountSettings() {
     <>
       <Section
         title="Profile"
-        body="Your display name and locale are stored by SaveStream. Email changes and profile images are not currently supported by the backend."
+        body="Your display name and language. To change your email address, contact support@savestream.online."
       >
         <div className="flex items-center gap-4">
           <span className="grid size-14 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
@@ -617,7 +618,7 @@ function ProductionAccountSettings() {
           if (!open) setConfirmText("");
         }}
         title="Request account deletion?"
-        body="Your account will be disabled immediately and every session will be revoked. The backend will then process the deletion request. This action cannot be undone from this screen."
+        body="Your account is closed immediately and you are signed out everywhere. Your recordings and personal data are then deleted. This cannot be undone."
         confirmLabel={deleteAccount.isPending ? "Requesting…" : "Delete account"}
         confirmDisabled={confirmText !== "DELETE" || deleteAccount.isPending}
         onConfirm={() => {
@@ -843,7 +844,7 @@ function ProductionNotificationSettings() {
     return (
       <ErrorState
         title="Could not load notification preferences"
-        body="SaveStream could not load your persisted notification settings."
+        body="Please try again in a moment."
         onRetry={() => preferences.refetch()}
       />
     );
@@ -881,7 +882,7 @@ function ProductionNotificationSettings() {
     <>
       <Section
         title="In-app notification preferences"
-        body="These preferences are stored by the backend and apply across signed-in devices."
+        body="These preferences apply on every device you sign in to."
       >
         <div>
           {rows.map(([key, label, description]) => (
@@ -929,13 +930,13 @@ function ProductionNotificationSettings() {
       </Section>
       <Section
         title="Email notifications"
-        body="Email delivery for recording lifecycle notifications is not supported by the current backend."
+        body="Recording notifications appear in the app. Email notifications are not available yet."
       >
         <StateBanner
           tone="info"
           icon={Mail}
-          title="In-app delivery only"
-          body="Phase 11 persists notification history and in-app preferences. It does not expose email toggles until user-facing email delivery is implemented."
+          title="In-app notifications"
+          body="You’ll see recording updates in the notification bell. We’ll add email notifications in a future update."
         />
       </Section>
     </>
@@ -1035,7 +1036,7 @@ function ProductionSecuritySettings() {
     <>
       <Section
         title="Password"
-        body="The backend does not expose an in-session change-password operation. Use the verified password-reset flow instead."
+        body="To change your password, we’ll email you a secure reset link."
       >
         <Button
           className="w-fit"
@@ -1127,7 +1128,7 @@ function ProductionSecuritySettings() {
         </Button>
       </Section>
 
-      <Section title="Sign-in methods" body="Authentication methods currently supported by the backend.">
+      <Section title="Sign-in methods" body="Ways you can sign in to SaveStream.">
         <div className="flex items-center gap-3 rounded-md border p-3">
           <KeyRound className="size-4 text-muted-foreground" />
           <div className="flex-1">
@@ -1141,7 +1142,7 @@ function ProductionSecuritySettings() {
           <div className="flex-1">
             <p className="text-sm font-medium">{t("Google")}</p>
             <p className="text-xs text-muted-foreground">
-              Not supported by the current SaveStream backend.
+              Coming soon.
             </p>
           </div>
           <span className="text-xs text-muted-foreground">Unavailable</span>
@@ -1316,7 +1317,7 @@ export function NotificationsPage() {
       <AppShell>
         <PageHeader
           title="Notifications"
-          subtitle="Persisted recording activity from the SaveStream backend."
+          subtitle="Updates about your recordings."
         />
         <div className="h-64 max-w-3xl animate-pulse rounded-lg border bg-muted" aria-busy="true" />
       </AppShell>
@@ -1328,11 +1329,11 @@ export function NotificationsPage() {
       <AppShell>
         <PageHeader
           title="Notifications"
-          subtitle="Persisted recording activity from the SaveStream backend."
+          subtitle="Updates about your recordings."
         />
         <ErrorState
           title="Could not load notifications"
-          body="SaveStream could not load your persisted notification history."
+          body="Please try again in a moment."
           onRetry={() => query.refetch()}
         />
       </AppShell>
@@ -1346,7 +1347,7 @@ export function NotificationsPage() {
         subtitle={
           isDemoMode
             ? "Recording activity, failures, and quota alerts."
-            : "Persisted recording activity synced from the SaveStream backend."
+            : "Updates about your recordings."
         }
         action={
           <Button
@@ -1369,7 +1370,7 @@ export function NotificationsPage() {
             tone="info"
             icon={Bell}
             title="Synced across devices"
-            body="Notification history and read state are persisted by the backend. New recording lifecycle notifications are refreshed automatically while this page is open."
+            body="Your notifications and read status are the same on every device. New notifications appear automatically while this page is open."
           />
         </div>
       )}
@@ -1470,7 +1471,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
             <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <h1 className="mt-5 text-xl font-semibold">Checking payment status…</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              We’re confirming this payment with the SaveStream backend.
+              We’re confirming your payment with Lemon Squeezy.
             </p>
           </div>
         </div>
@@ -1484,7 +1485,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
         <div className="grid min-h-[60vh] place-items-center">
           <ErrorState
             title="Could not confirm payment"
-            body="The browser redirect is not proof of payment. Retry the backend status check before assuming credits were added."
+            body="We couldn’t confirm your payment yet. Please try again; if you were charged, your credits will be added once the payment is confirmed."
             onRetry={() => query.refetch()}
           />
         </div>
@@ -1503,7 +1504,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
               tone="info"
               icon={Clock3}
               title="Payment is being confirmed"
-              body={`Order ${order.id} is still ${order.status}. SaveStream will keep checking the backend; credits are not considered added until the order becomes paid.`}
+              body="Your payment is still being confirmed. Credits are added as soon as Lemon Squeezy confirms it, usually within a minute."
               action={
                 <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
                   <RotateCcw />
@@ -1532,8 +1533,8 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
       <AppShell>
         <div className="grid min-h-[60vh] place-items-center">
           <SuccessState
-            title={`${order.credits} credits added`}
-            body="The SaveStream backend confirmed this payment as paid. Your credit balance and ledger are being refreshed from the server."
+            title={`${pluralize(order.credits, "credit")} added`}
+            body="Your payment is confirmed and the credits are in your balance."
             action={
               <>
                 <Button asChild>
@@ -1561,8 +1562,8 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
             title={refunded ? "Payment has a refund status" : "Payment was not completed"}
             body={
               refunded
-                ? `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. Your current balance is shown in Usage.`
-                : `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. No success is inferred from the checkout redirect.`
+                ? `This purchase is ${paymentReturnStatusLabel(order.status)}. Your current balance is shown in Usage.`
+                : `This purchase is ${paymentReturnStatusLabel(order.status)}. No credits were added.`
             }
           />
           <div className="flex justify-center">
@@ -1593,8 +1594,7 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
             </span>
             <h1 className="mt-5 text-2xl font-semibold">Checkout closed</h1>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              No payment order was supplied. SaveStream only treats a purchase as complete when the
-              backend confirms its payment status.
+              You left checkout before completing a purchase. No payment was taken.
             </p>
             <Button className="mt-7" asChild>
               <Link to="/billing">Back to billing</Link>
@@ -1612,7 +1612,7 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
           <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
             <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="mt-4 text-sm text-muted-foreground">
-              Checking the backend payment status…
+              Checking your payment status…
             </p>
           </div>
         </div>
@@ -1653,10 +1653,10 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
             }
             body={
               paid
-                ? `Order ${order.id} is paid according to the backend. Credits may already be reflected in your balance.`
+                ? "This purchase was paid. The credits are in your balance."
                 : isAwaitingPaymentConfirmation(order.status)
-                  ? `Order ${order.id} is still ${order.status}. This page does not mark it canceled; refresh Billing later because webhook or reconciliation may still update it.`
-                  : `Order ${order.id} is ${paymentReturnStatusLabel(order.status)} according to the backend.`
+                  ? "This purchase is still pending. If you completed payment, the credits will be added once it is confirmed; check Billing again in a minute."
+                  : `This purchase is ${paymentReturnStatusLabel(order.status)}.`
             }
           />
           <div className="flex justify-center gap-2">
@@ -3469,9 +3469,11 @@ export function TermsPage() {
           h: "Storage and deletion",
           p: (
             <p>
-              Recordings stay in your account until you delete them or delete your account. We may
-              remove recordings that violate these terms or the Acceptable Use Policy. Deleted
-              recordings cannot be recovered, so download anything you want to keep.
+              Finished recordings are stored for 30 days if your account has purchased credits, or
+              7 days if it has only used free trial credits, and are then deleted automatically. You
+              can delete them sooner, and deleting your account deletes them too. We may remove
+              recordings that violate these terms or the Acceptable Use Policy. Deleted recordings
+              cannot be recovered, so download anything you want to keep.
             </p>
           ),
         },
@@ -3622,8 +3624,9 @@ export function PrivacyPage() {
           h: "Retention",
           p: (
             <p>
-              Recordings are kept until you delete them or delete your account. When you delete your
-              account, we delete your recordings and remove your personal information from our
+              Finished recordings are kept for 30 days for accounts that have purchased credits and
+              7 days for free trial accounts, then deleted automatically; you can delete them sooner.
+              When you delete your account, we delete your recordings and remove your personal information from our
               systems, except billing records we must keep for accounting, tax, or fraud prevention.
               Security logs are kept only as long as needed for security and operations.
             </p>
@@ -4039,7 +4042,7 @@ const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; bod
     id: "retention",
     icon: Clock3,
     title: "How long are recordings kept?",
-    body: "Recordings stay in your account until you delete them. Deleting your account also deletes all of your recordings.",
+    body: "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial, then deleted automatically. Each recording shows its expiry date. Download anything you want to keep longer.",
   },
   {
     id: "troubleshooting",

@@ -2690,6 +2690,17 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "expires_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When a finished recording will be deleted by the retention policy; null while active or when kept until deleted."
           }
         },
         "additionalProperties": false
@@ -3654,6 +3665,22 @@
             ],
             "minimum": 1,
             "description": "Per-user simultaneous recording limit; null when not limited."
+          },
+          "recording_retention_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Days finished recordings are kept for accounts that bought credits; null keeps them until deleted."
+          },
+          "trial_recording_retention_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Days finished recordings are kept for trial-only accounts; null keeps them until deleted."
           }
         },
         "additionalProperties": false

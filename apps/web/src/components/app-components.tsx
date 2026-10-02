@@ -108,7 +108,7 @@ import {
 import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/mocks/demo-plan-catalog";
-import { formatDate } from "@/lib/formatters";
+import { formatDate, pluralize } from "@/lib/formatters";
 import type { ChannelModel, RecordingModel } from "@/repositories";
 import {
   useActiveRecordingData,
@@ -899,7 +899,7 @@ export function ChannelCard({ channel }: { channel: ChannelModel }) {
       </div>
       <div className="mt-4 flex justify-between border-t pt-3 text-xs">
         <span className="text-muted-foreground">
-          {channel.live} · {channel.recordings} recordings
+          {channel.live} · {pluralize(channel.recordings, "recording")}
         </span>
         <Link to="/channels/$id" params={{ id: channel.id }} className="font-medium text-primary">
           {t("View")}
@@ -1126,45 +1126,98 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
 
 export function VideoPlayerShell({
   state = "ready",
+  loadSource,
+  elapsed,
+  failedDetail,
 }: {
   state?: "ready" | "active" | "processing" | "failed";
+  /** Resolves a playable URL; errors should carry a user-facing message. */
+  loadSource?: () => Promise<string>;
+  elapsed?: string;
+  failedDetail?: string;
 }) {
   const { t } = usePreferences();
+  const [src, setSrc] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const play = async () => {
+    if (!loadSource || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setSrc(await loadSource());
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t("Playback is unavailable right now."));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (src) {
+    return (
+      <div className="w-full overflow-hidden rounded-lg bg-black">
+        <video
+          className="mx-auto max-h-[620px] w-full object-contain"
+          src={src}
+          controls
+          autoPlay
+          playsInline
+          preload="metadata"
+          onError={() => {
+            setSrc(null);
+            setError(t("Playback is unavailable right now."));
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative grid aspect-video max-h-[620px] w-full place-items-center overflow-hidden rounded-lg bg-player text-player-foreground">
       <div className="absolute inset-0 bg-player-grid" />
       {state === "ready" && (
-        <button
-          aria-label={t("Play video")}
-          className="relative grid size-16 place-items-center rounded-full bg-player-foreground text-player"
-        >
-          <span className="ml-1 text-2xl">▶</span>
-        </button>
+        <div className="relative text-center">
+          <button
+            type="button"
+            onClick={() => void play()}
+            disabled={loading || (!loadSource && !isDemoMode)}
+            aria-label={t("Play video")}
+            className="mx-auto grid size-16 place-items-center rounded-full bg-player-foreground text-player transition hover:scale-105 disabled:opacity-60"
+          >
+            {loading ? (
+              <span className="size-6 animate-spin rounded-full border-2 border-player/30 border-t-player" />
+            ) : (
+              <span className="ml-1 text-2xl">▶</span>
+            )}
+          </button>
+          {error && <p className="mt-4 max-w-sm px-4 text-sm text-player-muted">{error}</p>}
+        </div>
       )}
       {state === "active" && (
         <div className="relative text-center">
           <StatusBadge status="Recording" />
-          <p className="mt-5 font-mono text-4xl font-semibold">01:42:18</p>
+          <p className="mt-5 font-mono text-4xl font-semibold">{elapsed ?? "01:42:18"}</p>
           <p className="mt-2 text-sm text-player-muted">
-            Playback will be available after the livestream ends.
+            {t("Playback will be available after the livestream ends.")}
           </p>
         </div>
       )}
       {state === "processing" && (
         <div className="relative text-center">
           <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-player-muted border-t-player-foreground" />
-          <p className="mt-5 font-medium">Finalizing your recording</p>
+          <p className="mt-5 font-medium">{t("Finalizing your recording")}</p>
           <p className="mt-2 text-sm text-player-muted">
-            Playback will be available when processing is complete.
+            {t("Playback will be available when processing is complete.")}
           </p>
         </div>
       )}
       {state === "failed" && (
         <div className="relative max-w-md text-center">
           <AlertTriangle className="mx-auto size-8 text-recording" />
-          <p className="mt-4 font-medium">Recording couldn’t be completed</p>
+          <p className="mt-4 font-medium">{t("Recording couldn’t be completed")}</p>
           <p className="mt-2 text-sm text-player-muted">
-            47 minutes were saved before the stream connection was lost.
+            {failedDetail ?? "47 minutes were saved before the stream connection was lost."}
           </p>
         </div>
       )}
