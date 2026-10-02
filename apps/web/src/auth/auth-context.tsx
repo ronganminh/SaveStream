@@ -26,6 +26,7 @@ type AuthContextValue = {
   identity: AuthIdentity;
   signIn: (email: string, password: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
+  signOutEverywhere: () => Promise<void>;
   refreshSession: () => Promise<AuthUser | null>;
 };
 
@@ -142,6 +143,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [clearSession]);
 
+  const signOutEverywhere = useCallback(async () => {
+    if (isDemoMode) return;
+    try {
+      if (accessTokenRef.current) await authApi.logoutAll();
+    } finally {
+      clearSession();
+    }
+  }, [clearSession]);
+
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     if (isDemoMode) return user;
     const token = await refreshAccessToken();
@@ -166,8 +176,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [status, user]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, identity, signIn, signOut, refreshSession }),
-    [identity, refreshSession, signIn, signOut, status, user],
+    () => ({
+      status,
+      user,
+      identity,
+      signIn,
+      signOut,
+      signOutEverywhere,
+      refreshSession,
+    }),
+    [identity, refreshSession, signIn, signOut, signOutEverywhere, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

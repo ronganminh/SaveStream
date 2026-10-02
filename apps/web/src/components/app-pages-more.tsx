@@ -98,7 +98,18 @@ import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
+import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
+import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
+import {
+  accountActionErrorMessage,
+  useDeleteAccountMutation,
+  useExportAccountMutation,
+  useRequestPasswordResetMutation,
+  useResendVerificationMutation,
+  useRevokeSessionMutation,
+  useUpdateProfileMutation,
+} from "@/hooks/use-account-settings";
 import {
   isAwaitingPaymentConfirmation,
   useBillingReturnOrder,
@@ -394,6 +405,239 @@ function LabeledInput({
   );
 }
 function AccountSettings() {
+  return isDemoMode ? <LegacyAccountSettings /> : <ProductionAccountSettings />;
+}
+
+function ProductionAccountSettings() {
+  const { t } = usePreferences();
+  const navigate = useNavigate();
+  const { refreshSession } = useAuth();
+  const { query, state } = useCurrentUserData();
+  const updateProfile = useUpdateProfileMutation();
+  const exportAccount = useExportAccountMutation();
+  const deleteAccount = useDeleteAccountMutation();
+  const resendVerification = useResendVerificationMutation();
+  const [name, setName] = useState("");
+  const [locale, setLocale] = useState("en");
+  const [del, setDel] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+
+  useEffect(() => {
+    if (!query.data) return;
+    setName(query.data.display_name ?? "");
+    setLocale(query.data.locale);
+  }, [query.data]);
+
+  if (state.kind === "loading") {
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />;
+  }
+
+  if (state.kind === "error" || !query.data) {
+    return (
+      <ErrorState
+        title="Could not load account settings"
+        body="SaveStream could not load your current profile."
+        onRetry={() => query.refetch()}
+      />
+    );
+  }
+
+  const profile = query.data;
+  const dirty = name !== (profile.display_name ?? "") || locale !== profile.locale;
+  const initials = (profile.display_name || profile.email)
+    .split(/[\s@._-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+
+  const save = () => {
+    void updateProfile
+      .mutateAsync({
+        display_name: name.trim() || null,
+        locale: locale.trim(),
+      })
+      .then(async () => {
+        await refreshSession();
+        toast.success(t("Changes saved"));
+      })
+      .catch((error) =>
+        toast.error("Could not save profile", {
+          description: accountActionErrorMessage(error),
+        }),
+      );
+  };
+
+  const downloadExport = () => {
+    void exportAccount
+      .mutateAsync()
+      .then((payload) => {
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = "savestream-account-export.json";
+        anchor.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 0);
+        toast.success("Account export downloaded");
+      })
+      .catch((error) =>
+        toast.error("Could not export account data", {
+          description: accountActionErrorMessage(error),
+        }),
+      );
+  };
+
+  return (
+    <>
+      <Section
+        title="Profile"
+        body="Your display name and locale are stored by SaveStream. Email changes and profile images are not currently supported by the backend."
+      >
+        <div className="flex items-center gap-4">
+          <span className="grid size-14 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+            {initials || "SS"}
+          </span>
+          <div>
+            <p className="text-sm font-medium">{profile.email}</p>
+            <p className="text-xs text-muted-foreground">
+              {profile.email_verified ? "Email verified" : "Email verification pending"}
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <LabeledInput
+            id="acc-name"
+            label="Name"
+            value={name}
+            maxLength={160}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <LabeledInput
+            id="acc-locale"
+            label="Locale"
+            value={locale}
+            minLength={2}
+            maxLength={16}
+            onChange={(event) => setLocale(event.target.value)}
+          />
+        </div>
+        <LabeledInput
+          id="acc-email"
+          label="Email"
+          type="email"
+          value={profile.email}
+          readOnly
+          disabled
+        />
+        {!profile.email_verified && (
+          <StateBanner
+            tone="warning"
+            icon={Mail}
+            title="Verify your email"
+            body="Your account email has not been verified yet. You can request a fresh verification message."
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={resendVerification.isPending}
+                onClick={() => {
+                  void resendVerification
+                    .mutateAsync(profile.email)
+                    .then(() => toast.success("Verification email requested"))
+                    .catch((error) =>
+                      toast.error("Could not resend verification", {
+                        description: accountActionErrorMessage(error),
+                      }),
+                    );
+                }}
+              >
+                {resendVerification.isPending ? "Sending…" : "Resend verification"}
+              </Button>
+            }
+          />
+        )}
+        <Button
+          onClick={save}
+          disabled={!dirty || updateProfile.isPending || locale.trim().length < 2}
+        >
+          {updateProfile.isPending ? "Saving…" : t("Save changes")}
+        </Button>
+      </Section>
+
+      <Section
+        title="Export your data"
+        body="Download the account export returned by SaveStream as JSON. Recordings themselves are downloaded separately."
+      >
+        <Button
+          variant="outline"
+          className="w-fit"
+          disabled={exportAccount.isPending}
+          onClick={downloadExport}
+        >
+          <Download />
+          {exportAccount.isPending ? "Preparing export…" : "Download data export"}
+        </Button>
+      </Section>
+
+      <Section
+        danger
+        title="Delete account"
+        body="Request account deletion. SaveStream immediately disables the account and revokes all sessions, then processes deletion according to the server retention policy."
+      >
+        <Button variant="destructive" className="w-fit" onClick={() => setDel(true)}>
+          <Trash2 />
+          {t("Delete account")}
+        </Button>
+      </Section>
+
+      <ConfirmDialog
+        destructive
+        open={del}
+        onOpenChange={(open) => {
+          setDel(open);
+          if (!open) setConfirmText("");
+        }}
+        title="Request account deletion?"
+        body="Your account will be disabled immediately and every session will be revoked. The backend will then process the deletion request. This action cannot be undone from this screen."
+        confirmLabel={deleteAccount.isPending ? "Requesting…" : "Delete account"}
+        confirmDisabled={confirmText !== "DELETE" || deleteAccount.isPending}
+        onConfirm={() => {
+          void deleteAccount
+            .mutateAsync()
+            .then(async () => {
+              setDel(false);
+              toast.success("Account deletion requested");
+              await refreshSession();
+              await navigate({ to: "/", replace: true });
+            })
+            .catch((error) =>
+              toast.error("Could not request account deletion", {
+                description: accountActionErrorMessage(error),
+              }),
+            );
+        }}
+      >
+        <div>
+          <label htmlFor="confirm-delete" className="text-sm">
+            Type <b className="font-mono">DELETE</b> to confirm
+          </label>
+          <Input
+            id="confirm-delete"
+            className="mt-2"
+            value={confirmText}
+            onChange={(event) => setConfirmText(event.target.value)}
+            autoComplete="off"
+          />
+        </div>
+      </ConfirmDialog>
+    </>
+  );
+}
+
+function LegacyAccountSettings() {
   const { t } = usePreferences();
   const navigate = useNavigate();
   const [name, setName] = useState(user.name);
@@ -611,6 +855,177 @@ function NotificationSettings() {
   );
 }
 function SecuritySettings() {
+  return isDemoMode ? <LegacySecuritySettings /> : <ProductionSecuritySettings />;
+}
+
+function ProductionSecuritySettings() {
+  const { t } = usePreferences();
+  const navigate = useNavigate();
+  const { signOutEverywhere } = useAuth();
+  const { query: profileQuery, state: profileState } = useCurrentUserData();
+  const { query: sessionsQuery, state: sessionsState } = useSessionsData();
+  const revokeSession = useRevokeSessionMutation();
+  const resetPassword = useRequestPasswordResetMutation();
+  const [signOutAll, setSignOutAll] = useState(false);
+
+  if (profileState.kind === "loading" || sessionsState.kind === "loading") {
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />;
+  }
+
+  if (profileState.kind === "error" || !profileQuery.data) {
+    return (
+      <ErrorState
+        title="Could not load security settings"
+        body="SaveStream could not load your account security state."
+        onRetry={() => profileQuery.refetch()}
+      />
+    );
+  }
+
+  const profile = profileQuery.data;
+  const sessions = sessionsQuery.data?.items ?? [];
+
+  return (
+    <>
+      <Section
+        title="Password"
+        body="The backend does not expose an in-session change-password operation. Use the verified password-reset flow instead."
+      >
+        <Button
+          className="w-fit"
+          variant="outline"
+          disabled={resetPassword.isPending}
+          onClick={() => {
+            void resetPassword
+              .mutateAsync(profile.email)
+              .then(() =>
+                toast.success("Password reset email requested", {
+                  description: profile.email,
+                }),
+              )
+              .catch((error) =>
+                toast.error("Could not request password reset", {
+                  description: accountActionErrorMessage(error),
+                }),
+              );
+          }}
+        >
+          <Mail />
+          {resetPassword.isPending ? "Sending…" : "Email password reset link"}
+        </Button>
+      </Section>
+
+      <Section
+        title="Sessions"
+        body={`SaveStream returned ${sessions.length} session${sessions.length === 1 ? "" : "s"}. The current device is marked below.`}
+      >
+        {sessionsState.kind === "error" ? (
+          <ErrorState
+            title="Could not load sessions"
+            body="SaveStream could not load active sessions."
+            onRetry={() => sessionsQuery.refetch()}
+          />
+        ) : sessions.length ? (
+          <ul className="divide-y border-y">
+            {sessions.map((session) => (
+              <li key={session.id} className="flex items-center gap-3 py-4">
+                <Monitor className="size-5 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                    <span className="truncate">
+                      {session.user_agent || "Unknown browser or device"}
+                    </span>
+                    {session.current && (
+                      <span className="rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-semibold uppercase text-success">
+                        {t("This device")}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {session.ip_hint || "IP unavailable"} · Last active{" "}
+                    {new Date(session.last_seen_at).toLocaleString()}
+                  </p>
+                </div>
+                {!session.current && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={revokeSession.isPending}
+                    onClick={() => {
+                      void revokeSession
+                        .mutateAsync(session.id)
+                        .then(() => toast.success("Session revoked"))
+                        .catch((error) =>
+                          toast.error("Could not revoke session", {
+                            description: accountActionErrorMessage(error),
+                          }),
+                        );
+                    }}
+                  >
+                    {t("Revoke")}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No sessions were returned.</p>
+        )}
+
+        <Button
+          variant="outline"
+          className="w-fit"
+          onClick={() => setSignOutAll(true)}
+        >
+          Sign out everywhere
+        </Button>
+      </Section>
+
+      <Section title="Sign-in methods" body="Authentication methods currently supported by the backend.">
+        <div className="flex items-center gap-3 rounded-md border p-3">
+          <KeyRound className="size-4 text-muted-foreground" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">{t("Email and password")}</p>
+            <p className="text-xs text-muted-foreground">{profile.email}</p>
+          </div>
+          <span className="text-xs font-medium text-success">{t("Connected")}</span>
+        </div>
+        <div className="flex items-center gap-3 rounded-md border p-3 opacity-70">
+          <span className="grid size-4 place-items-center text-xs font-bold">G</span>
+          <div className="flex-1">
+            <p className="text-sm font-medium">{t("Google")}</p>
+            <p className="text-xs text-muted-foreground">
+              Not supported by the current SaveStream backend.
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground">Unavailable</span>
+        </div>
+      </Section>
+
+      <ConfirmDialog
+        open={signOutAll}
+        onOpenChange={setSignOutAll}
+        title="Sign out everywhere?"
+        body="All SaveStream sessions, including this device, will be revoked. Recording and monitoring continue on the server."
+        confirmLabel="Sign out everywhere"
+        onConfirm={() => {
+          void signOutEverywhere()
+            .then(async () => {
+              setSignOutAll(false);
+              await navigate({ to: "/sign-in", replace: true });
+            })
+            .catch((error) =>
+              toast.error("Could not sign out everywhere", {
+                description: accountActionErrorMessage(error),
+              }),
+            );
+        }}
+      />
+    </>
+  );
+}
+
+function LegacySecuritySettings() {
   const { t } = usePreferences();
   const [cur, setCur] = useState("");
   const [pw, setPw] = useState("");
