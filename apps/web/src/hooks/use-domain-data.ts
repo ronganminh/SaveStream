@@ -10,6 +10,11 @@ export const domainQueryKeys = {
   recording: (id: string) => ["recordings", id] as const,
   recordingArtifacts: (id: string) => ["recordings", id, "artifacts"] as const,
   activeRecording: ["recordings", "active"] as const,
+  creditBalance: ["credits", "balance"] as const,
+  creditTransactions: ["credits", "transactions"] as const,
+  creditReservations: ["credits", "reservations"] as const,
+  pricing: ["pricing"] as const,
+  creditPackages: ["billing", "packages"] as const,
   usage: ["usage", "current"] as const,
 };
 
@@ -93,6 +98,51 @@ export function useActiveRecordingData() {
       !isDemoMode && needsRecordingPolling(current.state.data) ? 5000 : false,
   });
   return { query, state: toResourceState(query, (data) => data === null) };
+}
+
+export function useCreditBalanceData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.creditBalance,
+    queryFn: () => repositories.credits.getBalance(),
+    enabled,
+  });
+  return { query, state: toResourceState(query) };
+}
+
+export function useCreditTransactionsData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.creditTransactions,
+    queryFn: () => repositories.credits.listTransactions({ limit: 20 }),
+    enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.items.length === 0) };
+}
+
+export function useCreditReservationsData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.creditReservations,
+    queryFn: () => repositories.credits.listReservations({ limit: 20 }),
+    enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.items.length === 0) };
+}
+
+export function usePricingData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.pricing,
+    queryFn: () => repositories.pricing.get(),
+    enabled,
+  });
+  return { query, state: toResourceState(query) };
+}
+
+export function useCreditPackagesData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.creditPackages,
+    queryFn: () => repositories.billing.listPackages(),
+    enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.items.length === 0) };
 }
 
 export function useUsageData() {

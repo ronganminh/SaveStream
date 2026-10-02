@@ -136,11 +136,22 @@ import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 import { isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
+import type {
+  CreditPackageResponse,
+  CreditReservationResponse,
+  CreditTransactionResponse,
+  PricingResponse,
+} from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import {
   useChannelData,
   useChannelsData,
+  useCreditBalanceData,
+  useCreditPackagesData,
+  useCreditReservationsData,
+  useCreditTransactionsData,
+  usePricingData,
   useRecordingArtifactsData,
   useRecordingData,
   useRecordingsData,
@@ -2064,6 +2075,353 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
 }
 
 export function UsagePage() {
+  return isDemoMode ? <LegacyUsagePage /> : <CreditsUsagePage />;
+}
+
+function formatCreditMoney(
+  packageItem: CreditPackageResponse,
+  language: string,
+) {
+  const amount = packageItem.price.amount_minor / 100;
+  try {
+    return new Intl.NumberFormat(language, {
+      style: "currency",
+      currency: packageItem.price.currency,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${packageItem.price.currency}`;
+  }
+}
+
+function pricingRuleTitle(rule: PricingResponse["rules"][number], index: number) {
+  const description = rule["description"];
+  if (typeof description === "string" && description.trim()) return description;
+  const code = rule["code"];
+  if (typeof code === "string" && code.trim()) return code;
+  return `Pricing rule ${index + 1}`;
+}
+
+function pricingRuleDetail(rule: PricingResponse["rules"][number]) {
+  const unitSeconds = rule["unit_seconds"];
+  const creditsPerUnit = rule["credits_per_unit"];
+  if (typeof unitSeconds === "number" && typeof creditsPerUnit === "number") {
+    const unit =
+      unitSeconds % 60 === 0
+        ? `${unitSeconds / 60} min`
+        : `${unitSeconds} sec`;
+    return `${creditsPerUnit} credit${creditsPerUnit === 1 ? "" : "s"} per ${unit}`;
+  }
+  return "The active backend pricing policy defines this rule.";
+}
+
+function creditTransactionTitle(transaction: CreditTransactionResponse) {
+  if (transaction.type === "charge" && transaction.reference_type === "recording") {
+    return "Recording charge";
+  }
+  if (transaction.type === "grant") return "Credits added";
+  if (transaction.type === "refund") return "Credit refund";
+  if (transaction.type === "adjustment") return "Credit adjustment";
+  if (transaction.type === "release") return "Reservation released";
+  return "Credit transaction";
+}
+
+function CreditTransactionRow({ transaction }: { transaction: CreditTransactionResponse }) {
+  const amount = transaction.amount > 0 ? `+${transaction.amount}` : String(transaction.amount);
+  return (
+    <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-[1.5fr_.8fr_.8fr_auto] sm:items-center">
+      <div>
+        <p className="font-medium">{creditTransactionTitle(transaction)}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {new Date(transaction.created_at).toLocaleString()}
+          {transaction.reference_id ? ` · ${transaction.reference_id}` : ""}
+        </p>
+      </div>
+      <span className="font-mono">{transaction.type}</span>
+      <span className="font-mono">Balance {transaction.balance_after}</span>
+      <span className="font-mono font-semibold">{amount}</span>
+    </div>
+  );
+}
+
+function CreditReservationRow({ reservation }: { reservation: CreditReservationResponse }) {
+  const outstanding = Math.max(
+    0,
+    reservation.reserved - reservation.settled - reservation.released,
+  );
+  return (
+    <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-[1.5fr_repeat(4,.7fr)] sm:items-center">
+      <div>
+        <p className="font-medium">Recording {reservation.recording_id}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {new Date(reservation.created_at).toLocaleString()}
+        </p>
+      </div>
+      <span className="font-mono">{reservation.status}</span>
+      <span className="font-mono">Reserved {reservation.reserved}</span>
+      <span className="font-mono">Settled {reservation.settled}</span>
+      <span className="font-mono">Open {outstanding}</span>
+    </div>
+  );
+}
+
+function CreditsUsagePage() {
+  const { t, language } = usePreferences();
+  const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
+  const { query: transactionsQuery, state: transactionsState } =
+    useCreditTransactionsData();
+  const { query: reservationsQuery, state: reservationsState } =
+    useCreditReservationsData();
+  const { query: pricingQuery, state: pricingState } = usePricingData();
+  const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
+
+  if (
+    balanceState.kind === "loading" ||
+    transactionsState.kind === "loading" ||
+    reservationsState.kind === "loading" ||
+    !balanceQuery.data
+  ) {
+    return (
+      <AppShell>
+        <PageHeader title="Credits & usage" subtitle="Loading credit account…" />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (balanceState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Credits & usage" />
+        <ErrorState
+          title="Could not load credit balance"
+          body="SaveStream could not load the authoritative credit account."
+          onRetry={() => balanceQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const balance = balanceQuery.data;
+  const transactions = transactionsQuery.data?.items ?? [];
+  const reservations = reservationsQuery.data?.items ?? [];
+  const activeReservations = reservations.filter((item) => item.status === "active");
+  const packages = packagesQuery.data?.items ?? [];
+  const pricing = pricingQuery.data;
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Credits & usage"
+        subtitle="Backend-authoritative credit balance, reservations, and charges."
+        action={
+          <Button variant="outline" asChild>
+            <Link to="/billing">
+              <CreditCard />
+              Billing
+            </Link>
+          </Button>
+        }
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          icon={Gauge}
+          title="SaveStream uses credits instead of monthly Free/Pro quotas"
+          body="Available credits equal posted credits minus active reservations. Recording charges are calculated and settled by the backend pricing snapshot; this page does not estimate final charges."
+        />
+      </div>
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Available credits"
+          value={String(balance.available)}
+          detail="Usable for new recordings"
+          icon={Zap}
+        />
+        <StatCard
+          label="Posted credits"
+          value={String(balance.posted)}
+          detail="Ledger balance"
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Reserved credits"
+          value={String(balance.reserved)}
+          detail="Held for active recordings"
+          icon={Clock3}
+        />
+        <StatCard
+          label="Active reservations"
+          value={String(activeReservations.length)}
+          detail="From the latest reservation page"
+          icon={Radio}
+        />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <section className="rounded-lg border bg-surface p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-medium">{t("Current pricing")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Public rules from the active backend pricing version.
+              </p>
+            </div>
+            {pricing && (
+              <span className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
+                {pricing.version}
+              </span>
+            )}
+          </div>
+          {pricingState.kind === "error" ? (
+            <div className="mt-5">
+              <StateBanner
+                tone="warning"
+                title="Pricing unavailable"
+                body="The backend does not currently have a readable active pricing rule."
+                action={
+                  <Button size="sm" variant="outline" onClick={() => void pricingQuery.refetch()}>
+                    Retry
+                  </Button>
+                }
+              />
+            </div>
+          ) : pricing ? (
+            <div className="mt-5 space-y-3">
+              {pricing.rules.length ? (
+                pricing.rules.map((rule, index) => (
+                  <div key={String(rule["code"] ?? index)} className="rounded-md border p-4">
+                    <p className="text-sm font-medium">{pricingRuleTitle(rule, index)}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {pricingRuleDetail(rule)}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No public pricing rules are exposed by the current backend version.
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-5 h-24 animate-pulse rounded-md bg-muted" />
+          )}
+        </section>
+
+        <section className="rounded-lg border bg-surface p-5">
+          <h2 className="font-medium">Credit packages</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Packages currently enabled by the billing backend.
+          </p>
+          {packagesState.kind === "error" ? (
+            <div className="mt-5">
+              <StateBanner
+                tone="warning"
+                title="Packages unavailable"
+                body="SaveStream could not load the current credit packages."
+                action={
+                  <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
+                    Retry
+                  </Button>
+                }
+              />
+            </div>
+          ) : packages.length ? (
+            <div className="mt-5 space-y-3">
+              {packages.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between gap-4 rounded-md border p-4"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{item.name}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {item.credits} credits
+                    </p>
+                  </div>
+                  <p className="font-mono font-semibold">
+                    {formatCreditMoney(item, language)}
+                  </p>
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Checkout is handled separately by the billing flow.
+              </p>
+            </div>
+          ) : packagesState.kind === "empty" ? (
+            <p className="mt-5 text-sm text-muted-foreground">
+              No active credit packages are available right now.
+            </p>
+          ) : (
+            <div className="mt-5 h-24 animate-pulse rounded-md bg-muted" />
+          )}
+        </section>
+      </div>
+
+      <section className="mt-8 rounded-lg border bg-surface">
+        <div className="border-b p-5">
+          <h2 className="font-medium">Active and recent reservations</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Reservations hold credits while recordings are in progress. Unused reserved credit is
+            released by the backend.
+          </p>
+        </div>
+        {reservationsState.kind === "error" ? (
+          <div className="p-5">
+            <StateBanner
+              tone="warning"
+              title="Reservations unavailable"
+              body="SaveStream could not load recent credit reservations."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void reservationsQuery.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        ) : reservations.length ? (
+          reservations.map((reservation) => (
+            <CreditReservationRow key={reservation.id} reservation={reservation} />
+          ))
+        ) : (
+          <p className="p-5 text-sm text-muted-foreground">No credit reservations yet.</p>
+        )}
+      </section>
+
+      <section className="mt-8 rounded-lg border bg-surface">
+        <div className="border-b p-5">
+          <h2 className="font-medium">Recent credit transactions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Ledger entries returned by the backend. Corrections appear as compensating entries.
+          </p>
+        </div>
+        {transactionsState.kind === "error" ? (
+          <div className="p-5">
+            <StateBanner
+              tone="warning"
+              title="Transactions unavailable"
+              body="SaveStream could not load recent credit transactions."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void transactionsQuery.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        ) : transactions.length ? (
+          transactions.map((transaction) => (
+            <CreditTransactionRow key={transaction.id} transaction={transaction} />
+          ))
+        ) : (
+          <p className="p-5 text-sm text-muted-foreground">No credit transactions yet.</p>
+        )}
+      </section>
+    </AppShell>
+  );
+}
+
+function LegacyUsagePage() {
   const { t } = usePreferences();
   const { query: usageQuery, state: usageState } = useUsageData();
   const { query: recordingsQuery } = useRecordingsData();
@@ -2290,6 +2648,134 @@ export function UsagePage() {
   );
 }
 export function BillingPage() {
+  return isDemoMode ? <LegacyBillingPage /> : <CreditBillingPage />;
+}
+
+function CreditBillingPage() {
+  const { language } = usePreferences();
+  const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
+  const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
+
+  if (balanceState.kind === "loading" || !balanceQuery.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Billing" subtitle="Loading credit account…" />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (balanceState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Billing" />
+        <ErrorState
+          title="Could not load billing balance"
+          body="SaveStream could not load the current credit account."
+          onRetry={() => balanceQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const balance = balanceQuery.data;
+  const packages = packagesQuery.data?.items ?? [];
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Billing"
+        subtitle="Credit packages available for your SaveStream account."
+        action={
+          <Button variant="outline" asChild>
+            <Link to="/usage">View credits & usage</Link>
+          </Button>
+        }
+      />
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
+        <StatCard
+          label="Available credits"
+          value={String(balance.available)}
+          detail="Available for new recordings"
+          icon={Zap}
+        />
+        <StatCard
+          label="Posted balance"
+          value={String(balance.posted)}
+          detail="Backend ledger balance"
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Reserved"
+          value={String(balance.reserved)}
+          detail="Held by active recordings"
+          icon={Clock3}
+        />
+      </div>
+
+      <section className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">Credit packages</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            These packages come from the billing backend. Secure checkout is wired separately.
+          </p>
+        </div>
+
+        {packagesState.kind === "error" ? (
+          <StateBanner
+            tone="warning"
+            title="Packages unavailable"
+            body="SaveStream could not load the current credit packages."
+            action={
+              <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : packages.length ? (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {packages.map((item) => (
+              <div key={item.id} className="rounded-lg border bg-surface p-6">
+                <p className="text-lg font-semibold">{item.name}</p>
+                <p className="mt-3 font-mono text-3xl font-semibold">
+                  {formatCreditMoney(item, language)}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {item.credits} credits
+                </p>
+                <Button className="mt-6 w-full" disabled>
+                  Checkout not yet enabled
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : packagesState.kind === "empty" ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No active packages"
+            body="The billing backend does not currently expose a package for purchase."
+          />
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
+            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
+          </div>
+        )}
+      </section>
+
+      <div className="mt-8">
+        <StateBanner
+          tone="info"
+          title="Credit purchases use payment orders and secure checkout"
+          body="This phase only replaces the old subscription mock with backend-authoritative balances and package data. Purchase execution is handled by the billing checkout flow."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+function LegacyBillingPage() {
   const { t, language } = usePreferences();
   const navigate = useNavigate();
   const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
@@ -2573,6 +3059,181 @@ export function AdminSystemPage() {
   );
 }
 export function PricingPage() {
+  if (isDemoMode) return <LegacyPricingPage />;
+  return <CreditPricingPage />;
+}
+
+function CreditPricingPage() {
+  const { t, language } = usePreferences();
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
+  const { query: pricingQuery, state: pricingState } = usePricingData(authenticated);
+  const { query: packagesQuery, state: packagesState } = useCreditPackagesData(authenticated);
+  const pricing = pricingQuery.data;
+  const packages = packagesQuery.data?.items ?? [];
+
+  return (
+    <>
+      <PublicHeader />
+      <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
+        <div className="text-center">
+          <h1 className="text-4xl font-semibold">Credit-based pricing for livestream recording.</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+            SaveStream uses integer credits. Recording costs are determined by the active backend
+            pricing policy and settled after recording usage is known.
+          </p>
+        </div>
+
+        {!authenticated ? (
+          <>
+            <div className="mx-auto mt-10 max-w-3xl">
+              <StateBanner
+                tone="info"
+                icon={CreditCard}
+                title="Sign in to view current packages and active pricing"
+                body="The current pricing and package APIs require an authenticated SaveStream account. We do not show stale Free/Pro prices or invent public package values here."
+                action={
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" asChild>
+                      <Link to="/sign-in">{t("Sign in")}</Link>
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link to="/sign-up">{t("Create account")}</Link>
+                    </Button>
+                  </div>
+                }
+              />
+            </div>
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {[
+                [
+                  "Credits, not monthly plan quotas",
+                  "The production backend tracks posted, reserved, and available credits instead of the old Free/Pro monthly usage model.",
+                ],
+                [
+                  "Backend pricing is authoritative",
+                  "Clients display the active public pricing rules but do not calculate or guess the final recording charge.",
+                ],
+                [
+                  "Unused reservations are released",
+                  "Credits reserved for a recording are settled or released by the backend as the recording lifecycle completes.",
+                ],
+              ].map(([title, body]) => (
+                <section key={title} className="rounded-lg border bg-surface p-5 text-left">
+                  <h2 className="font-medium">{title}</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
+                </section>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <section className="mt-10 rounded-lg border bg-surface p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h2 className="font-medium">Current backend pricing</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Public rules exposed by the active pricing configuration.
+                  </p>
+                </div>
+                {pricing && (
+                  <span className="w-fit rounded-md bg-muted px-2 py-1 font-mono text-xs">
+                    {pricing.version}
+                  </span>
+                )}
+              </div>
+              {pricingState.kind === "error" ? (
+                <div className="mt-5">
+                  <StateBanner
+                    tone="warning"
+                    title="Pricing unavailable"
+                    body="The active pricing policy could not be loaded."
+                    action={
+                      <Button size="sm" variant="outline" onClick={() => void pricingQuery.refetch()}>
+                        Retry
+                      </Button>
+                    }
+                  />
+                </div>
+              ) : pricing ? (
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {pricing.rules.length ? (
+                    pricing.rules.map((rule, index) => (
+                      <div key={String(rule["code"] ?? index)} className="rounded-md border p-4">
+                        <p className="text-sm font-medium">{pricingRuleTitle(rule, index)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {pricingRuleDetail(rule)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No public pricing rules are exposed by the current backend version.
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-5 h-28 animate-pulse rounded-md bg-muted" />
+              )}
+            </section>
+
+            <section className="mt-8">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold">Available credit packages</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Packages currently enabled by the billing backend.
+                </p>
+              </div>
+              {packagesState.kind === "error" ? (
+                <StateBanner
+                  tone="warning"
+                  title="Packages unavailable"
+                  body="SaveStream could not load the current credit packages."
+                  action={
+                    <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
+                      Retry
+                    </Button>
+                  }
+                />
+              ) : packages.length ? (
+                <div className="grid gap-5 md:grid-cols-2">
+                  {packages.map((item) => (
+                    <div key={item.id} className="rounded-lg border bg-surface p-6">
+                      <p className="text-lg font-semibold">{item.name}</p>
+                      <p className="mt-3 font-mono text-3xl font-semibold">
+                        {formatCreditMoney(item, language)}
+                      </p>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {item.credits} credits
+                      </p>
+                      <Button className="mt-6 w-full" variant="outline" asChild>
+                        <Link to="/billing">Open billing</Link>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : packagesState.kind === "empty" ? (
+                <EmptyState
+                  icon={CreditCard}
+                  title="No credit packages available"
+                  body="The billing backend does not currently expose an active package."
+                />
+              ) : (
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="h-40 animate-pulse rounded-lg border bg-muted" />
+                  <div className="h-40 animate-pulse rounded-lg border bg-muted" />
+                </div>
+              )}
+            </section>
+          </>
+        )}
+      </main>
+      <PublicFooter />
+    </>
+  );
+}
+
+function LegacyPricingPage() {
   const { t, language } = usePreferences();
   return (
     <>
