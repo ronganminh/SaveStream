@@ -798,6 +798,51 @@ const notifPrefs = [
   ],
 ] as const;
 function NotificationSettings() {
+  return isDemoMode ? <LegacyNotificationSettings /> : <ProductionNotificationSettings />;
+}
+
+function ProductionNotificationSettings() {
+  return (
+    <>
+      <Section
+        title="In-app notifications"
+        body="The backend does not expose persisted notifications yet. SaveStream currently derives a temporary in-app feed from real recording lifecycle changes while this browser session is open."
+      >
+        <StateBanner
+          tone="info"
+          icon={Bell}
+          title="Current-session feed"
+          body="Recording started, recording ready, and recording failed/stopped transitions can appear here while the app is running. These items and their read state are not persisted across reloads, sign-ins, or devices."
+        />
+        <div className="rounded-md border">
+          {[
+            ["Recording started", "Derived when a recording enters the recording state."],
+            ["Recording ready", "Derived when backend recording status becomes completed."],
+            ["Recording ended", "Derived when backend recording status becomes failed or stopped."],
+          ].map(([label, description]) => (
+            <div key={label} className="border-b p-4 last:border-0">
+              <p className="text-sm font-medium">{label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+            </div>
+          ))}
+        </div>
+      </Section>
+      <Section
+        title="Email notification preferences"
+        body="Recording notification preferences are not configurable because the current backend has no notification-preferences API."
+      >
+        <StateBanner
+          tone="warning"
+          icon={Mail}
+          title="Backend support required"
+          body="No preference is saved from this screen. Backend follow-up Issue #57 tracks persisted notifications and delivery preferences."
+        />
+      </Section>
+    </>
+  );
+}
+
+function LegacyNotificationSettings() {
   const { t } = usePreferences();
   const initial = { started: false, completed: true, failed: true, quota: true, expiry: true };
   const [saved, setSaved] = useState(initial);
@@ -1162,7 +1207,11 @@ export function NotificationsPage() {
     <AppShell>
       <PageHeader
         title="Notifications"
-        subtitle="Recording activity, failures, and quota alerts."
+        subtitle={
+          isDemoMode
+            ? "Recording activity, failures, and quota alerts."
+            : "Temporary recording activity from this browser session."
+        }
         action={
           <Button
             variant="outline"
@@ -1176,6 +1225,16 @@ export function NotificationsPage() {
           </Button>
         }
       />
+      {!isDemoMode && (
+        <div className="mb-4 max-w-3xl">
+          <StateBanner
+            tone="info"
+            icon={Bell}
+            title="Temporary in-app notifications"
+            body="This feed is derived from real recording state changes observed while SaveStream is open. It is not stored by the backend yet, so items and read state may disappear after reload, sign-out, or use on another device."
+          />
+        </div>
+      )}
       <div role="tablist" aria-label={t("Filter notifications")} className="mb-4 flex gap-1">
         {(["all", "unread"] as const).map((f) => (
           <Button
@@ -1210,11 +1269,29 @@ export function NotificationsPage() {
         />
       )}
       <p className="mt-4 text-xs text-muted-foreground">
-        Choose which emails you receive in{" "}
-        <Link to="/settings/notifications" className="text-primary underline underline-offset-4">
-          notification settings
-        </Link>
-        .
+        {isDemoMode ? (
+          <>
+            Choose which emails you receive in{" "}
+            <Link
+              to="/settings/notifications"
+              className="text-primary underline underline-offset-4"
+            >
+              notification settings
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            Persisted notification history and delivery preferences are not available yet.{" "}
+            <Link
+              to="/settings/notifications"
+              className="text-primary underline underline-offset-4"
+            >
+              View current notification scope
+            </Link>
+            .
+          </>
+        )}
       </p>
     </AppShell>
   );
