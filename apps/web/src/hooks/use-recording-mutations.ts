@@ -51,26 +51,38 @@ function downloadUrlIsFresh(expiresAt: string) {
   return Number.isFinite(expires) && expires - Date.now() > DOWNLOAD_EXPIRY_SAFETY_MS;
 }
 
-export function useArtifactDownloadMutation() {
+export function useRecordingDownloadMutation() {
   return useMutation({
-    mutationFn: async (artifactId: string) => {
-      let result = await repositories.recordings.createArtifactDownloadUrl(artifactId);
+    mutationFn: async (recordingId: string) => {
+      const artifacts = await repositories.recordings.listArtifacts(recordingId);
+      const artifact = artifacts.find(
+        (item) => item.kind === "video" && item.container === "mp4",
+      );
+      if (!artifact) {
+        throw new Error("The recording artifact is unavailable.");
+      }
+
+      let result = await repositories.recordings.createArtifactDownloadUrl(artifact.id);
       if (!downloadUrlIsFresh(result.expires_at)) {
-        result = await repositories.recordings.createArtifactDownloadUrl(artifactId);
+        result = await repositories.recordings.createArtifactDownloadUrl(artifact.id);
       }
       if (!downloadUrlIsFresh(result.expires_at)) {
         throw new Error("The download link expired before it could be used.");
       }
-      return result;
+      return { artifact, download: result };
     },
   });
 }
 
 export function artifactActionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return error instanceof Error && error.message.includes("expired")
-      ? "The download link expired. Try again to request a fresh link."
-      : "The recording file could not be downloaded.";
+    if (error instanceof Error && error.message.includes("expired")) {
+      return "The download link expired. Try again to request a fresh link.";
+    }
+    if (error instanceof Error && error.message.includes("unavailable")) {
+      return "This recording file is no longer available. It may have expired or been cleaned up.";
+    }
+    return "The recording file could not be downloaded.";
   }
   if (error.status === 404) {
     return "This recording file is no longer available. It may have expired or been cleaned up.";
