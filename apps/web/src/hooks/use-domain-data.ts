@@ -71,6 +71,14 @@ export function useRecordingsData() {
   return { query, state: toResourceState(query, (data) => data.length === 0) };
 }
 
+export function useNotificationRecordingFeedData() {
+  return useQuery({
+    queryKey: domainQueryKeys.recordings,
+    queryFn: () => repositories.recordings.list(),
+    refetchInterval: isDemoMode ? false : 5000,
+  });
+}
+
 export function useRecordingData(id: string | null | undefined) {
   const query = useQuery({
     queryKey: domainQueryKeys.recording(id ?? "missing"),
