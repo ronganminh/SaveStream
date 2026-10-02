@@ -35,4 +35,5 @@ jobs:
       - run: npm --workspace apps/web run test:credits
       - run: npm --workspace apps/web run test:billing
       - run: npm --workspace apps/web run test:account
+      - run: npm --workspace apps/web run test:notifications
       - run: npm run build

@@ -23,7 +23,8 @@
     "test:artifacts": "node scripts/recording-artifact-audit.mjs",
     "test:credits": "node scripts/credits-usage-audit.mjs",
     "test:billing": "node scripts/billing-integration-audit.mjs",
-    "test:account": "node scripts/account-settings-audit.mjs"
+    "test:account": "node scripts/account-settings-audit.mjs",
+    "test:notifications": "node scripts/notification-strategy-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
