@@ -52,9 +52,9 @@ for (const endpoint of [
 
 const pages = "src/components/app-pages.tsx";
 const usageWrapper = block(pages, "export function UsagePage", "function formatCreditMoney");
-mustIn("UsagePage", usageWrapper, "isDemoMode ? <LegacyUsagePage /> : <CreditsUsagePage />");
+mustIn("UsagePage", usageWrapper, "isDemoMode ? <DemoUsagePage /> : <CreditsUsagePage />");
 
-const creditsUsage = block(pages, "function CreditsUsagePage", "function LegacyUsagePage");
+const creditsUsage = block(pages, "function CreditsUsagePage", "function DemoUsagePage");
 for (const text of [
   "useCreditBalanceData()",
   "useCreditTransactionsData()",
@@ -81,7 +81,7 @@ for (const text of [
   forbidIn("CreditsUsagePage", creditsUsage, text);
 }
 
-const pricing = block(pages, "export function PricingPage", "function LegacyPricingPage");
+const pricing = block(pages, "export function PricingPage", "function DemoPricingPage");
 for (const text of [
   "CreditPricingPage",
   "usePricingData(authenticated)",
@@ -95,7 +95,7 @@ for (const text of ["planList.map", "Start with Pro", "Start for free"]) {
   forbidIn("PricingPage", pricing, text);
 }
 
-const billing = block(pages, "export function BillingPage", "function LegacyBillingPage");
+const billing = block(pages, "export function BillingPage", "function DemoBillingPage");
 for (const text of [
   "CreditBillingPage",
   "useCreditBalanceData()",
