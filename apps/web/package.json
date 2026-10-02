@@ -19,7 +19,8 @@
     "test:auth": "node scripts/auth-integration-audit.mjs",
     "test:repositories": "node scripts/repository-integration-audit.mjs",
     "test:watches": "node scripts/watch-integration-audit.mjs",
-    "test:recordings": "node scripts/recording-realtime-audit.mjs"
+    "test:recordings": "node scripts/recording-realtime-audit.mjs",
+    "test:artifacts": "node scripts/recording-artifact-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

@@ -9,6 +9,7 @@ import type {
   AdminRetryRecordingResponse,
   AdminUserListResponse,
   AdminUserResponse,
+  ArtifactsResponse,
   AuditLogListResponse,
   CheckoutResponse,
   CreateRecordingRequest,
@@ -17,6 +18,7 @@ import type {
   CreditPackageListResponse,
   CreditReservationListResponse,
   CreditTransactionListResponse,
+  DownloadUrlResponse,
   LiveStatusResponse,
   OperationalSnapshotResponse,
   PaymentOrderListResponse,
@@ -232,6 +234,19 @@ export const apiRepositories: SaveStreamRepositories = {
 
     getRecording(id: string) {
       return apiClient.get<RecordingResponse>(`/v1/recordings/${id}`);
+    },
+
+    async listArtifacts(id: string) {
+      const response = await apiClient.get<ArtifactsResponse>(
+        `/v1/recordings/${id}/artifacts`,
+      );
+      return response.items;
+    },
+
+    createArtifactDownloadUrl(artifactId: string) {
+      return apiClient.post<DownloadUrlResponse>(
+        `/v1/artifacts/${artifactId}/download-url`,
+      );
     },
 
     getLiveStatus(source: Source) {

@@ -10,6 +10,7 @@ import {
   type Notification,
 } from "@/mocks/fixtures";
 import type {
+  ArtifactResponse,
   PaymentOrderResponse,
   RecordingEventResponse,
   RecordingResponse,
@@ -131,6 +132,7 @@ function demoRecording(item: (typeof recordings)[number]): RecordingModel {
 const demoWatchState = channels.map(demoWatchFromChannel);
 const demoChannelState = channels.map(demoChannel);
 const demoRecordingState = recordings.map(demoRecordingFromFixture);
+const deletedDemoRecordingIds = new Set<string>();
 
 function channelStatusFromWatch(watch: WatchResponse): ChannelModel["status"] {
   if (watch.status === "paused_error") return "Error";
@@ -280,14 +282,17 @@ export const demoRepositories: SaveStreamRepositories = {
 
   recordings: {
     async list() {
-      return recordings.map(demoRecording);
+      return recordings
+        .filter((recording) => !deletedDemoRecordingIds.has(recording.id))
+        .map(demoRecording);
     },
     async getById(id) {
+      if (deletedDemoRecordingIds.has(id)) return null;
       const item = recordings.find((recording) => recording.id === id);
       return item ? demoRecording(item) : null;
     },
     async getActive() {
-      if (!activeRecording) return null;
+      if (!activeRecording || deletedDemoRecordingIds.has(activeRecording.id)) return null;
       return {
         ...activeRecording,
         backendStatus: "recording",
@@ -305,9 +310,31 @@ export const demoRepositories: SaveStreamRepositories = {
       };
     },
     async getRecording(id) {
+      if (deletedDemoRecordingIds.has(id)) throw new Error("Demo recording not found");
       const item = demoRecordingState.find((recording) => recording.id === id);
       if (!item) throw new Error("Demo recording not found");
       return structuredClone(item);
+    },
+    async listArtifacts(id) {
+      if (deletedDemoRecordingIds.has(id)) return [];
+      const recording = demoRecordingState.find((item) => item.id === id);
+      if (!recording || recording.status === "recording") return [];
+      const artifact: ArtifactResponse = {
+        id: `demo-artifact-${id}`,
+        recording_id: id,
+        kind: "video",
+        container: "mp4",
+        size_bytes: recording.bytes_recorded,
+        checksum_sha256: "demo".padEnd(64, "0"),
+        created_at: recording.updated_at,
+      };
+      return [artifact];
+    },
+    async createArtifactDownloadUrl(artifactId) {
+      return {
+        url: `https://demo.savestream.invalid/artifacts/${artifactId}.mp4`,
+        expires_at: new Date(Date.now() + 60_000).toISOString(),
+      };
     },
     async getLiveStatus(source) {
       return {
@@ -348,6 +375,7 @@ export const demoRepositories: SaveStreamRepositories = {
       return structuredClone(item);
     },
     async delete(id) {
+      deletedDemoRecordingIds.add(id);
       const index = demoRecordingState.findIndex((recording) => recording.id === id);
       if (index >= 0) demoRecordingState.splice(index, 1);
     },
