@@ -33,4 +33,5 @@ jobs:
       - run: npm --workspace apps/web run test:recordings
       - run: npm --workspace apps/web run test:artifacts
       - run: npm --workspace apps/web run test:credits
+      - run: npm --workspace apps/web run test:billing
       - run: npm run build
