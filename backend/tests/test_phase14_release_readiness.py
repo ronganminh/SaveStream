@@ -78,6 +78,10 @@ def _release_settings() -> AppSettings:
         minio_access_key="test-access",
         minio_secret_key="test-secret",
         frontend_base_url="https://savestream.online",
+        cors_allow_origins=(
+            "https://savestream.online",
+            "https://www.savestream.online",
+        ),
     )
 
 
@@ -89,7 +93,13 @@ def test_checkout_return_url_is_locked_to_frontend_success_route() -> None:
     )
     assert accepted == "https://savestream.online/billing/success?order_id=abc"
 
-    with pytest.raises(ApplicationError, match="configured frontend origin"):
+    alternate = _validate_checkout_return_url(
+        settings,
+        "https://www.savestream.online/billing/success?order_id=abc",
+    )
+    assert alternate.startswith("https://www.savestream.online/billing/success")
+
+    with pytest.raises(ApplicationError, match="allowed frontend origin"):
         _validate_checkout_return_url(
             settings,
             "https://evil.example/billing/success?order_id=abc",
