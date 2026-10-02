@@ -96,6 +96,8 @@ const vi: Record<string, string> = {
   "Retention cleanup": "Tự động dọn theo thời hạn",
   "Completed recordings": "Bản ghi đã hoàn tất",
   "Recording Examples": "Bản ghi mẫu",
+  "Show password": "Hiện mật khẩu",
+  "Hide password": "Ẩn mật khẩu",
   "Start recording your own livestreams": "Bắt đầu ghi livestream của bạn",
   "Demo preview": "Bản xem thử",
   SAMPLE: "BẢN MẪU",

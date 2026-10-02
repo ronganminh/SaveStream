@@ -8,6 +8,7 @@ from email.message import EmailMessage
 from urllib.parse import quote
 
 from app.infrastructure.db.models import OneTimeToken, User
+from app.infrastructure.email import templates
 from app.infrastructure.db.session import Database
 from app.infrastructure.security.tokens import TokenService
 from app.settings import AppSettings, get_app_settings
@@ -23,12 +24,14 @@ class SMTPEmailSender:
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
 
-    def send(self, *, to: str, subject: str, text: str) -> None:
+    def send(self, *, to: str, subject: str, text: str, html: str | None = None) -> None:
         message = EmailMessage()
         message["From"] = self.settings.email_from
         message["To"] = to
         message["Subject"] = subject
         message.set_content(text)
+        if html is not None:
+            message.add_alternative(html, subtype="html")
         with smtplib.SMTP(
             self.settings.smtp_host,
             self.settings.smtp_port,
@@ -75,21 +78,30 @@ async def deliver_one_time_token_email(
                 expires_at=_aware(token_row.expires_at),
             )
             encoded = quote(raw_token, safe="")
+            expires_in = int(
+                (_aware(token_row.expires_at) - _aware(token_row.created_at)).total_seconds()
+            )
             if token_row.purpose == "verify_email":
-                subject = "Verify your SaveStream email"
-                link = f"{cfg.frontend_base_url}/verify-email?token={encoded}"
-                body = f"Open this link to verify your SaveStream email:\n\n{link}\n"
+                email = templates.verify_email(
+                    link=f"{cfg.frontend_base_url}/verify-email?token={encoded}",
+                    expires_in_seconds=expires_in,
+                    site_url=cfg.frontend_base_url,
+                    trial_credits=cfg.signup_credits,
+                )
             elif token_row.purpose == "password_reset":
-                subject = "Reset your SaveStream password"
-                link = f"{cfg.frontend_base_url}/reset-password?token={encoded}"
-                body = f"Open this link to reset your SaveStream password:\n\n{link}\n"
+                email = templates.password_reset(
+                    link=f"{cfg.frontend_base_url}/reset-password?token={encoded}",
+                    expires_in_seconds=expires_in,
+                    site_url=cfg.frontend_base_url,
+                )
             else:
                 return
 
             SMTPEmailSender(cfg).send(
                 to=user.email,
-                subject=subject,
-                text=body,
+                subject=email.subject,
+                text=email.text,
+                html=email.html,
             )
     finally:
         await database.close()
