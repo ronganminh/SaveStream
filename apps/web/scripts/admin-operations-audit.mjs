@@ -1,0 +1,171 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const root = process.cwd();
+const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+const failures = [];
+
+const must = (file, text) => {
+  if (!read(file).includes(text)) failures.push(file + ": missing " + JSON.stringify(text));
+};
+const forbid = (file, text) => {
+  if (read(file).includes(text)) failures.push(file + ": forbidden " + JSON.stringify(text));
+};
+const block = (file, start, end) => {
+  const source = read(file);
+  const from = source.indexOf(start);
+  const to = source.indexOf(end, from + start.length);
+  if (from < 0 || to < 0) {
+    failures.push(file + ": could not locate block " + start);
+    return "";
+  }
+  return source.slice(from, to);
+};
+const mustIn = (label, source, text) => {
+  if (!source.includes(text)) failures.push(label + ": missing " + JSON.stringify(text));
+};
+const forbidIn = (label, source, text) => {
+  if (source.includes(text)) failures.push(label + ": forbidden " + JSON.stringify(text));
+};
+
+[
+  '"/v1/admin/recordings"',
+  '"/v1/admin/audit"',
+  '"/v1/admin/operations/snapshot"',
+  '"/v1/admin/recordings/"',
+  '"/retry"',
+].forEach((text) => must("src/repositories/api.ts", text));
+
+[
+  'pathname.startsWith("/admin")',
+  'requiredRole: "admin"',
+  'requiresAuth: true',
+].forEach((text) => must("src/lib/app-config.ts", text));
+
+[
+  "useAdminOperationalSnapshotData",
+  "refetchInterval: 10_000",
+  "useAdminRecordingsData",
+  "useAdminRecordingData",
+  "refetchInterval: 15_000",
+  "useAdminAuditData",
+  "useAdminRetryRecordingMutation",
+  "repositories.admin.retryRecording",
+  "globalThis.crypto?.randomUUID",
+].forEach((text) => must("src/hooks/use-admin-data.ts", text));
+
+["/metrics", "X-Metrics-Token", "metrics_token"].forEach((text) =>
+  forbid("src/hooks/use-admin-data.ts", text),
+);
+
+const system = block(
+  "src/components/app-pages.tsx",
+  "function ProductionAdminSystemPage()",
+  "function LegacyAdminSystemPage()",
+);
+[
+  "useAdminOperationalSnapshotData()",
+  "Active recordings",
+  "Recent failed recordings",
+  "Pending outbox events",
+  "Unprocessed payment events",
+  "Pending payment orders",
+  "Paused error watches",
+  "does not expose per-worker CPU",
+].forEach((text) => mustIn("ProductionAdminSystemPage", system, text));
+["Demo fixture", "4 / 4", "8.2 TB", "0.08%"].forEach((text) =>
+  forbidIn("ProductionAdminSystemPage", system, text),
+);
+
+const pages = "src/components/app-pages-more.tsx";
+
+const workers = block(
+  pages,
+  "function ProductionAdminWorkersPage()",
+  "/* ---------------- Admin: workers ---------------- */",
+);
+[
+  "useAdminOperationalSnapshotData()",
+  "Per-worker telemetry is not exposed by the backend",
+  "Active recordings",
+  "Pending outbox",
+  "Recent failures",
+  "Paused error watches",
+].forEach((text) => mustIn("ProductionAdminWorkersPage", workers, text));
+["useState(workerList)", "Drain worker", "Recent logs (placeholder)", "setList("].forEach(
+  (text) => forbidIn("ProductionAdminWorkersPage", workers, text),
+);
+
+const jobs = block(
+  pages,
+  "function ProductionAdminJobsPage()",
+  "/* ---------------- Admin: jobs ---------------- */",
+);
+[
+  "useAdminRecordingsData(",
+  "useAdminRetryRecordingMutation()",
+  "recording.actions.can_retry",
+  "adminSourceLabel(recording)",
+  "recording.actual_cost",
+].forEach((text) => mustIn("ProductionAdminJobsPage", jobs, text));
+["jobList", ".stuck", "Mark as failed", "stale heartbeat"].forEach((text) =>
+  forbidIn("ProductionAdminJobsPage", jobs, text),
+);
+
+const detail = block(
+  pages,
+  "function ProductionAdminJobDetailPage()",
+  "function LegacyAdminJobDetailPage()",
+);
+[
+  "useAdminRecordingData(id)",
+  "useAdminRetryRecordingMutation()",
+  "item.actions.can_retry",
+  "Backend recording state",
+  "admin retry endpoint",
+].forEach((text) => mustIn("ProductionAdminJobDetailPage", detail, text));
+["jobList.find", "Mark as failed", "JobEventTimeline", "worker process is stopped"].forEach(
+  (text) => forbidIn("ProductionAdminJobDetailPage", detail, text),
+);
+
+const auditPage = block(
+  pages,
+  "function ProductionAdminErrorsPage()",
+  "/* ---------------- Admin: errors ---------------- */",
+);
+[
+  "useAdminAuditData()",
+  "useAdminOperationalSnapshotData()",
+  "Audit log is not a raw service-error stream",
+  "Recent recording failures",
+  "Pending outbox",
+  "Unprocessed payment events",
+  "Paused error watches",
+  "JSON.stringify(selected.details, null, 2)",
+].forEach((text) => mustIn("ProductionAdminErrorsPage", auditPage, text));
+["systemEvents", "Severity", "EventState", "stack (placeholder)"].forEach((text) =>
+  forbidIn("ProductionAdminErrorsPage", auditPage, text),
+);
+
+must("src/components/app-components.tsx", 'label: isDemoMode ? "Errors" : "Audit"');
+
+const backend = read("../../backend/src/app/api/routes/admin.py");
+["_require_admin(principal)", '"FORBIDDEN"', '"Admin permission is required"'].forEach(
+  (text) => {
+    if (!backend.includes(text)) failures.push("backend admin RBAC: missing " + JSON.stringify(text));
+  },
+);
+
+const backendTest = read("../../backend/tests/test_phase8_admin_api.py");
+[
+  'forbidden = client.get("/v1/admin/users")',
+  "assert forbidden.status_code == 403",
+].forEach((text) => {
+  if (!backendTest.includes(text)) failures.push("backend admin test: missing " + JSON.stringify(text));
+});
+
+if (failures.length) {
+  console.error("Admin operations audit failed:\n- " + failures.join("\n- "));
+  process.exit(1);
+}
+console.log("Admin operations audit passed.");

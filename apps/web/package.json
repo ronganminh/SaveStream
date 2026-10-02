@@ -24,7 +24,8 @@
     "test:credits": "node scripts/credits-usage-audit.mjs",
     "test:billing": "node scripts/billing-integration-audit.mjs",
     "test:account": "node scripts/account-settings-audit.mjs",
-    "test:notifications": "node scripts/notification-strategy-audit.mjs"
+    "test:notifications": "node scripts/notification-strategy-audit.mjs",
+    "test:admin": "node scripts/admin-operations-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
