@@ -1546,6 +1546,146 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
   );
 }
 
+function formatAdminDuration(seconds: number) {
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours) return `${hours}h ${minutes}m`;
+  if (minutes) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}
+
+function formatAdminBytes(bytes: number) {
+  if (bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+}
+
+function adminSourceLabel(recording: RecordingResponse) {
+  return recording.creator?.display_name || recording.creator?.username || recording.source.value;
+}
+
+function AdminRecordingStatusPill({ status }: { status: RecordingStatusValue }) {
+  const className =
+    status === "completed"
+      ? "bg-success-subtle text-success"
+      : status === "failed"
+        ? "bg-recording-subtle text-destructive"
+        : status === "recording"
+          ? "bg-info-subtle text-info"
+          : status === "stopped"
+            ? "bg-muted text-muted-foreground"
+            : "bg-warning-subtle text-warning-foreground";
+
+  return (
+    <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium", className)}>
+      {status.replaceAll("_", " ")}
+    </span>
+  );
+}
+
+export function AdminWorkersPage() {
+  return isDemoMode ? <LegacyAdminWorkersPage /> : <ProductionAdminWorkersPage />;
+}
+
+function ProductionAdminWorkersPage() {
+  const snapshot = useAdminOperationalSnapshotData();
+
+  if (snapshot.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Workers & queues" subtitle="Loading operational state…" />
+        <div className="h-48 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (snapshot.isError || !snapshot.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Workers & queues" />
+        <ErrorState
+          title="Could not load worker-facing operations"
+          body="SaveStream could not load the backend operations snapshot."
+          onRetry={() => snapshot.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const data = snapshot.data;
+  return (
+    <AppShell>
+      <PageHeader
+        title="Workers & queues"
+        subtitle="Aggregate backend workload signals. Refreshes every 10 seconds while open."
+        action={
+          <Button
+            variant="outline"
+            disabled={snapshot.isFetching}
+            onClick={() => void snapshot.refetch()}
+          >
+            <RotateCcw />
+            {snapshot.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          icon={Server}
+          title="Per-worker telemetry is not exposed by the backend"
+          body="SaveStream currently exposes operational counters, not worker IDs, CPU, memory, heartbeat, logs, versions, or drain controls. Production intentionally does not simulate those details."
+        />
+      </div>
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Active recordings"
+          value={String(data.active_recordings)}
+          detail="Current recording workload"
+          icon={Radio}
+        />
+        <StatCard
+          label="Pending outbox"
+          value={String(data.pending_outbox_events)}
+          detail="Events waiting to publish"
+          icon={Clock3}
+        />
+        <StatCard
+          label="Recent failures"
+          value={String(data.failed_recordings_recent)}
+          detail="Backend failure window"
+          icon={AlertTriangle}
+        />
+        <StatCard
+          label="Paused error watches"
+          value={String(data.paused_error_watches)}
+          detail="Watches paused after errors"
+          icon={ShieldCheck}
+        />
+      </div>
+
+      <section className="mt-8 rounded-lg border bg-surface p-5">
+        <h2 className="font-medium">Operational boundaries</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Browser admin pages never receive the metrics token and do not call /metrics. Detailed
+          worker telemetry requires a future authenticated admin API before this page can safely
+          show a worker table or perform worker actions.
+        </p>
+      </section>
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: workers ---------------- */
 function WorkerBadge({ status }: { status: WorkerStatus }) {
   if (status === "Recording" || status === "Processing") return <StatusBadge status={status} />;
