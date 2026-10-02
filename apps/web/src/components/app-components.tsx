@@ -98,7 +98,7 @@ import {
 } from "@/lib/app-config";
 import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
-import { planCatalog } from "@/lib/plan-catalog";
+import { planCatalog } from "@/mocks/demo-plan-catalog";
 import { formatDate } from "@/lib/formatters";
 import type { ChannelModel, RecordingModel } from "@/repositories";
 import {
