@@ -25,6 +25,65 @@ export function useStopRecordingMutation() {
   });
 }
 
+export function useDeleteRecordingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await repositories.recordings.delete(id);
+      return id;
+    },
+    onSuccess: async (id) => {
+      queryClient.removeQueries({ queryKey: domainQueryKeys.recording(id) });
+      queryClient.removeQueries({ queryKey: domainQueryKeys.recordingArtifacts(id) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.recordings }),
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.activeRecording }),
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.channels }),
+      ]);
+    },
+  });
+}
+
+const DOWNLOAD_EXPIRY_SAFETY_MS = 5_000;
+
+function downloadUrlIsFresh(expiresAt: string) {
+  const expires = Date.parse(expiresAt);
+  return Number.isFinite(expires) && expires - Date.now() > DOWNLOAD_EXPIRY_SAFETY_MS;
+}
+
+export function useArtifactDownloadMutation() {
+  return useMutation({
+    mutationFn: async (artifactId: string) => {
+      let result = await repositories.recordings.createArtifactDownloadUrl(artifactId);
+      if (!downloadUrlIsFresh(result.expires_at)) {
+        result = await repositories.recordings.createArtifactDownloadUrl(artifactId);
+      }
+      if (!downloadUrlIsFresh(result.expires_at)) {
+        throw new Error("The download link expired before it could be used.");
+      }
+      return result;
+    },
+  });
+}
+
+export function artifactActionErrorMessage(error: unknown): string {
+  if (!(error instanceof ApiError)) {
+    return error instanceof Error && error.message.includes("expired")
+      ? "The download link expired. Try again to request a fresh link."
+      : "The recording file could not be downloaded.";
+  }
+  if (error.status === 404) {
+    return "This recording file is no longer available. It may have expired or been cleaned up.";
+  }
+  if (error.status === 0) {
+    return "Unable to reach SaveStream. Check your connection and try again.";
+  }
+  if (error.status >= 500 || error.retryable) {
+    return "Storage is temporarily unavailable. Please try again.";
+  }
+  return error.serverMessage || "The recording file could not be downloaded.";
+}
+
 export function recordingActionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "The recording action could not be completed.";
   if (error.status === 0) return "Unable to reach SaveStream. Check your connection and try again.";
