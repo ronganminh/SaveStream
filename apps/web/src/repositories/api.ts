@@ -196,8 +196,8 @@ export const apiRepositories: SaveStreamRepositories = {
       if (options.lastEventId) headers.set("Last-Event-ID", options.lastEventId);
       const response = await apiClient.get<Response>(`/v1/recordings/${id}/events`, {
         headers,
-        signal: options.signal,
         responseMode: "response",
+        ...(options.signal ? { signal: options.signal } : {}),
       });
 
       for await (const message of parseSseStream(response, options.signal)) {
