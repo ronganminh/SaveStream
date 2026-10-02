@@ -11,6 +11,11 @@ const files = [
   "src/lib/plan-catalog.ts",
   "src/mocks/fixtures.ts",
   "src/routes/status.tsx",
+  "src/lib/app-config.ts",
+  "src/api/client.ts",
+  "src/api/errors.ts",
+  "src/repositories/api.ts",
+  "src/repositories/index.ts",
 ];
 const source = Object.fromEntries(files.map((f) => [f, read(f)]));
 const all = Object.values(source).join("\n");
@@ -20,6 +25,9 @@ const requireText = (file, text) => {
 };
 const forbid = (text, label = text) => {
   if (all.includes(text)) failures.push(`forbidden regression: ${label}`);
+};
+const forbidText = (file, text, label = text) => {
+  if (source[file].includes(text)) failures.push(`${file}: forbidden ${JSON.stringify(label)}`);
 };
 
 forbid("MutationObserver", "DOM-mutation localization");
@@ -33,6 +41,19 @@ requireText("src/lib/plan-catalog.ts", 'simultaneousRecordings: 2');
 requireText("src/mocks/fixtures.ts", "planCatalog.pro.quotas.recordingHours");
 requireText("src/lib/preferences.tsx", '"Demo — illustrative data"');
 requireText("src/lib/preferences.tsx", '"Bản demo — dữ liệu minh họa"');
+
+requireText("src/lib/app-config.ts", 'VITE_API_BASE_URL');
+requireText("src/lib/app-config.ts", "apiConfigured");
+forbidText("src/lib/app-config.ts", "productionBackendConnected = false");
+requireText("src/api/client.ts", "REQUEST_ID_HEADER");
+requireText("src/api/client.ts", 'credentials = "include"');
+requireText("src/api/errors.ts", "export class ApiError");
+requireText("src/api/errors.ts", "request_id");
+requireText("src/repositories/index.ts", "isDemoMode ? demoRepositories : apiRepositories");
+for (const file of ["src/api/client.ts", "src/api/errors.ts", "src/repositories/api.ts"]) {
+  forbidText(file, "@/mocks/fixtures", "production foundation importing mock fixtures");
+  forbidText(file, "demoRepositories", "production foundation importing demo repositories");
+}
 
 if (failures.length) {
   console.error("P0 frontend audit failed:\n- " + failures.join("\n- "));
