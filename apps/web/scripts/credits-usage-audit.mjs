@@ -84,14 +84,19 @@ for (const text of [
 const pricing = block(pages, "export function PricingPage", "function DemoPricingPage");
 for (const text of [
   "CreditPricingPage",
-  "usePricingData(authenticated)",
-  "useCreditPackagesData(authenticated)",
-  "Credit-based pricing for livestream recording.",
-  "Sign in to view current packages and active pricing",
+  // Public catalog: guests see real packages without signing in.
+  "usePublicPricingData()",
+  "Simple, pay-as-you-go pricing",
+  "One-time purchase",
 ]) {
   mustIn("PricingPage", pricing, text);
 }
-for (const text of ["planList.map", "Start with Pro", "Start for free"]) {
+for (const text of [
+  "planList.map",
+  "Start with Pro",
+  "Start for free",
+  "Sign in to view current packages",
+]) {
   forbidIn("PricingPage", pricing, text);
 }
 

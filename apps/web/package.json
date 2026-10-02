@@ -27,7 +27,9 @@
     "test:notifications": "node scripts/notification-strategy-audit.mjs",
     "test:admin": "node scripts/admin-operations-audit.mjs",
     "test:cleanup": "node scripts/phase13-cleanup-audit.mjs",
-    "test:release": "node scripts/phase14-release-audit.mjs"
+    "test:release": "node scripts/phase14-release-audit.mjs",
+    "test:lemon": "node scripts/lemon-readiness-audit.mjs",
+    "audit:public-site": "node scripts/public-site-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"

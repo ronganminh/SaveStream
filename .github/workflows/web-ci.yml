@@ -39,6 +39,7 @@ jobs:
       - run: npm --workspace apps/web run test:admin
       - run: npm --workspace apps/web run test:cleanup
       - run: npm --workspace apps/web run test:release
+      - run: npm --workspace apps/web run test:lemon
       - run: npm run build
       - name: Build production mode
         env:
