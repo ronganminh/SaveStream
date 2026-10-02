@@ -119,6 +119,12 @@ import {
   displayNameFromTikTokUsername,
   parseTikTokSource,
 } from "@/lib/tiktok-source";
+import {
+  artifactActionErrorMessage,
+  recordingActionErrorMessage,
+  useDeleteRecordingMutation,
+  useRecordingDownloadMutation,
+} from "@/hooks/use-recording-mutations";
 
 export { meta, publicMeta };
 const mainNav = [
@@ -1019,6 +1025,27 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
   const navigate = useNavigate();
   const [del, setDel] = useState(false);
   const { t } = usePreferences();
+  const downloadRecording = useRecordingDownloadMutation();
+  const deleteRecording = useDeleteRecordingMutation();
+
+  const download = () => {
+    if (isDemoMode) {
+      toast.success("Download started", {
+        description: `${recording.size} · ${recording.handle} — ${recording.title}`,
+      });
+      return;
+    }
+
+    void downloadRecording
+      .mutateAsync(recording.id)
+      .then(({ download: signed }) => window.location.assign(signed.url))
+      .catch((error) =>
+        toast.error("Download unavailable", {
+          description: artifactActionErrorMessage(error),
+        }),
+      );
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -1039,27 +1066,53 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
             {t("View recording")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={recording.status !== "Ready"}
-            onSelect={() =>
-              toast.success("Download started", {
-                description: `${recording.size} · ${recording.handle} — ${recording.title}`,
-              })
-            }
+            disabled={recording.status !== "Ready" || downloadRecording.isPending}
+            onSelect={download}
           >
             <Download />
-            {t("Download")}
+            {downloadRecording.isPending ? t("Preparing…") : t("Download")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onSelect={() => setDel(true)}>
+          <DropdownMenuItem
+            disabled={!recording.actions.can_delete || deleteRecording.isPending}
+            className="text-destructive"
+            onSelect={() => setDel(true)}
+          >
             <Trash2 />
             {t("Delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ConfirmDeleteDialog open={del} onOpenChange={setDel} onDeleted={() => {}} />
+      {isDemoMode ? (
+        <ConfirmDeleteDialog open={del} onOpenChange={setDel} onDeleted={() => {}} />
+      ) : (
+        <ConfirmDialog
+          destructive
+          open={del}
+          onOpenChange={setDel}
+          title="Delete recording?"
+          body="This recording will disappear from your library and its stored artifact will be scheduled for cleanup."
+          confirmLabel="Delete recording"
+          confirmDisabled={deleteRecording.isPending}
+          onConfirm={() => {
+            void deleteRecording
+              .mutateAsync(recording.id)
+              .then(() => {
+                setDel(false);
+                toast.success("Recording deleted");
+              })
+              .catch((error) => {
+                toast.error("Could not delete recording", {
+                  description: recordingActionErrorMessage(error),
+                });
+              });
+          }}
+        />
+      )}
     </>
   );
 }
+
 export function VideoPlayerShell({
   state = "ready",
 }: {
