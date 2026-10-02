@@ -64,15 +64,66 @@ jobs:
           SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: 100
           SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: 2
         run: python -c "from app.settings import AppSettings; AppSettings.from_env()"
+      - name: Release readiness config smoke
+        env:
+          SAVESTREAM_ENVIRONMENT: production
+          SAVESTREAM_LOG_FORMAT: json
+          SAVESTREAM_DATABASE_URL: postgresql+asyncpg://user:password@db:5432/savestream
+          SAVESTREAM_REDIS_URL: redis://redis:6379/0
+          SAVESTREAM_MINIO_ENDPOINT: https://account.r2.cloudflarestorage.com
+          SAVESTREAM_MINIO_ACCESS_KEY: ci-r2-access
+          SAVESTREAM_MINIO_SECRET_KEY: ci-r2-secret
+          SAVESTREAM_MINIO_BUCKET: savestream-recordings
+          SAVESTREAM_MINIO_SECURE: "true"
+          SAVESTREAM_JWT_SECRET: ci-production-jwt-secret-at-least-thirty-two-characters
+          SAVESTREAM_FRONTEND_BASE_URL: https://app.example.test
+          SAVESTREAM_CORS_ALLOW_ORIGINS: https://app.example.test
+          SAVESTREAM_SMTP_HOST: smtp-relay.brevo.com
+          SAVESTREAM_SMTP_PORT: 587
+          SAVESTREAM_SMTP_USERNAME: ci-smtp-login
+          SAVESTREAM_SMTP_PASSWORD: ci-smtp-key
+          SAVESTREAM_SMTP_STARTTLS: "true"
+          SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@example.test>
+          SAVESTREAM_PAYMENT_PROVIDER: lemonsqueezy
+          SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://api.lemonsqueezy.com/v1
+          SAVESTREAM_PAYMENT_PROVIDER_API_KEY: ci-live-provider-key
+          SAVESTREAM_PAYMENT_WEBHOOK_SECRET: ci-live-webhook-secret
+          SAVESTREAM_LEMON_SQUEEZY_STORE_ID: "123"
+          SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: "456"
+          SAVESTREAM_METRICS_TOKEN: ci-metrics-secret
+          SAVESTREAM_OPS_ALERT_EMAIL: ops@example.test
+          SAVESTREAM_TRUSTED_PROXY_CIDRS: 10.0.0.0/8
+          SAVESTREAM_FORCE_HTTPS: "true"
+          SAVESTREAM_SECURITY_HEADERS_ENABLED: "true"
+          SAVESTREAM_API_RATE_LIMIT: 300
+          SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: 100
+          SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: 100
+          SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: 2
+          SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
+        run: |
+          python -m app.release.readiness             --api-origin https://api.example.test             --frontend-origin https://app.example.test             --payment-webhook-url https://api.example.test/v1/webhooks/payments/lemonsqueezy
       - name: Operational script syntax
         run: |
           sh -n scripts/backup.sh
           sh -n scripts/restore.sh
           sh -n scripts/backup_restore_drill.sh
-          python -m py_compile scripts/canary_check.py scripts/load_probe.py
+          sh -n ../deploy/vps/init-production-secrets.sh
+          python -m py_compile scripts/canary_check.py scripts/load_probe.py scripts/release_smoke.py
       - name: Package dependency consistency
         run: python -m pip check
       - name: Docker Compose config
         run: |
           docker compose -f docker-compose.yml config --quiet
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml config --quiet
+      - name: Production Docker Compose config
+        env:
+          SAVESTREAM_SECRETS_DIR: /tmp/savestream-production-secrets
+          SAVESTREAM_R2_ENDPOINT: https://account.r2.cloudflarestorage.com
+          SAVESTREAM_R2_BUCKET: savestream-recordings
+          SAVESTREAM_LEMON_SQUEEZY_STORE_ID: "123"
+          SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: "456"
+          SAVESTREAM_OPS_ALERT_EMAIL: ops@example.test
+          SAVESTREAM_TRUSTED_PROXY_CIDRS: 10.0.0.0/8
+        run: |
+          cd ..
+          docker compose -f deploy/vps/docker-compose.production.yml config --quiet
