@@ -2683,10 +2683,12 @@ function paymentStatusClass(status: PaymentStatusValue) {
 
 function PaymentOrderRow({
   order,
+  language,
   onContinue,
   pending,
 }: {
   order: PaymentOrderResponse;
+  language: string;
   onContinue: (id: string) => void;
   pending: boolean;
 }) {
@@ -2700,7 +2702,7 @@ function PaymentOrderRow({
           {order.provider ? ` · ${order.provider}` : ""}
         </p>
       </div>
-      <span className="font-mono">{formatMoneyValue(order.amount, "en")}</span>
+      <span className="font-mono">{formatMoneyValue(order.amount, language)}</span>
       <span
         className={cn(
           "w-fit rounded-md px-2 py-1 text-xs font-medium",
@@ -2918,6 +2920,7 @@ function CreditBillingPage() {
             <PaymentOrderRow
               key={order.id}
               order={order}
+              language={language}
               pending={checkout.isPending}
               onContinue={(orderId) =>
                 void redirectToCheckout({ orderId }, orderId)
