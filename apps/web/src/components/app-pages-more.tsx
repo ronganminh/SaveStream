@@ -9,6 +9,7 @@ import {
   CircleHelp,
   Clock3,
   Cloud,
+  CreditCard,
   Download,
   FileVideo,
   Gauge,
