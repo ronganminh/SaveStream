@@ -653,7 +653,7 @@ export function AuthPage({
       setTimeout(() => {
         setBusy(false);
         if (mode === "sign-in") void navigate({ to: "/overview" });
-        else if (mode === "sign-up") void navigate({ to: "/verify-email" });
+        else if (mode === "sign-up") void navigate({ to: "/verify-email", search: { token: "" } });
         else setDone(true);
       }, 700);
       return;
@@ -672,7 +672,7 @@ export function AuthPage({
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("savestream:pending-verification-email", email);
         }
-        await navigate({ to: "/verify-email" });
+        await navigate({ to: "/verify-email", search: { token: "" } });
       } else if (mode === "forgot") {
         await authApi.forgotPassword(email);
         setDone(true);
@@ -721,7 +721,7 @@ export function AuthPage({
         {isDemoMode && (
           <p className="mt-6 text-xs text-muted-foreground">
             Prototype:{" "}
-            <Link to="/reset-password" className="text-primary underline underline-offset-4">
+            <Link to="/reset-password" search={{ token: "" }} className="text-primary underline underline-offset-4">
               open the reset link
             </Link>
           </p>
