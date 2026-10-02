@@ -47,12 +47,14 @@ x-app-env: &app-env
   SAVESTREAM_API_RATE_LIMIT: "300"
   SAVESTREAM_API_RATE_WINDOW_SECONDS: "60"
 
-  SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: "100"
+  SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER: "20"
   SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: "100"
   SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: "2"
   SAVESTREAM_WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER: "2"
 
   SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
+  # Recordings run on the dedicated `recorder` service (see below).
+  SAVESTREAM_RECORDING_QUEUE: recordings
   SAVESTREAM_RECORDING_RETENTION_DAYS: "0"
   # Free trial: credits granted once on first email verification (1 credit = 1 minute).
   SAVESTREAM_SIGNUP_CREDITS: "10"
@@ -117,6 +119,7 @@ services:
       - app.infrastructure.queue.celery_app:celery_app
       - worker
       - --loglevel=INFO
+      - --queues=celery
       - --concurrency=2
     environment: *app-env
     secrets: *app-secrets
@@ -124,6 +127,28 @@ services:
       - backend
     # Background services wait for the API, whose healthcheck only passes after
     # `alembic upgrade head`, so they never query a schema that does not exist yet.
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Runs only recordings. Its concurrency is the system-wide cap on simultaneous
+  # cloud recordings; raise SAVESTREAM_RECORDING_CONCURRENCY as VPS metrics allow.
+  recorder:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.infrastructure.queue.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --queues=recordings
+      - --concurrency=${SAVESTREAM_RECORDING_CONCURRENCY:-6}
+    environment: *app-env
+    secrets: *app-secrets
+    networks:
+      - backend
     depends_on:
       api:
         condition: service_healthy

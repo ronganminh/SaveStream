@@ -30,6 +30,12 @@ def _recording_rate(policy_type: str, policy: dict[str, Any]) -> PublicRecording
     )
 
 
+def _limit(*values: int) -> int | None:
+    """Smallest configured per-user limit; 0 means not limited."""
+    configured = [value for value in values if value > 0]
+    return min(configured) if configured else None
+
+
 def _recording_minutes(credits: int, rate: PublicRecordingRate | None) -> int | None:
     if rate is None or rate.credits_per_unit == 0:
         return None
@@ -46,7 +52,7 @@ async def get_public_pricing(
     response: Response,
     session: AsyncSession = Depends(get_db_session),
 ) -> PublicPricingResponse:
-    """Active credit packages and recording rate for the public pricing page."""
+    """Active credit packages, recording rate and per-user limits for the pricing page."""
     try:
         rule = await PricingService(session).active_rule()
         rate = _recording_rate(rule.policy_type, dict(rule.policy))
@@ -57,6 +63,7 @@ async def get_public_pricing(
         session, request.app.state.settings, DisabledPaymentProvider()
     ).packages()
     response.headers["Cache-Control"] = "public, max-age=300"
+    settings = request.app.state.settings
     return PublicPricingResponse(
         packages=[
             PublicCreditPackage(
@@ -70,5 +77,10 @@ async def get_public_pricing(
             for package in packages
         ],
         recording_rate=rate,
-        signup_credits=request.app.state.settings.signup_credits,
+        signup_credits=settings.signup_credits,
+        max_channels_per_user=_limit(settings.quota_max_watches_per_user),
+        max_concurrent_recordings_per_user=_limit(
+            settings.quota_max_active_recordings_per_user,
+            settings.watch_max_concurrent_recordings_per_user,
+        ),
     )

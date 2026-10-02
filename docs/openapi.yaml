@@ -3638,6 +3638,22 @@
             "type": "integer",
             "minimum": 0,
             "description": "Free trial credits granted once on first email verification."
+          },
+          "max_channels_per_user": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Per-user monitored channel limit; null when not limited."
+          },
+          "max_concurrent_recordings_per_user": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Per-user simultaneous recording limit; null when not limited."
           }
         },
         "additionalProperties": false

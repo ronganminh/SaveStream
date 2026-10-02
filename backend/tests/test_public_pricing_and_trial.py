@@ -47,7 +47,13 @@ def _seed_catalog(settings) -> None:
 
 def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-pricing.db'}"
-    settings = replace(identity_settings(database_url), signup_credits=10)
+    settings = replace(
+        identity_settings(database_url),
+        signup_credits=10,
+        quota_max_watches_per_user=20,
+        quota_max_active_recordings_per_user=2,
+        watch_max_concurrent_recordings_per_user=3,
+    )
     create_schema(database_url)
     _seed_catalog(settings)
     app = create_app(settings)
@@ -60,6 +66,8 @@ def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
     assert "public" in response.headers["cache-control"]
     body = response.json()
     assert body["signup_credits"] == 10
+    assert body["max_channels_per_user"] == 20
+    assert body["max_concurrent_recordings_per_user"] == 2
     assert body["recording_rate"] == {
         "unit_seconds": 60,
         "credits_per_unit": 1,
@@ -85,7 +93,11 @@ def test_public_pricing_without_configuration_is_empty_not_an_error(tmp_path) ->
         response = client.get("/v1/public/pricing")
 
     assert response.status_code == 200
-    assert response.json() == {"packages": [], "recording_rate": None, "signup_credits": 0}
+    body = response.json()
+    assert body["packages"] == []
+    assert body["recording_rate"] is None
+    assert body["signup_credits"] == 0
+    assert body["max_channels_per_user"] is None
 
 
 def _ledger_for(settings, email: str) -> tuple[int, list[tuple[str, str, int]]]:

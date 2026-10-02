@@ -120,6 +120,7 @@ class AppSettings:
     recording_max_duration_seconds: int = 14_400
     recording_heartbeat_seconds: int = 10
     recording_stale_after_seconds: int = 60
+    recording_queue: str = "celery"
     recording_max_attempts: int = 3
     artifact_presign_seconds: int = 900
     sse_poll_seconds: float = 1.0
@@ -384,6 +385,7 @@ class AppSettings:
             recording_max_duration_seconds=_int_env("RECORDING_MAX_DURATION_SECONDS", 14_400),
             recording_heartbeat_seconds=_int_env("RECORDING_HEARTBEAT_SECONDS", 10),
             recording_stale_after_seconds=_int_env("RECORDING_STALE_AFTER_SECONDS", 60),
+            recording_queue=_env("RECORDING_QUEUE", "celery").strip() or "celery",
             recording_max_attempts=_int_env("RECORDING_MAX_ATTEMPTS", 3),
             artifact_presign_seconds=_int_env("ARTIFACT_PRESIGN_SECONDS", 900),
             sse_poll_seconds=_float_env("SSE_POLL_SECONDS", 1.0),

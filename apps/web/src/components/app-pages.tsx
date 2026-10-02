@@ -144,6 +144,7 @@ import type {
   PaymentOrderResponse,
   PaymentStatusValue,
   PricingResponse,
+  PublicPricingResponse,
   PublicRecordingRate,
 } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
@@ -3651,6 +3652,21 @@ function rateSentence(rate: PublicRecordingRate | null) {
   return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
 }
 
+function packageLimits(pricing: PublicPricingResponse | undefined) {
+  const lines: string[] = [];
+  const channels = pricing?.max_channels_per_user;
+  const parallel = pricing?.max_concurrent_recordings_per_user;
+  if (channels) lines.push(`Monitor up to ${channels} channels`);
+  if (parallel) {
+    lines.push(
+      parallel === 1
+        ? "Record 1 livestream at a time"
+        : `Record up to ${parallel} livestreams at the same time`,
+    );
+  }
+  return lines;
+}
+
 const includedInEveryPackage = [
   "Automatic live detection for every channel you add",
   "Cloud recording — no computer or browser needs to stay open",
@@ -3762,7 +3778,7 @@ function CreditPricingPage() {
           <div>
             <h2 className="font-medium">Included with every package</h2>
             <ul className="mt-4 space-y-3 text-sm">
-              {includedInEveryPackage.map((line) => (
+              {[...packageLimits(pricing), ...includedInEveryPackage].map((line) => (
                 <li key={line} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-primary" />
                   <span>{line}</span>
