@@ -12,11 +12,11 @@ random_hex() {
 
 hidden_read() {
   prompt="$1"
-  printf '%s' "$prompt"
+  printf '%s' "$prompt" >&2
   stty -echo
   IFS= read -r value
   stty echo
-  printf '\n'
+  printf '\n' >&2
   printf '%s' "$value"
 }
 
