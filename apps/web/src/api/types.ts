@@ -115,6 +115,25 @@ export type RecordingEventResponse = {
   data: RecordingProgressData;
 };
 
+export type ArtifactResponse = {
+  id: string;
+  recording_id: string;
+  kind: "video";
+  container: "mp4";
+  size_bytes: number;
+  checksum_sha256: string;
+  created_at: string;
+};
+
+export type ArtifactsResponse = {
+  items: ArtifactResponse[];
+};
+
+export type DownloadUrlResponse = {
+  url: string;
+  expires_at: string;
+};
+
 export type CreateRecordingRequest = {
   source: Source;
   max_duration_seconds?: number | null;
