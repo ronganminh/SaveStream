@@ -282,6 +282,9 @@ export const demoRepositories: SaveStreamRepositories = {
         actions: { can_stop: true, can_retry: false, can_delete: false },
       };
     },
+    async *streamEvents() {
+      return;
+    },
     async listRecordings() {
       return {
         items: demoRecordingState.map((item) => structuredClone(item)),

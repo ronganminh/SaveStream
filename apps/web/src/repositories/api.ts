@@ -1,5 +1,6 @@
 import { apiClient } from "@/api/client";
 import { ApiError } from "@/api/errors";
+import { parseSseStream } from "@/api/sse";
 import type {
   AdminCreditAdjustmentResponse,
   AdminPaymentListResponse,
@@ -21,6 +22,7 @@ import type {
   PaymentOrderListResponse,
   PaymentOrderResponse,
   PricingResponse,
+  RecordingEventResponse,
   RecordingListResponse,
   RecordingResponse,
   SessionsResponse,
@@ -174,13 +176,54 @@ export const apiRepositories: SaveStreamRepositories = {
     },
 
     async getActive() {
-      for (const status of ["recording", "stop_requested"] as const) {
+      for (const status of [
+        "recording",
+        "stop_requested",
+        "waiting_live",
+        "resolving",
+        "queued",
+      ] as const) {
         const page = await listRecordingPage({ limit: 1, status });
         if (page.items[0]) {
           return mapRecordingToModel(page.items[0], await allWatches());
         }
       }
       return null;
+    },
+
+    async *streamEvents(id, options = {}) {
+      const headers = new Headers();
+      if (options.lastEventId) headers.set("Last-Event-ID", options.lastEventId);
+      const response = await apiClient.get<Response>(`/v1/recordings/${id}/events`, {
+        headers,
+        signal: options.signal,
+        responseMode: "response",
+      });
+
+      for await (const message of parseSseStream(response, options.signal)) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(message.data);
+        } catch {
+          throw new Error("Recording event stream returned invalid JSON.");
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+          throw new Error("Recording event stream returned an invalid event.");
+        }
+        const event = parsed as Partial<RecordingEventResponse>;
+        if (
+          typeof event.id !== "string" ||
+          typeof event.sequence !== "number" ||
+          typeof event.recording_id !== "string" ||
+          typeof event.type !== "string" ||
+          typeof event.created_at !== "string" ||
+          !event.data ||
+          typeof event.data !== "object"
+        ) {
+          throw new Error("Recording event stream returned an invalid event.");
+        }
+        yield event as RecordingEventResponse;
+      }
     },
 
     listRecordings(options) {
