@@ -2008,6 +2008,29 @@
           }
         }
       }
+    },
+    "/public/pricing": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Get public credit packages and recording rate",
+        "description": "Unauthenticated, cacheable read of active credit packages for the public pricing page. Never reaches the payment provider.",
+        "operationId": "getPublicPricing",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPricing"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3523,6 +3546,98 @@
           },
           "recording_failed": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicRecordingRate": {
+        "type": "object",
+        "required": [
+          "unit_seconds",
+          "credits_per_unit",
+          "minimum_credits"
+        ],
+        "properties": {
+          "unit_seconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "credits_per_unit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minimum_credits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicCreditPackage": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "credits",
+          "price"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "price": {
+            "$ref": "#/components/schemas/Money"
+          },
+          "recording_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Recording time the credits buy at the active recording rate."
+          }
+        },
+        "additionalProperties": false
+      },
+      "PublicPricing": {
+        "type": "object",
+        "required": [
+          "packages",
+          "recording_rate",
+          "signup_credits"
+        ],
+        "properties": {
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicCreditPackage"
+            }
+          },
+          "recording_rate": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PublicRecordingRate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "signup_credits": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Free trial credits granted once on first email verification."
           }
         },
         "additionalProperties": false

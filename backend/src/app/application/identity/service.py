@@ -7,6 +7,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.credits.service import CreditService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.db.models import (
@@ -227,8 +228,13 @@ class IdentityService:
                 status_code=400,
             )
         now = utcnow()
+        first_verification = user.email_verified_at is None
         user.email_verified_at = user.email_verified_at or now
         row.consumed_at = now
+        if first_verification:
+            await CreditService(self.session).grant_signup_credits(
+                user.id, self.settings.signup_credits
+            )
         await self._audit(
             action="identity.email_verified",
             user_id=user.id,

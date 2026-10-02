@@ -428,6 +428,48 @@ class CreditService:
         return CreditReservationPage(items, next_cursor, has_more)
 
 
+    async def grant_signup_credits(
+        self,
+        user_id: uuid.UUID,
+        amount: int,
+    ) -> CreditLedgerEntry | None:
+        """Grant the one-time free trial credits; at most once per user.
+
+        Flushes without committing so the grant lands in the caller's transaction.
+        """
+        if amount <= 0:
+            return None
+        reference_key = f"signup-bonus:{user_id}"
+        existing = await self.session.scalar(
+            select(CreditLedgerEntry).where(
+                CreditLedgerEntry.reference_key == reference_key
+            )
+        )
+        if existing is not None:
+            return existing
+
+        account = await self._account(user_id, lock=True)
+        if account is None:
+            account = CreditAccount(user_id=user_id, posted_balance=0)
+            self.session.add(account)
+            await self.session.flush()
+        account.posted_balance += amount
+        entry = CreditLedgerEntry(
+            account_id=account.id,
+            user_id=user_id,
+            entry_type="grant",
+            amount=amount,
+            balance_after=account.posted_balance,
+            reference_type="signup_bonus",
+            reference_id=str(user_id),
+            reference_key=reference_key,
+            details={"reason": "free trial credits"},
+        )
+        self.session.add(entry)
+        await self.session.flush()
+        return entry
+
+
 class CreditAdminService:
     """Internal/admin adjustment service with idempotent references."""
 
