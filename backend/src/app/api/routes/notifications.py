@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Literal, cast
+
 from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_current_principal, get_db_session
 from app.api.schemas.notifications import (
     MarkAllReadResponse,
+    NotificationKind,
     NotificationListResponse,
     NotificationPreferenceResponse,
     NotificationResponse,
@@ -23,11 +26,11 @@ router = APIRouter(prefix="/v1", tags=["Notifications"])
 def _response(item: UserNotification) -> NotificationResponse:
     return NotificationResponse(
         id=str(item.id),
-        type=item.kind,
+        type=cast(NotificationKind, item.kind),
         title=item.title,
         body=item.body,
         read=item.read_at is not None,
-        resource_type=item.resource_type,
+        resource_type=cast(Literal["recording"] | None, item.resource_type),
         resource_id=item.resource_id,
         created_at=item.created_at,
     )
