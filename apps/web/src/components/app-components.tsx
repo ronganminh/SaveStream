@@ -704,6 +704,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
   if (empty)
     return (
       <section className="border-y bg-surface px-5 py-8">
@@ -722,7 +723,7 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
         </div>
       </section>
     );
-  const c = channels[0];
+  const c = channelsQuery.data?.[0];
   if (!c) return null;
   return (
     <section className="overflow-hidden rounded-lg border border-recording/25 bg-surface">
