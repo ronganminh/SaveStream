@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 
-import { useRecordingsData } from "@/hooks/use-domain-data";
+import { useNotificationRecordingFeedData } from "@/hooks/use-domain-data";
 import { isDemoMode } from "@/lib/app-config";
 import {
   notifications as demoNotifications,
@@ -125,7 +125,7 @@ export const notificationStore = {
 };
 
 export function useNotifications() {
-  const { query } = useRecordingsData();
+  const query = useNotificationRecordingFeedData();
   const notifications = useSyncExternalStore(
     notificationStore.subscribe,
     notificationStore.get,
