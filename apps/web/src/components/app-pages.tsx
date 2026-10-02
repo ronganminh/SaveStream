@@ -644,11 +644,11 @@ export function LandingPage() {
                   {t("Production uses backend-authoritative credits instead of the old Free/Pro monthly quota model.")}
                 </p>
                 <div className="mt-10 grid gap-5 text-left md:grid-cols-3">
-                  {[
+                  {([
                     ["Posted balance", "Credits added to your account are recorded in the backend ledger."],
                     ["Reservations", "Active recordings reserve credits before final usage is known."],
                     ["Settlement", "Final charges and unused-credit releases are settled by the backend."],
-                  ].map(([title, body]) => (
+                  ] as const).map(([title, body]) => (
                     <section key={title} className="rounded-lg border bg-surface p-5">
                       <h3 className="font-medium">{t(title)}</h3>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">{t(body)}</p>
