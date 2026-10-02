@@ -60,7 +60,7 @@ for (const text of [
 const billing = block(
   "src/components/app-pages.tsx",
   "function CreditBillingPage",
-  "function LegacyBillingPage",
+  "function DemoBillingPage",
 );
 for (const text of [
   "usePaymentOrdersData()",
