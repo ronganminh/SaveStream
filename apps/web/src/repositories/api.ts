@@ -20,6 +20,11 @@ import type {
   CreditTransactionListResponse,
   DownloadUrlResponse,
   LiveStatusResponse,
+  UpdateNotificationPreferencesRequest,
+  NotificationResponse,
+  NotificationPreferencesResponse,
+  NotificationListResponse,
+  MarkAllNotificationsReadResponse,
   OperationalSnapshotResponse,
   PaymentOrderListResponse,
   PaymentOrderResponse,
@@ -36,6 +41,7 @@ import type {
 } from "@/api/types";
 import type {
   FilteredPageOptions,
+  NotificationModel,
   PageOptions,
   SaveStreamRepositories,
 } from "@/repositories/contracts";
@@ -108,6 +114,33 @@ function allWatches() {
 
 function allRecordings() {
   return collectAll<RecordingResponse>((cursor) => listRecordingPage({ limit: 100, cursor }));
+}
+
+function mapNotificationToModel(item: NotificationResponse): NotificationModel {
+  const status =
+    item.type === "recording_started"
+      ? "Recording"
+      : item.type === "recording_ready"
+        ? "Ready"
+        : "Error";
+  const link =
+    item.resource_type === "recording" && item.resource_id
+      ? {
+          to: "/recordings/$id" as const,
+          params: { id: item.resource_id },
+        }
+      : { to: "/notifications" as const };
+
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    body: item.body,
+    time: new Date(item.created_at).toLocaleString(),
+    status,
+    read: item.read,
+    link,
+  };
 }
 
 async function nullable<T>(request: () => Promise<T>): Promise<T | null> {
@@ -452,13 +485,31 @@ export const apiRepositories: SaveStreamRepositories = {
 
   notifications: {
     async list() {
-      throw new UnsupportedBackendCapabilityError("persisted notifications");
+      const response = await apiClient.get<NotificationListResponse>(
+        withQuery("/v1/notifications", { limit: 100 }),
+      );
+      return response.items.map(mapNotificationToModel);
     },
-    async markRead() {
-      throw new UnsupportedBackendCapabilityError("persisted notifications");
+    async markRead(id: string) {
+      await apiClient.patch<NotificationResponse>(`/v1/notifications/${id}`, {
+        json: { read: true },
+      });
     },
     async markAllRead() {
-      throw new UnsupportedBackendCapabilityError("persisted notifications");
+      await apiClient.post<MarkAllNotificationsReadResponse>(
+        "/v1/notifications/mark-all-read",
+      );
+    },
+    getPreferences() {
+      return apiClient.get<NotificationPreferencesResponse>(
+        "/v1/me/notification-preferences",
+      );
+    },
+    updatePreferences(input: UpdateNotificationPreferencesRequest) {
+      return apiClient.patch<NotificationPreferencesResponse>(
+        "/v1/me/notification-preferences",
+        { json: input },
+      );
     },
   },
 };
