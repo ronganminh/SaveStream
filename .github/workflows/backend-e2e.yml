@@ -29,6 +29,33 @@ jobs:
         run: |
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm e2e-runner
 
+      - name: Prepare API restart continuity state
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
+            e2e-runner python -m app.e2e.phase12_resilience prepare-api-restart
+
+      - name: Restart API and verify existing session
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml restart api
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
+            e2e-runner python -m app.e2e.phase12_resilience verify-api-restart
+
+      - name: Queue recording while worker is stopped
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml stop worker
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
+            e2e-runner python -m app.e2e.phase12_resilience prepare-worker-restart
+
+      - name: Restart worker and verify queued recovery
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml start worker
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
+            e2e-runner python -m app.e2e.phase12_resilience verify-worker-restart
+
       - name: Dump E2E service logs on failure
         if: failure()
         working-directory: backend
