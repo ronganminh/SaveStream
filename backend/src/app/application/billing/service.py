@@ -101,13 +101,14 @@ def _validate_checkout_return_url(settings: AppSettings, value: str) -> str:
             status_code=400,
         )
     if settings.environment in {"staging", "production"}:
-        frontend = urlparse(settings.frontend_base_url)
-        expected_origin = f"{frontend.scheme}://{frontend.netloc}"
         actual_origin = f"{parsed.scheme}://{parsed.netloc}"
-        if parsed.scheme != "https" or actual_origin != expected_origin:
+        allowed_origins = set(settings.cors_allow_origins) or {
+            settings.frontend_base_url
+        }
+        if parsed.scheme != "https" or actual_origin not in allowed_origins:
             raise ApplicationError(
                 "VALIDATION_ERROR",
-                "Checkout return URL must use the configured frontend origin",
+                "Checkout return URL must use an allowed frontend origin",
                 status_code=400,
             )
         if parsed.path != "/billing/success":
