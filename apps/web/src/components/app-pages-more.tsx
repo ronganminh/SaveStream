@@ -1182,7 +1182,13 @@ function DemoSecuritySettings() {
   return (
     <>
       <Section title="Change password" body="Use a strong password you don’t use anywhere else.">
-        <PasswordField id="sec-cur" label="Current password" value={cur} onChange={setCur} />
+        <PasswordField
+          id="sec-cur"
+          label="Current password"
+          value={cur}
+          onChange={setCur}
+          autoComplete="current-password"
+        />
         <PasswordField id="sec-new" label="New password" value={pw} onChange={setPw} showStrength />
         <PasswordField
           id="sec-confirm"

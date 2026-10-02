@@ -1,5 +1,12 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ElementType, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ElementType,
+  type ReactNode,
+} from "react";
 import {
   Activity,
   AlertTriangle,
@@ -40,6 +47,8 @@ import {
   Video,
   X,
   Zap,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -2065,18 +2074,42 @@ export function SuccessState({
     </div>
   );
 }
+/** Password input with a show/hide toggle. */
+export function PasswordInput({ className, ...props }: Omit<ComponentProps<typeof Input>, "type">) {
+  const { t } = usePreferences();
+  const [visible, setVisible] = useState(false);
+  const Icon = visible ? EyeOff : Eye;
+  return (
+    <div className={cn("relative", className)}>
+      <Input {...props} type={visible ? "text" : "password"} className="pr-10" />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        className="absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label={t(visible ? "Hide password" : "Show password")}
+        aria-pressed={visible}
+        aria-controls={props.id}
+      >
+        <Icon className="size-4" />
+      </button>
+    </div>
+  );
+}
+
 export function PasswordField({
   label = "Password",
   id,
   value,
   onChange,
   showStrength = false,
+  autoComplete = "new-password",
 }: {
   label?: string;
   id: string;
   value: string;
   onChange: (v: string) => void;
   showStrength?: boolean;
+  autoComplete?: string;
 }) {
   const { t } = usePreferences();
   const score = [
@@ -2091,14 +2124,13 @@ export function PasswordField({
       <label htmlFor={id} className="block text-sm font-medium">
         {t(label)}
       </label>
-      <Input
+      <PasswordInput
         id={id}
-        type="password"
         className="mt-2"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="••••••••"
-        autoComplete="new-password"
+        autoComplete={autoComplete}
       />
       {showStrength &&
         (value ? (

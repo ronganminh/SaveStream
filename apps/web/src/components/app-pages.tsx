@@ -965,12 +965,11 @@ export function AuthPage({
           />
         )}
         {mode === "sign-in" && (
-          <Field
+          <PasswordField
+            id="password"
             label="Password"
-            placeholder="••••••••"
-            type="password"
             value={pw}
-            onChange={(e) => setPw(e.target.value)}
+            onChange={setPw}
             autoComplete="current-password"
           />
         )}
