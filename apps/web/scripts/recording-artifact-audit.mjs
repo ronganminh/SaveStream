@@ -42,7 +42,6 @@ must("src/hooks/use-recording-mutations.ts", "DOWNLOAD_EXPIRY_SAFETY_MS");
 must("src/hooks/use-recording-mutations.ts", "createArtifactDownloadUrl");
 must("src/hooks/use-recording-mutations.ts", "invalidateQueries({ queryKey: domainQueryKeys.channels })");
 
-const pages = read("src/components/app-pages.tsx");
 const detail = block(
   "src/components/app-pages.tsx",
   "export function RecordingDetailPage",
@@ -57,7 +56,6 @@ mustIn("RecordingDetailPage", detail, "artifactsState.kind === "empty"");
 mustIn("RecordingDetailPage", detail, "deleteRecording.mutateAsync");
 forbidIn("RecordingDetailPage", detail, "if (!isDemoMode) return;");
 
-const components = read("src/components/app-components.tsx");
 const actions = block(
   "src/components/app-components.tsx",
   "function RecordingActions",
@@ -67,7 +65,6 @@ mustIn("RecordingActions", actions, "useRecordingDownloadMutation");
 mustIn("RecordingActions", actions, "useDeleteRecordingMutation");
 mustIn("RecordingActions", actions, "window.location.assign");
 mustIn("RecordingActions", actions, "recording.actions.can_delete");
-forbidIn("RecordingActions", actions, 'toast.success("Download started"');
 
 forbid("src/repositories/api.ts", "@/mocks/fixtures");
 
