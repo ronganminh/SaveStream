@@ -2093,7 +2093,7 @@ function formatMoneyValue(money: Money, language: string) {
       style: "currency",
       currency: money.currency,
     });
-    const digits = formatter.resolvedOptions().maximumFractionDigits;
+    const digits = formatter.resolvedOptions().maximumFractionDigits ?? 2;
     return formatter.format(money.amount_minor / 10 ** digits);
   } catch {
     return `${money.amount_minor} ${money.currency} minor units`;
@@ -3160,7 +3160,7 @@ function LegacyBillingPage() {
           </ul>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setUpgrade(false)}>{t("Cancel")}</Button>
-            <Button onClick={() => { setUpgrade(false); navigate({ to: "/billing/success" }); }}>
+            <Button onClick={() => { setUpgrade(false); navigate({ to: "/billing/success", search: { order_id: "demo-paid" } }); }}>
               {t("Continue to checkout")}
             </Button>
           </DialogFooter>
