@@ -1900,6 +1900,270 @@ function LegacyAdminWorkersPage() {
   );
 }
 
+const productionJobStatuses = [
+  "queued",
+  "resolving",
+  "waiting_live",
+  "recording",
+  "processing",
+  "uploading",
+  "completed",
+  "failed",
+  "stop_requested",
+  "stopped",
+] as const satisfies readonly RecordingStatusValue[];
+
+export function AdminJobsPage() {
+  return isDemoMode ? <LegacyAdminJobsPage /> : <ProductionAdminJobsPage />;
+}
+
+function ProductionAdminJobsPage() {
+  const [queryText, setQueryText] = useState("");
+  const [status, setStatus] = useState<"all" | RecordingStatusValue>("all");
+  const recordings = useAdminRecordingsData(status === "all" ? null : status);
+  const retry = useAdminRetryRecordingMutation();
+
+  if (recordings.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording jobs" subtitle="Loading backend recordings…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (recordings.isError || !recordings.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording jobs" />
+        <ErrorState
+          title="Could not load recording jobs"
+          body="SaveStream could not load the admin recording list."
+          onRetry={() => recordings.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const normalizedQuery = queryText.trim().toLowerCase();
+  const list = recordings.data.items.filter((recording) => {
+    if (!normalizedQuery) return true;
+    return [
+      recording.id,
+      adminSourceLabel(recording),
+      recording.source.value,
+      recording.error?.code ?? "",
+      recording.error?.message ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  const retryRecording = (recordingId: string) => {
+    void retry
+      .mutateAsync(recordingId)
+      .then((result) =>
+        toast.success("Recording retry queued", {
+          description: `New recording ${result.recording.id}`,
+        }),
+      )
+      .catch((error) =>
+        toast.error("Could not retry recording", {
+          description:
+            error instanceof Error ? error.message : "The retry request could not be completed.",
+        }),
+      );
+  };
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Recording jobs"
+        subtitle="Admin view of backend recording records. Refreshes every 10 seconds while open."
+        action={
+          <Button
+            variant="outline"
+            disabled={recordings.isFetching}
+            onClick={() => void recordings.refetch()}
+          >
+            <RotateCcw />
+            {recordings.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <FilterBar>
+        <div className="flex-1">
+          <SearchInput
+            value={queryText}
+            onChange={setQueryText}
+            placeholder="Search recording ID, creator, source, or error"
+          />
+        </div>
+        <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+          <SelectTrigger className="w-44" aria-label="Recording status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {productionJobStatuses.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item.replaceAll("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterBar>
+
+      {recordings.data.pagination.has_more && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Showing the first 100 records"
+            body="The backend reports more recordings than this page currently loads. Narrow the status filter to reduce the result set."
+          />
+        </div>
+      )}
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="No recording jobs match"
+          body="Try another status or search term."
+        />
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-lg border bg-surface lg:block">
+            <table className="w-full min-w-[1050px] text-xs">
+              <thead className="bg-surface-subtle text-left text-[10px] uppercase text-muted-foreground">
+                <tr>
+                  {[
+                    "Recording ID",
+                    "Creator / source",
+                    "Status",
+                    "Started",
+                    "Duration",
+                    "Output",
+                    "Cost",
+                    "Error",
+                    "",
+                  ].map((heading) => (
+                    <th key={heading} className="px-4 py-2 font-medium">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((recording) => (
+                  <tr key={recording.id} className="border-t">
+                    <td className="px-4 py-3">
+                      <Link
+                        to="/admin/jobs/$id"
+                        params={{ id: recording.id }}
+                        className="font-mono font-medium text-primary hover:underline"
+                      >
+                        {recording.id}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{adminSourceLabel(recording)}</p>
+                      <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                        {recording.source.type}: {recording.source.value}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminRecordingStatusPill status={recording.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono">
+                      {recording.started_at
+                        ? new Date(recording.started_at).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatAdminDuration(recording.duration_seconds)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatAdminBytes(recording.bytes_recorded)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {recording.actual_cost === null
+                        ? "—"
+                        : `${recording.actual_cost} credits`}
+                    </td>
+                    <td
+                      className="max-w-56 truncate px-4 py-3 text-muted-foreground"
+                      title={recording.error?.message ?? ""}
+                    >
+                      {recording.error?.code ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {recording.actions.can_retry && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={retry.isPending}
+                          onClick={() => retryRecording(recording.id)}
+                        >
+                          <RotateCcw />
+                          Retry
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-3 lg:hidden">
+            {list.map((recording) => (
+              <div key={recording.id} className="rounded-lg border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      to="/admin/jobs/$id"
+                      params={{ id: recording.id }}
+                      className="truncate font-mono text-sm font-medium text-primary hover:underline"
+                    >
+                      {recording.id}
+                    </Link>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {adminSourceLabel(recording)}
+                    </p>
+                  </div>
+                  <AdminRecordingStatusPill status={recording.status} />
+                </div>
+                <dl className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Duration</dt>
+                    <dd className="mt-1 font-mono">
+                      {formatAdminDuration(recording.duration_seconds)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Output</dt>
+                    <dd className="mt-1 font-mono">
+                      {formatAdminBytes(recording.bytes_recorded)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Cost</dt>
+                    <dd className="mt-1 font-mono">
+                      {recording.actual_cost === null ? "—" : recording.actual_cost}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: jobs ---------------- */
 const jobFilters = ["All", "Recording", "Processing", "Error", "Stuck", "Ready"] as const;
 function JobStatusCell({ job }: { job: RecordingJob }) {
