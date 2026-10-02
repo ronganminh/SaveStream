@@ -27,6 +27,7 @@ for (const text of [
 for (const text of [
   "VITE_API_BASE_URL is required when VITE_APP_MODE=production.",
   "VITE_API_BASE_URL must not contain credentials.",
+  "VITE_API_BASE_URL must use https when VITE_APP_MODE=production.",
   "VITE_APP_MODE must be either demo or production.",
 ]) {
   must("src/lib/app-config.ts", text);
@@ -35,6 +36,7 @@ for (const text of [
 must("src/hooks/use-billing.ts", 'new URL("/billing/success", window.location.origin)');
 must("src/hooks/use-billing.ts", "Hosted checkout must use HTTPS.");
 must("src/repositories/api.ts", "json: { return_url: returnUrl }");
+must("src/api/client.ts", 'credentials = "include"');
 
 const pages = read("src/components/app-pages.tsx");
 const googleButton = pages.indexOf("Google sign-in isn’t connected in this prototype.");
