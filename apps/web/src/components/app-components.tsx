@@ -581,8 +581,15 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[min(360px,calc(100vw-2rem))] p-0">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-              <p className="font-medium">{t("Notifications")}</p>
+            <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="font-medium">{t("Notifications")}</p>
+                {!isDemoMode && (
+                  <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    Session only
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 disabled={!unread}
