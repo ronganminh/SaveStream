@@ -66,7 +66,7 @@ function colorFor(id: string): string {
   ] as const;
   let hash = 0;
   for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return colors[hash % colors.length];
+  return colors[hash % colors.length] ?? colors[0];
 }
 
 export function mapRecordingToModel(
