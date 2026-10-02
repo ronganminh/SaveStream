@@ -108,6 +108,7 @@ def test_identity_happy_path_refresh_reuse_and_web_cookie(tmp_path) -> None:
         assert "secure" in cookie
         assert "httponly" in cookie
         assert "samesite=lax" in cookie
+        assert "path=/v1/auth" in cookie
 
         web_refresh = client.post("/v1/auth/refresh", json={})
         assert web_refresh.status_code == 200
