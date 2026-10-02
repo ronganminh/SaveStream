@@ -5,6 +5,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Literal, cast
+from urllib.parse import urlparse
 
 Environment = Literal["local", "test", "staging", "production"]
 
@@ -60,6 +61,24 @@ def _secret_env(name: str, default: str) -> str:
 
 def _csv_env(name: str, default: str) -> tuple[str, ...]:
     return tuple(item.strip() for item in _env(name, default).split(",") if item.strip())
+
+
+def _exact_origin(value: str, setting_name: str) -> str:
+    parsed = urlparse(value)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError(
+            f"{setting_name} must be an exact http(s) origin without path, credentials, query, or fragment"
+        )
+    return f"{parsed.scheme}://{parsed.netloc}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -160,6 +179,11 @@ class AppSettings:
         )
         if "*" in origins:
             raise ValueError("Wildcard CORS origins are not allowed")
+        for origin in origins:
+            if _exact_origin(origin, "SAVESTREAM_CORS_ALLOW_ORIGINS") != origin:
+                raise ValueError(
+                    "SAVESTREAM_CORS_ALLOW_ORIGINS entries must be exact origins without a trailing slash"
+                )
         jwt_secret = _secret_env("JWT_SECRET", "savestream-dev-only-change-me")
         jwt_previous_secrets = tuple(
             item.strip()
@@ -290,11 +314,31 @@ class AppSettings:
                 raise ValueError(
                     "SAVESTREAM_FRONTEND_BASE_URL must use https in production"
                 )
+            frontend_origin = _exact_origin(
+                frontend_base_url,
+                "SAVESTREAM_FRONTEND_BASE_URL",
+            )
+            if frontend_origin != frontend_base_url:
+                raise ValueError(
+                    "SAVESTREAM_FRONTEND_BASE_URL must be an exact origin without a trailing slash"
+                )
+            if frontend_origin not in origins:
+                raise ValueError(
+                    "Production CORS origins must include SAVESTREAM_FRONTEND_BASE_URL"
+                )
+            if not origins:
+                raise ValueError(
+                    "SAVESTREAM_CORS_ALLOW_ORIGINS must be configured in production"
+                )
             for origin in origins:
                 if not origin.startswith("https://") or "localhost" in origin:
                     raise ValueError(
                         "Production CORS origins must use https and cannot target localhost"
                     )
+            if not _bool_env("SECURITY_HEADERS_ENABLED", True):
+                raise ValueError(
+                    "SAVESTREAM_SECURITY_HEADERS_ENABLED must be enabled in production"
+                )
 
         return cls(
             environment=cast(Environment, environment_raw),
