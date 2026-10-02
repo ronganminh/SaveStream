@@ -34,7 +34,7 @@ const forbidIn = (label, source, text) => {
 
 must("src/api/sse.ts", "parseSseStream");
 must("src/api/sse.ts", 'text/event-stream');
-must("src/repositories/api.ts", '"/events"');
+must("src/repositories/api.ts", "/v1/recordings/${id}/events");
 must("src/repositories/api.ts", '"Last-Event-ID"');
 must("src/repositories/api.ts", "parseSseStream");
 must("src/repositories/contracts.ts", "streamEvents(");
