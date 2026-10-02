@@ -37,4 +37,10 @@ jobs:
       - run: npm --workspace apps/web run test:account
       - run: npm --workspace apps/web run test:notifications
       - run: npm --workspace apps/web run test:admin
+      - run: npm --workspace apps/web run test:cleanup
       - run: npm run build
+      - name: Build production mode
+        env:
+          VITE_APP_MODE: production
+          VITE_API_BASE_URL: https://api-staging.savestream.online
+        run: npm run build
