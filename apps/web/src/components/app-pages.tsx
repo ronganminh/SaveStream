@@ -140,6 +140,7 @@ import type {
   CreditPackageResponse,
   CreditReservationResponse,
   CreditTransactionResponse,
+  Money,
   PaymentOrderResponse,
   PaymentStatusValue,
   PricingResponse,
@@ -2086,19 +2087,24 @@ export function UsagePage() {
   return isDemoMode ? <LegacyUsagePage /> : <CreditsUsagePage />;
 }
 
+function formatMoneyValue(money: Money, language: string) {
+  try {
+    const formatter = new Intl.NumberFormat(language, {
+      style: "currency",
+      currency: money.currency,
+    });
+    const digits = formatter.resolvedOptions().maximumFractionDigits;
+    return formatter.format(money.amount_minor / 10 ** digits);
+  } catch {
+    return `${money.amount_minor} ${money.currency} minor units`;
+  }
+}
+
 function formatCreditMoney(
   packageItem: CreditPackageResponse,
   language: string,
 ) {
-  const amount = packageItem.price.amount_minor / 100;
-  try {
-    return new Intl.NumberFormat(language, {
-      style: "currency",
-      currency: packageItem.price.currency,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${packageItem.price.currency}`;
-  }
+  return formatMoneyValue(packageItem.price, language);
 }
 
 function pricingRuleTitle(rule: PricingResponse["rules"][number], index: number) {
@@ -2694,9 +2700,7 @@ function PaymentOrderRow({
           {order.provider ? ` · ${order.provider}` : ""}
         </p>
       </div>
-      <span className="font-mono">
-        {(order.amount.amount_minor / 100).toFixed(2)} {order.amount.currency}
-      </span>
+      <span className="font-mono">{formatMoneyValue(order.amount, "en")}</span>
       <span
         className={cn(
           "w-fit rounded-md px-2 py-1 text-xs font-medium",
