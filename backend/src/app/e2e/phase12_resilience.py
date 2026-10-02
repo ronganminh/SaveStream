@@ -180,7 +180,7 @@ def verify_api_restart() -> None:
     clear_state(API_RESTART_KEY)
 
 
-def prepare_worker_restart() -> None:
+def prepare_worker_restart_user() -> None:
     api = env("SAVESTREAM_E2E_API_URL", "http://api:8000")
     mailhog = env("SAVESTREAM_E2E_MAILHOG_URL", "http://mail-debug:8025")
     payment_secret = os.getenv(
@@ -200,7 +200,23 @@ def prepare_worker_restart() -> None:
         )
         headers = {"Authorization": f"Bearer {token}"}
         fund_credits(client, api, headers, payment_secret)
+        save_state(
+            WORKER_RESTART_KEY,
+            {
+                "email": email,
+                "access_token": token,
+            },
+        )
 
+
+def queue_worker_restart_recording() -> None:
+    api = env("SAVESTREAM_E2E_API_URL", "http://api:8000")
+    timeout = float(os.getenv("SAVESTREAM_E2E_TIMEOUT_SECONDS", "120"))
+    state = load_state(WORKER_RESTART_KEY)
+    headers = {"Authorization": f"Bearer {state['access_token']}"}
+
+    with httpx.Client(timeout=20.0) as client:
+        wait_ready(client, api, timeout)
         response = client.post(
             f"{api}/v1/recordings",
             headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
@@ -220,8 +236,7 @@ def prepare_worker_restart() -> None:
         save_state(
             WORKER_RESTART_KEY,
             {
-                "email": email,
-                "access_token": token,
+                **state,
                 "recording_id": str(recording["id"]),
             },
         )
@@ -264,14 +279,16 @@ def main() -> None:
     commands = {
         "prepare-api-restart": prepare_api_restart,
         "verify-api-restart": verify_api_restart,
-        "prepare-worker-restart": prepare_worker_restart,
+        "prepare-worker-restart-user": prepare_worker_restart_user,
+        "queue-worker-restart": queue_worker_restart_recording,
         "verify-worker-restart": verify_worker_restart,
     }
     if len(sys.argv) != 2 or sys.argv[1] not in commands:
         raise SystemExit(
             "usage: python -m app.e2e.phase12_resilience "
             "<prepare-api-restart|verify-api-restart|"
-            "prepare-worker-restart|verify-worker-restart>"
+            "prepare-worker-restart-user|queue-worker-restart|"
+            "verify-worker-restart>"
         )
     commands[sys.argv[1]]()
     print(json.dumps({"status": "passed", "phase12": sys.argv[1]}))

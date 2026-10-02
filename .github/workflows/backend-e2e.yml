@@ -42,12 +42,18 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
             e2e-runner python -m app.e2e.phase12_resilience verify-api-restart
 
+      - name: Prepare worker restart user and credits
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
+            e2e-runner python -m app.e2e.phase12_resilience prepare-worker-restart-user
+
       - name: Queue recording while worker is stopped
         working-directory: backend
         run: |
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml stop worker
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm --no-deps \
-            e2e-runner python -m app.e2e.phase12_resilience prepare-worker-restart
+            e2e-runner python -m app.e2e.phase12_resilience queue-worker-restart
 
       - name: Restart worker and verify queued recovery
         working-directory: backend
