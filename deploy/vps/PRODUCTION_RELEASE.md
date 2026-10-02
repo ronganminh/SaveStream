@@ -85,6 +85,39 @@ Confirm:
 - Lemon Squeezy Store/Variant IDs (when enabled) are **Live**, not Test Mode;
 - operations alert email is correct.
 
+## 3a. Product catalog
+
+Credit packages and the recording rate are database data, not migrations. The current
+product decision (October 2026) is one-time credit packages:
+
+| Code | Name | Credits | Price (USD) | Recording time |
+|---|---|---|---|---|
+| `starter` | Starter | 3,000 | 9.99 | 50 hours |
+| `standard` | Standard | 9,000 | 24.99 | 150 hours |
+| `premium` | Premium | 24,000 | 59.99 | 400 hours |
+
+Recording rate: 1 credit = 1 minute (`duration_units_v1`, 60 s per unit, minimum 1 credit).
+Free trial: `SAVESTREAM_SIGNUP_CREDITS=10`, granted once on first email verification.
+Credits never expire. A recording is capped to the minutes the balance covers.
+
+After the stack is running, create them once (they are not idempotent; check
+`GET /v1/public/pricing` first):
+
+```sh
+C="docker compose --env-file deploy/vps/production.env -f deploy/vps/docker-compose.production.yml"
+$C exec -T api savestream-credit-admin pricing-create --version credits-v1 \
+  --policy-type duration_units_v1 \
+  --policy-json '{"unit_seconds":60,"credits_per_unit":1,"minimum_credits":1}' \
+  --public-rules-json '[{"code":"recording_duration","description":"1 credit per minute of recording","unit_seconds":60,"credits_per_unit":1}]' \
+  --activate
+$C exec -T api savestream-billing-admin package-create --code starter --name Starter --credits 3000 --amount-minor 999 --currency USD
+$C exec -T api savestream-billing-admin package-create --code standard --name Standard --credits 9000 --amount-minor 2499 --currency USD
+$C exec -T api savestream-billing-admin package-create --code premium --name Premium --credits 24000 --amount-minor 5999 --currency USD
+```
+
+Lemon Squeezy needs a single Live one-time variant; each order's amount is sent as
+`custom_price` from the selected package.
+
 ## 4. Validate configuration before starting services
 
 ```sh
