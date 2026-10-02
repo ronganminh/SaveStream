@@ -96,13 +96,11 @@ import {
 } from "@/mocks/fixtures";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
 import {
-  canAccessRoute,
-  getFrontendIdentity,
-  getRouteAccess,
   isDemoMode,
   isProductionMode,
   productionBackendConnected,
 } from "@/lib/app-config";
+import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
@@ -120,6 +118,33 @@ const adminNav = [
   { to: "/admin/jobs", label: "Jobs", icon: Zap },
   { to: "/admin/errors", label: "Errors", icon: AlertTriangle },
 ] as const;
+
+function useShellAccount() {
+  const { user: authUser } = useAuth();
+  if (isDemoMode || !authUser) {
+    return {
+      name: user.name,
+      email: user.email,
+      initials: user.initials,
+      subLabel: `${user.plan} plan`,
+    };
+  }
+
+  const name = authUser.display_name?.trim() || authUser.email.split("@")[0] || authUser.email;
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("") || authUser.email[0]?.toUpperCase() || "U";
+
+  return {
+    name,
+    email: authUser.email,
+    initials,
+    subLabel: authUser.role === "admin" ? "Admin account" : "Account",
+  };
+}
 export function Logo({ compact = false }: { compact?: boolean }) {
   const { t } = usePreferences();
   return (
@@ -358,8 +383,9 @@ export function LanguageMenu({ full = false }: { full?: boolean }) {
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
-  const identity = getFrontendIdentity();
-  const canSeeAdmin = canAccessRoute(getRouteAccess("/admin/system"), identity);
+  const { identity } = useAuth();
+  const account = useShellAccount();
+  const canSeeAdmin = identity.role === "admin";
   const item = (
     it:
       | (typeof mainNav)[number]
@@ -443,11 +469,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             className="flex items-center gap-3 rounded-md p-2 hover:bg-accent"
           >
             <span className="grid size-8 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              {user.initials}
+              {account.initials}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.plan} plan</p>
+              <p className="truncate text-sm font-medium">{account.name}</p>
+              <p className="text-xs text-muted-foreground">{account.subLabel}</p>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
@@ -460,6 +486,8 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
   const [cmd, setCmd] = useState(false);
   const navigate = useNavigate();
   const { t } = usePreferences();
+  const { signOut } = useAuth();
+  const account = useShellAccount();
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -570,15 +598,15 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
               aria-label={t("Account menu")}
             >
               <span className="grid size-7 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-                {user.initials}
+                {account.initials}
               </span>
               <ChevronDown className="hidden size-3 sm:block" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="font-normal">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-sm font-medium">{account.name}</p>
+              <p className="text-xs text-muted-foreground">{account.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate({ to: "/settings/account" })}>
@@ -594,7 +622,12 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
               {t("Notifications")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigate({ to: "/sign-in" })}>
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault();
+                void signOut().finally(() => navigate({ to: "/sign-in" }));
+              }}
+            >
               {t("Sign out")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -608,25 +641,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
-  const identity = getFrontendIdentity();
-  const access = getRouteAccess(path);
-
-  if (!canAccessRoute(access, identity)) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-background px-4">
-        <div className="max-w-lg rounded-xl border bg-surface p-8 text-center shadow-dashboard">
-          <div className="mx-auto w-fit"><Logo /></div>
-          <h1 className="mt-6 text-2xl font-semibold">{t("Sign in required")}</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            {t("This route requires an authenticated account with the appropriate role.")}
-          </p>
-          <Button asChild className="mt-6">
-            <Link to="/sign-in">{t("Back to sign in")}</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   if (isProductionMode && !productionBackendConnected) {
     return (

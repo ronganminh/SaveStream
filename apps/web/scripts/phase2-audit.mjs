@@ -16,9 +16,9 @@ const forbid = (file, text) => {
 must("src/routes/__root.tsx", 'href="#main-content"');
 must("src/routes/__root.tsx", 'id="main-content"');
 must("src/lib/app-config.ts", 'requiredRole: "admin"');
-must("src/lib/app-config.ts", 'getFrontendIdentity');
+must("src/auth/auth-context.tsx", "AuthProvider");
 must("src/components/app-components.tsx", 'canSeeAdmin');
-must("src/components/app-components.tsx", 'canAccessRoute(access, identity)');
+must("src/auth/auth-guards.tsx", 'canAccessRoute(access, identity)');
 must("src/components/ui/button.tsx", 'data-slot="button"');
 must("src/styles.css", "@media (prefers-reduced-motion: reduce)");
 must("src/styles.css", "@media (pointer: coarse)");

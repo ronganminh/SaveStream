@@ -1,5 +1,5 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -95,18 +95,73 @@ import {
 import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
+import { authApi, authErrorMessage } from "@/api/auth";
+import { isDemoMode } from "@/lib/app-config";
 
 const mono = "font-mono text-xs";
 
 /* ---------------- Auth: verification & errors ---------------- */
-export function VerifyEmailPage() {
+export function VerifyEmailPage({ token = "" }: { token?: string }) {
   const { t } = usePreferences();
+  const navigate = useNavigate();
   const [cooldown, setCooldown] = useState(0);
+  const [email, setEmail] = useState(isDemoMode ? user.email : "");
+  const [error, setError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(Boolean(token && !isDemoMode));
+  const verificationStarted = useRef(false);
+
+  useEffect(() => {
+    if (isDemoMode || typeof window === "undefined") return;
+    const pending = window.sessionStorage.getItem("savestream:pending-verification-email");
+    if (pending) setEmail(pending);
+  }, []);
+
+  useEffect(() => {
+    if (!token || isDemoMode || verificationStarted.current) return;
+    verificationStarted.current = true;
+    let cancelled = false;
+
+    void authApi
+      .verifyEmail(token)
+      .then(async () => {
+        if (cancelled) return;
+        if (typeof window !== "undefined") {
+          window.sessionStorage.removeItem("savestream:pending-verification-email");
+        }
+        await navigate({ to: "/verify-email/success", replace: true });
+      })
+      .catch((verifyError) => {
+        if (!cancelled) {
+          setError(authErrorMessage(verifyError));
+          setVerifying(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, token]);
+
   useEffect(() => {
     if (!cooldown) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCooldown((current) => current - 1), 1000);
+    return () => clearTimeout(timer);
   }, [cooldown]);
+
+  if (verifying) {
+    return (
+      <AuthLayout>
+        <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
+          <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        </span>
+        <h1 className="mt-6 text-2xl font-semibold">{t("Verifying your email")}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {t("Please keep this page open while we activate your account.")}
+        </p>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout>
       <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
@@ -114,17 +169,39 @@ export function VerifyEmailPage() {
       </span>
       <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        {t("We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.")}{" "}
-        <b className="font-medium text-foreground">{user.email}</b>
+        {t("We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.")}
+        {email && (
+          <>
+            {" "}
+            <b className="font-medium text-foreground">{email}</b>
+          </>
+        )}
       </p>
+      {error && (
+        <p role="alert" className="mt-4 text-sm text-destructive">
+          {error}
+        </p>
+      )}
       <div className="mt-8 space-y-2">
         <Button
           className="w-full"
           variant="outline"
-          disabled={cooldown > 0}
+          disabled={cooldown > 0 || (!isDemoMode && !email)}
           onClick={() => {
-            setCooldown(30);
-            toast.success(t("Verification email sent"), { description: user.email });
+            if (isDemoMode) {
+              setCooldown(30);
+              toast.success(t("Verification email sent"), { description: user.email });
+              return;
+            }
+            if (!email) return;
+            setError(null);
+            void authApi
+              .resendVerification(email)
+              .then(() => {
+                setCooldown(30);
+                toast.success(t("Verification email sent"), { description: email });
+              })
+              .catch((resendError) => setError(authErrorMessage(resendError)));
           }}
         >
           {cooldown > 0 ? (
@@ -144,16 +221,18 @@ export function VerifyEmailPage() {
           {t("Back to sign in")}
         </Link>
       </p>
-      <div className="mt-8 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-        Prototype:{" "}
-        <Link to="/verify-email/success" className="text-primary underline underline-offset-4">
-          open verification link
-        </Link>{" "}
-        ·{" "}
-        <Link to="/auth/error" className="text-primary underline underline-offset-4">
-          open expired link
-        </Link>
-      </div>
+      {isDemoMode && (
+        <div className="mt-8 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+          Prototype:{" "}
+          <Link to="/verify-email/success" className="text-primary underline underline-offset-4">
+            open verification link
+          </Link>{" "}
+          ·{" "}
+          <Link to="/auth/error" className="text-primary underline underline-offset-4">
+            open expired link
+          </Link>
+        </div>
+      )}
     </AuthLayout>
   );
 }
@@ -164,16 +243,22 @@ export function VerifyEmailSuccessPage() {
     <AuthLayout>
       <SuccessState
         title="Email verified"
-        body="Your account is active. Add your first TikTok channel and we’ll start monitoring it right away."
+        body="Your account is active. Sign in to continue to SaveStream."
         action={
-          <>
-            <Button asChild>
-              <Link to="/onboarding">Continue to setup</Link>
+          isDemoMode ? (
+            <>
+              <Button asChild>
+                <Link to="/onboarding">Continue to setup</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/overview">Go to dashboard</Link>
+              </Button>
+            </>
+          ) : (
+            <Button asChild className="w-full">
+              <Link to="/sign-in">{t("Sign in")}</Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link to="/overview">Go to dashboard</Link>
-            </Button>
-          </>
+          )
         }
       />
     </AuthLayout>
@@ -222,7 +307,7 @@ export function AuthErrorPage() {
           </Button>
         )}
         <Button className="w-full" variant={kind === "failed" ? "outline" : "default"} asChild>
-          <Link to="/verify-email">{t("Request a new link")}</Link>
+          <Link to="/verify-email" search={{ token: "" }}>{t("Request a new link")}</Link>
         </Button>
         <Button className="w-full" variant="ghost" asChild>
           <Link to="/sign-in">{t("Back to sign in")}</Link>

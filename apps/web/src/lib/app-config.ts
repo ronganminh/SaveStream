@@ -40,8 +40,7 @@ export const apiConfigured = apiBaseUrl.length > 0;
 export const productionBackendConnected = isProductionMode && apiConfigured;
 
 /**
- * Frontend-only access contract. Phase 1 replaces this with real auth/session
- * state without changing route visibility rules or presentation components.
+ * Route-access contract. Real auth/session state is supplied by AuthProvider.
  */
 export type FrontendIdentity = {
   authenticated: boolean;
@@ -84,7 +83,3 @@ export function getRouteAccess(pathname: string): RouteAccess {
   return { visibility: "public", requiresAuth: false, indexable };
 }
 
-export function getFrontendIdentity(): FrontendIdentity {
-  if (isDemoMode) return { authenticated: true, role: "admin" };
-  return { authenticated: false, role: "guest" };
-}

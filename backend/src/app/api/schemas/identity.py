@@ -73,6 +73,7 @@ class UpdateMeRequest(StrictModel):
 
 class UserResponse(StrictModel):
     id: str
+    role: Literal["user", "admin"]
     email: str
     email_verified: bool
     display_name: str | None

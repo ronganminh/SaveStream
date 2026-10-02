@@ -16,7 +16,21 @@ export type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
   idempotencyKey?: string | null;
   requestId?: string;
   responseMode?: ApiResponseMode;
+  skipAuth?: boolean;
+  skipAuthRefresh?: boolean;
 };
+
+type ApiSessionHooks = {
+  getAccessToken: () => string | null;
+  refreshAccessToken: () => Promise<string | null>;
+  onAuthExpired: () => void;
+};
+
+let apiSessionHooks: ApiSessionHooks | null = null;
+
+export function configureApiSession(hooks: ApiSessionHooks | null) {
+  apiSessionHooks = hooks;
+}
 
 function createRequestId(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
@@ -45,11 +59,13 @@ export class ApiClient {
       headers: initialHeaders,
       body,
       json,
-      accessToken,
+      accessToken: requestedAccessToken,
       idempotencyKey,
       requestId: requestedRequestId,
       responseMode = "json",
       credentials = "include",
+      skipAuth = false,
+      skipAuthRefresh = false,
       ...requestInit
     } = options;
 
@@ -61,6 +77,8 @@ export class ApiClient {
     const requestId = requestedRequestId ?? headers.get(REQUEST_ID_HEADER) ?? createRequestId();
     headers.set(REQUEST_ID_HEADER, requestId);
 
+    const accessToken =
+      requestedAccessToken ?? (!skipAuth ? apiSessionHooks?.getAccessToken() : null);
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
     if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
 
@@ -83,6 +101,30 @@ export class ApiClient {
       if (requestInit.signal?.aborted) throw error;
       if (error instanceof ApiError) throw error;
       throw apiNetworkError(error, requestId);
+    }
+
+    if (
+      response.status === 401 &&
+      !skipAuth &&
+      !skipAuthRefresh &&
+      apiSessionHooks
+    ) {
+      let refreshedAccessToken: string | null = null;
+      try {
+        refreshedAccessToken = await apiSessionHooks.refreshAccessToken();
+      } catch {
+        refreshedAccessToken = null;
+      }
+
+      if (refreshedAccessToken) {
+        return this.request<T>(path, {
+          ...options,
+          accessToken: refreshedAccessToken,
+          requestId,
+          skipAuthRefresh: true,
+        });
+      }
+      apiSessionHooks.onAuthExpired();
     }
 
     if (!response.ok) {

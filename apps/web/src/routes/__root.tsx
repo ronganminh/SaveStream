@@ -10,6 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/auth/auth-context";
+import { AuthRouteGuard } from "@/auth/auth-guards";
 import {
   PreferencesProvider,
   languageInitScript,
@@ -145,12 +147,16 @@ function RootComponent() {
   return (
     <PreferencesProvider>
       <QueryClientProvider client={queryClient}>
-        <SkipLink />
-        <div id="main-content" tabIndex={-1}>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </div>
-        <Toaster position="bottom-right" />
+        <AuthProvider>
+          <SkipLink />
+          <div id="main-content" tabIndex={-1}>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <AuthRouteGuard>
+              <Outlet />
+            </AuthRouteGuard>
+          </div>
+          <Toaster position="bottom-right" />
+        </AuthProvider>
       </QueryClientProvider>
     </PreferencesProvider>
   );
