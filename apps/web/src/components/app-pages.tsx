@@ -144,6 +144,7 @@ import type {
   PaymentOrderResponse,
   PaymentStatusValue,
   PricingResponse,
+  PublicRecordingRate,
 } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
@@ -156,6 +157,7 @@ import {
   useCreditTransactionsData,
   usePaymentOrdersData,
   usePricingData,
+  usePublicPricingData,
   useRecordingArtifactsData,
   useRecordingData,
   useRecordingsData,
@@ -298,7 +300,7 @@ function RecordingExamples() {
           <p className="text-sm font-semibold text-primary">{t("Completed recordings")}</p>
           <h2 className="mt-2 text-3xl font-semibold">{t("Recording Examples")}</h2>
           <p className="mt-3 text-muted-foreground">
-            {t("See what a completed cloud recording looks like. These are preserved SaveStream sample videos.")}
+            {t("Real livestreams recorded by SaveStream, shared with the creators’ permission.")}
           </p>
         </div>
 
@@ -366,13 +368,13 @@ function RecordingExamples() {
           <DialogHeader>
             <div className="mb-1 flex items-center gap-2">
               <span className="rounded-md bg-primary-subtle px-2 py-1 text-[10px] font-semibold uppercase text-primary">
-                {t("Demo preview")}
+                {t("Sample recording")}
               </span>
               <StatusBadge status="Ready" />
             </div>
             <DialogTitle>{selected?.title}</DialogTitle>
             <DialogDescription>
-              {t("Preserved sample media from the previous SaveStream frontend.")}
+              {t("Recorded by SaveStream and shared with the creator’s permission.")}
             </DialogDescription>
           </DialogHeader>
 
@@ -416,6 +418,28 @@ function RecordingExamples() {
   );
 }
 
+function RecordingPreviewCard() {
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border bg-background p-4 text-left sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-full bg-primary-subtle text-sm font-semibold text-primary">
+          YC
+        </span>
+        <div>
+          <p className="text-sm font-medium">@yourchannel</p>
+          <p className="text-xs text-muted-foreground">
+            Recording in the cloud · started automatically
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 text-xs font-medium">
+        <span className="size-2 animate-pulse rounded-full bg-recording" />
+        <span className="font-mono">LIVE · 00:42:18</span>
+      </div>
+    </div>
+  );
+}
+
 export function LandingPage() {
   const { t, language } = usePreferences();
   const structuredData = {
@@ -455,7 +479,7 @@ export function LandingPage() {
               {t(
                 isDemoMode
                   ? "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected."
-                  : "SaveStream monitors authorized TikTok channels and records livestreams on backend infrastructure, so recording does not depend on keeping this browser open.",
+                  : "SaveStream watches the TikTok channels you are authorized to record and saves every livestream in the cloud. No computer or browser needs to stay open.",
               )}
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
@@ -476,7 +500,7 @@ export function LandingPage() {
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="mx-auto rounded border bg-background px-20 py-1 text-[9px] text-muted-foreground">
-                  app.savestream.app/overview
+                  savestream.online/overview
                 </span>
               </div>
               <div className="grid text-left md:grid-cols-[180px_1fr]">
@@ -535,28 +559,28 @@ export function LandingPage() {
                     ) : (
                       <>
                         <StatCard
-                          label="Cloud monitoring"
-                          value="Backend"
-                          detail="Runs independently of this browser"
+                          label="Channels monitored"
+                          value="3"
+                          detail="Checked automatically"
                           icon={Radio}
                         />
                         <StatCard
-                          label="Recording charges"
-                          value="Credits"
-                          detail="Reserved and settled by the backend"
+                          label="Credits available"
+                          value="2,480"
+                          detail="About 41 hours of recording"
                           icon={CreditCard}
                         />
                         <StatCard
-                          label="Recording library"
-                          value="Synced"
-                          detail="Authoritative account data"
+                          label="Recordings"
+                          value="12"
+                          detail="Ready to watch or download"
                           icon={FileVideo}
                         />
                       </>
                     )}
                   </div>
                   <div className="mt-5">
-                    <ActiveRecordingCard />
+                    {isDemoMode ? <ActiveRecordingCard /> : <RecordingPreviewCard />}
                   </div>
                 </div>
               </div>
@@ -570,8 +594,16 @@ export function LandingPage() {
             <div className="mt-10 grid gap-px overflow-hidden rounded-lg border bg-border md:grid-cols-4">
               {[
                 [Plus, "Add a channel", "Enter a TikTok username or profile URL."],
-                [Radio, "We monitor it", "Backend monitoring is designed to check live status automatically."],
-                [Video, "Recording starts", "Recording workers are designed to start automatically when backend services are connected."],
+                [
+                  Radio,
+                  "We monitor it",
+                  "SaveStream checks the channel’s live status from the cloud, around the clock.",
+                ],
+                [
+                  Video,
+                  "Recording starts",
+                  "Recording starts automatically when the channel goes live.",
+                ],
                 [Play, "Watch later", "Play or download when it’s ready."],
               ].map(([I, stepTitle, b], i) => (
                 <div className="bg-background p-6" key={String(stepTitle)}>
@@ -597,7 +629,9 @@ export function LandingPage() {
                 {t("Close your laptop. Recording continues.")}
               </h2>
               <p className="mt-4 text-muted-foreground">
-                {t("Production monitoring and recording are designed to run on backend services rather than in your browser.")}
+                {t(
+                  "Monitoring and recording run in the cloud, not in your browser, so nothing on your side needs to stay on.",
+                )}
               </p>
             </div>
             <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2">
@@ -608,8 +642,8 @@ export function LandingPage() {
                 "Recording library",
                 "Browser playback",
                 "Fast downloads",
-                "Usage tracking",
-                "Retention cleanup",
+                "Credit usage history",
+                "Kept until you delete them",
               ].map((x, i) => (
                 <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
                   <Check className="size-4 text-success" />
@@ -641,16 +675,27 @@ export function LandingPage() {
               </>
             ) : (
               <>
-                <h2 className="text-3xl font-semibold">{t("Credit-based pricing.")}</h2>
+                <h2 className="text-3xl font-semibold">{t("Pay as you go with credits.")}</h2>
                 <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  {t("Production uses backend-authoritative credits instead of the old Free/Pro monthly quota model.")}
+                  {t("Buy a credit package once and use it whenever your channels go live.")}
                 </p>
                 <div className="mt-10 grid gap-5 text-left md:grid-cols-3">
-                  {([
-                    ["Posted balance", "Credits added to your account are recorded in the backend ledger."],
-                    ["Reservations", "Active recordings reserve credits before final usage is known."],
-                    ["Settlement", "Final charges and unused-credit releases are settled by the backend."],
-                  ] as const).map(([title, body]) => (
+                  {(
+                    [
+                      [
+                        "No subscription",
+                        "One-time credit packages. Nothing renews automatically, and credits never expire.",
+                      ],
+                      [
+                        "Pay for recording time",
+                        "Credits are used only while a livestream is being recorded. Monitoring offline channels is free.",
+                      ],
+                      [
+                        "Free trial",
+                        "New accounts get free credits after verifying their email, so you can try a real recording first.",
+                      ],
+                    ] as const
+                  ).map(([title, body]) => (
                     <section key={title} className="rounded-lg border bg-surface p-5">
                       <h3 className="font-medium">{t(title)}</h3>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">{t(body)}</p>
@@ -658,7 +703,7 @@ export function LandingPage() {
                   ))}
                 </div>
                 <Button className="mt-8" variant="outline" asChild>
-                  <Link to="/pricing">{t("View current pricing")}</Link>
+                  <Link to="/pricing">{t("See pricing")}</Link>
                 </Button>
               </>
             )}
@@ -691,19 +736,23 @@ export function LandingPage() {
               : [
                   [
                     "Do I need to keep my computer on?",
-                    "No. Monitoring and recording run on SaveStream backend services rather than in your browser.",
+                    "No. Monitoring and recording run in the cloud, so you can close your browser or turn off your computer.",
                   ],
                   [
                     "Which channels can I add?",
                     "Only TikTok channels you own, manage, or have explicit permission to record and archive.",
                   ],
                   [
-                    "How are recording charges handled?",
-                    "Production uses backend-authoritative credits. Credits may be reserved for an active recording and are settled when usage is known.",
+                    "How does pricing work?",
+                    "You buy credits once and they are used while livestreams are recorded. Credits never expire. See the pricing page for packages and the current rate.",
                   ],
                   [
                     "How long are recordings kept?",
-                    "Retention is controlled by the backend service policy. The production web app does not invent plan-specific retention periods.",
+                    "Recordings stay in your account until you delete them. You can watch them in the browser or download them at any time.",
+                  ],
+                  [
+                    "What happens if I run out of credits?",
+                    "A recording continues until the livestream ends or your credits run out, and everything recorded up to that point is saved. Add credits from Billing to keep recording.",
                   ],
                 ]
             ).map(([q, a]) => (
@@ -1215,7 +1264,7 @@ function ProductionOverviewPage() {
         <PageHeader title="Overview" action={<AddChannelDialog />} />
         <ErrorState
           title="Could not load workspace overview"
-          body="SaveStream could not load one or more authoritative workspace resources."
+          body="SaveStream could not load part of your workspace. Please try again."
           onRetry={() => {
             void channelsQuery.refetch();
             void recordingsQuery.refetch();
@@ -1247,7 +1296,7 @@ function ProductionOverviewPage() {
     <AppShell>
       <PageHeader
         title="Overview"
-        subtitle="Backend-authoritative workspace status."
+        subtitle="Your channels, recordings, and credits at a glance."
         action={<AddChannelDialog />}
       />
       <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
@@ -2446,7 +2495,7 @@ function CreditsUsagePage() {
         <PageHeader title="Credits & usage" />
         <ErrorState
           title="Could not load credit balance"
-          body="SaveStream could not load the authoritative credit account."
+          body="SaveStream could not load your credit balance. Please try again."
           onRetry={() => balanceQuery.refetch()}
         />
       </AppShell>
@@ -2464,7 +2513,7 @@ function CreditsUsagePage() {
     <AppShell>
       <PageHeader
         title="Credits & usage"
-        subtitle="Backend-authoritative credit balance, reservations, and charges."
+        subtitle="Your credit balance, reserved credits, and recording charges."
         action={
           <Button variant="outline" asChild>
             <Link to="/billing">
@@ -3586,170 +3635,166 @@ export function PricingPage() {
   return <CreditPricingPage />;
 }
 
+function minutesPerCredit(rate: PublicRecordingRate) {
+  return rate.unit_seconds / 60 / rate.credits_per_unit;
+}
+
+function formatRecordingTime(minutes: number) {
+  if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
+  if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
+  return `${minutes} minutes`;
+}
+
+function rateSentence(rate: PublicRecordingRate | null) {
+  if (!rate || rate.credits_per_unit === 0) return null;
+  const minutes = minutesPerCredit(rate);
+  return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
+}
+
+const includedInEveryPackage = [
+  "Automatic live detection for every channel you add",
+  "Cloud recording — no computer or browser needs to stay open",
+  "Watch in the browser or download the video file",
+  "Recordings are kept until you delete them",
+  "Credits never expire",
+];
+
 function CreditPricingPage() {
-  const { t, language } = usePreferences();
+  const { language } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
-  const { query: pricingQuery, state: pricingState } = usePricingData(authenticated);
-  const { query: packagesQuery, state: packagesState } = useCreditPackagesData(authenticated);
-  const pricing = pricingQuery.data;
-  const packages = packagesQuery.data?.items ?? [];
+  const { query, state } = usePublicPricingData();
+  const pricing = query.data;
+  const rate = pricing?.recording_rate ?? null;
+  const rateLine = rateSentence(rate);
+  const ctaTo = authenticated ? "/billing" : "/sign-up";
 
   return (
     <>
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
         <div className="text-center">
-          <h1 className="text-4xl font-semibold">Credit-based pricing for livestream recording.</h1>
+          <h1 className="text-4xl font-semibold">Simple, pay-as-you-go pricing</h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            SaveStream uses integer credits. Recording costs are determined by the active backend
-            pricing policy and settled after recording usage is known.
+            Buy credits once and use them whenever your channels go live. No subscription and no
+            monthly fee.
           </p>
+          {rateLine && <p className="mt-3 text-sm font-medium">{rateLine}</p>}
         </div>
 
-        {!authenticated ? (
-          <>
-            <div className="mx-auto mt-10 max-w-3xl">
-              <StateBanner
-                tone="info"
-                icon={CreditCard}
-                title="Sign in to view current packages and active pricing"
-                body="The current pricing and package APIs require an authenticated SaveStream account. We do not show stale Free/Pro prices or invent public package values here."
-                action={
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" asChild>
-                      <Link to="/sign-in">{t("Sign in")}</Link>
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <Link to="/sign-up">{t("Create account")}</Link>
-                    </Button>
-                  </div>
-                }
-              />
-            </div>
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {[
-                [
-                  "Credits, not monthly plan quotas",
-                  "The production backend tracks posted, reserved, and available credits instead of the old Free/Pro monthly usage model.",
-                ],
-                [
-                  "Backend pricing is authoritative",
-                  "Clients display the active public pricing rules but do not calculate or guess the final recording charge.",
-                ],
-                [
-                  "Unused reservations are released",
-                  "Credits reserved for a recording are settled or released by the backend as the recording lifecycle completes.",
-                ],
-              ].map(([title, body]) => (
-                <section key={title} className="rounded-lg border bg-surface p-5 text-left">
-                  <h2 className="font-medium">{title}</h2>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{body}</p>
-                </section>
-              ))}
-            </div>
-          </>
+        {state.kind === "error" ? (
+          <div className="mx-auto mt-10 max-w-3xl">
+            <StateBanner
+              tone="warning"
+              title="Pricing could not be loaded"
+              body="Please refresh the page in a moment."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        ) : state.kind === "loading" ? (
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-72 animate-pulse rounded-lg border bg-muted" />
+            ))}
+          </div>
+        ) : !pricing?.packages.length ? (
+          <div className="mt-12">
+            <EmptyState
+              icon={CreditCard}
+              title="Credit packages are not available right now"
+              body="Please check back soon."
+            />
+          </div>
         ) : (
-          <>
-            <section className="mt-10 rounded-lg border bg-surface p-5">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="font-medium">Current backend pricing</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Public rules exposed by the active pricing configuration.
-                  </p>
-                </div>
-                {pricing && (
-                  <span className="w-fit rounded-md bg-muted px-2 py-1 font-mono text-xs">
-                    {pricing.version}
-                  </span>
-                )}
-              </div>
-              {pricingState.kind === "error" ? (
-                <div className="mt-5">
-                  <StateBanner
-                    tone="warning"
-                    title="Pricing unavailable"
-                    body="The active pricing policy could not be loaded."
-                    action={
-                      <Button size="sm" variant="outline" onClick={() => void pricingQuery.refetch()}>
-                        Retry
-                      </Button>
-                    }
-                  />
-                </div>
-              ) : pricing ? (
-                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  {pricing.rules.length ? (
-                    pricing.rules.map((rule, index) => (
-                      <div key={String(rule["code"] ?? index)} className="rounded-md border p-4">
-                        <p className="text-sm font-medium">{pricingRuleTitle(rule, index)}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {pricingRuleDetail(rule)}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      No public pricing rules are exposed by the current backend version.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="mt-5 h-28 animate-pulse rounded-md bg-muted" />
-              )}
-            </section>
-
-            <section className="mt-8">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold">Available credit packages</h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Packages currently enabled by the billing backend.
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {pricing.packages.map((item) => (
+              <section key={item.id} className="flex flex-col rounded-lg border bg-surface p-6">
+                <h2 className="text-lg font-semibold">{item.name}</h2>
+                <p className="mt-4 font-mono text-4xl font-semibold">
+                  {formatMoneyValue(item.price, language)}
                 </p>
-              </div>
-              {packagesState.kind === "error" ? (
-                <StateBanner
-                  tone="warning"
-                  title="Packages unavailable"
-                  body="SaveStream could not load the current credit packages."
-                  action={
-                    <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
-                      Retry
-                    </Button>
-                  }
-                />
-              ) : packages.length ? (
-                <div className="grid gap-5 md:grid-cols-2">
-                  {packages.map((item) => (
-                    <div key={item.id} className="rounded-lg border bg-surface p-6">
-                      <p className="text-lg font-semibold">{item.name}</p>
-                      <p className="mt-3 font-mono text-3xl font-semibold">
-                        {formatCreditMoney(item, language)}
-                      </p>
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {item.credits} credits
-                      </p>
-                      <Button className="mt-6 w-full" variant="outline" asChild>
-                        <Link to="/billing">Open billing</Link>
-                      </Button>
+                <p className="mt-1 text-xs text-muted-foreground">One-time purchase</p>
+                <dl className="mt-6 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-3 border-t pt-3">
+                    <dt className="text-muted-foreground">Credits</dt>
+                    <dd className="font-medium">{item.credits.toLocaleString(language)}</dd>
+                  </div>
+                  {item.recording_minutes !== null && (
+                    <div className="flex items-center justify-between gap-3 border-t pt-3">
+                      <dt className="text-muted-foreground">Recording time</dt>
+                      <dd className="font-medium">{formatRecordingTime(item.recording_minutes)}</dd>
                     </div>
-                  ))}
-                </div>
-              ) : packagesState.kind === "empty" ? (
-                <EmptyState
-                  icon={CreditCard}
-                  title="No credit packages available"
-                  body="The billing backend does not currently expose an active package."
-                />
-              ) : (
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="h-40 animate-pulse rounded-lg border bg-muted" />
-                  <div className="h-40 animate-pulse rounded-lg border bg-muted" />
-                </div>
-              )}
-            </section>
-          </>
+                  )}
+                </dl>
+                <Button className="mt-6 w-full" asChild>
+                  <Link to={ctaTo}>{authenticated ? "Buy credits" : "Get started"}</Link>
+                </Button>
+              </section>
+            ))}
+          </div>
         )}
+
+        {pricing && pricing.signup_credits > 0 && (
+          <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-medium">Free trial</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Get {pricing.signup_credits} free credits
+                {rate && rate.credits_per_unit > 0
+                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate))} of recording)`
+                  : ""}{" "}
+                when you create an account and verify your email.
+              </p>
+            </div>
+            {!authenticated && (
+              <Button variant="outline" asChild>
+                <Link to="/sign-up">Create free account</Link>
+              </Button>
+            )}
+          </section>
+        )}
+
+        <section className="mt-8 grid gap-8 rounded-lg border bg-surface p-6 md:grid-cols-2">
+          <div>
+            <h2 className="font-medium">Included with every package</h2>
+            <ul className="mt-4 space-y-3 text-sm">
+              {includedInEveryPackage.map((line) => (
+                <li key={line} className="flex gap-2">
+                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <div>
+              <h3 className="font-medium text-foreground">How credits are used</h3>
+              <p className="mt-1 leading-6">
+                Credits are used only while a livestream is being recorded, rounded up to the next
+                minute
+                {rate && rate.minimum_credits > 0
+                  ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
+                  : ""}
+                . Monitoring a channel while it is offline is free.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">Payments and refunds</h3>
+              <p className="mt-1 leading-6">
+                Payments are processed by Lemon Squeezy, our reseller and Merchant of Record. Prices
+                are shown in USD; applicable taxes are calculated at checkout. See our{" "}
+                <Link to="/refund" className="text-primary underline underline-offset-4">
+                  refund policy
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
       <PublicFooter />
     </>
@@ -3806,8 +3851,8 @@ export function PublicFooter() {
       "Product",
       [
         ["/pricing", "Pricing"],
-        ["/status", "Status"],
         ["/help", "Help"],
+        ["/contact", "Contact"],
       ],
     ],
     [
@@ -3816,6 +3861,7 @@ export function PublicFooter() {
         ["/terms", "Terms"],
         ["/privacy", "Privacy"],
         ["/acceptable-use", "Acceptable use"],
+        ["/refund", "Refund policy"],
       ],
     ],
     [

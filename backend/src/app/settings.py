@@ -160,6 +160,7 @@ class AppSettings:
     quota_max_recordings_per_day: int = 0
     quota_max_active_recordings_per_user: int = 0
     recording_retention_days: int = 0
+    signup_credits: int = 0
     account_deletion_grace_days: int = 0
     retention_check_seconds: int = 3600
     recording_source_backend: str = "tiktok"
@@ -439,6 +440,7 @@ class AppSettings:
             recording_retention_days=_nonnegative_int_env(
                 "RECORDING_RETENTION_DAYS", 0
             ),
+            signup_credits=_nonnegative_int_env("SIGNUP_CREDITS", 0),
             account_deletion_grace_days=_nonnegative_int_env(
                 "ACCOUNT_DELETION_GRACE_DAYS", 0
             ),

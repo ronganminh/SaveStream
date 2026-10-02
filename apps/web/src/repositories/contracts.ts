@@ -21,6 +21,7 @@ import type {
   PaymentOrderListResponse,
   PaymentOrderResponse,
   PricingResponse,
+  PublicPricingResponse,
   RecordingActions,
   RecordingEventResponse,
   RecordingResponse,
@@ -173,6 +174,8 @@ export interface RecordingRepository {
 
 export interface PricingRepository {
   get(): Promise<PricingResponse>;
+  /** Unauthenticated catalog for the public pricing page. */
+  getPublic(): Promise<PublicPricingResponse>;
 }
 
 export interface CreditsRepository {

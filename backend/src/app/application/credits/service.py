@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.pricing.policy import PricingEvaluator
 from app.application.pricing.service import PricingService
 from app.domain.common.errors import ApplicationError
 from app.domain.credits.types import CreditBalance, ReservationStatus
@@ -171,12 +172,48 @@ class CreditService:
     ) -> tuple[bool, int, int]:
         rule = await PricingService(self.session).active_rule()
         snapshot = await PricingService(self.session).snapshot(rule)
-        required = PricingService.estimate_max(snapshot, max_duration_seconds)
+        # Recordings are capped to what the balance covers, so being able to pay
+        # for the smallest billable unit is enough to start.
+        probe_seconds = max_duration_seconds
+        if snapshot.policy_type == "duration_units_v1":
+            probe_seconds = min(max_duration_seconds, int(snapshot.policy["unit_seconds"]))
+        required = PricingService.estimate_max(snapshot, probe_seconds)
         # The probe snapshot is not part of a recording and must not persist.
         await self.session.delete(snapshot)
         await self.session.flush()
         balance = await self.balance(user_id)
         return balance.available >= required, required, balance.available
+
+    async def affordable_duration_seconds(
+        self,
+        *,
+        user_id: uuid.UUID,
+        max_duration_seconds: int,
+    ) -> int:
+        """Longest recording (up to max_duration_seconds) the available balance pays for.
+
+        Returns 0 when not even the smallest billable unit is affordable.
+        """
+        rule = await PricingService(self.session).active_rule()
+        available = (await self.balance(user_id)).available
+        policy = dict(rule.policy)
+        if rule.policy_type == "duration_units_v1":
+            unit_seconds = int(policy["unit_seconds"])
+            credits_per_unit = int(policy["credits_per_unit"])
+            minimum_credits = int(policy.get("minimum_credits", 0))
+            if credits_per_unit == 0:
+                return max_duration_seconds if available >= minimum_credits else 0
+            if available < max(minimum_credits, credits_per_unit):
+                return 0
+            units = available // credits_per_unit
+            return min(max_duration_seconds, units * unit_seconds)
+        full_cost = PricingEvaluator.cost(
+            policy_type=rule.policy_type,
+            policy=policy,
+            duration_seconds=max_duration_seconds,
+            bytes_recorded=0,
+        )
+        return max_duration_seconds if available >= full_cost else 0
 
     async def settle_recording(
         self,
@@ -426,6 +463,48 @@ class CreditService:
             else None
         )
         return CreditReservationPage(items, next_cursor, has_more)
+
+
+    async def grant_signup_credits(
+        self,
+        user_id: uuid.UUID,
+        amount: int,
+    ) -> CreditLedgerEntry | None:
+        """Grant the one-time free trial credits; at most once per user.
+
+        Flushes without committing so the grant lands in the caller's transaction.
+        """
+        if amount <= 0:
+            return None
+        reference_key = f"signup-bonus:{user_id}"
+        existing = await self.session.scalar(
+            select(CreditLedgerEntry).where(
+                CreditLedgerEntry.reference_key == reference_key
+            )
+        )
+        if existing is not None:
+            return existing
+
+        account = await self._account(user_id, lock=True)
+        if account is None:
+            account = CreditAccount(user_id=user_id, posted_balance=0)
+            self.session.add(account)
+            await self.session.flush()
+        account.posted_balance += amount
+        entry = CreditLedgerEntry(
+            account_id=account.id,
+            user_id=user_id,
+            entry_type="grant",
+            amount=amount,
+            balance_after=account.posted_balance,
+            reference_type="signup_bonus",
+            reference_id=str(user_id),
+            reference_key=reference_key,
+            details={"reason": "free trial credits"},
+        )
+        self.session.add(entry)
+        await self.session.flush()
+        return entry
 
 
 class CreditAdminService:

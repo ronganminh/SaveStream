@@ -1,7 +1,7 @@
 import { getRouteAccess } from "@/lib/app-config";
 
 export const PUBLIC_SITE_URL = (
-  import.meta.env["VITE_PUBLIC_SITE_URL"] || "https://savestream.ronganminh221.workers.dev"
+  import.meta.env["VITE_PUBLIC_SITE_URL"] || "https://savestream.online"
 ).replace(/\/$/, "");
 
 const socialImage = `${PUBLIC_SITE_URL}/savestream-mark.svg`;

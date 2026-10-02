@@ -71,7 +71,7 @@ for (const text of [
   "Available credits",
   "Reserved credits",
   "Monitored channels",
-  "Backend-authoritative workspace status.",
+  "Your channels, recordings, and credits at a glance.",
 ]) {
   mustIn("ProductionOverviewPage", overview, text);
 }
@@ -90,9 +90,9 @@ const pricing = block(
   "function DemoPricingPage()",
 );
 for (const text of [
-  "Credit-based pricing for livestream recording.",
-  "pricingQuery",
-  "packagesQuery",
+  "Simple, pay-as-you-go pricing",
+  "usePublicPricingData()",
+  "pricing.packages.map",
 ]) {
   mustIn("CreditPricingPage", pricing, text);
 }
@@ -106,7 +106,7 @@ const usage = block(
   "function DemoUsagePage()",
 );
 for (const text of [
-  "Backend-authoritative credit balance",
+  "Your credit balance, reserved credits, and recording charges.",
   "useCreditBalanceData",
   "useCreditReservationsData",
 ]) {
@@ -138,8 +138,8 @@ const productionHelp = block(
 );
 for (const text of [
   'title: "Credits"',
-  "backend-authoritative credits",
-  "production web app does not invent Free/Pro plan-specific retention periods",
+  "bought once and never expiring",
+  "Recordings stay in your account until you delete them.",
 ]) {
   mustIn("productionHelpTopics", productionHelp, text);
 }
@@ -147,17 +147,16 @@ for (const text of [
   "future API",
   "current frontend values come from one plan catalog",
   "This frontend demo does not connect to a real recorder",
+  "Free/Pro",
+  "backend-authoritative",
 ]) {
   forbidIn("productionHelpTopics", productionHelp, text);
 }
 
+must("src/components/app-pages.tsx", "Pay as you go with credits.");
 must(
   "src/components/app-pages.tsx",
-  "Production uses backend-authoritative credits instead of the old Free/Pro monthly quota model.",
-);
-must(
-  "src/components/app-pages.tsx",
-  "SaveStream monitors authorized TikTok channels and records livestreams on backend infrastructure",
+  "SaveStream watches the TikTok channels you are authorized to record",
 );
 
 must("src/repositories/index.ts", "isDemoMode ? demoRepositories : apiRepositories");

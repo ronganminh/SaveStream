@@ -208,6 +208,27 @@ export type CreditPackageListResponse = {
   items: CreditPackageResponse[];
 };
 
+export type PublicRecordingRate = {
+  unit_seconds: number;
+  credits_per_unit: number;
+  minimum_credits: number;
+};
+
+export type PublicCreditPackageResponse = {
+  id: string;
+  code: string;
+  name: string;
+  credits: number;
+  price: Money;
+  recording_minutes: number | null;
+};
+
+export type PublicPricingResponse = {
+  packages: PublicCreditPackageResponse[];
+  recording_rate: PublicRecordingRate | null;
+  signup_credits: number;
+};
+
 export type PaymentStatusValue =
   | "created"
   | "pending"

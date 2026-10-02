@@ -86,3 +86,24 @@ class CheckoutRequest(StrictModel):
 class CheckoutResponse(StrictModel):
     checkout_url: str
     payment_order: PaymentOrderResponse
+
+
+class PublicRecordingRate(StrictModel):
+    unit_seconds: int = Field(ge=1)
+    credits_per_unit: int = Field(ge=0)
+    minimum_credits: int = Field(ge=0)
+
+
+class PublicCreditPackage(StrictModel):
+    id: str
+    code: str
+    name: str
+    credits: int = Field(ge=1)
+    price: Money
+    recording_minutes: int | None = Field(default=None, ge=0)
+
+
+class PublicPricingResponse(StrictModel):
+    packages: list[PublicCreditPackage]
+    recording_rate: PublicRecordingRate | None
+    signup_credits: int = Field(ge=0)

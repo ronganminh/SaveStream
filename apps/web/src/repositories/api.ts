@@ -29,6 +29,7 @@ import type {
   PaymentOrderListResponse,
   PaymentOrderResponse,
   PricingResponse,
+  PublicPricingResponse,
   RecordingEventResponse,
   RecordingListResponse,
   RecordingResponse,
@@ -307,6 +308,12 @@ export const apiRepositories: SaveStreamRepositories = {
   pricing: {
     get() {
       return apiClient.get<PricingResponse>("/v1/pricing");
+    },
+    getPublic() {
+      return apiClient.get<PublicPricingResponse>("/v1/public/pricing", {
+        skipAuth: true,
+        skipAuthRefresh: true,
+      });
     },
   },
 

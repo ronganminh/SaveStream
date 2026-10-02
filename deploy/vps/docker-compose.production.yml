@@ -54,6 +54,8 @@ x-app-env: &app-env
 
   SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
   SAVESTREAM_RECORDING_RETENTION_DAYS: "0"
+  # Free trial: credits granted once on first email verification (1 credit = 1 minute).
+  SAVESTREAM_SIGNUP_CREDITS: "10"
   SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS: "0"
 
 x-app-secrets: &app-secrets

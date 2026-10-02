@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { isProductionMode } from "./lib/app-config";
+import { PUBLIC_SITE_URL } from "./lib/route-metadata";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -44,8 +46,27 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+const canonicalOrigin = new URL(PUBLIC_SITE_URL);
+
+/**
+ * Production serves one canonical host over HTTPS: http, www, and the
+ * workers.dev hostnames permanently redirect to it, keeping path and query.
+ */
+export function canonicalRedirect(request: Request): Response | null {
+  if (!isProductionMode) return null;
+  const url = new URL(request.url);
+  const host = url.hostname;
+  const isAlias = host === `www.${canonicalOrigin.hostname}` || host.endsWith(".workers.dev");
+  const isInsecureCanonical = host === canonicalOrigin.hostname && url.protocol === "http:";
+  if (!isAlias && !isInsecureCanonical) return null;
+  const target = new URL(`${url.pathname}${url.search}`, canonicalOrigin);
+  return new Response(null, { status: 301, headers: { location: target.toString() } });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    const redirect = canonicalRedirect(request);
+    if (redirect) return redirect;
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

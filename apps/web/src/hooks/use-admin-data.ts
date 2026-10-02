@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSignedIn } from "@/hooks/use-signed-in";
 
 import type { RecordingStatusValue } from "@/api/types";
 import { repositories } from "@/repositories";
@@ -18,14 +19,17 @@ const terminalRecordingStatuses = new Set<RecordingStatusValue>([
 ]);
 
 export function useAdminOperationalSnapshotData() {
+  const signedIn = useSignedIn();
   return useQuery({
     queryKey: adminKeys.snapshot,
     queryFn: () => repositories.admin.getOperationalSnapshot(),
+    enabled: signedIn,
     refetchInterval: 10_000,
   });
 }
 
 export function useAdminRecordingsData(status?: RecordingStatusValue | null) {
+  const signedIn = useSignedIn();
   return useQuery({
     queryKey: adminKeys.recordings(status),
     queryFn: () =>
@@ -38,10 +42,11 @@ export function useAdminRecordingsData(status?: RecordingStatusValue | null) {
 }
 
 export function useAdminRecordingData(id: string | null | undefined) {
+  const signedIn = useSignedIn();
   return useQuery({
     queryKey: adminKeys.recording(id ?? "missing"),
     queryFn: () => repositories.admin.getRecording(id ?? ""),
-    enabled: Boolean(id),
+    enabled: signedIn && Boolean(id),
     refetchInterval: (query) => {
       const status = query.state.data?.status;
       return status && !terminalRecordingStatuses.has(status) ? 5_000 : false;
@@ -50,9 +55,11 @@ export function useAdminRecordingData(id: string | null | undefined) {
 }
 
 export function useAdminAuditData() {
+  const signedIn = useSignedIn();
   return useQuery({
     queryKey: adminKeys.audit,
     queryFn: () => repositories.admin.listAudit({ limit: 100 }),
+    enabled: signedIn,
     refetchInterval: 15_000,
   });
 }

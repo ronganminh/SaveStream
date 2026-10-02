@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcceptableUseRouteImport } from './routes/acceptable-use'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as ChannelsRouteImport } from './routes/channels'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -21,6 +22,7 @@ import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecordingsRouteImport } from './routes/recordings'
+import { Route as RefundRouteImport } from './routes/refund'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -73,6 +75,11 @@ const ChannelsRoute = ChannelsRouteImport.update({
   path: '/channels',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
@@ -111,6 +118,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const RecordingsRoute = RecordingsRouteImport.update({
   id: '/recordings',
   path: '/recordings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -274,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/acceptable-use': typeof AcceptableUseRoute
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
+  '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -282,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
+  '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sign-in': typeof SignInRoute
@@ -317,6 +331,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acceptable-use': typeof AcceptableUseRoute
+  '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -324,6 +339,7 @@ export interface FileRoutesByTo {
   '/overview': typeof OverviewRoute
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -359,6 +375,7 @@ export interface FileRoutesById {
   '/acceptable-use': typeof AcceptableUseRoute
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
+  '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -367,6 +384,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
+  '/refund': typeof RefundRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sign-in': typeof SignInRoute
@@ -406,6 +424,7 @@ export interface FileRouteTypes {
     | '/acceptable-use'
     | '/billing'
     | '/channels'
+    | '/contact'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -414,6 +433,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/recordings'
+    | '/refund'
     | '/reset-password'
     | '/settings'
     | '/sign-in'
@@ -449,6 +469,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/acceptable-use'
+    | '/contact'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -456,6 +477,7 @@ export interface FileRouteTypes {
     | '/overview'
     | '/pricing'
     | '/privacy'
+    | '/refund'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
@@ -490,6 +512,7 @@ export interface FileRouteTypes {
     | '/acceptable-use'
     | '/billing'
     | '/channels'
+    | '/contact'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -498,6 +521,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/recordings'
+    | '/refund'
     | '/reset-password'
     | '/settings'
     | '/sign-in'
@@ -536,6 +560,7 @@ export interface RootRouteChildren {
   AcceptableUseRoute: typeof AcceptableUseRoute
   BillingRoute: typeof BillingRouteWithChildren
   ChannelsRoute: typeof ChannelsRouteWithChildren
+  ContactRoute: typeof ContactRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -544,6 +569,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   PrivacyRoute: typeof PrivacyRoute
   RecordingsRoute: typeof RecordingsRouteWithChildren
+  RefundRoute: typeof RefundRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SignInRoute: typeof SignInRoute
@@ -587,6 +613,13 @@ declare module '@tanstack/react-router' {
       path: '/channels'
       fullPath: '/channels'
       preLoaderRoute: typeof ChannelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -643,6 +676,13 @@ declare module '@tanstack/react-router' {
       path: '/recordings'
       fullPath: '/recordings'
       preLoaderRoute: typeof RecordingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -965,6 +1005,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcceptableUseRoute: AcceptableUseRoute,
   BillingRoute: BillingRouteWithChildren,
   ChannelsRoute: ChannelsRouteWithChildren,
+  ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
   NotificationsRoute: NotificationsRoute,
@@ -973,6 +1014,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   PrivacyRoute: PrivacyRoute,
   RecordingsRoute: RecordingsRouteWithChildren,
+  RefundRoute: RefundRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SignInRoute: SignInRoute,

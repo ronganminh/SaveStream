@@ -8,4 +8,4 @@ Disallow: /billing
 Disallow: /notifications
 Disallow: /settings
 Disallow: /admin
-Sitemap: https://savestream.ronganminh221.workers.dev/sitemap.xml
+Sitemap: https://savestream.online/sitemap.xml

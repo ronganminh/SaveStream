@@ -17,6 +17,7 @@ from app.api.routes.health import router as health_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.operations import router as operations_router
 from app.api.routes.pricing import router as pricing_router
+from app.api.routes.public import router as public_router
 from app.api.routes.recordings import router as recordings_router
 from app.api.routes.users import router as users_router
 from app.api.routes.watches import router as watches_router
@@ -87,6 +88,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(watches_router)
     app.include_router(credits_router)
     app.include_router(pricing_router)
+    app.include_router(public_router)
     app.include_router(billing_router)
     app.include_router(webhooks_router)
     app.include_router(admin_router)
