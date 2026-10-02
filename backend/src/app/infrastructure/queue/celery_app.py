@@ -22,6 +22,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
         task_acks_late=True,
         worker_prefetch_multiplier=1,
         broker_connection_retry_on_startup=True,
+        # Recordings hold a worker slot for the whole livestream. Routing them to
+        # their own queue lets a dedicated worker cap system-wide concurrency
+        # without starving watch checks and other short tasks.
+        task_routes={"savestream.recording.run": {"queue": cfg.recording_queue}},
         beat_schedule={
             "recover-stale-recordings": {
                 "task": "savestream.recording.recover_stale",

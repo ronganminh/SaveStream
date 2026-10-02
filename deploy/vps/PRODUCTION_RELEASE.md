@@ -100,6 +100,17 @@ Recording rate: 1 credit = 1 minute (`duration_units_v1`, 60 s per unit, minimum
 Free trial: `SAVESTREAM_SIGNUP_CREDITS=10`, granted once on first email verification.
 Credits never expire. A recording is capped to the minutes the balance covers.
 
+Usage limits are the same for every account and are not tied to packages:
+
+- 20 monitored channels per user (`SAVESTREAM_QUOTA_MAX_WATCHES_PER_USER`);
+- 2 simultaneous recordings per user (`SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER`,
+  `SAVESTREAM_WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER`);
+- 6 simultaneous recordings across the whole system at launch: recordings run on the
+  dedicated `recorder` service (`SAVESTREAM_RECORDING_QUEUE=recordings`) whose Celery
+  concurrency is `SAVESTREAM_RECORDING_CONCURRENCY` in `production.env`. Raise it as VPS
+  CPU, bandwidth, and disk metrics allow, then `up -d recorder`. Recordings beyond the cap
+  wait in the queue; watch checks keep running on the shared `worker`.
+
 After the stack is running, create them once (they are not idempotent; check
 `GET /v1/public/pricing` first):
 
