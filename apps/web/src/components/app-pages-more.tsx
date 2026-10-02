@@ -98,6 +98,11 @@ import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
+import type {
+  AuditLogResponse,
+  RecordingResponse,
+  RecordingStatusValue,
+} from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
 import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
@@ -114,6 +119,13 @@ import {
   isAwaitingPaymentConfirmation,
   useBillingReturnOrder,
 } from "@/hooks/use-billing";
+import {
+  useAdminAuditData,
+  useAdminOperationalSnapshotData,
+  useAdminRecordingData,
+  useAdminRecordingsData,
+  useAdminRetryRecordingMutation,
+} from "@/hooks/use-admin-data";
 
 const mono = "font-mono text-xs";
 
@@ -1534,6 +1546,146 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
   );
 }
 
+function formatAdminDuration(seconds: number) {
+  const total = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours) return `${hours}h ${minutes}m`;
+  if (minutes) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}
+
+function formatAdminBytes(bytes: number) {
+  if (bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let value = bytes;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value >= 10 || index === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[index]}`;
+}
+
+function adminSourceLabel(recording: RecordingResponse) {
+  return recording.creator?.display_name || recording.creator?.username || recording.source.value;
+}
+
+function AdminRecordingStatusPill({ status }: { status: RecordingStatusValue }) {
+  const className =
+    status === "completed"
+      ? "bg-success-subtle text-success"
+      : status === "failed"
+        ? "bg-recording-subtle text-destructive"
+        : status === "recording"
+          ? "bg-info-subtle text-info"
+          : status === "stopped"
+            ? "bg-muted text-muted-foreground"
+            : "bg-warning-subtle text-warning-foreground";
+
+  return (
+    <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium", className)}>
+      {status.replaceAll("_", " ")}
+    </span>
+  );
+}
+
+export function AdminWorkersPage() {
+  return isDemoMode ? <LegacyAdminWorkersPage /> : <ProductionAdminWorkersPage />;
+}
+
+function ProductionAdminWorkersPage() {
+  const snapshot = useAdminOperationalSnapshotData();
+
+  if (snapshot.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Workers & queues" subtitle="Loading operational state…" />
+        <div className="h-48 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (snapshot.isError || !snapshot.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Workers & queues" />
+        <ErrorState
+          title="Could not load worker-facing operations"
+          body="SaveStream could not load the backend operations snapshot."
+          onRetry={() => snapshot.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const data = snapshot.data;
+  return (
+    <AppShell>
+      <PageHeader
+        title="Workers & queues"
+        subtitle="Aggregate backend workload signals. Refreshes every 10 seconds while open."
+        action={
+          <Button
+            variant="outline"
+            disabled={snapshot.isFetching}
+            onClick={() => void snapshot.refetch()}
+          >
+            <RotateCcw />
+            {snapshot.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          icon={Server}
+          title="Per-worker telemetry is not exposed by the backend"
+          body="SaveStream currently exposes operational counters, not worker IDs, CPU, memory, heartbeat, logs, versions, or drain controls. Production intentionally does not simulate those details."
+        />
+      </div>
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Active recordings"
+          value={String(data.active_recordings)}
+          detail="Current recording workload"
+          icon={Radio}
+        />
+        <StatCard
+          label="Pending outbox"
+          value={String(data.pending_outbox_events)}
+          detail="Events waiting to publish"
+          icon={Clock3}
+        />
+        <StatCard
+          label="Recent failures"
+          value={String(data.failed_recordings_recent)}
+          detail="Backend failure window"
+          icon={AlertTriangle}
+        />
+        <StatCard
+          label="Paused error watches"
+          value={String(data.paused_error_watches)}
+          detail="Watches paused after errors"
+          icon={ShieldCheck}
+        />
+      </div>
+
+      <section className="mt-8 rounded-lg border bg-surface p-5">
+        <h2 className="font-medium">Operational boundaries</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Browser admin pages never receive the metrics token and do not call /metrics. Detailed
+          worker telemetry requires a future authenticated admin API before this page can safely
+          show a worker table or perform worker actions.
+        </p>
+      </section>
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: workers ---------------- */
 function WorkerBadge({ status }: { status: WorkerStatus }) {
   if (status === "Recording" || status === "Processing") return <StatusBadge status={status} />;
@@ -1558,7 +1710,7 @@ function WorkerBadge({ status }: { status: WorkerStatus }) {
     </span>
   );
 }
-export function AdminWorkersPage() {
+function LegacyAdminWorkersPage() {
   const { t } = usePreferences();
   const [list, setList] = useState(workerList);
   const [drain, setDrain] = useState<Worker | null>(null);
@@ -1748,6 +1900,270 @@ export function AdminWorkersPage() {
   );
 }
 
+const productionJobStatuses = [
+  "queued",
+  "resolving",
+  "waiting_live",
+  "recording",
+  "processing",
+  "uploading",
+  "completed",
+  "failed",
+  "stop_requested",
+  "stopped",
+] as const satisfies readonly RecordingStatusValue[];
+
+export function AdminJobsPage() {
+  return isDemoMode ? <LegacyAdminJobsPage /> : <ProductionAdminJobsPage />;
+}
+
+function ProductionAdminJobsPage() {
+  const [queryText, setQueryText] = useState("");
+  const [status, setStatus] = useState<"all" | RecordingStatusValue>("all");
+  const recordings = useAdminRecordingsData(status === "all" ? null : status);
+  const retry = useAdminRetryRecordingMutation();
+
+  if (recordings.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording jobs" subtitle="Loading backend recordings…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (recordings.isError || !recordings.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording jobs" />
+        <ErrorState
+          title="Could not load recording jobs"
+          body="SaveStream could not load the admin recording list."
+          onRetry={() => recordings.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const normalizedQuery = queryText.trim().toLowerCase();
+  const list = recordings.data.items.filter((recording) => {
+    if (!normalizedQuery) return true;
+    return [
+      recording.id,
+      adminSourceLabel(recording),
+      recording.source.value,
+      recording.error?.code ?? "",
+      recording.error?.message ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  const retryRecording = (recordingId: string) => {
+    void retry
+      .mutateAsync(recordingId)
+      .then((result) =>
+        toast.success("Recording retry queued", {
+          description: `New recording ${result.recording.id}`,
+        }),
+      )
+      .catch((error) =>
+        toast.error("Could not retry recording", {
+          description:
+            error instanceof Error ? error.message : "The retry request could not be completed.",
+        }),
+      );
+  };
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Recording jobs"
+        subtitle="Admin view of backend recording records. Refreshes every 10 seconds while open."
+        action={
+          <Button
+            variant="outline"
+            disabled={recordings.isFetching}
+            onClick={() => void recordings.refetch()}
+          >
+            <RotateCcw />
+            {recordings.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <FilterBar>
+        <div className="flex-1">
+          <SearchInput
+            value={queryText}
+            onChange={setQueryText}
+            placeholder="Search recording ID, creator, source, or error"
+          />
+        </div>
+        <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
+          <SelectTrigger className="w-44" aria-label="Recording status">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {productionJobStatuses.map((item) => (
+              <SelectItem key={item} value={item}>
+                {item.replaceAll("_", " ")}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterBar>
+
+      {recordings.data.pagination.has_more && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Showing the first 100 records"
+            body="The backend reports more recordings than this page currently loads. Narrow the status filter to reduce the result set."
+          />
+        </div>
+      )}
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={Search}
+          title="No recording jobs match"
+          body="Try another status or search term."
+        />
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-lg border bg-surface lg:block">
+            <table className="w-full min-w-[1050px] text-xs">
+              <thead className="bg-surface-subtle text-left text-[10px] uppercase text-muted-foreground">
+                <tr>
+                  {[
+                    "Recording ID",
+                    "Creator / source",
+                    "Status",
+                    "Started",
+                    "Duration",
+                    "Output",
+                    "Cost",
+                    "Error",
+                    "",
+                  ].map((heading) => (
+                    <th key={heading} className="px-4 py-2 font-medium">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((recording) => (
+                  <tr key={recording.id} className="border-t">
+                    <td className="px-4 py-3">
+                      <Link
+                        to="/admin/jobs/$id"
+                        params={{ id: recording.id }}
+                        className="font-mono font-medium text-primary hover:underline"
+                      >
+                        {recording.id}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{adminSourceLabel(recording)}</p>
+                      <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                        {recording.source.type}: {recording.source.value}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminRecordingStatusPill status={recording.status} />
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono">
+                      {recording.started_at
+                        ? new Date(recording.started_at).toLocaleString()
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatAdminDuration(recording.duration_seconds)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {formatAdminBytes(recording.bytes_recorded)}
+                    </td>
+                    <td className="px-4 py-3 font-mono">
+                      {recording.actual_cost === null
+                        ? "—"
+                        : `${recording.actual_cost} credits`}
+                    </td>
+                    <td
+                      className="max-w-56 truncate px-4 py-3 text-muted-foreground"
+                      title={recording.error?.message ?? ""}
+                    >
+                      {recording.error?.code ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {recording.actions.can_retry && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={retry.isPending}
+                          onClick={() => retryRecording(recording.id)}
+                        >
+                          <RotateCcw />
+                          Retry
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-3 lg:hidden">
+            {list.map((recording) => (
+              <div key={recording.id} className="rounded-lg border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <Link
+                      to="/admin/jobs/$id"
+                      params={{ id: recording.id }}
+                      className="truncate font-mono text-sm font-medium text-primary hover:underline"
+                    >
+                      {recording.id}
+                    </Link>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {adminSourceLabel(recording)}
+                    </p>
+                  </div>
+                  <AdminRecordingStatusPill status={recording.status} />
+                </div>
+                <dl className="mt-4 grid grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Duration</dt>
+                    <dd className="mt-1 font-mono">
+                      {formatAdminDuration(recording.duration_seconds)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Output</dt>
+                    <dd className="mt-1 font-mono">
+                      {formatAdminBytes(recording.bytes_recorded)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Cost</dt>
+                    <dd className="mt-1 font-mono">
+                      {recording.actual_cost === null ? "—" : recording.actual_cost}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: jobs ---------------- */
 const jobFilters = ["All", "Recording", "Processing", "Error", "Stuck", "Ready"] as const;
 function JobStatusCell({ job }: { job: RecordingJob }) {
@@ -1763,7 +2179,7 @@ function JobStatusCell({ job }: { job: RecordingJob }) {
     </div>
   );
 }
-export function AdminJobsPage() {
+function LegacyAdminJobsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [f, setF] = useState<(typeof jobFilters)[number]>("All");
@@ -1957,6 +2373,165 @@ export function JobEventTimeline({ events }: { events: JobEvent[] }) {
   );
 }
 export function AdminJobDetailPage() {
+  return isDemoMode ? <LegacyAdminJobDetailPage /> : <ProductionAdminJobDetailPage />;
+}
+
+function ProductionAdminJobDetailPage() {
+  const { id } = useParams({ strict: false }) as { id?: string };
+  const recording = useAdminRecordingData(id);
+  const retry = useAdminRetryRecordingMutation();
+  const [confirmRetry, setConfirmRetry] = useState(false);
+
+  if (recording.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording job" subtitle="Loading backend recording…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (recording.isError || !recording.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Recording job unavailable" />
+        <ErrorState
+          title="Could not load recording job"
+          body="The recording may not exist or the admin API could not load it."
+          onRetry={() => recording.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const item = recording.data;
+  const fields: [string, ReactNode][] = [
+    ["Recording ID", item.id],
+    ["Creator / source", adminSourceLabel(item)],
+    ["Source type", item.source.type],
+    ["Source value", item.source.value],
+    ["Started", item.started_at ? new Date(item.started_at).toLocaleString() : "—"],
+    ["Ended", item.ended_at ? new Date(item.ended_at).toLocaleString() : "—"],
+    ["Duration", formatAdminDuration(item.duration_seconds)],
+    ["Output", formatAdminBytes(item.bytes_recorded)],
+    ["Estimated max cost", `${item.estimated_max_cost} credits`],
+    ["Actual cost", item.actual_cost === null ? "—" : `${item.actual_cost} credits`],
+    ["Credit reservation", item.credit_reservation_id ?? "—"],
+    ["Updated", new Date(item.updated_at).toLocaleString()],
+  ];
+
+  const retryRecording = () => {
+    void retry
+      .mutateAsync(item.id)
+      .then((result) => {
+        setConfirmRetry(false);
+        toast.success("Recording retry queued", {
+          description: `New recording ${result.recording.id}`,
+        });
+      })
+      .catch((error) =>
+        toast.error("Could not retry recording", {
+          description:
+            error instanceof Error ? error.message : "The retry request could not be completed.",
+        }),
+      );
+  };
+
+  return (
+    <AppShell>
+      <Link
+        to="/admin/jobs"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" />
+        Jobs
+      </Link>
+
+      <PageHeader
+        title={item.id}
+        subtitle={adminSourceLabel(item)}
+        action={
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={recording.isFetching}
+              onClick={() => void recording.refetch()}
+            >
+              <RotateCcw />
+              Refresh
+            </Button>
+            {item.actions.can_retry && (
+              <Button
+                variant="outline"
+                disabled={retry.isPending}
+                onClick={() => setConfirmRetry(true)}
+              >
+                <RotateCcw />
+                Retry recording
+              </Button>
+            )}
+          </div>
+        }
+      />
+
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <AdminRecordingStatusPill status={item.status} />
+        <span className="text-xs text-muted-foreground">
+          Active records refresh every 5 seconds.
+        </span>
+      </div>
+
+      {item.error && (
+        <div className="mb-6 rounded-lg border border-destructive/30 bg-recording-subtle p-4">
+          <p className="text-sm font-medium text-destructive">{item.error.code}</p>
+          <p className="mt-2 text-sm">{item.error.message}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Retryable: {item.error.retryable ? "yes" : "no"}
+          </p>
+        </div>
+      )}
+
+      <section className="rounded-lg border bg-surface p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="font-medium">Backend recording state</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Only fields returned by the admin recording API are shown.
+            </p>
+          </div>
+        </div>
+        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {fields.map(([label, value]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-1 break-words font-mono text-xs">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section className="mt-6 rounded-lg border bg-surface p-5">
+        <h2 className="font-medium">Actions exposed by backend</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Retry is available only when the recording response says can_retry. The admin API does
+          not expose a browser action to mark a job failed, kill a worker, or edit hidden job state.
+        </p>
+      </section>
+
+      <ConfirmDialog
+        open={confirmRetry}
+        onOpenChange={setConfirmRetry}
+        title="Retry this recording?"
+        body="SaveStream will create a new recording attempt through the admin retry endpoint. The original recording remains unchanged."
+        confirmLabel={retry.isPending ? "Retrying…" : "Retry recording"}
+        confirmDisabled={retry.isPending}
+        onConfirm={retryRecording}
+      />
+    </AppShell>
+  );
+}
+
+function LegacyAdminJobDetailPage() {
   const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
   const job = jobList.find((j) => j.id === id);
@@ -2098,6 +2673,286 @@ export function AdminJobDetailPage() {
   );
 }
 
+function adminAuditResource(entry: AuditLogResponse) {
+  if (!entry.resource_type && !entry.resource_id) return "—";
+  return [entry.resource_type, entry.resource_id].filter(Boolean).join(": ");
+}
+
+export function AdminErrorsPage() {
+  return isDemoMode ? <LegacyAdminErrorsPage /> : <ProductionAdminErrorsPage />;
+}
+
+function ProductionAdminErrorsPage() {
+  const audit = useAdminAuditData();
+  const snapshot = useAdminOperationalSnapshotData();
+  const [queryText, setQueryText] = useState("");
+  const [resourceType, setResourceType] = useState("all");
+  const [open, setOpen] = useState<string | null>(null);
+
+  if (audit.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="Audit & operations" subtitle="Loading backend audit activity…" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (audit.isError || !audit.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Audit & operations" />
+        <ErrorState
+          title="Could not load admin audit log"
+          body="SaveStream could not load backend audit activity."
+          onRetry={() => audit.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const normalizedQuery = queryText.trim().toLowerCase();
+  const resourceTypes = Array.from(
+    new Set(
+      audit.data.items
+        .map((entry) => entry.resource_type)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ).sort();
+
+  const list = audit.data.items.filter((entry) => {
+    if (resourceType !== "all" && entry.resource_type !== resourceType) return false;
+    if (!normalizedQuery) return true;
+    return [
+      entry.action,
+      entry.resource_type ?? "",
+      entry.resource_id ?? "",
+      entry.actor_user_id ?? "",
+      entry.request_id ?? "",
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+
+  const selected = audit.data.items.find((entry) => entry.id === open) ?? null;
+
+  const refresh = () => {
+    void Promise.all([audit.refetch(), snapshot.refetch()]);
+  };
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Audit & operations"
+        subtitle="Real admin audit activity plus backend operational counters."
+        action={
+          <Button
+            variant="outline"
+            disabled={audit.isFetching || snapshot.isFetching}
+            onClick={refresh}
+          >
+            <RotateCcw />
+            {audit.isFetching || snapshot.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          icon={ShieldCheck}
+          title="Audit log is not a raw service-error stream"
+          body="The backend exposes administrative audit records and aggregate operational counters. Production does not fabricate worker stack traces, severity, or retry state that the API does not provide."
+        />
+      </div>
+
+      {snapshot.data && (
+        <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Recent recording failures"
+            value={String(snapshot.data.failed_recordings_recent)}
+            detail="Backend failure window"
+            icon={AlertTriangle}
+          />
+          <StatCard
+            label="Pending outbox"
+            value={String(snapshot.data.pending_outbox_events)}
+            detail="Events waiting to publish"
+            icon={Clock3}
+          />
+          <StatCard
+            label="Unprocessed payment events"
+            value={String(snapshot.data.unprocessed_payment_events)}
+            detail="Provider events awaiting processing"
+            icon={CreditCard}
+          />
+          <StatCard
+            label="Paused error watches"
+            value={String(snapshot.data.paused_error_watches)}
+            detail="Watches paused after repeated errors"
+            icon={Radio}
+          />
+        </div>
+      )}
+
+      {snapshot.isError && (
+        <div className="mb-6">
+          <StateBanner
+            tone="warning"
+            title="Operational counters unavailable"
+            body="The audit log is available, but the operations snapshot could not be refreshed."
+            action={
+              <Button size="sm" variant="outline" onClick={() => void snapshot.refetch()}>
+                Retry snapshot
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      <FilterBar>
+        <div className="flex-1">
+          <SearchInput
+            value={queryText}
+            onChange={setQueryText}
+            placeholder="Search action, resource, actor, or request ID"
+          />
+        </div>
+        <Select value={resourceType} onValueChange={setResourceType}>
+          <SelectTrigger className="w-44" aria-label="Resource type">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All resources</SelectItem>
+            {resourceTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterBar>
+
+      {audit.data.pagination.has_more && (
+        <div className="mb-4">
+          <StateBanner
+            tone="info"
+            title="Showing the first 100 audit entries"
+            body="The backend reports additional audit records beyond this page."
+          />
+        </div>
+      )}
+
+      {list.length === 0 ? (
+        <EmptyState
+          icon={CheckCircle2}
+          title="No audit entries match"
+          body="Try another search term or resource filter."
+        />
+      ) : (
+        <>
+          <div className="hidden overflow-x-auto rounded-lg border bg-surface md:block">
+            <table className="w-full min-w-[900px] text-xs">
+              <thead className="bg-surface-subtle text-left text-[10px] uppercase text-muted-foreground">
+                <tr>
+                  {["Time", "Action", "Resource", "Actor", "Request ID"].map((heading) => (
+                    <th key={heading} className="px-4 py-2 font-medium">
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    tabIndex={0}
+                    onClick={() => setOpen(entry.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") setOpen(entry.id);
+                    }}
+                    className="cursor-pointer border-t hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                  >
+                    <td className="whitespace-nowrap px-4 py-3 font-mono">
+                      {new Date(entry.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 font-mono font-medium">{entry.action}</td>
+                    <td className="px-4 py-3 font-mono">{adminAuditResource(entry)}</td>
+                    <td className="max-w-44 truncate px-4 py-3 font-mono">
+                      {entry.actor_user_id ?? "system"}
+                    </td>
+                    <td className="max-w-44 truncate px-4 py-3 font-mono text-muted-foreground">
+                      {entry.request_id ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="space-y-3 md:hidden">
+            {list.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={() => setOpen(entry.id)}
+                className="block w-full rounded-lg border bg-surface p-4 text-left"
+              >
+                <p className="font-mono text-xs font-medium">{entry.action}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {adminAuditResource(entry)}
+                </p>
+                <p className="mt-2 font-mono text-[11px] text-muted-foreground">
+                  {new Date(entry.created_at).toLocaleString()}
+                </p>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <Sheet open={Boolean(selected)} onOpenChange={(next) => !next && setOpen(null)}>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+          {selected && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="font-mono">{selected.action}</SheetTitle>
+                <SheetDescription>
+                  {new Date(selected.created_at).toLocaleString()}
+                </SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-5">
+                <dl className="grid grid-cols-2 gap-4 text-sm">
+                  {[
+                    ["Audit ID", selected.id],
+                    ["Actor", selected.actor_user_id ?? "system"],
+                    ["Resource", adminAuditResource(selected)],
+                    ["Request ID", selected.request_id ?? "—"],
+                    ["IP hint", selected.ip_address ?? "—"],
+                    ["User agent", selected.user_agent ?? "—"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0">
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dd className="mt-1 break-words font-mono text-xs">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div>
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">Details</p>
+                  <pre className="max-h-80 overflow-auto rounded-md bg-player p-3 font-mono text-[11px] leading-5 text-player-foreground">
+                    {JSON.stringify(selected.details, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </AppShell>
+  );
+}
+
 /* ---------------- Admin: errors ---------------- */
 const sevStyle: Record<EventSeverity, string> = {
   Critical: "bg-destructive text-destructive-foreground",
@@ -2140,7 +2995,7 @@ function EventState({ s }: { s: "Retrying" | "Resolved" | "Open" }) {
     </span>
   );
 }
-export function AdminErrorsPage() {
+function LegacyAdminErrorsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [sev, setSev] = useState("all");

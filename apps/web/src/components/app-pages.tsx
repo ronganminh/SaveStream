@@ -189,6 +189,7 @@ import {
   useRecordingRealtime,
   type RecordingRealtimeState,
 } from "@/hooks/use-recording-realtime";
+import { useAdminOperationalSnapshotData } from "@/hooks/use-admin-data";
 import {
   billingActionErrorMessage,
   isAwaitingPaymentConfirmation,
@@ -3185,6 +3186,121 @@ function LegacyBillingPage() {
   );
 }
 export function AdminSystemPage() {
+  return isDemoMode ? <LegacyAdminSystemPage /> : <ProductionAdminSystemPage />;
+}
+
+function ProductionAdminSystemPage() {
+  const snapshot = useAdminOperationalSnapshotData();
+
+  if (snapshot.isPending) {
+    return (
+      <AppShell>
+        <PageHeader title="System" subtitle="Loading backend operational state…" />
+        <div className="h-48 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (snapshot.isError || !snapshot.data) {
+    return (
+      <AppShell>
+        <PageHeader title="System" />
+        <ErrorState
+          title="Could not load operational state"
+          body="SaveStream could not load the admin operations snapshot."
+          onRetry={() => snapshot.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const data = snapshot.data;
+  const attention =
+    data.failed_recordings_recent +
+    data.pending_outbox_events +
+    data.unprocessed_payment_events +
+    data.paused_error_watches;
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="System"
+        subtitle="Backend-authoritative operational counters. Refreshes every 10 seconds while this page is open."
+        action={
+          <Button
+            variant="outline"
+            disabled={snapshot.isFetching}
+            onClick={() => void snapshot.refetch()}
+          >
+            <RotateCcw />
+            {snapshot.isFetching ? "Refreshing…" : "Refresh"}
+          </Button>
+        }
+      />
+
+      {attention > 0 && (
+        <div className="mb-6">
+          <StateBanner
+            tone="warning"
+            icon={AlertTriangle}
+            title="Operational attention required"
+            body="One or more backend counters are non-zero. Use Jobs and Audit to inspect affected recordings and administrative events."
+          />
+        </div>
+      )}
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          label="Active recordings"
+          value={String(data.active_recordings)}
+          detail="Backend active recording states"
+          icon={Radio}
+        />
+        <StatCard
+          label="Recent failed recordings"
+          value={String(data.failed_recordings_recent)}
+          detail="Within the backend failure window"
+          icon={AlertTriangle}
+        />
+        <StatCard
+          label="Pending outbox events"
+          value={String(data.pending_outbox_events)}
+          detail="Ready but not yet published"
+          icon={List}
+        />
+        <StatCard
+          label="Unprocessed payment events"
+          value={String(data.unprocessed_payment_events)}
+          detail="Provider events awaiting processing"
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Pending payment orders"
+          value={String(data.pending_payment_orders)}
+          detail="Orders currently pending"
+          icon={Clock3}
+        />
+        <StatCard
+          label="Paused error watches"
+          value={String(data.paused_error_watches)}
+          detail="Watches paused by repeated errors"
+          icon={Activity}
+        />
+      </div>
+
+      <section className="mt-8 rounded-lg border bg-surface p-5">
+        <h2 className="font-medium">What this snapshot does not expose</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          The admin operations API does not expose per-worker CPU, memory, heartbeat, raw service
+          health, storage totals, or secret-backed metrics. This page deliberately does not invent
+          those values or call the protected /metrics endpoint from the browser.
+        </p>
+      </section>
+    </AppShell>
+  );
+}
+
+function LegacyAdminSystemPage() {
   const { t } = usePreferences();
   return (
     <AppShell>
