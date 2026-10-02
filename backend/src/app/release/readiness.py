@@ -13,6 +13,7 @@ class ReleaseManifest:
     api_origin: str
     frontend_origin: str
     payment_webhook_url: str
+    allow_disabled_payments: bool = False
 
 
 def _origin(value: str, name: str) -> str:
@@ -99,21 +100,29 @@ def validate_release(
             "SAVESTREAM_RECORDING_SOURCE_BACKEND must be tiktok in production"
         )
 
-    if settings.payment_provider != "lemonsqueezy":
-        errors.append(
-            "Production release manifest expects SAVESTREAM_PAYMENT_PROVIDER=lemonsqueezy"
-        )
-    if (
-        settings.payment_provider_base_url.rstrip("/")
-        != "https://api.lemonsqueezy.com/v1"
-    ):
-        errors.append(
-            "Production Lemon Squeezy API URL must be https://api.lemonsqueezy.com/v1"
-        )
-    if not settings.lemon_squeezy_store_id:
-        errors.append("Lemon Squeezy Live store ID must be configured")
-    if not settings.lemon_squeezy_variant_id:
-        errors.append("Lemon Squeezy Live variant ID must be configured")
+    if settings.payment_provider == "disabled":
+        if not manifest.allow_disabled_payments:
+            errors.append(
+                "SAVESTREAM_PAYMENT_PROVIDER=disabled requires --allow-disabled-payments"
+            )
+    else:
+        if settings.payment_provider != "lemonsqueezy":
+            errors.append(
+                "Production release manifest expects SAVESTREAM_PAYMENT_PROVIDER=lemonsqueezy"
+            )
+        if (
+            settings.payment_provider_base_url.rstrip("/")
+            != "https://api.lemonsqueezy.com/v1"
+        ):
+            errors.append(
+                "Production Lemon Squeezy API URL must be https://api.lemonsqueezy.com/v1"
+            )
+        if not settings.lemon_squeezy_store_id:
+            errors.append("Lemon Squeezy Live store ID must be configured")
+        if not settings.lemon_squeezy_variant_id:
+            errors.append("Lemon Squeezy Live variant ID must be configured")
+        if settings.payment_provider_api_key == "payments-disabled":
+            errors.append("Payment API key is still the payments-disabled placeholder")
 
     if settings.smtp_host in {"localhost", "mail-debug"}:
         errors.append("Production SMTP host must be external")
@@ -144,6 +153,11 @@ def main() -> int:
             "/v1/webhooks/payments/lemonsqueezy"
         ),
     )
+    parser.add_argument(
+        "--allow-disabled-payments",
+        action="store_true",
+        help="Accept SAVESTREAM_PAYMENT_PROVIDER=disabled (launch before live payments).",
+    )
     args = parser.parse_args()
 
     settings = AppSettings.from_env()
@@ -152,6 +166,7 @@ def main() -> int:
         api_origin=args.api_origin.rstrip("/"),
         frontend_origin=args.frontend_origin.rstrip("/"),
         payment_webhook_url=args.payment_webhook_url,
+        allow_disabled_payments=args.allow_disabled_payments,
     )
     errors = validate_release(settings, runtime, manifest)
     if errors:
@@ -162,7 +177,10 @@ def main() -> int:
     print("release readiness checks passed")
     print(f"frontend origin: {manifest.frontend_origin}")
     print(f"api origin: {manifest.api_origin}")
-    print(f"payment webhook: {manifest.payment_webhook_url}")
+    if settings.payment_provider == "disabled":
+        print("payments: disabled (checkout fails closed; keep VITE_BILLING_CHECKOUT_ENABLED=false)")
+    else:
+        print(f"payment webhook: {manifest.payment_webhook_url}")
     print("oauth: disabled (no production OAuth backend is implemented)")
     print("secrets: validated without printing values")
     return 0

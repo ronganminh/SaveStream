@@ -2,6 +2,7 @@ from app.domain.common.errors import ApplicationError
 from app.settings import AppSettings
 
 from .base import PaymentProvider
+from .disabled import DisabledPaymentProvider
 from .fake import FakePaymentProvider
 from .lemonsqueezy import LemonSqueezyPaymentProvider
 from .provider import ConfiguredHttpPaymentProvider
@@ -16,6 +17,14 @@ def payment_provider_for_name(
     provider_name: str,
 ) -> PaymentProvider:
     normalized = provider_name.strip().lower()
+    if settings.payment_provider == "disabled":
+        if normalized == "disabled":
+            return DisabledPaymentProvider()
+        raise ApplicationError(
+            "SERVICE_UNAVAILABLE",
+            "Payments are not enabled",
+            status_code=503,
+        )
     if normalized == "fake":
         if settings.environment == "production":
             raise ApplicationError(

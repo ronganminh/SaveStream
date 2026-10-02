@@ -27,12 +27,14 @@ x-app-env: &app-env
   SAVESTREAM_SMTP_STARTTLS: "true"
   SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@savestream.online>
 
-  SAVESTREAM_PAYMENT_PROVIDER: lemonsqueezy
+  # "disabled" launches before Lemon Squeezy Live is approved; the API then
+  # rejects checkout/webhooks and the Live store/variant IDs may stay empty.
+  SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:-lemonsqueezy}
   SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://api.lemonsqueezy.com/v1
   SAVESTREAM_PAYMENT_PROVIDER_API_KEY_FILE: /run/secrets/payment_api_key
   SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
-  SAVESTREAM_LEMON_SQUEEZY_STORE_ID: ${SAVESTREAM_LEMON_SQUEEZY_STORE_ID:?set Lemon Squeezy Live store id}
-  SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: ${SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID:?set Lemon Squeezy Live variant id}
+  SAVESTREAM_LEMON_SQUEEZY_STORE_ID: ${SAVESTREAM_LEMON_SQUEEZY_STORE_ID:-}
+  SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: ${SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID:-}
 
   SAVESTREAM_METRICS_TOKEN_FILE: /run/secrets/metrics_token
   SAVESTREAM_OPS_ALERT_EMAIL: ${SAVESTREAM_OPS_ALERT_EMAIL:?set operations alert email}
