@@ -52,7 +52,7 @@ mustIn("RecordingDetailPage", detail, "useRecordingDownloadMutation");
 mustIn("RecordingDetailPage", detail, "useDeleteRecordingMutation");
 mustIn("RecordingDetailPage", detail, "window.location.assign");
 mustIn("RecordingDetailPage", detail, "Recording file unavailable");
-mustIn("RecordingDetailPage", detail, "artifactsState.kind === "empty"");
+mustIn("RecordingDetailPage", detail, 'artifactsState.kind === "empty"');
 mustIn("RecordingDetailPage", detail, "deleteRecording.mutateAsync");
 forbidIn("RecordingDetailPage", detail, "if (!isDemoMode) return;");
 
