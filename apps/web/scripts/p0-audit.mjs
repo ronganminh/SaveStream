@@ -8,7 +8,7 @@ const files = [
   "src/components/app-pages.tsx",
   "src/components/app-pages-more.tsx",
   "src/lib/preferences.tsx",
-  "src/lib/plan-catalog.ts",
+  "src/mocks/demo-plan-catalog.ts",
   "src/mocks/fixtures.ts",
   "src/routes/status.tsx",
   "src/lib/app-config.ts",
@@ -34,10 +34,10 @@ forbid("MutationObserver", "DOM-mutation localization");
 forbid("Yearly billing saves 20%", "unapproved annual billing claim");
 forbid("Save 20%", "unapproved annual savings claim");
 forbid("Updated every minute", "fake live status cadence");
-requireText("src/lib/plan-catalog.ts", 'priceMonthlyUsd: 9.99');
-requireText("src/lib/plan-catalog.ts", 'priceYearlyUsd: null');
-requireText("src/lib/plan-catalog.ts", 'monitoredChannels: 5');
-requireText("src/lib/plan-catalog.ts", 'simultaneousRecordings: 2');
+requireText("src/mocks/demo-plan-catalog.ts", 'priceMonthlyUsd: 9.99');
+requireText("src/mocks/demo-plan-catalog.ts", 'priceYearlyUsd: null');
+requireText("src/mocks/demo-plan-catalog.ts", 'monitoredChannels: 5');
+requireText("src/mocks/demo-plan-catalog.ts", 'simultaneousRecordings: 2');
 requireText("src/mocks/fixtures.ts", "planCatalog.pro.quotas.recordingHours");
 requireText("src/lib/preferences.tsx", '"Demo — illustrative data"');
 requireText("src/lib/preferences.tsx", '"Bản demo — dữ liệu minh họa"');
