@@ -8,7 +8,13 @@ from sqlalchemy import select
 
 from app.application.privacy.service import PrivacyService
 from app.application.recordings.service import utcnow
-from app.infrastructure.db.models import (\n    Base,\n    NotificationPreference,\n    OutboxEvent,\n    User,\n    UserNotification,\n)
+from app.infrastructure.db.models import (
+    Base,
+    NotificationPreference,
+    OutboxEvent,
+    User,
+    UserNotification,
+)
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import Watch
