@@ -134,12 +134,14 @@ import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/lib/plan-catalog";
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
-import { isDemoMode } from "@/lib/app-config";
+import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import type {
   CreditPackageResponse,
   CreditReservationResponse,
   CreditTransactionResponse,
+  PaymentOrderResponse,
+  PaymentStatusValue,
   PricingResponse,
 } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
@@ -151,6 +153,7 @@ import {
   useCreditPackagesData,
   useCreditReservationsData,
   useCreditTransactionsData,
+  usePaymentOrdersData,
   usePricingData,
   useRecordingArtifactsData,
   useRecordingData,
@@ -185,6 +188,11 @@ import {
   useRecordingRealtime,
   type RecordingRealtimeState,
 } from "@/hooks/use-recording-realtime";
+import {
+  billingActionErrorMessage,
+  isAwaitingPaymentConfirmation,
+  useBillingCheckoutMutation,
+} from "@/hooks/use-billing";
 
 export { meta, publicMeta } from "@/components/app-components";
 
@@ -2651,10 +2659,92 @@ export function BillingPage() {
   return isDemoMode ? <LegacyBillingPage /> : <CreditBillingPage />;
 }
 
+function paymentStatusLabel(status: PaymentStatusValue) {
+  return status
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function paymentStatusClass(status: PaymentStatusValue) {
+  if (status === "paid") return "bg-success-subtle text-success";
+  if (status === "pending" || status === "created" || status === "partially_refunded") {
+    return "bg-warning-subtle text-warning-foreground";
+  }
+  if (status === "failed") return "bg-recording-subtle text-destructive";
+  return "bg-muted text-muted-foreground";
+}
+
+function PaymentOrderRow({
+  order,
+  onContinue,
+  pending,
+}: {
+  order: PaymentOrderResponse;
+  onContinue: (id: string) => void;
+  pending: boolean;
+}) {
+  return (
+    <div className="grid gap-3 border-t px-5 py-4 text-sm sm:grid-cols-[1.3fr_.7fr_.7fr_auto] sm:items-center">
+      <div>
+        <p className="font-medium">{order.credits} credits</p>
+        <p className="mt-1 font-mono text-xs text-muted-foreground">{order.id}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {new Date(order.created_at).toLocaleString()}
+          {order.provider ? ` · ${order.provider}` : ""}
+        </p>
+      </div>
+      <span className="font-mono">
+        {(order.amount.amount_minor / 100).toFixed(2)} {order.amount.currency}
+      </span>
+      <span
+        className={cn(
+          "w-fit rounded-md px-2 py-1 text-xs font-medium",
+          paymentStatusClass(order.status),
+        )}
+      >
+        {paymentStatusLabel(order.status)}
+      </span>
+      {billingCheckoutEnabled && isAwaitingPaymentConfirmation(order.status) ? (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={pending}
+          onClick={() => onContinue(order.id)}
+        >
+          <ExternalLink />
+          Open checkout
+        </Button>
+      ) : (
+        <span />
+      )}
+    </div>
+  );
+}
+
 function CreditBillingPage() {
   const { language } = usePreferences();
   const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
   const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
+  const { query: ordersQuery, state: ordersState } = usePaymentOrdersData();
+  const checkout = useBillingCheckoutMutation();
+  const [activePurchase, setActivePurchase] = useState<string | null>(null);
+
+  const redirectToCheckout = async (
+    input: { packageId: string } | { orderId: string },
+    activeId: string,
+  ) => {
+    setActivePurchase(activeId);
+    try {
+      const result = await checkout.mutateAsync(input);
+      window.location.assign(result.checkout_url);
+    } catch (error) {
+      toast.error("Could not open secure checkout", {
+        description: billingActionErrorMessage(error),
+      });
+      setActivePurchase(null);
+    }
+  };
 
   if (balanceState.kind === "loading" || !balanceQuery.data) {
     return (
@@ -2680,18 +2770,30 @@ function CreditBillingPage() {
 
   const balance = balanceQuery.data;
   const packages = packagesQuery.data?.items ?? [];
+  const orders = ordersQuery.data?.items ?? [];
 
   return (
     <AppShell>
       <PageHeader
         title="Billing"
-        subtitle="Credit packages available for your SaveStream account."
+        subtitle="Buy SaveStream credits through secure hosted checkout."
         action={
           <Button variant="outline" asChild>
             <Link to="/usage">View credits & usage</Link>
           </Button>
         }
       />
+
+      {!billingCheckoutEnabled && (
+        <div className="mb-6">
+          <StateBanner
+            tone="info"
+            icon={ShieldCheck}
+            title="Checkout is disabled for this deployment"
+            body="Hosted checkout is enabled only on explicitly configured environments. Staging uses Lemon Squeezy Test Mode; production stays disabled until Live Mode is approved and configured."
+          />
+        </div>
+      )}
 
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
         <StatCard
@@ -2718,7 +2820,7 @@ function CreditBillingPage() {
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Credit packages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            These packages come from the billing backend. Secure checkout is wired separately.
+            Choose a package, then complete payment on the hosted payment-provider checkout.
           </p>
         </div>
 
@@ -2735,20 +2837,32 @@ function CreditBillingPage() {
           />
         ) : packages.length ? (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {packages.map((item) => (
-              <div key={item.id} className="rounded-lg border bg-surface p-6">
-                <p className="text-lg font-semibold">{item.name}</p>
-                <p className="mt-3 font-mono text-3xl font-semibold">
-                  {formatCreditMoney(item, language)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {item.credits} credits
-                </p>
-                <Button className="mt-6 w-full" disabled>
-                  Checkout not yet enabled
-                </Button>
-              </div>
-            ))}
+            {packages.map((item) => {
+              const loading = checkout.isPending && activePurchase === item.id;
+              return (
+                <div key={item.id} className="rounded-lg border bg-surface p-6">
+                  <p className="text-lg font-semibold">{item.name}</p>
+                  <p className="mt-3 font-mono text-3xl font-semibold">
+                    {formatCreditMoney(item, language)}
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">{item.credits} credits</p>
+                  <Button
+                    className="mt-6 w-full"
+                    disabled={!billingCheckoutEnabled || checkout.isPending}
+                    onClick={() =>
+                      void redirectToCheckout({ packageId: item.id }, item.id)
+                    }
+                  >
+                    <CreditCard />
+                    {loading
+                      ? "Opening checkout…"
+                      : billingCheckoutEnabled
+                        ? "Buy credits"
+                        : "Checkout disabled"}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         ) : packagesState.kind === "empty" ? (
           <EmptyState
@@ -2764,11 +2878,60 @@ function CreditBillingPage() {
         )}
       </section>
 
+      <section className="mt-8 overflow-hidden rounded-lg border bg-surface">
+        <div className="flex items-start justify-between gap-4 p-5">
+          <div>
+            <h2 className="font-medium">Recent payment orders</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Payment status comes from the SaveStream backend, not from the browser redirect.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={ordersQuery.isFetching}
+            onClick={() => void ordersQuery.refetch()}
+          >
+            <RotateCcw />
+            Refresh
+          </Button>
+        </div>
+        {ordersState.kind === "error" ? (
+          <div className="border-t p-5">
+            <StateBanner
+              tone="warning"
+              title="Payment history unavailable"
+              body="SaveStream could not load your recent payment orders."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void ordersQuery.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          </div>
+        ) : orders.length ? (
+          orders.map((order) => (
+            <PaymentOrderRow
+              key={order.id}
+              order={order}
+              pending={checkout.isPending}
+              onContinue={(orderId) =>
+                void redirectToCheckout({ orderId }, orderId)
+              }
+            />
+          ))
+        ) : (
+          <p className="border-t p-5 text-sm text-muted-foreground">
+            No payment orders yet.
+          </p>
+        )}
+      </section>
+
       <div className="mt-8">
         <StateBanner
           tone="info"
-          title="Credit purchases use payment orders and secure checkout"
-          body="This phase only replaces the old subscription mock with backend-authoritative balances and package data. Purchase execution is handled by the billing checkout flow."
+          title="Payment confirmation is server-side"
+          body="Opening checkout only creates a pending payment order. Credits are added only after a verified payment webhook or reconciliation confirms the order as paid."
         />
       </div>
     </AppShell>
