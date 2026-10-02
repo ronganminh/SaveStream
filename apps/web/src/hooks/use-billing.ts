@@ -8,8 +8,8 @@ import { billingCheckoutEnabled } from "@/lib/app-config";
 import { repositories } from "@/repositories";
 
 export type BillingCheckoutInput =
-  | { packageId: string; orderId?: never }
-  | { packageId?: never; orderId: string };
+  | { kind: "package"; packageId: string }
+  | { kind: "order"; orderId: string };
 
 const creditChangingStatuses = new Set<PaymentStatusValue>([
   "paid",
@@ -64,12 +64,13 @@ export function useBillingCheckoutMutation() {
         throw new Error("Hosted checkout is not enabled for this deployment.");
       }
 
-      const order = input.orderId
-        ? await repositories.billing.getPaymentOrder(input.orderId)
-        : await repositories.billing.createPaymentOrder(
-            input.packageId,
-            idempotencyKey(),
-          );
+      const order =
+        input.kind === "order"
+          ? await repositories.billing.getPaymentOrder(input.orderId)
+          : await repositories.billing.createPaymentOrder(
+              input.packageId,
+              idempotencyKey(),
+            );
 
       if (!isAwaitingPaymentConfirmation(order.status)) {
         throw new Error(
