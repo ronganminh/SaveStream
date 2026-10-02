@@ -98,6 +98,11 @@ import { notificationStore, useNotifications } from "@/lib/notification-store";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
+import type {
+  AuditLogResponse,
+  RecordingResponse,
+  RecordingStatusValue,
+} from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
 import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
@@ -114,6 +119,13 @@ import {
   isAwaitingPaymentConfirmation,
   useBillingReturnOrder,
 } from "@/hooks/use-billing";
+import {
+  useAdminAuditData,
+  useAdminOperationalSnapshotData,
+  useAdminRecordingData,
+  useAdminRecordingsData,
+  useAdminRetryRecordingMutation,
+} from "@/hooks/use-admin-data";
 
 const mono = "font-mono text-xs";
 
@@ -1558,7 +1570,7 @@ function WorkerBadge({ status }: { status: WorkerStatus }) {
     </span>
   );
 }
-export function AdminWorkersPage() {
+function LegacyAdminWorkersPage() {
   const { t } = usePreferences();
   const [list, setList] = useState(workerList);
   const [drain, setDrain] = useState<Worker | null>(null);
@@ -1763,7 +1775,7 @@ function JobStatusCell({ job }: { job: RecordingJob }) {
     </div>
   );
 }
-export function AdminJobsPage() {
+function LegacyAdminJobsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [f, setF] = useState<(typeof jobFilters)[number]>("All");
@@ -1956,7 +1968,7 @@ export function JobEventTimeline({ events }: { events: JobEvent[] }) {
     </ol>
   );
 }
-export function AdminJobDetailPage() {
+function LegacyAdminJobDetailPage() {
   const { t } = usePreferences();
   const { id } = useParams({ strict: false }) as { id?: string };
   const job = jobList.find((j) => j.id === id);
@@ -2140,7 +2152,7 @@ function EventState({ s }: { s: "Retrying" | "Resolved" | "Open" }) {
     </span>
   );
 }
-export function AdminErrorsPage() {
+function LegacyAdminErrorsPage() {
   const { t } = usePreferences();
   const [q, setQ] = useState("");
   const [sev, setSev] = useState("all");
