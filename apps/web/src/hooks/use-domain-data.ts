@@ -17,6 +17,8 @@ export const domainQueryKeys = {
   creditPackages: ["billing", "packages"] as const,
   paymentOrders: ["billing", "payment-orders"] as const,
   paymentOrder: (id: string) => ["billing", "payment-orders", id] as const,
+  currentUser: ["account", "current-user"] as const,
+  sessions: ["account", "sessions"] as const,
   usage: ["usage", "current"] as const,
 };
 
@@ -167,6 +169,24 @@ export function usePaymentOrderData(id: string | null | undefined, enabled = tru
     },
   });
   return { query, state: toResourceState(query) };
+}
+
+export function useCurrentUserData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.currentUser,
+    queryFn: () => repositories.users.getCurrent(),
+    enabled,
+  });
+  return { query, state: toResourceState(query) };
+}
+
+export function useSessionsData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.sessions,
+    queryFn: () => repositories.users.listSessions(),
+    enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.items.length === 0) };
 }
 
 export function useUsageData() {
