@@ -85,11 +85,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import {
   channelLookupExamples,
-  recordings,
   usage,
   user,
   type Notification,
-  type Recording,
   type Status,
 } from "@/mocks/fixtures";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
@@ -102,8 +100,12 @@ import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
-import type { ChannelModel } from "@/repositories";
-import { useChannelsData } from "@/hooks/use-domain-data";
+import type { ChannelModel, RecordingModel } from "@/repositories";
+import {
+  useActiveRecordingData,
+  useChannelsData,
+  useRecordingsData,
+} from "@/hooks/use-domain-data";
 import {
   channelActionErrorMessage,
   existingWatchId,
@@ -705,7 +707,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
-  if (empty)
+  const { query: activeQuery, state: activeState } = useActiveRecordingData();
+  const recording = activeQuery.data;
+
+  if (empty || activeState.kind === "empty")
     return (
       <section className="border-y bg-surface px-5 py-8">
         <div className="flex items-start gap-4">
@@ -723,8 +728,16 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
         </div>
       </section>
     );
-  const c = channelsQuery.data?.[0];
-  if (!c) return null;
+
+  if (activeState.kind === "loading") {
+    return <div className="h-44 animate-pulse rounded-lg border bg-muted" aria-busy="true" />;
+  }
+
+  if (activeState.kind === "error" || !recording) {
+    return null;
+  }
+
+  const channel = channelsQuery.data?.find((item) => item.id === recording.channelId);
   return (
     <section className="overflow-hidden rounded-lg border border-recording/25 bg-surface">
       <div className="flex items-center justify-between border-b border-recording/15 bg-recording-subtle px-5 py-3">
@@ -732,17 +745,23 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
           <span className="size-2 animate-pulse rounded-full bg-recording" />
           {t("Active recording")}
         </div>
-        <StatusBadge status="Recording" />
+        <StatusBadge status={recording.status} />
       </div>
       <div className="grid gap-6 p-5 md:grid-cols-[1fr_auto] md:items-center">
         <div className="flex items-center gap-4">
-          <CreatorAvatar channel={c} size="lg" />
+          {channel ? (
+            <CreatorAvatar channel={channel} size="lg" />
+          ) : (
+            <span className="grid size-12 place-items-center rounded-full bg-primary-subtle text-sm font-semibold text-primary">
+              {recording.handle.replace(/^@/, "").slice(0, 2).toUpperCase()}
+            </span>
+          )}
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold">Lina Studio</h2>
+              <h2 className="text-lg font-semibold">{channel?.name ?? recording.handle}</h2>
               <PlatformBadge />
             </div>
-            <p className="mt-0.5 text-sm text-muted-foreground">@linastudio</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{recording.handle}</p>
             <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Cloud className="size-4 text-success" />
               {t("Recording runs on our servers. You can safely close this page.")}
@@ -752,18 +771,20 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
         <div className="grid grid-cols-2 gap-x-8 gap-y-3 md:text-right">
           <div>
             <p className="text-xs text-muted-foreground">{t("Elapsed")}</p>
-            <p className="font-mono text-2xl font-semibold">01:42:18</p>
+            <p className="font-mono text-2xl font-semibold">{recording.duration}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t("Written")}</p>
-            <p className="font-mono text-lg font-medium">3.8 GB</p>
+            <p className="font-mono text-lg font-medium">{recording.size}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">{t("Started")}</p>
-            <p className="text-sm font-medium">Today, 13:22</p>
+            <p className="text-sm font-medium">
+              {recording.date} · {recording.time}
+            </p>
           </div>
           <Button asChild size="sm">
-            <Link to="/recordings/active">
+            <Link to="/recordings/$id" params={{ id: recording.id }}>
               {t("View recording")}
               <ChevronRight />
             </Link>
@@ -914,7 +935,7 @@ function MoreMenu({
     </DropdownMenu>
   );
 }
-export function RecordingThumb({ recording }: { recording: Recording }) {
+export function RecordingThumb({ recording }: { recording: RecordingModel }) {
   return (
     <div
       className={cn(
@@ -930,7 +951,7 @@ export function RecordingThumb({ recording }: { recording: Recording }) {
     </div>
   );
 }
-export function RecordingRow({ recording }: { recording: Recording }) {
+export function RecordingRow({ recording }: { recording: RecordingModel }) {
   return (
     <div className="grid grid-cols-[1.7fr_1fr_.7fr_.7fr_.8fr_.7fr_auto] items-center gap-4 border-b px-4 py-3 text-sm last:border-0">
       <Link to="/recordings/$id" params={{ id: recording.id }} className="flex items-center gap-3">
@@ -955,7 +976,7 @@ export function RecordingRow({ recording }: { recording: Recording }) {
     </div>
   );
 }
-export function RecordingCard({ recording }: { recording: Recording }) {
+export function RecordingCard({ recording }: { recording: RecordingModel }) {
   return (
     <div className="overflow-hidden rounded-lg border bg-surface">
       <Link
@@ -994,7 +1015,7 @@ export function RecordingCard({ recording }: { recording: Recording }) {
     </div>
   );
 }
-function RecordingActions({ recording }: { recording: Recording }) {
+function RecordingActions({ recording }: { recording: RecordingModel }) {
   const navigate = useNavigate();
   const [del, setDel] = useState(false);
   const { t } = usePreferences();
@@ -1659,7 +1680,9 @@ export function CommandSearch({
   const navigate = useNavigate();
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
+  const { query: recordingsQuery } = useRecordingsData();
   const channelItems = channelsQuery.data ?? [];
+  const recordingItems = recordingsQuery.data ?? [];
   const go = (fn: () => void) => {
     onOpenChange(false);
     fn();
@@ -1692,7 +1715,7 @@ export function CommandSearch({
           ))}
         </CommandGroup>
         <CommandGroup heading={t("Recordings")}>
-          {recordings.map((r) => (
+          {recordingItems.map((r) => (
             <CommandItem
               key={r.id}
               value={`${r.handle} ${r.title} ${r.date}`}
@@ -1812,7 +1835,7 @@ export function ExpiryText({
   recording,
   prefix = false,
 }: {
-  recording: Recording;
+  recording: RecordingModel;
   prefix?: boolean;
 }) {
   if (recording.expiresDays === null) return <span className="text-muted-foreground">—</span>;

@@ -100,6 +100,21 @@ export type RecordingListResponse = {
   pagination: Pagination;
 };
 
+export type RecordingProgressData = {
+  status: RecordingStatusValue;
+  duration_seconds: number;
+  bytes_recorded: number;
+};
+
+export type RecordingEventResponse = {
+  id: string;
+  sequence: number;
+  type: string;
+  recording_id: string;
+  created_at: string;
+  data: RecordingProgressData;
+};
+
 export type CreateRecordingRequest = {
   source: Source;
   max_duration_seconds?: number | null;

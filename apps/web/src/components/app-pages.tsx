@@ -91,11 +91,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-  activeRecording,
-  channels,
   dailyRecordingHours,
   invoices,
-  recordings,
   subscription,
   usage,
   user,
@@ -144,6 +141,7 @@ import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import {
   useChannelData,
   useChannelsData,
+  useRecordingData,
   useRecordingsData,
   useUsageData,
 } from "@/hooks/use-domain-data";
@@ -164,6 +162,14 @@ import {
   displayNameFromTikTokUsername,
   parseTikTokSource,
 } from "@/lib/tiktok-source";
+import {
+  recordingActionErrorMessage,
+  useStopRecordingMutation,
+} from "@/hooks/use-recording-mutations";
+import {
+  useRecordingRealtime,
+  type RecordingRealtimeState,
+} from "@/hooks/use-recording-realtime";
 
 export { meta, publicMeta } from "@/components/app-components";
 
@@ -1334,14 +1340,16 @@ export function RecordingsPage() {
         ? "error"
         : recordingsState.kind === "empty"
           ? "empty"
-          : mock;
+          : isDemoMode
+            ? mock
+            : "populated";
   const [q, setQ] = useState("");
   const [view, setView] = useState<"list" | "grid">("list");
   const [status, setStatus] = useState("all");
   const [streamer, setStreamer] = useState("all");
   const [range, setRange] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
-  const today = new Date("Sep 27, 2026").getTime();
+  const today = isDemoMode ? new Date("Sep 27, 2026").getTime() : Date.now();
   const list = recordingItems
     .filter(
       (r) =>
@@ -1371,7 +1379,7 @@ export function RecordingsPage() {
         title="Recordings"
         subtitle="Watch and download your completed livestream recordings."
       />
-      <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />
+      {isDemoMode && <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />}
       {viewState === "empty" ? (
         <EmptyState
           title="No recordings yet"
@@ -1542,6 +1550,60 @@ export function RecordingsPage() {
     </AppShell>
   );
 }
+const processingBackendStatuses = new Set([
+  "queued",
+  "resolving",
+  "waiting_live",
+  "processing",
+  "uploading",
+]);
+
+function recordingDetailState(recording: RecordingModel) {
+  if (recording.backendStatus === "recording" || recording.backendStatus === "stop_requested") {
+    return "active" as const;
+  }
+  if (processingBackendStatuses.has(recording.backendStatus)) return "processing" as const;
+  if (recording.backendStatus === "completed") return "ready" as const;
+  return "failed" as const;
+}
+
+function recordingMatchesForcedState(
+  recording: RecordingModel,
+  forced: "ready" | "active" | "processing" | "failed",
+) {
+  const state = recordingDetailState(recording);
+  return state === forced;
+}
+
+function RecordingRealtimeNotice({
+  state,
+  lastEventAt,
+}: {
+  state: RecordingRealtimeState;
+  lastEventAt: number | null;
+}) {
+  if (state === "idle" || state === "ended") return null;
+  if (state === "fallback" || state === "reconnecting") {
+    return (
+      <div className="mb-4">
+        <StateBanner
+          tone="warning"
+          icon={Wifi}
+          title="Realtime updates are reconnecting"
+          body="Recording status is still refreshing from the backend every few seconds while the event stream reconnects."
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+      <span className="size-2 animate-pulse rounded-full bg-success" />
+      {state === "connected" ? "Live recording updates connected" : "Connecting live updates…"}
+      {lastEventAt ? ` · last event ${new Date(lastEventAt).toLocaleTimeString()}` : ""}
+    </div>
+  );
+}
+
 export function RecordingDetailPage({
   state: forced,
 }: {
@@ -1549,26 +1611,64 @@ export function RecordingDetailPage({
 }) {
   const { id } = useParams({ strict: false }) as { id?: string };
   const navigate = useNavigate();
+  const { query: recordingQuery, state: recordingState } = useRecordingData(id);
+  const { query: recordingsQuery, state: recordingsState } = useRecordingsData();
+  const { query: channelsQuery } = useChannelsData();
+  const stopRecording = useStopRecordingMutation();
   const [quota, setQuota] = useState<"normal" | "low">("normal");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
-  const rec =
-    forced === "active"
-      ? activeRecording
-      : forced === "processing"
-        ? recordings.find((r) => r.id === "nora-processing")
-        : forced === "failed"
-          ? recordings.find((r) => r.id === "nora-failed")
-          : forced === "ready"
-            ? recordings[0]
-            : recordings.find((r) => r.id === id);
+
+  const rec = forced
+    ? (recordingsQuery.data ?? []).find((item) => recordingMatchesForcedState(item, forced))
+    : recordingQuery.data;
+  const sourceState = forced ? recordingsState : recordingState;
+  const realtime = useRecordingRealtime(rec?.id, rec?.backendStatus);
+
+  if (sourceState.kind === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" subtitle="Loading recording status…" />
+        <div className="h-56 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (sourceState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Recording" />
+        <ErrorState
+          title="Could not load recording"
+          body="SaveStream could not load the current recording state."
+          onRetry={() => {
+            if (forced) void recordingsQuery.refetch();
+            else void recordingQuery.refetch();
+          }}
+        />
+      </AppShell>
+    );
+  }
+
   if (!rec)
     return (
       <AppShell>
         <PageHeader title="Recording not found" />
         <EmptyState
-          title="This recording isn’t available"
-          body="It may have been deleted or removed after its retention period ended."
+          title={
+            forced === "active"
+              ? "No active recording"
+              : forced === "processing"
+                ? "No recording is processing"
+                : forced === "failed"
+                  ? "No failed recording"
+                  : "This recording isn’t available"
+          }
+          body={
+            forced
+              ? "The backend does not currently have a recording in this state."
+              : "It may have been deleted or removed after its retention period ended."
+          }
           action={
             <Button asChild variant="outline">
               <Link to="/recordings">Back to recordings</Link>
@@ -1577,14 +1677,17 @@ export function RecordingDetailPage({
         />
       </AppShell>
     );
-  const state =
-    forced ??
-    ({ Ready: "ready", Processing: "processing", Error: "failed", Recording: "active" } as const)[
-      rec.status
-    ];
-  const channel = channels.find((c) => c.id === rec.channelId);
+
+  const state = forced ?? recordingDetailState(rec);
+  const channelItems = channelsQuery.data ?? [];
+  const channel = channelItems.find(
+    (candidate) =>
+      candidate.id === rec.channelId ||
+      candidate.handle.toLowerCase() === rec.handle.toLowerCase(),
+  );
   const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
   const download = () => {
+    if (!isDemoMode) return;
     if (quota === "low") setUpgrade(true);
     else
       toast.success("Download started", {
@@ -1592,7 +1695,25 @@ export function RecordingDetailPage({
       });
   };
   const actions =
-    state === "ready" ? (
+    state === "active" ? (
+      <Button
+        variant="outline"
+        disabled={!rec.actions.can_stop || stopRecording.isPending}
+        onClick={() => {
+          void stopRecording
+            .mutateAsync(rec.id)
+            .then(() => toast.success("Stop requested", { description: rec.handle }))
+            .catch((error) =>
+              toast.error("Could not stop recording", {
+                description: recordingActionErrorMessage(error),
+              }),
+            );
+        }}
+      >
+        <Pause />
+        {stopRecording.isPending ? "Stopping…" : "Stop recording"}
+      </Button>
+    ) : state === "ready" && isDemoMode ? (
       <div className="flex gap-2">
         <Button onClick={download}>
           <Download />
@@ -1627,7 +1748,7 @@ export function RecordingDetailPage({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    ) : state === "failed" ? (
+    ) : state === "failed" && isDemoMode ? (
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
@@ -1648,9 +1769,10 @@ export function RecordingDetailPage({
     ) : state === "processing" ? (
       <Button disabled>
         <Download />
-        Download available soon
+        Download available after processing
       </Button>
     ) : null;
+
   return (
     <AppShell>
       {channel && (
@@ -1663,7 +1785,7 @@ export function RecordingDetailPage({
           {channel.name}
         </Link>
       )}
-      {state === "ready" && (
+      {state === "ready" && isDemoMode && (
         <PrototypeStateBar
           label="Download quota"
           value={quota}
@@ -1678,9 +1800,12 @@ export function RecordingDetailPage({
       )}
       <PageHeader
         title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
-        subtitle={`TikTok · ${state === "active" ? "Started today" : rec.date} at ${rec.time}`}
+        subtitle={`TikTok · ${state === "active" ? "Started" : rec.date} at ${rec.time}`}
         action={actions}
       />
+      {!isDemoMode && (state === "active" || state === "processing") && (
+        <RecordingRealtimeNotice state={realtime.state} lastEventAt={realtime.lastEventAt} />
+      )}
       {expiringSoon && (
         <div className="mb-4">
           <StateBanner
@@ -1714,39 +1839,45 @@ export function RecordingDetailPage({
           </div>
         </div>
       )}
-      {state === "processing" && <ProcessingTimeline />}
+      {state === "processing" && <ProcessingTimeline status={rec.backendStatus} />}
       {state === "failed" && (
         <div className="mt-4 space-y-3">
           <StateBanner
-            tone="error"
-            title="Recording couldn’t be completed"
+            tone={rec.backendStatus === "stopped" ? "info" : "error"}
+            title={rec.backendStatus === "stopped" ? "Recording stopped" : "Recording couldn’t be completed"}
             body={
-              <>
-                The stream connection was lost ({rec.error?.toLowerCase()}). {rec.partialDuration}{" "}
-                were successfully saved before the stream connection was lost. The partial file is
-                available to watch or download.
-              </>
+              rec.backendStatus === "stopped"
+                ? "The recording was stopped before it completed."
+                : rec.error || "The backend reported that this recording failed."
             }
             action={
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    toast.success("Processing queued", {
-                      description: "We’ll notify you when the partial recording is ready.",
-                    })
-                  }
-                >
-                  <RotateCcw />
-                  Retry processing
-                </Button>
+              isDemoMode ? (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      toast.success("Processing queued", {
+                        description: "We’ll notify you when the partial recording is ready.",
+                      })
+                    }
+                  >
+                    <RotateCcw />
+                    Retry processing
+                  </Button>
+                  <Button size="sm" variant="ghost" asChild>
+                    <Link to="/help" hash="contact">
+                      Contact support
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
                 <Button size="sm" variant="ghost" asChild>
                   <Link to="/help" hash="contact">
                     Contact support
                   </Link>
                 </Button>
-              </div>
+              )
             }
           />
         </div>
@@ -1764,7 +1895,9 @@ export function RecordingDetailPage({
               ? "After processing"
               : rec.expireTone === "critical"
                 ? "Tomorrow"
-                : `${rec.expires} left`,
+                : rec.expiresDays === null
+                  ? "—"
+                  : `${rec.expires} left`,
           ],
         ].map(([a, b]) => (
           <div key={a} className="bg-surface p-4">
@@ -1773,53 +1906,61 @@ export function RecordingDetailPage({
           </div>
         ))}
       </div>
-      <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
-      <ConfirmDeleteDialog
-        open={del}
-        onOpenChange={setDel}
-        partial={state === "failed"}
-        onDeleted={() => navigate({ to: "/recordings" })}
-      />
+      {isDemoMode && (
+        <>
+          <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
+          <ConfirmDeleteDialog
+            open={del}
+            onOpenChange={setDel}
+            partial={state === "failed"}
+            onDeleted={() => navigate({ to: "/recordings" })}
+          />
+        </>
+      )}
     </AppShell>
   );
 }
-function ProcessingTimeline() {
+
+function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"] }) {
+  const resolving = status === "queued" || status === "resolving" || status === "waiting_live";
+  const processing = status === "processing";
+  const uploading = status === "uploading";
+
+  const stage = resolving ? 0 : processing ? 1 : uploading ? 2 : 3;
+  const steps = [
+    [Activity, resolving ? "Preparing recorder" : "Recording completed"],
+    [Activity, "Processing video"],
+    [Upload, "Uploading"],
+    [CheckCircle2, "Ready"],
+  ] as const;
+
   return (
     <div className="mt-5 rounded-lg border p-5">
       <h2 className="font-medium">Finalizing your recording</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        The livestream has ended. We’re preparing the video for playback and download.
+        The backend is updating this page in realtime as the recording moves through its lifecycle.
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-4">
-        {[
-          [Check, "Recording completed", "done"],
-          [Activity, "Processing video", "active"],
-          [Upload, "Uploading", "next"],
-          [CheckCircle2, "Ready", "next"],
-        ].map(([I, l, s]) => (
-          <div className="flex items-center gap-2" key={String(l)}>
-            {I
-              ? (() => {
-                  const Icon = I;
-                  return (
-                    <Icon
-                      className={cn(
-                        "size-4",
-                        s === "done"
-                          ? "text-success"
-                          : s === "active"
-                            ? "animate-pulse text-info"
-                            : "text-muted-foreground",
-                      )}
-                    />
-                  );
-                })()
-              : null}
-            <span className={cn("text-sm", s === "next" && "text-muted-foreground")}>
-              {String(l)}
-            </span>
-          </div>
-        ))}
+        {steps.map(([Icon, label], index) => {
+          const statusLabel = index < stage ? "done" : index === stage ? "active" : "next";
+          return (
+            <div className="flex items-center gap-2" key={label}>
+              <Icon
+                className={cn(
+                  "size-4",
+                  statusLabel === "done"
+                    ? "text-success"
+                    : statusLabel === "active"
+                      ? "animate-pulse text-info"
+                      : "text-muted-foreground",
+                )}
+              />
+              <span className={cn("text-sm", statusLabel === "next" && "text-muted-foreground")}>
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

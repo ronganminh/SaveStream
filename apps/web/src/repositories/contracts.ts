@@ -20,6 +20,7 @@ import type {
   PaymentOrderResponse,
   PricingResponse,
   RecordingActions,
+  RecordingEventResponse,
   RecordingResponse,
   RecordingStatusValue,
   SessionResponse,
@@ -143,6 +144,10 @@ export interface RecordingRepository {
   list(): Promise<RecordingModel[]>;
   getById(id: string): Promise<RecordingModel | null>;
   getActive(): Promise<RecordingModel | null>;
+  streamEvents(
+    id: string,
+    options?: { lastEventId?: string | null; signal?: AbortSignal },
+  ): AsyncIterable<RecordingEventResponse>;
   listRecordings(options?: FilteredPageOptions): Promise<{
     items: RecordingResponse[];
     pagination: { next_cursor: string | null; has_more: boolean };

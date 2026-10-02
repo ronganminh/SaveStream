@@ -1,11 +1,13 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { AsyncResourceState } from "@/domain/resource-state";
-import { repositories } from "@/repositories";
+import { isDemoMode } from "@/lib/app-config";
+import { repositories, type RecordingModel } from "@/repositories";
 
 export const domainQueryKeys = {
   channels: ["channels"] as const,
   channel: (id: string) => ["channels", id] as const,
   recordings: ["recordings"] as const,
+  recording: (id: string) => ["recordings", id] as const,
   activeRecording: ["recordings", "active"] as const,
   usage: ["usage", "current"] as const,
 };
@@ -39,18 +41,43 @@ export function useChannelData(id: string | null | undefined) {
   return { query, state: toResourceState(query, (data) => data === null) };
 }
 
+const terminalRecordingStatuses = new Set(["completed", "failed", "stopped"]);
+
+function needsRecordingPolling(recording: RecordingModel | null | undefined) {
+  return Boolean(recording && !terminalRecordingStatuses.has(recording.backendStatus));
+}
+
+function needsRecordingsPolling(recordings: RecordingModel[] | undefined) {
+  return recordings?.some(needsRecordingPolling) ?? false;
+}
+
 export function useRecordingsData() {
   const query = useQuery({
     queryKey: domainQueryKeys.recordings,
     queryFn: () => repositories.recordings.list(),
+    refetchInterval: (current) =>
+      !isDemoMode && needsRecordingsPolling(current.state.data) ? 5000 : false,
   });
   return { query, state: toResourceState(query, (data) => data.length === 0) };
+}
+
+export function useRecordingData(id: string | null | undefined) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.recording(id ?? "missing"),
+    queryFn: () => repositories.recordings.getById(id ?? ""),
+    enabled: Boolean(id),
+    refetchInterval: (current) =>
+      !isDemoMode && needsRecordingPolling(current.state.data) ? 5000 : false,
+  });
+  return { query, state: toResourceState(query, (data) => data === null) };
 }
 
 export function useActiveRecordingData() {
   const query = useQuery({
     queryKey: domainQueryKeys.activeRecording,
     queryFn: () => repositories.recordings.getActive(),
+    refetchInterval: (current) =>
+      !isDemoMode && needsRecordingPolling(current.state.data) ? 5000 : false,
   });
   return { query, state: toResourceState(query, (data) => data === null) };
 }

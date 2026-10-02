@@ -11,6 +11,7 @@ import {
 } from "@/mocks/fixtures";
 import type {
   PaymentOrderResponse,
+  RecordingEventResponse,
   RecordingResponse,
   WatchResponse,
 } from "@/api/types";
@@ -21,6 +22,18 @@ import type {
 } from "@/repositories/contracts";
 
 let notificationState: Notification[] = notifications.map((item) => ({ ...item }));
+
+function emptyRecordingEventStream(): AsyncIterable<RecordingEventResponse> {
+  return {
+    [Symbol.asyncIterator]() {
+      return {
+        async next(): Promise<IteratorResult<RecordingEventResponse>> {
+          return { done: true, value: undefined as never };
+        },
+      };
+    },
+  };
+}
 
 function demoWatchFromChannel(channel: (typeof channels)[number]): WatchResponse {
   const username = channel.handle.replace(/^@/, "");
@@ -281,6 +294,9 @@ export const demoRepositories: SaveStreamRepositories = {
         source: { type: "username", value: activeRecording.handle.replace(/^@/, "") },
         actions: { can_stop: true, can_retry: false, can_delete: false },
       };
+    },
+    streamEvents() {
+      return emptyRecordingEventStream();
     },
     async listRecordings() {
       return {
