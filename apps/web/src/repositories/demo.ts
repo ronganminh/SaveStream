@@ -116,7 +116,67 @@ function demoRecording(item: (typeof recordings)[number]): RecordingModel {
 }
 
 const demoWatchState = channels.map(demoWatchFromChannel);
+const demoChannelState = channels.map(demoChannel);
 const demoRecordingState = recordings.map(demoRecordingFromFixture);
+
+function channelStatusFromWatch(watch: WatchResponse): ChannelModel["status"] {
+  if (watch.status === "paused_error") return "Error";
+  if (
+    watch.status === "paused" ||
+    watch.status === "paused_insufficient_credit" ||
+    watch.status === "disabled"
+  ) {
+    return "Paused";
+  }
+  if (watch.live_status === "live") return "Recording";
+  if (watch.live_status === "offline") return "Offline";
+  return "Waiting";
+}
+
+function syncDemoChannel(watch: WatchResponse) {
+  const existing = demoChannelState.find((channel) => channel.id === watch.id);
+  if (existing) {
+    existing.status = channelStatusFromWatch(watch);
+    existing.monitoring = watch.status === "active";
+    existing.backendStatus = watch.status;
+    existing.liveStatus = watch.live_status;
+    existing.source = structuredClone(watch.source);
+    existing.autoRecord = watch.auto_record;
+    existing.checked = watch.last_checked_at ? "Now" : "—";
+    existing.live = watch.live_status === "live" ? "Live now" : existing.live;
+    return;
+  }
+
+  const username =
+    watch.creator?.username ??
+    (watch.source.type === "username" ? watch.source.value.replace(/^@/, "") : watch.source.value);
+  const name = watch.creator?.display_name || username;
+  demoChannelState.push({
+    id: watch.id,
+    name,
+    handle: username ? `@${username.replace(/^@/, "")}` : watch.source.value,
+    initials:
+      name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() ?? "")
+        .join("") || "SS",
+    platform: "tiktok",
+    status: channelStatusFromWatch(watch),
+    monitoring: watch.status === "active",
+    live: watch.live_status === "live" ? "Live now" : "—",
+    checked: watch.last_checked_at ? "Now" : "—",
+    recordings: 0,
+    recordedHours: "0 h",
+    storage: "0 GB",
+    tone: "from-avatar-one to-avatar-one-end",
+    backendStatus: watch.status,
+    liveStatus: watch.live_status,
+    source: structuredClone(watch.source),
+    autoRecord: watch.auto_record,
+  });
+}
 
 function demoPaymentOrder(packageId: string): PaymentOrderResponse {
   const now = new Date().toISOString();
@@ -136,11 +196,11 @@ function demoPaymentOrder(packageId: string): PaymentOrderResponse {
 export const demoRepositories: SaveStreamRepositories = {
   channels: {
     async list() {
-      return channels.map(demoChannel);
+      return demoChannelState.map((item) => structuredClone(item));
     },
     async getById(id) {
-      const item = channels.find((channel) => channel.id === id);
-      return item ? demoChannel(item) : null;
+      const item = demoChannelState.find((channel) => channel.id === id);
+      return item ? structuredClone(item) : null;
     },
     async listWatches() {
       return {
@@ -169,6 +229,7 @@ export const demoRepositories: SaveStreamRepositories = {
         updated_at: now,
       };
       demoWatchState.push(item);
+      syncDemoChannel(item);
       return structuredClone(item);
     },
     async update(id, input) {
@@ -177,6 +238,7 @@ export const demoRepositories: SaveStreamRepositories = {
       if (input.auto_record !== undefined && input.auto_record !== null) item.auto_record = input.auto_record;
       if (input.status) item.status = input.status;
       item.updated_at = new Date().toISOString();
+      syncDemoChannel(item);
       return structuredClone(item);
     },
     async pause(id) {
@@ -184,6 +246,7 @@ export const demoRepositories: SaveStreamRepositories = {
       if (!item) throw new Error("Demo watch not found");
       item.status = "paused";
       item.updated_at = new Date().toISOString();
+      syncDemoChannel(item);
       return structuredClone(item);
     },
     async resume(id) {
@@ -191,11 +254,14 @@ export const demoRepositories: SaveStreamRepositories = {
       if (!item) throw new Error("Demo watch not found");
       item.status = "active";
       item.updated_at = new Date().toISOString();
+      syncDemoChannel(item);
       return structuredClone(item);
     },
     async delete(id) {
-      const index = demoWatchState.findIndex((watch) => watch.id === id);
-      if (index >= 0) demoWatchState.splice(index, 1);
+      const watchIndex = demoWatchState.findIndex((watch) => watch.id === id);
+      if (watchIndex >= 0) demoWatchState.splice(watchIndex, 1);
+      const channelIndex = demoChannelState.findIndex((channel) => channel.id === id);
+      if (channelIndex >= 0) demoChannelState.splice(channelIndex, 1);
     },
   },
 

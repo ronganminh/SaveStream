@@ -4,6 +4,7 @@ import { repositories } from "@/repositories";
 
 export const domainQueryKeys = {
   channels: ["channels"] as const,
+  channel: (id: string) => ["channels", id] as const,
   recordings: ["recordings"] as const,
   activeRecording: ["recordings", "active"] as const,
   usage: ["usage", "current"] as const,
@@ -27,6 +28,15 @@ export function useChannelsData() {
     queryFn: () => repositories.channels.list(),
   });
   return { query, state: toResourceState(query, (data) => data.length === 0) };
+}
+
+export function useChannelData(id: string | null | undefined) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.channel(id ?? "missing"),
+    queryFn: () => repositories.channels.getById(id ?? ""),
+    enabled: Boolean(id),
+  });
+  return { query, state: toResourceState(query, (data) => data === null) };
 }
 
 export function useRecordingsData() {

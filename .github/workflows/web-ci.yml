@@ -29,4 +29,5 @@ jobs:
       - run: npm --workspace apps/web run test:p3
       - run: npm --workspace apps/web run test:auth
       - run: npm --workspace apps/web run test:repositories
+      - run: npm --workspace apps/web run test:watches
       - run: npm run build

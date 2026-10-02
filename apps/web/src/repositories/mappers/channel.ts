@@ -46,6 +46,7 @@ function statusFor(watch: WatchResponse): ChannelStatus {
   ) {
     return "Paused";
   }
+  if (watch.live_status === "live") return "Recording";
   if (watch.live_status === "offline") return "Offline";
   return "Waiting";
 }

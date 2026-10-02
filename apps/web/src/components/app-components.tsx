@@ -85,11 +85,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import {
   channelLookupExamples,
-  channels,
   recordings,
   usage,
   user,
-  type Channel,
   type Notification,
   type Recording,
   type Status,
@@ -104,6 +102,21 @@ import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/lib/plan-catalog";
 import { formatDate } from "@/lib/formatters";
+import type { ChannelModel } from "@/repositories";
+import { useChannelsData } from "@/hooks/use-domain-data";
+import {
+  channelActionErrorMessage,
+  existingWatchId,
+  useCreateChannelMutation,
+  useDeleteChannelMutation,
+  usePauseChannelMutation,
+  useResumeChannelMutation,
+  watchQuotaLimit,
+} from "@/hooks/use-channel-mutations";
+import {
+  displayNameFromTikTokUsername,
+  parseTikTokSource,
+} from "@/lib/tiktok-source";
 
 export { meta, publicMeta };
 const mainNav = [
@@ -162,7 +175,7 @@ export function CreatorAvatar({
   channel,
   size = "md",
 }: {
-  channel: Channel;
+  channel: ChannelModel;
   size?: "sm" | "md" | "lg";
 }) {
   return (
@@ -691,6 +704,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
   if (empty)
     return (
       <section className="border-y bg-surface px-5 py-8">
@@ -709,7 +723,7 @@ export function ActiveRecordingCard({ empty = false }: { empty?: boolean }) {
         </div>
       </section>
     );
-  const c = channels[0];
+  const c = channelsQuery.data?.[0];
   if (!c) return null;
   return (
     <section className="overflow-hidden rounded-lg border border-recording/25 bg-surface">
@@ -789,7 +803,7 @@ export function FilterBar({ children }: { children: ReactNode }) {
     </div>
   );
 }
-export function ChannelRow({ channel }: { channel: Channel }) {
+export function ChannelRow({ channel }: { channel: ChannelModel }) {
   const c = useChannelControls(channel);
   if (c.removed) return null;
   return (
@@ -823,7 +837,7 @@ export function ChannelRow({ channel }: { channel: Channel }) {
     </div>
   );
 }
-export function ChannelCard({ channel }: { channel: Channel }) {
+export function ChannelCard({ channel }: { channel: ChannelModel }) {
   const c = useChannelControls(channel);
   const { t } = usePreferences();
   if (c.removed) return null;
@@ -861,7 +875,7 @@ function MoreMenu({
   channel,
   controls,
 }: {
-  channel: Channel;
+  channel: ChannelModel;
   controls: ReturnType<typeof useChannelControls>;
 }) {
   const navigate = useNavigate();
@@ -1075,57 +1089,87 @@ export function VideoPlayerShell({
 export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const navigate = useNavigate();
   const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
+  const createChannel = useCreateChannelMutation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [state, setState] = useState<LookupState>("idle");
   const [phase, setPhase] = useState<"form" | "submitting" | "success">("form");
-  const handle = useMemo(() => {
-    const t = input.trim();
-    const m = t.match(/tiktok\.com\/@([A-Za-z0-9._]{2,24})/i);
-    if (m) return "@" + m[1]!.toLowerCase();
-    const h = t.replace(/^@/, "");
-    return /^[A-Za-z0-9._]{2,24}$/.test(h) ? "@" + h.toLowerCase() : null;
-  }, [input]);
+  const [createdWatchId, setCreatedWatchId] = useState<string | null>(null);
+  const [duplicateWatchId, setDuplicateWatchId] = useState<string | null>(null);
+  const [quotaLimit, setQuotaLimit] = useState<number | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const parsed = useMemo(() => parseTikTokSource(input), [input]);
+  const handle = parsed?.handle ?? null;
+  const name = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
+  const channelItems = channelsQuery.data ?? [];
+
   useEffect(() => {
+    setErrorText(null);
+    setQuotaLimit(null);
+    setDuplicateWatchId(null);
     if (!input.trim()) {
       setState("idle");
       return;
     }
-    if (!handle) {
+    if (!parsed) {
       setState("invalid");
       return;
     }
-    setState("resolving");
-    const t = setTimeout(() => {
-      if (channels.some((c) => c.handle === handle)) setState("exists");
-      else if (handle.includes("notfound")) setState("notfound");
-      else if (handle.includes("unavailable")) setState("unavailable");
-      else if (handle.includes("limit")) setState("limit");
-      else setState("found");
-    }, 700);
-    return () => clearTimeout(t);
-  }, [input, handle]);
+    const existing = channelItems.find(
+      (channel) => channel.handle.toLowerCase() === parsed.handle.toLowerCase(),
+    );
+    if (existing) {
+      setDuplicateWatchId(existing.id);
+      setState("exists");
+      return;
+    }
+    setState("found");
+  }, [channelItems, input, parsed]);
+
   const reset = () => {
     setInput("");
     setState("idle");
     setPhase("form");
+    setCreatedWatchId(null);
+    setDuplicateWatchId(null);
+    setQuotaLimit(null);
+    setErrorText(null);
   };
-  const submit = () => {
-    if (state !== "found") return;
+
+  const submit = async () => {
+    if (state !== "found" || !parsed) return;
     setPhase("submitting");
-    setTimeout(() => {
+    setErrorText(null);
+    try {
+      const watch = await createChannel.mutateAsync({
+        source: parsed.source,
+        auto_record: true,
+      });
+      setCreatedWatchId(watch.id);
       setPhase("success");
-      toast.success(`Monitoring ${handle}`, {
+      toast.success(`Monitoring ${parsed.handle}`, {
         description: "We’ll record automatically when this channel goes live.",
       });
-    }, 900);
+    } catch (error) {
+      setPhase("form");
+      const duplicateId = existingWatchId(error);
+      if (duplicateId) {
+        setDuplicateWatchId(duplicateId);
+        setState("exists");
+        return;
+      }
+      const limit = watchQuotaLimit(error);
+      if (limit !== null) {
+        setQuotaLimit(limit);
+        setState("limit");
+        return;
+      }
+      setState("unavailable");
+      setErrorText(channelActionErrorMessage(error));
+    }
   };
-  const name = handle
-    ? handle
-        .slice(1)
-        .replace(/[._]/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase())
-    : "";
+
   const msg: Partial<
     Record<LookupState, { tone: "error" | "warning" | "info"; title: string; body: string }>
   > = {
@@ -1134,11 +1178,6 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       title: "Enter a valid TikTok username or URL",
       body: "Use @username or a link like https://www.tiktok.com/@username.",
     },
-    notfound: {
-      tone: "error",
-      title: "We couldn’t find this TikTok account",
-      body: "Check the spelling. Private or banned accounts can’t be monitored.",
-    },
     exists: {
       tone: "info",
       title: "This channel is already monitored",
@@ -1146,22 +1185,23 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     },
     unavailable: {
       tone: "warning",
-      title: "TikTok is temporarily unavailable",
-      body: "We couldn’t reach TikTok to verify this account. We’re retrying automatically — you can also try again in a minute.",
+      title: "We couldn’t add this channel",
+      body: errorText ?? "SaveStream could not complete the request. Try again.",
     },
     limit: {
       tone: "warning",
       title: "Monitored channel limit reached",
-      body: `Your plan allows ${usage.channels.limit} monitored channels. Upgrade to add another.`,
+      body: `Your account allows ${quotaLimit ?? usage.channels.limit} monitored channels. Remove one or review billing before adding another.`,
     },
   };
-  const m = msg[state];
+  const message = msg[state];
+
   return (
     <Dialog
       open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) setTimeout(reset, 200);
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (!nextOpen) setTimeout(reset, 200);
       }}
     >
       <DialogTrigger asChild>
@@ -1180,26 +1220,24 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             </span>
             <DialogTitle className="mt-5">{t("Monitoring started")}</DialogTitle>
             <DialogDescription className="mt-2">
-              {handle} is now monitored. Status:{" "}
-              <b className="font-medium text-foreground">Waiting for live</b>. Recording starts
-              automatically on our servers when the channel goes live.
+              {handle} is now monitored. Recording starts automatically on our servers when the
+              channel goes live.
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  reset();
-                }}
-              >
+              <Button variant="outline" onClick={reset}>
                 {t("Add another")}
               </Button>
               <Button
                 onClick={() => {
                   setOpen(false);
-                  navigate({ to: "/channels" });
+                  if (createdWatchId) {
+                    void navigate({ to: "/channels/$id", params: { id: createdWatchId } });
+                  } else {
+                    void navigate({ to: "/channels" });
+                  }
                 }}
               >
-                {t("Go to channels")}
+                {t("View channel")}
               </Button>
             </div>
           </div>
@@ -1208,8 +1246,8 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogHeader>
               <DialogTitle>{t("Add TikTok channel")}</DialogTitle>
               <DialogDescription>
-                We’ll monitor this channel continuously and automatically start recording when it
-                goes live.
+                Add a TikTok creator to your account. SaveStream will monitor it automatically and
+                start recording when configured to do so.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">
@@ -1222,64 +1260,60 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                     id="add-channel-input"
                     autoFocus
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    aria-invalid={state === "invalid" || state === "notfound"}
+                    onChange={(event) => setInput(event.target.value)}
+                    aria-invalid={state === "invalid"}
                     placeholder="@username or https://www.tiktok.com/@username"
                     className="pr-9"
                   />
-                  {state === "resolving" && (
+                  {phase === "submitting" && (
                     <span
-                      aria-label={t("Looking up creator…")}
+                      aria-label={t("Adding channel…")}
                       className="absolute right-3 top-2.5 size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
                     />
                   )}
-                  {state === "found" && (
+                  {state === "found" && phase !== "submitting" && (
                     <Check className="absolute right-3 top-2.5 size-4 text-success" />
                   )}
                 </div>
               </div>
-              {state === "resolving" && (
-                <div className="flex items-center gap-3 rounded-md border p-3">
-                  <div className="size-10 animate-pulse rounded-full bg-muted" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
-                    <div className="h-3 w-1/4 animate-pulse rounded bg-muted" />
-                  </div>
-                  <span className="text-xs text-muted-foreground">{t("Looking up creator…")}</span>
-                </div>
-              )}
-              {state === "found" && (
+              {state === "found" && parsed && (
                 <div className="flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
                   <div className="grid size-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                     {name
                       .split(" ")
-                      .map((w) => w[0])
+                      .map((word) => word[0])
                       .join("")
                       .slice(0, 2)}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{name}</p>
-                    <p className="text-xs text-muted-foreground">{handle}</p>
+                    <p className="text-xs text-muted-foreground">{parsed.handle}</p>
                   </div>
                   <div className="ml-auto">
                     <PlatformBadge />
                   </div>
                 </div>
               )}
-              {m && (
+              {message && (
                 <StateBanner
-                  tone={m.tone}
-                  title={m.title}
-                  body={m.body}
+                  tone={message.tone}
+                  title={message.title}
+                  body={message.body}
                   action={
                     state === "exists" ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const c = channels.find((x) => x.handle === handle);
                           setOpen(false);
-                          if (c) navigate({ to: "/channels/$id", params: { id: c.id } });
+                          if (duplicateWatchId) {
+                            void navigate({
+                              to: "/channels/$id",
+                              params: { id: duplicateWatchId },
+                            });
+                          } else {
+                            void navigate({ to: "/channels" });
+                          }
                         }}
                       >
                         View channel
@@ -1289,18 +1323,18 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                         size="sm"
                         onClick={() => {
                           setOpen(false);
-                          navigate({ to: "/billing" });
+                          void navigate({ to: "/billing" });
                         }}
                       >
-                        Upgrade plan
+                        Review billing
                       </Button>
                     ) : state === "unavailable" ? (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          setState("resolving");
-                          setTimeout(() => setState("found"), 900);
+                          setState(parsed ? "found" : "invalid");
+                          void channelsQuery.refetch();
                         }}
                       >
                         Try again
@@ -1309,35 +1343,30 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
                   }
                 />
               )}
-              <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                <summary className="cursor-pointer">Prototype: try lookup states</summary>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {channelLookupExamples.map((x) => (
-                    <button
-                      type="button"
-                      key={x.input}
-                      onClick={() => setInput(x.input)}
-                      className="rounded border bg-background px-2 py-1 font-mono hover:bg-accent"
-                    >
-                      {x.input}{" "}
-                      <span className="font-sans text-muted-foreground">· {x.result}</span>
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setInput("not a url!")}
-                    className="rounded border bg-background px-2 py-1 hover:bg-accent"
-                  >
-                    Invalid input
-                  </button>
-                </div>
-              </details>
+              {isDemoMode && (
+                <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Prototype: try lookup states</summary>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {channelLookupExamples.map((example) => (
+                      <button
+                        type="button"
+                        key={example.input}
+                        onClick={() => setInput(example.input)}
+                        className="rounded border bg-background px-2 py-1 font-mono hover:bg-accent"
+                      >
+                        {example.input}{" "}
+                        <span className="font-sans text-muted-foreground">· {example.result}</span>
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setOpen(false)}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={submit} disabled={state !== "found" || phase === "submitting"}>
+              <Button onClick={() => void submit()} disabled={state !== "found" || phase === "submitting"}>
                 {phase === "submitting" ? (
                   <>
                     <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1629,6 +1658,8 @@ export function CommandSearch({
 }) {
   const navigate = useNavigate();
   const { t } = usePreferences();
+  const { query: channelsQuery } = useChannelsData();
+  const channelItems = channelsQuery.data ?? [];
   const go = (fn: () => void) => {
     onOpenChange(false);
     fn();
@@ -1646,7 +1677,7 @@ export function CommandSearch({
           </div>
         </CommandEmpty>
         <CommandGroup heading={t("Channels")}>
-          {channels.map((c) => (
+          {channelItems.map((c) => (
             <CommandItem
               key={c.id}
               value={`${c.name} ${c.handle}`}
@@ -1679,55 +1710,99 @@ export function CommandSearch({
     </CommandDialog>
   );
 }
-export function useChannelControls(channel: Channel) {
-  const [on, setOn] = useState(channel.monitoring && channel.status !== "Paused");
+export function useChannelControls(channel: ChannelModel) {
+  const pauseChannel = usePauseChannelMutation();
+  const resumeChannel = useResumeChannelMutation();
+  const deleteChannel = useDeleteChannelMutation();
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
-  const [removed, setRemoved] = useState(false);
-  const toggle = (next: boolean) => {
-    if (next) {
-      setOn(true);
+  const [demoOn, setDemoOn] = useState(channel.monitoring && channel.status !== "Paused");
+  const [demoRemoved, setDemoRemoved] = useState(false);
+  const on = isDemoMode ? demoOn : channel.backendStatus === "active";
+  const pending =
+    pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+
+  const resume = async () => {
+    try {
+      await resumeChannel.mutateAsync(channel.id);
+      if (isDemoMode) setDemoOn(true);
       toast.success(`Monitoring resumed for ${channel.handle}`, {
         description: "We’ll record the next livestream automatically.",
       });
-    } else setDialog("pause");
+    } catch (error) {
+      toast.error("Could not resume monitoring", {
+        description: channelActionErrorMessage(error),
+      });
+    }
   };
+
+  const toggle = (next: boolean) => {
+    if (pending) return;
+    if (next) {
+      void resume();
+    } else {
+      setDialog("pause");
+    }
+  };
+
   const dialogs = (
     <>
       <ConfirmDialog
         open={dialog === "pause"}
-        onOpenChange={(o) => !o && setDialog(null)}
+        onOpenChange={(open) => !open && setDialog(null)}
         title="Pause monitoring?"
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
+        confirmDisabled={pending}
         onConfirm={() => {
-          setOn(false);
-          setDialog(null);
-          toast(`Monitoring paused for ${channel.handle}`, {
-            description: "Future livestreams will not be recorded.",
-          });
+          void pauseChannel
+            .mutateAsync(channel.id)
+            .then(() => {
+              if (isDemoMode) setDemoOn(false);
+              setDialog(null);
+              toast(`Monitoring paused for ${channel.handle}`, {
+                description: "Future livestreams will not be recorded.",
+              });
+            })
+            .catch((error) => {
+              toast.error("Could not pause monitoring", {
+                description: channelActionErrorMessage(error),
+              });
+            });
         }}
       />
       <ConfirmDialog
         destructive
         open={dialog === "remove"}
-        onOpenChange={(o) => !o && setDialog(null)}
+        onOpenChange={(open) => !open && setDialog(null)}
         title="Remove channel?"
         body={`We’ll stop monitoring ${channel.handle}. Existing recordings stay in your library until you delete them or they expire.`}
         confirmLabel="Remove channel"
+        confirmDisabled={pending}
         onConfirm={() => {
-          setRemoved(true);
-          setDialog(null);
-          toast.success(`${channel.handle} removed`, {
-            description: "Existing recordings are still in your library.",
-          });
+          void deleteChannel
+            .mutateAsync(channel.id)
+            .then(() => {
+              if (isDemoMode) setDemoRemoved(true);
+              setDialog(null);
+              toast.success(`${channel.handle} removed`, {
+                description: "Existing recordings are still in your library.",
+              });
+            })
+            .catch((error) => {
+              toast.error("Could not remove channel", {
+                description: channelActionErrorMessage(error),
+              });
+            });
         }}
       />
     </>
   );
+
   return {
     on,
     toggle,
-    removed,
+    removed: isDemoMode ? demoRemoved : deleteChannel.isSuccess,
+    pending,
     openPause: () => setDialog("pause"),
     openRemove: () => setDialog("remove"),
     dialogs,
