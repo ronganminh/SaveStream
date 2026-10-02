@@ -97,6 +97,10 @@ import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { isDemoMode } from "@/lib/app-config";
+import {
+  isAwaitingPaymentConfirmation,
+  useBillingReturnOrder,
+} from "@/hooks/use-billing";
 
 const mono = "font-mono text-xs";
 
@@ -800,45 +804,236 @@ export function NotificationsPage() {
 }
 
 /* ---------------- Billing return pages ---------------- */
-export function BillingSuccessPage() {
-  const { t } = usePreferences();
-  return (
-    <AppShell>
-      <div className="grid min-h-[60vh] place-items-center">
-        <SuccessState
-          title="You’re on Pro"
-          body="Your subscription is active. You now have 50 recording hours per month, 5 monitored channels, 2 simultaneous recordings, and 30-day retention."
-          action={
-            <>
+export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
+  const { query, state } = useBillingReturnOrder(orderId);
+
+  if (!orderId) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <EmptyState
+            icon={CreditCard}
+            title="Payment order missing"
+            body="The checkout return URL did not include a payment order. Open Billing to check your recent orders."
+            action={
               <Button asChild>
-                <Link to="/overview">Go to dashboard</Link>
-              </Button>
-              <Button variant="outline" asChild>
                 <Link to="/billing">View billing</Link>
               </Button>
-            </>
-          }
-        />
+            }
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (state.kind === "loading") {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
+            <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <h1 className="mt-5 text-xl font-semibold">Checking payment status…</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We’re confirming this payment with the SaveStream backend.
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (state.kind === "error" || !query.data) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <ErrorState
+            title="Could not confirm payment"
+            body="The browser redirect is not proof of payment. Retry the backend status check before assuming credits were added."
+            onRetry={() => query.refetch()}
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  const order = query.data;
+
+  if (isAwaitingPaymentConfirmation(order.status)) {
+    return (
+      <AppShell>
+        <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
+          <div className="w-full space-y-5">
+            <StateBanner
+              tone="info"
+              icon={Clock3}
+              title="Payment is being confirmed"
+              body={`Order ${order.id} is still ${order.status}. SaveStream will keep checking the backend; credits are not considered added until the order becomes paid.`}
+              action={
+                <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+                  <RotateCcw />
+                  Check now
+                </Button>
+              }
+            />
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button asChild>
+                <Link to="/billing">View billing</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <a href={`/billing/canceled?order_id=${encodeURIComponent(order.id)}`}>
+                  I left checkout
+                </a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (order.status === "paid") {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <SuccessState
+            title={`${order.credits} credits added`}
+            body="The SaveStream backend confirmed this payment as paid. Your credit balance and ledger are being refreshed from the server."
+            action={
+              <>
+                <Button asChild>
+                  <Link to="/usage">View credits</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/billing">View billing</Link>
+                </Button>
+              </>
+            }
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  const refunded = order.status === "partially_refunded" || order.status === "refunded";
+  return (
+    <AppShell>
+      <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
+        <div className="w-full space-y-5">
+          <StateBanner
+            tone={refunded ? "info" : "error"}
+            icon={refunded ? CreditCard : XCircle}
+            title={refunded ? "Payment has a refund status" : "Payment was not completed"}
+            body={
+              refunded
+                ? `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. The credit ledger shown in Usage is the authoritative current balance.`
+                : `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. No success is inferred from the checkout redirect.`
+            }
+          />
+          <div className="flex justify-center">
+            <Button asChild>
+              <Link to="/billing">Back to billing</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </AppShell>
   );
 }
-export function BillingCanceledPage() {
-  const { t } = usePreferences();
+
+function paymentReturnStatusLabel(status: string) {
+  return status.replaceAll("_", " ");
+}
+
+export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
+  const { query, state } = useBillingReturnOrder(orderId);
+
+  if (!orderId) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center text-center">
+          <div>
+            <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+              <XCircle className="size-6" />
+            </span>
+            <h1 className="mt-5 text-2xl font-semibold">Checkout closed</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              No payment order was supplied. SaveStream only treats a purchase as complete when the
+              backend confirms its payment status.
+            </p>
+            <Button className="mt-7" asChild>
+              <Link to="/billing">Back to billing</Link>
+            </Button>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (state.kind === "loading") {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
+            <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-4 text-sm text-muted-foreground">
+              Checking the backend payment status…
+            </p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (state.kind === "error" || !query.data) {
+    return (
+      <AppShell>
+        <div className="grid min-h-[60vh] place-items-center">
+          <ErrorState
+            title="Could not check payment order"
+            body="Open Billing to review the order again. SaveStream will not infer cancellation or payment from this page alone."
+            onRetry={() => query.refetch()}
+          />
+        </div>
+      </AppShell>
+    );
+  }
+
+  const order = query.data;
+  const paid = order.status === "paid";
+
   return (
     <AppShell>
-      <div className="grid min-h-[60vh] place-items-center text-center">
-        <div>
-          <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-            <XCircle className="size-6" />
-          </span>
-          <h1 className="mt-5 text-2xl font-semibold">{t("Checkout canceled")}</h1>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-            No changes were made to your plan and you weren’t charged.
-          </p>
-          <Button className="mt-7" asChild>
-            <Link to="/billing">{t("Back to billing")}</Link>
-          </Button>
+      <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
+        <div className="w-full space-y-5">
+          <StateBanner
+            tone={paid ? "success" : isAwaitingPaymentConfirmation(order.status) ? "warning" : "info"}
+            icon={paid ? CheckCircle2 : XCircle}
+            title={
+              paid
+                ? "Payment was already confirmed"
+                : isAwaitingPaymentConfirmation(order.status)
+                  ? "Checkout left before confirmation"
+                  : "Checkout is not active"
+            }
+            body={
+              paid
+                ? `Order ${order.id} is paid according to the backend. Credits may already be reflected in your balance.`
+                : isAwaitingPaymentConfirmation(order.status)
+                  ? `Order ${order.id} is still ${order.status}. This page does not mark it canceled; refresh Billing later because webhook or reconciliation may still update it.`
+                  : `Order ${order.id} is ${paymentReturnStatusLabel(order.status)} according to the backend.`
+            }
+          />
+          <div className="flex justify-center gap-2">
+            <Button asChild>
+              <Link to="/billing">Back to billing</Link>
+            </Button>
+            {isAwaitingPaymentConfirmation(order.status) && (
+              <Button variant="outline" onClick={() => void query.refetch()}>
+                <RotateCcw />
+                Check status
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </AppShell>
