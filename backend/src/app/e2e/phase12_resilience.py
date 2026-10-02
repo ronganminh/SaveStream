@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import uuid
+from typing import cast
 
 import httpx
 import redis
@@ -29,7 +30,7 @@ def save_state(key: str, payload: dict[str, str]) -> None:
 
 
 def load_state(key: str) -> dict[str, str]:
-    raw = state_store().get(key)
+    raw = cast(str | bytes | None, state_store().get(key))
     if raw is None:
         raise RuntimeError(f"missing Phase 12 E2E state: {key}")
     payload = json.loads(raw)
