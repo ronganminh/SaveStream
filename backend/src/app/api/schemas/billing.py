@@ -70,8 +70,16 @@ class CheckoutRequest(StrictModel):
     @classmethod
     def validate_return_url(cls, value: str) -> str:
         parsed = urlparse(value)
-        if not parsed.scheme:
-            raise ValueError("return_url must be an absolute URI")
+        if (
+            parsed.scheme not in {"http", "https"}
+            or not parsed.netloc
+            or parsed.username
+            or parsed.password
+            or parsed.fragment
+        ):
+            raise ValueError(
+                "return_url must be an absolute http(s) URL without credentials or fragment"
+            )
         return value
 
 

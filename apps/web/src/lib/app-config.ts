@@ -28,6 +28,9 @@ function resolveApiBaseUrl(value: string | undefined): string {
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error("VITE_API_BASE_URL must use http or https.");
   }
+  if (isProductionMode && parsed.protocol !== "https:") {
+    throw new Error("VITE_API_BASE_URL must use https when VITE_APP_MODE=production.");
+  }
   if (parsed.username || parsed.password) {
     throw new Error("VITE_API_BASE_URL must not contain credentials.");
   }

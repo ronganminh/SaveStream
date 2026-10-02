@@ -425,7 +425,9 @@ export function LandingPage() {
     applicationCategory: "MultimediaApplication",
     operatingSystem: "Web",
     url: PUBLIC_SITE_URL,
-    description: "Frontend preview for authorized livestream recording workflows.",
+    description: isDemoMode
+      ? "Frontend preview for authorized livestream recording workflows."
+      : "Cloud monitoring and recording for authorized TikTok livestream workflows.",
   };
   return (
     <div className="min-h-screen bg-background">
@@ -872,7 +874,7 @@ export function AuthPage({
     <AuthLayout>
       <h1 className="text-2xl font-semibold">{copy[0]}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{copy[1]}</p>
-      {(mode === "sign-in" || mode === "sign-up") && (
+      {isDemoMode && (mode === "sign-in" || mode === "sign-up") && (
         <>
           <Button
             variant="outline"

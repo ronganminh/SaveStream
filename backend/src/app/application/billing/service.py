@@ -5,6 +5,7 @@ import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +84,40 @@ def _validate_idempotency_key(value: str) -> None:
             "Idempotency-Key must be a UUID",
             status_code=400,
         ) from exc
+
+
+def _validate_checkout_return_url(settings: AppSettings, value: str) -> str:
+    parsed = urlparse(value)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.fragment
+    ):
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "Checkout return URL must be an absolute http(s) URL without credentials or fragment",
+            status_code=400,
+        )
+    if settings.environment in {"staging", "production"}:
+        actual_origin = f"{parsed.scheme}://{parsed.netloc}"
+        allowed_origins = set(settings.cors_allow_origins) or {
+            settings.frontend_base_url
+        }
+        if parsed.scheme != "https" or actual_origin not in allowed_origins:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "Checkout return URL must use an allowed frontend origin",
+                status_code=400,
+            )
+        if parsed.path != "/billing/success":
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "Checkout return URL must target /billing/success",
+                status_code=400,
+            )
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -270,6 +305,7 @@ class BillingService:
         idempotency_key: str,
     ) -> CheckoutResult:
         _validate_idempotency_key(idempotency_key)
+        return_url = _validate_checkout_return_url(self.settings, return_url)
         order = await self.get(
             user_id=user_id,
             payment_order_id=payment_order_id,
