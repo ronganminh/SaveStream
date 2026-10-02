@@ -406,6 +406,8 @@ export const demoRepositories: SaveStreamRepositories = {
         ],
         recording_rate: { unit_seconds: 60, credits_per_unit: 1, minimum_credits: 1 },
         signup_credits: 10,
+        max_channels_per_user: 20,
+        max_concurrent_recordings_per_user: 2,
       };
     },
   },

@@ -227,6 +227,8 @@ export type PublicPricingResponse = {
   packages: PublicCreditPackageResponse[];
   recording_rate: PublicRecordingRate | null;
   signup_credits: number;
+  max_channels_per_user: number | null;
+  max_concurrent_recordings_per_user: number | null;
 };
 
 export type PaymentStatusValue =
