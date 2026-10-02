@@ -30,6 +30,13 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
 
+    # The API sets the same headers; drop its copies so each header is sent once
+    # (nginx stays the single source, including on its own 502/504 pages).
+    proxy_hide_header Strict-Transport-Security;
+    proxy_hide_header X-Content-Type-Options;
+    proxy_hide_header X-Frame-Options;
+    proxy_hide_header Referrer-Policy;
+
     location /metrics {
         allow 127.0.0.1;
         allow 10.0.0.0/8;
