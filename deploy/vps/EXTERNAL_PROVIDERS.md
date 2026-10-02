@@ -47,6 +47,21 @@ Secret values are written with mode 600 under the existing staging secret
 directory. Store and variant IDs are written to
 `deploy/vps/staging.external.env`.
 
+## Web staging checkout flag
+
+The web app keeps hosted billing checkout disabled by default. For the **staging**
+frontend build that points at Lemon Squeezy **Test Mode**, set:
+
+```sh
+VITE_APP_MODE=production
+VITE_API_BASE_URL=https://staging-api.savestream.online
+VITE_BILLING_CHECKOUT_ENABLED=true
+```
+
+Do **not** enable `VITE_BILLING_CHECKOUT_ENABLED` on the production frontend
+until Lemon Squeezy Live Mode is approved and live credentials/store/variant
+configuration are installed.
+
 ## Enable Brevo + Lemon Squeezy
 
 ```sh
