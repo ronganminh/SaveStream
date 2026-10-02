@@ -26,7 +26,8 @@
     "test:account": "node scripts/account-settings-audit.mjs",
     "test:notifications": "node scripts/notification-strategy-audit.mjs",
     "test:admin": "node scripts/admin-operations-audit.mjs",
-    "test:cleanup": "node scripts/phase13-cleanup-audit.mjs"
+    "test:cleanup": "node scripts/phase13-cleanup-audit.mjs",
+    "test:release": "node scripts/phase14-release-audit.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
