@@ -108,7 +108,7 @@ export type NotificationType =
 
 export type NotificationLink =
   | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
-  | { to: "/usage" }\n  | { to: "/notifications" };
+  | { to: "/usage" };
 
 export type NotificationModel = {
   id: string;

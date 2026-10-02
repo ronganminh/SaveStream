@@ -129,7 +129,7 @@ function mapNotificationToModel(item: NotificationResponse): NotificationModel {
           to: "/recordings/$id" as const,
           params: { id: item.resource_id },
         }
-      : { to: "/notifications" as const };
+      : { to: "/usage" as const };
 
   return {
     id: item.id,
