@@ -392,6 +392,22 @@ export const demoRepositories: SaveStreamRepositories = {
     async get() {
       return { version: "demo", credit_unit: "credit", rules: [] };
     },
+    async getPublic() {
+      return {
+        packages: [
+          {
+            id: "demo-100",
+            code: "demo",
+            name: "100 credits",
+            credits: 100,
+            price: { amount_minor: 999, currency: "USD" },
+            recording_minutes: 100,
+          },
+        ],
+        recording_rate: { unit_seconds: 60, credits_per_unit: 1, minimum_credits: 1 },
+        signup_credits: 10,
+      };
+    },
   },
 
   credits: {

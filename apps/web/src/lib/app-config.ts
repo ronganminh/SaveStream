@@ -78,9 +78,20 @@ const protectedPrefixes = [
   "/billing",
   "/notifications",
   "/settings",
-  "/help",
   "/onboarding",
 ] as const;
+
+/** Public, indexable marketing and policy pages (also listed in public/sitemap.xml). */
+export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
+  "/",
+  "/pricing",
+  "/help",
+  "/contact",
+  "/terms",
+  "/privacy",
+  "/acceptable-use",
+  "/refund",
+];
 
 export function getRouteAccess(pathname: string): RouteAccess {
   if (pathname.startsWith("/admin")) {
@@ -89,7 +100,7 @@ export function getRouteAccess(pathname: string): RouteAccess {
   if (protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return { visibility: "authenticated", requiresAuth: true, indexable: false };
   }
-  const indexable = ["/", "/pricing", "/privacy", "/terms", "/acceptable-use"].includes(pathname);
+  const indexable = PUBLIC_INDEXABLE_PATHS.includes(pathname);
   return { visibility: "public", requiresAuth: false, indexable };
 }
 

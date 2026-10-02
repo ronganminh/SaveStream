@@ -1555,7 +1555,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
             title={refunded ? "Payment has a refund status" : "Payment was not completed"}
             body={
               refunded
-                ? `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. The credit ledger shown in Usage is the authoritative current balance.`
+                ? `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. Your current balance is shown in Usage.`
                 : `Order ${order.id} is ${paymentReturnStatusLabel(order.status)}. No success is inferred from the checkout redirect.`
             }
           />
@@ -3293,7 +3293,47 @@ function DemoAdminErrorsPage() {
   );
 }
 
-/* ---------------- Public: legal, status ---------------- */
+/* ---------------- Public: legal, refund, contact ---------------- */
+const LEGAL_LAST_UPDATED = "October 2, 2026";
+const SUPPORT_EMAIL = "support@savestream.online";
+const PRIVACY_EMAIL = "privacy@savestream.online";
+const ABUSE_EMAIL = "abuse@savestream.online";
+
+function MailLink({ email }: { email: string }) {
+  return (
+    <a href={`mailto:${email}`} className="text-primary underline underline-offset-4">
+      {email}
+    </a>
+  );
+}
+
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="text-primary underline underline-offset-4"
+    >
+      {children}
+    </a>
+  );
+}
+
+function InlineLink({
+  to,
+  children,
+}: {
+  to: "/acceptable-use" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
+  children: ReactNode;
+}) {
+  return (
+    <Link to={to} className="text-primary underline underline-offset-4">
+      {children}
+    </Link>
+  );
+}
+
 type LegalSection = { h: string; p: ReactNode };
 export function LegalPage({
   title,
@@ -3301,7 +3341,7 @@ export function LegalPage({
   sections,
 }: {
   title: string;
-  intro: string;
+  intro: ReactNode;
   sections: LegalSection[];
 }) {
   const { t } = usePreferences();
@@ -3309,16 +3349,9 @@ export function LegalPage({
     <div className="min-h-screen bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <p className="text-xs text-muted-foreground">Last updated September 27, 2026</p>
+        <p className="text-xs text-muted-foreground">Last updated {LEGAL_LAST_UPDATED}</p>
         <h1 className="mt-2 text-3xl font-semibold">{title}</h1>
-        <p className="mt-3 text-muted-foreground">{intro}</p>
-        <div className="mt-6">
-          <StateBanner
-            tone="warning"
-            title="Draft — for legal review before launch"
-            body="This is placeholder copy for the prototype. It must be reviewed and completed by qualified counsel before SaveStream launches."
-          />
-        </div>
+        <div className="mt-3 text-muted-foreground">{intro}</div>
         <div className="mt-10 space-y-8">
           {sections.map((s, i) => (
             <section key={s.h}>
@@ -3341,15 +3374,32 @@ export function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      intro="These terms describe how you may use SaveStream, a cloud service that monitors TikTok channels and records their livestreams."
+      intro={
+        <p>
+          These terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a cloud service that
+          monitors TikTok channels you add and records their livestreams. By creating an account or
+          using the service, you agree to these terms.
+        </p>
+      }
       sections={[
         {
           h: "The service",
           p: (
             <p>
-              SaveStream checks the live status of channels you add and records livestreams on our
-              servers. Recordings are stored for the retention period of your plan and can be
-              watched or downloaded during that time.
+              SaveStream checks the live status of the channels you add and, when a channel goes
+              live, records the livestream on our servers. Finished recordings can be watched in the
+              browser or downloaded from your account.
+            </p>
+          ),
+        },
+        {
+          h: "Your account",
+          p: (
+            <p>
+              You need an account with a verified email address to use SaveStream. You must be old
+              enough to enter into a binding agreement in your country, keep your password secure,
+              and tell us at <MailLink email={SUPPORT_EMAIL} /> if you believe your account has been
+              compromised. You are responsible for activity under your account.
             </p>
           ),
         },
@@ -3358,11 +3408,7 @@ export function TermsPage() {
           p: (
             <p>
               {authorized} You must stop monitoring a channel as soon as your permission ends. See
-              the{" "}
-              <Link to="/acceptable-use" className="text-primary underline underline-offset-4">
-                Acceptable Use Policy
-              </Link>
-              .
+              the <InlineLink to="/acceptable-use">Acceptable Use Policy</InlineLink>.
             </p>
           ),
         },
@@ -3370,30 +3416,56 @@ export function TermsPage() {
           h: "Your responsibility for content",
           p: (
             <p>
-              You are solely responsible for confirming you have the rights and authorization to
-              record, store, and use each livestream, and for how you use recordings afterward.
-              SaveStream does not verify ownership of channels.
+              You are solely responsible for confirming that you have the rights to record, store,
+              and use each livestream, and for how you use recordings afterward. SaveStream does not
+              claim ownership of your recordings and does not verify ownership of channels.
             </p>
           ),
         },
         {
-          h: "Retention and deletion",
+          h: "Credits and payments",
+          p: (
+            <>
+              <p>
+                SaveStream is paid for with credits. Credits are bought in one-time packages listed
+                on the <InlineLink to="/pricing">pricing page</InlineLink>; there is no subscription
+                and nothing renews automatically. Prices are shown in US dollars and applicable
+                taxes are calculated at checkout.
+              </p>
+              <p>
+                Payments are processed by Lemon Squeezy, which acts as our reseller and Merchant of
+                Record. Your purchase is also subject to the{" "}
+                <ExternalLink href="https://www.lemonsqueezy.com/buyer-terms">
+                  Lemon Squeezy buyer terms
+                </ExternalLink>
+                .
+              </p>
+              <p>
+                Credits are used only while a livestream is being recorded, based on the recording
+                time captured as shown on the pricing page. Credits do not expire, have no cash
+                value, and cannot be transferred to another account. New accounts may receive free
+                trial credits once, on first email verification. Unused credits are forfeited when
+                you delete your account.
+              </p>
+            </>
+          ),
+        },
+        {
+          h: "Refunds",
           p: (
             <p>
-              Recordings expire and are deleted automatically at the end of your plan’s retention
-              period (currently 3 days on Free and 30 days on Pro). Deleted recordings cannot be
-              recovered. Download any recording you want to keep.
+              Refund requests are handled as described in our{" "}
+              <InlineLink to="/refund">Refund Policy</InlineLink>.
             </p>
           ),
         },
         {
-          h: "Plans, quotas, and billing",
+          h: "Storage and deletion",
           p: (
             <p>
-              Plans include limits on recording hours, monitored channels, simultaneous recordings,
-              and downloads. When a limit is reached, automatic recording or downloads may pause
-              until the next billing period. Paid plans renew automatically until canceled. [Refund
-              terms — to be completed by legal.]
+              Recordings stay in your account until you delete them or delete your account. We may
+              remove recordings that violate these terms or the Acceptable Use Policy. Deleted
+              recordings cannot be recovered, so download anything you want to keep.
             </p>
           ),
         },
@@ -3401,22 +3473,52 @@ export function TermsPage() {
           h: "Availability",
           p: (
             <p>
-              Recording depends on third-party platforms. We can’t guarantee every livestream will
-              be detected or fully recorded. [Service level and liability terms — to be completed by
-              legal.]
+              Recording depends on TikTok and other third-party services that we do not control. We
+              work to detect and record every livestream, but we cannot guarantee that every
+              livestream will be detected or fully recorded, or that the service will be
+              uninterrupted.
             </p>
           ),
         },
         {
-          h: "Termination",
+          h: "Suspension and termination",
           p: (
             <p>
-              We may suspend accounts that record content without authorization or violate these
-              terms. You can delete your account at any time from Settings.
+              We may suspend or close accounts that record content without authorization, abuse the
+              service, or violate these terms. You can delete your account at any time from
+              Settings.
             </p>
           ),
         },
-        { h: "Contact", p: <p>[Company legal name, address, and contact email — placeholder.]</p> },
+        {
+          h: "Disclaimer and limitation of liability",
+          p: (
+            <p>
+              The service is provided “as is” and “as available”. To the extent permitted by law,
+              SaveStream is not liable for indirect, incidental, or consequential damages, or for
+              lost data or recordings, and our total liability for any claim is limited to the
+              amount you paid us in the 12 months before the claim.
+            </p>
+          ),
+        },
+        {
+          h: "Changes to these terms",
+          p: (
+            <p>
+              We may update these terms. When we make material changes, we will update the date at
+              the top of this page and, where appropriate, notify you by email. Continuing to use
+              SaveStream after a change means you accept the updated terms.
+            </p>
+          ),
+        },
+        {
+          h: "Contact",
+          p: (
+            <p>
+              Questions about these terms: <MailLink email={SUPPORT_EMAIL} />.
+            </p>
+          ),
+        },
       ]}
     />
   );
@@ -3425,24 +3527,54 @@ export function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      intro="This policy explains what information SaveStream handles and why. Sections marked as placeholders must be completed before launch."
+      intro={
+        <p>
+          This policy explains what personal information SaveStream collects, how we use it, and the
+          choices you have. Contact <MailLink email={PRIVACY_EMAIL} /> with any privacy question.
+        </p>
+      }
       sections={[
         {
           h: "Information we collect",
           p: (
-            <p>
-              Account details (name, email, password hash or sign-in provider), channels you add,
-              recordings and their metadata, usage statistics, and billing records handled by our
-              payment provider. [Full data inventory — placeholder.]
-            </p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Account details: email address, display name, and a hashed password.</li>
+              <li>Channels you add: TikTok usernames or links, and your monitoring settings.</li>
+              <li>
+                Recordings: the video files we record for you and their metadata, such as channel,
+                start and end time, duration, and file size.
+              </li>
+              <li>
+                Billing records: credit balance and history, purchased packages, amounts, and order
+                references. Card and payment details are collected by Lemon Squeezy; we never
+                receive your full card number.
+              </li>
+              <li>Notification preferences and the notifications we send you.</li>
+              <li>
+                Security and operational data: IP address, browser user agent, sign-in sessions,
+                request identifiers, and audit events.
+              </li>
+            </ul>
           ),
         },
         {
           h: "How we use it",
           p: (
             <p>
-              To operate monitoring and recording, send notifications you’ve enabled, enforce plan
-              limits, process payments, prevent abuse, and provide support.
+              To provide monitoring and recording, keep your account secure, process purchases and
+              credit usage, send the emails you need (such as verification, password reset, and
+              notifications you have enabled), prevent abuse, and respond to support requests. We do
+              not sell your personal information and do not use it for advertising.
+            </p>
+          ),
+        },
+        {
+          h: "Cookies and browser storage",
+          p: (
+            <p>
+              We use one essential, secure cookie to keep you signed in. Your browser also stores
+              your theme and language preferences locally. We do not use advertising or analytics
+              cookies.
             </p>
           ),
         },
@@ -3450,37 +3582,83 @@ export function PrivacyPage() {
           h: "Recordings",
           p: (
             <p>
-              Recordings are stored in cloud storage associated with your account and are only
-              accessible to you and to authorized staff when needed for support or abuse
-              investigations. {authorized}
+              Recordings are stored in cloud storage linked to your account. They are accessible to
+              you, and to SaveStream staff only when needed for support or abuse investigations.{" "}
+              {authorized}
             </p>
+          ),
+        },
+        {
+          h: "Service providers",
+          p: (
+            <>
+              <p>We share data only with providers that help us run SaveStream:</p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  Cloudflare — website hosting, DNS, and storage of recordings (Cloudflare R2).
+                </li>
+                <li>VNPT — server hosting for the SaveStream API and recording workers.</li>
+                <li>Brevo — delivery of account and notification emails.</li>
+                <li>
+                  Lemon Squeezy — payment processing as Merchant of Record (
+                  <ExternalLink href="https://www.lemonsqueezy.com/privacy">
+                    privacy policy
+                  </ExternalLink>
+                  ).
+                </li>
+                <li>Google Fonts — delivery of the fonts used on our website.</li>
+              </ul>
+              <p>These providers may process data in countries other than your own.</p>
+            </>
           ),
         },
         {
           h: "Retention",
           p: (
             <p>
-              Recordings are deleted automatically when your plan’s retention period ends, or sooner
-              if you delete them. Account data is deleted when you delete your account, except where
-              we must keep records by law. [Exact retention schedule — placeholder.]
+              Recordings are kept until you delete them or delete your account. When you delete your
+              account, we delete your recordings and remove your personal information from our
+              systems, except billing records we must keep for accounting, tax, or fraud prevention.
+              Security logs are kept only as long as needed for security and operations.
             </p>
           ),
         },
         {
-          h: "Your choices",
+          h: "Your choices and rights",
           p: (
             <p>
-              You can update your profile, change notification emails, export your account data, and
-              delete your account from Settings. [Regional rights (e.g. access, correction, deletion
-              requests) — to be completed by legal.]
+              You can update your profile, change notification settings, export your account data,
+              and delete your account from Settings. You can also email{" "}
+              <MailLink email={PRIVACY_EMAIL} /> to request access to, correction of, or deletion of
+              your personal information.
             </p>
           ),
         },
         {
-          h: "Service providers",
-          p: <p>[List of hosting, storage, email, and payment processors — placeholder.]</p>,
+          h: "Children",
+          p: (
+            <p>
+              SaveStream is not intended for children and we do not knowingly collect their data.
+            </p>
+          ),
         },
-        { h: "Contact", p: <p>[Privacy contact email — placeholder.]</p> },
+        {
+          h: "Changes to this policy",
+          p: (
+            <p>
+              We will update the date at the top of this page when this policy changes and notify
+              you by email about material changes.
+            </p>
+          ),
+        },
+        {
+          h: "Contact",
+          p: (
+            <p>
+              Privacy questions and requests: <MailLink email={PRIVACY_EMAIL} />.
+            </p>
+          ),
+        },
       ]}
     />
   );
@@ -3489,7 +3667,13 @@ export function AcceptableUsePage() {
   return (
     <LegalPage
       title="Acceptable Use Policy"
-      intro="SaveStream is built for creators, brands, and teams archiving livestreams they are authorized to record."
+      intro={
+        <p>
+          SaveStream is built for creators, brands, and teams archiving livestreams they are
+          authorized to record. This policy is part of our{" "}
+          <InlineLink to="/terms">Terms of Service</InlineLink>.
+        </p>
+      }
       sections={[
         {
           h: "Allowed",
@@ -3512,7 +3696,10 @@ export function AcceptableUsePage() {
                 Redistributing recordings in violation of the creator’s rights or platform terms.
               </li>
               <li>Using SaveStream to harass, surveil, or collect data about individuals.</li>
-              <li>Attempting to bypass plan limits or overload the service.</li>
+              <li>
+                Attempting to bypass usage limits, share accounts to abuse free credits, or overload
+                the service.
+              </li>
             </ul>
           ),
         },
@@ -3521,7 +3708,7 @@ export function AcceptableUsePage() {
           p: (
             <p>
               You are responsible for ensuring you own, manage, or have permission to record each
-              channel’s livestreams.
+              channel’s livestreams, and for stopping monitoring when that permission ends.
             </p>
           ),
         },
@@ -3530,7 +3717,8 @@ export function AcceptableUsePage() {
           p: (
             <p>
               We may pause monitoring, remove recordings, or suspend accounts that violate this
-              policy. [Appeals process — placeholder.]
+              policy. If you believe we made a mistake, reply to our notice or write to{" "}
+              <MailLink email={SUPPORT_EMAIL} /> and we will review your case.
             </p>
           ),
         },
@@ -3538,13 +3726,131 @@ export function AcceptableUsePage() {
           h: "Reporting",
           p: (
             <p>
-              If you believe a channel is being recorded without authorization, contact [abuse
-              contact — placeholder].
+              If you believe a channel is being recorded without authorization, email{" "}
+              <MailLink email={ABUSE_EMAIL} /> with the channel name and why you believe the
+              recording is unauthorized.
             </p>
           ),
         },
       ]}
     />
+  );
+}
+export function RefundPage() {
+  return (
+    <LegalPage
+      title="Refund Policy"
+      intro={<p>This policy explains how to request a refund for a SaveStream credit purchase.</p>}
+      sections={[
+        {
+          h: "Who processes payments",
+          p: (
+            <p>
+              Credit purchases are processed by Lemon Squeezy, which acts as our reseller and
+              Merchant of Record. Your order receipt comes from Lemon Squeezy, and the{" "}
+              <ExternalLink href="https://www.lemonsqueezy.com/buyer-terms">
+                Lemon Squeezy buyer terms
+              </ExternalLink>{" "}
+              also apply to your purchase.
+            </p>
+          ),
+        },
+        {
+          h: "How to request a refund",
+          p: (
+            <>
+              <p>
+                Email <MailLink email={SUPPORT_EMAIL} /> with:
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>the email address of your SaveStream account;</li>
+                <li>the order number from your Lemon Squeezy receipt;</li>
+                <li>the reason for your request.</li>
+              </ul>
+            </>
+          ),
+        },
+        {
+          h: "How requests are handled",
+          p: (
+            <p>
+              We review every request individually and reply by email. Refunds are not issued
+              automatically. When a refund is approved, it is issued through Lemon Squeezy to your
+              original payment method, and the credits from that purchase are removed from your
+              balance. Credits that have already been used for recordings may reduce or rule out a
+              refund.
+            </p>
+          ),
+        },
+        {
+          h: "Free trial credits",
+          p: (
+            <p>
+              Free trial credits are not a purchase and cannot be refunded or exchanged for money.
+            </p>
+          ),
+        },
+        {
+          h: "Contact",
+          p: (
+            <p>
+              Billing and refund questions: <MailLink email={SUPPORT_EMAIL} />.
+            </p>
+          ),
+        },
+      ]}
+    />
+  );
+}
+export function ContactPage() {
+  const contacts: { title: string; email: string; body: string }[] = [
+    {
+      title: "Support",
+      email: SUPPORT_EMAIL,
+      body: "Questions about your account, channels, recordings, or credits. Include your account email and, for a recording, the channel name and time.",
+    },
+    {
+      title: "Billing and refunds",
+      email: SUPPORT_EMAIL,
+      body: "Include the order number from your Lemon Squeezy receipt.",
+    },
+    {
+      title: "Privacy",
+      email: PRIVACY_EMAIL,
+      body: "Requests to access, correct, or delete your personal information.",
+    },
+    {
+      title: "Report unauthorized recording",
+      email: ABUSE_EMAIL,
+      body: "Tell us the channel name and why you believe it is being recorded without permission.",
+    },
+  ];
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
+        <h1 className="text-3xl font-semibold">Contact us</h1>
+        <p className="mt-3 text-muted-foreground">
+          Email us and we will get back to you. For answers to common questions, see{" "}
+          <Link to="/help" className="text-primary underline underline-offset-4">
+            Help
+          </Link>
+          .
+        </p>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {contacts.map((item) => (
+            <section key={item.title} className="rounded-lg border bg-surface p-5">
+              <h2 className="font-medium">{item.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</p>
+              <p className="mt-3 text-sm">
+                <MailLink email={item.email} />
+              </p>
+            </section>
+          ))}
+        </div>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }
 export function StatusPage() {
@@ -3688,42 +3994,52 @@ const demoHelpTopics: { id: string; icon: typeof Cloud; title: string; body: str
   },
 ];
 
-const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
+const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; body: ReactNode }[] = [
   {
     id: "getting-started",
     icon: Radio,
     title: "Getting started",
-    body: "Create an account, add an authorized TikTok channel, and leave monitoring enabled. The backend checks live status and starts recording according to the watch configuration.",
+    body: "Create an account, verify your email, and add a TikTok channel you own, manage, or have permission to record. SaveStream starts watching it right away.",
   },
   {
     id: "cloud-monitoring",
     icon: Cloud,
-    title: "How cloud monitoring works",
-    body: "Monitoring and recording run on SaveStream backend services. Closing this browser does not stop an active server-side recording.",
+    title: "How monitoring works",
+    body: "SaveStream checks your channels from the cloud. When one goes live, recording starts automatically, so you can close your browser or turn off your computer.",
   },
   {
-    id: "lifecycle",
+    id: "recordings",
     icon: FileVideo,
-    title: "Recording lifecycle",
-    body: "Recordings can move through queued, resolving, waiting live, recording, processing, uploading, completed, failed, stop requested, and stopped states.",
+    title: "Watching and downloading recordings",
+    body: "When a livestream ends, the recording is processed and appears in Recordings, ready to watch in the browser or download. You can also stop a recording early.",
   },
   {
     id: "credits",
     icon: Gauge,
     title: "Credits",
-    body: "Production uses backend-authoritative credits. Active recordings can reserve credits, then settle the final charge or release unused reserved credits.",
+    body: (
+      <>
+        Recording time is paid with credits, bought once and never expiring. New accounts get free
+        trial credits after verifying their email. A recording runs until the livestream ends or
+        your credits run out. See{" "}
+        <Link to="/pricing" className="text-primary underline underline-offset-4">
+          Pricing
+        </Link>{" "}
+        for packages and the current rate.
+      </>
+    ),
   },
   {
     id: "retention",
     icon: Clock3,
-    title: "Retention",
-    body: "Retention is controlled by the backend service policy. The production web app does not invent Free/Pro plan-specific retention periods.",
+    title: "How long are recordings kept?",
+    body: "Recordings stay in your account until you delete them. Deleting your account also deletes all of your recordings.",
   },
   {
     id: "troubleshooting",
     icon: AlertTriangle,
-    title: "Failed recording troubleshooting",
-    body: "Open the failed recording to review the backend error and retry availability. Retry is offered only when the backend marks the recording retryable.",
+    title: "If a recording fails",
+    body: "Open the recording to see what happened. When it can be retried, you will see a Retry button. Failed recordings do not use your credits.",
   },
   {
     id: "authorized",
@@ -3734,22 +4050,75 @@ const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; bod
 ];
 
 export function HelpPage() {
+  return isDemoMode ? <DemoHelpPage /> : <PublicHelpPage />;
+}
+
+function PublicHelpPage() {
+  const { t } = usePreferences();
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+      <main className="mx-auto max-w-5xl px-4 pb-20 pt-28 sm:px-6">
+        <h1 className="text-3xl font-semibold">{t("Help")}</h1>
+        <p className="mt-3 text-muted-foreground">
+          {t("Guidance for monitoring and recording authorized TikTok channels.")}
+        </p>
+        <div className="mt-10 grid gap-4 lg:grid-cols-2">
+          {productionHelpTopics.map((topic) => {
+            const I = topic.icon;
+            return (
+              <section
+                key={topic.id}
+                id={topic.id}
+                className="scroll-mt-24 rounded-lg border bg-surface p-5"
+              >
+                <div className="flex items-center gap-2">
+                  <I className="size-4 text-primary" />
+                  <h2 className="font-medium">{t(topic.title)}</h2>
+                </div>
+                <div className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {typeof topic.body === "string" ? t(topic.body) : topic.body}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+        <section
+          id="contact"
+          className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
+        >
+          <CircleHelp className="size-5 text-primary" />
+          <div className="flex-1">
+            <h2 className="font-medium">{t("Still need help?")}</h2>
+            <p className="text-sm text-muted-foreground">
+              Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
+            </p>
+          </div>
+          <Button variant="outline" asChild>
+            <Link to="/contact">{t("Contact support")}</Link>
+          </Button>
+        </section>
+      </main>
+      <PublicFooter />
+    </div>
+  );
+}
+
+function DemoHelpPage() {
   const { t } = usePreferences();
   const [contact, setContact] = useState(false);
   const [msg, setMsg] = useState("");
-  const helpTopics = isDemoMode ? demoHelpTopics : productionHelpTopics;
+  const helpTopics = demoHelpTopics;
   return (
     <AppShell>
       <PageHeader
         title="Help"
         subtitle="Guidance for monitoring and recording authorized TikTok channels."
         action={
-          isDemoMode ? (
-            <Button variant="outline" onClick={() => setContact(true)}>
-              <LifeBuoy />
-              {t("Contact support")}
-            </Button>
-          ) : undefined
+          <Button variant="outline" onClick={() => setContact(true)}>
+            <LifeBuoy />
+            {t("Contact support")}
+          </Button>
         }
       />
       <nav aria-label={t("Help topics")} className="mb-6 flex gap-2 overflow-x-auto pb-1">
@@ -3777,37 +4146,20 @@ export function HelpPage() {
           );
         })}
       </div>
-      {isDemoMode ? (
-        <>
-                <section
-                  id="contact"
-                  className="mt-8 scroll-mt-24 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-                >
-                  <CircleHelp className="size-5 text-primary" />
-                  <div className="flex-1">
-                    <h2 className="font-medium">{t("Still need help?")}</h2>
-                    <p className="text-sm text-muted-foreground">{t("This demo does not send support messages.")}</p>
-                  </div>
-                  <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
-                </section>
-          
-        </>
-      ) : (
-        <div className="mt-8">
-          <StateBanner
-            tone="info"
-            icon={LifeBuoy}
-            title="In-app support messaging is not connected"
-            body="The production web app does not pretend to send support requests. Service availability is also not published through a live public incident feed yet."
-          />
+      <section
+        id="contact"
+        className="mt-8 scroll-mt-24 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
+      >
+        <CircleHelp className="size-5 text-primary" />
+        <div className="flex-1">
+          <h2 className="font-medium">{t("Still need help?")}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t("This demo does not send support messages.")}
+          </p>
         </div>
-      )}
-      <p className="mt-4 text-xs text-muted-foreground">
-        <Link to="/status" className="text-primary underline underline-offset-4">
-          {t("Service issues? Check the status page.")}
-        </Link>
-      </p>
-      {isDemoMode && <Dialog open={contact} onOpenChange={setContact}>
+        <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
+      </section>
+      <Dialog open={contact} onOpenChange={setContact}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("Contact support")}</DialogTitle>
@@ -3847,14 +4199,16 @@ export function HelpPage() {
               onClick={() => {
                 setContact(false);
                 setMsg("");
-                toast.success(t("Demo function"), { description: t("This demo does not send support messages.") });
+                toast.success(t("Demo function"), {
+                  description: t("This demo does not send support messages."),
+                });
               }}
             >
               {t("Send message")}
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>}
+      </Dialog>
     </AppShell>
   );
 }

@@ -1,4 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { meta } from "@/components/app-pages";
+import { publicMeta } from "@/components/app-pages";
 import { HelpPage } from "@/components/app-pages-more";
-export const Route = createFileRoute("/help")({ head:()=>meta("Help","Learn how cloud monitoring, recording lifecycle, credits, and retention work."), component:HelpPage });
+
+export const Route = createFileRoute("/help")({
+  head: () =>
+    publicMeta(
+      "/help",
+      "Help",
+      "How SaveStream monitoring, cloud recording, credits, and downloads work.",
+    ),
+  component: HelpPage,
+});

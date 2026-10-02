@@ -96,8 +96,6 @@ const vi: Record<string, string> = {
   "Retention cleanup": "Tự động dọn theo thời hạn",
   "Completed recordings": "Bản ghi đã hoàn tất",
   "Recording Examples": "Bản ghi mẫu",
-  "See what a completed cloud recording looks like. These samples use prototype data.":
-    "Xem một bản ghi đám mây hoàn chỉnh trông như thế nào. Các mẫu này sử dụng dữ liệu mô phỏng.",
   "Start recording your own livestreams": "Bắt đầu ghi livestream của bạn",
   "Demo preview": "Bản xem thử",
   SAMPLE: "BẢN MẪU",
@@ -247,7 +245,6 @@ const vi: Record<string, string> = {
   "This link isn’t valid": "Liên kết không hợp lệ",
   "We couldn’t verify your email": "Không thể xác minh email của bạn",
   "Recording ready": "Bản ghi đã sẵn sàng",
-  "Draft — for legal review before launch": "Bản nháp — cần pháp lý duyệt trước khi ra mắt",
   "Authorized recording only": "Chỉ ghi hình khi được phép",
   "Information we collect": "Thông tin chúng tôi thu thập",
   "How we use it": "Cách chúng tôi sử dụng",
