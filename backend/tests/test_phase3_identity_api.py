@@ -71,7 +71,9 @@ def test_identity_happy_path_refresh_reuse_and_web_cookie(tmp_path) -> None:
         assert login.status_code == 200
         mobile = login.json()
         assert mobile["refresh_token"]
-        assert client.get("/v1/me", headers=_auth(mobile["access_token"])).status_code == 200
+        me = client.get("/v1/me", headers=_auth(mobile["access_token"]))
+        assert me.status_code == 200
+        assert me.json()["role"] == "user"
 
         old_refresh = mobile["refresh_token"]
         rotated = client.post(

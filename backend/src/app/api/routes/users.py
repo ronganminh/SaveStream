@@ -29,6 +29,7 @@ def _request_id(request: Request) -> str | None:
 def _user_response(user: User) -> UserResponse:
     return UserResponse(
         id=str(user.id),
+        role=user.role,
         email=user.email,
         email_verified=user.email_verified_at is not None,
         display_name=user.display_name,

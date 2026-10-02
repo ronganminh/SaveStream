@@ -139,6 +139,8 @@ import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/lib/plan-catalog";
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 import { isDemoMode } from "@/lib/app-config";
+import { authApi, authErrorMessage } from "@/api/auth";
+import { useAuth } from "@/auth/auth-context";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import { useChannelsData, useRecordingsData, useUsageData } from "@/hooks/use-domain-data";
 
@@ -590,9 +592,16 @@ export function LandingPage() {
   );
 }
 
-export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "reset" }) {
+export function AuthPage({
+  mode,
+  token = "",
+}: {
+  mode: "sign-in" | "sign-up" | "forgot" | "reset";
+  token?: string;
+}) {
   const { t } = usePreferences();
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -614,7 +623,7 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
     ],
     reset: ["Choose a new password", "Use at least 8 characters.", "Reset password"],
   }[mode];
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
     if (mode !== "reset" && !/^\S+@\S+\.\S+$/.test(email)) {
@@ -633,13 +642,49 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
       setErr("Passwords don’t match.");
       return;
     }
+    if (mode === "reset" && !token) {
+      setErr("This password reset link is missing or invalid.");
+      return;
+    }
+
     setBusy(true);
-    setTimeout(() => {
+
+    if (isDemoMode) {
+      setTimeout(() => {
+        setBusy(false);
+        if (mode === "sign-in") void navigate({ to: "/overview" });
+        else if (mode === "sign-up") void navigate({ to: "/verify-email" });
+        else setDone(true);
+      }, 700);
+      return;
+    }
+
+    try {
+      if (mode === "sign-in") {
+        await signIn(email, pw);
+        await navigate({ to: "/overview" });
+      } else if (mode === "sign-up") {
+        await authApi.register({
+          email,
+          password: pw,
+          display_name: name.trim() || null,
+        });
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("savestream:pending-verification-email", email);
+        }
+        await navigate({ to: "/verify-email" });
+      } else if (mode === "forgot") {
+        await authApi.forgotPassword(email);
+        setDone(true);
+      } else {
+        await authApi.resetPassword(token, pw);
+        setDone(true);
+      }
+    } catch (error) {
+      setErr(authErrorMessage(error));
+    } finally {
       setBusy(false);
-      if (mode === "sign-in") navigate({ to: "/overview" });
-      else if (mode === "sign-up") navigate({ to: "/verify-email" });
-      else setDone(true);
-    }, 700);
+    }
   };
   if (done && mode === "forgot")
     return (
@@ -656,7 +701,16 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
           <Button
             variant="outline"
             className="w-full"
-            onClick={() => toast.success("Reset link sent again")}
+            onClick={() => {
+              if (isDemoMode) {
+                toast.success("Reset link sent again");
+                return;
+              }
+              void authApi
+                .forgotPassword(email)
+                .then(() => toast.success("Reset link sent again"))
+                .catch((error) => toast.error(authErrorMessage(error)));
+            }}
           >
             Resend link
           </Button>
@@ -664,12 +718,14 @@ export function AuthPage({ mode }: { mode: "sign-in" | "sign-up" | "forgot" | "r
             <Link to="/sign-in">{t("Back to sign in")}</Link>
           </Button>
         </div>
-        <p className="mt-6 text-xs text-muted-foreground">
-          Prototype:{" "}
-          <Link to="/reset-password" className="text-primary underline underline-offset-4">
-            open the reset link
-          </Link>
-        </p>
+        {isDemoMode && (
+          <p className="mt-6 text-xs text-muted-foreground">
+            Prototype:{" "}
+            <Link to="/reset-password" className="text-primary underline underline-offset-4">
+              open the reset link
+            </Link>
+          </p>
+        )}
       </AuthLayout>
     );
   if (done && mode === "reset")
