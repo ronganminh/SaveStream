@@ -2648,6 +2648,134 @@ function LegacyUsagePage() {
   );
 }
 export function BillingPage() {
+  return isDemoMode ? <LegacyBillingPage /> : <CreditBillingPage />;
+}
+
+function CreditBillingPage() {
+  const { language } = usePreferences();
+  const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
+  const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
+
+  if (balanceState.kind === "loading" || !balanceQuery.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Billing" subtitle="Loading credit account…" />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (balanceState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Billing" />
+        <ErrorState
+          title="Could not load billing balance"
+          body="SaveStream could not load the current credit account."
+          onRetry={() => balanceQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const balance = balanceQuery.data;
+  const packages = packagesQuery.data?.items ?? [];
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="Billing"
+        subtitle="Credit packages available for your SaveStream account."
+        action={
+          <Button variant="outline" asChild>
+            <Link to="/usage">View credits & usage</Link>
+          </Button>
+        }
+      />
+
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
+        <StatCard
+          label="Available credits"
+          value={String(balance.available)}
+          detail="Available for new recordings"
+          icon={Zap}
+        />
+        <StatCard
+          label="Posted balance"
+          value={String(balance.posted)}
+          detail="Backend ledger balance"
+          icon={CreditCard}
+        />
+        <StatCard
+          label="Reserved"
+          value={String(balance.reserved)}
+          detail="Held by active recordings"
+          icon={Clock3}
+        />
+      </div>
+
+      <section className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">Credit packages</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            These packages come from the billing backend. Secure checkout is wired separately.
+          </p>
+        </div>
+
+        {packagesState.kind === "error" ? (
+          <StateBanner
+            tone="warning"
+            title="Packages unavailable"
+            body="SaveStream could not load the current credit packages."
+            action={
+              <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : packages.length ? (
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {packages.map((item) => (
+              <div key={item.id} className="rounded-lg border bg-surface p-6">
+                <p className="text-lg font-semibold">{item.name}</p>
+                <p className="mt-3 font-mono text-3xl font-semibold">
+                  {formatCreditMoney(item, language)}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {item.credits} credits
+                </p>
+                <Button className="mt-6 w-full" disabled>
+                  Checkout not yet enabled
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : packagesState.kind === "empty" ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No active packages"
+            body="The billing backend does not currently expose a package for purchase."
+          />
+        ) : (
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
+            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
+          </div>
+        )}
+      </section>
+
+      <div className="mt-8">
+        <StateBanner
+          tone="info"
+          title="Credit purchases use payment orders and secure checkout"
+          body="This phase only replaces the old subscription mock with backend-authoritative balances and package data. Purchase execution is handled by the billing checkout flow."
+        />
+      </div>
+    </AppShell>
+  );
+}
+
+function LegacyBillingPage() {
   const { t, language } = usePreferences();
   const navigate = useNavigate();
   const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
