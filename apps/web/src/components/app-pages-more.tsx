@@ -916,8 +916,8 @@ function ProductionSecuritySettings() {
       </Section>
 
       <Section
-        title="Active sessions"
-        body={`Signed in on ${sessions.length} session${sessions.length === 1 ? "" : "s"}.`}
+        title="Sessions"
+        body={`SaveStream returned ${sessions.length} session${sessions.length === 1 ? "" : "s"}. The current device is marked below.`}
       >
         {sessionsState.kind === "error" ? (
           <ErrorState
@@ -969,7 +969,7 @@ function ProductionSecuritySettings() {
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No active sessions were returned.</p>
+          <p className="text-sm text-muted-foreground">No sessions were returned.</p>
         )}
 
         <Button
