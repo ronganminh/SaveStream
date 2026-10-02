@@ -4,7 +4,9 @@ import pytest
 
 from app.application.billing.service import _validate_checkout_return_url
 from app.domain.common.errors import ApplicationError
+from app.release.readiness import ReleaseManifest, validate_release
 from app.settings import AppSettings
+from config import Settings as RuntimeSettings
 
 
 def _production_env(monkeypatch) -> None:
@@ -112,3 +114,111 @@ def test_checkout_return_url_rejects_credentials_and_fragments() -> None:
             settings,
             "https://savestream.online/billing/success#token",
         )
+
+
+def test_release_validator_accepts_canonical_production_manifest() -> None:
+    settings = AppSettings(
+        environment="production",
+        database_url="postgresql+asyncpg://user:password@db:5432/savestream",
+        redis_url="redis://redis:6379/0",
+        celery_broker_url="redis://redis:6379/1",
+        celery_result_backend="redis://redis:6379/2",
+        minio_endpoint="https://account.r2.cloudflarestorage.com",
+        minio_access_key="production-r2-access",
+        minio_secret_key="production-r2-secret",
+        minio_bucket="savestream-recordings",
+        minio_secure=True,
+        frontend_base_url="https://savestream.online",
+        cors_allow_origins=(
+            "https://savestream.online",
+            "https://www.savestream.online",
+        ),
+        smtp_host="smtp-relay.brevo.com",
+        smtp_username="smtp-login",
+        smtp_password="smtp-key",
+        smtp_starttls=True,
+        payment_provider="lemonsqueezy",
+        payment_provider_base_url="https://api.lemonsqueezy.com/v1",
+        payment_provider_api_key="live-api-key",
+        payment_webhook_secret="live-webhook-secret",
+        lemon_squeezy_store_id="123",
+        lemon_squeezy_variant_id="456",
+        metrics_token="metrics-token",
+        ops_alert_email="ops@savestream.online",
+        trusted_proxy_cidrs=("172.16.0.0/12",),
+        force_https=True,
+        security_headers_enabled=True,
+        recording_source_backend="tiktok",
+    )
+    runtime = RuntimeSettings(
+        environment="production",
+        log_level=20,
+        log_format="json",
+        http_timeout_seconds=15.0,
+        http_stream_timeout_seconds=30.0,
+        proxy_check_timeout_seconds=10.0,
+        update_timeout_seconds=15.0,
+        cookies_file=None,
+        telegram_config_file=None,
+    )
+    manifest = ReleaseManifest(
+        api_origin="https://api.savestream.online",
+        frontend_origin="https://savestream.online",
+        payment_webhook_url=(
+            "https://api.savestream.online"
+            "/v1/webhooks/payments/lemonsqueezy"
+        ),
+    )
+    assert validate_release(settings, runtime, manifest) == []
+
+
+def test_release_validator_rejects_insecure_storage_and_missing_alerts() -> None:
+    settings = AppSettings(
+        environment="production",
+        database_url="sqlite+aiosqlite:///:memory:",
+        redis_url="redis://localhost:6379/0",
+        celery_broker_url="memory://",
+        celery_result_backend="cache+memory://",
+        minio_endpoint="http://storage:9000",
+        minio_access_key="savestream",
+        minio_secret_key="savestream-local-only",
+        frontend_base_url="https://savestream.online",
+        cors_allow_origins=("https://savestream.online",),
+        smtp_host="smtp-relay.brevo.com",
+        smtp_starttls=True,
+        payment_provider="lemonsqueezy",
+        payment_provider_base_url="https://api.lemonsqueezy.com/v1",
+        lemon_squeezy_store_id="123",
+        lemon_squeezy_variant_id="456",
+        trusted_proxy_cidrs=("172.16.0.0/12",),
+        force_https=True,
+        security_headers_enabled=True,
+        recording_source_backend="tiktok",
+    )
+    runtime = RuntimeSettings(
+        environment="production",
+        log_level=20,
+        log_format="json",
+        http_timeout_seconds=15.0,
+        http_stream_timeout_seconds=30.0,
+        proxy_check_timeout_seconds=10.0,
+        update_timeout_seconds=15.0,
+        cookies_file=None,
+        telegram_config_file=None,
+    )
+    errors = validate_release(
+        settings,
+        runtime,
+        ReleaseManifest(
+            api_origin="https://api.savestream.online",
+            frontend_origin="https://savestream.online",
+            payment_webhook_url=(
+                "https://api.savestream.online"
+                "/v1/webhooks/payments/lemonsqueezy"
+            ),
+        ),
+    )
+    assert "Production S3/MinIO transport must use TLS" in errors
+    assert "Production storage access key must not use the local default" in errors
+    assert "Production storage secret must not use the local default" in errors
+    assert "SAVESTREAM_OPS_ALERT_EMAIL must be configured" in errors
