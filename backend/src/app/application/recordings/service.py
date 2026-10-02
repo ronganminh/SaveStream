@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.credits.service import CreditService
+from app.application.notifications.service import ensure_recording_notification
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
@@ -109,6 +110,7 @@ async def append_event(
     )
     session.add(event)
     await session.flush()
+    await ensure_recording_notification(session, recording, event_type)
     return event
 
 
