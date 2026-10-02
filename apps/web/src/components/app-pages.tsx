@@ -132,7 +132,7 @@ import {
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
-import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/lib/plan-catalog";
+import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate } from "@/lib/formatters";
 import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
