@@ -11,6 +11,29 @@ import {
 export type Language = "en" | "vi";
 export type ThemePreference = "light" | "dark" | "system";
 
+const LANGUAGE_STORAGE_KEY = "savestream:ui:language";
+const THEME_STORAGE_KEY = "savestream:ui:theme";
+const LEGACY_LANGUAGE_STORAGE_KEY = "savestream-language";
+const LEGACY_THEME_STORAGE_KEY = "savestream-theme";
+
+function readUiPreference(primaryKey: string, legacyKey: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(primaryKey) ?? window.localStorage.getItem(legacyKey);
+  } catch {
+    return null;
+  }
+}
+
+function writeUiPreference(primaryKey: string, legacyKey: string, value: string) {
+  try {
+    window.localStorage.setItem(primaryKey, value);
+    window.localStorage.removeItem(legacyKey);
+  } catch {
+    // UI preferences are best-effort and must never block application state.
+  }
+}
+
 const vi: Record<string, string> = {
   Features: "Tính năng",
   "How it works": "Cách hoạt động",
@@ -541,14 +564,14 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
   const [theme, setThemeState] = useState<ThemePreference>("system");
   useEffect(() => {
-    const savedLanguage = localStorage.getItem("savestream-language");
+    const savedLanguage = readUiPreference(LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY);
     const nextLanguage: Language =
       savedLanguage === "vi" || savedLanguage === "en"
         ? savedLanguage
         : navigator.language.toLowerCase().startsWith("vi")
           ? "vi"
           : "en";
-    const savedTheme = localStorage.getItem("savestream-theme");
+    const savedTheme = readUiPreference(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY);
     const nextTheme: ThemePreference =
       savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
         ? savedTheme
@@ -578,12 +601,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     () => ({
       language,
       setLanguage: (next) => {
-        localStorage.setItem("savestream-language", next);
+        writeUiPreference(LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY, next);
         setLanguageState(next);
       },
       theme,
       setTheme: (next) => {
-        localStorage.setItem("savestream-theme", next);
+        writeUiPreference(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY, next);
         setThemeState(next);
       },
       t,
@@ -599,5 +622,5 @@ export function usePreferences() {
   return value;
 }
 
-export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;
-export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream-language');if(l!=='en'&&l!=='vi')l=(navigator.language||'').toLowerCase().indexOf('vi')===0?'vi':'en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;
+export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream:ui:theme')||localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;
+export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream:ui:language')||localStorage.getItem('savestream-language');if(l!=='en'&&l!=='vi')l=(navigator.language||'').toLowerCase().indexOf('vi')===0?'vi':'en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;
