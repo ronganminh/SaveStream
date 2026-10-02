@@ -15,6 +15,8 @@ export const domainQueryKeys = {
   creditReservations: ["credits", "reservations"] as const,
   pricing: ["pricing"] as const,
   creditPackages: ["billing", "packages"] as const,
+  paymentOrders: ["billing", "payment-orders"] as const,
+  paymentOrder: (id: string) => ["billing", "payment-orders", id] as const,
   usage: ["usage", "current"] as const,
 };
 
@@ -143,6 +145,28 @@ export function useCreditPackagesData(enabled = true) {
     enabled,
   });
   return { query, state: toResourceState(query, (data) => data.items.length === 0) };
+}
+
+export function usePaymentOrdersData(enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.paymentOrders,
+    queryFn: () => repositories.billing.listPaymentOrders({ limit: 20 }),
+    enabled,
+  });
+  return { query, state: toResourceState(query, (data) => data.items.length === 0) };
+}
+
+export function usePaymentOrderData(id: string | null | undefined, enabled = true) {
+  const query = useQuery({
+    queryKey: domainQueryKeys.paymentOrder(id ?? "missing"),
+    queryFn: () => repositories.billing.getPaymentOrder(id ?? ""),
+    enabled: Boolean(id) && enabled,
+    refetchInterval: (current) => {
+      const status = current.state.data?.status;
+      return status === "created" || status === "pending" ? 2500 : false;
+    },
+  });
+  return { query, state: toResourceState(query) };
 }
 
 export function useUsageData() {
