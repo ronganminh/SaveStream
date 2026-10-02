@@ -108,7 +108,7 @@ export type NotificationType =
 
 export type NotificationLink =
   | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
-  | { to: "/usage" };
+  | { to: "/usage" }\n  | { to: "/notifications" };
 
 export type NotificationModel = {
   id: string;
@@ -119,6 +119,14 @@ export type NotificationModel = {
   status: Status;
   read: boolean;
   link: NotificationLink;
+};
+
+export type NotificationPreferenceModel = {
+  recording_started: boolean;
+  recording_ready: boolean;
+  recording_failed: boolean;
+  email_supported: false;
+  updated_at: string | null;
 };
 
 export type PageOptions = {
@@ -239,6 +247,13 @@ export interface NotificationRepository {
   list(): Promise<NotificationModel[]>;
   markRead(id: string): Promise<void>;
   markAllRead(): Promise<void>;
+  getPreferences(): Promise<NotificationPreferenceModel>;
+  updatePreferences(
+    input: Pick<
+      NotificationPreferenceModel,
+      "recording_started" | "recording_ready" | "recording_failed"
+    >,
+  ): Promise<NotificationPreferenceModel>;
 }
 
 export interface SaveStreamRepositories {
