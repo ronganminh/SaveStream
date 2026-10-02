@@ -6,9 +6,42 @@ export const appMode: AppMode = requestedMode === "production" ? "production" : 
 export const isDemoMode = appMode === "demo";
 export const isProductionMode = appMode === "production";
 
+function resolveApiBaseUrl(value: string | undefined): string {
+  const candidate = value?.trim() ?? "";
+  if (!candidate) {
+    if (isProductionMode) {
+      throw new Error("VITE_API_BASE_URL is required when VITE_APP_MODE=production.");
+    }
+    return "";
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    throw new Error("VITE_API_BASE_URL must be an absolute http(s) URL.");
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error("VITE_API_BASE_URL must use http or https.");
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error("VITE_API_BASE_URL must not contain credentials.");
+  }
+  if (parsed.search || parsed.hash) {
+    throw new Error("VITE_API_BASE_URL must not contain a query string or fragment.");
+  }
+
+  return parsed.toString().replace(/\/$/, "");
+}
+
+export const apiBaseUrl = resolveApiBaseUrl(import.meta.env["VITE_API_BASE_URL"]);
+export const apiConfigured = apiBaseUrl.length > 0;
+export const productionBackendConnected = isProductionMode && apiConfigured;
+
 /**
- * Frontend-only access contract. A real auth provider can replace this context
- * later without changing route visibility rules or presentation components.
+ * Frontend-only access contract. Phase 1 replaces this with real auth/session
+ * state without changing route visibility rules or presentation components.
  */
 export type FrontendIdentity = {
   authenticated: boolean;
@@ -55,5 +88,3 @@ export function getFrontendIdentity(): FrontendIdentity {
   if (isDemoMode) return { authenticated: true, role: "admin" };
   return { authenticated: false, role: "guest" };
 }
-
-export const productionBackendConnected = false;
