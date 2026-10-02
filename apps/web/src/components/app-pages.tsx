@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  useEffect,
   useState,
   type ComponentProps,
   type ElementType,
@@ -98,8 +99,6 @@ import {
   subscription,
   usage,
   user,
-  type Channel,
-  type ChannelStatus,
 } from "@/mocks/fixtures";
 import {
   ActiveRecordingCard,
@@ -142,7 +141,29 @@ import { isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
-import { useChannelsData, useRecordingsData, useUsageData } from "@/hooks/use-domain-data";
+import {
+  useChannelData,
+  useChannelsData,
+  useRecordingsData,
+  useUsageData,
+} from "@/hooks/use-domain-data";
+import {
+  channelActionErrorMessage,
+  existingWatchId,
+  useCreateChannelMutation,
+  useDeleteChannelMutation,
+  usePauseChannelMutation,
+  useResumeChannelMutation,
+} from "@/hooks/use-channel-mutations";
+import type {
+  ChannelModel,
+  ChannelStatus,
+  RecordingModel,
+} from "@/repositories";
+import {
+  displayNameFromTikTokUsername,
+  parseTikTokSource,
+} from "@/lib/tiktok-source";
 
 export { meta, publicMeta } from "@/components/app-components";
 
@@ -881,20 +902,36 @@ function Field({ label, id, ...props }: { label: string } & ComponentProps<typeo
 }
 export function OnboardingPage() {
   const { t } = usePreferences();
+  const createChannel = useCreateChannelMutation();
   const [step, setStep] = useState(1);
   const [username, setUsername] = useState("");
-  const [resolving, setResolving] = useState(false);
-  const onboardingChannel = channels[1] ?? channels[0];
-  const valid = /^@?[A-Za-z0-9._]{2,24}$/.test(username.trim());
-  if (!onboardingChannel) return null;
-  const addChannel = () => {
-    if (!valid) return;
-    setResolving(true);
-    setTimeout(() => {
-      setResolving(false);
+  const [createdHandle, setCreatedHandle] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const parsed = parseTikTokSource(username);
+  const valid = Boolean(parsed);
+  const displayName = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
+
+  const addChannel = async () => {
+    if (!parsed || createChannel.isPending) return;
+    setError(null);
+    try {
+      await createChannel.mutateAsync({
+        source: parsed.source,
+        auto_record: true,
+      });
+      setCreatedHandle(parsed.handle);
       setStep(3);
-    }, 700);
+    } catch (createError) {
+      const duplicateId = existingWatchId(createError);
+      if (duplicateId) {
+        setCreatedHandle(parsed.handle);
+        setStep(3);
+        return;
+      }
+      setError(channelActionErrorMessage(createError));
+    }
   };
+
   return (
     <div className="min-h-screen bg-surface-subtle">
       <header className="border-b bg-background p-5">
@@ -904,10 +941,13 @@ export function OnboardingPage() {
       </header>
       <main className="mx-auto max-w-2xl px-4 py-12">
         <div className="mb-8 flex items-center gap-2">
-          {[1, 2, 3].map((n) => (
+          {[1, 2, 3].map((number) => (
             <span
-              key={n}
-              className={cn("h-1 flex-1 rounded-full", n <= step ? "bg-primary" : "bg-border")}
+              key={number}
+              className={cn(
+                "h-1 flex-1 rounded-full",
+                number <= step ? "bg-primary" : "bg-border",
+              )}
             />
           ))}
         </div>
@@ -950,7 +990,10 @@ export function OnboardingPage() {
                   label="TikTok username or URL"
                   placeholder="@mikefitness"
                   value={username}
-                  onChange={(event) => setUsername(event.target.value)}
+                  onChange={(event) => {
+                    setUsername(event.target.value);
+                    setError(null);
+                  }}
                   aria-invalid={Boolean(username) && !valid}
                 />
                 {username && !valid && (
@@ -958,23 +1001,37 @@ export function OnboardingPage() {
                     {t("Enter a valid TikTok username.")}
                   </p>
                 )}
-                {valid && (
+                {parsed && (
                   <div className="mt-4 flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
-                    <CreatorAvatar channel={onboardingChannel} />
+                    <div className="grid size-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                      {displayName
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </div>
                     <div>
-                      <p className="text-sm font-medium">Mike Fitness</p>
-                      <p className="text-xs text-muted-foreground">@mikefitness</p>
+                      <p className="text-sm font-medium">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{parsed.handle}</p>
                     </div>
                     <CheckCircle2 className="ml-auto size-4 text-success" />
                   </div>
                 )}
+                {error && (
+                  <p role="alert" className="mt-3 text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
               </div>
               <div className="mt-6 flex justify-end">
-                <Button disabled={!valid || resolving} onClick={addChannel}>
-                  {resolving ? (
+                <Button
+                  disabled={!valid || createChannel.isPending}
+                  onClick={() => void addChannel()}
+                >
+                  {createChannel.isPending ? (
                     <>
                       <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      Resolving creator…
+                      Adding channel…
                     </>
                   ) : (
                     <>
@@ -989,12 +1046,19 @@ export function OnboardingPage() {
           {step === 3 && (
             <>
               <div className="flex items-center gap-4">
-                <CreatorAvatar channel={onboardingChannel} size="lg" />
-                <div>
-                  <h1 className="text-xl font-semibold">Mike Fitness</h1>
-                  <p className="text-sm text-muted-foreground">@mikefitness</p>
+                <div className="grid size-12 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                  {(createdHandle ?? "@ss")
+                    .replace(/^@/, "")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </div>
-                <Switch className="ml-auto" checked />
+                <div>
+                  <h1 className="text-xl font-semibold">
+                    {displayNameFromTikTokUsername(createdHandle ?? "channel")}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">{createdHandle}</p>
+                </div>
+                <Switch className="ml-auto" checked disabled />
               </div>
               <div className="mt-8 rounded-lg border bg-success-subtle p-5">
                 <div className="flex items-center gap-2 font-medium text-success">
@@ -1002,13 +1066,13 @@ export function OnboardingPage() {
                   Monitoring on
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  You’re all set. We’ll automatically start recording the next time this channel
-                  goes live.
+                  You’re all set. SaveStream will monitor this channel and automatically start
+                  recording according to its watch settings.
                 </p>
               </div>
               <Button className="mt-8" asChild>
-                <Link to="/overview">
-                  Go to dashboard
+                <Link to="/channels">
+                  View channels
                   <ArrowRight />
                 </Link>
               </Button>
@@ -1019,7 +1083,6 @@ export function OnboardingPage() {
     </div>
   );
 }
-
 export function OverviewPage({ empty = false }: { empty?: boolean }) {
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
@@ -1200,8 +1263,33 @@ export function ChannelsPage() {
 }
 export function ChannelDetailPage() {
   const { id } = useParams({ strict: false }) as { id?: string };
-  const channel = channels.find((c) => c.id === id);
-  if (!channel)
+  const { query: channelQuery, state: channelState } = useChannelData(id);
+  const { query: recordingsQuery } = useRecordingsData();
+
+  if (channelState.kind === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" subtitle="Loading channel…" />
+        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+      </AppShell>
+    );
+  }
+
+  if (channelState.kind === "error") {
+    return (
+      <AppShell>
+        <PageHeader title="Channel" />
+        <ErrorState
+          title="Could not load channel"
+          body="SaveStream could not load this monitored channel."
+          onRetry={() => channelQuery.refetch()}
+        />
+      </AppShell>
+    );
+  }
+
+  const channel = channelQuery.data;
+  if (!channel) {
     return (
       <AppShell>
         <PageHeader title="Channel not found" />
@@ -1217,7 +1305,20 @@ export function ChannelDetailPage() {
         />
       </AppShell>
     );
-  return <ChannelDetail key={channel.id} channel={channel} />;
+  }
+
+  const history = (recordingsQuery.data ?? []).filter(
+    (recording) => recording.channelId === channel.id,
+  );
+
+  return (
+    <ChannelDetail
+      key={channel.id}
+      channel={channel}
+      history={history}
+      onRefresh={() => channelQuery.refetch()}
+    />
+  );
 }
 export function RecordingsPage() {
   const { t } = usePreferences();
@@ -2366,19 +2467,54 @@ const channelStates = [
   { value: "Paused", label: "Paused" },
   { value: "Error", label: "Error" },
 ] as const;
-function ChannelDetail({ channel }: { channel: Channel }) {
+function ChannelDetail({
+  channel,
+  history,
+  onRefresh,
+}: {
+  channel: ChannelModel;
+  history: RecordingModel[];
+  onRefresh: () => Promise<unknown>;
+}) {
   const { t } = usePreferences();
   const navigate = useNavigate();
-  const [state, setState] = useState<ChannelStatus>(channel.status);
+  const pauseChannel = usePauseChannelMutation();
+  const resumeChannel = useResumeChannelMutation();
+  const deleteChannel = useDeleteChannelMutation();
+  const [previewState, setPreviewState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
-  const monitoring = state !== "Paused";
-  const history = recordings.filter((r) => r.channelId === channel.id);
-  const toggle = (v: boolean) => {
-    if (v) {
-      setState("Waiting");
+  const state = isDemoMode ? previewState : channel.status;
+  const monitoring = isDemoMode
+    ? state !== "Paused"
+    : channel.backendStatus === "active";
+  const pending =
+    pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+
+  useEffect(() => {
+    setPreviewState(channel.status);
+  }, [channel.status]);
+
+  const resume = async () => {
+    try {
+      await resumeChannel.mutateAsync(channel.id);
+      if (isDemoMode) setPreviewState("Waiting");
       toast.success(`Monitoring resumed for ${channel.handle}`);
-    } else setDialog("pause");
+    } catch (error) {
+      toast.error("Could not resume monitoring", {
+        description: channelActionErrorMessage(error),
+      });
+    }
   };
+
+  const toggle = (value: boolean) => {
+    if (pending) return;
+    if (value) {
+      void resume();
+    } else {
+      setDialog("pause");
+    }
+  };
+
   const card = {
     Recording: (
       <>
@@ -2387,11 +2523,12 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           <StatusBadge status="Recording" />
         </div>
         <p className="mt-6 text-sm font-medium text-recording">Recording now</p>
-        <p className="mt-1 font-mono text-3xl font-semibold">01:42:18</p>
-        <p className="mt-1 text-sm text-muted-foreground">Started today at 13:22 · checked now</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          SaveStream is recording this livestream on the server.
+        </p>
         <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
           <Cloud className="size-4 text-success" />
-          Recording runs on our servers. You can safely close this page.
+          You can safely close this page.
         </p>
         <Button className="mt-5" asChild>
           <Link to="/recordings/active">View active recording</Link>
@@ -2428,7 +2565,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </div>
         <p className="mt-6 font-medium">Channel is offline</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Monitoring is on. We check live status continuously and record the next livestream.
+          Monitoring is on. SaveStream will check again automatically.
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -2453,7 +2590,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           Future livestreams from {channel.handle} will not be recorded until you resume monitoring.
           Existing recordings are not affected.
         </p>
-        <Button className="mt-5" onClick={() => toggle(true)}>
+        <Button className="mt-5" disabled={pending} onClick={() => void resume()}>
           <Radio />
           Resume monitoring
         </Button>
@@ -2467,25 +2604,23 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </div>
         <p className="mt-6 font-medium">We couldn’t check live status</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          TikTok didn’t respond to our last 3 checks. We’re retrying automatically every 60 seconds
-          — no action needed.
-        </p>
-        <p className="mt-3 font-mono text-xs text-muted-foreground">
-          LIVE_CHECK_FAILED · last attempt 12s ago
+          The most recent watch check failed. SaveStream will retry according to the backend
+          scheduler.
         </p>
         <Button
           className="mt-5"
           variant="outline"
           onClick={() => {
-            toast("Checking live status…");
-            setTimeout(() => setState("Waiting"), 900);
+            toast("Refreshing channel status…");
+            void onRefresh();
           }}
         >
-          Check now
+          Refresh status
         </Button>
       </>
     ),
   }[state];
+
   return (
     <AppShell>
       <Link
@@ -2495,12 +2630,14 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         <ArrowLeft className="size-4" />
         Channels
       </Link>
-      <PrototypeStateBar
-        label="Preview channel state"
-        value={state}
-        options={channelStates}
-        onChange={setState}
-      />
+      {isDemoMode && (
+        <PrototypeStateBar
+          label="Preview channel state"
+          value={previewState}
+          options={channelStates}
+          onChange={setPreviewState}
+        />
+      )}
       <div className="mb-6 flex flex-col gap-4 border-y bg-surface px-5 py-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-4">
           <CreatorAvatar channel={channel} size="lg" />
@@ -2514,7 +2651,12 @@ function ChannelDetail({ channel }: { channel: Channel }) {
         </div>
         <div className="flex items-center gap-3 text-sm sm:ml-auto">
           <label htmlFor="detail-monitoring">{t("Monitoring")}</label>
-          <Switch id="detail-monitoring" checked={monitoring} onCheckedChange={toggle} />
+          <Switch
+            id="detail-monitoring"
+            checked={monitoring}
+            disabled={pending}
+            onCheckedChange={toggle}
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="More channel actions">
@@ -2536,7 +2678,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
                   Pause monitoring
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onSelect={() => toggle(true)}>
+                <DropdownMenuItem onSelect={() => void resume()}>
                   <Radio />
                   Resume monitoring
                 </DropdownMenuItem>
@@ -2575,7 +2717,7 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           />
           <StatCard
             label="Last livestream"
-            value={state === "Recording" ? "Now" : channel.live.split(",")[0]!}
+            value={state === "Recording" ? "Now" : channel.live.split(",")[0] ?? "—"}
             detail={state === "Recording" ? "Currently recording" : channel.live}
             icon={Radio}
           />
@@ -2593,13 +2735,13 @@ function ChannelDetail({ channel }: { channel: Channel }) {
           <>
             <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
               <RecordingHeader />
-              {history.map((r) => (
-                <RecordingRow key={r.id} recording={r} />
+              {history.map((recording) => (
+                <RecordingRow key={recording.id} recording={recording} />
               ))}
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
-              {history.map((r) => (
-                <RecordingCard key={r.id} recording={r} />
+              {history.map((recording) => (
+                <RecordingCard key={recording.id} recording={recording} />
               ))}
             </div>
           </>
@@ -2612,27 +2754,47 @@ function ChannelDetail({ channel }: { channel: Channel }) {
       </section>
       <ConfirmDialog
         open={dialog === "pause"}
-        onOpenChange={(o) => !o && setDialog(null)}
+        onOpenChange={(open) => !open && setDialog(null)}
         title="Pause monitoring?"
         body={`Future livestreams from ${channel.handle} won’t be recorded until you resume monitoring. Existing recordings aren’t affected.`}
         confirmLabel="Pause monitoring"
+        confirmDisabled={pending}
         onConfirm={() => {
-          setState("Paused");
-          setDialog(null);
-          toast(`Monitoring paused for ${channel.handle}`);
+          void pauseChannel
+            .mutateAsync(channel.id)
+            .then(() => {
+              if (isDemoMode) setPreviewState("Paused");
+              setDialog(null);
+              toast(`Monitoring paused for ${channel.handle}`);
+            })
+            .catch((error) => {
+              toast.error("Could not pause monitoring", {
+                description: channelActionErrorMessage(error),
+              });
+            });
         }}
       />
       <ConfirmDialog
         destructive
         open={dialog === "remove"}
-        onOpenChange={(o) => !o && setDialog(null)}
+        onOpenChange={(open) => !open && setDialog(null)}
         title="Remove channel?"
         body={`We’ll stop monitoring ${channel.handle}. Existing recordings stay in your library until you delete them or they expire.`}
         confirmLabel="Remove channel"
+        confirmDisabled={pending}
         onConfirm={() => {
-          setDialog(null);
-          toast.success(`${channel.handle} removed`);
-          navigate({ to: "/channels" });
+          void deleteChannel
+            .mutateAsync(channel.id)
+            .then(() => {
+              setDialog(null);
+              toast.success(`${channel.handle} removed`);
+              void navigate({ to: "/channels" });
+            })
+            .catch((error) => {
+              toast.error("Could not remove channel", {
+                description: channelActionErrorMessage(error),
+              });
+            });
         }}
       />
     </AppShell>
