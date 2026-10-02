@@ -32,8 +32,8 @@ const forbidIn = (label, source, text) => {
   '"/v1/admin/recordings"',
   '"/v1/admin/audit"',
   '"/v1/admin/operations/snapshot"',
-  '"/v1/admin/recordings/"',
-  '"/retry"',
+  "/v1/admin/recordings/",
+  "/retry",
 ].forEach((text) => must("src/repositories/api.ts", text));
 
 [
