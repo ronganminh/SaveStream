@@ -112,7 +112,7 @@ forbidIn("NotificationsPage", page, 'subtitle="Recording activity, failures, and
 const topbar = block(
   "src/components/app-components.tsx",
   "export function AppTopbar",
-  "export function LanguageMenu",
+  "export function CommandSearch",
 );
 mustIn("AppTopbar", topbar, "Session only");
 
