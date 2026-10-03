@@ -22,14 +22,16 @@ import '../../features/onboarding/presentation/onboarding_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
+import '../../features/settings/presentation/legal_link_screen.dart';
+import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
-import '../../features/settings/presentation/settings_info_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
 import '../session/app_session_controller.dart';
 import '../shell/main_shell.dart';
+import '../splash/splash_screen.dart';
 import 'app_routes.dart';
 
 GoRouter createAppRouter({
@@ -74,10 +76,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.splash,
         builder: (BuildContext context, GoRouterState state) {
-          return SsRoutePlaceholder(
-            title: context.l10n.appTitle,
-            message: context.l10n.loadingLabel,
-          );
+          return const SplashScreen();
         },
       ),
       GoRoute(
@@ -162,7 +161,9 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.billing,
         builder: (BuildContext context, GoRouterState state) {
-          return const BillingScreen();
+          return BillingScreen(
+            externalCheckoutEnabled: config.externalCheckoutEnabled,
+          );
         },
         routes: <RouteBase>[
           GoRoute(
@@ -259,7 +260,11 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (BuildContext context, GoRouterState state) {
-                  return SettingsScreen(settings: settings, session: session);
+                  return SettingsScreen(
+                    settings: settings,
+                    session: session,
+                    config: config,
+                  );
                 },
                 routes: <RouteBase>[
                   GoRoute(
@@ -283,30 +288,26 @@ GoRouter createAppRouter({
                   GoRoute(
                     path: 'notifications',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SettingsInfoScreen(
-                        title: context.l10n.notificationsTitle,
-                        message: context.l10n.notificationsPlaceholderBody,
-                        icon: Icons.notifications_outlined,
-                      );
+                      return const NotificationSettingsScreen();
                     },
                   ),
                   GoRoute(
                     path: 'privacy',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SettingsInfoScreen(
+                      return LegalLinkScreen(
                         title: context.l10n.privacyPolicyTitle,
-                        message: context.l10n.privacyPolicyPlaceholderBody,
-                        icon: Icons.privacy_tip_outlined,
+                        url: config.privacyPolicyUrl,
+                        openLabel: context.l10n.openLegalDocumentAction,
                       );
                     },
                   ),
                   GoRoute(
                     path: 'terms',
                     builder: (BuildContext context, GoRouterState state) {
-                      return SettingsInfoScreen(
+                      return LegalLinkScreen(
                         title: context.l10n.termsOfUseTitle,
-                        message: context.l10n.termsOfUsePlaceholderBody,
-                        icon: Icons.description_outlined,
+                        url: config.termsOfUseUrl,
+                        openLabel: context.l10n.openLegalDocumentAction,
                       );
                     },
                   ),

@@ -19,3 +19,6 @@ android/app/release
 ios/Flutter/ephemeral/
 ios/Pods/
 ios/.symlinks/
+
+# Local/store signing configuration
+ios/Flutter/ReleaseSigning.xcconfig

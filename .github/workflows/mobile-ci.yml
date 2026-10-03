@@ -3,6 +3,7 @@ name: Mobile CI
 on:
   push:
     branches:
+      - main
       - feat/flutter-mobile
     paths:
       - 'apps/mobile/**'
@@ -11,6 +12,7 @@ on:
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-ci.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -32,8 +34,20 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Resolve dependencies
-        run: flutter pub get
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate official brand raster
+        run: |
+          python3 -m venv .brand-venv
+          .brand-venv/bin/python -m pip install --disable-pip-version-check cairosvg==2.7.1
+          .brand-venv/bin/python tool/generate_brand_assets.py
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Generate native splash
+        run: dart run flutter_native_splash:create
 
       - name: Generate localizations
         run: flutter gen-l10n
@@ -48,3 +62,50 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Build production Android App Bundle
+        run: >-
+          flutter build appbundle --release
+          --dart-define=APP_ENV=production
+          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+
+      - name: Phase 17 release audit
+        run: bash tool/phase17_release_audit.sh
+
+
+  ios-release-compile:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate official brand raster
+        run: |
+          python3 -m venv .brand-venv
+          .brand-venv/bin/python -m pip install --disable-pip-version-check cairosvg==2.7.1
+          .brand-venv/bin/python tool/generate_brand_assets.py
+
+      - name: Generate native assets
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
+          flutter gen-l10n
+
+      - name: Build production iOS release simulator
+        run: >-
+          flutter build ios --simulator --release
+          --dart-define=APP_ENV=production
+          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false

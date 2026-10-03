@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../app/theme/ss_tokens.dart';
+import '../../../core/widgets/savestream_widgets.dart';
+import '../../../l10n/l10n.dart';
+import '../domain/models/app_notification.dart';
+import '../domain/models/notification_preferences.dart';
+import 'controllers/notification_feed_providers.dart';
+import 'controllers/notification_preferences_providers.dart';
+
+class NotificationSettingsScreen extends ConsumerWidget {
+  const NotificationSettingsScreen({super.key});
+
+  Future<void> _markRead(WidgetRef ref, AppNotification notification) async {
+    if (notification.read) return;
+    await ref.read(notificationsRepositoryProvider).markRead(notification.id);
+    ref.invalidate(notificationFeedProvider);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<NotificationPreferences> preferences = ref.watch(
+      notificationPreferencesProvider,
+    );
+    final AsyncValue<List<AppNotification>> feed = ref.watch(
+      notificationFeedProvider,
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.notificationsTitle)),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(notificationPreferencesProvider);
+            ref.invalidate(notificationFeedProvider);
+            await Future.wait<Object?>(<Future<Object?>>[
+              ref.read(notificationPreferencesProvider.future),
+              ref.read(notificationFeedProvider.future),
+            ]);
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(SsSpacing.lg),
+            children: <Widget>[
+              Text(
+                l10n.notificationsReleaseBody,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              Text(
+                l10n.notificationPreferencesTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              preferences.when(
+                loading: () =>
+                    const SsSkeleton(height: 180, radius: SsRadii.lg),
+                error: (Object error, StackTrace stackTrace) =>
+                    SsAsyncErrorState(
+                      error: error,
+                      onRetry: () =>
+                          ref.invalidate(notificationPreferencesProvider),
+                    ),
+                data: (NotificationPreferences value) => SsCard(
+                  child: Column(
+                    children: <Widget>[
+                      _PreferenceSwitch(
+                        title: l10n.notificationRecordingStartedTitle,
+                        value: value.recordingStarted,
+                        onChanged: (bool enabled) => ref
+                            .read(notificationPreferencesProvider.notifier)
+                            .save(value.copyWith(recordingStarted: enabled)),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationRecordingReadyTitle,
+                        value: value.recordingReady,
+                        onChanged: (bool enabled) => ref
+                            .read(notificationPreferencesProvider.notifier)
+                            .save(value.copyWith(recordingReady: enabled)),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationRecordingFailedTitle,
+                        value: value.recordingFailed,
+                        onChanged: (bool enabled) => ref
+                            .read(notificationPreferencesProvider.notifier)
+                            .save(value.copyWith(recordingFailed: enabled)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              Text(
+                l10n.notificationsInAppOnlyBody,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: SsSpacing.xl),
+              Text(
+                l10n.notificationHistoryTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              feed.when(
+                loading: () => const Column(
+                  children: <Widget>[
+                    SsSkeleton(height: 92, radius: SsRadii.lg),
+                    SizedBox(height: SsSpacing.sm),
+                    SsSkeleton(height: 92, radius: SsRadii.lg),
+                  ],
+                ),
+                error: (Object error, StackTrace stackTrace) =>
+                    SsAsyncErrorState(
+                      error: error,
+                      onRetry: () => ref.invalidate(notificationFeedProvider),
+                    ),
+                data: (List<AppNotification> items) {
+                  if (items.isEmpty) {
+                    return SsCard(
+                      child: SsEmptyState(
+                        icon: Icons.notifications_none_rounded,
+                        title: l10n.notificationHistoryEmptyTitle,
+                        message: l10n.notificationHistoryEmptyBody,
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: items
+                        .map(
+                          (AppNotification item) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: SsSpacing.sm,
+                            ),
+                            child: _NotificationCard(
+                              item: item,
+                              onTap: () => _markRead(ref, item),
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PreferenceSwitch extends StatelessWidget {
+  const _PreferenceSwitch({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  const _NotificationCard({required this.item, required this.onTap});
+
+  final AppNotification item;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final IconData icon = switch (item.type) {
+      AppNotificationType.recordingStarted => Icons.fiber_manual_record_rounded,
+      AppNotificationType.recordingReady => Icons.check_circle_outline_rounded,
+      AppNotificationType.recordingFailed => Icons.error_outline_rounded,
+    };
+    return SsCard(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(SsRadii.lg),
+        child: Padding(
+          padding: const EdgeInsets.all(SsSpacing.sm),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(icon, color: colors.primary),
+              const SizedBox(width: SsSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            item.title,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ),
+                        if (!item.read)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: colors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: SsSpacing.xs),
+                    Text(item.body),
+                    const SizedBox(height: SsSpacing.xs),
+                    Text(
+                      MaterialLocalizations.of(
+                        context,
+                      ).formatMediumDate(item.createdAt.toLocal()),
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

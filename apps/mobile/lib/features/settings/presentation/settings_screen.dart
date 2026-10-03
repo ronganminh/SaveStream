@@ -6,6 +6,7 @@ import '../../../app/app_settings_controller.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import 'controllers/settings_providers.dart';
@@ -14,11 +15,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
     required this.settings,
     required this.session,
+    required this.config,
     super.key,
   });
 
   final AppSettingsController settings;
   final AppSessionController session;
+  final AppConfig config;
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -162,7 +165,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const Divider(),
                   SsListTile(
                     title: l10n.notificationsTitle,
-                    subtitle: l10n.notificationsPlaceholderSubtitle,
+                    subtitle: l10n.notificationsReleaseSubtitle,
                     leading: const Icon(Icons.notifications_outlined),
                     trailing: const Icon(Icons.chevron_right_rounded),
                     onTap: () => context.push(AppRoutes.notifications),
@@ -226,17 +229,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: SsSpacing.xl),
-            _SectionLabel(label: l10n.settingsDeveloperSectionTitle),
-            const SizedBox(height: SsSpacing.sm),
-            SsCard(
-              child: SsListTile(
-                title: l10n.designSystemTitle,
-                leading: const Icon(Icons.palette_outlined),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => context.push(AppRoutes.componentGallery),
+            if (widget.config.developerToolsEnabled) ...<Widget>[
+              const SizedBox(height: SsSpacing.xl),
+              _SectionLabel(label: l10n.settingsDeveloperSectionTitle),
+              const SizedBox(height: SsSpacing.sm),
+              SsCard(
+                child: SsListTile(
+                  title: l10n.designSystemTitle,
+                  leading: const Icon(Icons.palette_outlined),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(AppRoutes.componentGallery),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

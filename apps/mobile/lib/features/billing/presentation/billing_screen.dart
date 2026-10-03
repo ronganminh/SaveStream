@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../credits/presentation/controllers/credits_providers.dart';
@@ -16,7 +17,9 @@ import '../domain/models/billing_models.dart';
 import 'controllers/billing_providers.dart';
 
 class BillingScreen extends ConsumerStatefulWidget {
-  const BillingScreen({super.key});
+  const BillingScreen({required this.externalCheckoutEnabled, super.key});
+
+  final bool externalCheckoutEnabled;
 
   @override
   ConsumerState<BillingScreen> createState() => _BillingScreenState();
@@ -49,6 +52,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
   }
 
   Future<void> _buy(CreditPackage package) async {
+    if (!widget.externalCheckoutEnabled) return;
     await _runMutation(() async {
       final PaymentOrder? order = await ref
           .read(billingControllerProvider)
@@ -60,6 +64,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
   }
 
   Future<void> _continueCheckout() async {
+    if (!widget.externalCheckoutEnabled) return;
     final PaymentOrder? order = _activeOrder;
     if (order == null) return;
     await _runMutation(() => _openCheckout(order));
@@ -147,12 +152,27 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
           isRefreshing: snapshot.isRefreshing,
           child: snapshot.when(
             loading: () => const _BillingSkeleton(),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: SsAsyncErrorState(
-                error: error,
-                onRetry: () => ref.invalidate(billingSnapshotProvider),
-              ),
-            ),
+            error: (Object error, StackTrace stackTrace) {
+              final bool unavailable =
+                  error is ApiException && error.statusCode == 503;
+              return Center(
+                child: unavailable
+                    ? Padding(
+                        padding: const EdgeInsets.all(SsSpacing.lg),
+                        child: SsCard(
+                          child: SsEmptyState(
+                            icon: Icons.payments_outlined,
+                            title: l10n.billingPurchasesUnavailableTitle,
+                            message: l10n.billingPurchasesUnavailableBody,
+                          ),
+                        ),
+                      )
+                    : SsAsyncErrorState(
+                        error: error,
+                        onRetry: () => ref.invalidate(billingSnapshotProvider),
+                      ),
+              );
+            },
             data: (BillingSnapshot data) => RefreshIndicator(
               onRefresh: () async {
                 ref.invalidate(billingSnapshotProvider);
@@ -163,6 +183,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
               },
               child: _BillingBody(
                 data: data,
+                externalCheckoutEnabled: widget.externalCheckoutEnabled,
                 activeOrder: _activeOrder,
                 isMutating: _isMutating,
                 mutationError: _mutationError,
@@ -181,6 +202,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 class _BillingBody extends StatelessWidget {
   const _BillingBody({
     required this.data,
+    required this.externalCheckoutEnabled,
     required this.activeOrder,
     required this.isMutating,
     required this.mutationError,
@@ -190,6 +212,7 @@ class _BillingBody extends StatelessWidget {
   });
 
   final BillingSnapshot data;
+  final bool externalCheckoutEnabled;
   final PaymentOrder? activeOrder;
   final bool isMutating;
   final Object? mutationError;
@@ -210,37 +233,49 @@ class _BillingBody extends StatelessWidget {
         SsSpacing.xxl,
       ),
       children: <Widget>[
-        Text(
-          l10n.billingChoosePackageTitle,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: SsSpacing.xs),
-        Text(l10n.billingChoosePackageBody),
-        const SizedBox(height: SsSpacing.lg),
-        if (data.packages.isEmpty)
-          SsCard(
-            child: SsEmptyState(
-              icon: Icons.add_card_rounded,
-              title: l10n.billingNoPackagesTitle,
-              message: l10n.billingNoPackagesBody,
-            ),
-          )
-        else
-          ...data.packages.map(
-            (CreditPackage package) => Padding(
-              padding: const EdgeInsets.only(bottom: SsSpacing.md),
-              child: _PackageCard(
-                package: package,
-                isMutating: isMutating,
-                onBuy: () => onBuy(package),
+        if (externalCheckoutEnabled) ...<Widget>[
+          Text(
+            l10n.billingChoosePackageTitle,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: SsSpacing.xs),
+          Text(l10n.billingChoosePackageBody),
+          const SizedBox(height: SsSpacing.lg),
+          if (data.packages.isEmpty)
+            SsCard(
+              child: SsEmptyState(
+                icon: Icons.add_card_rounded,
+                title: l10n.billingNoPackagesTitle,
+                message: l10n.billingNoPackagesBody,
+              ),
+            )
+          else
+            ...data.packages.map(
+              (CreditPackage package) => Padding(
+                padding: const EdgeInsets.only(bottom: SsSpacing.md),
+                child: _PackageCard(
+                  package: package,
+                  isMutating: isMutating,
+                  purchasingEnabled: true,
+                  onBuy: () => onBuy(package),
+                ),
               ),
             ),
+        ] else ...<Widget>[
+          SsCard(
+            child: SsEmptyState(
+              icon: Icons.policy_outlined,
+              title: l10n.billingExternalCheckoutDisabledTitle,
+              message: l10n.billingExternalCheckoutDisabledBody,
+            ),
           ),
+        ],
         if (activeOrder != null) ...<Widget>[
           const SizedBox(height: SsSpacing.md),
           _CheckoutStatusCard(
             order: activeOrder!,
             isMutating: isMutating,
+            externalCheckoutEnabled: externalCheckoutEnabled,
             onContinueCheckout: onContinueCheckout,
             onRefresh: onRefreshOrder,
           ),
@@ -286,11 +321,13 @@ class _PackageCard extends StatelessWidget {
   const _PackageCard({
     required this.package,
     required this.isMutating,
+    required this.purchasingEnabled,
     required this.onBuy,
   });
 
   final CreditPackage package;
   final bool isMutating;
+  final bool purchasingEnabled;
   final VoidCallback onBuy;
 
   @override
@@ -319,7 +356,7 @@ class _PackageCard extends StatelessWidget {
             label: l10n.billingBuyAction,
             icon: Icons.shopping_cart_checkout_rounded,
             isLoading: isMutating,
-            onPressed: onBuy,
+            onPressed: purchasingEnabled ? onBuy : null,
           ),
         ],
       ),
@@ -331,12 +368,14 @@ class _CheckoutStatusCard extends StatelessWidget {
   const _CheckoutStatusCard({
     required this.order,
     required this.isMutating,
+    required this.externalCheckoutEnabled,
     required this.onContinueCheckout,
     required this.onRefresh,
   });
 
   final PaymentOrder order;
   final bool isMutating;
+  final bool externalCheckoutEnabled;
   final Future<void> Function() onContinueCheckout;
   final Future<void> Function() onRefresh;
 
@@ -374,7 +413,9 @@ class _CheckoutStatusCard extends StatelessWidget {
             SsSecondaryButton(
               label: l10n.billingContinueCheckoutAction,
               icon: Icons.open_in_new_rounded,
-              onPressed: isMutating ? null : onContinueCheckout,
+              onPressed: isMutating || !externalCheckoutEnabled
+                  ? null
+                  : onContinueCheckout,
             ),
           ] else if (order.status == PaymentOrderStatus.pending) ...<Widget>[
             const SizedBox(height: SsSpacing.md),

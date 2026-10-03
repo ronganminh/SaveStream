@@ -146,20 +146,31 @@ flutter gen-l10n
 flutter run
 ```
 
-Local environment defaults to:
+Environment defaults:
 
 ```text
-APP_ENV=local
-API_BASE_URL=http://10.0.2.2:8000
+local      -> http://10.0.2.2:8000
+staging    -> https://api-staging.savestream.online
+production -> https://api.savestream.online
 ```
 
-Override build configuration with Dart defines:
+Override build configuration with Dart defines when needed:
 
 ```bash
 flutter run \
-  --dart-define=APP_ENV=staging \
-  --dart-define=API_BASE_URL=https://api-staging.example.com
+  --dart-define=APP_ENV=staging
 ```
+
+Production native builds keep external hosted checkout disabled unless the
+release channel has passed the applicable store-payment policy review:
+
+```bash
+flutter build appbundle --release \
+  --dart-define=APP_ENV=production \
+  --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+```
+
+See `MOBILE_RELEASE.md` for signing and store submission requirements.
 
 ## Current architecture
 
@@ -379,3 +390,18 @@ flutter test
 CI runs the same mobile checks for pull requests and for pushes to the long-lived `feat/flutter-mobile` branch.
 
 Phase 8 settings validation additionally covers unverified profile fallback, all Theme options, VI/EN round-trip switching, Notifications/Privacy/Terms navigation, and Delete Account cancellation.
+
+
+## Cloud recording and artifacts
+
+The mobile app is a client for SaveStream cloud recording. It does not capture
+livestream video on the phone and does not keep recording artifacts in app
+storage. Recording jobs continue on backend infrastructure after the app is
+closed.
+
+Play / Download requests a fresh presigned artifact URL from the backend and
+opens that URL through the platform/browser. The cloud recording artifact
+remains authoritative.
+
+Notification preferences now use the persisted backend preference API. Privacy
+Policy and Terms of Use open the published documents at savestream.online.
