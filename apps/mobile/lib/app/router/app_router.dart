@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/widgets/savestream_widgets.dart';
 import '../../features/auth/data/auth_providers.dart';
+import '../../features/auth/presentation/check_email_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
@@ -18,6 +19,13 @@ import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/credits/presentation/credits_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/onboarding/presentation/add_first_creator_screen.dart';
+import '../../features/onboarding/presentation/android_recording_info_screen.dart';
+import '../../features/onboarding/presentation/first_creator_added_screen.dart';
+import '../../features/onboarding/presentation/intro_local_cloud_screen.dart';
+import '../../features/onboarding/presentation/intro_watch_detect_screen.dart';
+import '../../features/onboarding/presentation/ios_recording_info_screen.dart';
+import '../../features/onboarding/presentation/notification_rationale_screen.dart';
 import '../../features/onboarding/presentation/welcome_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
@@ -47,22 +55,38 @@ GoRouter createAppRouter({
     navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.home,
     restorationScopeId: 'savestream_router',
-    refreshListenable: session,
+    refreshListenable: Listenable.merge(<Listenable>[session, settings]),
     redirect: (BuildContext context, GoRouterState state) {
       final String location = state.matchedLocation;
-      final bool isOnboarding = location == AppRoutes.onboarding;
+      final bool isWelcome =
+          location == AppRoutes.welcome || location == AppRoutes.onboarding;
       final bool isAuth = location.startsWith('/auth/');
       final bool isSplash = location == AppRoutes.splash;
+      final bool isIntro = location.startsWith('/onboarding/');
 
-      if (!session.hasCompletedOnboarding) {
-        return isOnboarding ? null : AppRoutes.onboarding;
+      final bool needsWelcome =
+          !session.isAuthenticated &&
+          (!session.hasCompletedOnboarding || !settings.hasCompletedIntro);
+
+      if (needsWelcome) {
+        if (isWelcome || isAuth) return null;
+        return AppRoutes.welcome;
       }
 
       if (!session.isAuthenticated) {
-        return isAuth ? null : AppRoutes.signIn;
+        if (isAuth || isWelcome) return null;
+        return AppRoutes.signIn;
       }
 
-      if (isOnboarding || isAuth || isSplash) {
+      if (!settings.hasCompletedIntro) {
+        if (isIntro && !isWelcome) return null;
+        return AppRoutes.introWatchDetect;
+      }
+
+      if (isWelcome ||
+          isAuth ||
+          isSplash ||
+          (isIntro && location != AppRoutes.onboardingCreatorAdded)) {
         return AppRoutes.home;
       }
 
@@ -80,7 +104,7 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
-        path: AppRoutes.onboarding,
+        path: AppRoutes.welcome,
         builder: (BuildContext context, GoRouterState state) {
           return AnimatedBuilder(
             animation: settings,
@@ -93,6 +117,10 @@ GoRouter createAppRouter({
             },
           );
         },
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        redirect: (_, _) => AppRoutes.welcome,
       ),
       GoRoute(
         path: AppRoutes.signIn,
@@ -148,6 +176,21 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
+        path: AppRoutes.checkEmail,
+        builder: (BuildContext context, GoRouterState state) {
+          final String email = state.uri.queryParameters['email'] ?? '';
+          return Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? child) {
+              return CheckEmailScreen(
+                repository: ref.watch(authRepositoryProvider),
+                session: session,
+                email: email,
+              );
+            },
+          );
+        },
+      ),
+      GoRoute(
         path: AppRoutes.resetPassword,
         builder: (BuildContext context, GoRouterState state) {
           return Consumer(
@@ -158,6 +201,56 @@ GoRouter createAppRouter({
                 initialToken: state.uri.queryParameters['token'],
               );
             },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.introWatchDetect,
+        builder: (BuildContext context, GoRouterState state) {
+          return const IntroWatchDetectScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.introLocalCloud,
+        builder: (BuildContext context, GoRouterState state) {
+          return const IntroLocalCloudScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingNotifications,
+        builder: (BuildContext context, GoRouterState state) {
+          return const NotificationRationaleScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingAndroidPermission,
+        builder: (BuildContext context, GoRouterState state) {
+          return const AndroidRecordingInfoScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingIosLimits,
+        builder: (BuildContext context, GoRouterState state) {
+          return const IosRecordingInfoScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingAddCreator,
+        builder: (BuildContext context, GoRouterState state) {
+          return const AddFirstCreatorScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.onboardingCreatorAdded,
+        builder: (BuildContext context, GoRouterState state) {
+          return FirstCreatorAddedScreen(
+            settings: settings,
+            creatorName:
+                state.uri.queryParameters['name'] ??
+                context.l10n.onboardingSampleCreatorOneName,
+            creatorHandle:
+                state.uri.queryParameters['handle'] ??
+                context.l10n.onboardingSampleCreatorOneHandle,
           );
         },
       ),
@@ -186,6 +279,25 @@ GoRouter createAppRouter({
             },
           ),
         ],
+      ),
+      GoRoute(path: '/auth/register', redirect: (_, _) => AppRoutes.register),
+      GoRoute(
+        path: '/auth/verify-email',
+        redirect: (BuildContext context, GoRouterState state) =>
+            AppRoutes.verifyEmailLocation(
+              token: state.uri.queryParameters['token'],
+            ),
+      ),
+      GoRoute(
+        path: '/auth/forgot-password',
+        redirect: (_, _) => AppRoutes.forgotPassword,
+      ),
+      GoRoute(
+        path: '/auth/reset-password',
+        redirect: (BuildContext context, GoRouterState state) =>
+            AppRoutes.resetPasswordLocation(
+              token: state.uri.queryParameters['token'],
+            ),
       ),
       GoRoute(
         path: AppRoutes.componentGallery,

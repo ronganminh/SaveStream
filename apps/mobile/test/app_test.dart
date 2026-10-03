@@ -12,6 +12,7 @@ import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
+import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
 import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
 import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
 import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
@@ -225,11 +226,10 @@ void main() {
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'new@example.com');
-    await tester.enterText(fields.at(1), 'password-123');
+    await tester.enterText(fields.at(0), 'Alex Nguyen');
+    await tester.enterText(fields.at(1), 'new@example.com');
     await tester.enterText(fields.at(2), 'password-123');
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
+
     final Finder createAccountButton = find.widgetWithText(
       FilledButton,
       'Create account',
@@ -240,18 +240,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('Verify email'), findsWidgets);
-    expect(find.text('new@example.com'), findsOneWidget);
+    expect(find.text('Verify email'), findsOneWidget);
+    expect(find.textContaining('new@example.com'), findsOneWidget);
 
-    await tester.enterText(
-      find.byType(TextFormField),
-      'verification-token-123456',
+    final GoRouter router = GoRouter.of(
+      tester.element(find.byType(VerifyEmailScreen)),
     );
-    await tester.tap(find.widgetWithText(FilledButton, 'Verify email'));
+    router.go(
+      AppRoutes.verifyEmailLocation(token: 'verification-token-123456'),
+    );
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
 
     expect(find.text('Sign in'), findsWidgets);
   });
@@ -290,17 +290,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('I have a reset token'));
+    final GoRouter router = GoRouter.of(
+      tester.element(find.text('Check your email')),
+    );
+    router.go(
+      AppRoutes.resetPasswordLocation(token: 'password-reset-token-123456'),
+    );
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'password-reset-token-123456');
+    await tester.enterText(fields.at(0), 'new-password-123');
     await tester.enterText(fields.at(1), 'new-password-123');
-    await tester.enterText(fields.at(2), 'new-password-123');
-    await tester.tap(find.widgetWithText(FilledButton, 'Reset password'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save password'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
+    expect(find.text('New password saved'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
     expect(find.text('Sign in'), findsWidgets);
   });
 

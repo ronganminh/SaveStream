@@ -1,3 +1,4 @@
+/// A04 — Sign up.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,12 +29,10 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmController = TextEditingController();
   late final AuthController _controller;
-  bool _acceptedTerms = false;
-  bool _showTermsError = false;
 
   @override
   void initState() {
@@ -46,22 +45,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    final bool formValid = _formKey.currentState!.validate();
-    setState(() {
-      _showTermsError = !_acceptedTerms;
-    });
-    if (!formValid || !_acceptedTerms) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     final bool registered = await _controller.register(
       email: _emailController.text.trim(),
@@ -69,6 +62,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (registered && mounted) {
       context.go(AppRoutes.verifyEmail);
+    }
+  }
+
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.welcome);
     }
   }
 
@@ -80,6 +81,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       title: l10n.registerTitle,
       subtitle: l10n.registerSubtitle,
       showBackButton: true,
+      onBack: _back,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
@@ -93,6 +95,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     AuthFailureBanner(failure: _controller.failure!),
                     const SizedBox(height: SsSpacing.lg),
                   ],
+                  SsTextField(
+                    label: l10n.fullNameLabel,
+                    hintText: l10n.fullNameHint,
+                    controller: _nameController,
+                    prefixIcon: Icons.person_outline_rounded,
+                    textInputAction: TextInputAction.next,
+                    autofillHints: const <String>[AutofillHints.name],
+                    validator: (String? value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.fullNameRequiredMessage;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: SsSpacing.md),
                   SsTextField(
                     label: l10n.emailLabel,
                     hintText: l10n.emailHint,
@@ -116,7 +133,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     label: l10n.passwordLabel,
                     controller: _passwordController,
                     autofillHints: const <String>[AutofillHints.newPassword],
-                    textInputAction: TextInputAction.next,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
                     validator: (String? value) {
                       if (value == null || value.isEmpty) {
                         return l10n.passwordRequiredMessage;
@@ -127,63 +145,54 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: SsSpacing.md),
-                  SsPasswordField(
-                    label: l10n.confirmPasswordLabel,
-                    controller: _confirmController,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.confirmPasswordRequiredMessage;
-                      }
-                      if (value != _passwordController.text) {
-                        return l10n.passwordMismatchMessage;
-                      }
-                      return null;
+                  const SizedBox(height: SsSpacing.sm),
+                  ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: _passwordController,
+                    builder: (BuildContext context, TextEditingValue value, _) {
+                      final bool met = value.text.length >= 8;
+                      final Color color = met
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant;
+                      return Semantics(
+                        label: l10n.passwordRuleMin8,
+                        value: met
+                            ? l10n.requirementMetLabel
+                            : l10n.requirementNotMetLabel,
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              met
+                                  ? Icons.check_circle_rounded
+                                  : Icons.radio_button_unchecked_rounded,
+                              size: 20,
+                              color: color,
+                            ),
+                            const SizedBox(width: SsSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                l10n.passwordRuleMin8,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.bodySmall?.copyWith(color: color),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
                     },
                   ),
-                  const SizedBox(height: SsSpacing.md),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _acceptedTerms,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: Text(l10n.termsAcceptanceLabel),
-                    onChanged: _controller.isLoading
-                        ? null
-                        : (bool? value) {
-                            setState(() {
-                              _acceptedTerms = value ?? false;
-                              if (_acceptedTerms) {
-                                _showTermsError = false;
-                              }
-                            });
-                          },
-                  ),
-                  if (_showTermsError)
-                    Padding(
-                      padding: const EdgeInsets.only(left: SsSpacing.md),
-                      child: Text(
-                        l10n.termsRequiredMessage,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: SsSpacing.lg),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SsPrimaryButton(
-                      label: l10n.createAccountAction,
-                      isLoading: _controller.isLoading,
-                      onPressed: _submit,
-                    ),
+                  const SizedBox(height: SsSpacing.xl),
+                  SsPrimaryButton(
+                    label: l10n.createAccountAction,
+                    isLoading: _controller.isLoading,
+                    onPressed: _submit,
                   ),
                   const SizedBox(height: SsSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
-                      Flexible(child: Text(l10n.haveAccountPrompt)),
+                      Text(l10n.haveAccountPrompt),
                       SsTextAction(
                         label: l10n.signInAction,
                         onPressed: _controller.isLoading
