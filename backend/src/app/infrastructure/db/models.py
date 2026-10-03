@@ -211,6 +211,47 @@ class AuditLog(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+class DeviceRegistration(Base):
+    __tablename__ = "device_registrations"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "device_id",
+            name="uq_device_registrations_user_device",
+        ),
+        Index("ix_device_registrations_session", "session_id"),
+        Index("ix_device_registrations_user", "user_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("auth_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    device_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    platform: Mapped[str] = mapped_column(String(16), nullable=False)
+    push_token: Mapped[str | None] = mapped_column(String(4096), nullable=True)
+    device_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    app_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
 class UserNotification(Base):
     __tablename__ = "user_notifications"
     __table_args__ = (
@@ -278,6 +319,26 @@ class NotificationPreference(Base):
         Boolean,
         nullable=False,
         default=True,
+    )
+    creator_live: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    recording_expiring: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    free_minutes_low: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+    )
+    marketing: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

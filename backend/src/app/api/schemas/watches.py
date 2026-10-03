@@ -36,6 +36,7 @@ class WatchResponse(StrictModel):
     live_status: LiveStatusValue
     auto_record: bool
     auto_record_state: AutoRecordStateValue = "off"
+    notify_on_live: bool = True
     last_checked_at: datetime | None
     next_check_at: datetime | None
     last_live_at: datetime | None
@@ -46,15 +47,21 @@ class WatchResponse(StrictModel):
 class CreateWatchRequest(StrictModel):
     source: Source
     auto_record: bool
+    notify_on_live: bool = True
 
 
 class UpdateWatchRequest(StrictModel):
     auto_record: bool | None = None
     status: Literal["active", "paused", "disabled"] | None = None
+    notify_on_live: bool | None = None
 
     @model_validator(mode="after")
     def at_least_one_field(self) -> "UpdateWatchRequest":
-        if self.auto_record is None and self.status is None:
+        if (
+            self.auto_record is None
+            and self.status is None
+            and self.notify_on_live is None
+        ):
             raise ValueError("At least one Watch field must be provided")
         return self
 

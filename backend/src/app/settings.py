@@ -167,6 +167,11 @@ class AppSettings:
     retention_check_seconds: int = 3600
     recording_source_backend: str = "tiktok"
     e2e_stream_base_url: str = ""
+    push_provider: str = "noop"
+    push_fcm_service_account_json: str = field(default="", repr=False)
+    push_fcm_base_url: str = "https://fcm.googleapis.com"
+    push_fcm_token_url: str = "https://oauth2.googleapis.com/token"
+    push_timeout_seconds: float = 10.0
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -239,6 +244,27 @@ class AppSettings:
         ).rstrip("/")
         recording_source_backend = _env("RECORDING_SOURCE_BACKEND", "tiktok").lower()
         e2e_stream_base_url = _env("E2E_STREAM_BASE_URL", "").rstrip("/")
+        push_provider = _env("PUSH_PROVIDER", "noop").lower()
+        if push_provider not in {"noop", "fcm"}:
+            raise ValueError("SAVESTREAM_PUSH_PROVIDER must be one of noop, fcm")
+        push_fcm_service_account_json = _secret_env(
+            "PUSH_FCM_SERVICE_ACCOUNT_JSON",
+            "",
+        )
+        push_fcm_base_url = _env(
+            "PUSH_FCM_BASE_URL",
+            "https://fcm.googleapis.com",
+        ).rstrip("/")
+        push_fcm_token_url = _env(
+            "PUSH_FCM_TOKEN_URL",
+            "https://oauth2.googleapis.com/token",
+        )
+        push_timeout_seconds = _float_env("PUSH_TIMEOUT_SECONDS", 10.0)
+        if push_provider == "fcm" and not push_fcm_service_account_json:
+            raise ValueError(
+                "SAVESTREAM_PUSH_FCM_SERVICE_ACCOUNT_JSON is required when "
+                "SAVESTREAM_PUSH_PROVIDER=fcm"
+            )
         if recording_source_backend not in {"tiktok", "fake_http"}:
             raise ValueError(
                 "SAVESTREAM_RECORDING_SOURCE_BACKEND must be one of tiktok, fake_http"
@@ -248,6 +274,11 @@ class AppSettings:
                 "SAVESTREAM_E2E_STREAM_BASE_URL is required for fake_http recording backend"
             )
         if environment_raw == "production":
+            if push_provider == "fcm" and (
+                not push_fcm_base_url.startswith("https://")
+                or not push_fcm_token_url.startswith("https://")
+            ):
+                raise ValueError("FCM endpoints must use https in production")
             if recording_source_backend != "tiktok":
                 raise ValueError(
                     "SAVESTREAM_RECORDING_SOURCE_BACKEND must be tiktok in production"
@@ -453,6 +484,11 @@ class AppSettings:
             retention_check_seconds=_int_env("RETENTION_CHECK_SECONDS", 3600),
             recording_source_backend=recording_source_backend,
             e2e_stream_base_url=e2e_stream_base_url,
+            push_provider=push_provider,
+            push_fcm_service_account_json=push_fcm_service_account_json,
+            push_fcm_base_url=push_fcm_base_url,
+            push_fcm_token_url=push_fcm_token_url,
+            push_timeout_seconds=push_timeout_seconds,
         )
 
 
