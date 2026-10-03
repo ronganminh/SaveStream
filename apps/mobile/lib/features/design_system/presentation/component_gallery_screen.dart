@@ -1,3 +1,4 @@
+import '../../../features/entitlement/domain/models/entitlement.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/app_settings_controller.dart';
@@ -156,6 +157,53 @@ class ComponentGalleryScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  _GallerySection(
+                    title: 'V2 A0',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        const Wrap(
+                          spacing: SsSpacing.sm,
+                          runSpacing: SsSpacing.sm,
+                          children: <Widget>[
+                            SsLocationChip(engine: Engine.local),
+                            SsLocationChip(engine: Engine.cloud),
+                            SsPlanBadge(plan: Plan.free),
+                            SsPlanBadge(plan: Plan.pro),
+                            SsLiveBadge(isLive: true),
+                          ],
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsQuotaCard(
+                          title: 'Cloud time',
+                          value: '133 h 20 min',
+                          subtitle: '3 / 20 creators',
+                          progress: .45,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsInlineAlert(
+                          title: l10n.warningStatus,
+                          message: l10n.errorBody,
+                          tone: SsInlineAlertTone.warning,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsFilterChips(
+                          items: const <String>['All', 'LIVE', 'Offline'],
+                          selectedIndex: 0,
+                          onSelected: (_) {},
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsBannerAdSlot(label: 'Ad slot'),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsChecklist(
+                          items: <SsChecklistItem>[
+                            SsChecklistItem(label: 'Finalize file', done: true),
+                            SsChecklistItem(label: 'Save metadata'),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   _GallerySection(
