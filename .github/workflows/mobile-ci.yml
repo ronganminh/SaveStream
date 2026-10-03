@@ -111,10 +111,23 @@ jobs:
       # build needs a Development Team. This compiles the production
       # configuration and native plugins; it does not validate a store archive.
       - name: Compile production-config iOS app for simulator
-        run: >-
-          flutter build ios --simulator --debug
-          --dart-define=APP_ENV=production
-          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if flutter build ios --simulator --debug \
+              --dart-define=APP_ENV=production \
+              --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false; then
+              exit 0
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "iOS simulator build failed after $attempt attempts."
+              exit 1
+            fi
+
+            echo "::warning::iOS simulator build attempt $attempt failed; retrying transient SPM/CDN resolution."
+            sleep $((attempt * 10))
+          done
 
   android-emulator-smoke:
     needs: flutter-checks
