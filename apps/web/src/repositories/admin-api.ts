@@ -52,16 +52,16 @@ export type AdminListResponse = {
 };
 
 export type AdminUserFilters = {
-  cursor?: string | null;
-  query?: string;
-  plan?: "free" | "pro" | "";
-  accountStatus?: "active" | "locked" | "pending_deletion" | "deleted" | "";
-  emailVerified?: "true" | "false" | "";
-  createdFrom?: string;
-  createdTo?: string;
-  purchaseProvider?: string;
-  sortBy?: "created_at" | "email";
-  sortOrder?: "asc" | "desc";
+  cursor?: string | null | undefined;
+  query?: string | undefined;
+  plan?: "free" | "pro" | "" | undefined;
+  accountStatus?: "active" | "locked" | "pending_deletion" | "deleted" | "" | undefined;
+  emailVerified?: "true" | "false" | "" | undefined;
+  createdFrom?: string | undefined;
+  createdTo?: string | undefined;
+  purchaseProvider?: string | undefined;
+  sortBy?: "created_at" | "email" | undefined;
+  sortOrder?: "asc" | "desc" | undefined;
 };
 
 export type AdminEntitlement = {
