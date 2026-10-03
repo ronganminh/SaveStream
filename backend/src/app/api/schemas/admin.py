@@ -34,6 +34,7 @@ class AdminUserListResponse(StrictModel):
 class AdminUserUpdateRequest(StrictModel):
     role: Literal["user", "owner", "support", "finance", "admin"] | None = None
     is_active: bool | None = None
+    reason: str | None = Field(default=None, min_length=3, max_length=500)
 
     @model_validator(mode="after")
     def at_least_one_field(self) -> "AdminUserUpdateRequest":
