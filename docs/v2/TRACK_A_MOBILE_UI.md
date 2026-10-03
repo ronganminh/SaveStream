@@ -132,7 +132,7 @@ Việc cần làm:
 
 **Phụ thuộc:** A2.
 
-Màn: R01-android, R01-ios, R02-android, R02-ios, R03, R03-slow, R04, R05, R06–R12, R08-pending, R08-invalid, R08-locked, R13–R16, R17, R18, R19, R20, R21, R22, R23, R24-android, R24-ios, R25-android, R25-ios, R26, R27, R28, H04, H05, H07, H08, H09, AN01–AN03, IO01–IO03.
+Màn: Q06, R01-android, R01-ios, R02-android, R02-ios, R03, R03-slow, R04, R05, R06–R12, R08-pending, R08-invalid, R08-locked, R13–R16, R17, R18, R19, R20, R21, R22, R23, R24-android, R24-ios, R25-android, R25-ios, R26, R27, R28, H04, H05, H07, H08, H09, AN01–AN03, IO01–IO03.
 
 Việc cần làm:
 
@@ -143,11 +143,12 @@ Việc cần làm:
 5. **Ô ghi thứ 2** R13–R16: mở bằng 2 phần thưởng, có giờ hết hạn. Hết hạn không dừng phiên đang chạy, chỉ chặn phiên thứ 2 mới.
 6. Bộ nhớ sắp đầy và gần hết (R17, R18), xác nhận dừng (R19), đang hoàn tất dạng danh sách bước không có phần trăm (R20), hoàn tất (R21).
 7. **Khôi phục sau gián đoạn** R22–R25, khác nhau giữa Android và iOS.
-8. **Bản ghi cloud (Pro):** R26 đang ghi, R27 đang xử lý, R28 lỗi. Dùng `RecordingRepository` hiện có. Không có nút xem trực tiếp khi đang ghi.
-9. `SsRecordingBar` hiện trên mọi tab khi có phiên đang chạy; ẩn trên màn chi tiết đang ghi. Có 2 phiên thì chạm vào mở sheet chọn.
-10. Các biến thể Home khi đang ghi: H04, H05, H07, H08, H09.
-11. Màn hướng dẫn theo nền tảng: AN01–AN03 (Android), IO01–IO03 (iOS).
-12. Không bao giờ hiện quảng cáo banner trên các màn của phase này.
+8. **Pro ghi thủ công:** khi `entitlement.local.enabled`, bấm "Record ngay" mở sheet Q06 để chọn ghi trên máy (mặc định, không tốn giờ) hoặc trên cloud (ghi rõ sẽ trừ giờ). Khi `local.unlimited`, màn đang ghi trên máy không hiện phút còn lại, cảnh báo 60 giây hay lời mời xem quảng cáo. Khi `local.enabled = false`, bỏ qua sheet và ghi cloud luôn. Luôn đọc hai trường này từ entitlement, không tự suy ra từ `plan`.
+9. **Bản ghi cloud (Pro):** R26 đang ghi, R27 đang xử lý, R28 lỗi. Dùng `RecordingRepository` hiện có. Không có nút xem trực tiếp khi đang ghi.
+10. `SsRecordingBar` hiện trên mọi tab khi có phiên đang chạy; ẩn trên màn chi tiết đang ghi. Có 2 phiên thì chạm vào mở sheet chọn.
+11. Các biến thể Home khi đang ghi: H04, H05, H07, H08, H09.
+12. Màn hướng dẫn theo nền tảng: AN01–AN03 (Android), IO01–IO03 (iOS).
+13. Không bao giờ hiện quảng cáo banner trên các màn của phase này.
 
 ---
 
@@ -185,7 +186,7 @@ Việc cần làm:
 6. **Xoá** màn Credits, Billing, Billing Return và luồng checkout ngoài của bản cũ, cùng route, provider, mock, chuỗi ARB và test của chúng. Nói rõ trong PR những gì đã xoá.
 7. Báo Track C cập nhật `tool/phase17_release_audit.sh` (script đang kiểm tra vài chuỗi của Billing cũ); không tự sửa file đó. Nếu script làm CI đỏ, giữ lại các key ARB mà script kiểm tra cho tới khi Track C sửa xong.
 
-Không dựng: M11, M12, M13, M14 (thuê bao), Q06.
+Không dựng: M11, M12, M13, M14 (thuê bao).
 
 ---
 

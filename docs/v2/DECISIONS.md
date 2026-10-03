@@ -13,6 +13,7 @@ Nguồn thiết kế: gói `SaveStream mobile app phase 1.zip` (`docs/SCREENS.md
 | Free trên mobile | Ghi và lưu video **trên máy người dùng**, 10 phút mỗi ngày, xem quảng cáo thưởng để thêm thời gian. **Không dùng cloud**, để không tốn hạ tầng máy chủ. |
 | Free trên web | Được 10 phút cloud dùng thử (10 credit khi xác minh email) để trải nghiệm. Ngoài ra chỉ theo dõi kênh và nhận thông báo. |
 | Pro | Tự động ghi trên cloud, không quảng cáo. |
+| Pro ghi trên máy | **Được, không giới hạn phút** (chốt 03/10/2026). Khi bấm ghi thủ công, Pro chọn ghi trên máy (không tốn giờ) hoặc trên cloud (trừ giờ). Khi nhiều người dùng sẽ xem xét chuyển sang "Pro chỉ ghi cloud"; backend phải bật tắt được bằng cấu hình, không cần phát hành lại app. |
 | Màu chính trong app | `#4F46E5` (khớp icon và web), không dùng `#6D49F4` của thiết kế. |
 
 ## 2. Giới hạn
@@ -51,7 +52,7 @@ Nguồn thiết kế: gói `SaveStream mobile app phase 1.zip` (`docs/SCREENS.md
 
 - Mọi màn thuê bao: quản lý gói, gia hạn, huỷ, hết hạn/ân hạn, Pro bị thu hồi, "Pro mua trên web" (M11–M14).
 - Paywall chọn gói Tháng/Năm (M03): thay bằng một màn chọn gói giờ.
-- Các màn "Free + Cloud Pack chọn Local hay Cloud" (Q06): không áp dụng, vì đã mua giờ thì là Pro.
+- Màn Q06 (chọn Local hay Cloud) **vẫn dùng**, nhưng dành cho Pro khi ghi thủ công, không phải cho "Free có Cloud Pack".
 
 ## 6. Làm ở đợt sau
 
