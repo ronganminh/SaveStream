@@ -266,7 +266,7 @@ export type CheckoutResponse = {
   payment_order: PaymentOrderResponse;
 };
 
-export type UserRole = "user" | "admin";
+export type UserRole = "user" | "owner" | "support" | "finance" | "admin";
 
 export type UserResponse = {
   id: string;
@@ -276,6 +276,8 @@ export type UserResponse = {
   display_name: string | null;
   locale: string;
   created_at: string;
+  admin_mfa_enabled?: boolean;
+  admin_mfa_verified?: boolean;
 };
 
 export type SessionResponse = {
