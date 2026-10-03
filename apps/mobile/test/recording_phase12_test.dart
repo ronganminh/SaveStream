@@ -99,6 +99,7 @@ void main() {
       'queued',
       'resolving',
       'waiting_live',
+      'waiting_for_cloud_slot',
       'recording',
       'processing',
       'uploading',
@@ -106,6 +107,7 @@ void main() {
       'failed',
       'stop_requested',
       'stopped',
+      'missed_no_cloud_slot',
     ];
     final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,
@@ -132,10 +134,23 @@ void main() {
 
     expect(
       items.map((RecordingSummary item) => item.status).toList(),
-      RecordingStatus.values,
+      <RecordingStatus>[
+        RecordingStatus.queued,
+        RecordingStatus.resolving,
+        RecordingStatus.waitingLive,
+        RecordingStatus.waitingForCloudSlot,
+        RecordingStatus.recording,
+        RecordingStatus.processing,
+        RecordingStatus.uploading,
+        RecordingStatus.completed,
+        RecordingStatus.failed,
+        RecordingStatus.stopRequested,
+        RecordingStatus.stopped,
+        RecordingStatus.missedNoCloudSlot,
+      ],
     );
     expect(items.first.actions.canStop, isTrue);
-    expect(items[7].actions.canRetry, isTrue);
+    expect(items[8].actions.canRetry, isTrue);
     expect(items.last.actions.canDelete, isTrue);
   });
 
