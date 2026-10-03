@@ -22,9 +22,9 @@ class LegalLinkScreen extends StatelessWidget {
       mode: LaunchMode.externalApplication,
     );
     if (!opened && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(url.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(url.toString())));
     }
   }
 
