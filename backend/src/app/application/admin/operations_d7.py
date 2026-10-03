@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+from collections.abc import Sequence
 import json
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -423,7 +424,7 @@ class AdminOperationsService:
         kind: str,
         title: str,
         body: str,
-        channels: list[str],
+        channels: Sequence[str],
         reason: str,
     ) -> AdminBroadcast:
         broadcast = AdminBroadcast(
@@ -431,7 +432,7 @@ class AdminOperationsService:
             kind=kind,
             title=title.strip(),
             body=body.strip(),
-            channels=channels,
+            channels=list(channels),
             status="queued",
             audience_count=await self.audience_count(kind),
             reason=reason.strip(),

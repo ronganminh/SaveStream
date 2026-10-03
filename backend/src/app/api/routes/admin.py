@@ -614,7 +614,6 @@ async def list_admin_recordings(
     cursor: str | None = Query(default=None),
     user_id: uuid.UUID | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
-    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminRecordingListResponse:
@@ -1441,6 +1440,7 @@ async def list_admin_email_logs(
         actor_role=principal.role,
         action="admin.email.logs_viewed",
         resource_type="email_log",
+        resource_id=None,
         context=_context(request),
         details={"rows": len(items), "recipient": recipient, "kind": kind, "status": status_filter},
     )
@@ -1492,6 +1492,7 @@ async def export_admin_email_logs(
         actor_role=principal.role,
         action="admin.email.logs_exported",
         resource_type="email_log",
+        resource_id=None,
         context=_context(request),
         details={"rows": len(items), "truncated": has_more},
     )
@@ -1603,12 +1604,14 @@ async def update_admin_email_template(
     )
     await session.commit()
     await session.refresh(row)
-    return AdminEmailTemplateResponse(
-        key=key,
-        subject=row.subject,
-        body=row.body,
-        overridden=True,
-        updated_at=row.updated_at,
+    return AdminEmailTemplateResponse.model_validate(
+        {
+            "key": key,
+            "subject": row.subject,
+            "body": row.body,
+            "overridden": True,
+            "updated_at": row.updated_at,
+        }
     )
 
 
@@ -1754,6 +1757,7 @@ async def export_admin_broadcasts(
         actor_role=principal.role,
         action="admin.broadcasts.exported",
         resource_type="admin_broadcast",
+        resource_id=None,
         context=_context(request),
         details={"rows": len(items), "truncated": has_more},
     )

@@ -791,7 +791,7 @@ export function AdminOperationsPage() {
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                     value={broadcastDraft.kind ?? ""}
-                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, kind: event.target.value as AdminBroadcastFilters["kind"] }))}
+                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, kind: event.target.value as "" | "system" | "marketing" }))}
                   >
                     <option value="">All types</option>
                     <option value="system">System</option>
