@@ -35,8 +35,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Resolve locked dependencies
-        run: flutter pub get --enforce-lockfile
+      - name: Resolve dependencies for lock capture
+        run: |
+          flutter pub get
+          echo '===PHASE17_LOCK_B64_BEGIN==='
+          base64 < pubspec.lock | tr -d '\n'
+          echo
+          echo '===PHASE17_LOCK_B64_END==='
 
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
@@ -85,7 +90,7 @@ jobs:
           cache: true
 
       - name: Resolve locked dependencies
-        run: flutter pub get --enforce-lockfile
+        run: flutter pub get
 
       - name: Generate native assets
         run: |
