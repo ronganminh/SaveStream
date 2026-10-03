@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.entitlements.service import EntitlementService
+from app.application.recordings.cloud_slots import CloudSlotQueueService
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
@@ -121,6 +122,7 @@ class WatchScheduler:
             await self._record_failure(watch, now, exc)
             return
 
+        previous_room_id = watch.resolved_room_id
         watch.last_checked_at = now
         watch.failure_count = 0
         watch.last_error = None
@@ -140,8 +142,21 @@ class WatchScheduler:
             )
         await self.session.commit()
 
-        if result.is_live and watch.auto_record:
-            await self._auto_record(watch, result.room_id)
+        if watch.auto_record:
+            if result.is_live:
+                await self._auto_record(watch, result.room_id)
+            else:
+                queue = CloudSlotQueueService(self.session, self.settings)
+                room_ids = {
+                    room_id
+                    for room_id in (previous_room_id, result.room_id)
+                    if room_id
+                }
+                for room_id in room_ids:
+                    await queue.mark_missed_for_room(
+                        user_id=watch.user_id,
+                        room_id=room_id,
+                    )
 
     async def _record_failure(
         self,
@@ -170,6 +185,9 @@ class WatchScheduler:
         if not entitlement.is_pro:
             return
 
+        queue = CloudSlotQueueService(self.session, self.settings)
+        await queue.promote_available(watch.user_id)
+
         active_values = [status.value for status in ACTIVE_RECORDING_STATUSES]
         active_count = int(
             await self.session.scalar(
@@ -184,6 +202,7 @@ class WatchScheduler:
             or 0
         )
         if active_count >= entitlement.max_concurrent_cloud_recordings:
+            await queue.queue_for_watch(watch, room_id)
             return
 
         payload = CreateRecordingRequest(
