@@ -130,7 +130,8 @@ must("src/components/app-components.tsx", '{ to: "/admin/users", label: "Users",
   "Email delivery logs",
   "The HTML shell remains version-controlled.",
   "System reaches every active account.",
-  "Marketing reaches only users who opted in.",
+  "Marketing reaches only users",
+  "who opted in.",
   "Preview audience",
   "Queue broadcast",
   "Re-enter your password, current authenticator code, and the reason for this action.",
@@ -311,8 +312,7 @@ const d7Worker = read("../../backend/src/app/infrastructure/admin/d7_worker.py")
 [
   'NotificationPreference.marketing.is_(True)',
   '_RATE_LIMIT_SECONDS',
-  '"admin_system"',
-  '"admin_marketing"',
+  'f"admin_{broadcast.kind}"',
   'MinioStorageClient(settings).list_keys',
 ].forEach((text) => {
   if (!d7Worker.includes(text)) failures.push("D7 worker invariant: missing " + JSON.stringify(text));
