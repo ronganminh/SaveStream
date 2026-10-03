@@ -473,6 +473,7 @@ async def retry_admin_recording(
         context=_context(request),
         before_state={"status": original.status},
         after_state={"retry_recording_id": str(retry.id)},
+        details={"retry_recording_id": str(retry.id)},
     )
     await session.commit()
     return AdminRetryRecordingResponse(
