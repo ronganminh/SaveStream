@@ -14,7 +14,7 @@ from app.application.pricing.service import PricingService
 from app.application.recordings.service import RecordingService
 from app.application.watches.service import WatchService
 from app.domain.common.errors import ApplicationError
-from app.domain.identity.types import AuthPrincipal, scopes_for_role
+from app.domain.identity.types import AuthPrincipal, is_admin_role, scopes_for_role
 from app.infrastructure.db.models import AuthSession, User
 from app.infrastructure.payments.factory import selected_payment_provider
 from app.infrastructure.security.tokens import TokenError, TokenExpiredError, TokenService
@@ -84,12 +84,33 @@ async def get_current_principal(
             "Authentication session is invalid or revoked",
             status_code=401,
         )
-    return AuthPrincipal(
+    principal = AuthPrincipal(
         user_id=user.id,
         session_id=auth_session.id,
         role=user.role,
         scopes=scopes_for_role(user.role),
+        admin_mfa_verified=(
+            not is_admin_role(user.role)
+            or auth_session.admin_mfa_verified_at is not None
+        ),
     )
+    if is_admin_role(user.role) and not principal.admin_mfa_verified:
+        mfa_allowed_paths = {
+            "/v1/me",
+            "/v1/auth/logout",
+            "/v1/auth/logout-all",
+            "/v1/admin/security/mfa",
+            "/v1/admin/security/mfa/setup",
+            "/v1/admin/security/mfa/enable",
+            "/v1/admin/security/mfa/verify",
+        }
+        if request.url.path not in mfa_allowed_paths:
+            raise ApplicationError(
+                "ADMIN_MFA_REQUIRED",
+                "Admin MFA verification is required",
+                status_code=403,
+            )
+    return principal
 
 
 def require_scopes(*required: str) -> Callable:

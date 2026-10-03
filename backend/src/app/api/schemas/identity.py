@@ -73,12 +73,14 @@ class UpdateMeRequest(StrictModel):
 
 class UserResponse(StrictModel):
     id: str
-    role: Literal["user", "admin"]
+    role: Literal["user", "owner", "support", "finance", "admin"]
     email: str
     email_verified: bool
     display_name: str | None
     locale: str
     created_at: datetime
+    admin_mfa_enabled: bool = False
+    admin_mfa_verified: bool = False
 
 
 class SessionResponse(StrictModel):

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { meta } from "@/components/app-pages";
-import { AdminJobDetailPage } from "@/components/app-pages-more";
+import { AdminJobDetailPage } from "@/components/admin/pages";
 
 export const Route = createFileRoute("/admin/jobs/$id")({
   head: () =>

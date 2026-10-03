@@ -10,7 +10,7 @@ from app.api.dependencies import get_current_principal, get_db_session
 from app.api.schemas.operations import OperationalSnapshotResponse
 from app.application.operations.service import OperationsService
 from app.domain.common.errors import ApplicationError
-from app.domain.identity.types import AuthPrincipal
+from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
 
 router = APIRouter(include_in_schema=False)
 
@@ -48,10 +48,18 @@ async def admin_operations_snapshot(
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> OperationalSnapshotResponse:
-    if principal.role != "admin" and "admin:*" not in principal.scopes:
+    if not is_admin_role(principal.role) or not has_scope(
+        principal.scopes, "admin:operations:read"
+    ):
         raise ApplicationError(
             "FORBIDDEN",
-            "Admin permission is required",
+            "Admin operations permission is required",
+            status_code=403,
+        )
+    if not principal.admin_mfa_verified:
+        raise ApplicationError(
+            "ADMIN_MFA_REQUIRED",
+            "Admin MFA verification is required",
             status_code=403,
         )
     snapshot = await OperationsService(

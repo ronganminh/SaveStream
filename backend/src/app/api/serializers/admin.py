@@ -28,6 +28,10 @@ def audit_log_response(row: AuditLog) -> AuditLogResponse:
         request_id=row.request_id,
         ip_address=row.ip_address,
         user_agent=row.user_agent,
+        actor_role=row.actor_role,
+        reason=row.reason,
+        before_state=dict(row.before_state) if row.before_state is not None else None,
+        after_state=dict(row.after_state) if row.after_state is not None else None,
         details=dict(row.details),
         created_at=row.created_at,
     )

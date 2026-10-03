@@ -1,7 +1,7 @@
 import { ApiError } from "@/api/errors";
 import { apiClient } from "@/api/client";
 
-export type AuthRole = "user" | "admin";
+export type AuthRole = "user" | "owner" | "support" | "finance" | "admin";
 
 export type AuthUser = {
   id: string;
@@ -11,6 +11,8 @@ export type AuthUser = {
   display_name: string | null;
   locale: string;
   created_at: string;
+  admin_mfa_enabled: boolean;
+  admin_mfa_verified: boolean;
 };
 
 type AuthMessage = {
@@ -107,6 +109,14 @@ export function authErrorMessage(error: unknown): string {
       return "Verify your email address before signing in.";
     case "AUTH_SESSION_REVOKED":
       return "Your session has expired. Sign in again.";
+    case "ADMIN_MFA_SETUP_REQUIRED":
+      return "Set up two-factor authentication to continue.";
+    case "ADMIN_MFA_REQUIRED":
+      return "Verify your two-factor authentication code to continue.";
+    case "AUTH_INVALID_MFA":
+      return "The authentication code is invalid.";
+    case "ADMIN_STEP_UP_REQUIRED":
+      return "Confirm your password and authentication code to continue.";
     case "RATE_LIMITED":
       return "Too many attempts. Please wait a moment and try again.";
     case "VALIDATION_ERROR":

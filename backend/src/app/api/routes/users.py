@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_principal, get_identity_service
+from app.api.dependencies import get_current_principal, get_db_session, get_identity_service
 from app.api.schemas.identity import (
     AuthMessage,
     SessionResponse,
@@ -16,10 +17,9 @@ from app.api.schemas.identity import (
 )
 from app.application.identity.service import IdentityService, ip_hint
 from app.application.privacy.service import PrivacyService
-from app.domain.identity.types import AuthPrincipal
+from app.domain.identity.types import AuthPrincipal, is_admin_role
+from app.infrastructure.db.admin_models import AdminMfaCredential
 from app.infrastructure.db.models import AuthSession, User
-from app.api.dependencies import get_db_session
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/v1", tags=["Users"])
 
@@ -28,16 +28,25 @@ def _request_id(request: Request) -> str | None:
     return getattr(request.state, "request_id", None)
 
 
-def _user_response(user: User) -> UserResponse:
-    role: Literal["user", "admin"] = "admin" if user.role == "admin" else "user"
+def _user_response(
+    user: User,
+    *,
+    principal: AuthPrincipal,
+    admin_mfa_enabled: bool,
+) -> UserResponse:
     return UserResponse(
         id=str(user.id),
-        role=role,
+        role=cast(
+            Literal["user", "owner", "support", "finance", "admin"],
+            user.role,
+        ),
         email=user.email,
         email_verified=user.email_verified_at is not None,
         display_name=user.display_name,
         locale=user.locale,
         created_at=user.created_at,
+        admin_mfa_enabled=admin_mfa_enabled,
+        admin_mfa_verified=principal.admin_mfa_verified if is_admin_role(user.role) else False,
     )
 
 
@@ -59,8 +68,15 @@ def _session_response(
 async def get_me(
     principal: AuthPrincipal = Depends(get_current_principal),
     service: IdentityService = Depends(get_identity_service),
+    session: AsyncSession = Depends(get_db_session),
 ) -> UserResponse:
-    return _user_response(await service.get_user(principal))
+    user = await service.get_user(principal)
+    mfa = await session.get(AdminMfaCredential, principal.user_id)
+    return _user_response(
+        user,
+        principal=principal,
+        admin_mfa_enabled=mfa is not None and mfa.enabled_at is not None,
+    )
 
 
 @router.patch("/me", response_model=UserResponse, operation_id="updateMe")
@@ -69,6 +85,7 @@ async def update_me(
     request: Request,
     principal: AuthPrincipal = Depends(get_current_principal),
     service: IdentityService = Depends(get_identity_service),
+    session: AsyncSession = Depends(get_db_session),
 ) -> UserResponse:
     current = await service.get_user(principal)
     display_name = (
@@ -83,7 +100,12 @@ async def update_me(
         locale=locale,
         request_id=_request_id(request),
     )
-    return _user_response(updated)
+    mfa = await session.get(AdminMfaCredential, principal.user_id)
+    return _user_response(
+        updated,
+        principal=principal,
+        admin_mfa_enabled=mfa is not None and mfa.enabled_at is not None,
+    )
 
 
 @router.delete(

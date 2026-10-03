@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AdminSystemPage, meta } from "@/components/app-pages";
+import { meta } from "@/components/app-pages";
+import { AdminSystemPage } from "@/components/admin/pages";
 
 export const Route = createFileRoute("/admin/system")({
   head: () =>
