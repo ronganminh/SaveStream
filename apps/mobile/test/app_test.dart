@@ -52,7 +52,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('SaveStream'), findsOneWidget);
+    // The Home tab opens with the V2 greeting header instead of an app bar.
+    expect(find.byType(SsLargeHeader), findsOneWidget);
+    expect(find.byTooltip('Notifications'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Channels'), findsOneWidget);
     expect(find.text('Recordings'), findsOneWidget);

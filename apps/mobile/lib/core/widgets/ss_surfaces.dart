@@ -18,10 +18,10 @@ class SsCard extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Material(
-      color: colors.surfaceContainerLow,
+      color: colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: SsRadii.card,
-        side: BorderSide(color: colors.outlineVariant),
+        side: BorderSide(color: colors.outline),
       ),
       clipBehavior: Clip.antiAlias,
       child: Padding(padding: padding, child: child),
@@ -47,12 +47,15 @@ class SsStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final SsSemanticColors semantic = context.semanticColors;
-    final Color foreground = switch (tone) {
-      SsStatusTone.neutral => colors.onSurfaceVariant,
-      SsStatusTone.success => semantic.success,
-      SsStatusTone.warning => semantic.warning,
-      SsStatusTone.error => semantic.error,
-      SsStatusTone.recording => semantic.recording,
+    final (Color foreground, Color background) = switch (tone) {
+      SsStatusTone.neutral => (
+        colors.onSurfaceVariant,
+        colors.surfaceContainerHighest,
+      ),
+      SsStatusTone.success => (semantic.success, semantic.successSubtle),
+      SsStatusTone.warning => (semantic.warning, semantic.warningSubtle),
+      SsStatusTone.error => (semantic.error, semantic.errorSubtle),
+      SsStatusTone.recording => (semantic.recording, semantic.errorSubtle),
     };
 
     final double maxWidth = (MediaQuery.sizeOf(context).width - SsSpacing.xxl)
@@ -63,16 +66,16 @@ class SsStatusChip extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
+        constraints: BoxConstraints(maxWidth: maxWidth, minHeight: 24),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: foreground.withValues(alpha: 0.10),
+            color: background,
             borderRadius: const BorderRadius.all(Radius.circular(SsRadii.pill)),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: SsSpacing.md,
-              vertical: 6,
+              horizontal: SsSpacing.sm,
+              vertical: SsSpacing.xs,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -80,14 +83,25 @@ class SsStatusChip extends StatelessWidget {
                 if (icon != null) ...<Widget>[
                   Icon(icon, size: 14, color: foreground),
                   const SizedBox(width: SsSpacing.xs),
+                ] else if (tone == SsStatusTone.recording) ...<Widget>[
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: foreground,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                 ],
                 Flexible(
                   child: Text(
                     label,
                     softWrap: true,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: foreground,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
