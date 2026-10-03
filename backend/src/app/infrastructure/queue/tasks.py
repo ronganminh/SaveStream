@@ -100,6 +100,27 @@ def notification_push(self, notification_id: str) -> int:
     return run_notification_push(notification_id)
 
 
+@celery_app.task(name="savestream.admin.storage.orphan_scan")
+def admin_storage_orphan_scan(run_id: str) -> None:
+    from app.infrastructure.admin.d7_worker import run_orphan_scan
+
+    run_orphan_scan(run_id)
+
+
+@celery_app.task(name="savestream.admin.storage.orphan_delete")
+def admin_storage_orphan_delete(run_id: str) -> None:
+    from app.infrastructure.admin.d7_worker import run_orphan_delete
+
+    run_orphan_delete(run_id)
+
+
+@celery_app.task(name="savestream.admin.broadcast")
+def admin_broadcast(broadcast_id: str) -> None:
+    from app.infrastructure.admin.d7_worker import run_broadcast
+
+    run_broadcast(broadcast_id)
+
+
 @celery_app.task(
     bind=True,
     name="savestream.outbox.event",
@@ -124,6 +145,15 @@ def handle_outbox_event(
         return
     if topic == "notification.push":
         notification_push.delay(str(payload["notification_id"]))
+        return
+    if topic == "admin.storage.orphan_scan":
+        admin_storage_orphan_scan.delay(str(payload["run_id"]))
+        return
+    if topic == "admin.storage.orphan_delete":
+        admin_storage_orphan_delete.delay(str(payload["run_id"]))
+        return
+    if topic == "admin.broadcast":
+        admin_broadcast.delay(str(payload["broadcast_id"]))
         return
     if topic == "recording.requested":
         recording_run.delay(str(payload["recording_id"]))
