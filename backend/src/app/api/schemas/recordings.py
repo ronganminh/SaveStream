@@ -45,6 +45,8 @@ RecordingStatusValue = Literal[
     "failed",
     "stop_requested",
     "stopped",
+    "waiting_for_cloud_slot",
+    "missed_no_cloud_slot",
 ]
 
 
@@ -77,6 +79,7 @@ class RecordingResponse(StrictModel):
     created_at: datetime
     updated_at: datetime
     expires_at: datetime | None = None
+    queue_position: int | None = Field(default=None, ge=1)
 
 
 class CreateRecordingRequest(StrictModel):
