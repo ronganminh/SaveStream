@@ -511,7 +511,7 @@ class RecordingStateStore:
             await CloudSlotQueueService(
                 self.session,
                 self.settings,
-            ).promote_available(recording.user_id)
+            ).wake_next(recording.user_id)
             return None
         if status is RecordingStatus.WAITING_FOR_CLOUD_SLOT:
             return None
@@ -625,4 +625,4 @@ class RecordingStateStore:
         await CloudSlotQueueService(
             self.session,
             self.settings,
-        ).promote_available(recording.user_id)
+        ).wake_next(recording.user_id)
