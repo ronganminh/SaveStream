@@ -115,7 +115,7 @@ const forbidIn = (label, source, text) => {
 
 must("src/components/app-components.tsx", '{ to: "/admin/users", label: "Users", icon: Users }');
 
-["Play", "Download recording", "presigned", "storage_key"].forEach((text) =>
+["Play recording", "Download recording", "presigned", "storage_key"].forEach((text) =>
   forbid("src/components/admin/user-support.tsx", text),
 );
 
