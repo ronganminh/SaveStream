@@ -84,7 +84,7 @@ async def get_current_principal(
             "Authentication session is invalid or revoked",
             status_code=401,
         )
-    return AuthPrincipal(
+    principal = AuthPrincipal(
         user_id=user.id,
         session_id=auth_session.id,
         role=user.role,
@@ -94,6 +94,23 @@ async def get_current_principal(
             or auth_session.admin_mfa_verified_at is not None
         ),
     )
+    if is_admin_role(user.role) and not principal.admin_mfa_verified:
+        mfa_allowed_paths = {
+            "/v1/me",
+            "/v1/auth/logout",
+            "/v1/auth/logout-all",
+            "/v1/admin/security/mfa",
+            "/v1/admin/security/mfa/setup",
+            "/v1/admin/security/mfa/enable",
+            "/v1/admin/security/mfa/verify",
+        }
+        if request.url.path not in mfa_allowed_paths:
+            raise ApplicationError(
+                "ADMIN_MFA_REQUIRED",
+                "Admin MFA verification is required",
+                status_code=403,
+            )
+    return principal
 
 
 def require_scopes(*required: str) -> Callable:
