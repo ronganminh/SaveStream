@@ -26,10 +26,12 @@ class NotificationPreferencesController
     extends AsyncNotifier<NotificationPreferences> {
   @override
   Future<NotificationPreferences> build() {
-    return ref.watch(notificationPreferencesRepositoryProvider).getPreferences();
+    return ref
+        .watch(notificationPreferencesRepositoryProvider)
+        .getPreferences();
   }
 
-  Future<void> update(NotificationPreferences next) async {
+  Future<void> save(NotificationPreferences next) async {
     final NotificationPreferences? previous = state.value;
     state = AsyncData<NotificationPreferences>(next);
     try {
