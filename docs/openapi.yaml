@@ -6059,7 +6059,7 @@
           "notify_on_live": {
             "type": "boolean",
             "default": true,
-            "description": "Per-Watch push switch. Implemented in B3; defaults to true and does not disable backend monitoring."
+            "description": "Per-Watch creator LIVE push switch. Defaults to true. creator_live pushes require both this switch and NotificationPreferences.creator_live to be true. Disabling it does not disable monitoring or auto-record."
           },
           "auto_record_state": {
             "$ref": "#/components/schemas/AutoRecordState",
@@ -6086,7 +6086,7 @@
           "notify_on_live": {
             "type": "boolean",
             "default": true,
-            "description": "Optional per-Watch LIVE push switch; defaults to true. Implemented in B3."
+            "description": "Optional per-Watch creator LIVE push switch; defaults to true. Effective together with NotificationPreferences.creator_live."
           }
         },
         "additionalProperties": false
@@ -6107,7 +6107,7 @@
           },
           "notify_on_live": {
             "type": "boolean",
-            "description": "Optional per-Watch LIVE push switch. Implemented in B3."
+            "description": "Optional per-Watch creator LIVE push switch. Effective together with NotificationPreferences.creator_live."
           }
         },
         "additionalProperties": false
@@ -6517,6 +6517,7 @@
       },
       "NotificationType": {
         "type": "string",
+        "description": "Notification feed type. V2 adds creator_live, recording_expiring, and free_minutes_low.",
         "enum": [
           "recording_started",
           "recording_ready",
@@ -6628,6 +6629,9 @@
           "recording_started",
           "recording_ready",
           "recording_failed",
+          "creator_live",
+          "recording_expiring",
+          "free_minutes_low",
           "email_supported",
           "updated_at"
         ],
@@ -6658,17 +6662,17 @@
           "creator_live": {
             "type": "boolean",
             "default": true,
-            "description": "V2 notification preference implemented in B3. Default: true."
+            "description": "Global master preference for creator_live pushes. A creator LIVE push is delivered only when this preference and the matching Watch.notify_on_live are both true. Default: true."
           },
           "recording_expiring": {
             "type": "boolean",
             "default": true,
-            "description": "V2 notification preference implemented in B3. Default: true."
+            "description": "Preference for recording_expiring pushes when a cloud recording is close to retention expiry. Default: true."
           },
           "free_minutes_low": {
             "type": "boolean",
             "default": true,
-            "description": "V2 notification preference implemented in B3. Default: true."
+            "description": "Preference for free_minutes_low pushes when Free daily recording minutes are close to running out. Default: true."
           },
           "marketing": {
             "type": "boolean",

@@ -3,6 +3,15 @@ enum AppNotificationType {
   recordingReady,
   recordingFailed,
 
+  /// A followed creator is currently LIVE.
+  creatorLive,
+
+  /// A cloud recording is close to its retention expiry.
+  recordingExpiring,
+
+  /// The account is close to using all Free recording minutes for the day.
+  freeMinutesLow,
+
   /// A notification kind this app version does not know yet.
   other,
 }

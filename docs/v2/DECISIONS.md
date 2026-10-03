@@ -65,7 +65,10 @@ Nguồn thiết kế: gói `SaveStream mobile app phase 1.zip` (`docs/SCREENS.md
 - Hàng chờ slot cloud và trạng thái "Bỏ lỡ".
 - Tự bật lại tự động ghi sau khi người dùng mua thêm giờ (hiện kênh chỉ chuyển sang "tạm dừng vì hết credit").
 - Xác minh hoá đơn App Store / Google Play rồi mới cộng credit.
-- Push: đăng ký thiết bị, công tắc "báo khi LIVE" theo từng kênh, các loại thông báo mới (kênh LIVE, sắp hết hạn lưu, sắp hết phút).
+- Push: đăng ký thiết bị và dùng contract V2 sau:
+  - Loại thông báo mới: `creator_live` (kênh LIVE), `recording_expiring` (sắp hết hạn lưu), `free_minutes_low` (sắp hết phút Free).
+  - Preference theo loại: `creator_live`, `recording_expiring`, `free_minutes_low`; mặc định bật.
+  - Mỗi Watch có `notify_on_live` (mặc định bật) cho công tắc "báo khi LIVE" theo từng kênh. Push `creator_live` chỉ gửi khi cả preference `creator_live` và `watch.notify_on_live` đều bật. Tắt công tắc này không dừng monitoring hay auto-record.
 - Xác minh quảng cáo thưởng phía server, và đếm phút Free theo ngày.
 - Tăng số luồng ghi song song toàn hệ thống (hiện 6) trước khi mở bán, vì mỗi Pro được 3 luồng.
 
