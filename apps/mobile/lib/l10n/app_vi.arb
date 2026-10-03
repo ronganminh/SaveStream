@@ -470,5 +470,17 @@
   "notificationHistoryEmptyBody": "Thông báo vòng đời recording sẽ xuất hiện tại đây khi backend tạo chúng.",
   "notificationMarkReadFailed": "Không thể đánh dấu thông báo là đã đọc. Hãy thử lại.",
   "notificationPreferencesSaveFailed": "Không thể lưu tùy chọn thông báo. Cài đặt trước đó được giữ nguyên.",
-  "notificationLoadMoreFailed": "Không thể tải thêm thông báo."
+  "notificationLoadMoreFailed": "Không thể tải thêm thông báo.",
+  "welcomeHeadline": "Không bỏ lỡ LIVE nào.",
+  "welcomeBody": "SaveStream báo khi creator bạn theo dõi LIVE. Bấm Record để lưu trên điện thoại, hoặc để Pro tự record trên cloud.",
+  "welcomePreviewStatus": "Đang record · Local · 00:06:12",
+  "welcomeLegalNotice": "Tiếp tục nghĩa là bạn đồng ý Điều khoản và Chính sách quyền riêng tư. Chỉ record những livestream bạn được phép lưu.",
+  "welcomeThemeLabel": "Giao diện: {mode}",
+  "@welcomeThemeLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  }
 }

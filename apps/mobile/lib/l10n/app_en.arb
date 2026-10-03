@@ -470,5 +470,17 @@
   "notificationHistoryEmptyBody": "Recording lifecycle notifications will appear here when they are created by the backend.",
   "notificationMarkReadFailed": "Couldn’t mark this notification as read. Try again.",
   "notificationPreferencesSaveFailed": "Couldn’t save your notification preferences. Your previous settings were kept.",
-  "notificationLoadMoreFailed": "Couldn’t load more notifications."
+  "notificationLoadMoreFailed": "Couldn’t load more notifications.",
+  "welcomeHeadline": "Never miss a LIVE.",
+  "welcomeBody": "SaveStream tells you when the creators you watch go LIVE. Tap Record to save it on your phone, or let Pro record automatically in the cloud.",
+  "welcomePreviewStatus": "Recording · Local · 00:06:12",
+  "welcomeLegalNotice": "By continuing you agree to the Terms of Use and Privacy Policy. Only record streams you are permitted to save.",
+  "welcomeThemeLabel": "Theme: {mode}",
+  "@welcomeThemeLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  }
 }
