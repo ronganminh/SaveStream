@@ -56,10 +56,8 @@ void main() {
     // The Home tab opens with the V2 greeting header instead of an app bar.
     expect(find.byType(SsLargeHeader), findsOneWidget);
     expect(find.byTooltip('Notifications'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Channels'), findsOneWidget);
-    expect(find.text('Recordings'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.byType(NavigationDestination), findsNWidgets(4));
   });
 
   testWidgets('renders the aggregated home dashboard', (
@@ -70,12 +68,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Welcome back, Alex'), findsOneWidget);
-    expect(find.text('Available credit'), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
-    expect(find.text('Recording now'), findsOneWidget);
-    expect(find.text('Credit is running low'), findsOneWidget);
-    expect(find.text('A recording needs attention'), findsOneWidget);
-    expect(find.text('12.6 / 50 recording hours'), findsOneWidget);
+    expect(find.text('Free minutes today'), findsOneWidget);
+    expect(find.text('6 / 10 minutes remaining'), findsOneWidget);
+    expect(find.text('Watching 8/3'), findsOneWidget);
+    expect(find.text('Available credit'), findsNothing);
+    expect(find.textContaining('credit', findRichText: true), findsNothing);
     expect(find.text('Ada Live'), findsWidgets);
   });
 
@@ -100,8 +97,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add your first channel'), findsOneWidget);
-    expect(find.text('Credit is running low'), findsNothing);
+    expect(find.text('Add a creator to get started'), findsOneWidget);
+    expect(find.text('Advertisement'), findsNothing);
   });
 
   testWidgets('reports retryable home repository errors', (
@@ -317,7 +314,7 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
 
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -332,78 +329,50 @@ void main() {
     await tester.tap(find.text('Recordings'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
   });
 
-  testWidgets('renders all Phase 5 Watch status variants', (
+  testWidgets('renders V2 Watching filters and legacy Free limit', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Ada Live'), findsOneWidget);
-    expect(find.text('Nora Shop'), findsOneWidget);
-
-    for (final String reason in <String>[
-      'Monitoring paused because available credit is insufficient.',
-      'Monitoring paused after a Watch error. Review and resume when ready.',
-      'Monitoring is paused until you resume it.',
-      'This Watch is disabled.',
-    ]) {
-      await tester.scrollUntilVisible(
-        find.text(reason),
-        320,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text(reason), findsOneWidget);
-    }
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('LIVE'), findsWidgets);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(find.text('Paused'), findsOneWidget);
+    expect(
+      find.textContaining('You already have 8 creators from an older plan'),
+      findsWidgets,
+    );
   });
 
-  testWidgets('Add Channel requires authorization then creates a Watch', (
+  testWidgets('legacy Free creator list is preserved but adding is blocked', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add channel').first);
+    await tester.tap(find.byTooltip('Add creator').first);
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField), '@fresh_creator');
-    final Finder addButton = find.widgetWithText(
-      FilledButton,
-      'Add & start monitoring',
-    );
-    await tester.ensureVisible(addButton);
-    await tester.tap(addButton);
-    await tester.pump();
-
+    expect(find.text('Watching is full'), findsOneWidget);
     expect(
-      find.text(
-        'Confirm that you are authorized to record this stream before continuing.',
-      ),
-      findsOneWidget,
+      find.textContaining('You already have 8 creators from an older plan'),
+      findsWidgets,
     );
-
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    await tester.tap(addButton);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-
-    expect(find.text('Channel detail'), findsOneWidget);
-    expect(find.text('Fresh Creator'), findsOneWidget);
-    expect(find.text('@fresh_creator'), findsOneWidget);
+    expect(find.byType(Checkbox), findsNothing);
   });
 
   testWidgets('Channel detail can pause and resume monitoring', (
@@ -411,7 +380,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -419,45 +388,34 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Monitoring settings'), findsOneWidget);
+    expect(find.text('Channel detail'), findsOneWidget);
     expect(find.text('Pause monitoring'), findsOneWidget);
+    expect(find.text('Notify when LIVE'), findsOneWidget);
 
-    await tester.ensureVisible(
-      find.widgetWithText(OutlinedButton, 'Pause monitoring'),
+    final Finder pause = find.widgetWithText(
+      OutlinedButton,
+      'Pause monitoring',
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Pause monitoring'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
-    await tester.pumpAndSettle();
+    final OutlinedButton pauseButton = tester.widget<OutlinedButton>(pause);
+    pauseButton.onPressed!();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
 
-    expect(find.text('Paused'), findsOneWidget);
+    expect(find.text('PAUSED'), findsWidgets);
 
-    await tester.ensureVisible(
-      find.widgetWithText(OutlinedButton, 'Resume monitoring'),
+    final Finder resume = find.widgetWithText(
+      OutlinedButton,
+      'Resume monitoring',
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(OutlinedButton, 'Resume monitoring'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 1000));
-    await tester.pumpAndSettle();
+    final OutlinedButton resumeButton = tester.widget<OutlinedButton>(resume);
+    resumeButton.onPressed!();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
 
-    expect(find.text('Active'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('Latest recording'),
-      320,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Latest recording'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Recording history'),
-      240,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Recording history'), findsOneWidget);
+    expect(find.text('LIVE'), findsWidgets);
+    expect(find.text('Recent recording'), findsOneWidget);
   });
 
   testWidgets('Recordings pagination exposes all lifecycle statuses', (
@@ -867,7 +825,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
 
     expect(find.byType(SsSkeleton), findsWidgets);
@@ -880,11 +838,11 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('No channels yet'), findsOneWidget);
+    expect(find.text('Add a creator to get started'), findsOneWidget);
   });
 
   testWidgets('switches locale and theme at runtime', (
@@ -903,7 +861,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Trang chủ'), findsOneWidget);
-    expect(find.text('Kênh'), findsOneWidget);
+    expect(find.text('Theo dõi'), findsWidgets);
 
     final MaterialApp app = tester.widget<MaterialApp>(
       find.byType(MaterialApp),

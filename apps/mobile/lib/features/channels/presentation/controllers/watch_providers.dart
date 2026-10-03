@@ -34,6 +34,12 @@ final watchDetailProvider = FutureProvider.family<WatchSummary?, String>(
   (ref, id) => ref.watch(watchRepositoryProvider).getWatch(id),
 );
 
+final FutureProvider<List<RecordingSummary>> watchRecordingsProvider =
+    FutureProvider<List<RecordingSummary>>((ref) {
+      ref.watch(recordingRevisionProvider);
+      return ref.watch(recordingRepositoryProvider).listRecordings();
+    });
+
 final channelDetailProvider =
     FutureProvider.family<ChannelDetailViewModel?, String>((ref, id) async {
       ref.watch(recordingRevisionProvider);
@@ -97,6 +103,13 @@ class WatchController {
     return _runMutation(
       id,
       () => _repository.setAutoRecord(id, enabled: enabled),
+    );
+  }
+
+  Future<void> setNotifyOnLive(String id, {required bool enabled}) {
+    return _runMutation(
+      id,
+      () => _repository.setNotifyOnLive(id, enabled: enabled),
     );
   }
 

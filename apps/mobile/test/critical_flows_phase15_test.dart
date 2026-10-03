@@ -7,10 +7,13 @@ import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
 import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
 import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
+import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
+import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/features/recordings/domain/repositories/recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
@@ -57,46 +60,56 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('critical flow add channel -> channel detail', (
+  testWidgets('critical flow add creator -> creator detail', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        extraOverrides: [
+          entitlementRepositoryProvider.overrideWithValue(
+            const MockEntitlementRepository(
+              MockBehavior(
+                scenario: MockScenario.success,
+                latency: Duration.zero,
+              ),
+              state: EntitlementMockState.pro,
+            ),
+          ),
+        ],
+      ),
+    );
     await tester.pump();
 
-    await tester.tap(find.text('Channels'));
+    await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add channel').first);
+    await tester.tap(find.byTooltip('Add creator').first);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '@phase15_creator');
 
-    final Finder addButton = find.widgetWithText(
+    final Finder findCreator = find.widgetWithText(
       FilledButton,
-      'Add & start monitoring',
+      'Find creator',
     );
+    await tester.tap(findCreator);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+
+    expect(find.byType(Checkbox), findsNothing);
+    expect(find.text('Use recordings responsibly'), findsOneWidget);
+
+    final Finder addButton = find.widgetWithText(FilledButton, 'Add & follow');
     await tester.ensureVisible(addButton);
     await tester.tap(addButton);
-    await tester.pump();
-
-    expect(
-      find.text(
-        'Confirm that you are authorized to record this stream before continuing.',
-      ),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
-    expect(find.text('@phase15_creator'), findsOneWidget);
-    expect(find.text('Monitoring settings'), findsOneWidget);
+    expect(find.textContaining('@phase15_creator'), findsOneWidget);
+    expect(find.text('Notify when LIVE'), findsOneWidget);
   });
 
   testWidgets('critical flow active recording -> stop -> stopped', (
