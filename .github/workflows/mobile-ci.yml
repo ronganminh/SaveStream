@@ -34,8 +34,15 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Resolve locked dependencies
-        run: flutter pub get --enforce-lockfile
+      - name: Resolve dependencies for C0 lock refresh
+        run: flutter pub get
+
+      - name: Upload refreshed C0 lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: c0-pubspec-lock
+          path: apps/mobile/pubspec.lock
+          if-no-files-found: error
 
       - name: Generate official brand raster
         run: |
