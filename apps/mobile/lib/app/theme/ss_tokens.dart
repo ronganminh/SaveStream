@@ -2,12 +2,9 @@ import 'package:flutter/material.dart';
 
 /// SaveStream Mobile V2 design tokens (design handoff, Phase 7 final).
 abstract final class SsColors {
-  static const Color brandPrimary = Color(0xFF6D49F4);
-  static const Color brandPrimaryDark = Color(0xFF968CFF);
+  static const Color brandPrimary = Color(0xFF4F46E5);
+  static const Color brandPrimaryDark = Color(0xFF818CF8);
   static const Color brandAccent = Color(0xFFC4B5FD);
-
-  /// Background of the official brand mark, launcher icon and native splash.
-  static const Color brandMark = Color(0xFF4F46E5);
 
   static const Color success = Color(0xFF007742);
   static const Color successDark = Color(0xFF3FD18A);
@@ -17,6 +14,17 @@ abstract final class SsColors {
   static const Color errorDark = Color(0xFFFF5468);
   static const Color recording = Color(0xFFE31029);
   static const Color recordingDark = Color(0xFFFF5468);
+  static const Color info = Color(0xFF0074C8);
+  static const Color infoDark = Color(0xFF5BB0FF);
+
+  static const Color successSubtle = Color(0xFFE6F4EC);
+  static const Color successSubtleDark = Color(0xFF0D2419);
+  static const Color warningSubtle = Color(0xFFFDF4E1);
+  static const Color warningSubtleDark = Color(0xFF2A2111);
+  static const Color errorSubtle = Color(0xFFFDECEE);
+  static const Color errorSubtleDark = Color(0xFF2B1117);
+  static const Color infoSubtle = Color(0xFFE6F1FA);
+  static const Color infoSubtleDark = Color(0xFF0E2033);
 }
 
 abstract final class SsSpacing {

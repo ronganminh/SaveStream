@@ -11,7 +11,7 @@ class SplashScreen extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(color: SsColors.brandMark),
+        decoration: const BoxDecoration(color: SsColors.brandPrimary),
         child: SafeArea(
           child: Center(
             child: Column(

@@ -49,8 +49,8 @@ class MainShell extends StatelessWidget {
             label: l10n.navHome,
           ),
           NavigationDestination(
-            icon: const Icon(Icons.rss_feed_rounded),
-            selectedIcon: const Icon(Icons.rss_feed_rounded),
+            icon: const Icon(Icons.visibility_outlined),
+            selectedIcon: const Icon(Icons.visibility_rounded),
             label: l10n.navChannels,
           ),
           NavigationDestination(

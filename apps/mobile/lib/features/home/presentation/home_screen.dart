@@ -21,41 +21,50 @@ class HomeScreen extends ConsumerWidget {
       homeDashboardProvider,
     );
 
+    final String? displayName = dashboard.value?.metrics.displayName;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            const SsLogoMark(size: 32),
-            const SizedBox(width: SsSpacing.md),
+            SsLargeHeader(
+              title: displayName == null
+                  ? l10n.appTitle
+                  : l10n.homeGreeting(displayName),
+              subtitle: MaterialLocalizations.of(
+                context,
+              ).formatFullDate(DateTime.now()),
+              actions: <Widget>[
+                IconButton(
+                  tooltip: l10n.notificationsTitle,
+                  onPressed: () => context.push(AppRoutes.notifications),
+                  icon: const Icon(Icons.notifications_outlined),
+                ),
+              ],
+            ),
             Expanded(
-              child: Text(
-                l10n.appTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: SsAsyncRefreshFrame(
+                isRefreshing: dashboard.isRefreshing,
+                child: dashboard.when(
+                  loading: () => const _HomeSkeleton(),
+                  error: (Object error, StackTrace stackTrace) => Center(
+                    child: SsAsyncErrorState(
+                      error: error,
+                      onRetry: () => ref.invalidate(homeDashboardProvider),
+                    ),
+                  ),
+                  data: (HomeDashboardViewModel data) => RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(homeDashboardProvider);
+                      await ref.read(homeDashboardProvider.future);
+                    },
+                    child: _HomeDashboard(data: data),
+                  ),
+                ),
               ),
             ),
           ],
-        ),
-      ),
-      body: SafeArea(
-        child: SsAsyncRefreshFrame(
-          isRefreshing: dashboard.isRefreshing,
-          child: dashboard.when(
-            loading: () => const _HomeSkeleton(),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: SsAsyncErrorState(
-                error: error,
-                onRetry: () => ref.invalidate(homeDashboardProvider),
-              ),
-            ),
-            data: (HomeDashboardViewModel data) => RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(homeDashboardProvider);
-                await ref.read(homeDashboardProvider.future);
-              },
-              child: _HomeDashboard(data: data),
-            ),
-          ),
         ),
       ),
     );
@@ -78,7 +87,7 @@ class _HomeDashboard extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(
             SsSpacing.lg,
-            SsSpacing.md,
+            0,
             SsSpacing.lg,
             SsSpacing.xxl,
           ),
@@ -89,18 +98,6 @@ class _HomeDashboard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text(
-                      l10n.homeGreeting(data.metrics.displayName),
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    const SizedBox(height: SsSpacing.xs),
-                    Text(
-                      l10n.homeGreetingSubtitle,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: SsSpacing.xl),
                     _MetricGrid(data: data),
                     const SizedBox(height: SsSpacing.lg),
                     SizedBox(
