@@ -161,7 +161,7 @@ class _HomeDashboard extends StatelessWidget {
     final WatchSummary? live =
         data.liveWatches.isEmpty ? null : data.liveWatches.first;
     final int limit = entitlement.limits.maxWatches;
-    final int remainingSlots = (limit - data.watches.length).clamp(0, limit);
+    final int remainingSlots = (limit - data.watches.length).clamp(0, limit).toInt();
     final Duration resetIn = local.resetsAt.difference(DateTime.now().toUtc());
     final String reset = formatResetCountdown(
       resetIn,
@@ -379,7 +379,7 @@ class _WatchingSummary extends StatelessWidget {
           Text(detail),
           const SizedBox(height: SsSpacing.md),
           LinearProgressIndicator(
-            value: limit == 0 ? 0 : (count / limit).clamp(0, 1),
+            value: limit == 0 ? 0 : (count / limit).clamp(0.0, 1.0).toDouble(),
           ),
         ],
       ),
