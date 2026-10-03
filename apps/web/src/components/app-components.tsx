@@ -101,6 +101,7 @@ import {
 } from "@/mocks/fixtures";
 import { usePreferences, type ThemePreference } from "@/lib/preferences";
 import {
+  isAdminRole,
   isDemoMode,
   isProductionMode,
   productionBackendConnected,
@@ -172,7 +173,7 @@ function useShellAccount() {
     name,
     email: authUser.email,
     initials,
-    subLabel: authUser.role === "admin" ? "Admin account" : "Account",
+    subLabel: isAdminRole(authUser.role) ? `${authUser.role === "admin" ? "Owner" : authUser.role[0]!.toUpperCase() + authUser.role.slice(1)} admin` : "Account",
   };
 }
 export function Logo({ compact = false }: { compact?: boolean }) {
@@ -415,7 +416,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const { t } = usePreferences();
   const { identity } = useAuth();
   const account = useShellAccount();
-  const canSeeAdmin = identity.role === "admin";
+  const canSeeAdmin = isAdminRole(identity.role);
   const item = (
     it:
       | (typeof mainNav)[number]
