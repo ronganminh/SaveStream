@@ -4,6 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
+from app.application.notifications.push import PushDeliveryError
+
 from .celery_app import celery_app
 
 logger = logging.getLogger("savestream.worker")
@@ -85,6 +87,21 @@ def recording_recover_stale() -> int:
 
 @celery_app.task(
     bind=True,
+    name="savestream.notification.push",
+    autoretry_for=(PushDeliveryError,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def notification_push(self, notification_id: str) -> int:
+    del self
+    from app.infrastructure.push.worker import run_notification_push
+
+    return run_notification_push(notification_id)
+
+
+@celery_app.task(
+    bind=True,
     name="savestream.outbox.event",
     autoretry_for=(Exception,),
     retry_backoff=True,
@@ -104,6 +121,9 @@ def handle_outbox_event(
 
         token_id = str(payload.get("token_id", ""))
         asyncio.run(deliver_one_time_token_email(token_id))
+        return
+    if topic == "notification.push":
+        notification_push.delay(str(payload["notification_id"]))
         return
     if topic == "recording.requested":
         recording_run.delay(str(payload["recording_id"]))

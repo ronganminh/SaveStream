@@ -30,7 +30,7 @@ def _response(item: UserNotification) -> NotificationResponse:
         title=item.title,
         body=item.body,
         read=item.read_at is not None,
-        resource_type=cast(Literal["recording"] | None, item.resource_type),
+        resource_type=cast(Literal["recording", "watch"] | None, item.resource_type),
         resource_id=item.resource_id,
         created_at=item.created_at,
     )
@@ -109,6 +109,10 @@ async def get_notification_preferences(
         recording_started=preferences.recording_started,
         recording_ready=preferences.recording_ready,
         recording_failed=preferences.recording_failed,
+        creator_live=preferences.creator_live,
+        recording_expiring=preferences.recording_expiring,
+        free_minutes_low=preferences.free_minutes_low,
+        marketing=preferences.marketing,
         updated_at=preferences.updated_at,
     )
 
@@ -128,10 +132,18 @@ async def update_notification_preferences(
         recording_started=payload.recording_started,
         recording_ready=payload.recording_ready,
         recording_failed=payload.recording_failed,
+        creator_live=payload.creator_live,
+        recording_expiring=payload.recording_expiring,
+        free_minutes_low=payload.free_minutes_low,
+        marketing=payload.marketing,
     )
     return NotificationPreferenceResponse(
         recording_started=preferences.recording_started,
         recording_ready=preferences.recording_ready,
         recording_failed=preferences.recording_failed,
+        creator_live=preferences.creator_live,
+        recording_expiring=preferences.recording_expiring,
+        free_minutes_low=preferences.free_minutes_low,
+        marketing=preferences.marketing,
         updated_at=preferences.updated_at,
     )

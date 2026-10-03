@@ -47,6 +47,7 @@ def watch_response(
         live_status=cast(LiveStatusValue, watch.live_status),
         auto_record=watch.auto_record,
         auto_record_state=auto_record_state,
+        notify_on_live=watch.notify_on_live,
         last_checked_at=watch.last_checked_at,
         next_check_at=watch.next_check_at,
         last_live_at=watch.last_live_at,

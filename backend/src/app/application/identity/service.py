@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
@@ -13,6 +13,7 @@ from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.db.models import (
     AuditLog,
     AuthSession,
+    DeviceRegistration,
     OneTimeToken,
     PasswordCredential,
     User,
@@ -74,6 +75,20 @@ class IdentityService:
         self.passwords = password_service or PasswordService()
         self.tokens = token_service or TokenService(settings)
         self.outbox = outbox_writer or OutboxWriter()
+
+    async def _delete_devices_for_session(self, session_id: uuid.UUID) -> None:
+        await self.session.execute(
+            delete(DeviceRegistration).where(
+                DeviceRegistration.session_id == session_id
+            )
+        )
+
+    async def _delete_devices_for_user(self, user_id: uuid.UUID) -> None:
+        await self.session.execute(
+            delete(DeviceRegistration).where(
+                DeviceRegistration.user_id == user_id
+            )
+        )
 
     @staticmethod
     def normalize_email(email: str) -> str:
@@ -336,6 +351,7 @@ class IdentityService:
             if presented_hash in list(auth_session.refresh_history or []):
                 auth_session.revoked_at = now
                 auth_session.revoked_reason = "refresh_reuse"
+                await self._delete_devices_for_session(auth_session.id)
                 await self._audit(
                     action="identity.refresh_reuse_detected",
                     user_id=auth_session.user_id,
@@ -373,6 +389,7 @@ class IdentityService:
         if auth_session is not None and auth_session.user_id == principal.user_id:
             auth_session.revoked_at = utcnow()
             auth_session.revoked_reason = "logout"
+            await self._delete_devices_for_session(auth_session.id)
             await self._audit(
                 action="identity.logout",
                 user_id=principal.user_id,
@@ -391,6 +408,7 @@ class IdentityService:
             )
             .values(revoked_at=now, revoked_reason="logout_all")
         )
+        await self._delete_devices_for_user(principal.user_id)
         await self._audit(
             action="identity.logout_all",
             user_id=principal.user_id,
@@ -468,6 +486,7 @@ class IdentityService:
             )
             .values(revoked_at=now, revoked_reason="password_reset")
         )
+        await self._delete_devices_for_user(user.id)
         await self._audit(
             action="identity.password_reset",
             user_id=user.id,
@@ -537,6 +556,7 @@ class IdentityService:
         if target.revoked_at is None:
             target.revoked_at = utcnow()
             target.revoked_reason = "session_revoke"
+            await self._delete_devices_for_session(target.id)
             await self._audit(
                 action="identity.session_revoked",
                 user_id=principal.user_id,
@@ -563,6 +583,7 @@ class IdentityService:
             )
             .values(revoked_at=now, revoked_reason="account_deletion")
         )
+        await self._delete_devices_for_user(user.id)
         await self.outbox.enqueue(
             self.session,
             topic="identity.account_deletion_requested",

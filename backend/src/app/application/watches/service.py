@@ -138,6 +138,7 @@ class WatchService:
             status=WatchStatus.ACTIVE.value,
             live_status="unknown",
             auto_record=payload.auto_record,
+            notify_on_live=payload.notify_on_live,
             next_check_at=utcnow(),
         )
         self.session.add(watch)
@@ -233,6 +234,8 @@ class WatchService:
                         details={"plan": entitlement.plan},
                     )
             watch.auto_record = payload.auto_record
+        if payload.notify_on_live is not None:
+            watch.notify_on_live = payload.notify_on_live
         if payload.status is not None:
             status = validate_user_status(payload.status)
             watch.status = status.value

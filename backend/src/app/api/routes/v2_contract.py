@@ -151,25 +151,6 @@ async def create_store_purchase(
     _not_implemented("B5")
 
 
-@router.put("/me/devices/{device_id}", operation_id="upsertDevice")
-async def upsert_device(
-    device_id: str,
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del device_id, request, principal
-    _not_implemented("B3")
-
-
-@router.delete("/me/devices/{device_id}", operation_id="deleteDevice")
-async def delete_device(
-    device_id: str,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del device_id, principal
-    _not_implemented("B3")
-
-
 @router.get("/app/status", operation_id="getAppStatus")
 async def get_app_status() -> None:
     _not_implemented("B6")

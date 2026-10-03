@@ -29,6 +29,10 @@ class Watch(Base):
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="active")
     live_status: Mapped[str] = mapped_column(String(16), nullable=False, default="unknown")
     auto_record: Mapped[bool] = mapped_column(nullable=False, default=True)
+    notify_on_live: Mapped[bool] = mapped_column(nullable=False, default=True)
+    live_session_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), nullable=True
+    )
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     next_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_live_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

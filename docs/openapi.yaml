@@ -2651,14 +2651,14 @@
         ],
         "summary": "Create or update a device registration",
         "operationId": "upsertDevice",
-        "description": "Contract frozen in B0; implemented in B3. Successful upsert has no response body.",
+        "description": "Create or update the current session's device registration. Implemented in B3.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B3"
         },
         "parameters": [
@@ -2685,16 +2685,6 @@
         "responses": {
           "204": {
             "description": "Stored"
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       },
@@ -2704,14 +2694,14 @@
         ],
         "summary": "Delete a device registration",
         "operationId": "deleteDevice",
-        "description": "Contract frozen in B0; implemented in B3. Called on logout.",
+        "description": "Delete the current user's device registration. Session revocation also removes registrations bound to that session. Implemented in B3.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B3"
         },
         "parameters": [
@@ -2728,16 +2718,6 @@
         "responses": {
           "204": {
             "description": "Deleted"
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -5429,7 +5409,7 @@
           "notify_on_live": {
             "type": "boolean",
             "default": true,
-            "description": "V2 field frozen in B0; implemented in B3. Absence during rollout must be treated as true."
+            "description": "Per-Watch push switch. Implemented in B3; defaults to true and does not disable backend monitoring."
           },
           "auto_record_state": {
             "$ref": "#/components/schemas/AutoRecordState",
@@ -5456,7 +5436,7 @@
           "notify_on_live": {
             "type": "boolean",
             "default": true,
-            "description": "Optional V2 notification switch; implemented in B3."
+            "description": "Optional per-Watch LIVE push switch; defaults to true. Implemented in B3."
           }
         },
         "additionalProperties": false
@@ -5477,7 +5457,7 @@
           },
           "notify_on_live": {
             "type": "boolean",
-            "description": "Optional V2 notification switch; implemented in B3."
+            "description": "Optional per-Watch LIVE push switch. Implemented in B3."
           }
         },
         "additionalProperties": false
@@ -6028,22 +6008,22 @@
           "creator_live": {
             "type": "boolean",
             "default": true,
-            "description": "V2 preference frozen in B0; implemented in B3."
+            "description": "V2 notification preference implemented in B3. Default: true."
           },
           "recording_expiring": {
             "type": "boolean",
             "default": true,
-            "description": "V2 preference frozen in B0; implemented in B3."
+            "description": "V2 notification preference implemented in B3. Default: true."
           },
           "free_minutes_low": {
             "type": "boolean",
             "default": true,
-            "description": "V2 preference frozen in B0; implemented in B3."
+            "description": "V2 notification preference implemented in B3. Default: true."
           },
           "marketing": {
             "type": "boolean",
             "default": false,
-            "description": "V2 preference frozen in B0; implemented in B3."
+            "description": "V2 notification preference implemented in B3. Default: false."
           }
         },
         "additionalProperties": false

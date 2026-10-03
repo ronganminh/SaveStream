@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.entitlements.service import EntitlementService
+from app.application.notifications.service import ensure_creator_live_notification
 from app.application.recordings.cloud_slots import CloudSlotQueueService
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
@@ -123,6 +124,19 @@ class WatchScheduler:
             return
 
         previous_room_id = watch.resolved_room_id
+        started_live_session = False
+        if result.is_live:
+            if (
+                watch.live_session_id is None
+                or (
+                    previous_room_id is not None
+                    and previous_room_id != result.room_id
+                )
+            ):
+                watch.live_session_id = uuid.uuid4()
+                started_live_session = True
+        else:
+            watch.live_session_id = None
         watch.last_checked_at = now
         watch.failure_count = 0
         watch.last_error = None
@@ -139,6 +153,12 @@ class WatchScheduler:
         else:
             watch.next_check_at = now + self._jitter(
                 float(self.settings.watch_offline_check_seconds)
+            )
+        if started_live_session and watch.live_session_id is not None:
+            await ensure_creator_live_notification(
+                self.session,
+                watch,
+                live_session_id=watch.live_session_id,
             )
         await self.session.commit()
 

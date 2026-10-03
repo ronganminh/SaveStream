@@ -13,6 +13,7 @@ from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.billing import router as billing_router
 from app.api.routes.credits import router as credits_router
+from app.api.routes.devices import router as devices_router
 from app.api.routes.health import router as health_router
 from app.api.routes.notifications import router as notifications_router
 from app.api.routes.operations import router as operations_router
@@ -88,6 +89,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(artifacts_router)
     app.include_router(watches_router)
     app.include_router(credits_router)
+    app.include_router(devices_router)
     app.include_router(pricing_router)
     app.include_router(public_router)
     app.include_router(billing_router)

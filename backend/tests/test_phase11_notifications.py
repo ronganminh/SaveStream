@@ -176,6 +176,10 @@ def test_persisted_notifications_read_state_dedupe_and_preferences(tmp_path) -> 
             "recording_started": True,
             "recording_ready": True,
             "recording_failed": True,
+            "creator_live": True,
+            "recording_expiring": True,
+            "free_minutes_low": True,
+            "marketing": False,
             "email_supported": False,
             "updated_at": None,
         }
