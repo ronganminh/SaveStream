@@ -121,7 +121,7 @@ Không cần tài khoản Firebase để hoàn thành phase này; bản thật c
 7. Ô ghi thứ 2: mở bằng 2 phần thưởng `purpose = local_slot`, có thời hạn; thời hạn và số ô trả trong khối `local` của entitlement (thêm trường nếu cần, cập nhật hợp đồng).
 8. **Đồng bộ metadata:** `GET /v1/local-recordings`, `DELETE /v1/local-recordings/{id}` (chỉ thiết bị nguồn). Không lưu file video nào của bản ghi trên máy lên máy chủ.
 9. Khối `local` trong `GET /v1/me/entitlement` trả số thật.
-10. Pro gọi các endpoint này vẫn được (Pro cũng có thể ghi trên máy), nhưng không bị giới hạn phút: quyết định này **chưa chốt**, mặc định áp cùng giới hạn như Free và ghi câu hỏi vào PR cho chủ repo.
+10. **Pro ghi trên máy không giới hạn phút** (đã chốt): cấu hình `SAVESTREAM_PRO_LOCAL_RECORDING`, giá trị `unlimited` (mặc định) hoặc `disabled`. Với `unlimited`: không trừ phút Free, không cần phần thưởng, cấp lease dài và cho `extend` không kèm `reward_id`. Với `disabled`: trả `403 LOCAL_RECORDING_DISABLED`. Trả đúng `local.enabled` và `local.unlimited` trong entitlement. Test cả hai giá trị cấu hình.
 
 ---
 

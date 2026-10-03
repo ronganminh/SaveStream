@@ -22,6 +22,8 @@ Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời 
   },
   "watch_count": 2,
   "local": {
+    "enabled": true,
+    "unlimited": false,
     "daily_minutes": 10,
     "minutes_remaining": 6,
     "resets_at": "2026-10-04T00:00:00Z",
@@ -40,7 +42,9 @@ Quy tắc:
 - 10 credit dùng thử khi xác minh email **không** làm tài khoản thành Pro.
 - Pro: `max_watches = 20`, `max_concurrent_cloud_recordings = 3`, `cloud_retention_days = 30`.
 - Free: `max_watches = 3`, `max_concurrent_cloud_recordings = 0` trên mobile. Web vẫn cho tài khoản Free dùng credit dùng thử để ghi cloud thủ công; quy tắc đó do web và backend xử lý, không qua trường này.
-- Khối `local` chỉ có nghĩa với Free trên mobile. Với Pro vẫn trả về để app không phải xử lý null.
+- `local.enabled`: tài khoản có được ghi trên máy không. `local.unlimited`: không giới hạn phút, khi đó app bỏ qua các trường phút và phần thưởng.
+- Free: `enabled = true`, `unlimited = false`.
+- Pro: `enabled = true`, `unlimited = true` (mặc định hiện tại). Backend đổi được bằng cấu hình `SAVESTREAM_PRO_LOCAL_RECORDING` (`unlimited` hoặc `disabled`); app **phải đọc hai trường này**, không tự suy ra từ `plan`.
 - Phút Free reset lúc 00:00 UTC. App chỉ hiển thị đếm ngược theo giờ máy.
 
 ## 2. Kênh theo dõi (watch)
@@ -104,6 +108,8 @@ Trả `201`:
 
 - `granted_seconds` lấy từ phút Free còn lại trong ngày, hoặc từ phần thưởng quảng cáo nếu có `reward_id` hợp lệ.
 - Hết phút và không có phần thưởng: `402` mã `FREE_MINUTES_EXHAUSTED`.
+- Tài khoản `local.unlimited`: `granted_seconds` là một lease dài (mặc định 4 giờ), app gọi `extend` không kèm `reward_id` để nối tiếp; không trừ phút Free.
+- Tài khoản `local.enabled = false`: `403` mã `LOCAL_RECORDING_DISABLED`.
 - Kênh không LIVE: `409` mã `CREATOR_NOT_LIVE`.
 - Đã có phiên ghi trên máy đang chạy và chưa mở ô thứ 2: `409` mã `LOCAL_SLOT_BUSY`.
 - `stream.format` là `flv` hoặc `hls`. `stream.url` có thời hạn ngắn; app không lưu lại.
@@ -267,6 +273,7 @@ App so phiên bản để hiện màn bắt buộc cập nhật, và hiện màn
 | `REWARD_LOCKED` | 429 | Tạm khoá phần thưởng |
 | `STORE_RECEIPT_INVALID` | 422 | Hoá đơn store không hợp lệ |
 | `NOT_SOURCE_DEVICE` | 403 | Xoá bản ghi trên máy từ thiết bị khác |
+| `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |
 
 ## 10. Không thay đổi
 
