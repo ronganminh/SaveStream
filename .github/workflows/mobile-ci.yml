@@ -38,6 +38,12 @@ jobs:
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
 
+      - name: Generate official brand raster
+        run: |
+          python3 -m venv .brand-venv
+          .brand-venv/bin/python -m pip install --disable-pip-version-check cairosvg==2.7.1
+          .brand-venv/bin/python tool/generate_brand_assets.py
+
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
 
@@ -86,6 +92,12 @@ jobs:
 
       - name: Resolve locked dependencies
         run: flutter pub get --enforce-lockfile
+
+      - name: Generate official brand raster
+        run: |
+          python3 -m venv .brand-venv
+          .brand-venv/bin/python -m pip install --disable-pip-version-check cairosvg==2.7.1
+          .brand-venv/bin/python tool/generate_brand_assets.py
 
       - name: Generate native assets
         run: |
