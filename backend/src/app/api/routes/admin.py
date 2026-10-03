@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import csv
+import io
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_principal, get_db_session
 from app.api.schemas.admin import (
+    AdminActionResponse,
     AdminAdminListResponse,
+    AdminEntitlementResponse,
     AdminCreditAdjustmentRequest,
     AdminCreditAdjustmentResponse,
     AdminMfaCodeRequest,
@@ -16,26 +22,43 @@ from app.api.schemas.admin import (
     AdminMfaSetupResponse,
     AdminMfaStatusResponse,
     AdminPaymentListResponse,
+    AdminPrivacyRequestListResponse,
+    AdminPrivacyRequestResponse,
     AdminRecordingListResponse,
     AdminRefundRequest,
     AdminRefundResponse,
     AdminRetryRecordingResponse,
+    AdminSearchHit,
+    AdminSearchResponse,
     AdminRoleUpdateRequest,
     AdminStepUpRequest,
     AdminStepUpResponse,
+    AdminSupportActionRequest,
+    AdminUserDetailResponse,
     AdminUserListResponse,
+    AdminUserNoteRequest,
+    AdminUserNoteResponse,
+    AdminUserNotificationResponse,
+    AdminUserProfileUpdateRequest,
+    AdminUserSessionResponse,
     AdminUserResponse,
     AdminUserUpdateRequest,
+    AdminViewAsUserResponse,
     AuditLogListResponse,
 )
+from app.api.schemas.credits import CreditBalanceResponse
 from app.api.schemas.recordings import Pagination, RecordingResponse
 from app.api.serializers.admin import admin_user_response, audit_log_response
 from app.api.serializers.billing import payment_order_response
 from app.api.serializers.credits import transaction_response
 from app.api.serializers.recordings import recording_response
+from app.api.serializers.watches import watch_response
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.audit.service import AuditContext, AuditService
+from app.application.entitlements.service import EntitlementSnapshot
+from app.application.identity.service import ip_hint
+from app.application.privacy.service import PrivacyService
 from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
 from app.domain.common.errors import ApplicationError
@@ -119,6 +142,31 @@ async def _require_step_up(
         )
     await AdminSecurityService(session, request.app.state.settings).verify_step_up(
         principal, token
+    )
+
+
+async def _user_with_summary(
+    service: AdminService,
+    user,
+) -> AdminUserResponse:
+    entitlement, balance, provider = await service.user_summary(user)
+    return admin_user_response(
+        user,
+        plan=entitlement.plan,
+        cloud_minutes_available=balance.available,
+        latest_purchase_provider=provider,
+    )
+
+
+def _entitlement_response(snapshot: EntitlementSnapshot) -> AdminEntitlementResponse:
+    return AdminEntitlementResponse(
+        plan=snapshot.plan,
+        has_purchased=snapshot.has_purchased,
+        cloud_minutes_available=snapshot.cloud_minutes_available,
+        max_watches=snapshot.max_watches,
+        max_concurrent_cloud_recordings=snapshot.max_concurrent_cloud_recordings,
+        cloud_retention_days=snapshot.cloud_retention_days,
+        watch_count=snapshot.watch_count,
     )
 
 
@@ -331,19 +379,144 @@ async def list_admin_users(
     cursor: str | None = Query(default=None),
     role: str | None = Query(default=None),
     is_active: bool | None = Query(default=None),
+    query: str | None = Query(default=None, min_length=1, max_length=320),
+    plan: str | None = Query(default=None),
+    account_status: str | None = Query(default=None),
+    email_verified: bool | None = Query(default=None),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    purchase_provider: str | None = Query(default=None),
+    sort_by: str = Query(default="created_at"),
+    sort_order: str = Query(default="desc"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminUserListResponse:
     _require_scope(principal, "admin:users:read")
-    page = await AdminService(session, request.app.state.settings).list_users(
+    service = AdminService(session, request.app.state.settings)
+    page = await service.list_users(
         limit=limit,
         cursor=cursor,
         role=role,
         is_active=is_active,
+        query=query,
+        plan=plan,
+        account_status=account_status,
+        email_verified=email_verified,
+        created_from=created_from,
+        created_to=created_to,
+        purchase_provider=purchase_provider,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
+    items = [await _user_with_summary(service, item) for item in page.items]
     return AdminUserListResponse(
-        items=[admin_user_response(item) for item in page.items],
+        items=items,
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
+    )
+
+
+@router.get("/users/export.csv")
+async def export_admin_users_csv(
+    request: Request,
+    role: str | None = Query(default=None),
+    is_active: bool | None = Query(default=None),
+    query: str | None = Query(default=None, min_length=1, max_length=320),
+    plan: str | None = Query(default=None),
+    account_status: str | None = Query(default=None),
+    email_verified: bool | None = Query(default=None),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    purchase_provider: str | None = Query(default=None),
+    sort_by: str = Query(default="created_at"),
+    sort_order: str = Query(default="desc"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:users:read")
+    service = AdminService(session, request.app.state.settings)
+    page = await service.list_users(
+        limit=500,
+        cursor=None,
+        role=role,
+        is_active=is_active,
+        query=query,
+        plan=plan,
+        account_status=account_status,
+        email_verified=email_verified,
+        created_from=created_from,
+        created_to=created_to,
+        purchase_provider=purchase_provider,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "id",
+            "email",
+            "display_name",
+            "role",
+            "plan",
+            "cloud_minutes_available",
+            "status",
+            "email_verified",
+            "latest_purchase_provider",
+            "created_at",
+        ]
+    )
+    for user in page.items:
+        summary = await _user_with_summary(service, user)
+        status_value = (
+            "deleted"
+            if user.deletion_completed_at is not None
+            else "pending_deletion"
+            if user.deletion_requested_at is not None
+            else "active"
+            if user.is_active
+            else "locked"
+        )
+        writer.writerow(
+            [
+                summary.id,
+                summary.email,
+                summary.display_name or "",
+                summary.role,
+                summary.plan or "",
+                summary.cloud_minutes_available or 0,
+                status_value,
+                summary.email_verified_at is not None,
+                summary.latest_purchase_provider or "",
+                summary.created_at.isoformat(),
+            ]
+        )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.users.exported",
+        resource_type="user_list",
+        resource_id=None,
+        context=_context(request),
+        details={
+            "rows": len(page.items),
+            "truncated": page.has_more,
+            "filters": {
+                "role": role,
+                "plan": plan,
+                "account_status": account_status,
+                "email_verified": email_verified,
+                "purchase_provider": purchase_provider,
+            },
+        },
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-users.csv"',
+            "X-Result-Truncated": "true" if page.has_more else "false",
+        },
     )
 
 
@@ -627,4 +800,456 @@ async def list_admin_audit(
     return AuditLogListResponse(
         items=[audit_log_response(item) for item in page.items],
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
+    )
+
+
+
+@router.get("/users/{user_id}/detail", response_model=AdminUserDetailResponse)
+async def get_admin_user_detail(
+    user_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserDetailResponse:
+    _require_scope(principal, "admin:users:read")
+    service = AdminService(session, request.app.state.settings)
+    data = await service.get_user_detail(user_id)
+    user_response = admin_user_response(
+        data.user,
+        plan=data.entitlement.plan,
+        cloud_minutes_available=data.balance.available,
+        latest_purchase_provider=data.latest_purchase_provider,
+    )
+    return AdminUserDetailResponse(
+        user=user_response,
+        entitlement=_entitlement_response(data.entitlement),
+        balance=CreditBalanceResponse(
+            posted=data.balance.posted,
+            reserved=data.balance.reserved,
+            available=data.balance.available,
+        ),
+        watches=[
+            watch_response(
+                item,
+                is_pro=data.entitlement.is_pro,
+                has_purchased=data.entitlement.has_purchased,
+            )
+            for item in data.watches
+        ],
+        recordings=[recording_response(item) for item in data.recordings],
+        payments=[payment_order_response(item) for item in data.payments],
+        ledger=[transaction_response(item) for item in data.ledger],
+        sessions=[
+            AdminUserSessionResponse(
+                id=str(item.id),
+                client_type=item.client_type,
+                user_agent=item.user_agent,
+                ip_hint=ip_hint(item.ip_address),
+                created_at=item.created_at,
+                last_seen_at=item.last_seen_at,
+                expires_at=item.expires_at,
+                revoked_at=item.revoked_at,
+                revoked_reason=item.revoked_reason,
+            )
+            for item in data.sessions
+        ],
+        notifications=[
+            AdminUserNotificationResponse(
+                id=str(item.id),
+                kind=item.kind,
+                title=item.title,
+                body=item.body,
+                resource_type=item.resource_type,
+                resource_id=item.resource_id,
+                read_at=item.read_at,
+                created_at=item.created_at,
+            )
+            for item in data.notifications
+        ],
+        notes=[
+            AdminUserNoteResponse(
+                id=str(item.id),
+                user_id=str(item.user_id),
+                author_user_id=str(item.author_user_id) if item.author_user_id else None,
+                body=item.body,
+                created_at=item.created_at,
+                updated_at=item.updated_at,
+            )
+            for item in data.notes
+        ],
+        audit=[audit_log_response(item) for item in data.audit],
+    )
+
+
+@router.post(
+    "/users/{user_id}/resend-verification",
+    response_model=AdminActionResponse,
+)
+async def resend_admin_user_verification(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_scope(principal, "admin:users:write")
+    user = await AdminService(session, request.app.state.settings).issue_identity_token(
+        user_id, "verify_email"
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.verification_resent",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+    )
+    await session.commit()
+    return AdminActionResponse(message="Verification email queued")
+
+
+@router.post(
+    "/users/{user_id}/force-password-reset",
+    response_model=AdminActionResponse,
+)
+async def force_admin_user_password_reset(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_scope(principal, "admin:users:write")
+    user = await AdminService(session, request.app.state.settings).issue_identity_token(
+        user_id, "password_reset"
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.password_reset_forced",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+    )
+    await session.commit()
+    return AdminActionResponse(message="Password reset email queued")
+
+
+@router.post("/users/{user_id}/force-logout", response_model=AdminActionResponse)
+async def force_admin_user_logout(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_scope(principal, "admin:users:write")
+    user = await AdminService(session, request.app.state.settings).force_logout(user_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.force_logout",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+    )
+    await session.commit()
+    return AdminActionResponse(message="All user sessions revoked")
+
+
+@router.patch("/users/{user_id}/profile", response_model=AdminUserResponse)
+async def update_admin_user_profile(
+    user_id: str,
+    payload: AdminUserProfileUpdateRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserResponse:
+    _require_scope(principal, "admin:users:write")
+    service = AdminService(session, request.app.state.settings)
+    user, previous = await service.update_display_name(user_id, payload.display_name)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.profile_updated",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"display_name": previous},
+        after_state={"display_name": user.display_name},
+    )
+    await session.commit()
+    return await _user_with_summary(service, user)
+
+
+@router.post("/users/{user_id}/notes", response_model=AdminUserNoteResponse)
+async def create_admin_user_note(
+    user_id: str,
+    payload: AdminUserNoteRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserNoteResponse:
+    _require_scope(principal, "admin:users:write")
+    note = await AdminService(session, request.app.state.settings).create_user_note(
+        actor_user_id=principal.user_id,
+        user_id=user_id,
+        body=payload.body,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.note_created",
+        resource_type="user",
+        resource_id=user_id,
+        context=_context(request),
+        reason=payload.reason,
+        after_state={"note_id": str(note.id)},
+    )
+    await session.commit()
+    await session.refresh(note)
+    return AdminUserNoteResponse(
+        id=str(note.id),
+        user_id=str(note.user_id),
+        author_user_id=str(note.author_user_id) if note.author_user_id else None,
+        body=note.body,
+        created_at=note.created_at,
+        updated_at=note.updated_at,
+    )
+
+
+@router.patch(
+    "/users/{user_id}/notes/{note_id}",
+    response_model=AdminUserNoteResponse,
+)
+async def update_admin_user_note(
+    user_id: str,
+    note_id: str,
+    payload: AdminUserNoteRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserNoteResponse:
+    _require_scope(principal, "admin:users:write")
+    service = AdminService(session, request.app.state.settings)
+    existing = await service.update_user_note(
+        actor_user_id=principal.user_id,
+        user_id=user_id,
+        note_id=note_id,
+        body=payload.body,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.note_updated",
+        resource_type="user",
+        resource_id=user_id,
+        context=_context(request),
+        reason=payload.reason,
+        after_state={"note_id": str(existing.id)},
+    )
+    await session.commit()
+    return AdminUserNoteResponse(
+        id=str(existing.id),
+        user_id=str(existing.user_id),
+        author_user_id=str(existing.author_user_id) if existing.author_user_id else None,
+        body=existing.body,
+        created_at=existing.created_at,
+        updated_at=existing.updated_at,
+    )
+
+
+@router.get("/search", response_model=AdminSearchResponse)
+async def search_admin(
+    request: Request,
+    q: str = Query(min_length=2, max_length=320),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSearchResponse:
+    _require_scope(principal, "admin:users:read")
+    hits = await AdminService(session, request.app.state.settings).global_search(q)
+    return AdminSearchResponse(items=[AdminSearchHit.model_validate(item) for item in hits])
+
+
+@router.get("/privacy/requests", response_model=AdminPrivacyRequestListResponse)
+async def list_admin_privacy_requests(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=200),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPrivacyRequestListResponse:
+    _require_scope(principal, "admin:users:read")
+    rows = await AdminService(session, request.app.state.settings).list_privacy_requests(limit=limit)
+    return AdminPrivacyRequestListResponse(
+        items=[AdminPrivacyRequestResponse.model_validate(item) for item in rows]
+    )
+
+
+@router.post("/users/{user_id}/privacy/export")
+async def export_admin_user_privacy_data(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> JSONResponse:
+    _require_scope(principal, "admin:users:read")
+    user = await AdminService(session, request.app.state.settings).get_user(user_id)
+    exported = await PrivacyService(session).export_user(user.id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.privacy_exported",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+        details={"schema_version": exported.get("schema_version")},
+    )
+    await session.commit()
+    return JSONResponse(
+        content=jsonable_encoder(exported),
+        headers={
+            "Content-Disposition": f'attachment; filename="savestream-user-{user.id}-export.json"',
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@router.post(
+    "/users/{user_id}/privacy/deletion/cancel",
+    response_model=AdminActionResponse,
+)
+async def cancel_admin_user_deletion(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_scope(principal, "admin:users:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    user = await AdminService(session, request.app.state.settings).cancel_deletion(user_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.deletion_cancelled",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"deletion_requested": True, "is_active": False},
+        after_state={"deletion_requested": False, "is_active": True},
+    )
+    await session.commit()
+    return AdminActionResponse(message="Deletion request cancelled")
+
+
+@router.post(
+    "/users/{user_id}/privacy/deletion/perform",
+    response_model=AdminActionResponse,
+)
+async def perform_admin_user_deletion(
+    user_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_scope(principal, "admin:users:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminService(session, request.app.state.settings)
+    user = await service.get_user(user_id)
+    if user.deletion_requested_at is None or user.deletion_completed_at is not None:
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "User does not have a pending deletion request",
+            status_code=409,
+        )
+    before = {
+        "email": user.email,
+        "deletion_requested_at": user.deletion_requested_at.isoformat(),
+    }
+    completed = await PrivacyService(session).anonymize_user(user.id)
+    if not completed:
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "Deletion request could not be completed",
+            status_code=409,
+        )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.deletion_performed",
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state=before,
+        after_state={"deletion_completed": True, "is_active": False},
+    )
+    await session.commit()
+    return AdminActionResponse(message="Account deletion completed")
+
+
+@router.get("/users/{user_id}/view", response_model=AdminViewAsUserResponse)
+async def view_as_admin_user(
+    user_id: str,
+    request: Request,
+    reason: str = Query(min_length=3, max_length=500),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminViewAsUserResponse:
+    _require_scope(principal, "admin:users:read")
+    service = AdminService(session, request.app.state.settings)
+    data = await service.get_user_detail(user_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.user.viewed_as",
+        resource_type="user",
+        resource_id=str(data.user.id),
+        context=_context(request),
+        reason=reason,
+        details={"read_only": True},
+    )
+    await session.commit()
+    return AdminViewAsUserResponse(
+        user=admin_user_response(
+            data.user,
+            plan=data.entitlement.plan,
+            cloud_minutes_available=data.balance.available,
+            latest_purchase_provider=data.latest_purchase_provider,
+        ),
+        entitlement=_entitlement_response(data.entitlement),
+        balance=CreditBalanceResponse(
+            posted=data.balance.posted,
+            reserved=data.balance.reserved,
+            available=data.balance.available,
+        ),
+        watches=[
+            watch_response(
+                item,
+                is_pro=data.entitlement.is_pro,
+                has_purchased=data.entitlement.has_purchased,
+            )
+            for item in data.watches
+        ],
+        recordings=[recording_response(item) for item in data.recordings],
     )
