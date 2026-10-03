@@ -74,12 +74,8 @@ Future<void> bootstrap() async {
         apiClient: authRuntime.authenticatedApiClient,
       ),
       extraOverrides: [
-        connectivityServiceProvider.overrideWithValue(
-          ConnectivityPlusService(),
-        ),
-        deviceInfoServiceProvider.overrideWithValue(
-          DeviceInfoPlusService(),
-        ),
+        connectivityServiceProvider.overrideWithValue(ConnectivityPlusService()),
+        deviceInfoServiceProvider.overrideWithValue(DeviceInfoPlusService()),
       ],
     ),
   );
