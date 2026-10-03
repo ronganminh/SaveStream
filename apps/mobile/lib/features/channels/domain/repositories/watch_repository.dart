@@ -9,6 +9,8 @@ abstract interface class WatchRepository {
 
   Future<WatchSummary?> setAutoRecord(String id, {required bool enabled});
 
+  Future<WatchSummary?> setNotifyOnLive(String id, {required bool enabled});
+
   Future<WatchSummary?> pauseWatch(String id);
 
   Future<WatchSummary?> resumeWatch(String id);

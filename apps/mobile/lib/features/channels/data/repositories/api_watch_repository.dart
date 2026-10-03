@@ -86,6 +86,14 @@ final class ApiWatchRepository implements WatchRepository {
   }
 
   @override
+  Future<WatchSummary?> setNotifyOnLive(
+    String id, {
+    required bool enabled,
+  }) async {
+    return _patchWatch(id, <String, Object?>{'notify_on_live': enabled});
+  }
+
+  @override
   Future<WatchSummary?> pauseWatch(String id) async {
     return _patchWatch(id, <String, Object?>{'status': 'paused'});
   }

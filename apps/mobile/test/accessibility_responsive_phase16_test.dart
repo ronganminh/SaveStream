@@ -91,18 +91,16 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Channels'), findsOneWidget);
-      expect(find.text('Recordings'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(NavigationDestination), findsNWidgets(4));
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('Channels'));
+      await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('Recordings'));
+      await tester.tap(find.byIcon(Icons.video_library_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       expect(tester.takeException(), isNull);
@@ -123,7 +121,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byTooltip('Add channel'), findsWidgets);
+    expect(find.byTooltip('Add creator'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

@@ -47,15 +47,15 @@
   "snackbarMessage": "Thông báo phản hồi của SaveStream",
   "componentGalleryHint": "Màn hình QA nội bộ được giữ lại để kiểm tra component, giao diện và bản dịch.",
   "navHome": "Trang chủ",
-  "navChannels": "Kênh",
+  "navChannels": "Theo dõi",
   "navRecordings": "Bản ghi",
   "navSettings": "Cài đặt",
-  "addChannelAction": "Thêm kênh",
+  "addChannelAction": "Thêm creator",
   "homeFoundationTitle": "Nền tảng mobile đã sẵn sàng",
   "homeFoundationBody": "App shell, router có guard, tab giữ trạng thái, lifecycle hook và mock repository đã được kết nối.",
   "mockFoundationTitle": "Nền tảng mock",
   "mockFoundationBody": "Kênh và bản ghi dùng repository interface với các kịch bản thành công, đang tải, rỗng, lỗi và giống mất mạng.",
-  "channelsTitle": "Kênh",
+  "channelsTitle": "Theo dõi",
   "recordingsTitle": "Bản ghi",
   "settingsTitle": "Cài đặt",
   "profileTitle": "Hồ sơ",
@@ -635,6 +635,248 @@
       },
       "limit": {
         "type": "int"
+      }
+    }
+  },
+  "advertisementLabel": "Quảng cáo",
+  "timeHoursUnit": "giờ",
+  "timeMinutesUnit": "phút",
+  "homeFreeMinutesTitle": "Phút Free hôm nay",
+  "homeFreeMinutesRemaining": "Còn {remaining} / {daily} phút",
+  "homeResetAfter": "Reset sau {duration}",
+  "homeRewardsUsed": "Rewarded {used}/{cap}",
+  "homeWatchingCapacity": "Theo dõi {count}/{limit}",
+  "homeCloudTimeTitle": "Giờ cloud còn lại",
+  "homeCloudSlots": "Slot cloud {used}/{limit}",
+  "homeCloudRetention": "Bản ghi cloud lưu {days} ngày",
+  "homeLiveCreatorTitle": "{name} đang LIVE",
+  "homeLiveCreatorBody": "Mở creator để Record ngay.",
+  "homeLocalSaveHint": "Local · Lưu trên thiết bị này",
+  "homeAutoRecordUpsellTitle": "Tự động record khi creator LIVE",
+  "homeAutoRecordUpsellBody": "Mua giờ cloud để mở auto-record trên cloud, theo dõi 20 creator và bỏ quảng cáo.",
+  "buyCloudHoursAction": "Mua giờ cloud",
+  "homeOfflineTitle": "Không có kết nối",
+  "homeOfflineBody": "Đang hiện dữ liệu đã lưu. Trạng thái LIVE có thể đã thay đổi. Các thao tác cần mạng tạm thời không dùng được.",
+  "homeEmptyCreatorTitle": "Thêm creator để bắt đầu",
+  "homeEmptyCreatorBody": "SaveStream báo khi creator LIVE để bạn Record ngay.",
+  "homeMinutesExhaustedTitle": "Đã dùng hết phút Free hôm nay",
+  "homeMinutesExhaustedBody": "Phút Free reset mỗi ngày. Bạn có thể xem quảng cáo thưởng cho một recording Local mới trong luồng Recording.",
+  "watchAdMinutesAction": "Xem quảng cáo · Record {minutes} phút",
+  "watchingHeader": "Theo dõi {count}/{limit} creator · {plan}",
+  "watchFilterAll": "Tất cả",
+  "watchFilterLive": "LIVE",
+  "watchFilterOffline": "Offline",
+  "watchFilterPaused": "Paused",
+  "watchCapacityRemaining": "Còn {count} chỗ",
+  "watchCapacityFull": "Đã đủ số creator",
+  "watchCapacityLegacyExceeded": "Bạn đang giữ {count} creator từ gói cũ. Các creator này vẫn được giữ, nhưng không thể thêm mới cho tới khi mua giờ cloud hoặc xoá bớt.",
+  "watchLimitTitle": "Danh sách Theo dõi đã đầy",
+  "watchLimitBody": "Tài khoản Free theo dõi tối đa 3 creator. Các creator hiện có vẫn được giữ; việc thêm mới bị chặn ở giới hạn hiện tại.",
+  "manageWatchingAction": "Quản lý danh sách",
+  "watchNotifyOnLive": "Báo khi LIVE",
+  "watchAutoRecordCloud": "Auto-record trên cloud",
+  "watchAutoRecordLocked": "Mua giờ cloud để bật auto-record",
+  "watchCheckingStatus": "CHECKING",
+  "watchUnknownStatus": "UNKNOWN",
+  "watchPausedStatus": "PAUSED",
+  "watchWaitingCloudSlot": "Chờ slot cloud",
+  "watchMissedNoCloudSlot": "Bỏ lỡ · không có slot cloud",
+  "watchNextCheckAt": "Kiểm tra lại lúc {time}",
+  "watchWillCheckAgain": "SaveStream sẽ tự kiểm tra lại",
+  "addCreatorTitle": "Thêm creator",
+  "addCreatorHeading": "Theo dõi một creator TikTok",
+  "addCreatorBody": "Dán username hoặc link hồ sơ TikTok. SaveStream kiểm tra trước khi thêm.",
+  "creatorLookupAction": "Tìm creator",
+  "creatorLookupChecking": "Đang kiểm tra trên TikTok…",
+  "creatorNotFoundTitle": "Không tìm thấy creator",
+  "creatorNotFoundBody": "Không tìm thấy {handle} trên TikTok. Kiểm tra lại chính tả rồi thử lại.",
+  "creatorRestrictedTitle": "Tài khoản riêng tư hoặc bị hạn chế",
+  "creatorRestrictedBody": "SaveStream chỉ theo dõi được tài khoản TikTok công khai. Link Douyin chưa được hỗ trợ.",
+  "creatorUnavailableTitle": "Không truy cập được creator",
+  "creatorUnavailableBody": "SaveStream hiện không thể truy cập tài khoản này. Thử lại sau hoặc kiểm tra username.",
+  "tryAnotherCreatorAction": "Thử username khác",
+  "creatorLimitDirectBody": "Bạn đã đạt giới hạn creator của tài khoản này. Các creator hiện có vẫn được giữ nhưng không thể thêm mới.",
+  "cloudHoursUpsellTitle": "Mở auto-record trên cloud",
+  "cloudHoursUpsellBody": "Giờ cloud là gói mua một lần. Mua giờ để mở auto-record cloud, theo dõi tối đa 20 creator và bỏ quảng cáo.",
+  "cloudHoursBenefitAuto": "Tự động record khi creator LIVE",
+  "cloudHoursBenefitPhone": "Recording chạy trên server; điện thoại không cần online",
+  "cloudHoursBenefitCreators": "Theo dõi tối đa 20 creator",
+  "cloudHoursBenefitNoAds": "Không quảng cáo",
+  "creatorDetailStatusTitle": "Trạng thái",
+  "creatorLiveSince": "Đang LIVE",
+  "creatorOfflineBody": "Hiện không LIVE",
+  "creatorPausedBody": "Đã tạm dừng theo dõi. Creator này vẫn tính vào giới hạn.",
+  "creatorWaitingTitle": "Đang chờ slot cloud",
+  "creatorWaitingBody": "Cả {limit} slot cloud đang được dùng. Creator này sẽ bắt đầu record khi có slot trống theo FIFO. Phần LIVE trước đó không ghi lại được.",
+  "queuePositionLabel": "Vị trí hàng chờ {position}",
+  "activeCloudSlotsTitle": "Recording cloud đang dùng slot",
+  "creatorMissedTitle": "Bỏ lỡ",
+  "creatorMissedBody": "LIVE đã kết thúc trước khi có slot cloud trống. Không trừ phút cloud.",
+  "creatorRecentRecordingTitle": "Bản ghi gần đây",
+  "notificationSavedMessage": "Đã cập nhật thông báo.",
+  "autoRecordSettingsTitle": "Auto-record",
+  "autoRecordWhenLive": "Auto-record khi LIVE",
+  "autoRecordCloudLocation": "Lưu trên cloud SaveStream",
+  "cloudRetentionValue": "Lưu {days} ngày",
+  "cloudConcurrentValue": "Recording cloud {used}/{limit}",
+  "cloudTimeRemainingValue": "Còn {value}",
+  "cloudQueueInfo": "Khi đủ slot cloud, creator LIVE tiếp theo chờ theo thứ tự FIFO. Phần đã bỏ lỡ không được ghi bù.",
+  "liveCheckTitle": "Đang kiểm tra LIVE…",
+  "liveCheckBody": "SaveStream xác nhận creator vẫn đang LIVE trước khi record.",
+  "liveEndedTitle": "Livestream đã kết thúc",
+  "liveEndedBody": "{name} đã kết thúc LIVE trước khi bạn mở thông báo. SaveStream sẽ báo ở lần LIVE tiếp theo.",
+  "backToHomeAction": "Về Trang chủ",
+  "@homeFreeMinutesRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeResetAfter": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@homeRewardsUsed": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeWatchingCapacity": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeCloudSlots": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeCloudRetention": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeLiveCreatorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@watchAdMinutesAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchingHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      },
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "@watchCapacityRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchCapacityLegacyExceeded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchNextCheckAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@creatorNotFoundBody": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "@creatorWaitingBody": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@queuePositionLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudRetentionValue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudConcurrentValue": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudTimeRemainingValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveEndedBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   }

@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/mock/mock_providers.dart';
 import '../../../channels/domain/models/watch_summary.dart';
 import '../../../channels/presentation/controllers/watch_providers.dart';
-import '../../../credits/domain/models/credit_models.dart';
-import '../../../credits/presentation/controllers/credits_providers.dart';
+import '../../../entitlement/domain/models/entitlement.dart';
+import '../../../entitlement/presentation/entitlement_providers.dart';
 import '../../../recordings/domain/models/recording_summary.dart';
 import '../../../recordings/presentation/controllers/recording_providers.dart';
 import '../../data/repositories/mock_home_metrics_repository.dart';
@@ -25,14 +25,17 @@ final FutureProvider<HomeDashboardViewModel> homeDashboardProvider =
         ref.watch(watchRepositoryProvider).listWatches(),
         ref.watch(recordingRepositoryProvider).listRecordings(),
         ref.watch(homeMetricsRepositoryProvider).getMetrics(),
-        ref.watch(creditsRepositoryProvider).getBalance(),
+        ref.watch(entitlementRepositoryProvider).getEntitlement(),
       ], eagerError: false);
 
       final HomeAccountMetrics metrics = results[2] as HomeAccountMetrics;
-      final CreditBalance balance = results[3] as CreditBalance;
+      final Entitlement entitlement = results[3] as Entitlement;
       return HomeDashboardViewModel(
-        metrics: metrics.copyWith(availableCredit: balance.available),
+        metrics: metrics.copyWith(
+          availableCredit: entitlement.cloudMinutesAvailable,
+        ),
         watches: results[0] as List<WatchSummary>,
         recordings: results[1] as List<RecordingSummary>,
+        entitlement: entitlement,
       );
     });

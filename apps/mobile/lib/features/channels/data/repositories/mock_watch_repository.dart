@@ -25,6 +25,7 @@ final class MockWatchRepository extends MockRepositoryBase
       isLive: false,
       autoRecord: true,
       lastCheckedAt: DateTime.utc(2026, 9, 30, 14, 15),
+      nextCheckAt: DateTime.utc(2026, 9, 30, 14, 45),
       lastLiveAt: DateTime.utc(2026, 9, 28, 10, 30),
     ),
     WatchSummary(
@@ -67,6 +68,29 @@ final class MockWatchRepository extends MockRepositoryBase
       lastCheckedAt: DateTime.utc(2026, 9, 25, 9),
       lastLiveAt: DateTime.utc(2026, 9, 24, 19, 20),
     ),
+    WatchSummary(
+      id: 'watch_007',
+      creatorDisplayName: 'Queue Creator',
+      creatorUsername: '@queue_creator',
+      status: WatchStatus.active,
+      isLive: true,
+      autoRecord: true,
+      notifyOnLive: true,
+      autoRecordState: AutoRecordState.waitingForCloudSlot,
+      lastCheckedAt: DateTime.utc(2026, 9, 30, 14, 29),
+      lastLiveAt: DateTime.utc(2026, 9, 30, 14, 29),
+    ),
+    WatchSummary(
+      id: 'watch_008',
+      creatorDisplayName: 'Missed Creator',
+      creatorUsername: '@missed_creator',
+      status: WatchStatus.active,
+      isLive: false,
+      autoRecord: true,
+      notifyOnLive: true,
+      lastCheckedAt: DateTime.utc(2026, 9, 30, 14, 28),
+      lastLiveAt: DateTime.utc(2026, 9, 30, 14, 20),
+    ),
   ];
 
   final List<WatchSummary> _items;
@@ -104,12 +128,22 @@ final class MockWatchRepository extends MockRepositoryBase
   }
 
   @override
+  Future<WatchSummary?> setNotifyOnLive(String id, {required bool enabled}) {
+    return respond<WatchSummary?>(
+      success: () => _update(
+        id,
+        (WatchSummary current) => current.copyWith(notifyOnLive: enabled),
+      ),
+      empty: () => null,
+    );
+  }
+
+  @override
   Future<WatchSummary?> pauseWatch(String id) {
     return respond<WatchSummary?>(
       success: () => _update(
         id,
-        (WatchSummary current) =>
-            current.copyWith(status: WatchStatus.paused, isLive: false),
+        (WatchSummary current) => current.copyWith(status: WatchStatus.paused),
       ),
       empty: () => null,
     );
@@ -168,6 +202,7 @@ final class MockWatchRepository extends MockRepositoryBase
       status: WatchStatus.active,
       isLive: false,
       autoRecord: command.autoRecord,
+      notifyOnLive: command.notifyOnLive,
       lastCheckedAt: DateTime.utc(2026, 9, 30, 14, 30),
     );
     _items.insert(0, created);

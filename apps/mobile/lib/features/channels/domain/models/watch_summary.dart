@@ -58,6 +58,7 @@ class WatchSummary {
     this.notifyOnLive = true,
     this.autoRecordState = AutoRecordState.off,
     this.lastCheckedAt,
+    this.nextCheckAt,
     this.lastLiveAt,
   });
 
@@ -72,6 +73,7 @@ class WatchSummary {
   final bool notifyOnLive;
   final AutoRecordState autoRecordState;
   final DateTime? lastCheckedAt;
+  final DateTime? nextCheckAt;
   final DateTime? lastLiveAt;
 
   WatchSummary copyWith({
@@ -85,6 +87,7 @@ class WatchSummary {
     bool? notifyOnLive,
     AutoRecordState? autoRecordState,
     DateTime? lastCheckedAt,
+    DateTime? nextCheckAt,
     DateTime? lastLiveAt,
   }) {
     return WatchSummary(
@@ -99,6 +102,7 @@ class WatchSummary {
       notifyOnLive: notifyOnLive ?? this.notifyOnLive,
       autoRecordState: autoRecordState ?? this.autoRecordState,
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
+      nextCheckAt: nextCheckAt ?? this.nextCheckAt,
       lastLiveAt: lastLiveAt ?? this.lastLiveAt,
     );
   }

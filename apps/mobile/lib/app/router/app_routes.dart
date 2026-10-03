@@ -39,7 +39,16 @@ abstract final class AppRoutes {
   static const String componentGallery = '/dev/components';
 
   static String channelDetail(String id) => '/channels/' + id;
+  static String autoRecordSettings(String id) =>
+      '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
+
+  static String liveNotification(String id, {String state = 'checking'}) {
+    return Uri(
+      path: '/live/' + id,
+      queryParameters: <String, String>{'state': state},
+    ).toString();
+  }
 
   static String checkEmailLocation(String email) {
     return Uri(

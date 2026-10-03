@@ -248,6 +248,14 @@ final class _FakeWatchRepository implements WatchRepository {
   }
 
   @override
+  Future<WatchSummary?> setNotifyOnLive(
+    String id, {
+    required bool enabled,
+  }) async {
+    return _watch(id, WatchStatus.active).copyWith(notifyOnLive: enabled);
+  }
+
+  @override
   Future<WatchSummary?> pauseWatch(String id) async {
     if (failPause) {
       throw StateError('pause failed');

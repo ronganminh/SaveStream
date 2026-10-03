@@ -131,6 +131,7 @@ void main() {
       expect(options.path, '/v1/watches');
       final Map<String, Object?> data = options.data! as Map<String, Object?>;
       expect(data['auto_record'], isTrue);
+      expect(data.containsKey('notify_on_live'), isFalse);
       expect(data['source'], <String, Object?>{
         'type': 'username',
         'value': '@ada_live',
@@ -170,16 +171,24 @@ void main() {
         case 2:
           expect(options.method, 'PATCH');
           expect(options.path, '/v1/watches/watch-1');
+          expect(options.data, <String, Object?>{'notify_on_live': false});
+          return _jsonResponse(
+            200,
+            _watchJson(id: 'watch-1', notifyOnLive: false),
+          );
+        case 3:
+          expect(options.method, 'PATCH');
+          expect(options.path, '/v1/watches/watch-1');
           expect(options.data, <String, Object?>{'status': 'paused'});
           return _jsonResponse(
             200,
             _watchJson(id: 'watch-1', status: 'paused'),
           );
-        case 3:
+        case 4:
           expect(options.method, 'POST');
           expect(options.path, '/v1/watches/watch-1/resume');
           return _jsonResponse(200, _watchJson(id: 'watch-1'));
-        case 4:
+        case 5:
           expect(options.method, 'DELETE');
           expect(options.path, '/v1/watches/watch-1');
           return ResponseBody.fromString('', 204);
@@ -193,14 +202,19 @@ void main() {
       'watch-1',
       enabled: false,
     );
+    final WatchSummary? notifications = await repository.setNotifyOnLive(
+      'watch-1',
+      enabled: false,
+    );
     final WatchSummary? paused = await repository.pauseWatch('watch-1');
     final WatchSummary? resumed = await repository.resumeWatch('watch-1');
     await repository.deleteWatch('watch-1');
 
     expect(autoRecord?.autoRecord, isFalse);
+    expect(notifications?.notifyOnLive, isFalse);
     expect(paused?.status, WatchStatus.paused);
     expect(resumed?.status, WatchStatus.active);
-    expect(adapter.calls, 4);
+    expect(adapter.calls, 5);
   });
 
   test('getWatch maps RESOURCE_NOT_FOUND to null', () async {
@@ -307,6 +321,7 @@ Map<String, Object?> _watchJson({
   String sourceType = 'username',
   String sourceValue = 'ada_live',
   bool autoRecord = true,
+  bool notifyOnLive = true,
   Object? creator = _defaultCreator,
 }) {
   return <String, Object?>{
@@ -316,6 +331,7 @@ Map<String, Object?> _watchJson({
     'status': status,
     'live_status': liveStatus,
     'auto_record': autoRecord,
+    'notify_on_live': notifyOnLive,
     'last_checked_at': '2026-10-01T03:00:00Z',
     'next_check_at': '2026-10-01T03:00:30Z',
     'last_live_at': '2026-09-30T18:30:00Z',
@@ -394,6 +410,11 @@ final class _ThrowingWatchRepository implements WatchRepository {
 
   @override
   Future<WatchSummary?> setAutoRecord(String id, {required bool enabled}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<WatchSummary?> setNotifyOnLive(String id, {required bool enabled}) {
     throw UnimplementedError();
   }
 
