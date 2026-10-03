@@ -42,6 +42,47 @@ const forbidIn = (label, source, text) => {
   'requiresAuth: true',
 ].forEach((text) => must("src/lib/app-config.ts", text));
 
+
+[
+  'ADMIN_ROLES = ["owner", "support", "finance", "admin"]',
+  "isAdminRole(identity.role)",
+].forEach((text) => must("src/lib/app-config.ts", text));
+
+[
+  '"/v1/admin/security/mfa"',
+  '"/v1/admin/step-up"',
+  '"/v1/admin/admins"',
+  '"X-Admin-Step-Up"',
+].forEach((text) => must("src/repositories/admin-api.ts", text));
+
+[
+  "AdminMfaGate",
+  "SaveStream requires an authenticator app for every administrator.",
+  "Re-enter your password, current authenticator code, and the reason for this action.",
+  "AdminOwnerAccessPanel",
+  "AdminDataTable",
+  "AdminMetricCard",
+  "AdminTimeline",
+  "Global search becomes available in D1",
+].forEach((text) => must("src/components/admin/foundation.tsx", text));
+
+[
+  "AdminSystemPage",
+  "AdminWorkersPage",
+  "AdminJobsPage",
+  "AdminJobDetailPage",
+  "AdminErrorsPage",
+  "AdminMfaGate",
+].forEach((text) => must("src/components/admin/pages.tsx", text));
+
+[
+  "src/routes/admin/system.tsx",
+  "src/routes/admin/workers.tsx",
+  "src/routes/admin/jobs.index.tsx",
+  "src/routes/admin/jobs.$id.tsx",
+  "src/routes/admin/errors.tsx",
+].forEach((file) => must(file, "@/components/admin/pages"));
+
 [
   "useAdminOperationalSnapshotData",
   "refetchInterval: 10_000",
@@ -148,6 +189,23 @@ const auditPage = block(
 );
 
 must("src/components/app-components.tsx", 'label: isDemoMode ? "Errors" : "Audit"');
+
+const d0Backend = read("../../backend/src/app/api/routes/admin.py");
+[
+  '"ADMIN_MFA_REQUIRED"',
+  'alias="X-Admin-Step-Up"',
+  '"admin:users:read"',
+  '"admin:payments:refund"',
+  '"admin:credits:adjust"',
+  'reason=payload.reason',
+].forEach((text) => {
+  if (!d0Backend.includes(text)) failures.push("D0 backend invariant: missing " + JSON.stringify(text));
+});
+
+const roles = read("../../backend/src/app/domain/identity/types.py");
+['"owner"', '"support"', '"finance"', '"admin:*"'].forEach((text) => {
+  if (!roles.includes(text)) failures.push("D0 role matrix: missing " + JSON.stringify(text));
+});
 
 const backend = read("../../backend/src/app/api/routes/admin.py");
 ["_require_admin(principal)", '"FORBIDDEN"', '"Admin permission is required"'].forEach(
