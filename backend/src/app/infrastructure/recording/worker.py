@@ -269,7 +269,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
             await CloudSlotQueueService(
                 session,
                 settings,
-            ).promote_available(recording.user_id)
+            ).wake_next(recording.user_id)
             result.artifact_path.unlink(missing_ok=True)
             result.source_path.unlink(missing_ok=True)
             try:
