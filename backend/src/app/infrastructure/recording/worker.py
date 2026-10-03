@@ -264,6 +264,12 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 else "recording.completed",
             )
             await session.commit()
+            from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+            await CloudSlotQueueService(
+                session,
+                settings,
+            ).promote_available(recording.user_id)
             result.artifact_path.unlink(missing_ok=True)
             result.source_path.unlink(missing_ok=True)
             try:
