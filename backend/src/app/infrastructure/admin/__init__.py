@@ -1,1 +1,1 @@
-"""Admin infrastructure workers."""\n
+"""Admin infrastructure workers."""

@@ -1421,6 +1421,7 @@ async def list_admin_email_logs(
     recipient: str | None = Query(default=None),
     kind: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminEmailLogListResponse:
