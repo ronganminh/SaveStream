@@ -16,7 +16,11 @@ from app.infrastructure.db.credit_models import CreditReservation
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
-from tests.credit_helpers import configure_test_pricing, grant_test_credits
+from tests.credit_helpers import (
+    configure_test_pricing,
+    grant_test_credits,
+    mark_test_user_paid,
+)
 from tests.identity_helpers import identity_settings
 
 
@@ -72,7 +76,7 @@ def test_affordable_duration_is_capped_by_balance(tmp_path) -> None:
     asyncio.run(run())
 
 
-def test_trial_balance_records_until_credits_run_out(tmp_path) -> None:
+def test_paid_balance_records_until_credits_run_out(tmp_path) -> None:
     async def run() -> None:
         settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'trial-record.db'}")
         database = Database(settings.database_url)
@@ -81,7 +85,13 @@ def test_trial_balance_records_until_credits_run_out(tmp_path) -> None:
                 await connection.run_sync(Base.metadata.create_all)
             async with database.session() as session:
                 user = await _user_with_credits(session, 10)
-                principal = AuthPrincipal(user.id, uuid.uuid4(), "user", scopes_for_role("user"))
+                await mark_test_user_paid(session, user.id)
+                principal = AuthPrincipal(
+                    user.id,
+                    uuid.uuid4(),
+                    "user",
+                    scopes_for_role("user"),
+                )
                 watch = await WatchService(session, settings).create(
                     principal,
                     CreateWatchRequest(

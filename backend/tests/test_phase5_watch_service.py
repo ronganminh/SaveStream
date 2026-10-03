@@ -13,7 +13,11 @@ from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.session import Database
-from tests.credit_helpers import configure_test_pricing, grant_test_credits
+from tests.credit_helpers import (
+    configure_test_pricing,
+    grant_test_credits,
+    mark_test_user_paid,
+)
 from tests.identity_helpers import identity_settings
 
 
@@ -46,6 +50,7 @@ def test_watch_crud_pause_resume_and_tenant_isolation(tmp_path) -> None:
                 await session.refresh(other)
                 await configure_test_pricing(session)
                 await grant_test_credits(session, owner.id)
+                await mark_test_user_paid(session, owner.id)
 
                 principal = AuthPrincipal(
                     user_id=owner.id,

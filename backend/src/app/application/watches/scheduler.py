@@ -11,6 +11,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.application.entitlements.service import EntitlementService
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
@@ -162,6 +163,13 @@ class WatchScheduler:
         await self.session.commit()
 
     async def _auto_record(self, watch: Watch, room_id: str) -> None:
+        entitlement = await EntitlementService(
+            self.session,
+            self.settings,
+        ).get(watch.user_id)
+        if not entitlement.is_pro:
+            return
+
         active_values = [status.value for status in ACTIVE_RECORDING_STATUSES]
         active_count = int(
             await self.session.scalar(
@@ -175,7 +183,7 @@ class WatchScheduler:
             )
             or 0
         )
-        if active_count >= self.settings.watch_max_concurrent_recordings_per_user:
+        if active_count >= entitlement.max_concurrent_cloud_recordings:
             return
 
         payload = CreateRecordingRequest(

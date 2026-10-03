@@ -28,7 +28,13 @@ async def create_watch(
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    return watch_response(await service.create(principal, payload))
+    watch = await service.create(principal, payload)
+    entitlement = await service.entitlement_for(principal.user_id)
+    return watch_response(
+        watch,
+        is_pro=entitlement.is_pro,
+        has_purchased=entitlement.has_purchased,
+    )
 
 
 @router.get(
@@ -49,8 +55,16 @@ async def list_watches(
         cursor=cursor,
         status=status_filter,
     )
+    entitlement = await service.entitlement_for(principal.user_id)
     return WatchListResponse(
-        items=[watch_response(item) for item in page.items],
+        items=[
+            watch_response(
+                item,
+                is_pro=entitlement.is_pro,
+                has_purchased=entitlement.has_purchased,
+            )
+            for item in page.items
+        ],
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
     )
 
@@ -65,7 +79,13 @@ async def get_watch(
     principal: AuthPrincipal = Depends(require_scopes("watches:read")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    return watch_response(await service.get(principal, watch_id))
+    watch = await service.get(principal, watch_id)
+    entitlement = await service.entitlement_for(principal.user_id)
+    return watch_response(
+        watch,
+        is_pro=entitlement.is_pro,
+        has_purchased=entitlement.has_purchased,
+    )
 
 
 @router.patch(
@@ -79,7 +99,13 @@ async def update_watch(
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    return watch_response(await service.update(principal, watch_id, payload))
+    watch = await service.update(principal, watch_id, payload)
+    entitlement = await service.entitlement_for(principal.user_id)
+    return watch_response(
+        watch,
+        is_pro=entitlement.is_pro,
+        has_purchased=entitlement.has_purchased,
+    )
 
 
 @router.delete(
@@ -106,4 +132,10 @@ async def resume_watch(
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    return watch_response(await service.resume(principal, watch_id))
+    watch = await service.resume(principal, watch_id)
+    entitlement = await service.entitlement_for(principal.user_id)
+    return watch_response(
+        watch,
+        is_pro=entitlement.is_pro,
+        has_purchased=entitlement.has_purchased,
+    )

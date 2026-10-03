@@ -17,7 +17,11 @@ from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import Watch
-from tests.credit_helpers import configure_test_pricing, grant_test_credits
+from tests.credit_helpers import (
+    configure_test_pricing,
+    grant_test_credits,
+    mark_test_user_paid,
+)
 from tests.identity_helpers import identity_settings
 
 
@@ -144,6 +148,7 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                 await session.refresh(user)
                 await configure_test_pricing(session)
                 await grant_test_credits(session, user.id)
+                await mark_test_user_paid(session, user.id)
                 principal = AuthPrincipal(
                     user.id,
                     uuid.uuid4(),
@@ -187,18 +192,17 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                         auto_record=True,
                     ),
                 )
-                capped_settings = replace(
-                    settings,
-                    watch_max_concurrent_recordings_per_user=1,
-                )
-                capped = WatchScheduler(
+                plan_scheduler = WatchScheduler(
                     session,
-                    capped_settings,
+                    settings,
                     random_fn=lambda: 0.5,
                 )
-                claim = (await capped.claim_due())[0]
+                claim = (await plan_scheduler.claim_due())[0]
                 assert claim.watch_id == third.id
-                await capped.process_claim(claim, LiveChecker("different-room"))
+                await plan_scheduler.process_claim(
+                    claim,
+                    LiveChecker("different-room"),
+                )
 
                 count_after_cap = int(
                     await session.scalar(
@@ -206,7 +210,7 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                     )
                     or 0
                 )
-                assert count_after_cap == 1
+                assert count_after_cap == 2
 
                 shared = await session.scalar(
                     select(Recording).where(Recording.user_id == user.id)

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.recordings import Source
 from app.api.schemas.watches import CreateWatchRequest, UpdateWatchRequest
 from app.application.credits.service import CreditService
+from app.application.entitlements.service import EntitlementService, EntitlementSnapshot
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
@@ -75,6 +76,9 @@ class WatchService:
         self.session = session
         self.settings = settings
 
+    async def entitlement_for(self, user_id: uuid.UUID) -> EntitlementSnapshot:
+        return await EntitlementService(self.session, self.settings).get(user_id)
+
     async def create(
         self,
         principal: AuthPrincipal,
@@ -97,6 +101,16 @@ class WatchService:
                 "A Watch already exists for this source",
                 status_code=409,
                 details={"watch_id": str(existing.id)},
+            )
+
+        entitlement = await self.entitlement_for(principal.user_id)
+        if payload.auto_record and not entitlement.is_pro:
+            raise ApplicationError(
+                "PLAN_REQUIRED",
+                "Automatic cloud recording requires purchased cloud minutes",
+                status_code=403,
+                retryable=False,
+                details={"plan": entitlement.plan},
             )
 
         await QuotaService(self.session, self.settings).check_watch_create(
@@ -196,6 +210,16 @@ class WatchService:
     ) -> Watch:
         watch = await self.get(principal, watch_id)
         if payload.auto_record is not None:
+            if payload.auto_record:
+                entitlement = await self.entitlement_for(principal.user_id)
+                if not entitlement.is_pro:
+                    raise ApplicationError(
+                        "PLAN_REQUIRED",
+                        "Automatic cloud recording requires purchased cloud minutes",
+                        status_code=403,
+                        retryable=False,
+                        details={"plan": entitlement.plan},
+                    )
             watch.auto_record = payload.auto_record
         if payload.status is not None:
             status = validate_user_status(payload.status)
@@ -231,7 +255,8 @@ class WatchService:
                 "Watch cannot be resumed in its current state",
                 status_code=409,
             )
-        if watch.auto_record:
+        entitlement = await self.entitlement_for(principal.user_id)
+        if watch.auto_record and entitlement.is_pro:
             affordable, required, available = await CreditService(
                 self.session
             ).can_afford(

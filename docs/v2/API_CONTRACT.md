@@ -40,8 +40,9 @@ Quy tắc:
 
 - `plan = "pro"` khi tài khoản có ít nhất một đơn mua đã thanh toán **và** số dư credit khả dụng > 0. Ngược lại là `"free"`.
 - 10 credit dùng thử khi xác minh email **không** làm tài khoản thành Pro.
-- Pro: `max_watches = 20`, `max_concurrent_cloud_recordings = 3`, `cloud_retention_days = 30`.
+- Pro: `max_watches = 20`, `max_concurrent_cloud_recordings = 3`.
 - Free: `max_watches = 3`, `max_concurrent_cloud_recordings = 0` trên mobile. Web vẫn cho tài khoản Free dùng credit dùng thử để ghi cloud thủ công; quy tắc đó do web và backend xử lý, không qua trường này.
+- `has_purchased = true` khi còn ít nhất một đơn ở trạng thái paid hợp lệ theo `PAID_ORDER_STATUSES`; đơn đã hoàn tiền toàn bộ không tính. `cloud_retention_days` theo lịch sử mua hiện có của backend: `30` khi `has_purchased = true`, ngược lại `7`. Vì vậy tài khoản đã mua nhưng vừa hết số dư có thể có `plan = "free"` đồng thời `cloud_retention_days = 30`.
 - `local.enabled`: tài khoản có được ghi trên máy không. `local.unlimited`: không giới hạn phút, khi đó app bỏ qua các trường phút và phần thưởng.
 - Free: `enabled = true`, `unlimited = false`.
 - Pro: `enabled = true`, `unlimited = true` (mặc định hiện tại). Backend đổi được bằng cấu hình `SAVESTREAM_PRO_LOCAL_RECORDING` (`unlimited` hoặc `disabled`); app **phải đọc hai trường này**, không tự suy ra từ `plan`.

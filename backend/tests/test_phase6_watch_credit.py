@@ -17,7 +17,7 @@ from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
-from tests.credit_helpers import configure_test_pricing
+from tests.credit_helpers import configure_test_pricing, mark_test_user_paid
 from tests.identity_helpers import identity_settings
 
 
@@ -52,6 +52,13 @@ def test_watch_pauses_on_insufficient_credit_and_resumes_after_adjustment(
                 await session.commit()
                 await session.refresh(user)
                 await configure_test_pricing(session)
+                await mark_test_user_paid(session, user.id)
+                await CreditAdminService(session).adjust(
+                    user_id=user.id,
+                    amount=1,
+                    idempotency_key=str(uuid.uuid4()),
+                    reason="initial paid balance",
+                )
 
                 principal = AuthPrincipal(
                     user.id,

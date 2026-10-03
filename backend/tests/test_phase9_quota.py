@@ -52,22 +52,28 @@ def test_phase9_watch_and_recording_quotas(tmp_path) -> None:
                     scopes_for_role("user"),
                 )
                 watches = WatchService(session, settings)
-                await watches.create(
-                    principal,
-                    CreateWatchRequest(
-                        source=Source(type="username", value="one"),
-                        auto_record=False,
-                    ),
-                )
+                for value in ("one", "two", "three"):
+                    await watches.create(
+                        principal,
+                        CreateWatchRequest(
+                            source=Source(type="username", value=value),
+                            auto_record=False,
+                        ),
+                    )
                 with pytest.raises(ApplicationError) as watch_quota:
                     await watches.create(
                         principal,
                         CreateWatchRequest(
-                            source=Source(type="username", value="two"),
+                            source=Source(type="username", value="four"),
                             auto_record=False,
                         ),
                     )
-                assert watch_quota.value.code == "RATE_LIMITED"
+                assert watch_quota.value.code == "WATCH_LIMIT_REACHED"
+                assert watch_quota.value.status_code == 409
+                assert watch_quota.value.details == {
+                    "limit": 3,
+                    "plan": "free",
+                }
 
                 recordings = RecordingService(session, settings)
                 await recordings.create(

@@ -2059,14 +2059,14 @@
         ],
         "summary": "Get V2 account entitlement",
         "operationId": "getEntitlement",
-        "description": "Contract frozen in B0. Runtime implementation lands in B1; local usage counters become authoritative in B4.",
+        "description": "Implemented in B1. Returns plan, purchase history, current available cloud minutes, plan limits, watch count, and a safe local-recording default block whose counters become authoritative in B4.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B1"
         },
         "responses": {
@@ -2082,16 +2082,6 @@
           },
           "401": {
             "description": "Authentication error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3782,7 +3772,7 @@
           "auto_record_state": {
             "$ref": "#/components/schemas/AutoRecordState",
             "default": "off",
-            "description": "V2 field frozen in B0; B1 implements off/active/paused_no_cloud_minutes and B2 adds waiting_for_cloud_slot."
+            "description": "Derived in B1. Values implemented now: off, active, paused_no_cloud_minutes. B2 adds waiting_for_cloud_slot."
           }
         },
         "additionalProperties": false
