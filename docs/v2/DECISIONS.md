@@ -79,3 +79,25 @@ Nguồn thiết kế: gói `SaveStream mobile app phase 1.zip` (`docs/SCREENS.md
 ## 9. Phần đã khớp, không cần xử lý
 
 Giới hạn 20 kênh cho Pro, dừng ghi an toàn khi hết giờ giữa chừng, danh sách thiết bị đã đăng nhập, xoá tài khoản, trường họ tên khi đăng ký.
+
+## 10. Trang quản trị (chốt 04/10/2026)
+
+| Hạng mục | Đã chốt |
+|---|---|
+| Vị trí | Trong web hiện tại, dưới `/admin`. Không tách tên miền. |
+| Ngôn ngữ | **Chỉ tiếng Anh.** |
+| Vai trò | **Owner** (toàn quyền), **Support** (người dùng, bản ghi, khiếu nại; không đụng tiền), **Finance** (thanh toán, hoàn tiền, giờ, báo cáo). Chỉ Owner đổi cấu hình và phân quyền. |
+| Bảo mật | Bắt buộc xác thực hai lớp bằng ứng dụng cho mọi admin. Thao tác nguy hiểm phải nhập lại mật khẩu và ghi lý do. |
+| Cấu hình | Lưu trong cơ sở dữ liệu, đổi có hiệu lực ngay: bảo trì, phiên bản app tối thiểu, phút dùng thử, Pro ghi trên máy, giới hạn, thời hạn lưu, bật tắt thanh toán. Khoá bí mật không hiện trên admin. |
+| Xem như người dùng | Chỉ đọc, có dải cảnh báo, ghi nhật ký. |
+| Xem video của người dùng | Mặc định chỉ thấy thông tin. Phát hoặc tải phải ghi lý do và được ghi nhật ký. |
+| Hoàn tiền | Đơn web: hoàn từ admin. Đơn store: chỉ Apple và Google hoàn, admin tự cập nhật khi store báo. Trừ lại giờ tương ứng, không âm. |
+| Tặng giờ, mã khuyến mãi | Không làm tài khoản thành Pro, trừ khi tick "tính như đã mua". Mã có hạn dùng, số lượt tối đa, mỗi tài khoản một lần. |
+| Gói và giá | Sửa tên, số giờ, giá web, bật tắt bán. Giá trong app đổi trên trang của Apple và Google. |
+| Mẫu email | Sửa tiêu đề và đoạn nội dung chính, có xem trước và gửi thử. Khung email nằm trong code. |
+| Thông báo hàng loạt | Tin hệ thống gửi mọi người; tin khuyến mãi chỉ gửi người đã bật nhận. Chỉ Owner, phải xem số người nhận và xác nhận. |
+| Khiếu nại bản quyền | Chặn kênh: dừng bản ghi đang chạy, không thêm lại được, khoá phát và tải các bản đã có. Admin quyết định xoá hay mở lại. Không tự hoàn giờ. |
+| Thời gian lưu | Nhật ký admin vĩnh viễn, nhật ký email 90 ngày, báo lỗi từ app 180 ngày. |
+| Doanh thu | Tính bằng USD, hiện số trước phí store kèm phí ước tính. |
+
+Chi tiết triển khai: [TRACK_D_ADMIN.md](TRACK_D_ADMIN.md).

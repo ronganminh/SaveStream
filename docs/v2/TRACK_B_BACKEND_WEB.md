@@ -44,6 +44,7 @@ CI phải xanh: `Backend CI` (Python 3.11 và 3.12), `Backend E2E`, `Mobile Back
 6. **Tiền và phút:** mọi thao tác cộng trừ đi qua `CreditService` và sổ cái hiện có, có khoá idempotency. Không để số dư âm.
 7. **Theo kiến trúc đang có:** `api/routes` → `application/<khu>/service.py` → `domain` → `infrastructure`. Đọc `backend/README.md`, `backend/PHASE*.md` và `docs/architecture.md` trước khi bắt đầu.
 8. Tên file test theo mẫu `tests/test_v2_b<số>_<chủ đề>.py`.
+9. **Track D (admin) cũng thêm migration song song.** Trước khi merge, rebase lên `main` và sửa `down_revision` để chuỗi migration chỉ có một đầu. Không sửa các file trong vùng admin của Track D (xem bảng quyền sở hữu trong README).
 
 ---
 
