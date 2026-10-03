@@ -129,12 +129,13 @@ import {
   UsageProgress,
   VideoPlayerShell,
 } from "@/components/app-components";
+import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
-import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
+import { billingCheckoutEnabled, isAdminRole, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import type {
   CreditPackageResponse,
@@ -830,7 +831,7 @@ export function AuthPage({
     if (isDemoMode) {
       setTimeout(() => {
         setBusy(false);
-        if (mode === "sign-in") void navigate({ to: "/overview" });
+        if (mode === "sign-in") void navigate({ to: "/admin/system" });
         else if (mode === "sign-up") void navigate({ to: "/verify-email", search: { token: "" } });
         else setDone(true);
       }, 700);
@@ -839,8 +840,8 @@ export function AuthPage({
 
     try {
       if (mode === "sign-in") {
-        await signIn(email, pw);
-        await navigate({ to: "/overview" });
+        const currentUser = await signIn(email, pw);
+        await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
       } else if (mode === "sign-up") {
         await authApi.register({
           email,
@@ -3556,6 +3557,10 @@ function ProductionAdminSystemPage() {
         }
       />
 
+      <div className="mb-6">
+        <AdminGlobalSearch />
+      </div>
+
       {attention > 0 && (
         <div className="mb-6">
           <StateBanner
@@ -3606,6 +3611,10 @@ function ProductionAdminSystemPage() {
         />
       </div>
 
+      <div className="mt-8">
+        <AdminOwnerAccessPanel />
+      </div>
+
       <section className="mt-8 rounded-lg border bg-surface p-5">
         <h2 className="font-medium">What this snapshot does not expose</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -3643,6 +3652,9 @@ function DemoAdminSystemPage() {
             icon={I as ElementType}
           />
         ))}
+      </div>
+      <div className="mt-8">
+        <AdminOwnerAccessPanel />
       </div>
       <section className="mt-8 rounded-lg border bg-surface">
         <div className="border-b p-5">
