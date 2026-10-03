@@ -236,14 +236,35 @@ class _BillingBody extends StatelessWidget {
         SsSpacing.xxl,
       ),
       children: <Widget>[
-        Text(
-          l10n.billingChoosePackageTitle,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: SsSpacing.xs),
-        Text(l10n.billingChoosePackageBody),
-        if (!externalCheckoutEnabled) ...<Widget>[
-          const SizedBox(height: SsSpacing.md),
+        if (externalCheckoutEnabled) ...<Widget>[
+          Text(
+            l10n.billingChoosePackageTitle,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: SsSpacing.xs),
+          Text(l10n.billingChoosePackageBody),
+          const SizedBox(height: SsSpacing.lg),
+          if (data.packages.isEmpty)
+            SsCard(
+              child: SsEmptyState(
+                icon: Icons.add_card_rounded,
+                title: l10n.billingNoPackagesTitle,
+                message: l10n.billingNoPackagesBody,
+              ),
+            )
+          else
+            ...data.packages.map(
+              (CreditPackage package) => Padding(
+                padding: const EdgeInsets.only(bottom: SsSpacing.md),
+                child: _PackageCard(
+                  package: package,
+                  isMutating: isMutating,
+                  purchasingEnabled: true,
+                  onBuy: () => onBuy(package),
+                ),
+              ),
+            ),
+        ] else ...<Widget>[
           SsCard(
             child: SsEmptyState(
               icon: Icons.policy_outlined,
@@ -252,27 +273,6 @@ class _BillingBody extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: SsSpacing.lg),
-        if (data.packages.isEmpty)
-          SsCard(
-            child: SsEmptyState(
-              icon: Icons.add_card_rounded,
-              title: l10n.billingNoPackagesTitle,
-              message: l10n.billingNoPackagesBody,
-            ),
-          )
-        else
-          ...data.packages.map(
-            (CreditPackage package) => Padding(
-              padding: const EdgeInsets.only(bottom: SsSpacing.md),
-              child: _PackageCard(
-                package: package,
-                isMutating: isMutating,
-                purchasingEnabled: externalCheckoutEnabled,
-                onBuy: () => onBuy(package),
-              ),
-            ),
-          ),
         if (activeOrder != null) ...<Widget>[
           const SizedBox(height: SsSpacing.md),
           _CheckoutStatusCard(
