@@ -4098,7 +4098,7 @@
               }
             ],
             "default": null,
-            "description": "FIFO position while waiting_for_cloud_slot; implemented in B2."
+            "description": "Dynamic 1-based FIFO position while waiting_for_cloud_slot. Implemented in B2; null in every other state."
           }
         },
         "additionalProperties": false
@@ -4385,7 +4385,7 @@
           "auto_record_state": {
             "$ref": "#/components/schemas/AutoRecordState",
             "default": "off",
-            "description": "Derived in B1. Values implemented now: off, active, paused_no_cloud_minutes. B2 adds waiting_for_cloud_slot."
+            "description": "Derived V2 state. B1 implements off/active/paused_no_cloud_minutes; B2 implements waiting_for_cloud_slot."
           }
         },
         "additionalProperties": false

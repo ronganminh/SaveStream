@@ -238,6 +238,12 @@ def _notification_definition(
             "Recording ended",
             f"{handle} recording stopped before completion.",
         )
+    if event_type == "recording.missed_no_cloud_slot":
+        return (
+            "recording_missed",
+            "Recording missed",
+            f"{handle} ended before a cloud recording slot became available.",
+        )
     return None
 
 
@@ -256,7 +262,7 @@ async def ensure_recording_notification(
             "recording_started": preferences.recording_started,
             "recording_ready": preferences.recording_ready,
             "recording_failed": preferences.recording_failed,
-        }[kind]
+        }.get(kind, True)
         if not enabled:
             return None
 
