@@ -31,6 +31,8 @@ def test_frozen_openapi_contract_still_has_unique_operations_and_enums() -> None
         "failed",
         "stop_requested",
         "stopped",
+        "waiting_for_cloud_slot",
+        "missed_no_cloud_slot",
     ]
     assert spec["components"]["schemas"]["WatchStatus"]["enum"] == [
         "active",

@@ -22,6 +22,7 @@ from app.api.routes.recordings import router as recordings_router
 from app.api.routes.users import router as users_router
 from app.api.routes.watches import router as watches_router
 from app.api.routes.webhooks import router as webhooks_router
+from app.api.routes.v2_contract import router as v2_contract_router
 from app.infrastructure.db.session import Database
 from app.infrastructure.metrics.registry import MetricsMiddleware, MetricsRegistry
 from app.infrastructure.rate_limit import RedisRateLimiter
@@ -63,7 +64,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=list(cfg.cors_allow_origins),
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=[
             "Authorization",
             "Content-Type",
@@ -91,6 +92,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(public_router)
     app.include_router(billing_router)
     app.include_router(webhooks_router)
+    app.include_router(v2_contract_router)
     app.include_router(admin_router)
     app.include_router(operations_router)
     return app

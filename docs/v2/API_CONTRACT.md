@@ -2,7 +2,7 @@
 
 File này mô tả phần API **thêm mới hoặc thay đổi** cho V2, trên nền hợp đồng hiện có ở `docs/openapi.yaml`. Track B đưa nội dung này vào `docs/openapi.yaml` ở phase B0; từ lúc đó `docs/openapi.yaml` là nguồn chuẩn và file này phải khớp với nó.
 
-Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời gian UTC ISO-8601, ID dạng chuỗi, phân trang cursor (`items` + `pagination.next_cursor` / `has_more`), lỗi dạng `{"error": {"code", "message", "request_id"}}`, Bearer access token.
+Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời gian UTC ISO-8601, ID dạng chuỗi, phân trang cursor (`items` + `pagination.next_cursor` / `has_more`), lỗi dạng `{"error": {"code", "message", "request_id", "retryable", "details"}}`, Bearer access token. Trong `docs/openapi.yaml`, kiểu mà tài liệu này gọi là `WatchResponse` và `RecordingResponse` dùng tên schema hiện có là `Watch` và `Recording`; B0 mở rộng schema cũ, không tạo kiểu trùng.
 
 Đơn vị: backend lưu **credit**, 1 credit = 1 phút cloud. Mọi trường thời lượng cloud trong API tính bằng **phút** (`*_minutes`); app tự đổi ra giờ để hiển thị.
 
@@ -120,7 +120,7 @@ Trả `201`:
 { "reward_id": "rwd_123" }
 ```
 
-Cộng thêm `minutes_per_reward` phút cho phiên đang chạy. Quá 4 lần gia hạn cho một phiên: `409` mã `EXTENSION_LIMIT_REACHED`.
+Cộng thêm `minutes_per_reward` phút cho phiên đang chạy. Quá 4 lần gia hạn cho một phiên: `409` mã `EXTENSION_LIMIT_REACHED`. Thành công trả `204` không có body; với `local.unlimited`, `reward_id` có thể bỏ trống.
 
 ### `POST /v1/local-recordings/sessions/{session_id}/finish`
 
@@ -136,7 +136,7 @@ Cộng thêm `minutes_per_reward` phút cho phiên đang chạy. Quá 4 lần gi
 - `end_reason`: `user_stopped`, `live_ended`, `free_minutes_exhausted`, `storage_low`, `interrupted`, `error`.
 - `status`: `completed`, `partial`, `recovered`, `failed`.
 - Backend trừ phút theo `recorded_seconds` (làm tròn lên phút), tối đa bằng `granted_seconds`. Khoảng mất kết nối không ghi được thì không tính.
-- Gọi lại nhiều lần với cùng nội dung cho cùng kết quả.
+- Gọi lại nhiều lần với cùng nội dung cho cùng kết quả. Thành công trả `204` không có body.
 
 ### `GET /v1/local-recordings`
 
@@ -147,7 +147,7 @@ Danh sách metadata các bản ghi trên máy của tài khoản, từ mọi thi
   "items": [{
     "id": "lrs_123",
     "watch_id": "wat_123",
-    "creator": { "display_name": "Lina Studio", "handle": "linastudio" },
+    "creator": { "platform": "tiktok", "username": "linastudio", "display_name": "Lina Studio", "avatar_url": null },
     "device_id": "dev_abc",
     "device_name": "Pixel 8",
     "started_at": "2026-10-03T13:22:00Z",
@@ -161,7 +161,7 @@ Danh sách metadata các bản ghi trên máy của tài khoản, từ mọi thi
 
 ### `DELETE /v1/local-recordings/{id}`
 
-Chỉ thiết bị nguồn gọi (gửi `device_id` trong query). Thiết bị khác: `403` mã `NOT_SOURCE_DEVICE`.
+Chỉ thiết bị nguồn gọi (gửi `device_id` trong query). Thiết bị khác: `403` mã `NOT_SOURCE_DEVICE`. Thành công trả `204` không có body.
 
 ## 5. Quảng cáo thưởng (rewarded)
 
@@ -185,7 +185,7 @@ Trả `201`: `{ "reward_id": "rwd_123", "ssv_user_id": "usr_1", "ssv_custom_data
 
 ### `GET /v1/webhooks/admob-ssv`
 
-Điểm nhận gọi lại xác minh phía máy chủ của mạng quảng cáo. Kiểm tra chữ ký, đánh dấu phần thưởng `valid`. Chỉ phần thưởng `valid` mới tính vào giới hạn 8 mỗi ngày.
+Điểm nhận gọi lại xác minh phía máy chủ của mạng quảng cáo. Kiểm tra chữ ký, đánh dấu phần thưởng `valid`. Chỉ phần thưởng `valid` mới tính vào giới hạn 8 mỗi ngày. Tham số query do AdMob quy định và được B4 kiểm từ request thô; B0 không đóng băng từng tên tham số. Thành công trả `204`.
 
 ## 6. Mua trong app
 
@@ -230,11 +230,11 @@ Trả `200`:
 { "platform": "android", "push_token": "fcm-token", "device_name": "Pixel 8", "app_version": "2.0.0", "locale": "vi" }
 ```
 
-Tạo hoặc cập nhật. `push_token` có thể null khi người dùng chưa cấp quyền.
+Tạo hoặc cập nhật. `push_token` có thể null khi người dùng chưa cấp quyền. Thành công trả `204` không có body.
 
 ### `DELETE /v1/me/devices/{device_id}`
 
-Gọi khi đăng xuất.
+Gọi khi đăng xuất. Thành công trả `204` không có body.
 
 ### Loại thông báo mới
 
@@ -273,7 +273,7 @@ App so phiên bản để hiện màn bắt buộc cập nhật, và hiện màn
 | `REWARD_LOCKED` | 429 | Tạm khoá phần thưởng |
 | `STORE_RECEIPT_INVALID` | 422 | Hoá đơn store không hợp lệ |
 | `NOT_SOURCE_DEVICE` | 403 | Xoá bản ghi trên máy từ thiết bị khác |
-| `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |
+| `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |\n| `NOT_IMPLEMENTED` | 501 | Route V2 đã được B0 đóng băng contract nhưng phase sở hữu chưa triển khai; chỉ dùng trong giai đoạn rollout |
 
 ## 10. Không thay đổi
 

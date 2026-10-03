@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Request
+
+from app.api.dependencies import get_current_principal
+from app.domain.common.errors import ApplicationError
+from app.domain.identity.types import AuthPrincipal
+
+router = APIRouter(prefix="/v1", tags=["V2"])
+
+
+def _not_implemented(phase: str) -> None:
+    raise ApplicationError(
+        "NOT_IMPLEMENTED",
+        f"SaveStream V2 endpoint is frozen by B0 and will be implemented in {phase}",
+        status_code=501,
+        retryable=False,
+        details={"phase": phase},
+    )
+
+
+@router.get("/me/entitlement", operation_id="getEntitlement")
+async def get_entitlement(
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del principal
+    _not_implemented("B1")
+
+
+@router.post("/local-recordings/sessions", operation_id="createLocalRecordingSession")
+async def create_local_recording_session(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del request, principal
+    _not_implemented("B4")
+
+
+@router.post(
+    "/local-recordings/sessions/{session_id}/extend",
+    operation_id="extendLocalRecordingSession",
+)
+async def extend_local_recording_session(
+    session_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del session_id, request, principal
+    _not_implemented("B4")
+
+
+@router.post(
+    "/local-recordings/sessions/{session_id}/finish",
+    operation_id="finishLocalRecordingSession",
+)
+async def finish_local_recording_session(
+    session_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del session_id, request, principal
+    _not_implemented("B4")
+
+
+@router.get("/local-recordings", operation_id="listLocalRecordings")
+async def list_local_recordings(
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del principal
+    _not_implemented("B4")
+
+
+@router.delete("/local-recordings/{id}", operation_id="deleteLocalRecording")
+async def delete_local_recording(
+    id: str,
+    device_id: str,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del id, device_id, principal
+    _not_implemented("B4")
+
+
+@router.post("/rewards", operation_id="createReward")
+async def create_reward(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del request, principal
+    _not_implemented("B4")
+
+
+@router.get("/rewards/{reward_id}", operation_id="getReward")
+async def get_reward(
+    reward_id: str,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del reward_id, principal
+    _not_implemented("B4")
+
+
+@router.get("/webhooks/admob-ssv", operation_id="admobSsvWebhook")
+async def admob_ssv_webhook(request: Request) -> None:
+    del request
+    _not_implemented("B4")
+
+
+@router.post("/billing/store-purchases", operation_id="createStorePurchase")
+async def create_store_purchase(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del request, principal
+    _not_implemented("B5")
+
+
+@router.put("/me/devices/{device_id}", operation_id="upsertDevice")
+async def upsert_device(
+    device_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del device_id, request, principal
+    _not_implemented("B3")
+
+
+@router.delete("/me/devices/{device_id}", operation_id="deleteDevice")
+async def delete_device(
+    device_id: str,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> None:
+    del device_id, principal
+    _not_implemented("B3")
+
+
+@router.get("/app/status", operation_id="getAppStatus")
+async def get_app_status() -> None:
+    _not_implemented("B6")
