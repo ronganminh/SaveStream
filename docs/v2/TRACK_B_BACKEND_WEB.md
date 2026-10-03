@@ -8,8 +8,10 @@
 
 ## Tiến độ
 
-- [x] B0 — Đưa hợp đồng V2 vào OpenAPI
-- [x] B1 — Gói Free/Pro và giới hạn theo gói
+*Cập nhật: 2026-10-04*
+
+- [x] B0 — Đưa hợp đồng V2 vào OpenAPI — đã merge PR #78 vào `main`.
+- [ ] B1 — Gói Free/Pro và giới hạn theo gói — **đang triển khai trên PR #80; Backend E2E ✅, Mobile Backend E2E ✅, Backend CI ❌ ở bước `Test` (Python 3.11); chưa merge.**
 - [ ] B2 — Hàng chờ slot cloud và tự bật lại sau khi mua
 - [ ] B3 — Thiết bị, push và loại thông báo mới
 - [ ] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
@@ -64,6 +66,8 @@ CI phải xanh: `Backend CI` (Python 3.11 và 3.12), `Backend E2E`, `Mobile Back
 ## B1 — Gói Free/Pro và giới hạn theo gói
 
 **Phụ thuộc:** B0.
+
+**Trạng thái hiện tại (2026-10-04):** PR #80 `V2 B1 — Free/Pro entitlements and plan quotas` đang mở. Đã triển khai service entitlement dùng chung, `GET /v1/me/entitlement`, giới hạn Watch Free/Pro 3/20, Pro tối đa 3 bản ghi cloud song song, chặn auto-record cho Free bằng `PLAN_REQUIRED`, giữ manual cloud trial tương thích, và `auto_record_state` cho B1. Hai E2E đã xanh; Backend CI đang đỏ ở bước test trên Python 3.11 nên **B1 chưa hoàn tất và chưa được merge**. Bước tiếp theo: sửa test/logic gây lỗi, chạy lại toàn bộ gate, kiểm tra branch không đi sau `main`, rồi mới merge và đổi checkbox B1 thành `[x]`.
 
 1. **Suy ra gói:** Pro khi có ít nhất một đơn đã thanh toán (dùng lại logic `PAID_ORDER_STATUSES` trong `application/recordings/retention.py`) **và** số dư khả dụng > 0. Viết thành một service dùng chung, không rải điều kiện ở nhiều nơi.
 2. **`GET /v1/me/entitlement`** theo hợp đồng. Khối `local` ở phase này trả giá trị mặc định (đủ 10 phút, 0 phần thưởng); B4 làm thật.
