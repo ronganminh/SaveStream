@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/ss_tokens.dart';
 import '../../features/entitlement/domain/models/entitlement.dart';
+import 'ss_surfaces.dart';
 
 class SsLocationChip extends StatelessWidget {
   const SsLocationChip({required this.engine, this.label, super.key});
@@ -68,7 +69,13 @@ class SsQuotaCard extends StatelessWidget {
             ],
             if (progress != null) ...<Widget>[
               const SizedBox(height: SsSpacing.md),
-              LinearProgressIndicator(value: progress!.clamp(0, 1)),
+              LinearProgressIndicator(
+                value: progress! < 0
+                    ? 0
+                    : progress! > 1
+                    ? 1
+                    : progress!,
+              ),
             ],
           ],
         ),
@@ -220,11 +227,11 @@ class SsInlineAlert extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (IconData, SsStatusTone) visual = switch (tone) {
-      SsInlineAlertTone.info => (Icons.info_outline_rounded, SsStatusTone.neutral),
-      SsInlineAlertTone.success => (Icons.check_circle_outline_rounded, SsStatusTone.success),
-      SsInlineAlertTone.warning => (Icons.warning_amber_rounded, SsStatusTone.warning),
-      SsInlineAlertTone.error => (Icons.error_outline_rounded, SsStatusTone.error),
+    final IconData icon = switch (tone) {
+      SsInlineAlertTone.info => Icons.info_outline_rounded,
+      SsInlineAlertTone.success => Icons.check_circle_outline_rounded,
+      SsInlineAlertTone.warning => Icons.warning_amber_rounded,
+      SsInlineAlertTone.error => Icons.error_outline_rounded,
     };
     return Semantics(
       container: true,
@@ -233,7 +240,7 @@ class SsInlineAlert extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(visual.$1),
+            Icon(icon),
             const SizedBox(width: SsSpacing.md),
             Expanded(
               child: Column(

@@ -1,5 +1,6 @@
-import '../../../features/entitlement/domain/models/entitlement.dart';
 import 'package:flutter/material.dart';
+
+import '../../../features/entitlement/domain/models/entitlement.dart';
 
 import '../../../app/app_settings_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
@@ -197,10 +198,60 @@ class ComponentGalleryScreen extends StatelessWidget {
                         const SizedBox(height: SsSpacing.md),
                         const SsBannerAdSlot(label: 'Ad slot'),
                         const SizedBox(height: SsSpacing.md),
+                        SsCreatorTile(
+                          name: l10n.creatorName,
+                          handle: l10n.creatorSubtitle,
+                          isLive: true,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsRecordingTile(
+                          title: l10n.creatorName,
+                          subtitle: '01:23:45',
+                          engine: Engine.cloud,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsActiveRecordingCard(
+                          creatorName: l10n.creatorName,
+                          elapsed: '00:12:34',
+                          engine: Engine.local,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsRecordingBar(
+                          label: '1 recording active',
+                          elapsed: '00:12:34',
+                        ),
+                        const SizedBox(height: SsSpacing.md),
                         const SsChecklist(
                           items: <SsChecklistItem>[
                             SsChecklistItem(label: 'Finalize file', done: true),
                             SsChecklistItem(label: 'Save metadata'),
+                          ],
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        Wrap(
+                          spacing: SsSpacing.sm,
+                          runSpacing: SsSpacing.sm,
+                          children: <Widget>[
+                            SsSecondaryButton(
+                              label: l10n.showDialogAction,
+                              onPressed: () {
+                                showModalBottomSheet<void>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return SsBottomSheet(
+                                      title: l10n.confirmTitle,
+                                      child: Text(l10n.confirmBody),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                            SsSecondaryButton(
+                              label: l10n.showSnackbarAction,
+                              onPressed: () {
+                                SsToast.show(context, l10n.snackbarMessage);
+                              },
+                            ),
                           ],
                         ),
                       ],
