@@ -8,14 +8,23 @@
 
 ## Tiến độ
 
-- [ ] A0 — Nền móng: model, interface, mock, widget dùng chung
-- [ ] A1 — Auth và Onboarding
+- [x] A0 — Nền móng: model, interface, mock, widget dùng chung — **đã merge PR #77 vào `main`**
+- [ ] A1 — Auth và Onboarding — **✅ hoàn tất triển khai trên PR #81, sẵn sàng merge vào `main`**
 - [ ] A2 — Home và Theo dõi
 - [ ] A3 — Luồng ghi (Recording)
 - [ ] A4 — Bản ghi và Trình phát
 - [ ] A5 — Gói, sử dụng và mua giờ
 - [ ] A6 — Cài đặt, Thông báo, trạng thái toàn cục
 - [ ] A7 — Luồng biên, trợ năng, dọn code cũ
+
+### Trạng thái triển khai hiện tại — 2026-10-04
+
+| Phase | Branch / PR | Trạng thái | Kiểm tra |
+|---|---|---|---|
+| A0 | `track-a/a0-foundation` / #77 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
+| A1 | `track-a/a1-auth-onboarding` / #81 | ✅ Hoàn tất triển khai, đã rebase sạch lên `main`, sẵn sàng merge | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
+
+**Quy tắc cập nhật tracking:** chỉ đánh dấu `[x]` khi phase đã merge vào `main`. Phase đang mở PR vẫn giữ `[ ]` và ghi trạng thái ở bảng trên.
 
 ## Kiểm tra (chạy trong `apps/mobile` trước khi mở PR)
 
@@ -53,6 +62,10 @@ CI phải xanh: `flutter-checks`, `ios-release-compile`, `mobile-backend-e2e`.
 
 ## A0 — Nền móng
 
+**Trạng thái:** ✅ **HOÀN TẤT** — PR #77 đã merge vào `main` ngày 2026-10-04. Branch triển khai: `track-a/a0-foundation`.
+
+**Kết quả đã chốt:** model/interface/mock V2, native contracts + fake providers, `SaveStreamApp.extraOverrides`, widget dùng chung + `/dev/components`, formatter, ARB native EN/VI và test A0. CI trước merge đã xanh đủ `flutter-checks`, `ios-release-compile`, `mobile-backend-e2e`.
+
 **Phụ thuộc:** không. **Chặn:** C0 và mọi phase A sau.
 
 Việc cần làm:
@@ -89,6 +102,18 @@ Việc cần làm:
 
 ## A1 — Auth và Onboarding
 
+**Trạng thái:** ✅ **HOÀN TẤT TRIỂN KHAI / READY TO MERGE** — PR #81, branch `track-a/a1-auth-onboarding`, đã rebase lên `main` sau khi #77 merge. PR hiện chỉ chứa phạm vi A1.
+
+**Đã triển khai trong PR #81:**
+- A01 splash theo V2; A03/A03-error, A04, A05, A05b, A06 và A06-verify đã dựng lại nhưng giữ nguyên auth controller/repository.
+- Cờ hoàn tất phần giới thiệu được lưu bằng `AppSettingsStore`; router phân biệt Welcome, auth và first-run intro.
+- A07 → A09 và nhánh nền tảng A10 Android / A11 iOS đã có; A09 gọi `PushService.requestPermission()`.
+- A12 dùng lại `WatchController` để thêm creator đầu tiên, không có checkbox xác nhận quyền ghi; A13 hoàn tất intro rồi vào Home hoặc thêm creator khác.
+- Đã thêm EN/VI localization và test A1 cho persistence, auth/onboarding first-run và nhánh iOS.
+- Đã sửa verify deep-link để token mới vẫn được xử lý khi route giữ nguyên `/auth/verify` nhưng query thay đổi.
+
+**Kiểm tra cuối:** `flutter gen-l10n`, formatter, analyzer, toàn bộ `flutter test`, Android production AAB + Phase 17 release audit đều xanh trong `flutter-checks`; `ios-release-compile` xanh; `mobile-backend-e2e` xanh với backend thật. PR #81 đủ điều kiện kỹ thuật để merge.
+
 **Phụ thuộc:** A0. Màn A02 (Welcome) đã có sẵn ở `lib/features/onboarding/presentation/welcome_screen.dart`.
 
 Màn: A01, A03, A03-error, A04, A05, A05b, A06, A06-verify, A07, A08, A09, A10, A11, A12, A13.
@@ -104,7 +129,7 @@ Việc cần làm:
 7. A10 (Android): giải thích thông báo "đang ghi" và tối ưu pin. A11 (iOS): giải thích phải giữ app mở khi ghi. Chọn theo `DeviceInfoService.platform`.
 8. A12, A13: thêm kênh đầu tiên, dùng lại logic thêm kênh hiện có. Theo thiết kế, **không có ô tick** xác nhận quyền ghi; thay bằng một dòng nhắc trách nhiệm.
 
-Định nghĩa xong: test luồng đầy đủ "mở app lần đầu → Welcome → đăng ký → xác minh → 3 bước giới thiệu → thêm kênh → Home".
+Định nghĩa xong: test luồng đầy đủ "mở app lần đầu → Welcome → đăng ký → xác minh → 3 bước giới thiệu → thêm kênh → Home". **Đã đạt trên PR #81.**
 
 ---
 

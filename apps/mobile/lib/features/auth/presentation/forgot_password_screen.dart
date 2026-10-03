@@ -1,3 +1,4 @@
+/// A05 — Forgot password.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,7 +31,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   late final AuthController _controller;
-  bool _sent = false;
 
   @override
   void initState() {
@@ -50,55 +50,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    final bool sent = await _controller.forgotPassword(
-      email: _emailController.text.trim(),
-    );
+    if (!_formKey.currentState!.validate()) return;
+    final String email = _emailController.text.trim();
+    final bool sent = await _controller.forgotPassword(email: email);
     if (sent && mounted) {
-      setState(() {
-        _sent = true;
-      });
+      context.go(AppRoutes.checkEmailLocation(email));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-
-    if (_sent) {
-      return AuthScaffold(
-        title: l10n.passwordResetSentTitle,
-        subtitle: l10n.passwordResetSentBody,
-        showBackButton: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Icon(
-              Icons.mark_email_read_outlined,
-              size: 56,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsPrimaryButton(
-              label: l10n.backToSignIn,
-              onPressed: () => context.go(AppRoutes.signIn),
-            ),
-            const SizedBox(height: SsSpacing.sm),
-            SsTextAction(
-              label: l10n.enterResetTokenAction,
-              onPressed: () => context.go(AppRoutes.resetPassword),
-            ),
-          ],
-        ),
-      );
-    }
-
     return AuthScaffold(
       title: l10n.forgotPasswordTitle,
       subtitle: l10n.forgotPasswordSubtitle,
       showBackButton: true,
+      onBack: () => context.go(AppRoutes.signIn),
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
@@ -129,14 +96,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: SsSpacing.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: SsPrimaryButton(
-                    label: l10n.sendResetLinkAction,
-                    isLoading: _controller.isLoading,
-                    onPressed: _submit,
-                  ),
+                const SizedBox(height: SsSpacing.xl),
+                SsPrimaryButton(
+                  label: l10n.sendResetLinkAction,
+                  isLoading: _controller.isLoading,
+                  onPressed: _submit,
                 ),
               ],
             ),

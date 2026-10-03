@@ -1,3 +1,4 @@
+/// A03 · A03-error — Sign in.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -51,13 +52,19 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
     await _controller.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
+  }
+
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.welcome);
+    }
   }
 
   @override
@@ -66,11 +73,14 @@ class _SignInScreenState extends State<SignInScreen> {
 
     return AuthScaffold(
       title: l10n.signInTitle,
-      subtitle: l10n.signInSubtitle,
+      showBackButton: true,
+      onBack: _back,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
           final AuthFailureCode? failure = _controller.failure;
+          final bool invalidCredentials =
+              failure == AuthFailureCode.invalidCredentials;
 
           return AutofillGroup(
             child: Form(
@@ -78,7 +88,7 @@ class _SignInScreenState extends State<SignInScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  if (failure != null) ...<Widget>[
+                  if (failure != null && !invalidCredentials) ...<Widget>[
                     AuthFailureBanner(
                       failure: failure,
                       actionLabel: failure == AuthFailureCode.emailNotVerified
@@ -122,6 +132,15 @@ class _SignInScreenState extends State<SignInScreen> {
                       return null;
                     },
                   ),
+                  if (invalidCredentials) ...<Widget>[
+                    const SizedBox(height: SsSpacing.xs),
+                    Text(
+                      l10n.invalidCredentialsMessage,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
                   Align(
                     alignment: Alignment.centerRight,
                     child: SsTextAction(
@@ -132,19 +151,17 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                   ),
                   const SizedBox(height: SsSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: SsPrimaryButton(
-                      label: l10n.signInAction,
-                      isLoading: _controller.isLoading,
-                      onPressed: _submit,
-                    ),
+                  SsPrimaryButton(
+                    label: l10n.signInAction,
+                    isLoading: _controller.isLoading,
+                    onPressed: _submit,
                   ),
                   const SizedBox(height: SsSpacing.md),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: <Widget>[
-                      Flexible(child: Text(l10n.noAccountPrompt)),
+                      Text(l10n.noAccountPrompt),
                       SsTextAction(
                         label: l10n.createAccountAction,
                         onPressed: _controller.isLoading

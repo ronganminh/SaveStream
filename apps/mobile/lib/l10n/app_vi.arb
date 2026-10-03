@@ -90,7 +90,7 @@
   "watchStatusPausedError": "Tạm dừng · lỗi",
   "watchStatusDisabled": "Đã tắt",
   "liveStatus": "LIVE",
-  "offlineStatus": "Offline",
+  "offlineStatus": "OFFLINE",
   "recordingDetailTitle": "Chi tiết bản ghi",
   "recordingNotFoundTitle": "Không tìm thấy bản ghi",
   "recordingNotFoundBody": "Recording này không còn khả dụng.",
@@ -504,5 +504,138 @@
   "recordingFinalizingBody": "SaveStream đang hoàn tất file trên máy một cách an toàn.",
   "recordingPartialBody": "Bản ghi đã được lưu nhưng một phần LIVE không được ghi lại.",
   "recordingRecoveredBody": "Bản ghi trên máy đã được khôi phục sau khi bị gián đoạn.",
-  "recordingMissedNoCloudSlotBody": "LIVE đã kết thúc trước khi có slot cloud trống."
+  "recordingMissedNoCloudSlotBody": "LIVE đã kết thúc trước khi có slot cloud trống.",
+  "fullNameLabel": "Họ tên",
+  "fullNameHint": "Alex Nguyen",
+  "fullNameRequiredMessage": "Nhập họ tên của bạn.",
+  "passwordRuleMin8": "Ít nhất 8 ký tự",
+  "requirementMetLabel": "Đã đạt yêu cầu",
+  "requirementNotMetLabel": "Chưa đạt yêu cầu",
+  "checkEmailTitle": "Kiểm tra email",
+  "checkEmailBody": "Đã gửi link đặt lại tới {email}. Mở link trong email để đặt mật khẩu mới.",
+  "openEmailAppAction": "Mở ứng dụng email",
+  "resendEmailAction": "Gửi lại email",
+  "emailHelpSpam": "Không thấy email? Kiểm tra mục Spam hoặc Quảng cáo.",
+  "passwordResetEmailResentMessage": "Đã gửi lại email đặt mật khẩu.",
+  "verifyEmailBody": "Đã gửi link xác minh tới {email}. Mở link trong email để kích hoạt tài khoản.",
+  "verifyEmailGenericBody": "Mở link xác minh trong email để kích hoạt tài khoản.",
+  "changeEmailAction": "Đổi email",
+  "verifyingEmailMessage": "Đang kiểm tra link xác minh…",
+  "emailVerifiedSignInMessage": "Email đã xác minh. Đăng nhập để tiếp tục.",
+  "resetPasswordAccountBody": "Chọn mật khẩu mới cho tài khoản SaveStream của bạn.",
+  "confirmNewPasswordLabel": "Nhập lại mật khẩu mới",
+  "savePasswordAction": "Lưu mật khẩu",
+  "resetLinkExpiredTitle": "Link đã hết hạn",
+  "resetLinkExpiredBody": "Link đặt lại mật khẩu chỉ dùng được một lần và có thể đã hết hạn.",
+  "sendNewLinkAction": "Gửi link mới",
+  "resetPasswordSuccessTitle": "Đã đặt mật khẩu mới",
+  "resetPasswordSuccessBody": "Mật khẩu đã được thay đổi. Đăng nhập lại để tiếp tục.",
+  "laterAction": "Để sau",
+  "gotItAction": "Đã hiểu",
+  "onboardingSkipAction": "Bỏ qua",
+  "onboardingStepLabel": "Bước {step}/{total}",
+  "introWatchTitle": "Theo dõi creator, biết ngay khi LIVE",
+  "introWatchBody": "Thêm tối đa 3 creator TikTok. SaveStream tự kiểm tra và báo cho bạn khi họ bắt đầu LIVE.",
+  "onboardingSampleCreatorOneName": "Lina Studio",
+  "onboardingSampleCreatorOneHandle": "@linastudio",
+  "onboardingSampleCreatorTwoName": "Mike Fitness",
+  "onboardingSampleCreatorTwoHandle": "@mikefitness",
+  "introWatchMockNotificationTitle": "Lina Studio đang LIVE",
+  "introWatchMockNotificationBody": "Mở SaveStream để Record ngay.",
+  "introStorageTitle": "Record trên máy hoặc trên cloud",
+  "introStorageBody": "Chọn nơi ghi phù hợp với cách bạn muốn lưu một phiên LIVE.",
+  "localLabel": "Local",
+  "cloudLabel": "Cloud",
+  "freePlanLabel": "FREE",
+  "proPlanLabel": "PRO",
+  "introLocalTitle": "Lưu trên thiết bị này",
+  "introLocalBulletManual": "Bạn bấm Record khi creator LIVE.",
+  "introLocalBulletMinutes": "10 phút miễn phí mỗi ngày.",
+  "introLocalBulletAndroid": "Có thể chuyển app; Android hiện thông báo khi đang record.",
+  "introLocalBulletIos": "Cần giữ SaveStream mở khi record.",
+  "introCloudTitle": "Record trên server",
+  "introCloudBulletServer": "Điện thoại không cần online trong lúc server đang record.",
+  "introCloudBulletAuto": "Tự động record khi creator bạn theo dõi bắt đầu LIVE.",
+  "notificationRationaleTitle": "Bật thông báo để biết khi creator LIVE",
+  "notificationRationaleBody": "Bạn luôn kiểm soát creator nào có thể gửi thông báo.",
+  "notificationRationaleFollowedOnly": "Chỉ báo khi creator bạn theo dõi bắt đầu LIVE.",
+  "notificationRationalePerCreator": "Tắt riêng từng creator bất cứ lúc nào.",
+  "enableNotificationsAction": "Bật thông báo",
+  "androidRecordingInfoTitle": "Cho phép record khi bạn chuyển app",
+  "androidRecordingInfoBody": "Khi đang record Local, Android hiện thông báo cố định để recording có thể tiếp tục.",
+  "androidRecordingNotificationPreview": "Lina Studio · 00:03:12",
+  "androidBatteryWarningTitle": "Android có thể dừng recording",
+  "androidBatteryWarningBody": "Tiết kiệm pin hoặc thiếu bộ nhớ có thể làm gián đoạn recording Local. Tắt tối ưu pin có thể giúp ổn định hơn.",
+  "disableBatteryOptimizationAction": "Tắt tối ưu pin",
+  "iosRecordingInfoTitle": "Trên iPhone, giữ SaveStream mở khi record",
+  "iosRecordingInfoBody": "iOS có thể dừng recording Local khi SaveStream chạy nền hoặc màn hình bị khoá.",
+  "iosRecordingBackgroundBody": "Giữ SaveStream mở ở phía trước trong khi record Local.",
+  "iosRecordingRecoveryBody": "Nếu iOS dừng recording, phần đã ghi được giữ lại và SaveStream có thể hướng dẫn khôi phục.",
+  "iosRecordingCloudTitle": "Record trên cloud",
+  "iosRecordingCloudBody": "Với cloud recording, server tiếp tục ghi và điện thoại không cần online.",
+  "addFirstCreatorTitle": "Thêm creator đầu tiên",
+  "addFirstCreatorBody": "Dán username hoặc link TikTok của creator bạn muốn theo dõi.",
+  "tiktokSupportedLabel": "TikTok · Đã hỗ trợ",
+  "douyinComingSoonLabel": "Douyin · Sắp có",
+  "onboardingCreatorSourceLabel": "Username hoặc link TikTok",
+  "creatorFoundLabel": "Tìm thấy",
+  "responsibleUseReminderTitle": "Sử dụng bản ghi có trách nhiệm",
+  "responsibleUseReminderBody": "Bạn chịu trách nhiệm sử dụng bản ghi phù hợp với pháp luật và điều khoản của nền tảng.",
+  "addAndFollowAction": "Thêm & theo dõi",
+  "firstCreatorAddedTitle": "Đã thêm {creator}",
+  "firstCreatorAddedBody": "SaveStream sẽ báo khi {creator} LIVE. Khi đó bấm Record ngay để lưu trên thiết bị này.",
+  "firstCreatorFollowingValue": "{handle} · Đang theo dõi · {count}/{limit} creator",
+  "goHomeAction": "Vào Trang chủ",
+  "addAnotherCreatorAction": "Thêm creator khác",
+  "@checkEmailBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@verifyEmailBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@onboardingStepLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@firstCreatorAddedTitle": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
+  "@firstCreatorAddedBody": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
+  "@firstCreatorFollowingValue": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  }
 }

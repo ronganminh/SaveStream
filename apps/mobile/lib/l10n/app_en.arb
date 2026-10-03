@@ -90,7 +90,7 @@
   "watchStatusPausedError": "Paused · error",
   "watchStatusDisabled": "Disabled",
   "liveStatus": "LIVE",
-  "offlineStatus": "Offline",
+  "offlineStatus": "OFFLINE",
   "recordingDetailTitle": "Recording detail",
   "recordingNotFoundTitle": "Recording not found",
   "recordingNotFoundBody": "This recording is no longer available.",
@@ -504,5 +504,138 @@
   "recordingFinalizingBody": "SaveStream is safely finalizing the local file.",
   "recordingPartialBody": "The recording was saved, but part of the LIVE was not captured.",
   "recordingRecoveredBody": "The local recording was recovered after an interruption.",
-  "recordingMissedNoCloudSlotBody": "The LIVE ended before a cloud recording slot became available."
+  "recordingMissedNoCloudSlotBody": "The LIVE ended before a cloud recording slot became available.",
+  "fullNameLabel": "Full name",
+  "fullNameHint": "Alex Nguyen",
+  "fullNameRequiredMessage": "Enter your full name.",
+  "passwordRuleMin8": "At least 8 characters",
+  "requirementMetLabel": "Requirement met",
+  "requirementNotMetLabel": "Requirement not met",
+  "checkEmailTitle": "Check your email",
+  "checkEmailBody": "We sent a password reset link to {email}. Open the link in your email to set a new password.",
+  "openEmailAppAction": "Open email app",
+  "resendEmailAction": "Resend email",
+  "emailHelpSpam": "Can’t find it? Check Spam or Promotions.",
+  "passwordResetEmailResentMessage": "Password reset email sent again.",
+  "verifyEmailBody": "We sent a verification link to {email}. Open the link in your email to activate your account.",
+  "verifyEmailGenericBody": "Open the verification link from your email to activate your account.",
+  "changeEmailAction": "Change email",
+  "verifyingEmailMessage": "Checking verification link…",
+  "emailVerifiedSignInMessage": "Email verified. Sign in to continue.",
+  "resetPasswordAccountBody": "Choose a new password for your SaveStream account.",
+  "confirmNewPasswordLabel": "Enter new password again",
+  "savePasswordAction": "Save password",
+  "resetLinkExpiredTitle": "Link expired",
+  "resetLinkExpiredBody": "This password reset link can only be used once and may have expired.",
+  "sendNewLinkAction": "Send a new link",
+  "resetPasswordSuccessTitle": "New password saved",
+  "resetPasswordSuccessBody": "Your password was changed. Sign in again to continue.",
+  "laterAction": "Later",
+  "gotItAction": "Got it",
+  "onboardingSkipAction": "Skip",
+  "onboardingStepLabel": "Step {step}/{total}",
+  "introWatchTitle": "Follow creators, know when they’re LIVE",
+  "introWatchBody": "Add up to 3 TikTok creators. SaveStream checks them and lets you know when a creator goes LIVE.",
+  "onboardingSampleCreatorOneName": "Lina Studio",
+  "onboardingSampleCreatorOneHandle": "@linastudio",
+  "onboardingSampleCreatorTwoName": "Mike Fitness",
+  "onboardingSampleCreatorTwoHandle": "@mikefitness",
+  "introWatchMockNotificationTitle": "Lina Studio is LIVE",
+  "introWatchMockNotificationBody": "Open SaveStream to Record now.",
+  "introStorageTitle": "Record on your device or in the cloud",
+  "introStorageBody": "Choose the recording location that fits how you want to save a LIVE.",
+  "localLabel": "Local",
+  "cloudLabel": "Cloud",
+  "freePlanLabel": "FREE",
+  "proPlanLabel": "PRO",
+  "introLocalTitle": "Saved on this device",
+  "introLocalBulletManual": "Tap Record when a creator is LIVE.",
+  "introLocalBulletMinutes": "10 free minutes each day.",
+  "introLocalBulletAndroid": "You can switch apps; Android shows a recording notification.",
+  "introLocalBulletIos": "Keep SaveStream open while recording.",
+  "introCloudTitle": "Recorded on the server",
+  "introCloudBulletServer": "Your phone does not need to stay online while the server records.",
+  "introCloudBulletAuto": "Automatically record when a followed creator goes LIVE.",
+  "notificationRationaleTitle": "Turn on notifications to know when a creator is LIVE",
+  "notificationRationaleBody": "You stay in control of which creators can alert you.",
+  "notificationRationaleFollowedOnly": "Only alert when a creator you follow starts a LIVE.",
+  "notificationRationalePerCreator": "Turn alerts off for any creator at any time.",
+  "enableNotificationsAction": "Turn on notifications",
+  "androidRecordingInfoTitle": "Allow recording while you switch apps",
+  "androidRecordingInfoBody": "During a Local recording, Android shows a persistent notification so the recording can keep running.",
+  "androidRecordingNotificationPreview": "Lina Studio · 00:03:12",
+  "androidBatteryWarningTitle": "Android may stop recording",
+  "androidBatteryWarningBody": "Battery saving or low storage can interrupt a Local recording. Disabling battery optimization can improve reliability.",
+  "disableBatteryOptimizationAction": "Turn off battery optimization",
+  "iosRecordingInfoTitle": "On iPhone, keep SaveStream open while recording",
+  "iosRecordingInfoBody": "iOS can stop a Local recording when SaveStream is in the background or the phone is locked.",
+  "iosRecordingBackgroundBody": "Keep SaveStream open in the foreground during a Local recording.",
+  "iosRecordingRecoveryBody": "If iOS stops the recording, the saved part is kept and SaveStream can guide recovery.",
+  "iosRecordingCloudTitle": "Cloud recording",
+  "iosRecordingCloudBody": "With cloud recording, the server keeps recording and your phone does not need to stay online.",
+  "addFirstCreatorTitle": "Add your first creator",
+  "addFirstCreatorBody": "Paste a TikTok username or link for the creator you want to follow.",
+  "tiktokSupportedLabel": "TikTok · Supported",
+  "douyinComingSoonLabel": "Douyin · Coming soon",
+  "onboardingCreatorSourceLabel": "TikTok username or link",
+  "creatorFoundLabel": "Found",
+  "responsibleUseReminderTitle": "Use recordings responsibly",
+  "responsibleUseReminderBody": "You are responsible for using recordings in accordance with the law and the platform’s terms.",
+  "addAndFollowAction": "Add & follow",
+  "firstCreatorAddedTitle": "{creator} added",
+  "firstCreatorAddedBody": "SaveStream will alert you when {creator} is LIVE. Tap Record then to save it on this device.",
+  "firstCreatorFollowingValue": "{handle} · Following · {count}/{limit} creators",
+  "goHomeAction": "Go to Home",
+  "addAnotherCreatorAction": "Add another creator",
+  "@checkEmailBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@verifyEmailBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@onboardingStepLabel": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "@firstCreatorAddedTitle": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
+  "@firstCreatorAddedBody": {
+    "placeholders": {
+      "creator": {
+        "type": "String"
+      }
+    }
+  },
+  "@firstCreatorFollowingValue": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  }
 }
