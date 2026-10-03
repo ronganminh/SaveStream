@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block">
+<style>body{margin:0;background:#E7E9EE;font-family:Geist,system-ui,sans-serif;color:#0E111A}a{color:#6D49F4;text-decoration:none}a:hover{color:#5A36E0;text-decoration:underline}</style>
+</helmet>
+
+<section id="intro" style="padding:48px 48px 32px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:980px">
+    <div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">SAVESTREAM MOBILE V2 · PHASE 1</div>
+    <div style="font:700 32px/40px Geist">Screens gốc · Free / Pro · Light / Dark</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font:600 14px/20px Geist">
+      <a href="SaveStream V2 Phase 1 Foundations.dc.html">Foundations + Flutter tokens →</a>
+      <a href="SaveStream V2 Phase 1 Components.dc.html">Components + App shell →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:12px">
+      <div style="background:#FDF4E1;border:1px solid #F1DDAE;border-radius:12px;padding:16px;overflow-wrap:anywhere;font:400 14px/20px Geist;color:#5C3E00">
+        <div style="font:600 14px/20px Geist;margin-bottom:4px">Thiếu spec v1.0</div>
+        File SaveStream_Mobile_UX_UI_Figma_Design_Spec_VI_v1.0.md chưa có trong project. Phase 1 dựa trên brief + code V1. Mọi quota/giá lấy từ brief; hành vi chưa rõ đánh dấu "?" trong annotation.
+      </div>
+      <div style="background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:16px;font:400 14px/20px Geist;color:#3A3E48">
+        <div style="font:600 14px/20px Geist;color:#0E111A;margin-bottom:4px">Quy ước</div>
+        Frame 390×844 (safe area top 44 · bottom 34). Icon = Material Symbols Rounded (map trực tiếp sang Flutter Icons.*_rounded). Copy VI. Mỗi màn: Light, Dark, annotation. H01/W01/L01 thêm QA 360×800 + 430×932 (Light). Nội dung dưới fold là vùng cuộn.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="decisions" style="padding:32px 48px;border-bottom:1px solid #D5D8DF">
+  <div style="font:600 18px/24px Geist;margin-bottom:12px">Quyết định đã chốt (vòng 1)</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:8px 32px;font:400 14px/20px Geist;color:#3A3E48;max-width:1200px">
+    <div>1 · Phút Free reset 00:00 UTC (backend). UI: "Reset sau X giờ Y phút".</div>
+    <div>2 · Trừ: subscription 30 h → legacy → Cloud Pack. Pack không hết hạn.</div>
+    <div>3 · Recording bar mọi tab (compact trên Home). Ẩn chỉ ở Active Recording detail.</div>
+    <div>4 · "Thông báo khi LIVE" theo creator, default ON, chỉ tắt push.</div>
+    <div>5 · FAILED cloud chỉ tính phần đã lưu. "Thử lại" khi còn LIVE + retryable.</div>
+    <div>6 · Retention: Free + Cloud Pack 7 ngày · Pro 14 ngày. Ghi rõ trước khi mua.</div>
+    <div>7 · UNKNOWN dùng next_check_at; thiếu → "SaveStream sẽ tự kiểm tra lại".</div>
+    <div>8 · Không có picker chất lượng Local. Chỉ thông tin "Tự động / theo nguồn".</div>
+    <div>9 · Tab localize. VI: Trang chủ / Theo dõi / Bản ghi / Cài đặt.</div>
+    <div>10 · Hết phút ngày: 1 Rewarded Ad → 10 phút cho recording mới, không bank, tính cap 8.</div>
+    <div>11 · Local sync metadata giữa device; file chỉ ở máy đã record → "Không có trên máy này".</div>
+  </div>
+</section>
+<!-- H01 -->
+<section id="H01" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">H01</span>
+    <span style="font:600 22px/28px Geist">Home · Free</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Chưa có recording chạy · 1 creator đang LIVE · user tự bấm Record</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themesQA }}" as="t" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">H01 · Home Free · Android · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0">
+                <div style="font:700 22px/28px Geist;text-wrap:pretty">Chào buổi chiều, Alex</div>
+                <div style="font:400 14px/20px Geist;color:var(--text2)">Thứ Ba, 29 Th9</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span>
+              <div style="position:relative;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;color:var(--text)">
+                <span style="font:24px/1 'Material Symbols Rounded'">notifications</span>
+                <span style="position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:999px;background:var(--rec);border:2px solid var(--bg)"></span>
+              </div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
+                  <span style="font:600 14px/20px Geist;color:var(--text2)">Phút Free hôm nay</span>
+                  <span style="font:500 12px/16px Geist;color:var(--text2)">Reset sau 3 giờ 20 phút</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span style="font:600 32px/40px 'Geist Mono';font-variant-numeric:tabular-nums">6</span>
+                  <span style="font:500 16px/24px Geist;color:var(--text2)">/ 10 phút còn lại</span>
+                </div>
+                <div style="height:6px;border-radius:999px;background:var(--surface2);overflow:hidden"><div style="width:60%;height:100%;background:var(--primary);border-radius:999px"></div></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                  <div style="background:var(--surface2);border-radius:12px;padding:10px 12px"><div style="font:500 12px/16px Geist;color:var(--text2)">Rewarded</div><div style="font:600 16px/24px 'Geist Mono'">2/8</div></div>
+                  <div style="background:var(--surface2);border-radius:12px;padding:10px 12px"><div style="font:500 12px/16px Geist;color:var(--text2)">Slot</div><div style="font:600 16px/24px 'Geist Mono'">0/1</div></div>
+                  <div style="background:var(--surface2);border-radius:12px;padding:10px 12px"><div style="font:500 12px/16px Geist;color:var(--text2)">Theo dõi</div><div style="font:600 16px/24px 'Geist Mono'">2/3</div></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:600 18px/24px Geist">Theo dõi</span><span style="font:600 14px/20px Geist;color:var(--primary)">Xem tất cả</span></div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+                  <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div>
+                      <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">@linastudio · LIVE từ 13:22</div></div>
+                      <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="flex:1;display:flex;align-items:center;gap:6px;font:500 12px/16px Geist;color:var(--local)"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local · Lưu trên thiết bị này</div>
+                      <div style="display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">radio_button_checked</span>Record ngay</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:var(--primarySubtle);border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start">
+                <span style="font:22px/1 'Material Symbols Rounded';color:var(--primary);font-variation-settings:'FILL' 1">bolt</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                  <div><div style="font:600 16px/24px Geist">Tự động record khi creator LIVE</div><div style="font:400 14px/20px Geist;color:var(--text2)">Pro record trên cloud, điện thoại không cần online.</div></div>
+                  <span style="font:600 14px/20px Geist;color:var(--primary)">Xem Pro</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:500 12px/16px Geist;color:var(--text2)">Quảng cáo</span>
+                <div style="min-height:56px;border-radius:8px;border:1px dashed var(--border);background:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 12px/16px 'Geist Mono';color:var(--text2)">SsBannerAdSlot · adaptive banner</div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="home" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · liveStatus, phút còn lại, rewarded x/8, Watch List x/3</div>
+        <div><b style="font-weight:600;color:#0E111A">Recorder local</b> · slot 0/1</div>
+        <div><b style="font-weight:600;color:#0E111A">Ad SDK</b> · banner fill (no-fill → ẩn slot, không giữ khoảng trống)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>Chỉ hiện sau aha moment (đã thêm creator + đã nhận LIVE). Trước đó Home không có upgrade card / banner.</div>
+        <div>Banner ở cuối nội dung chính, trên bottom nav — vị trí cho phép.</div>
+        <div>"Record ngay" chạy Local. Android: bật Foreground Service. iOS: hiện cảnh báo giữ app mở (Phase sau).</div>
+        <div>Reset 00:00 UTC do backend quyết định. UI chỉ hiện countdown quy đổi giờ local.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- H06 -->
+<section id="H06" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">H06</span>
+    <span style="font:600 22px/28px Geist">Home · Pro · Cloud đang record</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Auto-record cloud đã bắt đầu · không ads</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">H06 · Home Pro Cloud Active · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0">
+                <div style="font:700 22px/28px Geist;text-wrap:pretty">Chào buổi chiều, Alex</div>
+                <div style="font:400 14px/20px Geist;color:var(--text2)">Thứ Ba, 29 Th9</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 10px 0 8px;border-radius:999px;background:var(--primary);color:var(--onPrimary);font:700 12px/16px Geist;letter-spacing:.06em"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">workspace_premium</span>PRO</span>
+              <div style="position:relative;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span><span style="position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:999px;background:var(--rec);border:2px solid var(--bg)"></span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px">
+              <div style="background:var(--player);color:var(--playerFg);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+                  <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span>
+                  <span style="font:500 12px/16px Geist;color:var(--playerMuted);margin-left:auto">Auto-record</span>
+                </div>
+                <div style="font:600 18px/24px Geist">Lina Studio <span style="font:400 14px/20px Geist;color:var(--playerMuted)">· từ 13:22</span></div>
+                <div style="font:600 36px/44px 'Geist Mono';font-variant-numeric:tabular-nums;letter-spacing:-.01em">01:42:18</div>
+                <div style="font:400 14px/20px Geist;color:var(--playerMuted)">SaveStream đang record trên server, điện thoại không cần online.</div>
+                <div style="display:flex;gap:8px">
+                  <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:#fff;color:#0E111A;font:600 16px/20px Geist">Mở recording</div>
+                  <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.2);color:#FF8A96;font:600 16px/20px Geist">Dừng recording</div>
+                </div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font:600 14px/20px Geist;color:var(--text2)">Cloud hours kỳ này</span><span style="font:500 12px/16px Geist;color:var(--text2)">Reset 01/11</span></div>
+                <div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 28px/36px 'Geist Mono';font-variant-numeric:tabular-nums">12,6</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 30 h</span></div>
+                <div style="height:6px;border-radius:999px;background:var(--surface2);overflow:hidden"><div style="width:42%;height:100%;background:var(--cloud);border-radius:999px"></div></div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px 16px;font:500 14px/20px Geist;color:var(--text2)"><span>Đồng thời <b style="font:600 14px/20px 'Geist Mono';color:var(--text)">1/3</b></span><span>Theo dõi <b style="font:600 14px/20px 'Geist Mono';color:var(--text)">8/20</b></span><span>Cloud Pack <b style="font:600 14px/20px 'Geist Mono';color:var(--text)">5 h</b></span></div>
+              </div>
+            </div>
+            <div style="margin:0 12px 8px;background:var(--player);color:var(--playerFg);border-radius:12px;min-height:44px;padding:0 8px 0 12px;display:flex;align-items:center;gap:10px">
+              <span style="width:8px;height:8px;flex:none;border-radius:999px;background:var(--rec)"></span>
+              <span style="flex:1;min-width:0;font:600 14px/20px Geist;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Lina Studio</span>
+              <span style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted);font-variant-numeric:tabular-nums">01:42:18</span>
+              <span style="font:18px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1;color:#fff" title="Cloud">cloud</span>
+              <span style="font:20px/1 'Material Symbols Rounded';color:var(--playerMuted)">chevron_right</span>
+            </div>
+            <dc-import name="SsBottomNav" active="home" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#6D49F4;color:#fff">PRO</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · toàn bộ: recordingStatus, timer, cloud hours, slot 1/3, Cloud Pack</div>
+        <div><b style="font-weight:600;color:#0E111A">Client</b> · timer chỉ nội suy giữa 2 lần sync, không tự đếm khi mất mạng</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>Watch List không hiện trên H06 khi có recording; xem ở tab Watch.</div>
+        <div>"Mở recording" → R-detail (không phát live cloud đang ghi, theo spec).</div>
+        <div>Không banner, không upgrade card.</div>
+        <div>Trên Home dùng SsRecordingBar.compact. Bar chỉ ẩn trên Active Recording detail.</div>
+        <div>Thứ tự trừ: subscription 30 h → legacy minutes → Cloud Pack. Không trừ song song. Cloud Pack không hết hạn.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- W01 -->
+<section id="W01" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">W01</span>
+    <span style="font:600 22px/28px Geist">Watch List · Free 2/3</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Thông báo LIVE · Record thủ công · auto-record khoá Pro</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themesQA }}" as="t" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">W01 · Watch List Free 2/3 · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">2/3 creator · Free</div></div>
+              <div style="position:relative;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div>
+              <div style="width:44px;height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">add</span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:12px;padding:0 16px 16px">
+              <div style="display:flex;gap:8px">
+                <span style="display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:999px;background:var(--primarySubtle);border:1px solid var(--primary);color:var(--primary);font:600 14px/20px Geist">Tất cả · 2</span>
+                <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text);font:500 14px/20px Geist">LIVE · 1</span>
+                <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text);font:500 14px/20px Geist">Offline · 1</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px"><div style="height:6px;border-radius:999px;background:var(--primary)"></div><div style="height:6px;border-radius:999px;background:var(--primary)"></div><div style="height:6px;border-radius:999px;background:var(--surface2);border:1px solid var(--border)"></div></div>
+                <div style="font:400 14px/20px Geist;color:var(--text2)">Còn 1 chỗ. Pro theo dõi tối đa 20 creator.</div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">@linastudio · TikTok</div></div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">radio_button_checked</span>Record ngay</div>
+                <div style="height:1px;background:var(--border)"></div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:28px">
+                  <span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">notifications_active</span>
+                  <span style="flex:1;font:400 14px/20px Geist">Thông báo khi LIVE</span>
+                  <span style="width:44px;height:26px;border-radius:999px;background:var(--primary);position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:999px;background:#fff"></span></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:28px">
+                  <span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">lock</span>
+                  <span style="flex:1;font:400 14px/20px Geist;color:var(--text2)">Auto-record trên cloud</span>
+                  <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--primarySubtle);color:var(--primary);font:700 12px/16px Geist;letter-spacing:.04em">PRO</span>
+                </div>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .15 240),oklch(.72 .14 195))">MF</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Mike Fitness</div><div style="font:400 14px/20px Geist;color:var(--text2)">LIVE gần nhất hôm qua 20:15</div></div>
+                  <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:28px">
+                  <span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">notifications_active</span>
+                  <span style="flex:1;font:400 14px/20px Geist">Thông báo khi LIVE</span>
+                  <span style="width:44px;height:26px;border-radius:999px;background:var(--primary);position:relative;flex:none"><span style="position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:999px;background:#fff"></span></span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border-radius:16px;border:1.5px dashed var(--border);color:var(--text2);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">person_add</span>Thêm creator · còn 1 chỗ</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:500 12px/16px Geist;color:var(--text2)">Quảng cáo</span>
+                <div style="min-height:56px;border-radius:8px;border:1px dashed var(--border);background:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 12px/16px 'Geist Mono';color:var(--text2)">SsBannerAdSlot · cuối Watch List</div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · liveStatus, giới hạn 3, thông báo push</div>
+        <div><b style="font-weight:600;color:#0E111A">OS</b> · quyền thông báo (nếu tắt → SsInlineAlert warning thay toggle)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>Dòng "Auto-record · PRO" mở paywall ngữ cảnh auto-record (Phase sau).</div>
+        <div>3/3 → nút + vẫn bấm được, mở paywall "Watch List đầy" (không ẩn nút).</div>
+        <div>Toggle theo từng creator, mặc định ON. Tắt = chỉ tắt push; backend vẫn monitor, creator vẫn trong list.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- W03 -->
+<section id="W03" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">W03</span>
+    <span style="font:600 22px/28px Geist">Watch List · Pro</span>
+    <span style="font:400 14px/20px Geist;color:#626671">8/20 · 2 cloud đang record · đủ 5 liveStatus</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">W03 · Watch List Pro · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">8/20 creator · Pro</div></div>
+              <div style="position:relative;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span><span style="position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:999px;background:var(--rec);border:2px solid var(--bg)"></span></div>
+              <div style="width:44px;height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">add</span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:0 16px 16px">
+              <div style="display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font:400 16px/24px Geist"><span style="font:20px/1 'Material Symbols Rounded'">search</span>Tìm creator</div>
+              <div style="display:flex;gap:8px;overflow:hidden">
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--primarySubtle);border:1px solid var(--primary);color:var(--primary);font:600 14px/20px Geist">Tất cả · 8</span>
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist">LIVE · 2</span>
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist">Offline · 4</span>
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist">Paused · 1</span>
+              </div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--recSubtle);color:var(--rec);font:600 12px/16px Geist"><span style="width:6px;height:6px;border-radius:999px;background:currentColor"></span>Đang record</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></div></div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin-left:72px"></div>
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">HB</div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px"><div style="font:600 16px/24px Geist">Hà Beauty</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">wifi_tethering_error</span>Đang kết nối lại</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></div></div>
+                  <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin-left:72px"></div>
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .15 240),oklch(.72 .14 195))">MF</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Mike Fitness</div><div style="font:400 14px/20px Geist;color:var(--text2)">Auto-record · Cloud</div></div>
+                  <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">sync</span>CHECKING</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin-left:72px"></div>
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.68 .16 75),oklch(.65 .18 40))">NS</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Nora Shop</div><div style="font:400 14px/20px Geist;color:var(--text2)">LIVE gần nhất 24/9 · Auto-record</div></div>
+                  <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin-left:72px"></div>
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));opacity:.6">TV</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Tuấn Vlog</div><div style="font:400 14px/20px Geist;color:var(--text2)">Đã tạm dừng theo dõi</div></div>
+                  <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">pause</span>PAUSED</span>
+                </div>
+                <div style="height:1px;background:var(--border);margin-left:72px"></div>
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.68 .16 75),oklch(.65 .18 40))">MC</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Mai Cook</div><div style="font:400 14px/20px Geist;color:var(--text2)">SaveStream sẽ tự kiểm tra lại</div></div>
+                  <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">help</span>UNKNOWN</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin:0 12px 8px;background:var(--player);color:var(--playerFg);border-radius:16px;padding:10px 12px 10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 24px -12px rgba(0,0,0,.5)">
+              <div style="display:flex;flex:none"><div style="width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 11px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));border:2px solid var(--player)">LS</div><div style="width:28px;height:28px;margin-left:-8px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 11px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250));border:2px solid var(--player)">HB</div></div>
+              <div style="flex:1;min-width:0"><div style="font:600 14px/20px Geist">2 recording đang chạy</div><div style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted);font-variant-numeric:tabular-nums">01:42:18 · 00:12:04</div></div>
+              <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>2</span>
+              <span style="font:22px/1 'Material Symbols Rounded';color:var(--playerMuted)">expand_less</span>
+            </div>
+            <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#6D49F4;color:#fff">PRO</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · liveStatus (LIVE/OFFLINE/CHECKING/UNKNOWN), recordingStatus cloud</div>
+        <div><b style="font-weight:600;color:#0E111A">User</b> · PAUSED (tạm dừng theo dõi)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>Tile 2 dòng khi có recording: liveStatus bên phải, recordingStatus + engine bên dưới tên.</div>
+        <div>Recording bar 2 recording: tap → bottom sheet chọn recording (Phase sau).</div>
+        <div>UNKNOWN: có next_check_at → "Kiểm tra lại lúc HH:mm" (giờ local). Không có → "SaveStream sẽ tự kiểm tra lại". Không bịa timestamp.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- L01 -->
+<section id="L01" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">L01</span>
+    <span style="font:600 22px/28px Geist">Recordings · Local + Cloud</span>
+    <span style="font:400 14px/20px Geist;color:#626671">User Free có Cloud Pack · nhóm theo ngày · banner giữa 2 nhóm</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themesQA }}" as="t" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">L01 · Recordings Mixed · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Bản ghi</div><div style="font:400 14px/20px Geist;color:var(--text2)">3 Local · 2 Cloud</div></div>
+              <div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:0 16px 16px">
+              <div style="display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font:400 16px/24px Geist"><span style="font:20px/1 'Material Symbols Rounded'">search</span>Tìm recording</div>
+              <div style="display:flex;gap:8px;overflow:hidden">
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--primarySubtle);border:1px solid var(--primary);color:var(--primary);font:600 14px/20px Geist">Tất cả</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist"><span style="font:18px/1 'Material Symbols Rounded';color:var(--local)">smartphone</span>Local</span>
+                <span style="flex:none;display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist"><span style="font:18px/1 'Material Symbols Rounded';color:var(--cloud);font-variation-settings:'FILL' 1">cloud</span>Cloud</span>
+                <span style="flex:none;display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist">Lỗi</span>
+              </div>
+              <div style="font:600 14px/20px Geist;color:var(--text2)">Hôm nay</div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+                <div style="padding:12px;display:flex;gap:12px">
+                  <div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.24 .08 325);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.8)"><span style="font:24px/1 'Material Symbols Rounded'">hourglass_top</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="font:600 16px/22px Geist">Lina Studio</div>
+                    <div style="font:400 12px/16px Geist;color:var(--text2)">13:22 · 1 g 42 ph · Đang xử lý trên server</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">pending</span>Đang xử lý</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></div>
+                  </div>
+                </div>
+                <div style="height:1px;background:var(--border);margin:0 12px"></div>
+                <div style="padding:12px;display:flex;gap:12px">
+                  <div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.24 .07 245);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="font:600 16px/22px Geist">Mike Fitness</div>
+                    <div style="font:400 12px/16px Geist;color:var(--text2)">09:10 · 48 ph · 1,7 GB · Lưu trên thiết bị này</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">check</span>Hoàn tất</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:500 12px/16px Geist;color:var(--text2)">Quảng cáo</span>
+                <div style="min-height:56px;border-radius:8px;border:1px dashed var(--border);background:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 12px/16px 'Geist Mono';color:var(--text2)">SsBannerAdSlot · giữa date group</div>
+              </div>
+              <div style="font:600 14px/20px Geist;color:var(--text2)">Hôm qua</div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+                <div style="padding:12px;display:flex;gap:12px">
+                  <div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.26 .07 75);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="font:600 16px/22px Geist">Nora Shop</div>
+                    <div style="font:400 12px/16px Geist;color:var(--text2)">20:18 · 23 ph đã lưu · gián đoạn 20:41</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">contrast</span>Một phần</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span></div>
+                  </div>
+                </div>
+                <div style="height:1px;background:var(--border);margin:0 12px"></div>
+                <div style="padding:12px;display:flex;gap:12px">
+                  <div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.23 .08 290);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="font:600 16px/22px Geist">Lina Studio</div>
+                    <div style="font:400 12px/16px Geist;color:var(--text2)">15:02 · 31 ph · khôi phục sau khi app bị đóng</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">restore</span>Đã khôi phục</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span></div>
+                  </div>
+                </div>
+                <div style="height:1px;background:var(--border);margin:0 12px"></div>
+                <div style="padding:12px;display:flex;gap:12px">
+                  <div style="width:96px;height:64px;flex:none;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--rec)"><span style="font:24px/1 'Material Symbols Rounded'">error</span></div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                    <div style="font:600 16px/22px Geist">Mike Fitness</div>
+                    <div style="font:400 12px/16px Geist;color:var(--text2)">11:40 · LIVE đã kết thúc · không tính cloud hours</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--recSubtle);color:var(--rec);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">error</span>Lỗi</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="recordings" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE + CLOUD PACK</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Recorder local</b> · COMPLETED / PARTIAL / RECOVERED của Local, dung lượng file</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · PROCESSING / FAILED của Cloud</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>Pill hiển thị chữ VI; enum giữ nguyên (PROCESSING → "Đang xử lý"). Không có % cho PROCESSING.</div>
+        <div>Pro: bỏ banner, layout giữ nguyên.</div>
+        <div>Local từ máy khác: hiện entry + tên máy nguồn + "Không có trên máy này"; không Play/Share/Export. Xem <a href="#L01-crossdevice">L01-crossdevice</a>.</div>
+        <div>FAILED: chỉ tính duration cloud thực sự lưu được. "Thử lại" chỉ hiện khi creator còn LIVE và lỗi retryable (cờ từ backend).</div><div>Cloud Pack của Free: lưu 7 ngày (Pro 14). Ghi rõ trước khi mua pack.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S01 -->
+<section id="S01" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">S01</span>
+    <span style="font:600 22px/28px Geist">Settings · Free</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Không quảng cáo · Restore purchases ở nhóm Tài khoản</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">S01 · Settings Free · Android · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Cài đặt</div></div>
+              <div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                <div style="padding:16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:48px;height:48px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 16px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250))">AN</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Alex Nguyen</div><div style="font:400 14px/20px Geist;color:var(--text2)">alex@example.com</div></div>
+                  <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span>
+                </div>
+                <div style="height:1px;background:var(--border)"></div>
+                <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;justify-content:space-between;gap:8px;font:400 14px/20px Geist"><span style="color:var(--text2)">Hôm nay</span><span style="font-family:'Geist Mono';font-weight:500">6/10 phút · 2/8 ads</span></div>
+                  <div style="display:flex;gap:8px">
+                    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist">Plan &amp; Usage</div>
+                    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Nâng cấp Pro</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:none">
+                <div style="font:600 12px/16px Geist;color:var(--text2);letter-spacing:.06em;padding-left:4px">RECORDING</div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">storage</span><span style="flex:1;font:400 16px/24px Geist">Bộ nhớ thiết bị</span><span style="font:400 14px/20px Geist;color:var(--text2)">2,4 GB</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">high_quality</span><span style="flex:1;font:400 16px/24px Geist">Chất lượng</span><span style="font:400 14px/20px Geist;color:var(--text2)">Tự động / theo nguồn</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="padding:12px 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">battery_saver</span><div style="flex:1;min-width:0"><div style="font:400 16px/24px Geist">Record nền</div><div style="font:400 12px/16px Geist;color:var(--text2)">Tắt tối ưu pin để Android không dừng recording</div></div><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">warning</span>Cần bật</span></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:none">
+                <div style="font:600 12px/16px Geist;color:var(--text2);letter-spacing:.06em;padding-left:4px">ỨNG DỤNG</div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">notifications</span><span style="flex:1;font:400 16px/24px Geist">Thông báo</span><span style="font:400 14px/20px Geist;color:var(--text2)">Bật</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">contrast</span><span style="flex:1;font:400 16px/24px Geist">Giao diện</span><span style="font:400 14px/20px Geist;color:var(--text2)">Hệ thống</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">language</span><span style="flex:1;font:400 16px/24px Geist">Ngôn ngữ</span><span style="font:400 14px/20px Geist;color:var(--text2)">Tiếng Việt</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:none">
+                <div style="font:600 12px/16px Geist;color:var(--text2);letter-spacing:.06em;padding-left:4px">TÀI KHOẢN &amp; MUA HÀNG</div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">restore</span><span style="flex:1;font:400 16px/24px Geist">Khôi phục giao dịch</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">shield</span><span style="flex:1;font:400 16px/24px Geist">Bảo mật</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                </div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="settings" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#FDF4E1;color:#8A5D00">"RECORD NỀN" ANDROID-ONLY</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">OS</b> · battery optimization, quyền thông báo, dung lượng</div>
+        <div><b style="font-weight:600;color:#0E111A">Store</b> · Restore purchases (Play / App Store)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>iOS: thay hàng "Record nền" bằng "Giữ app mở khi record" (info, không toggle).</div>
+        <div>Nhóm Hỗ trợ (Trợ giúp, Điều khoản, Sử dụng có trách nhiệm, version) nằm dưới, cuộn tới.</div>
+        <div>"Chất lượng" chỉ là thông tin (lưu chất lượng nguồn tốt nhất, không transcode realtime). Không có picker.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- S02 -->
+<section id="S02" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">S02</span>
+    <span style="font:600 22px/28px Geist">Settings · Pro</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Gói, kỳ gia hạn, cloud hours, Cloud Pack, lưu 14 ngày</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">S02 · Settings Pro · iOS · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px">
+              <div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Cài đặt</div></div>
+              <div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div>
+            </div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px">
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                <div style="padding:16px;display:flex;align-items:center;gap:12px">
+                  <div style="width:48px;height:48px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 16px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250))">AN</div>
+                  <div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Alex Nguyen</div><div style="font:400 14px/20px Geist;color:var(--text2)">alex@example.com</div></div>
+                  <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--primary);color:var(--onPrimary);font:700 12px/16px Geist;letter-spacing:.06em"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">workspace_premium</span>PRO</span>
+                </div>
+                <div style="height:1px;background:var(--border)"></div>
+                <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+                  <div style="display:flex;justify-content:space-between;gap:8px"><div><div style="font:600 16px/24px Geist">SaveStream Pro · Tháng</div><div style="font:400 14px/20px Geist;color:var(--text2)">$4.99 · gia hạn 01/11/2026</div></div></div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Cloud hours</span><span style="font-family:'Geist Mono';font-weight:500">12,6 / 30 h</span></div>
+                    <div style="height:6px;border-radius:999px;background:var(--surface2);overflow:hidden"><div style="width:42%;height:100%;background:var(--cloud)"></div></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Cloud Pack (dùng sau 30 h)</span><span style="font-family:'Geist Mono';font-weight:500">5 h</span></div>
+                  <div style="display:flex;gap:8px">
+                    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist">Plan &amp; Usage</div>
+                    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist">Quản lý gói</div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:none">
+                <div style="font:600 12px/16px Geist;color:var(--text2);letter-spacing:.06em;padding-left:4px">RECORDING</div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--cloud);font-variation-settings:'FILL' 1">cloud</span><span style="flex:1;font:400 16px/24px Geist">Auto-record mặc định</span><span style="font:400 14px/20px Geist;color:var(--text2)">Cloud</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">schedule</span><span style="flex:1;font:400 16px/24px Geist">Lưu trên cloud</span><span style="font:400 14px/20px Geist;color:var(--text2)">14 ngày</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">storage</span><span style="flex:1;font:400 16px/24px Geist">Bộ nhớ thiết bị</span><span style="font:400 14px/20px Geist;color:var(--text2)">2,4 GB</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:none">
+                <div style="font:600 12px/16px Geist;color:var(--text2);letter-spacing:.06em;padding-left:4px">TÀI KHOẢN &amp; MUA HÀNG</div>
+                <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;flex:none">
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">add_shopping_cart</span><span style="flex:1;font:400 16px/24px Geist">Mua Cloud Pack</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">restore</span><span style="flex:1;font:400 16px/24px Geist">Khôi phục giao dịch</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                  <div style="height:1px;background:var(--border);margin-left:50px"></div>
+                  <div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">notifications</span><span style="flex:1;font:400 16px/24px Geist">Thông báo</span><span style="font:400 14px/20px Geist;color:var(--text2)">Bật</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+                </div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="settings" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:16px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span>
+        <span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#6D49F4;color:#fff">PRO</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">NGUỒN STATE</div>
+        <div><b style="font-weight:600;color:#0E111A">Store + Backend</b> · plan, ngày gia hạn (verify receipt server-side)</div>
+        <div><b style="font-weight:600;color:#0E111A">Backend</b> · cloud hours, Cloud Pack balance</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:600 12px/16px Geist;color:#626671;letter-spacing:.06em">GHI CHÚ</div>
+        <div>"Quản lý gói" mở trang subscription của store (huỷ ở đó), không tự làm flow huỷ.</div>
+        <div>Pro không có hàng "Record nền" vì cloud không phụ thuộc máy.</div>
+        <div>Pro lưu 14 ngày. Free + Cloud Pack lưu 7 ngày.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="states" style="padding:40px 48px 8px">
+  <div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">PHASE 1.1</div>
+  <div style="font:700 28px/36px Geist;margin-top:6px">States · loading / offline / limit / empty / error</div>
+  <div style="font:400 14px/20px Geist;color:#626671;margin-top:6px;max-width:760px">Dùng lại SsSkeleton, SsEmptyState, SsInlineAlert, SsQuotaCard. State nhỏ hơn (lỗi 1 tile, reconnecting) nằm ở trang Components. Anchor H01 / W01 / L01 có thêm QA frame 360×800 và 430×932 ngay trong section của chúng.</div>
+</section>
+<section id="H01-loading" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">H01-loading</span>
+    <span style="font:600 22px/28px Geist">Home · Loading</span>
+    <span style="font:400 14px/20px Geist;color:#626671">SsSkeleton giữ đúng layout nội dung thật</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">H01-loading · Home Free · Loading · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 22px/28px Geist">Chào buổi chiều, Alex</div><div style="font:400 14px/20px Geist;color:var(--text2)">Thứ Ba, 29 Th9</div></div><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:14px;"><div style="height:14px;width:40%;border-radius:6px;background:var(--surface2)"></div><div style="height:32px;width:30%;border-radius:8px;background:var(--surface2)"></div><div style="height:6px;width:100%;border-radius:999px;background:var(--surface2)"></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div style="height:52px;width:100%;border-radius:12px;background:var(--surface2)"></div><div style="height:52px;width:100%;border-radius:12px;background:var(--surface2)"></div><div style="height:52px;width:100%;border-radius:12px;background:var(--surface2)"></div></div></div><div style="display:flex;flex-direction:column;gap:10px"><div style="height:18px;width:30%;border-radius:6px;background:var(--surface2)"></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:14px;"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;flex:none;border-radius:999px;background:var(--surface2)"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div style="height:14px;width:55%;border-radius:6px;background:var(--surface2)"></div><div style="height:12px;width:35%;border-radius:6px;background:var(--surface2)"></div></div><div style="height:24px;width:64px;border-radius:999px;background:var(--surface2)"></div></div><div style="height:1px;background:var(--border)"></div><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;flex:none;border-radius:999px;background:var(--surface2)"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div style="height:14px;width:55%;border-radius:6px;background:var(--surface2)"></div><div style="height:12px;width:35%;border-radius:6px;background:var(--surface2)"></div></div><div style="height:24px;width:64px;border-radius:999px;background:var(--surface2)"></div></div></div></div></div>
+            <dc-import name="SsBottomNav" active="home" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Không spinner toàn màn. Header + bottom nav hiển thị thật ngay.</div><div>Không request banner khi đang skeleton; banner chỉ load sau khi nội dung chính hiện.</div><div>Reduced motion: skeleton tĩnh, không shimmer.</div></div>
+  </div>
+</section>
+<section id="H01-offline" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">H01-offline</span>
+    <span style="font:600 22px/28px Geist">Home · Offline</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Dữ liệu cache + không cho bắt đầu Record</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">H01-offline · Home Free · Offline · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 22px/28px Geist">Chào buổi chiều, Alex</div><div style="font:400 14px/20px Geist;color:var(--text2)">Thứ Ba, 29 Th9</div></div><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--warnSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--warnFg)">cloud_off</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="font:600 14px/20px Geist">Không có kết nối</div><div style="font:400 14px/20px Geist;color:var(--text2)">Đang hiện dữ liệu lúc 13:05. Trạng thái LIVE có thể đã thay đổi.</div><span style="font:600 14px/20px Geist;color:var(--primary);margin-top:6px">Thử lại</span></div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px;"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 14px/20px Geist;color:var(--text2)">Phút Free hôm nay</span><span style="font:500 12px/16px Geist;color:var(--text2)">Cập nhật 13:05</span></div><div style="display:flex;align-items:baseline;gap:6px;opacity:.7"><span style="font:600 32px/40px 'Geist Mono'">6</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 10 phút còn lại</span></div></div><div style="display:flex;flex-direction:column;gap:10px"><span style="font:600 18px/24px Geist">Theo dõi</span><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:12px;"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));">LS</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">LIVE lúc 13:05</div></div><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">help</span>UNKNOWN</span></div><div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--surface2);color:var(--text2);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">radio_button_checked</span>Record ngay</div><div style="font:400 12px/16px Geist;color:var(--text2);text-align:center">Cần kết nối mạng để bắt đầu recording</div></div></div></div>
+            <dc-import name="SsBottomNav" active="home" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Nguồn: OS (connectivity). Số liệu backend hiển thị bản cache + mốc thời gian.</div><div>liveStatus đổi về UNKNOWN khi offline; không giữ badge LIVE cũ.</div><div>Ẩn banner khi offline. Không hiện paywall.</div><div>Recording Local đang chạy khi mất mạng → trạng thái RECONNECTING trên Active Recording (Phase sau).</div></div>
+  </div>
+</section>
+<section id="H01-limit" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">H01-limit</span>
+    <span style="font:600 22px/28px Geist">Home · Hết phút Free</span>
+    <span style="font:400 14px/20px Geist;color:#626671">SsQuotaCard limit + paywall ngữ cảnh "hết phút Free"</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">H01-limit · Home Free · Minutes 0/10 · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 22px/28px Geist">Chào buổi chiều, Alex</div><div style="font:400 14px/20px Geist;color:var(--text2)">Thứ Ba, 29 Th9</div></div><span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="background:var(--surface);border:1px solid var(--warn);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 14px/20px Geist;color:var(--warnFg)">Đã dùng hết phút Free hôm nay</span></div><div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 32px/40px 'Geist Mono'">0</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 10 phút</span></div><div style="height:6px;border-radius:999px;background:var(--surface2)"></div><div style="font:500 14px/20px Geist;color:var(--text2)">Reset sau 3 giờ 20 phút</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:12px;"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">@linastudio · LIVE từ 13:22</div></div><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span></div><div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">smart_display</span>Xem quảng cáo · Record 10 phút</div><div style="font:400 12px/16px Geist;color:var(--text2);text-align:center">10 phút gắn với recording mới này, không cộng dồn · hôm nay 2/8 quảng cáo</div></div><div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--primarySubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--primary)">bolt</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="font:600 14px/20px Geist">Record tiếp khi hết phút Free</div><div style="font:400 14px/20px Geist;color:var(--text2)">Pro: 30 giờ cloud mỗi kỳ, tự động record, điện thoại không cần online.</div><div style="display:flex;gap:16px"><span style="font:600 14px/20px Geist;color:var(--primary);margin-top:6px">Xem Pro</span><span style="font:600 14px/20px Geist;color:var(--primary);margin-top:6px">Cloud Pack</span></div></div></div></div>
+            <dc-import name="SsBottomNav" active="home" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Nguồn: backend (phút còn lại, thời điểm reset 00:00 UTC). Countdown quy đổi giờ local.</div><div>Paywall ngữ cảnh "hết phút Free": lợi ích đầu là record tiếp / auto-record, không phải "No ads".</div><div>Không banner trên màn này vì có CTA rewarded (tránh ad cạnh reward flow).</div><div>Rewarded: 1 ad → 10 phút cho recording Local mới, không bank phút, tính vào cap 8 ads/ngày. Recording chỉ bắt đầu sau khi server xác nhận reward.</div><div>Cap 8/8 → CTA đổi thành SsRewardChoiceCard disabled "Hết lượt hôm nay".</div></div>
+  </div>
+</section>
+<section id="W01-empty" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">W01-empty</span>
+    <span style="font:600 22px/28px Geist">Theo dõi · Empty (lần đầu)</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Trước aha moment: không ads, không paywall</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">W01-empty · Watch List Free 0/3 · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">0/3 creator</div></div><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:0 16px 40px"><div style="width:64px;height:64px;border-radius:20px;background:var(--primarySubtle);color:var(--primary);display:flex;align-items:center;justify-content:center"><span style="font:32px/1 'Material Symbols Rounded'">person_add</span></div><div style="font:600 22px/28px Geist;text-wrap:balance">Thêm creator đầu tiên</div><div style="font:400 16px/24px Geist;color:var(--text2);max-width:280px;text-wrap:pretty">Dán username hoặc link TikTok. SaveStream báo cho bạn khi creator LIVE.</div><div style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Thêm creator</div></div></div></div>
+            <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Không banner, không upgrade card — chưa qua aha moment.</div><div>Nút "Thêm creator" → Add creator (checkbox responsible use dạng helper).</div></div>
+  </div>
+</section>
+<section id="W01-limit" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">W01-limit</span>
+    <span style="font:600 22px/28px Geist">Theo dõi · Đầy 3/3</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Paywall ngữ cảnh "Watch List đầy"</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">W01-limit · Watch List Free 3/3 · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">3/3 creator · Free</div></div><div style="width:44px;height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">add</span></div><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px"><div style="height:6px;border-radius:999px;background:var(--warn)"></div><div style="height:6px;border-radius:999px;background:var(--warn)"></div><div style="height:6px;border-radius:999px;background:var(--warn)"></div></div><div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--primarySubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--primary)">group_add</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="font:600 14px/20px Geist">Đã đủ 3 creator</div><div style="font:400 14px/20px Geist;color:var(--text2)">Pro theo dõi tối đa 20 creator và tự động record trên cloud.</div><span style="font:600 14px/20px Geist;color:var(--primary);margin-top:6px">Xem Pro</span></div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:12px;"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">@linastudio</div></div><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span></div><div style="height:1px;background:var(--border)"></div><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .15 240),oklch(.72 .14 195));">MF</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Mike Fitness</div><div style="font:400 14px/20px Geist;color:var(--text2)">LIVE gần nhất hôm qua</div></div><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span></div><div style="height:1px;background:var(--border)"></div><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.68 .16 75),oklch(.65 .18 40));">NS</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Nora Shop</div><div style="font:400 14px/20px Geist;color:var(--text2)">LIVE gần nhất 24/9</div></div><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span></div></div><div style="display:flex;flex-direction:column;gap:4px"><span style="font:500 12px/16px Geist;color:var(--text2)">Quảng cáo</span><div style="min-height:56px;border-radius:8px;border:1px dashed var(--border);background:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 12px/16px 'Geist Mono';color:var(--text2)">SsBannerAdSlot · cuối Watch List</div></div></div>
+            <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Nút + vẫn bấm được → paywall "Watch List đầy". Không ẩn, không disable.</div><div>Thanh capacity chuyển warning khi 3/3.</div><div>Xoá 1 creator → về 2/3 ngay (backend xác nhận).</div></div>
+  </div>
+</section>
+<section id="W01-error" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">W01-error</span>
+    <span style="font:600 22px/28px Geist">Theo dõi · Error</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Không tải được danh sách</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">W01-error · Watch List · Error · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">Free</div></div><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--recSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--rec)">error</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="font:600 14px/20px Geist">Không tải được danh sách</div><div style="font:400 14px/20px Geist;color:var(--text2)">Lỗi từ máy chủ. Thử lại sau ít phút.</div></div></div><div style="align-self:flex-start"><div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font:600 16px/20px Geist">Thử lại</div></div></div>
+            <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE</span></div><div>Không banner trên màn Error.</div><div>Thử lại: nút chuyển loading (SsButton.loading), giữ nguyên width.</div><div>Lỗi chỉ ở 1 tile (vd. lookup creator) → SsInlineAlert trong tile, không thay cả màn.</div></div>
+  </div>
+</section>
+<section id="L01-empty" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">L01-empty</span>
+    <span style="font:600 22px/28px Geist">Bản ghi · Empty</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Chưa có recording nào</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">L01-empty · Recordings · Empty · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Bản ghi</div></div><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:16px;padding:0 16px 16px"><div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:0 16px 40px"><div style="width:64px;height:64px;border-radius:20px;background:var(--primarySubtle);color:var(--primary);display:flex;align-items:center;justify-content:center"><span style="font:32px/1 'Material Symbols Rounded'">video_library</span></div><div style="font:600 22px/28px Geist;text-wrap:balance">Chưa có bản ghi</div><div style="font:400 16px/24px Geist;color:var(--text2);max-width:280px;text-wrap:pretty">Khi creator LIVE, bấm Record ngay để lưu lại. Bản Local nằm trên thiết bị này.</div><div style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font:600 16px/20px Geist">Mở Theo dõi</div></div></div></div>
+            <dc-import name="SsBottomNav" active="recordings" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48"><div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE / PRO</span></div><div>Pro: thay body = "Bản ghi cloud sẽ hiện ở đây khi creator LIVE."</div><div>Không banner (không có date group).</div></div>
+  </div>
+</section>
+<section id="L01-crossdevice" style="padding:40px 48px 56px;border-bottom:1px solid #D5D8DF">
+  <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:28px;flex-wrap:wrap">
+    <span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">L01-crossdevice</span>
+    <span style="font:600 22px/28px Geist">Bản ghi · Local từ thiết bị khác</span>
+    <span style="font:400 14px/20px Geist;color:#626671">Metadata sync, file không có trên máy này</span>
+  </div>
+  <div style="display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+    <sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="font:500 13px/18px 'Geist Mono';color:#4A4D57">L01-crossdevice · Recordings · Shared · {{ t.name }} · VI</div>
+        <div style="{{ t.vars }}">
+          <div style="width:var(--fw);height:var(--fh);margin:10px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+            <dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 16px 12px 20px"><div style="flex:1;min-width:0"><div style="font:700 28px/36px Geist">Bản ghi</div><div style="font:400 14px/20px Geist;color:var(--text2)">iPhone 15 của Alex</div></div><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span></div></div>
+            <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px;padding:0 16px 16px">
+              <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--infoSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--info)">devices</span><div style="flex:1;min-width:0"><div style="font:600 14px/20px Geist">Có bản ghi Local từ thiết bị khác</div><div style="font:400 14px/20px Geist;color:var(--text2)">File được lưu trên Pixel 8. Mở SaveStream trên thiết bị đó để quản lý hoặc xoá bản ghi.</div></div></div>
+              <div style="font:600 14px/20px Geist;color:var(--text2)">Hôm qua</div>
+              <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+                <div style="padding:12px;display:flex;gap:12px"><div style="width:96px;height:64px;flex:none;border-radius:8px;background:var(--surface2);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text2)"><span style="font:24px/1 'Material Symbols Rounded'">phonelink_off</span></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 16px/22px Geist">Nora Shop</div><div style="font:400 12px/16px Geist;color:var(--text2)">20:18 · 23 ph · ghi trên Pixel 8</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';">phonelink_off</span>Không có trên máy này</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';">smartphone</span>Local</span></div></div></div>
+                <div style="height:1px;background:var(--border);margin:0 12px"></div>
+                <div style="padding:12px;display:flex;gap:12px"><div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.23 .08 290);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 16px/22px Geist">Lina Studio</div><div style="font:400 12px/16px Geist;color:var(--text2)">15:02 · 31 ph · Lưu trên thiết bị này</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';">check</span>Hoàn tất</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';">smartphone</span>Local</span></div></div></div>
+              </div>
+            </div>
+            <dc-import name="SsBottomNav" active="recordings" hint-size="390px,98px"></dc-import>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="width:320px;background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48">
+      <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#EEF0F4;color:#3A3E48">SHARED</span><span style="font:600 12px/16px 'Geist Mono';padding:4px 8px;border-radius:6px;background:#F0F0FF;color:#5A36E0">FREE / PRO</span></div>
+      <div><b style="font-weight:600;color:#0E111A">Backend</b> · metadata + source device name. <b style="font-weight:600;color:#0E111A">Recorder local</b> · file có/không trên máy này.</div>
+      <div>Thumbnail thay bằng icon phonelink_off, không Play/Share/Export. Tap → detail chỉ đọc + "Mở trên Pixel 8 để xem".</div>
+      <div>Read-only: không Play/Share/Export/Delete. Chỉ máy nguồn xoá được; backend sync metadata để entry biến mất ở máy khác. Không remote-delete queue trong V1.</div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static TOK = {
+    light: { bg:'#F9FAFC', surface:'#FFFFFF', surface2:'#F2F3F7', text:'#0E111A', text2:'#626671', border:'#DBDEE4', primary:'#6D49F4', onPrimary:'#FFFFFF', primarySubtle:'#F0F0FF', rec:'#E31029', recSubtle:'#FDECEE', success:'#007742', successSubtle:'#E6F4EC', warn:'#D38F00', warnFg:'#8A5D00', warnSubtle:'#FDF4E1', info:'#0074C8', infoSubtle:'#E6F1FA', local:'#0B7A75', localSubtle:'#E3F3F2', cloud:'#2F6FE4', cloudSubtle:'#EAF0FD', player:'#12141B', playerFg:'#F7F8FA', playerMuted:'#A3A8B3', shadow:'0 1px 2px rgba(14,17,26,.05)' },
+    dark: { bg:'#090B10', surface:'#11141A', surface2:'#181C24', text:'#ECEEF2', text2:'#9BA1AC', border:'#262B35', primary:'#968CFF', onPrimary:'#120E2E', primarySubtle:'#1F1B40', rec:'#FF5468', recSubtle:'#2B1117', success:'#3FD18A', successSubtle:'#0D2419', warn:'#F0B43C', warnFg:'#F0B43C', warnSubtle:'#2A2111', info:'#5BB0FF', infoSubtle:'#0E2033', local:'#4CCFC5', localSubtle:'#0E2827', cloud:'#7EA8FF', cloudSubtle:'#141F3A', player:'#04060A', playerFg:'#F7F8FA', playerMuted:'#8F95A1', shadow:'none' }
+  };
+  renderVals() {
+    const v = m => Object.fromEntries(Object.entries(Component.TOK[m]).map(([k, x]) => ['--' + k, x]));
+    const sz = (w, hh) => ({ '--fw': w + 'px', '--fh': hh + 'px' });
+    const L = { name: 'Light', vars: { ...v('light'), ...sz(390, 844) } }, D = { name: 'Dark', vars: { ...v('dark'), ...sz(390, 844) } };
+    return { themes: [L, D], themesQA: [L, D, { name: 'Light · QA 360×800', vars: { ...v('light'), ...sz(360, 800) } }, { name: 'Light · QA 430×932', vars: { ...v('light'), ...sz(430, 932) } }] };
+  }
+}
+</script>
+</body>
+</html>

@@ -13,7 +13,7 @@ Bộ tài liệu này để giao cho một coding agent (ChatGPT/Codex hoặc t�
 ## Cách dùng
 
 1. Mở 3 phiên agent riêng, mỗi phiên một track.
-2. Đưa cho mỗi phiên: file `README.md` này, `DECISIONS.md`, `API_CONTRACT.md`, file track của nó, và gói thiết kế `SaveStream mobile app phase 1.zip`.
+2. Cho mỗi phiên truy cập repo và bảo nó đọc: file `README.md` này, `DECISIONS.md`, `API_CONTRACT.md`, file track của nó, và thư mục `design/`.
 3. Ra lệnh: "Làm phase tiếp theo chưa đánh dấu xong trong file track, theo đúng quy trình trong README."
 4. Sau mỗi phase, agent báo lại theo mẫu ở mục "Báo cáo sau mỗi phase".
 
@@ -94,15 +94,15 @@ B0 ──► B1 ► B2 ► B3 ► B4 ► B5 ► B6 ► B7 ► B8
 
 ## Nguồn thiết kế
 
-Gói `SaveStream mobile app phase 1.zip` (chủ repo cung cấp), thư mục `flutter_export/`:
+Gói thiết kế nằm trong repo ở [design/](design/) (xem [design/README.md](design/README.md)):
 
-- `docs/SCREENS.md`: tra theo ID màn (ví dụ `### W10`): chữ trên màn, nguồn dữ liệu, ghi chú hành vi.
-- `docs/BACKLOG.md`: danh sách toàn bộ màn.
-- `docs/DECISIONS.md` và `docs/HANDOFF_FULL.md`: quy tắc và token của thiết kế.
-- `design/*.dc.html`: mở bằng trình duyệt để xem bố cục; mỗi màn là `<section id="ID">`.
-- `lib/`: code mẫu của bên thiết kế. **Chỉ tham khảo bố cục.** Không chép nguyên vào app: nó dùng `ValueNotifier`, chữ tiếng Việt viết cứng, và mô hình thuê bao đã bị bỏ.
+- `design/docs/SCREENS.md`: tra theo ID màn (ví dụ `### W10`): chữ trên màn, nguồn dữ liệu, ghi chú hành vi.
+- `design/docs/BACKLOG.md`: danh sách toàn bộ màn.
+- `design/docs/DECISIONS.md` và `design/docs/HANDOFF_FULL.md`: quy tắc và token của bên thiết kế.
+- `design/design/*.dc.html`: mở bằng trình duyệt để xem bố cục; mỗi màn là `<section id="ID">`.
+- `design/reference_code/lib/`: code mẫu của bên thiết kế. **Chỉ tham khảo bố cục.** Không chép nguyên vào app: nó dùng `ValueNotifier`, chữ tiếng Việt viết cứng, và mô hình thuê bao đã bị bỏ.
 
-Thứ tự ưu tiên khi có mâu thuẫn: `docs/v2/DECISIONS.md` > `docs/v2/API_CONTRACT.md` > `SCREENS.md` của thiết kế > code mẫu của thiết kế.
+Thứ tự ưu tiên khi có mâu thuẫn: `docs/v2/DECISIONS.md` > `docs/v2/API_CONTRACT.md` > `design/docs/SCREENS.md` > code mẫu của thiết kế.
 
 ## Quy ước code
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="flex:none;background:var(--surface);border-top:1px solid var(--border);padding:8px 8px 0;display:flex;flex-direction:column">
+  <div style="display:flex">
+    <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="4">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:56px">
+        <div style="width:56px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:{{ tb.pill }}">
+          <span style="font:24px/1 'Material Symbols Rounded';color:{{ tb.color }};font-variation-settings:{{ tb.fill }}">{{ tb.icon }}</span>
+        </div>
+        <span style="font-family:Geist;font-size:12px;line-height:16px;font-weight:{{ tb.weight }};color:{{ tb.color }}">{{ tb.label }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div style="height:34px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px">
+    <div style="width:134px;height:5px;border-radius:3px;background:var(--text);opacity:.8"></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:110},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;watch&quot;,&quot;recordings&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;'home'|'watch'|'recordings'|'settings'&quot;},&quot;lang&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;vi&quot;,&quot;en&quot;],&quot;default&quot;:&quot;vi&quot;,&quot;tsType&quot;:&quot;'vi'|'en'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const a = this.props.active ?? 'home';
+    const vi = (this.props.lang ?? 'vi') === 'vi';
+    const tabs = [['home','home','Trang chủ','Home'],['watch','visibility','Theo dõi','Watch'],['recordings','video_library','Bản ghi','Recordings'],['settings','settings','Cài đặt','Settings']]
+      .map(([k, icon, lv, le]) => {
+        const label = vi ? lv : le;
+        const on = k === a;
+        return { icon, label, pill: on ? 'var(--primarySubtle)' : 'transparent', color: on ? 'var(--primary)' : 'var(--text2)', fill: on ? "'FILL' 1" : "'FILL' 0", weight: on ? 600 : 500 };
+      });
+    return { tabs };
+  }
+}
+</script>
+</body>
+</html>

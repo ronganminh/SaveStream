@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>body{margin:0;background:#F9FAFC;font-family:Geist,system-ui,sans-serif;color:#0E111A}a{color:#6D49F4;text-decoration:none}a:hover{color:#5A36E0;text-decoration:underline}</style>
+</helmet>
+<div style="max-width:1120px;margin:0 auto;padding:48px 32px 96px;display:flex;flex-direction:column;gap:56px">
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">SAVESTREAM MOBILE V2 · PHASE 1</div>
+    <div style="font:700 32px/40px Geist">Foundations</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font:600 14px/20px Geist"><a href="SaveStream V2 Phase 1 Components.dc.html">Components →</a><a href="SaveStream V2 Phase 1 Screens.dc.html">Screens →</a></div>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="font:600 22px/28px Geist">Color tokens</div>
+    <div style="font:400 14px/20px Geist;color:#626671;max-width:720px">Base lấy từ code web V1. Mới: local (teal, icon smartphone) và cloud (azure, icon cloud) — luôn kèm icon + chữ, không phân biệt chỉ bằng màu. Text trên nền subtle dùng token đậm cùng hue.</div>
+    <div style="background:#fff;border:1px solid #DBDEE4;border-radius:16px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr);gap:12px;padding:12px 20px;background:#F2F3F7;font:600 12px/16px 'Geist Mono';color:#626671">
+        <span>TOKEN · DART</span><span>LIGHT</span><span>DARK</span><span>DÙNG CHO</span>
+      </div>
+      <sc-for list="{{ colors }}" as="c" hint-placeholder-count="20">
+        <div style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr);gap:12px;padding:10px 20px;border-top:1px solid #EEF0F4;align-items:center">
+          <div><div style="font:600 14px/20px Geist">{{ c.name }}</div><div style="font:400 12px/16px 'Geist Mono';color:#626671">{{ c.dart }}</div></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;flex:none;border-radius:8px;border:1px solid rgba(0,0,0,.08);background:{{ c.light }}"></span><span style="font:500 12px/16px 'Geist Mono'">{{ c.light }}</span></div>
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;flex:none;border-radius:8px;border:1px solid rgba(0,0,0,.08);background:{{ c.dark }}"></span><span style="font:500 12px/16px 'Geist Mono'">{{ c.dark }}</span></div>
+          <div style="font:400 14px/20px Geist;color:#3A3E48">{{ c.use }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="font:600 22px/28px Geist">Typography · Geist / Geist Mono</div>
+    <div style="font:400 14px/20px Geist;color:#626671;max-width:720px">Không còn chữ 10–11pt như V1: metadata tối thiểu 12. Timer và số quota dùng Geist Mono + FontFeature.tabularFigures(). Line-height cố định theo bảng, không fixed-height container.</div>
+    <div style="background:#fff;border:1px solid #DBDEE4;border-radius:16px;overflow:hidden">
+      <sc-for list="{{ type }}" as="ty" hint-placeholder-count="9">
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:20px;padding:16px 20px;border-top:1px solid #EEF0F4;align-items:baseline">
+          <div><div style="font:600 14px/20px Geist">{{ ty.name }}</div><div style="font:400 12px/16px 'Geist Mono';color:#626671">{{ ty.spec }}</div></div>
+          <div style="{{ ty.style }}">{{ ty.sample }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 22px/28px Geist">Spacing · 4pt</div>
+      <div style="background:#fff;border:1px solid #DBDEE4;border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ spacing }}" as="s" hint-placeholder-count="8">
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:72px;font:500 12px/16px 'Geist Mono';color:#626671">{{ s.name }}</span><span style="height:12px;border-radius:3px;background:#6D49F4;width:{{ s.px }}px"></span><span style="font:500 12px/16px 'Geist Mono'">{{ s.px }}</span></div>
+        </sc-for>
+        <div style="font:400 12px/16px Geist;color:#626671">Padding ngang màn 16 (≤360) / 20 (≥390). Gap giữa section 20.</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 22px/28px Geist">Radius</div>
+      <div style="background:#fff;border:1px solid #DBDEE4;border-radius:16px;padding:16px 20px;display:flex;flex-wrap:wrap;gap:16px">
+        <sc-for list="{{ radius }}" as="r" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:64px;height:48px;background:#F0F0FF;border:1.5px solid #6D49F4;border-radius:{{ r.css }}"></div><span style="font:500 12px/16px 'Geist Mono'">{{ r.name }}</span><span style="font:400 12px/16px Geist;color:#626671">{{ r.use }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 22px/28px Geist">Elevation</div>
+      <div style="background:#F2F3F7;border:1px solid #DBDEE4;border-radius:16px;padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div style="background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:12px;font:500 12px/16px 'Geist Mono'">e0<br><span style="color:#626671">border only</span></div>
+        <div style="background:#fff;border:1px solid #DBDEE4;border-radius:12px;padding:12px;box-shadow:0 1px 2px rgba(14,17,26,.05);font:500 12px/16px 'Geist Mono'">e1<br><span style="color:#626671">card</span></div>
+        <div style="background:#fff;border-radius:12px;padding:12px;box-shadow:0 10px 24px -12px rgba(14,17,26,.35);font:500 12px/16px 'Geist Mono'">e2<br><span style="color:#626671">bar · sheet · dialog</span></div>
+      </div>
+      <div style="font:400 12px/16px Geist;color:#626671">Dark: không dùng shadow cho card; tách lớp bằng surface + border.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 22px/28px Geist">Motion</div>
+      <div style="background:#fff;border:1px solid #DBDEE4;border-radius:16px;padding:16px 20px;display:flex;flex-direction:column;gap:8px;font:400 14px/20px Geist">
+        <div style="display:flex;justify-content:space-between;gap:8px"><span>fast · press, chip, toggle</span><span style="font:500 12px/20px 'Geist Mono'">150ms easeOut</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px"><span>base · recording bar in/out</span><span style="font:500 12px/20px 'Geist Mono'">200ms easeOutCubic</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px"><span>slow · sheet, page</span><span style="font:500 12px/20px 'Geist Mono'">250ms easeInOutCubic</span></div>
+        <div style="display:flex;justify-content:space-between;gap:8px"><span>LIVE dot pulse</span><span style="font:500 12px/20px 'Geist Mono'">1200ms loop</span></div>
+        <div style="font:400 12px/16px Geist;color:#626671;margin-top:4px">MediaQuery.disableAnimations = true → duration 0, tắt pulse, giữ dot tĩnh.</div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div style="font:600 22px/28px Geist">Flutter tokens · Light + Dark</div>
+    <div style="font:400 14px/20px Geist;color:#626671;max-width:720px">ColorScheme (Material 3) + ThemeExtension SsColors + TextTheme + SsSpace/SsRadius/SsMotion. Chép trực tiếp vào lib/theme/ss_theme.dart.</div>
+    <pre style="margin:0;background:#0E111A;color:#E4E6EC;border-radius:16px;padding:24px;overflow:auto;font:400 13px/20px 'Geist Mono';white-space:pre">{{ dart }}</pre>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = [
+      ['background','bg','#F9FAFC','#090B10','Nền màn'],
+      ['surface','surface','#FFFFFF','#11141A','Card, nav, input'],
+      ['surfaceSubtle','surfaceSubtle','#F2F3F7','#181C24','Ô stat, chip offline, skeleton'],
+      ['textPrimary','onSurface','#0E111A','#ECEEF2','Text chính'],
+      ['textSecondary','onSurfaceVariant','#626671','#9BA1AC','Metadata, label'],
+      ['textDisabled','disabled','#A6AAB4','#5A606B','Disabled'],
+      ['border','outline','#DBDEE4','#262B35','Viền card, divider'],
+      ['primary','primary','#6D49F4','#968CFF','CTA, tab active'],
+      ['primaryPressed','primaryPressed','#5A36E0','#8278F5','Pressed'],
+      ['onPrimary','onPrimary','#FFFFFF','#120E2E','Text trên primary'],
+      ['primarySubtle','primaryContainer','#F0F0FF','#1F1B40','Upgrade alert, chip selected, nav pill'],
+      ['recording / live','recording','#E31029','#FF5468','LIVE badge, rec dot, destructive'],
+      ['recordingSubtle','recordingSubtle','#FDECEE','#2B1117','Pill RECORDING / FAILED'],
+      ['success','success','#007742','#3FD18A','COMPLETED, RECOVERED'],
+      ['successSubtle','successSubtle','#E6F4EC','#0D2419',''],
+      ['warning','warning','#D38F00','#F0B43C','Viền / icon cảnh báo (không dùng cho text light)'],
+      ['warningText','onWarningSubtle','#8A5D00','#F0B43C','Text RECONNECTING, PARTIAL'],
+      ['warningSubtle','warningSubtle','#FDF4E1','#2A2111',''],
+      ['info','info','#0074C8','#5BB0FF','CHECKING, PROCESSING, FINALIZING'],
+      ['infoSubtle','infoSubtle','#E6F1FA','#0E2033',''],
+      ['local · MỚI','local','#0B7A75','#4CCFC5','Chip Local + icon smartphone'],
+      ['localSubtle · MỚI','localSubtle','#E3F3F2','#0E2827',''],
+      ['cloud · MỚI','cloud','#2F6FE4','#7EA8FF','Chip Cloud + icon cloud, cloud hours bar'],
+      ['cloudSubtle · MỚI','cloudSubtle','#EAF0FD','#141F3A',''],
+      ['player','player','#12141B','#04060A','Active card, recording bar, video'],
+      ['onPlayer','onPlayer','#F7F8FA','#F7F8FA',''],
+      ['onPlayerMuted','onPlayerMuted','#A3A8B3','#8F95A1','Metadata trên player']
+    ];
+    const colors = C.map(([name, dart, light, dark, use]) => ({ name, dart, light, dark, use }));
+    const T = [
+      ['Display','32/40 · 700','font:700 32px/40px Geist','Never miss the live'],
+      ['H1 · headlineMedium','28/36 · 700','font:700 28px/36px Geist','Watch List'],
+      ['H2 · titleLarge','22/28 · 600','font:600 22px/28px Geist','Plan & Usage'],
+      ['H3 · titleMedium','18/24 · 600','font:600 18px/24px Geist','Lina Studio'],
+      ['Body · bodyLarge','16/24 · 400','font:400 16px/24px Geist','SaveStream đang record trên server, điện thoại không cần online.'],
+      ['Secondary · bodyMedium','14/20 · 400','font:400 14px/20px Geist;color:#626671','LIVE gần nhất hôm qua 20:15'],
+      ['Caption · labelSmall','12/16 · 500','font:500 12px/16px Geist;color:#626671','Reset lúc 00:00'],
+      ['Button · labelLarge','16/20 · 600','font:600 16px/20px Geist','Record ngay'],
+      ['Timer · mono','40/48 · 600 · tnum','font:600 40px/48px "Geist Mono";font-variant-numeric:tabular-nums','01:42:18']
+    ];
+    const type = T.map(([name, spec, style, sample]) => ({ name, spec, style, sample }));
+    const spacing = [['xxs',2],['xs',4],['sm',8],['md',12],['lg',16],['xl',20],['xxl',24],['xxxl',32]].map(([name, px]) => ({ name, px }));
+    const radius = [['sm 8','8px','thumb, ad'],['md 12','12px','button, input'],['lg 16','16px','card'],['sheet 24','24px 24px 0 0','sheet'],['pill 999','999px','chip, badge']].map(([name, css, use]) => ({ name, css, use }));
+    const hex = h => '0xFF' + h.slice(1).toUpperCase();
+    const ext = C.filter(c => !['bg','surface','onSurface','onSurfaceVariant','outline','primary','onPrimary','primaryContainer'].includes(c[1]));
+    const dart = `import 'dart:ui';
+import 'package:flutter/material.dart';
+
+// ── ColorScheme (Material 3) ─────────────────────────────
+const ssLightScheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: Color(${hex('#6D49F4')}), onPrimary: Color(${hex('#FFFFFF')}),
+  primaryContainer: Color(${hex('#F0F0FF')}), onPrimaryContainer: Color(${hex('#3A1FB0')}),
+  secondary: Color(${hex('#626671')}), onSecondary: Color(${hex('#FFFFFF')}),
+  error: Color(${hex('#E31029')}), onError: Color(${hex('#FFFFFF')}),
+  surface: Color(${hex('#FFFFFF')}), onSurface: Color(${hex('#0E111A')}),
+  surfaceContainerLowest: Color(${hex('#F9FAFC')}), // = scaffold background
+  surfaceContainerHighest: Color(${hex('#F2F3F7')}),
+  onSurfaceVariant: Color(${hex('#626671')}),
+  outline: Color(${hex('#DBDEE4')}), outlineVariant: Color(${hex('#EEF0F4')}),
+);
+const ssDarkScheme = ColorScheme(
+  brightness: Brightness.dark,
+  primary: Color(${hex('#968CFF')}), onPrimary: Color(${hex('#120E2E')}),
+  primaryContainer: Color(${hex('#1F1B40')}), onPrimaryContainer: Color(${hex('#D9D5FF')}),
+  secondary: Color(${hex('#9BA1AC')}), onSecondary: Color(${hex('#090B10')}),
+  error: Color(${hex('#FF5468')}), onError: Color(${hex('#FFFFFF')}),
+  surface: Color(${hex('#11141A')}), onSurface: Color(${hex('#ECEEF2')}),
+  surfaceContainerLowest: Color(${hex('#090B10')}),
+  surfaceContainerHighest: Color(${hex('#181C24')}),
+  onSurfaceVariant: Color(${hex('#9BA1AC')}),
+  outline: Color(${hex('#262B35')}), outlineVariant: Color(${hex('#1C2028')}),
+);
+
+// ── Semantic colors ──────────────────────────────────────
+@immutable
+class SsColors extends ThemeExtension<SsColors> {
+  const SsColors({
+${ext.map(c => `    required this.${c[1]},`).join('\n')}
+  });
+${ext.map(c => `  final Color ${c[1]};`).join('\n')}
+
+  static const light = SsColors(
+${ext.map(c => `    ${c[1]}: Color(${hex(c[2])}),`).join('\n')}
+  );
+  static const dark = SsColors(
+${ext.map(c => `    ${c[1]}: Color(${hex(c[3])}),`).join('\n')}
+  );
+
+  @override
+  SsColors copyWith() => this;
+  @override
+  SsColors lerp(ThemeExtension<SsColors>? other, double t) {
+    if (other is! SsColors) return this;
+    return SsColors(
+${ext.map(c => `      ${c[1]}: Color.lerp(${c[1]}, other.${c[1]}, t)!,`).join('\n')}
+    );
+  }
+}
+
+// ── TextTheme ────────────────────────────────────────────
+const _f = 'Geist';
+const ssTextTheme = TextTheme(
+  displaySmall:   TextStyle(fontFamily: _f, fontSize: 32, height: 40 / 32, fontWeight: FontWeight.w700), // Display
+  headlineMedium: TextStyle(fontFamily: _f, fontSize: 28, height: 36 / 28, fontWeight: FontWeight.w700), // H1
+  titleLarge:     TextStyle(fontFamily: _f, fontSize: 22, height: 28 / 22, fontWeight: FontWeight.w600), // H2
+  titleMedium:    TextStyle(fontFamily: _f, fontSize: 18, height: 24 / 18, fontWeight: FontWeight.w600), // H3
+  bodyLarge:      TextStyle(fontFamily: _f, fontSize: 16, height: 24 / 16, fontWeight: FontWeight.w400), // Body
+  bodyMedium:     TextStyle(fontFamily: _f, fontSize: 14, height: 20 / 14, fontWeight: FontWeight.w400), // Secondary
+  labelSmall:     TextStyle(fontFamily: _f, fontSize: 12, height: 16 / 12, fontWeight: FontWeight.w500), // Caption
+  labelLarge:     TextStyle(fontFamily: _f, fontSize: 16, height: 20 / 16, fontWeight: FontWeight.w600), // Button
+);
+const ssTimer = TextStyle(
+  fontFamily: 'Geist Mono', fontSize: 40, height: 48 / 40, fontWeight: FontWeight.w600,
+  fontFeatures: [FontFeature.tabularFigures()],
+);
+
+// ── Spacing / Radius / Motion ────────────────────────────
+abstract final class SsSpace {
+  static const xxs = 2.0, xs = 4.0, sm = 8.0, md = 12.0, lg = 16.0, xl = 20.0, xxl = 24.0, xxxl = 32.0;
+  static const screenH = 20.0, screenHCompact = 16.0; // <= 360dp
+  static const minTap = 48.0, buttonMinHeight = 44.0;
+}
+abstract final class SsRadius {
+  static const sm = 8.0, md = 12.0, lg = 16.0, sheet = 24.0, pill = 999.0;
+}
+abstract final class SsMotion {
+  static const fast = Duration(milliseconds: 150);
+  static const base = Duration(milliseconds: 200);
+  static const slow = Duration(milliseconds: 250);
+  static Duration of(BuildContext c, Duration d) =>
+      MediaQuery.of(c).disableAnimations ? Duration.zero : d;
+}
+
+// ── Enums ────────────────────────────────────────────────
+enum LiveStatus { live, offline, checking, unknown, paused }
+enum RecordingStatus { starting, waitingForCloudSlot, recording, reconnecting, finalizing, processing, completed, partial, recovered, failed, missedNoCloudSlot }
+enum Engine { local, cloud }
+enum Plan { free, pro } // Web Cloud Trial 10 phút = entitlement trên tài khoản FREE, không phải plan
+
+ThemeData ssTheme(Brightness b) {
+  final light = b == Brightness.light;
+  final scheme = light ? ssLightScheme : ssDarkScheme;
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: scheme.surfaceContainerLowest,
+    textTheme: ssTextTheme.apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface),
+    extensions: [light ? SsColors.light : SsColors.dark],
+  );
+}`;
+    return { colors, type, spacing, radius, dart };
+  }
+}
+</script>
+</body>
+</html>
