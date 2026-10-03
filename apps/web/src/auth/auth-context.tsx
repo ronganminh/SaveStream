@@ -119,12 +119,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("authenticated");
         return {
           id: "demo",
-          role: "admin",
+          role: "owner",
           email,
           email_verified: true,
-          display_name: "Demo User",
+          display_name: "Demo Owner",
           locale: "en",
           created_at: new Date(0).toISOString(),
+          admin_mfa_enabled: true,
+          admin_mfa_verified: true,
         };
       }
 
@@ -168,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [clearSession, loadCurrentUser, refreshAccessToken, user]);
 
   const identity = useMemo<AuthIdentity>(() => {
-    if (isDemoMode) return { authenticated: true, role: "admin" };
+    if (isDemoMode) return { authenticated: true, role: "owner" };
     if (status === "authenticated" && user) {
       return { authenticated: true, role: user.role };
     }
