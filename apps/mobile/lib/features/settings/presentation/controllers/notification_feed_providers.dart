@@ -6,7 +6,9 @@ import '../../domain/models/app_notification.dart';
 
 final Provider<ApiNotificationsRepository> notificationsRepositoryProvider =
     Provider<ApiNotificationsRepository>((ref) {
-      return ApiNotificationsRepository(apiClient: ref.watch(apiClientProvider));
+      return ApiNotificationsRepository(
+        apiClient: ref.watch(apiClientProvider),
+      );
     });
 
 final FutureProvider<List<AppNotification>> notificationFeedProvider =
