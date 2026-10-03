@@ -47,15 +47,15 @@
   "snackbarMessage": "SaveStream feedback message",
   "componentGalleryHint": "Internal QA screen retained for checking components, themes, and localization.",
   "navHome": "Home",
-  "navChannels": "Channels",
+  "navChannels": "Watching",
   "navRecordings": "Recordings",
   "navSettings": "Settings",
-  "addChannelAction": "Add channel",
+  "addChannelAction": "Add creator",
   "homeFoundationTitle": "Mobile foundation is ready",
   "homeFoundationBody": "The app shell, guarded router, stateful tabs, lifecycle hooks, and mock repositories are now wired.",
   "mockFoundationTitle": "Mock foundation",
   "mockFoundationBody": "Channels and recordings are backed by repository interfaces with success, loading, empty, error, and offline-like scenarios.",
-  "channelsTitle": "Channels",
+  "channelsTitle": "Watching",
   "recordingsTitle": "Recordings",
   "settingsTitle": "Settings",
   "profileTitle": "Profile",
@@ -635,6 +635,248 @@
       },
       "limit": {
         "type": "int"
+      }
+    }
+  },
+  "advertisementLabel": "Advertisement",
+  "timeHoursUnit": "hours",
+  "timeMinutesUnit": "minutes",
+  "homeFreeMinutesTitle": "Free minutes today",
+  "homeFreeMinutesRemaining": "{remaining} / {daily} minutes remaining",
+  "homeResetAfter": "Resets in {duration}",
+  "homeRewardsUsed": "Rewarded {used}/{cap}",
+  "homeWatchingCapacity": "Watching {count}/{limit}",
+  "homeCloudTimeTitle": "Cloud time available",
+  "homeCloudSlots": "Cloud slots {used}/{limit}",
+  "homeCloudRetention": "Cloud recordings kept {days} days",
+  "homeLiveCreatorTitle": "{name} is LIVE",
+  "homeLiveCreatorBody": "Open the creator to record now.",
+  "homeLocalSaveHint": "Local · Saved on this device",
+  "homeAutoRecordUpsellTitle": "Automatically record when a creator goes LIVE",
+  "homeAutoRecordUpsellBody": "Buy cloud hours to unlock cloud auto-recording, 20 creators, and no ads.",
+  "buyCloudHoursAction": "Buy cloud hours",
+  "homeOfflineTitle": "No connection",
+  "homeOfflineBody": "Showing saved data. LIVE status may have changed. Recording actions that need the network are unavailable.",
+  "homeEmptyCreatorTitle": "Add a creator to get started",
+  "homeEmptyCreatorBody": "SaveStream can alert you when a creator goes LIVE so you can Record now.",
+  "homeMinutesExhaustedTitle": "Free minutes used for today",
+  "homeMinutesExhaustedBody": "Free minutes reset daily. You can watch a rewarded ad for a new Local recording in the Recording flow.",
+  "watchAdMinutesAction": "Watch an ad · Record {minutes} minutes",
+  "watchingHeader": "Watching {count}/{limit} creators · {plan}",
+  "watchFilterAll": "All",
+  "watchFilterLive": "LIVE",
+  "watchFilterOffline": "Offline",
+  "watchFilterPaused": "Paused",
+  "watchCapacityRemaining": "{count} spots left",
+  "watchCapacityFull": "Creator limit reached",
+  "watchCapacityLegacyExceeded": "You already have {count} creators from an older plan. They stay here, but you cannot add another until you buy cloud hours or remove creators.",
+  "watchLimitTitle": "Watching is full",
+  "watchLimitBody": "Free accounts can follow up to 3 creators. Your existing creators stay in place; adding more is blocked at the current limit.",
+  "manageWatchingAction": "Manage list",
+  "watchNotifyOnLive": "Notify when LIVE",
+  "watchAutoRecordCloud": "Auto-record on cloud",
+  "watchAutoRecordLocked": "Buy cloud hours to enable auto-record",
+  "watchCheckingStatus": "CHECKING",
+  "watchUnknownStatus": "UNKNOWN",
+  "watchPausedStatus": "PAUSED",
+  "watchWaitingCloudSlot": "Waiting for cloud slot",
+  "watchMissedNoCloudSlot": "Missed · no cloud slot",
+  "watchNextCheckAt": "Check again at {time}",
+  "watchWillCheckAgain": "SaveStream will check again",
+  "addCreatorTitle": "Add creator",
+  "addCreatorHeading": "Follow a TikTok creator",
+  "addCreatorBody": "Paste a TikTok username or profile link. SaveStream checks it before adding.",
+  "creatorLookupAction": "Find creator",
+  "creatorLookupChecking": "Checking on TikTok…",
+  "creatorNotFoundTitle": "Creator not found",
+  "creatorNotFoundBody": "We could not find {handle} on TikTok. Check the spelling and try again.",
+  "creatorRestrictedTitle": "Private or restricted account",
+  "creatorRestrictedBody": "SaveStream can only follow public TikTok accounts. Douyin links are not supported yet.",
+  "creatorUnavailableTitle": "Creator unavailable",
+  "creatorUnavailableBody": "SaveStream cannot access this account right now. Try again later or check the username.",
+  "tryAnotherCreatorAction": "Try another username",
+  "creatorLimitDirectBody": "You have reached the creator limit for this account. Existing creators are kept, but a new creator cannot be added.",
+  "cloudHoursUpsellTitle": "Unlock cloud auto-recording",
+  "cloudHoursUpsellBody": "Cloud hours are a one-time purchase. Buying hours unlocks cloud auto-recording, up to 20 creators, and removes ads.",
+  "cloudHoursBenefitAuto": "Automatically record when a creator goes LIVE",
+  "cloudHoursBenefitPhone": "Recording runs on the server; your phone does not need to stay online",
+  "cloudHoursBenefitCreators": "Follow up to 20 creators",
+  "cloudHoursBenefitNoAds": "No ads",
+  "creatorDetailStatusTitle": "Status",
+  "creatorLiveSince": "LIVE now",
+  "creatorOfflineBody": "Not LIVE right now",
+  "creatorPausedBody": "Monitoring is paused. This creator still counts toward your limit.",
+  "creatorWaitingTitle": "Waiting for a cloud slot",
+  "creatorWaitingBody": "All {limit} cloud slots are in use. This creator will start recording when a slot opens, in FIFO order. Earlier LIVE time cannot be recovered.",
+  "queuePositionLabel": "Queue position {position}",
+  "activeCloudSlotsTitle": "Cloud recordings using slots",
+  "creatorMissedTitle": "Missed",
+  "creatorMissedBody": "The LIVE ended before a cloud slot became available. No cloud minutes were charged.",
+  "creatorRecentRecordingTitle": "Recent recording",
+  "notificationSavedMessage": "Notification preference updated.",
+  "autoRecordSettingsTitle": "Auto-record",
+  "autoRecordWhenLive": "Auto-record when LIVE",
+  "autoRecordCloudLocation": "Saved on SaveStream cloud",
+  "cloudRetentionValue": "Kept for {days} days",
+  "cloudConcurrentValue": "Cloud recordings {used}/{limit}",
+  "cloudTimeRemainingValue": "{value} remaining",
+  "cloudQueueInfo": "When all cloud slots are in use, the next LIVE creator waits in FIFO order. Missed time is not recorded later.",
+  "liveCheckTitle": "Checking LIVE status…",
+  "liveCheckBody": "SaveStream verifies the creator is still LIVE before recording.",
+  "liveEndedTitle": "Livestream ended",
+  "liveEndedBody": "{name} ended the LIVE before you opened the notification. SaveStream will alert you next time.",
+  "backToHomeAction": "Back to Home",
+  "@homeFreeMinutesRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeResetAfter": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "@homeRewardsUsed": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeWatchingCapacity": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeCloudSlots": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeCloudRetention": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@homeLiveCreatorTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@watchAdMinutesAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchingHeader": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      },
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "@watchCapacityRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchCapacityLegacyExceeded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@watchNextCheckAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "@creatorNotFoundBody": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "@creatorWaitingBody": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@queuePositionLabel": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudRetentionValue": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudConcurrentValue": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@cloudTimeRemainingValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "@liveEndedBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   }
