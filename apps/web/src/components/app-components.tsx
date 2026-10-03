@@ -144,6 +144,7 @@ const mainNav = [
   { to: "/usage", label: "Usage & Billing", icon: Gauge },
 ] as const;
 const adminNav = [
+  { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/system", label: "System", icon: Activity },
   { to: "/admin/workers", label: "Workers", icon: MonitorCog },
   { to: "/admin/jobs", label: "Jobs", icon: Zap },
