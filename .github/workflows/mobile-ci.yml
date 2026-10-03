@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   flutter-checks:
@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -52,17 +54,16 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Check formatting
-        run: dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
-
-      - name: Upload formatted A0 sources
-        uses: actions/upload-artifact@v4
-        with:
-          name: a0-formatted-sources
-          path: |
-            apps/mobile/lib
-            apps/mobile/test
-          retention-days: 1
+      - name: Format and commit A0 sources
+        run: |
+          dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
+          if ! git diff --quiet -- lib/app lib/core lib/features lib/l10n/l10n.dart test; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add lib/app lib/core lib/features lib/l10n/l10n.dart test
+            git commit -m "style(mobile): format A0 sources"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
 
       - name: Analyze
         run: flutter analyze --fatal-infos
