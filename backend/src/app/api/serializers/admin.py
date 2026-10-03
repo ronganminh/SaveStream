@@ -2,7 +2,13 @@ from app.api.schemas.admin import AdminUserResponse, AuditLogResponse
 from app.infrastructure.db.models import AuditLog, User
 
 
-def admin_user_response(user: User) -> AdminUserResponse:
+def admin_user_response(
+    user: User,
+    *,
+    plan: str | None = None,
+    cloud_minutes_available: int | None = None,
+    latest_purchase_provider: str | None = None,
+) -> AdminUserResponse:
     return AdminUserResponse.model_validate(
         {
             "id": str(user.id),
@@ -14,6 +20,9 @@ def admin_user_response(user: User) -> AdminUserResponse:
             "deletion_requested_at": user.deletion_requested_at,
             "created_at": user.created_at,
             "updated_at": user.updated_at,
+            "plan": plan,
+            "cloud_minutes_available": cloud_minutes_available,
+            "latest_purchase_provider": latest_purchase_provider,
         }
     )
 

@@ -63,7 +63,8 @@ const forbidIn = (label, source, text) => {
   "AdminDataTable",
   "AdminMetricCard",
   "AdminTimeline",
-  "Global search becomes available in D1",
+  "Search email, user ID, order ID, recording ID, or request ID",
+  "adminFoundationApi.search",
 ].forEach((text) => must("src/components/admin/foundation.tsx", text));
 
 [
@@ -82,6 +83,41 @@ const forbidIn = (label, source, text) => {
   "src/routes/admin/jobs.$id.tsx",
   "src/routes/admin/errors.tsx",
 ].forEach((file) => must(file, "@/components/admin/pages"));
+
+
+[
+  "/v1/admin/users?",
+  "/v1/admin/users/export.csv",
+  "/v1/admin/search?",
+  "/privacy/requests",
+  "/privacy/export",
+  "/privacy/deletion/cancel",
+  "/privacy/deletion/perform",
+  "/view?",
+].forEach((text) => must("src/repositories/admin-api.ts", text));
+
+[
+  "Search, filter, support, and audit SaveStream accounts.",
+  "Export CSV",
+  "Privacy requests",
+  "Finance access is read-only for user support actions.",
+  "Viewing as ",
+  "(read-only)",
+  "Playback and download are intentionally unavailable here",
+  "This never creates a user token and never allows actions.",
+  "AdminMfaGate",
+].forEach((text) => must("src/components/admin/user-support.tsx", text));
+
+[
+  "src/routes/admin/users.index.tsx",
+  "src/routes/admin/users.$id.tsx",
+].forEach((file) => must(file, "@/components/admin/user-support"));
+
+must("src/components/app-components.tsx", '{ to: "/admin/users", label: "Users", icon: Users }');
+
+["Play recording", "Download recording", "presigned", "storage_key"].forEach((text) =>
+  forbid("src/components/admin/user-support.tsx", text),
+);
 
 [
   "useAdminOperationalSnapshotData",
@@ -205,6 +241,33 @@ const d0Backend = read("../../backend/src/app/api/routes/admin.py");
 const roles = read("../../backend/src/app/domain/identity/types.py");
 ['"owner"', '"support"', '"finance"', '"admin:*"'].forEach((text) => {
   if (!roles.includes(text)) failures.push("D0 role matrix: missing " + JSON.stringify(text));
+});
+
+
+const d1Backend = read("../../backend/src/app/api/routes/admin.py");
+[
+  '"admin:users:read"',
+  '"admin:users:write"',
+  '"admin.user.viewed_as"',
+  '"admin.user.privacy_exported"',
+  '"admin.users.exported"',
+  'alias="X-Admin-Step-Up"',
+  'PrivacyService(session).anonymize_user',
+].forEach((text) => {
+  if (!d1Backend.includes(text)) failures.push("D1 backend invariant: missing " + JSON.stringify(text));
+});
+
+const d1Test = read("../../backend/tests/test_v2_d1_admin_users.py");
+[
+  'principal("support")',
+  'principal("finance")',
+  '"artifact" not in rendered',
+  '"download_url" not in rendered',
+  'support_money.status_code == 403',
+  'finance_write.status_code == 403',
+  '"admin.user.viewed_as"',
+].forEach((text) => {
+  if (!d1Test.includes(text)) failures.push("D1 backend test: missing " + JSON.stringify(text));
 });
 
 const backend = read("../../backend/src/app/api/routes/admin.py");
