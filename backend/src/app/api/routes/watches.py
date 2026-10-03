@@ -30,10 +30,15 @@ async def create_watch(
 ) -> WatchResponse:
     watch = await service.create(principal, payload)
     entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
         has_purchased=entitlement.has_purchased,
+        waiting_for_cloud_slot=(
+            watch.resolved_room_id is not None
+            and watch.resolved_room_id in waiting_room_ids
+        ),
     )
 
 
@@ -56,12 +61,17 @@ async def list_watches(
         status=status_filter,
     )
     entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
     return WatchListResponse(
         items=[
             watch_response(
                 item,
                 is_pro=entitlement.is_pro,
                 has_purchased=entitlement.has_purchased,
+                waiting_for_cloud_slot=(
+                    item.resolved_room_id is not None
+                    and item.resolved_room_id in waiting_room_ids
+                ),
             )
             for item in page.items
         ],
@@ -81,10 +91,15 @@ async def get_watch(
 ) -> WatchResponse:
     watch = await service.get(principal, watch_id)
     entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
         has_purchased=entitlement.has_purchased,
+        waiting_for_cloud_slot=(
+            watch.resolved_room_id is not None
+            and watch.resolved_room_id in waiting_room_ids
+        ),
     )
 
 
@@ -101,10 +116,15 @@ async def update_watch(
 ) -> WatchResponse:
     watch = await service.update(principal, watch_id, payload)
     entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
         has_purchased=entitlement.has_purchased,
+        waiting_for_cloud_slot=(
+            watch.resolved_room_id is not None
+            and watch.resolved_room_id in waiting_room_ids
+        ),
     )
 
 
@@ -134,8 +154,13 @@ async def resume_watch(
 ) -> WatchResponse:
     watch = await service.resume(principal, watch_id)
     entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
         has_purchased=entitlement.has_purchased,
+        waiting_for_cloud_slot=(
+            watch.resolved_room_id is not None
+            and watch.resolved_room_id in waiting_room_ids
+        ),
     )

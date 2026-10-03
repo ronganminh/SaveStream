@@ -108,8 +108,16 @@ async def list_recordings(
         status=status_filter,
     )
     days = await service.retention_days_for(principal.user_id)
+    positions = await service.queue_positions(page.items)
     return RecordingListResponse(
-        items=[recording_response(item, retention_days=days) for item in page.items],
+        items=[
+            recording_response(
+                item,
+                retention_days=days,
+                queue_position=positions.get(item.id),
+            )
+            for item in page.items
+        ],
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
     )
 
@@ -126,7 +134,12 @@ async def get_recording(
 ) -> RecordingResponse:
     recording = await service.get(principal, recording_id)
     days = await service.retention_days_for(principal.user_id)
-    return recording_response(recording, retention_days=days)
+    queue_position = await service.queue_position(recording)
+    return recording_response(
+        recording,
+        retention_days=days,
+        queue_position=queue_position,
+    )
 
 
 @router.post(

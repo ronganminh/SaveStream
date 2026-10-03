@@ -15,6 +15,7 @@ def watch_response(
     *,
     is_pro: bool | None = None,
     has_purchased: bool | None = None,
+    waiting_for_cloud_slot: bool = False,
 ) -> WatchResponse:
     creator = None
     if watch.resolved_username:
@@ -29,6 +30,8 @@ def watch_response(
         auto_record_state = "paused_no_cloud_minutes"
     elif is_pro is False:
         auto_record_state = "off"
+    elif waiting_for_cloud_slot:
+        auto_record_state = "waiting_for_cloud_slot"
     elif watch.status == "active":
         auto_record_state = "active"
     else:
