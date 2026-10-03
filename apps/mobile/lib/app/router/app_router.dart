@@ -30,8 +30,8 @@ import '../../features/settings/presentation/theme_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
 import '../session/app_session_controller.dart';
-import '../splash/splash_screen.dart';
 import '../shell/main_shell.dart';
+import '../splash/splash_screen.dart';
 import 'app_routes.dart';
 
 GoRouter createAppRouter({
