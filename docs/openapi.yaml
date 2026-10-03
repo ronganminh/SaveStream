@@ -1128,6 +1128,16 @@
               }
             }
           },
+          "403": {
+            "description": "PLAN_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Error",
             "content": {
@@ -1270,6 +1280,16 @@
           },
           "400": {
             "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PLAN_REQUIRED",
             "content": {
               "application/json": {
                 "schema": {
@@ -2031,6 +2051,739 @@
           }
         }
       }
+    },
+    "/me/entitlement": {
+      "get": {
+        "tags": [
+          "V2"
+        ],
+        "summary": "Get V2 account entitlement",
+        "operationId": "getEntitlement",
+        "description": "Contract frozen in B0. Runtime implementation lands in B1; local usage counters become authoritative in B4.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B1"
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-recordings/sessions": {
+      "post": {
+        "tags": [
+          "Local Recordings"
+        ],
+        "summary": "Start local recording session",
+        "operationId": "createLocalRecordingSession",
+        "description": "Contract frozen in B0; implemented in B4. Requires Idempotency-Key.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLocalRecordingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Lease granted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalRecordingSessionStartResponse"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "FREE_MINUTES_EXHAUSTED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "LOCAL_RECORDING_DISABLED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CREATOR_NOT_LIVE or LOCAL_SLOT_BUSY",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-recordings/sessions/{session_id}/extend": {
+      "post": {
+        "tags": [
+          "Local Recordings"
+        ],
+        "summary": "Extend local recording session",
+        "operationId": "extendLocalRecordingSession",
+        "description": "Contract frozen in B0; implemented in B4. Successful extension has no response body.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtendLocalRecordingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Extended"
+          },
+          "409": {
+            "description": "EXTENSION_LIMIT_REACHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-recordings/sessions/{session_id}/finish": {
+      "post": {
+        "tags": [
+          "Local Recordings"
+        ],
+        "summary": "Finish local recording session",
+        "operationId": "finishLocalRecordingSession",
+        "description": "Contract frozen in B0; implemented in B4. Idempotent for repeated identical payloads. Successful finish has no response body.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishLocalRecordingSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Finished"
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-recordings": {
+      "get": {
+        "tags": [
+          "Local Recordings"
+        ],
+        "summary": "List local recording metadata",
+        "operationId": "listLocalRecordings",
+        "description": "Contract frozen in B0; implemented in B4. No local video bytes are stored by the backend.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalRecordingList"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/local-recordings/{id}": {
+      "delete": {
+        "tags": [
+          "Local Recordings"
+        ],
+        "summary": "Delete local recording metadata",
+        "operationId": "deleteLocalRecording",
+        "description": "Contract frozen in B0; implemented in B4. Only the source device may delete the metadata.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "403": {
+            "description": "NOT_SOURCE_DEVICE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rewards": {
+      "post": {
+        "tags": [
+          "Rewards"
+        ],
+        "summary": "Create rewarded-ad intent",
+        "operationId": "createReward",
+        "description": "Contract frozen in B0; implemented in B4.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRewardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardCreateResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "REWARD_DAILY_CAP_REACHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "REWARD_LOCKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rewards/{reward_id}": {
+      "get": {
+        "tags": [
+          "Rewards"
+        ],
+        "summary": "Get rewarded-ad verification status",
+        "operationId": "getReward",
+        "description": "Contract frozen in B0; implemented in B4.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "parameters": [
+          {
+            "name": "reward_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardStatusResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/admob-ssv": {
+      "get": {
+        "tags": [
+          "Rewards"
+        ],
+        "summary": "AdMob server-side verification callback",
+        "operationId": "admobSsvWebhook",
+        "description": "Contract frozen in B0; implemented in B4. The provider-defined signed query string is verified from the raw request; individual provider parameters are intentionally not frozen here.",
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B4"
+        },
+        "responses": {
+          "204": {
+            "description": "Verification callback accepted"
+          },
+          "400": {
+            "description": "Invalid SSV signature or payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/billing/store-purchases": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Verify and credit an App Store or Google Play purchase",
+        "operationId": "createStorePurchase",
+        "description": "Contract frozen in B0; implemented in B5. The backend verifies the receipt/token before posting credit.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B5"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorePurchaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Purchase verification result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorePurchaseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "STORE_RECEIPT_INVALID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Store verification provider disabled or unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/devices/{device_id}": {
+      "put": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Create or update a device registration",
+        "operationId": "upsertDevice",
+        "description": "Contract frozen in B0; implemented in B3. Successful upsert has no response body.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B3"
+        },
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertDeviceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Stored"
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Delete a device registration",
+        "operationId": "deleteDevice",
+        "description": "Contract frozen in B0; implemented in B3. Called on logout.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B3"
+        },
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/app/status": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "Get minimum supported app versions and maintenance state",
+        "operationId": "getAppStatus",
+        "description": "Public V2 status endpoint. Contract frozen in B0; implemented in B6.",
+        "x-savestream-implementation": {
+          "status": "contract-only",
+          "phase": "B6"
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppStatus"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2181,7 +2934,19 @@
           "PAYMENT_PENDING",
           "PAYMENT_FAILED",
           "SERVICE_UNAVAILABLE",
-          "INTERNAL_ERROR"
+          "INTERNAL_ERROR",
+          "PLAN_REQUIRED",
+          "WATCH_LIMIT_REACHED",
+          "FREE_MINUTES_EXHAUSTED",
+          "CREATOR_NOT_LIVE",
+          "LOCAL_SLOT_BUSY",
+          "EXTENSION_LIMIT_REACHED",
+          "REWARD_DAILY_CAP_REACHED",
+          "REWARD_LOCKED",
+          "STORE_RECEIPT_INVALID",
+          "NOT_SOURCE_DEVICE",
+          "LOCAL_RECORDING_DISABLED",
+          "NOT_IMPLEMENTED"
         ]
       },
       "ApiError": {
@@ -2542,7 +3307,9 @@
           "completed",
           "failed",
           "stop_requested",
-          "stopped"
+          "stopped",
+          "waiting_for_cloud_slot",
+          "missed_no_cloud_slot"
         ]
       },
       "RecordingActions": {
@@ -2557,7 +3324,8 @@
             "type": "boolean"
           },
           "can_retry": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True only while the creator is still LIVE and the failure is retryable; V2 behavior implemented by the owning recording phase."
           },
           "can_delete": {
             "type": "boolean"
@@ -2700,7 +3468,34 @@
                 "type": "null"
               }
             ],
-            "description": "When a finished recording will be deleted by the retention policy; null while active or when kept until deleted."
+            "description": "When the cloud artifact expires under retention policy. V2 semantics are finalized in B6; null while not applicable."
+          },
+          "engine": {
+            "type": "string",
+            "enum": [
+              "cloud"
+            ],
+            "default": "cloud",
+            "description": "V2 field frozen in B0; populated in B6."
+          },
+          "minutes_charged": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Cloud minutes charged for this recording. Failed recordings are fully refunded. Implemented in B6."
+          },
+          "queue_position": {
+            "oneOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "FIFO position while waiting_for_cloud_slot; implemented in B2."
           }
         },
         "additionalProperties": false
@@ -2978,6 +3773,16 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "notify_on_live": {
+            "type": "boolean",
+            "default": true,
+            "description": "V2 field frozen in B0; implemented in B3. Absence during rollout must be treated as true."
+          },
+          "auto_record_state": {
+            "$ref": "#/components/schemas/AutoRecordState",
+            "default": "off",
+            "description": "V2 field frozen in B0; B1 implements off/active/paused_no_cloud_minutes and B2 adds waiting_for_cloud_slot."
           }
         },
         "additionalProperties": false
@@ -2995,6 +3800,11 @@
           "auto_record": {
             "type": "boolean",
             "default": true
+          },
+          "notify_on_live": {
+            "type": "boolean",
+            "default": true,
+            "description": "Optional V2 notification switch; implemented in B3."
           }
         },
         "additionalProperties": false
@@ -3012,6 +3822,10 @@
               "paused",
               "disabled"
             ]
+          },
+          "notify_on_live": {
+            "type": "boolean",
+            "description": "Optional V2 notification switch; implemented in B3."
           }
         },
         "additionalProperties": false
@@ -3268,6 +4082,15 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "store_product_ids": {
+            "$ref": "#/components/schemas/StoreProductIds",
+            "description": "V2 in-app purchase product IDs. Optional during rollout; populated in B5."
+          },
+          "cloud_minutes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Cloud minutes granted by this package; 1 credit = 1 minute. Optional during rollout; populated in B5."
           }
         },
         "additionalProperties": false
@@ -3415,7 +4238,13 @@
         "enum": [
           "recording_started",
           "recording_ready",
-          "recording_failed"
+          "recording_failed",
+          "creator_live",
+          "recording_missed",
+          "recording_expiring",
+          "cloud_minutes_exhausted",
+          "free_minutes_low",
+          "purchase_completed"
         ]
       },
       "Notification": {
@@ -3453,6 +4282,7 @@
             ],
             "enum": [
               "recording",
+              "watch",
               null
             ]
           },
@@ -3542,6 +4372,26 @@
                 "type": "null"
               }
             ]
+          },
+          "creator_live": {
+            "type": "boolean",
+            "default": true,
+            "description": "V2 preference frozen in B0; implemented in B3."
+          },
+          "recording_expiring": {
+            "type": "boolean",
+            "default": true,
+            "description": "V2 preference frozen in B0; implemented in B3."
+          },
+          "free_minutes_low": {
+            "type": "boolean",
+            "default": true,
+            "description": "V2 preference frozen in B0; implemented in B3."
+          },
+          "marketing": {
+            "type": "boolean",
+            "default": false,
+            "description": "V2 preference frozen in B0; implemented in B3."
           }
         },
         "additionalProperties": false
@@ -3556,6 +4406,18 @@
             "type": "boolean"
           },
           "recording_failed": {
+            "type": "boolean"
+          },
+          "creator_live": {
+            "type": "boolean"
+          },
+          "recording_expiring": {
+            "type": "boolean"
+          },
+          "free_minutes_low": {
+            "type": "boolean"
+          },
+          "marketing": {
             "type": "boolean"
           }
         },
@@ -3681,6 +4543,600 @@
             ],
             "minimum": 1,
             "description": "Days finished recordings are kept for trial-only accounts; null keeps them until deleted."
+          }
+        },
+        "additionalProperties": false
+      },
+      "EntitlementPlan": {
+        "type": "string",
+        "enum": [
+          "free",
+          "pro"
+        ]
+      },
+      "EntitlementLimits": {
+        "type": "object",
+        "required": [
+          "max_watches",
+          "max_concurrent_cloud_recordings",
+          "cloud_retention_days"
+        ],
+        "properties": {
+          "max_watches": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_concurrent_cloud_recordings": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cloud_retention_days": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocalEntitlement": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "unlimited",
+          "daily_minutes",
+          "minutes_remaining",
+          "resets_at",
+          "rewards_used_today",
+          "rewards_cap_per_day",
+          "minutes_per_reward",
+          "extensions_cap_per_recording"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "unlimited": {
+            "type": "boolean"
+          },
+          "daily_minutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes_remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resets_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "rewards_used_today": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewards_cap_per_day": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes_per_reward": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "extensions_cap_per_recording": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "Entitlement": {
+        "type": "object",
+        "required": [
+          "plan",
+          "has_purchased",
+          "cloud_minutes_available",
+          "limits",
+          "watch_count",
+          "local",
+          "updated_at"
+        ],
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/EntitlementPlan"
+          },
+          "has_purchased": {
+            "type": "boolean"
+          },
+          "cloud_minutes_available": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Available cloud credits expressed in minutes; 1 credit = 1 minute."
+          },
+          "limits": {
+            "$ref": "#/components/schemas/EntitlementLimits"
+          },
+          "watch_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "local": {
+            "$ref": "#/components/schemas/LocalEntitlement"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AutoRecordState": {
+        "type": "string",
+        "enum": [
+          "off",
+          "active",
+          "paused_no_cloud_minutes",
+          "waiting_for_cloud_slot"
+        ]
+      },
+      "LocalRecordingStream": {
+        "type": "object",
+        "required": [
+          "url",
+          "format",
+          "headers"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "flv",
+              "hls"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateLocalRecordingSessionRequest": {
+        "type": "object",
+        "required": [
+          "watch_id",
+          "device_id"
+        ],
+        "properties": {
+          "watch_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "device_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reward_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocalRecordingSessionStartResponse": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "granted_seconds",
+          "lease_expires_at",
+          "stream"
+        ],
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "granted_seconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "lease_expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "stream": {
+            "$ref": "#/components/schemas/LocalRecordingStream"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ExtendLocalRecordingSessionRequest": {
+        "type": "object",
+        "properties": {
+          "reward_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional for accounts whose local entitlement is unlimited."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocalRecordingEndReason": {
+        "type": "string",
+        "enum": [
+          "user_stopped",
+          "live_ended",
+          "free_minutes_exhausted",
+          "storage_low",
+          "interrupted",
+          "error"
+        ]
+      },
+      "LocalRecordingStatus": {
+        "type": "string",
+        "enum": [
+          "completed",
+          "partial",
+          "recovered",
+          "failed"
+        ]
+      },
+      "FinishLocalRecordingSessionRequest": {
+        "type": "object",
+        "required": [
+          "recorded_seconds",
+          "size_bytes",
+          "end_reason",
+          "status"
+        ],
+        "properties": {
+          "recorded_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "end_reason": {
+            "$ref": "#/components/schemas/LocalRecordingEndReason"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LocalRecordingStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocalRecording": {
+        "type": "object",
+        "required": [
+          "id",
+          "watch_id",
+          "creator",
+          "device_id",
+          "device_name",
+          "started_at",
+          "recorded_seconds",
+          "size_bytes",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "watch_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "creator": {
+            "$ref": "#/components/schemas/Creator"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "recorded_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/LocalRecordingStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LocalRecordingList": {
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocalRecording"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RewardPurpose": {
+        "type": "string",
+        "enum": [
+          "local_minutes",
+          "local_slot"
+        ]
+      },
+      "CreateRewardRequest": {
+        "type": "object",
+        "required": [
+          "purpose"
+        ],
+        "properties": {
+          "purpose": {
+            "$ref": "#/components/schemas/RewardPurpose"
+          },
+          "session_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/OpaqueId"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "additionalProperties": false
+      },
+      "RewardCreateResponse": {
+        "type": "object",
+        "required": [
+          "reward_id",
+          "ssv_user_id",
+          "ssv_custom_data",
+          "expires_at"
+        ],
+        "properties": {
+          "reward_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "ssv_user_id": {
+            "type": "string"
+          },
+          "ssv_custom_data": {
+            "type": "string"
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "RewardStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "valid",
+          "invalid",
+          "expired"
+        ]
+      },
+      "RewardStatusResponse": {
+        "type": "object",
+        "required": [
+          "reward_id",
+          "status"
+        ],
+        "properties": {
+          "reward_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RewardStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StoreProductIds": {
+        "type": "object",
+        "required": [
+          "app_store",
+          "google_play"
+        ],
+        "properties": {
+          "app_store": {
+            "type": "string"
+          },
+          "google_play": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "StorePurchasePlatform": {
+        "type": "string",
+        "enum": [
+          "app_store",
+          "google_play"
+        ]
+      },
+      "StorePurchaseStatus": {
+        "type": "string",
+        "enum": [
+          "credited",
+          "pending",
+          "rejected"
+        ]
+      },
+      "StorePurchaseRequest": {
+        "type": "object",
+        "required": [
+          "platform",
+          "product_id",
+          "transaction_id",
+          "receipt"
+        ],
+        "properties": {
+          "platform": {
+            "$ref": "#/components/schemas/StorePurchasePlatform"
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "transaction_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "StorePurchaseResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "payment_order_id",
+          "cloud_minutes_added",
+          "cloud_minutes_available"
+        ],
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/StorePurchaseStatus"
+          },
+          "payment_order_id": {
+            "$ref": "#/components/schemas/OpaqueId"
+          },
+          "cloud_minutes_added": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cloud_minutes_available": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "DevicePlatform": {
+        "type": "string",
+        "enum": [
+          "android",
+          "ios"
+        ]
+      },
+      "UpsertDeviceRequest": {
+        "type": "object",
+        "required": [
+          "platform",
+          "push_token",
+          "device_name",
+          "app_version",
+          "locale"
+        ],
+        "properties": {
+          "platform": {
+            "$ref": "#/components/schemas/DevicePlatform"
+          },
+          "push_token": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "app_version": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MinimumSupportedVersions": {
+        "type": "object",
+        "required": [
+          "android",
+          "ios"
+        ],
+        "properties": {
+          "android": {
+            "type": "string"
+          },
+          "ios": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MaintenanceStatus": {
+        "type": "object",
+        "required": [
+          "active",
+          "eta"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "eta": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AppStatus": {
+        "type": "object",
+        "required": [
+          "min_supported_version",
+          "maintenance"
+        ],
+        "properties": {
+          "min_supported_version": {
+            "$ref": "#/components/schemas/MinimumSupportedVersions"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/MaintenanceStatus"
           }
         },
         "additionalProperties": false
