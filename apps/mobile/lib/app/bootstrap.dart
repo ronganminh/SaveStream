@@ -13,6 +13,9 @@ import '../features/recordings/data/repositories/api_recording_repository.dart';
 import '../features/settings/data/repositories/api_notification_preferences_repository.dart';
 import '../features/settings/data/repositories/api_notifications_repository.dart';
 import '../features/settings/data/repositories/api_profile_repository.dart';
+import '../platform/connectivity_plus_service.dart';
+import '../platform/device_info_plus_service.dart';
+import '../platform/platform_providers.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
 import 'session/app_session_controller.dart';
@@ -70,6 +73,12 @@ Future<void> bootstrap() async {
       notificationPreferencesRepository: ApiNotificationPreferencesRepository(
         apiClient: authRuntime.authenticatedApiClient,
       ),
+      extraOverrides: [
+        connectivityServiceProvider.overrideWithValue(
+          ConnectivityPlusService(),
+        ),
+        deviceInfoServiceProvider.overrideWithValue(DeviceInfoPlusService()),
+      ],
     ),
   );
 }
