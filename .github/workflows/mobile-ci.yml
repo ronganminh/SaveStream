@@ -69,8 +69,11 @@ jobs:
           --dart-define=APP_ENV=production
           --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
 
-      - name: Phase 17 release audit
-        run: bash tool/phase17_release_audit.sh
+      - name: Report Android App Bundle size
+        run: ls -lh build/app/outputs/bundle/release/app-release.aab
+
+      - name: Mobile release audit
+        run: bash tool/release_audit.sh
 
 
   ios-release-compile:
