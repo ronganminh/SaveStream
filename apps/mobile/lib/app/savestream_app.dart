@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../core/api/api_client.dart';
 import '../core/api/api_providers.dart';
 import '../core/config/app_config.dart';
+import '../core/config/app_config_provider.dart';
 import '../core/mock/mock_providers.dart';
 import '../core/mock/mock_scenario.dart';
 import '../features/auth/data/auth_providers.dart';
@@ -97,6 +98,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
   Widget build(BuildContext context) {
     return ProviderScope(
       overrides: [
+        appConfigProvider.overrideWithValue(widget.config),
         mockScenarioProvider.overrideWithValue(widget.mockScenario),
         authMockScenarioProvider.overrideWithValue(widget.authMockScenario),
         if (widget.authRepository != null)
