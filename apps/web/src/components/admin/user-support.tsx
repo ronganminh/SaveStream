@@ -647,7 +647,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
 
         <Tabs defaultValue="profile" className="mt-6">
           <TabsList className="h-auto flex-wrap justify-start">
-            {[
+            {([
               ["profile", "Profile"],
               ["plan", "Plan & balance"],
               ["channels", "Channels"],
