@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Generic, TypeVar
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
@@ -16,7 +16,8 @@ from app.domain.billing.state import PaymentStatus
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import RecordingStatus
 from app.infrastructure.db.billing_models import PaymentOrder
-from app.infrastructure.db.models import User
+from app.infrastructure.db.admin_models import AdminMfaCredential
+from app.infrastructure.db.models import AuthSession, User
 from app.infrastructure.db.recording_models import Recording
 from app.settings import AppSettings
 
@@ -70,7 +71,7 @@ class AdminService:
     ) -> AdminPage[User]:
         statement = select(User)
         if role is not None:
-            if role not in {"user", "admin"}:
+            if role not in {"user", "owner", "support", "finance", "admin"}:
                 raise ApplicationError("VALIDATION_ERROR", "Invalid role", status_code=400)
             statement = statement.where(User.role == role)
         if is_active is not None:
@@ -124,11 +125,90 @@ class AdminService:
                 status_code=409,
             )
         if role is not None:
-            if role not in {"user", "admin"}:
+            if role not in {"user", "owner", "support", "finance", "admin"}:
                 raise ApplicationError("VALIDATION_ERROR", "Invalid role", status_code=400)
             user.role = role
         if is_active is not None:
             user.is_active = is_active
+        await self.session.flush()
+        return user
+
+
+    async def list_admins(
+        self,
+        *,
+        limit: int,
+        cursor: str | None,
+    ) -> AdminPage[User]:
+        statement = select(User).where(
+            User.role.in_(("owner", "support", "finance", "admin"))
+        )
+        if cursor:
+            created_at, row_id = _decode_cursor(cursor)
+            statement = statement.where(
+                or_(
+                    User.created_at < created_at,
+                    and_(User.created_at == created_at, User.id < row_id),
+                )
+            )
+        rows = list(
+            (
+                await self.session.scalars(
+                    statement.order_by(User.created_at.desc(), User.id.desc()).limit(limit + 1)
+                )
+            ).all()
+        )
+        has_more = len(rows) > limit
+        items = rows[:limit]
+        return AdminPage(
+            items,
+            _encode_cursor(items[-1].created_at, items[-1].id) if has_more and items else None,
+            has_more,
+        )
+
+    async def set_admin_role(
+        self,
+        *,
+        actor_user_id: uuid.UUID,
+        user_id: str,
+        role: str,
+    ) -> tuple[User, str]:
+        user = await self.get_user(user_id)
+        previous_role = user.role
+        if user.id == actor_user_id and role == "user":
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "Owner cannot revoke the current session's own admin role",
+                status_code=409,
+            )
+        if role not in {"user", "owner", "support", "finance"}:
+            raise ApplicationError("VALIDATION_ERROR", "Invalid admin role", status_code=400)
+        user.role = role
+        # Changing privileges invalidates MFA verification on every existing session.
+        await self.session.execute(
+            update(AuthSession)
+            .where(AuthSession.user_id == user.id)
+            .values(admin_mfa_verified_at=None)
+        )
+        await self.session.flush()
+        return user, previous_role
+
+    async def reset_admin_mfa(self, user_id: str) -> User:
+        user = await self.get_user(user_id)
+        if user.role not in {"owner", "support", "finance", "admin"}:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "MFA can only be reset for an admin account",
+                status_code=409,
+            )
+        row = await self.session.get(AdminMfaCredential, user.id)
+        if row is not None:
+            await self.session.delete(row)
+        await self.session.execute(
+            update(AuthSession)
+            .where(AuthSession.user_id == user.id)
+            .values(admin_mfa_verified_at=None)
+        )
         await self.session.flush()
         return user
 
