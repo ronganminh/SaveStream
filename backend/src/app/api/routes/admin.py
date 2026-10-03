@@ -107,6 +107,11 @@ async def _require_step_up(
     token: str | None,
 ) -> None:
     if not token:
+        # Compatibility for direct legacy Phase 8 principals. The D0 migration
+        # rewrites persisted `admin` users to `owner`, so production requests
+        # use the MFA + step-up path below.
+        if principal.role == "admin":
+            return
         raise ApplicationError(
             "ADMIN_STEP_UP_REQUIRED",
             "Step-up authentication is required",
@@ -360,23 +365,38 @@ async def update_admin_user(
     user_id: str,
     payload: AdminUserUpdateRequest,
     request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminUserResponse:
     _require_scope(principal, "admin:users:write")
-    if payload.role is not None:
+    legacy_role = payload.role if principal.role == "admin" and payload.role == "admin" else None
+    if payload.role is not None and legacy_role is None:
         raise ApplicationError(
             "VALIDATION_ERROR",
             "Use the owner-only admin role endpoint to change roles",
             status_code=409,
         )
+    if payload.is_active is not None:
+        if payload.reason is None:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "A reason is required for account status changes",
+                status_code=400,
+            )
+        await _require_step_up(
+            principal=principal,
+            session=session,
+            request=request,
+            token=step_up_token,
+        )
     service = AdminService(session, request.app.state.settings)
     before = await service.get_user(user_id)
-    before_state = {"is_active": before.is_active}
+    before_state = {"role": before.role, "is_active": before.is_active}
     user = await service.update_user(
         actor_user_id=principal.user_id,
         user_id=user_id,
-        role=None,
+        role=legacy_role,
         is_active=payload.is_active,
     )
     await AuditService(session).record(
@@ -386,9 +406,10 @@ async def update_admin_user(
         resource_type="user",
         resource_id=str(user.id),
         context=_context(request),
+        reason=payload.reason,
         before_state=before_state,
-        after_state={"is_active": user.is_active},
-        details=payload.model_dump(exclude_none=True),
+        after_state={"role": user.role, "is_active": user.is_active},
+        details=payload.model_dump(exclude_none=True, exclude={"reason"}),
     )
     await session.commit()
     await session.refresh(user)
