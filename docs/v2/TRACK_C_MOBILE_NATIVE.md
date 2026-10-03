@@ -8,7 +8,7 @@
 
 ## Tiến độ
 
-- [ ] C0 — Plugin và khung native
+- [x] C0 — Plugin và khung native
 - [ ] C1 — Repository gọi API V2
 - [ ] C2 — Thử nghiệm kỹ thuật ghi trên máy (**dừng chờ duyệt**)
 - [ ] C3 — Ghi trên máy cho Android
@@ -29,7 +29,7 @@ dart format --output=none --set-exit-if-changed lib/app lib/core lib/features li
 flutter analyze --fatal-infos
 flutter test
 flutter build appbundle --release --dart-define=APP_ENV=production --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
-bash tool/phase17_release_audit.sh
+bash tool/release_audit.sh
 ```
 
 CI phải xanh: `flutter-checks` (có build Android App Bundle), `ios-release-compile` (biên dịch iOS cho simulator), `mobile-backend-e2e`.
