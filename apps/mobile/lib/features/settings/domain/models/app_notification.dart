@@ -1,8 +1,4 @@
-enum AppNotificationType {
-  recordingStarted,
-  recordingReady,
-  recordingFailed,
-}
+enum AppNotificationType { recordingStarted, recordingReady, recordingFailed }
 
 class AppNotification {
   const AppNotification({
