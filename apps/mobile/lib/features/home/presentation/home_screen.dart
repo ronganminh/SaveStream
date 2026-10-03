@@ -1,12 +1,17 @@
+/// H01/H02/H03/H06 — V2 Home states.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../channels/domain/models/watch_summary.dart';
+import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
@@ -20,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
     final AsyncValue<HomeDashboardViewModel> dashboard = ref.watch(
       homeDashboardProvider,
     );
-
+    final bool online = ref.watch(appOnlineProvider).value ?? true;
     final String? displayName = dashboard.value?.metrics.displayName;
 
     return Scaffold(
@@ -59,7 +64,7 @@ class HomeScreen extends ConsumerWidget {
                       ref.invalidate(homeDashboardProvider);
                       await ref.read(homeDashboardProvider.future);
                     },
-                    child: _HomeDashboard(data: data),
+                    child: _HomeDashboard(data: data, online: online),
                   ),
                 ),
               ),
@@ -72,435 +77,311 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HomeDashboard extends StatelessWidget {
-  const _HomeDashboard({required this.data});
+  const _HomeDashboard({required this.data, required this.online});
 
   final HomeDashboardViewModel data;
+  final bool online;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Entitlement entitlement = data.entitlement;
+    final bool isPro = entitlement.plan == Plan.pro;
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
-            SsSpacing.lg,
-            0,
-            SsSpacing.lg,
-            SsSpacing.xxl,
-          ),
-          children: <Widget>[
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 720),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _MetricGrid(data: data),
-                    const SizedBox(height: SsSpacing.lg),
-                    SizedBox(
-                      width: double.infinity,
-                      child: SsPrimaryButton(
-                        label: l10n.addChannelAction,
-                        icon: Icons.add_rounded,
-                        onPressed: () => context.push(AppRoutes.addChannel),
-                      ),
-                    ),
-                    if (data.isEmptyAccount) ...<Widget>[
-                      const SizedBox(height: SsSpacing.xl),
-                      SsCard(
-                        child: SsEmptyState(
-                          icon: Icons.rss_feed_rounded,
-                          title: l10n.homeEmptyTitle,
-                          message: l10n.homeEmptyBody,
-                        ),
-                      ),
-                    ] else ...<Widget>[
-                      if (data.isLowCredit) ...<Widget>[
-                        const SizedBox(height: SsSpacing.xl),
-                        _HomeAlert(
-                          icon: Icons.account_balance_wallet_outlined,
-                          title: l10n.homeLowCreditTitle,
-                          message: l10n.homeLowCreditBody,
-                          tone: colors.tertiary,
-                          actionLabel: l10n.homeViewCreditsAction,
-                          onAction: () => context.push(AppRoutes.credits),
-                        ),
-                      ],
-                      if (data.failedRecordings.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: SsSpacing.md),
-                        _HomeAlert(
-                          icon: Icons.error_outline_rounded,
-                          title: l10n.homeRecordingFailedTitle,
-                          message: l10n.homeRecordingFailedBody,
-                          tone: colors.error,
-                          actionLabel: l10n.homeReviewRecordingAction,
-                          onAction: () => context.push(
-                            AppRoutes.recordingDetail(
-                              data.failedRecordings.first.id,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: SsSpacing.xl),
-                      _UsageCard(data: data),
-                      if (data.activeRecordings.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: SsSpacing.xl),
-                        _ActiveRecordingCard(
-                          recording: data.activeRecordings.first,
-                        ),
-                      ],
-                      if (data.featuredWatches.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: SsSpacing.xl),
-                        SsSectionHeader(
-                          title: l10n.homeMonitoredChannelsTitle,
-                          actionLabel: l10n.sectionExampleAction,
-                          onAction: () => context.go(AppRoutes.channels),
-                        ),
-                        const SizedBox(height: SsSpacing.sm),
-                        ...data.featuredWatches.map(
-                          (WatchSummary watch) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: SsSpacing.md,
-                            ),
-                            child: _WatchCard(watch: watch),
-                          ),
-                        ),
-                      ],
-                      if (data.recentRecordings.isNotEmpty) ...<Widget>[
-                        const SizedBox(height: SsSpacing.lg),
-                        SsSectionHeader(
-                          title: l10n.homeRecentRecordingsTitle,
-                          actionLabel: l10n.sectionExampleAction,
-                          onAction: () => context.go(AppRoutes.recordings),
-                        ),
-                        const SizedBox(height: SsSpacing.sm),
-                        ...data.recentRecordings.map(
-                          (RecordingSummary recording) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: SsSpacing.md,
-                            ),
-                            child: _RecordingCard(recording: recording),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MetricGrid extends StatelessWidget {
-  const _MetricGrid({required this.data});
-
-  final HomeDashboardViewModel data;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth >= 560
-            ? 3
-            : constraints.maxWidth >= 320
-            ? 2
-            : 1;
-        final double width =
-            (constraints.maxWidth - (columns - 1) * SsSpacing.md) / columns;
-
-        return Wrap(
-          spacing: SsSpacing.md,
-          runSpacing: SsSpacing.md,
-          children: <Widget>[
-            _MetricCard(
-              width: width,
-              icon: Icons.account_balance_wallet_outlined,
-              label: l10n.homeAvailableCreditLabel,
-              value: data.metrics.availableCredit.toString(),
-            ),
-            _MetricCard(
-              width: width,
-              icon: Icons.fiber_manual_record_rounded,
-              label: l10n.homeActiveRecordingsLabel,
-              value: data.activeRecordings.length.toString(),
-            ),
-            _MetricCard(
-              width: width,
-              icon: Icons.rss_feed_rounded,
-              label: l10n.homeMonitoredChannelsLabel,
-              value: data.monitoredChannelCount.toString(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.width,
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final double width;
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      width: width,
-      child: SsCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(icon, color: colors.primary),
-            const SizedBox(height: SsSpacing.md),
-            Text(value, style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: SsSpacing.xs),
-            Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-            ),
-          ],
-        ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(
+        SsSpacing.lg,
+        0,
+        SsSpacing.lg,
+        SsSpacing.xxl,
       ),
-    );
-  }
-}
-
-class _HomeAlert extends StatelessWidget {
-  const _HomeAlert({
-    required this.icon,
-    required this.title,
-    required this.message,
-    required this.tone,
-    required this.actionLabel,
-    required this.onAction,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-  final Color tone;
-  final String actionLabel;
-  final VoidCallback onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SsCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icon, color: tone),
-          const SizedBox(width: SsSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(title, style: Theme.of(context).textTheme.titleSmall),
-                const SizedBox(height: SsSpacing.xs),
-                Text(
-                  message,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: SsSpacing.sm),
-                TextButton(onPressed: onAction, child: Text(actionLabel)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsageCard extends StatelessWidget {
-  const _UsageCard({required this.data});
-
-  final HomeDashboardViewModel data;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool stack =
-                  constraints.maxWidth < 360 ||
-                  MediaQuery.textScalerOf(context).scale(1) >= 1.4;
-              final Widget title = Text(
-                l10n.homeUsageTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              );
-              final Widget action = TextButton(
-                onPressed: () => context.push(AppRoutes.credits),
-                child: Text(l10n.homeViewUsageAction),
-              );
-
-              if (stack) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    title,
-                    const SizedBox(height: SsSpacing.xs),
-                    Align(alignment: Alignment.centerLeft, child: action),
-                  ],
-                );
-              }
-
-              return Row(
-                children: <Widget>[
-                  Expanded(child: title),
-                  action,
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: SsSpacing.md),
-          LinearProgressIndicator(value: data.usageProgress),
-          const SizedBox(height: SsSpacing.sm),
-          Text(
-            l10n.homeUsageHours(
-              data.metrics.recordingHoursUsed.toStringAsFixed(1),
-              data.metrics.recordingHoursLimit.toStringAsFixed(0),
-            ),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActiveRecordingCard extends StatelessWidget {
-  const _ActiveRecordingCard({required this.recording});
-
-  final RecordingSummary recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        SsSectionHeader(title: l10n.homeActiveRecordingTitle),
-        const SizedBox(height: SsSpacing.sm),
-        SsCard(
-          child: InkWell(
-            onTap: () => context.push(AppRoutes.recordingDetail(recording.id)),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: SsSpacing.xs),
-              child: Row(
-                children: <Widget>[
-                  SsAvatar(label: recording.creatorDisplayName, radius: 24),
-                  const SizedBox(width: SsSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          recording.creatorDisplayName,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: SsSpacing.xs),
-                        Text(
-                          l10n.homeCloudRecordingHint,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colors.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SsStatusChip(
-                    label: 'REC',
-                    tone: SsStatusTone.recording,
-                    icon: Icons.fiber_manual_record_rounded,
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SsPlanBadge(plan: entitlement.plan),
+                ),
+                if (!online) ...<Widget>[
+                  const SizedBox(height: SsSpacing.md),
+                  SsInlineAlert(
+                    title: context.l10n.homeOfflineTitle,
+                    message: context.l10n.homeOfflineBody,
+                    tone: SsInlineAlertTone.warning,
                   ),
                 ],
-              ),
+                if (data.watches.isEmpty) ...<Widget>[
+                  const SizedBox(height: SsSpacing.xl),
+                  SsCard(
+                    child: SsEmptyState(
+                      icon: Icons.person_add_alt_1_rounded,
+                      title: context.l10n.homeEmptyCreatorTitle,
+                      message: context.l10n.homeEmptyCreatorBody,
+                    ),
+                  ),
+                  const SizedBox(height: SsSpacing.lg),
+                  SsPrimaryButton(
+                    label: context.l10n.addChannelAction,
+                    icon: Icons.person_add_alt_1_rounded,
+                    onPressed: online
+                        ? () => context.push(AppRoutes.addChannel)
+                        : null,
+                  ),
+                ] else if (isPro) ...<Widget>[
+                  ..._buildPro(context, entitlement),
+                ] else ...<Widget>[
+                  ..._buildFree(context, entitlement),
+                ],
+                if (data.missedNoCloudSlot.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: SsSpacing.lg),
+                  SsInlineAlert(
+                    title: context.l10n.creatorMissedTitle,
+                    message: context.l10n.creatorMissedBody,
+                    tone: SsInlineAlertTone.warning,
+                  ),
+                ],
+              ],
             ),
           ),
         ),
       ],
     );
   }
-}
 
-class _WatchCard extends StatelessWidget {
-  const _WatchCard({required this.watch});
-
-  final WatchSummary watch;
-
-  @override
-  Widget build(BuildContext context) {
+  List<Widget> _buildFree(
+    BuildContext context,
+    Entitlement entitlement,
+  ) {
     final AppLocalizations l10n = context.l10n;
-
-    return SsCard(
-      child: SsListTile(
-        title: watch.creatorDisplayName,
-        subtitle: watch.creatorUsername,
-        leading: SsAvatar(label: watch.creatorDisplayName),
-        trailing: SsStatusChip(
-          label: _watchStatusLabel(l10n, watch),
-          tone: _watchStatusTone(watch.status),
-          icon: watch.isLive ? Icons.fiber_manual_record_rounded : null,
-        ),
-        onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
-      ),
+    final LocalEntitlement local = entitlement.local;
+    final WatchSummary? live =
+        data.liveWatches.isEmpty ? null : data.liveWatches.first;
+    final int limit = entitlement.limits.maxWatches;
+    final int remainingSlots = (limit - data.watches.length).clamp(0, limit);
+    final Duration resetIn = local.resetsAt.difference(DateTime.now().toUtc());
+    final String reset = formatResetCountdown(
+      resetIn,
+      hoursLabel: l10n.timeHoursUnit,
+      minutesLabel: l10n.timeMinutesUnit,
     );
+
+    return <Widget>[
+      if (live != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      l10n.homeLiveCreatorTitle(live.creatorDisplayName),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const SsLiveBadge(isLive: true),
+                ],
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              Text(l10n.homeLocalSaveHint),
+              const SizedBox(height: SsSpacing.md),
+              SsPrimaryButton(
+                label: l10n.recordNowAction,
+                icon: Icons.fiber_manual_record_rounded,
+                onPressed: online
+                    ? () => context.push(AppRoutes.channelDetail(live.id))
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      ],
+      const SizedBox(height: SsSpacing.lg),
+      SsQuotaCard(
+        title: local.minutesRemaining > 0
+            ? l10n.homeFreeMinutesTitle
+            : l10n.homeMinutesExhaustedTitle,
+        value: l10n.homeFreeMinutesRemaining(
+          local.minutesRemaining,
+          local.dailyMinutes,
+        ),
+        subtitle:
+            '${l10n.homeResetAfter(reset)} · ${l10n.homeRewardsUsed(local.rewardsUsedToday, local.rewardsCapPerDay)}',
+        progress: local.dailyMinutes == 0
+            ? 0
+            : local.minutesRemaining / local.dailyMinutes,
+      ),
+      if (local.minutesRemaining == 0) ...<Widget>[
+        const SizedBox(height: SsSpacing.md),
+        SsInlineAlert(
+          title: l10n.homeMinutesExhaustedTitle,
+          message: l10n.homeMinutesExhaustedBody,
+          tone: SsInlineAlertTone.warning,
+        ),
+        const SizedBox(height: SsSpacing.sm),
+        SsPrimaryButton(
+          label: l10n.watchAdMinutesAction(local.minutesPerReward),
+          onPressed: live == null || !online
+              ? null
+              : () => context.push(AppRoutes.channelDetail(live.id)),
+        ),
+      ],
+      const SizedBox(height: SsSpacing.lg),
+      _WatchingSummary(
+        count: data.watches.length,
+        limit: limit,
+        detail: remainingSlots > 0
+            ? l10n.watchCapacityRemaining(remainingSlots)
+            : l10n.watchCapacityFull,
+      ),
+      if (data.liveWatches.isNotEmpty) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsSectionHeader(
+          title: l10n.channelsTitle,
+          actionLabel: l10n.sectionExampleAction,
+          onAction: () => context.go(AppRoutes.channels),
+        ),
+        const SizedBox(height: SsSpacing.sm),
+        for (final WatchSummary watch in data.liveWatches.take(3))
+          Padding(
+            padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+            child: SsCreatorTile(
+              name: watch.creatorDisplayName,
+              handle: watch.creatorUsername,
+              isLive: true,
+              onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+            ),
+          ),
+      ],
+      if (data.hasAhaMoment && local.minutesRemaining > 0 && online) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.homeAutoRecordUpsellTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              Text(l10n.homeAutoRecordUpsellBody),
+              const SizedBox(height: SsSpacing.md),
+              SsSecondaryButton(
+                label: l10n.buyCloudHoursAction,
+                icon: Icons.cloud_outlined,
+                onPressed: () => showCloudHoursUpsellSheet(context),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: SsSpacing.lg),
+        SsBannerAdSlot(label: l10n.advertisementLabel),
+      ],
+    ];
+  }
+
+  List<Widget> _buildPro(
+    BuildContext context,
+    Entitlement entitlement,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final String cloudTime = formatMinutesAsHoursMinutes(
+      entitlement.cloudMinutesAvailable,
+      hoursLabel: l10n.timeHoursUnit,
+      minutesLabel: l10n.timeMinutesUnit,
+    );
+    final RecordingSummary? active =
+        data.activeRecordings.isEmpty ? null : data.activeRecordings.first;
+
+    return <Widget>[
+      if (active != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsActiveRecordingCard(
+          creatorName: active.creatorDisplayName,
+          elapsed: formatDurationHms(
+            Duration(seconds: active.durationSeconds),
+          ),
+          engine: Engine.cloud,
+          onTap: () => context.push(AppRoutes.recordingDetail(active.id)),
+        ),
+      ],
+      const SizedBox(height: SsSpacing.lg),
+      SsQuotaCard(
+        title: l10n.homeCloudTimeTitle,
+        value: cloudTime,
+        subtitle:
+            '${l10n.homeCloudSlots(data.cloudSlotsUsed, entitlement.limits.maxConcurrentCloudRecordings)} · '
+            '${l10n.homeWatchingCapacity(data.watches.length, entitlement.limits.maxWatches)}',
+      ),
+      const SizedBox(height: SsSpacing.sm),
+      Text(
+        l10n.homeCloudRetention(entitlement.limits.cloudRetentionDays),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      if (data.waitingForCloudSlot.isNotEmpty) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsInlineAlert(
+          title: l10n.watchWaitingCloudSlot,
+          message: l10n.creatorWaitingBody(
+            entitlement.limits.maxConcurrentCloudRecordings,
+          ),
+          tone: SsInlineAlertTone.info,
+        ),
+      ],
+      const SizedBox(height: SsSpacing.lg),
+      SsSectionHeader(
+        title: l10n.channelsTitle,
+        actionLabel: l10n.sectionExampleAction,
+        onAction: () => context.go(AppRoutes.channels),
+      ),
+      const SizedBox(height: SsSpacing.sm),
+      for (final WatchSummary watch in data.featuredWatches)
+        Padding(
+          padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+          child: SsCreatorTile(
+            name: watch.creatorDisplayName,
+            handle: watch.creatorUsername,
+            isLive: watch.isLive,
+            onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+          ),
+        ),
+    ];
   }
 }
 
-class _RecordingCard extends StatelessWidget {
-  const _RecordingCard({required this.recording});
+class _WatchingSummary extends StatelessWidget {
+  const _WatchingSummary({
+    required this.count,
+    required this.limit,
+    required this.detail,
+  });
 
-  final RecordingSummary recording;
+  final int count;
+  final int limit;
+  final String detail;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
     return SsCard(
-      child: SsListTile(
-        title: recording.creatorDisplayName,
-        subtitle: recording.creatorUsername,
-        leading: SsAvatar(label: recording.creatorDisplayName),
-        trailing: SsStatusChip(
-          label: _recordingStatusLabel(l10n, recording.status),
-          tone: _recordingStatusTone(recording.status),
-        ),
-        onTap: () => context.push(AppRoutes.recordingDetail(recording.id)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            context.l10n.homeWatchingCapacity(count, limit),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: SsSpacing.xs),
+          Text(detail),
+          const SizedBox(height: SsSpacing.md),
+          LinearProgressIndicator(
+            value: limit == 0 ? 0 : (count / limit).clamp(0, 1),
+          ),
+        ],
       ),
     );
   }
@@ -515,97 +396,14 @@ class _HomeSkeleton extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(SsSpacing.lg),
       children: const <Widget>[
-        SsSkeleton(width: 220, height: 30),
-        SizedBox(height: SsSpacing.sm),
-        SsSkeleton(width: 280),
-        SizedBox(height: SsSpacing.xl),
-        Row(
-          children: <Widget>[
-            Expanded(child: SsSkeleton(height: 112, radius: SsRadii.lg)),
-            SizedBox(width: SsSpacing.md),
-            Expanded(child: SsSkeleton(height: 112, radius: SsRadii.lg)),
-          ],
-        ),
+        SsSkeleton(width: 90, height: 28, radius: SsRadii.pill),
+        SizedBox(height: SsSpacing.lg),
+        SsSkeleton(height: 164, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 52, radius: SsRadii.md),
-        SizedBox(height: SsSpacing.xl),
-        SsSkeleton(height: 120, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.xl),
-        SsSkeleton(width: 180, height: 22),
+        SsSkeleton(height: 132, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 82, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 82, radius: SsRadii.lg),
+        SsSkeleton(height: 96, radius: SsRadii.lg),
       ],
     );
   }
-}
-
-String _watchStatusLabel(AppLocalizations l10n, WatchSummary watch) {
-  if (watch.isLive) {
-    return l10n.liveStatus;
-  }
-  return switch (watch.status) {
-    WatchStatus.active => l10n.watchStatusActive,
-    WatchStatus.paused => l10n.watchStatusPaused,
-    WatchStatus.pausedInsufficientCredit =>
-      l10n.watchStatusPausedInsufficientCredit,
-    WatchStatus.pausedError => l10n.watchStatusPausedError,
-    WatchStatus.disabled => l10n.watchStatusDisabled,
-  };
-}
-
-SsStatusTone _watchStatusTone(WatchStatus status) {
-  return switch (status) {
-    WatchStatus.active => SsStatusTone.success,
-    WatchStatus.paused => SsStatusTone.warning,
-    WatchStatus.pausedInsufficientCredit => SsStatusTone.warning,
-    WatchStatus.pausedError => SsStatusTone.error,
-    WatchStatus.disabled => SsStatusTone.neutral,
-  };
-}
-
-String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
-  return switch (status) {
-    RecordingStatus.starting => l10n.recordingStatusStarting,
-    RecordingStatus.queued => l10n.recordingStatusQueued,
-    RecordingStatus.resolving => l10n.recordingStatusResolving,
-    RecordingStatus.waitingLive => l10n.recordingStatusWaitingLive,
-    RecordingStatus.waitingForCloudSlot =>
-      l10n.recordingStatusWaitingForCloudSlot,
-    RecordingStatus.recording => l10n.recordingStatusRecording,
-    RecordingStatus.reconnecting => l10n.recordingStatusReconnecting,
-    RecordingStatus.processing => l10n.recordingStatusProcessing,
-    RecordingStatus.uploading => l10n.recordingStatusUploading,
-    RecordingStatus.finalizing => l10n.recordingStatusFinalizing,
-    RecordingStatus.completed => l10n.recordingStatusCompleted,
-    RecordingStatus.partial => l10n.recordingStatusPartial,
-    RecordingStatus.recovered => l10n.recordingStatusRecovered,
-    RecordingStatus.failed => l10n.recordingStatusFailed,
-    RecordingStatus.stopRequested => l10n.recordingStatusStopRequested,
-    RecordingStatus.stopped => l10n.recordingStatusStopped,
-    RecordingStatus.missedNoCloudSlot => l10n.recordingStatusMissedNoCloudSlot,
-  };
-}
-
-SsStatusTone _recordingStatusTone(RecordingStatus status) {
-  return switch (status) {
-    RecordingStatus.recording => SsStatusTone.recording,
-    RecordingStatus.reconnecting ||
-    RecordingStatus.partial ||
-    RecordingStatus.stopRequested ||
-    RecordingStatus.stopped => SsStatusTone.warning,
-    RecordingStatus.completed ||
-    RecordingStatus.recovered => SsStatusTone.success,
-    RecordingStatus.failed ||
-    RecordingStatus.missedNoCloudSlot => SsStatusTone.error,
-    RecordingStatus.starting ||
-    RecordingStatus.queued ||
-    RecordingStatus.resolving ||
-    RecordingStatus.waitingLive ||
-    RecordingStatus.waitingForCloudSlot ||
-    RecordingStatus.processing ||
-    RecordingStatus.uploading ||
-    RecordingStatus.finalizing => SsStatusTone.neutral,
-  };
 }
