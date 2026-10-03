@@ -20,6 +20,7 @@ from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import (
+    TERMINAL_RECORDING_STATUSES,
     RecordingStatus,
     actions_for_status,
     transition,
@@ -138,6 +139,28 @@ class RecordingService:
     async def retention_days_for(self, user_id: uuid.UUID) -> int:
         paid = await has_paid_purchase(self.session, user_id)
         return retention_days(self.settings, paid=paid)
+
+    async def queue_position(self, recording: Recording) -> int | None:
+        from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+        return await CloudSlotQueueService(
+            self.session,
+            self.settings,
+            outbox=self.outbox,
+        ).queue_position(recording)
+
+    async def queue_positions(
+        self,
+        recordings: list[Recording],
+    ) -> dict[uuid.UUID, int]:
+        from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+        return await CloudSlotQueueService(
+            self.session,
+            self.settings,
+            outbox=self.outbox,
+        ).queue_positions(recordings)
+
     async def create(
         self,
         principal: AuthPrincipal,
@@ -366,6 +389,15 @@ class RecordingService:
     async def stop(self, principal: AuthPrincipal, recording_id: str) -> Recording:
         recording = await self.get(principal, recording_id)
         current = RecordingStatus(recording.status)
+        if current is RecordingStatus.WAITING_FOR_CLOUD_SLOT:
+            recording.status = RecordingStatus.STOPPED.value
+            recording.ended_at = utcnow()
+            recording.actual_cost = 0
+            recording.active_dedupe_key = None
+            await append_event(self.session, recording, "recording.stopped")
+            await self.session.commit()
+            await self.session.refresh(recording)
+            return recording
         if not actions_for_status(current).can_stop:
             raise ApplicationError(
                 "RECORDING_NOT_STOPPABLE",
@@ -474,12 +506,16 @@ class RecordingStateStore:
             recording.actual_cost = 0
             await append_event(self.session, recording, "recording.stopped")
             await self.session.commit()
+            from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+            await CloudSlotQueueService(
+                self.session,
+                self.settings,
+            ).promote_available(recording.user_id)
             return None
-        if status in {
-            RecordingStatus.COMPLETED,
-            RecordingStatus.FAILED,
-            RecordingStatus.STOPPED,
-        }:
+        if status is RecordingStatus.WAITING_FOR_CLOUD_SLOT:
+            return None
+        if status in TERMINAL_RECORDING_STATUSES:
             return None
 
         now = utcnow()
@@ -584,3 +620,9 @@ class RecordingStateStore:
         recording.worker_lease_id = None
         await append_event(self.session, recording, "recording.failed")
         await self.session.commit()
+        from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+        await CloudSlotQueueService(
+            self.session,
+            self.settings,
+        ).promote_available(recording.user_id)
