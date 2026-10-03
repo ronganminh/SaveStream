@@ -1,4 +1,5 @@
 import '../../../channels/domain/models/watch_summary.dart';
+import '../../../entitlement/domain/models/entitlement.dart';
 import '../../../recordings/domain/models/recording_summary.dart';
 
 class HomeAccountMetrics {
@@ -29,13 +30,13 @@ class HomeDashboardViewModel {
     required this.metrics,
     required this.watches,
     required this.recordings,
+    required this.entitlement,
   });
 
   final HomeAccountMetrics metrics;
   final List<WatchSummary> watches;
   final List<RecordingSummary> recordings;
-
-  static const int lowCreditThreshold = 5;
+  final Entitlement entitlement;
 
   List<RecordingSummary> get activeRecordings => recordings
       .where(
@@ -57,8 +58,28 @@ class HomeDashboardViewModel {
 
   bool get isEmptyAccount => watches.isEmpty && recordings.isEmpty;
 
-  bool get isLowCredit =>
-      !isEmptyAccount && metrics.availableCredit <= lowCreditThreshold;
+  List<WatchSummary> get liveWatches =>
+      watches.where((WatchSummary item) => item.isLive).toList(growable: false);
+
+  List<RecordingSummary> get waitingForCloudSlot => recordings
+      .where(
+        (RecordingSummary item) =>
+            item.status == RecordingStatus.waitingForCloudSlot,
+      )
+      .toList(growable: false);
+
+  List<RecordingSummary> get missedNoCloudSlot => recordings
+      .where(
+        (RecordingSummary item) =>
+            item.status == RecordingStatus.missedNoCloudSlot,
+      )
+      .toList(growable: false);
+
+  bool get hasAhaMoment => watches.isNotEmpty && recordings.isNotEmpty;
+
+  int get cloudSlotsUsed => activeRecordings
+      .where((RecordingSummary item) => item.engine == Engine.cloud)
+      .length;
 
   double get usageProgress {
     if (metrics.recordingHoursLimit <= 0) {

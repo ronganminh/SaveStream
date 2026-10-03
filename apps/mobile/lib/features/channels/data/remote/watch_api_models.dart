@@ -124,6 +124,7 @@ final class WatchApiModel {
       notifyOnLive: notifyOnLive,
       autoRecordState: autoRecordState,
       lastCheckedAt: lastCheckedAt,
+      nextCheckAt: nextCheckAt,
       lastLiveAt: lastLiveAt,
     );
   }

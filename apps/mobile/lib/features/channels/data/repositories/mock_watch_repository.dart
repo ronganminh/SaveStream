@@ -104,6 +104,20 @@ final class MockWatchRepository extends MockRepositoryBase
   }
 
   @override
+  Future<WatchSummary?> setNotifyOnLive(
+    String id, {
+    required bool enabled,
+  }) {
+    return respond<WatchSummary?>(
+      success: () => _update(
+        id,
+        (WatchSummary current) => current.copyWith(notifyOnLive: enabled),
+      ),
+      empty: () => null,
+    );
+  }
+
+  @override
   Future<WatchSummary?> pauseWatch(String id) {
     return respond<WatchSummary?>(
       success: () => _update(
@@ -168,6 +182,7 @@ final class MockWatchRepository extends MockRepositoryBase
       status: WatchStatus.active,
       isLive: false,
       autoRecord: command.autoRecord,
+      notifyOnLive: command.notifyOnLive,
       lastCheckedAt: DateTime.utc(2026, 9, 30, 14, 30),
     );
     _items.insert(0, created);
