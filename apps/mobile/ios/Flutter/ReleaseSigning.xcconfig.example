@@ -1,0 +1,5 @@
+// Copy this file to ReleaseSigning.xcconfig in the same directory for a
+// signed App Store/TestFlight build. Do not commit the real Team ID if your
+// release process treats it as deployment configuration.
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = YOUR_APPLE_DEVELOPMENT_TEAM_ID
