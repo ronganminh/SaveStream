@@ -88,13 +88,20 @@ SaveStream · Cloud recording for TikTok channels you own, manage, or have permi
 
 
 def verify_email(
-    *, link: str, expires_in_seconds: int, site_url: str, trial_credits: int = 0
+    *,
+    link: str,
+    expires_in_seconds: int,
+    site_url: str,
+    trial_credits: int = 0,
+    subject_override: str | None = None,
+    intro_override: str | None = None,
 ) -> RenderedEmail:
     trial = f" and get {trial_credits} free trial credits" if trial_credits > 0 else ""
     return action_email(
-        subject="Verify your SaveStream email",
+        subject=subject_override or "Verify your SaveStream email",
         heading="Confirm your email address",
-        intro=f"Thanks for signing up for SaveStream. Confirm your email to activate your account{trial}.",
+        intro=intro_override
+        or f"Thanks for signing up for SaveStream. Confirm your email to activate your account{trial}.",
         button_label="Verify email",
         link=link,
         expires_in_seconds=expires_in_seconds,
@@ -103,14 +110,53 @@ def verify_email(
     )
 
 
-def password_reset(*, link: str, expires_in_seconds: int, site_url: str) -> RenderedEmail:
+def password_reset(
+    *,
+    link: str,
+    expires_in_seconds: int,
+    site_url: str,
+    subject_override: str | None = None,
+    intro_override: str | None = None,
+) -> RenderedEmail:
     return action_email(
-        subject="Reset your SaveStream password",
+        subject=subject_override or "Reset your SaveStream password",
         heading="Reset your password",
-        intro="We received a request to reset the password for your SaveStream account. Choose a new password using the button below.",
+        intro=intro_override
+        or "We received a request to reset the password for your SaveStream account. Choose a new password using the button below.",
         button_label="Reset password",
         link=link,
         expires_in_seconds=expires_in_seconds,
         ignore_note="If you didn’t request a password reset, you can ignore this email; your password will not change.",
         site_url=site_url,
     )
+
+
+
+EMAIL_TEMPLATE_DEFAULTS: dict[str, tuple[str, str]] = {
+    "verify_email": (
+        "Verify your SaveStream email",
+        "Thanks for signing up for SaveStream. Confirm your email to activate your account.",
+    ),
+    "password_reset": (
+        "Reset your SaveStream password",
+        "We received a request to reset the password for your SaveStream account. Choose a new password using the button below.",
+    ),
+}
+
+
+def message_email(*, subject: str, body: str, site_url: str) -> RenderedEmail:
+    text = f"{subject}\n\n{body}\n\n— SaveStream\n{site_url}\n"
+    site = escape(site_url, quote=True)
+    html = f"""<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{escape(subject)}</title></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2330;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px;"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+<tr><td style="background:#ffffff;border:1px solid #e6e6ec;border-radius:12px;padding:32px;">
+<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;">{escape(subject)}</h1>
+<p style="margin:0;font-size:15px;line-height:1.7;color:#4a4f5c;white-space:pre-line;">{escape(body)}</p>
+</td></tr>
+<tr><td style="padding:20px 4px 0;font-size:12px;color:#8a8f9c;">SaveStream · <a href="{site}" style="color:#8a8f9c;">{escape(site_url.removeprefix("https://"))}</a></td></tr>
+</table></td></tr></table></body></html>"""
+    return RenderedEmail(subject=subject, text=text, html=html)
