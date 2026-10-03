@@ -104,10 +104,7 @@ void main() {
 
   test('A0 mocks inherit all five base scenarios', () async {
     const MockEntitlementRepository errorRepository = MockEntitlementRepository(
-      const MockBehavior(
-        scenario: MockScenario.error,
-        latency: Duration.zero,
-      ),
+      const MockBehavior(scenario: MockScenario.error, latency: Duration.zero),
     );
     await expectLater(
       errorRepository.getEntitlement(),
