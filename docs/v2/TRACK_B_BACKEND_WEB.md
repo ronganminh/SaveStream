@@ -8,7 +8,7 @@
 
 ## Tiến độ
 
-- [ ] B0 — Đưa hợp đồng V2 vào OpenAPI
+- [x] B0 — Đưa hợp đồng V2 vào OpenAPI
 - [ ] B1 — Gói Free/Pro và giới hạn theo gói
 - [ ] B2 — Hàng chờ slot cloud và tự bật lại sau khi mua
 - [ ] B3 — Thiết bị, push và loại thông báo mới
