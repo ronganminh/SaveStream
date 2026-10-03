@@ -25,9 +25,9 @@ class SsPlanBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsStatusChip(
-        label: plan == Plan.pro ? 'PRO' : 'FREE',
-        icon: plan == Plan.pro ? Icons.workspace_premium_rounded : null,
-      );
+    label: plan == Plan.pro ? 'PRO' : 'FREE',
+    icon: plan == Plan.pro ? Icons.workspace_premium_rounded : null,
+  );
 }
 
 class SsLiveBadge extends StatelessWidget {
@@ -36,9 +36,9 @@ class SsLiveBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsStatusChip(
-        label: isLive ? 'LIVE' : 'OFFLINE',
-        tone: isLive ? SsStatusTone.recording : SsStatusTone.neutral,
-      );
+    label: isLive ? 'LIVE' : 'OFFLINE',
+    tone: isLive ? SsStatusTone.recording : SsStatusTone.neutral,
+  );
 }
 
 class SsQuotaCard extends StatelessWidget {
@@ -57,29 +57,29 @@ class SsQuotaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(title, style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: SsSpacing.sm),
-            Text(value, style: Theme.of(context).textTheme.headlineSmall),
-            if (subtitle != null) ...<Widget>[
-              const SizedBox(height: SsSpacing.xs),
-              Text(subtitle!),
-            ],
-            if (progress != null) ...<Widget>[
-              const SizedBox(height: SsSpacing.md),
-              LinearProgressIndicator(
-                value: progress! < 0
-                    ? 0.0
-                    : progress! > 1
-                    ? 1.0
-                    : progress!,
-              ),
-            ],
-          ],
-        ),
-      );
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: SsSpacing.sm),
+        Text(value, style: Theme.of(context).textTheme.headlineSmall),
+        if (subtitle != null) ...<Widget>[
+          const SizedBox(height: SsSpacing.xs),
+          Text(subtitle!),
+        ],
+        if (progress != null) ...<Widget>[
+          const SizedBox(height: SsSpacing.md),
+          LinearProgressIndicator(
+            value: progress! < 0
+                ? 0.0
+                : progress! > 1
+                ? 1.0
+                : progress!,
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class SsCreatorTile extends StatelessWidget {
@@ -99,14 +99,14 @@ class SsCreatorTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsCard(
-        child: SsListTile(
-          title: name,
-          subtitle: handle,
-          leading: SsAvatar(label: name),
-          trailing: trailing ?? SsLiveBadge(isLive: isLive),
-          onTap: onTap,
-        ),
-      );
+    child: SsListTile(
+      title: name,
+      subtitle: handle,
+      leading: SsAvatar(label: name),
+      trailing: trailing ?? SsLiveBadge(isLive: isLive),
+      onTap: onTap,
+    ),
+  );
 }
 
 class SsRecordingTile extends StatelessWidget {
@@ -124,11 +124,11 @@ class SsRecordingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsListTile(
-        title: title,
-        subtitle: subtitle,
-        trailing: SsLocationChip(engine: engine),
-        onTap: onTap,
-      );
+    title: title,
+    subtitle: subtitle,
+    trailing: SsLocationChip(engine: engine),
+    onTap: onTap,
+  );
 }
 
 class SsActiveRecordingCard extends StatelessWidget {
@@ -146,33 +146,33 @@ class SsActiveRecordingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SsCard(
-        child: InkWell(
-          onTap: onTap,
-          child: Row(
-            children: <Widget>[
-              SsAvatar(label: creatorName),
-              const SizedBox(width: SsSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(creatorName),
-                    Semantics(
-                      label: 'Recording timer',
-                      value: elapsed,
-                      child: Text(
-                        elapsed,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                    ),
-                  ],
+    child: InkWell(
+      onTap: onTap,
+      child: Row(
+        children: <Widget>[
+          SsAvatar(label: creatorName),
+          const SizedBox(width: SsSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(creatorName),
+                Semantics(
+                  label: 'Recording timer',
+                  value: elapsed,
+                  child: Text(
+                    elapsed,
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
                 ),
-              ),
-              SsLocationChip(engine: engine),
-            ],
+              ],
+            ),
           ),
-        ),
-      );
+          SsLocationChip(engine: engine),
+        ],
+      ),
+    ),
+  );
 }
 
 class SsRecordingBar extends StatelessWidget {
@@ -188,28 +188,28 @@ class SsRecordingBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        color: Theme.of(context).colorScheme.inverseSurface,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 44),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: SsSpacing.lg,
-                vertical: SsSpacing.sm,
-              ),
-              child: Row(
-                children: <Widget>[
-                  const Icon(Icons.fiber_manual_record_rounded, size: 14),
-                  const SizedBox(width: SsSpacing.sm),
-                  Expanded(child: Text(label)),
-                  Text(elapsed),
-                ],
-              ),
-            ),
+    color: Theme.of(context).colorScheme.inverseSurface,
+    child: InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: SsSpacing.lg,
+            vertical: SsSpacing.sm,
+          ),
+          child: Row(
+            children: <Widget>[
+              const Icon(Icons.fiber_manual_record_rounded, size: 14),
+              const SizedBox(width: SsSpacing.sm),
+              Expanded(child: Text(label)),
+              Text(elapsed),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 enum SsInlineAlertTone { info, success, warning, error }
@@ -235,7 +235,8 @@ class SsInlineAlert extends StatelessWidget {
     };
     return Semantics(
       container: true,
-      liveRegion: tone == SsInlineAlertTone.warning || tone == SsInlineAlertTone.error,
+      liveRegion:
+          tone == SsInlineAlertTone.warning || tone == SsInlineAlertTone.error,
       child: SsCard(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -271,20 +272,20 @@ class SsFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: <Widget>[
-            for (int i = 0; i < items.length; i++) ...<Widget>[
-              if (i > 0) const SizedBox(width: SsSpacing.sm),
-              ChoiceChip(
-                label: Text(items[i]),
-                selected: i == selectedIndex,
-                onSelected: (_) => onSelected(i),
-              ),
-            ],
-          ],
-        ),
-      );
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: <Widget>[
+        for (int i = 0; i < items.length; i++) ...<Widget>[
+          if (i > 0) const SizedBox(width: SsSpacing.sm),
+          ChoiceChip(
+            label: Text(items[i]),
+            selected: i == selectedIndex,
+            onSelected: (_) => onSelected(i),
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 class SsBannerAdSlot extends StatelessWidget {
@@ -293,14 +294,14 @@ class SsBannerAdSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        constraints: const BoxConstraints(minHeight: 60),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).colorScheme.outline),
-          borderRadius: SsRadii.card,
-        ),
-        child: Text(label),
-      );
+    constraints: const BoxConstraints(minHeight: 60),
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      border: Border.all(color: Theme.of(context).colorScheme.outline),
+      borderRadius: SsRadii.card,
+    ),
+    child: Text(label),
+  );
 }
 
 class SsBottomSheet extends StatelessWidget {
@@ -310,19 +311,19 @@ class SsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(SsSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: SsSpacing.lg),
-              child,
-            ],
-          ),
-        ),
-      );
+    child: Padding(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: SsSpacing.lg),
+          child,
+        ],
+      ),
+    ),
+  );
 }
 
 abstract final class SsToast {
@@ -345,18 +346,18 @@ class SsChecklist extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Column(
-        children: items
-            .map(
-              (SsChecklistItem item) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  item.done
-                      ? Icons.check_circle_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                ),
-                title: Text(item.label),
-              ),
-            )
-            .toList(growable: false),
-      );
+    children: items
+        .map(
+          (SsChecklistItem item) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              item.done
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+            ),
+            title: Text(item.label),
+          ),
+        )
+        .toList(growable: false),
+  );
 }

@@ -46,22 +46,23 @@ final class MockLocalRecordingRepository extends MockRepositoryBase
   }
 
   @override
-  Future<LocalRecordingSession> extend(
-    String sessionId, {
-    String? rewardId,
-  }) {
+  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId}) {
     return respond<LocalRecordingSession>(
       success: () {
-        final LocalRecordingSession current = _sessions[sessionId] ??
+        final LocalRecordingSession current =
+            _sessions[sessionId] ??
             (throw StateError('Unknown local recording session.'));
         final LocalRecordingSession extended = current.copyWith(
           grantedSeconds: current.grantedSeconds + 600,
-          leaseExpiresAt: current.leaseExpiresAt.add(const Duration(minutes: 10)),
+          leaseExpiresAt: current.leaseExpiresAt.add(
+            const Duration(minutes: 10),
+          ),
         );
         _sessions[sessionId] = extended;
         return extended;
       },
-      empty: () => _sessions[sessionId] ??
+      empty: () =>
+          _sessions[sessionId] ??
           (throw StateError('Unknown local recording session.')),
     );
   }
@@ -76,7 +77,8 @@ final class MockLocalRecordingRepository extends MockRepositoryBase
   }) {
     return respond<LocalRecordingSummary>(
       success: () {
-        final LocalRecordingSession session = _sessions.remove(sessionId) ??
+        final LocalRecordingSession session =
+            _sessions.remove(sessionId) ??
             (throw StateError('Unknown local recording session.'));
         final LocalRecordingSummary summary = LocalRecordingSummary(
           id: sessionId,

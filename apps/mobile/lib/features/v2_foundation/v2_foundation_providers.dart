@@ -16,30 +16,31 @@ import '../store/domain/repositories/store_repository.dart';
 
 final Provider<EntitlementRepository> entitlementRepositoryProvider =
     Provider<EntitlementRepository>(
-  (Ref ref) => MockEntitlementRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) => MockEntitlementRepository(ref.watch(mockBehaviorProvider)),
+    );
 
 final Provider<LocalRecordingRepository> localRecordingRepositoryProvider =
     Provider<LocalRecordingRepository>(
-  (Ref ref) => MockLocalRecordingRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) =>
+          MockLocalRecordingRepository(ref.watch(mockBehaviorProvider)),
+    );
 
 final Provider<RewardRepository> rewardRepositoryProvider =
     Provider<RewardRepository>(
-  (Ref ref) => MockRewardRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) => MockRewardRepository(ref.watch(mockBehaviorProvider)),
+    );
 
 final Provider<StoreRepository> storeRepositoryProvider =
     Provider<StoreRepository>(
-  (Ref ref) => MockStoreRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) => MockStoreRepository(ref.watch(mockBehaviorProvider)),
+    );
 
 final Provider<AppStatusRepository> appStatusRepositoryProvider =
     Provider<AppStatusRepository>(
-  (Ref ref) => MockAppStatusRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) => MockAppStatusRepository(ref.watch(mockBehaviorProvider)),
+    );
 
 final Provider<DeviceRepository> deviceRepositoryProvider =
     Provider<DeviceRepository>(
-  (Ref ref) => MockDeviceRepository(ref.watch(mockBehaviorProvider)),
-);
+      (Ref ref) => MockDeviceRepository(ref.watch(mockBehaviorProvider)),
+    );

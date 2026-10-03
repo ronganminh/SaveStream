@@ -1,8 +1,5 @@
 class MinimumSupportedVersion {
-  const MinimumSupportedVersion({
-    required this.android,
-    required this.ios,
-  });
+  const MinimumSupportedVersion({required this.android, required this.ios});
 
   final String android;
   final String ios;

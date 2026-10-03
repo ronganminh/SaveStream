@@ -94,7 +94,8 @@ final class WatchApiModel {
         _requiredString(map['live_status'], 'live_status'),
       ),
       autoRecord: autoRecord,
-      notifyOnLive: _optionalBool(map['notify_on_live'], 'notify_on_live') ?? true,
+      notifyOnLive:
+          _optionalBool(map['notify_on_live'], 'notify_on_live') ?? true,
       autoRecordState: _autoRecordState(
         _optionalString(map['auto_record_state'], 'auto_record_state'),
         autoRecord: autoRecord,

@@ -1,10 +1,7 @@
 enum StorePurchasePlatform { appStore, googlePlay }
 
 class StoreProductIds {
-  const StoreProductIds({
-    required this.appStore,
-    required this.googlePlay,
-  });
+  const StoreProductIds({required this.appStore, required this.googlePlay});
 
   final String appStore;
   final String googlePlay;

@@ -6,8 +6,7 @@ final class MockDeviceRepository extends MockRepositoryBase
     implements DeviceRepository {
   MockDeviceRepository(super.behavior);
 
-  final Map<String, DeviceRegistration> _items =
-      <String, DeviceRegistration>{};
+  final Map<String, DeviceRegistration> _items = <String, DeviceRegistration>{};
 
   @override
   Future<DeviceRegistration> register(DeviceRegistration device) {
@@ -22,9 +21,6 @@ final class MockDeviceRepository extends MockRepositoryBase
 
   @override
   Future<void> unregister(String deviceId) {
-    return respond<void>(
-      success: () => _items.remove(deviceId),
-      empty: () {},
-    );
+    return respond<void>(success: () => _items.remove(deviceId), empty: () {});
   }
 }

@@ -571,7 +571,8 @@ String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,
     RecordingStatus.waitingLive => l10n.recordingStatusWaitingLive,
-    RecordingStatus.waitingForCloudSlot => l10n.recordingStatusWaitingForCloudSlot,
+    RecordingStatus.waitingForCloudSlot =>
+      l10n.recordingStatusWaitingForCloudSlot,
     RecordingStatus.recording => l10n.recordingStatusRecording,
     RecordingStatus.reconnecting => l10n.recordingStatusReconnecting,
     RecordingStatus.processing => l10n.recordingStatusProcessing,

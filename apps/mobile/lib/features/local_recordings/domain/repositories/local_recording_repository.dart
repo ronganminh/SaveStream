@@ -8,10 +8,7 @@ abstract interface class LocalRecordingRepository {
     String? rewardId,
   });
 
-  Future<LocalRecordingSession> extend(
-    String sessionId, {
-    String? rewardId,
-  });
+  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId});
 
   Future<LocalRecordingSummary> finish(
     String sessionId, {

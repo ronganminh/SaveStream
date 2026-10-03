@@ -10,7 +10,8 @@ String recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,
     RecordingStatus.waitingLive => l10n.recordingStatusWaitingLive,
-    RecordingStatus.waitingForCloudSlot => l10n.recordingStatusWaitingForCloudSlot,
+    RecordingStatus.waitingForCloudSlot =>
+      l10n.recordingStatusWaitingForCloudSlot,
     RecordingStatus.recording => l10n.recordingStatusRecording,
     RecordingStatus.reconnecting => l10n.recordingStatusReconnecting,
     RecordingStatus.processing => l10n.recordingStatusProcessing,
@@ -35,7 +36,8 @@ String recordingStatusDescription(
     RecordingStatus.queued => l10n.recordingQueuedBody,
     RecordingStatus.resolving => l10n.recordingResolvingBody,
     RecordingStatus.waitingLive => l10n.recordingWaitingLiveBody,
-    RecordingStatus.waitingForCloudSlot => l10n.recordingWaitingForCloudSlotBody,
+    RecordingStatus.waitingForCloudSlot =>
+      l10n.recordingWaitingForCloudSlotBody,
     RecordingStatus.recording => l10n.recordingActiveBody,
     RecordingStatus.reconnecting => l10n.recordingReconnectingBody,
     RecordingStatus.processing => l10n.recordingProcessingBody,
@@ -55,9 +57,11 @@ SsStatusTone recordingStatusTone(RecordingStatus status) {
   return switch (status) {
     RecordingStatus.recording => SsStatusTone.recording,
     RecordingStatus.reconnecting => SsStatusTone.warning,
-    RecordingStatus.completed || RecordingStatus.recovered => SsStatusTone.success,
+    RecordingStatus.completed ||
+    RecordingStatus.recovered => SsStatusTone.success,
     RecordingStatus.partial => SsStatusTone.warning,
-    RecordingStatus.failed || RecordingStatus.missedNoCloudSlot => SsStatusTone.error,
+    RecordingStatus.failed ||
+    RecordingStatus.missedNoCloudSlot => SsStatusTone.error,
     RecordingStatus.stopRequested => SsStatusTone.warning,
     RecordingStatus.stopped => SsStatusTone.warning,
     RecordingStatus.starting ||

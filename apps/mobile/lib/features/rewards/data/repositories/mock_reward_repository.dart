@@ -9,10 +9,7 @@ final class MockRewardRepository extends MockRepositoryBase
   final Map<String, Reward> _items = <String, Reward>{};
 
   @override
-  Future<Reward> create({
-    required RewardPurpose purpose,
-    String? sessionId,
-  }) {
+  Future<Reward> create({required RewardPurpose purpose, String? sessionId}) {
     return respond<Reward>(
       success: () {
         final String id = 'rwd_${_items.length + 1}';
@@ -44,8 +41,8 @@ final class MockRewardRepository extends MockRepositoryBase
   Future<Reward> getStatus(String rewardId) {
     return respond<Reward>(
       success: () {
-        final Reward current = _items[rewardId] ??
-            (throw StateError('Unknown reward.'));
+        final Reward current =
+            _items[rewardId] ?? (throw StateError('Unknown reward.'));
         final Reward valid = current.copyWith(status: RewardStatus.valid);
         _items[rewardId] = valid;
         return valid;

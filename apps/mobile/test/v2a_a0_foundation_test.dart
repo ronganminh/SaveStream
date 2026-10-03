@@ -73,12 +73,14 @@ void main() {
   });
 
   test('A0 store packages match V2 purchased-hour products', () async {
-    final List<StorePackage> packages =
-        await const MockStoreRepository(behavior).listPackages();
-    expect(
-      packages.map((StorePackage item) => item.cloudMinutes),
-      <int>[3000, 9000, 24000],
-    );
+    final List<StorePackage> packages = await const MockStoreRepository(
+      behavior,
+    ).listPackages();
+    expect(packages.map((StorePackage item) => item.cloudMinutes), <int>[
+      3000,
+      9000,
+      24000,
+    ]);
   });
 
   test('A0 app status mock returns supported-version data', () async {
@@ -103,21 +105,18 @@ void main() {
   test('A0 mocks inherit all five base scenarios', () async {
     final MockEntitlementRepository errorRepository =
         const MockEntitlementRepository(
-      const MockBehavior(
-        scenario: MockScenario.error,
-        latency: Duration.zero,
-      ),
-    );
+          const MockBehavior(
+            scenario: MockScenario.error,
+            latency: Duration.zero,
+          ),
+        );
     await expectLater(
       errorRepository.getEntitlement(),
       throwsA(isA<MockRepositoryException>()),
     );
 
     final MockStoreRepository emptyRepository = const MockStoreRepository(
-      const MockBehavior(
-        scenario: MockScenario.empty,
-        latency: Duration.zero,
-      ),
+      const MockBehavior(scenario: MockScenario.empty, latency: Duration.zero),
     );
     expect(await emptyRepository.listPackages(), isEmpty);
   });
