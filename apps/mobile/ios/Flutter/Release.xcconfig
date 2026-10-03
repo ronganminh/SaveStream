@@ -1,1 +1,4 @@
 #include "Generated.xcconfig"
+
+CODE_SIGN_STYLE = Automatic
+DEVELOPMENT_TEAM = $(SAVESTREAM_IOS_DEVELOPMENT_TEAM)
