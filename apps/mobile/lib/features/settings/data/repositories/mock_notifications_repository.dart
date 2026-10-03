@@ -30,7 +30,8 @@ final class MockNotificationsRepository extends MockRepositoryBase
     ),
     AppNotification(
       id: 'notification-creator-live',
-      type: AppNotificationType.creatorLive,
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.creatorLive,
       title: 'Creator is LIVE',
       body: '@alex.live is LIVE now.',
       read: false,
@@ -40,7 +41,8 @@ final class MockNotificationsRepository extends MockRepositoryBase
     ),
     AppNotification(
       id: 'notification-expiring',
-      type: AppNotificationType.recordingExpiring,
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.recordingExpiring,
       title: 'Recording expires soon',
       body: 'A cloud recording will expire soon.',
       read: false,
@@ -50,7 +52,8 @@ final class MockNotificationsRepository extends MockRepositoryBase
     ),
     AppNotification(
       id: 'notification-free-minutes-low',
-      type: AppNotificationType.freeMinutesLow,
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.freeMinutesLow,
       title: 'Free minutes are running low',
       body: 'You are close to using today\'s Free recording minutes.',
       read: false,

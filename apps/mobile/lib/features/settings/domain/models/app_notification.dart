@@ -3,17 +3,18 @@ enum AppNotificationType {
   recordingReady,
   recordingFailed,
 
-  /// A followed creator is currently LIVE.
-  creatorLive,
-
-  /// A cloud recording is close to its retention expiry.
-  recordingExpiring,
-
-  /// The account is close to using all Free recording minutes for the day.
-  freeMinutesLow,
-
   /// A notification kind this app version does not know yet.
   other,
+}
+
+/// V2 notification kinds added by the product contract.
+///
+/// Kept separate from [AppNotificationType] so Track C can map the new wire
+/// values without forcing presentation changes before A6.
+enum AppNotificationV2Type {
+  creatorLive,
+  recordingExpiring,
+  freeMinutesLow,
 }
 
 class AppNotification {
@@ -26,6 +27,7 @@ class AppNotification {
     required this.createdAt,
     this.resourceType,
     this.resourceId,
+    this.v2Type,
   });
 
   final String id;
@@ -36,6 +38,7 @@ class AppNotification {
   final DateTime createdAt;
   final String? resourceType;
   final String? resourceId;
+  final AppNotificationV2Type? v2Type;
 
   /// The Recording this notification points at, when it has one.
   String? get recordingId => resourceType == 'recording' ? resourceId : null;
@@ -50,6 +53,7 @@ class AppNotification {
       createdAt: createdAt,
       resourceType: resourceType,
       resourceId: resourceId,
+      v2Type: v2Type,
     );
   }
 }

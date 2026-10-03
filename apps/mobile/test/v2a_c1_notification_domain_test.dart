@@ -12,11 +12,11 @@ void main() {
 
   test('V2 notification domain exposes C1 notification types', () {
     expect(
-      AppNotificationType.values,
-      containsAll(<AppNotificationType>[
-        AppNotificationType.creatorLive,
-        AppNotificationType.recordingExpiring,
-        AppNotificationType.freeMinutesLow,
+      AppNotificationV2Type.values,
+      containsAll(<AppNotificationV2Type>[
+        AppNotificationV2Type.creatorLive,
+        AppNotificationV2Type.recordingExpiring,
+        AppNotificationV2Type.freeMinutesLow,
       ]),
     );
   });
@@ -50,16 +50,17 @@ void main() {
     final NotificationPage page = await repository.listNotifications();
 
     expect(
-      page.items.map((AppNotification item) => item.type),
-      containsAll(<AppNotificationType>[
-        AppNotificationType.creatorLive,
-        AppNotificationType.recordingExpiring,
-        AppNotificationType.freeMinutesLow,
+      page.items.map((AppNotification item) => item.v2Type),
+      containsAll(<AppNotificationV2Type>[
+        AppNotificationV2Type.creatorLive,
+        AppNotificationV2Type.recordingExpiring,
+        AppNotificationV2Type.freeMinutesLow,
       ]),
     );
 
     final AppNotification live = page.items.firstWhere(
-      (AppNotification item) => item.type == AppNotificationType.creatorLive,
+      (AppNotification item) =>
+          item.v2Type == AppNotificationV2Type.creatorLive,
     );
     expect(live.resourceType, 'watch');
     expect(live.resourceId, 'watch_001');
