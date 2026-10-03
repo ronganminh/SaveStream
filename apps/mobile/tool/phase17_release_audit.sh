@@ -45,6 +45,12 @@ grep -q "flutter_launcher_icons:" pubspec.yaml ||
   fail "launcher icon generator is missing"
 grep -q "flutter_native_splash:" pubspec.yaml ||
   fail "native splash generator is missing"
+grep -q "build/branding/savestream_app_icon.png" pubspec.yaml ||
+  fail "native asset generators must use the rasterized official brand mark"
+grep -q 'fill="#4F46E5"' assets/branding/savestream_mark.svg ||
+  fail "official SaveStream brand mark source is missing"
+grep -q "cairosvg.svg2png" tool/generate_brand_assets.py ||
+  fail "official SVG rasterizer is missing"
 
 grep -q "billingPurchasesUnavailableTitle" lib/l10n/app_en.arb ||
   fail "billing-disabled UX copy is missing"
