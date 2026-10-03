@@ -186,8 +186,6 @@ class WatchScheduler:
             return
 
         queue = CloudSlotQueueService(self.session, self.settings)
-        await queue.promote_available(watch.user_id)
-
         active_values = [status.value for status in ACTIVE_RECORDING_STATUSES]
         active_count = int(
             await self.session.scalar(
@@ -201,6 +199,22 @@ class WatchScheduler:
             )
             or 0
         )
+        head = await queue.head_waiter(watch.user_id)
+        if head is not None:
+            if (
+                active_count < entitlement.max_concurrent_cloud_recordings
+                and head.source_value == room_id
+            ):
+                promoted = await queue.promote_checked_room(
+                    user_id=watch.user_id,
+                    room_id=room_id,
+                )
+                if promoted is not None:
+                    return
+            await queue.queue_for_watch(watch, room_id)
+            await queue.wake_next(watch.user_id)
+            return
+
         if active_count >= entitlement.max_concurrent_cloud_recordings:
             await queue.queue_for_watch(watch, room_id)
             return
