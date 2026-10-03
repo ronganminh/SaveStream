@@ -4395,6 +4395,575 @@
           }
         }
       }
+    },
+    "/admin/storage/summary": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get storage usage summary",
+        "operationId": "getAdminStorageSummary",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/storage/orphan-scans": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Queue bounded orphan storage scan",
+        "operationId": "createAdminOrphanScan",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminOrphanScanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/storage/runs/{run_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get storage operation run",
+        "operationId": "getAdminStorageRun",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/storage/orphan-scans/{run_id}/delete": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete files reported by completed orphan scan",
+        "operationId": "deleteAdminOrphanFiles",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/logs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List admin email delivery logs",
+        "operationId": "listAdminEmailLogs",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "recipient",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/logs/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export email delivery logs",
+        "operationId": "exportAdminEmailLogsCsv",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/logs/{log_id}/resend": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Resend an email",
+        "operationId": "resendAdminEmail",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "log_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/templates": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List editable email templates",
+        "operationId": "listAdminEmailTemplates",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/templates/{key}/preview": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Preview email template",
+        "operationId": "previewAdminEmailTemplate",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/templates/{key}": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Override email template",
+        "operationId": "updateAdminEmailTemplate",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminEmailTemplateUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reset email template",
+        "operationId": "resetAdminEmailTemplate",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/email/templates/{key}/test": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Send email template test to current admin",
+        "operationId": "testAdminEmailTemplate",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/broadcasts/preview": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Preview broadcast audience",
+        "operationId": "previewAdminBroadcast",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminBroadcastPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/broadcasts": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List admin broadcasts",
+        "operationId": "listAdminBroadcasts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Queue admin broadcast",
+        "operationId": "createAdminBroadcast",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminBroadcastCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/broadcasts/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export broadcast history",
+        "operationId": "exportAdminBroadcastsCsv",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/broadcasts/{broadcast_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get admin broadcast report",
+        "operationId": "getAdminBroadcast",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "broadcast_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7437,6 +8006,420 @@
             "items": {
               "$ref": "#/components/schemas/Recording"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOrphanScanRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5000,
+            "default": 1000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminStorageRun": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "scanned_count",
+          "orphan_count",
+          "deleted_count",
+          "orphan_keys",
+          "truncated",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "scanned_count": {
+            "type": "integer"
+          },
+          "orphan_count": {
+            "type": "integer"
+          },
+          "deleted_count": {
+            "type": "integer"
+          },
+          "orphan_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminStorageSummary": {
+        "type": "object",
+        "required": [
+          "total_bytes",
+          "by_user",
+          "daily_trend",
+          "latest_cleanup"
+        ],
+        "properties": {
+          "total_bytes": {
+            "type": "integer"
+          },
+          "by_user": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "daily_trend": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "latest_cleanup": {
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminEmailLog": {
+        "type": "object",
+        "required": [
+          "id",
+          "recipient_email",
+          "kind",
+          "subject",
+          "status",
+          "attempts",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "recipient_email": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminEmailTemplate": {
+        "type": "object",
+        "required": [
+          "key",
+          "subject",
+          "body",
+          "overridden"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "verify_email",
+              "password_reset"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "overridden": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminEmailTemplateUpdateRequest": {
+        "type": "object",
+        "required": [
+          "subject",
+          "body",
+          "reason"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminBroadcastPreviewRequest": {
+        "type": "object",
+        "required": [
+          "kind",
+          "channels"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "system",
+              "marketing"
+            ]
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "in_app",
+                "push",
+                "email"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminBroadcastCreateRequest": {
+        "type": "object",
+        "required": [
+          "kind",
+          "channels",
+          "title",
+          "body",
+          "reason"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "system",
+              "marketing"
+            ]
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "in_app",
+                "push",
+                "email"
+              ]
+            },
+            "minItems": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminBroadcast": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "body",
+          "channels",
+          "status",
+          "audience_count",
+          "delivered_in_app",
+          "delivered_push",
+          "delivered_email",
+          "failed_count",
+          "reason",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "system",
+              "marketing"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "audience_count": {
+            "type": "integer"
+          },
+          "delivered_in_app": {
+            "type": "integer"
+          },
+          "delivered_push": {
+            "type": "integer"
+          },
+          "delivered_email": {
+            "type": "integer"
+          },
+          "failed_count": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
           }
         },
         "additionalProperties": false

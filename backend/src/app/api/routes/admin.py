@@ -46,6 +46,23 @@ from app.api.schemas.admin import (
     AdminViewAsUserResponse,
     AuditLogListResponse,
 )
+from app.api.schemas.admin_d7 import (
+    AdminBroadcastCreateRequest,
+    AdminBroadcastListResponse,
+    AdminBroadcastPreviewRequest,
+    AdminBroadcastPreviewResponse,
+    AdminBroadcastResponse,
+    AdminEmailLogListResponse,
+    AdminEmailLogResponse,
+    AdminEmailPreviewResponse,
+    AdminEmailTemplateResponse,
+    AdminEmailTemplateUpdateRequest,
+    AdminEmailTestRequest,
+    AdminOrphanScanRequest,
+    AdminReasonRequest,
+    AdminStorageRunResponse,
+    AdminStorageSummaryResponse,
+)
 from app.api.schemas.credits import CreditBalanceResponse
 from app.api.schemas.recordings import Pagination, RecordingResponse
 from app.api.serializers.admin import admin_user_response, audit_log_response
@@ -53,6 +70,7 @@ from app.api.serializers.billing import payment_order_response
 from app.api.serializers.credits import transaction_response
 from app.api.serializers.recordings import recording_response
 from app.api.serializers.watches import watch_response
+from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.audit.service import AuditContext, AuditService
@@ -1253,3 +1271,532 @@ async def view_as_admin_user(
         ],
         recordings=[recording_response(item) for item in data.recordings],
     )
+
+
+
+def _d7_storage_run_response(run) -> AdminStorageRunResponse:
+    details = run.details if isinstance(run.details, dict) else {}
+    return AdminStorageRunResponse(
+        id=str(run.id),
+        kind=run.kind,
+        status=run.status,
+        scanned_count=run.scanned_count,
+        orphan_count=run.orphan_count,
+        deleted_count=run.deleted_count,
+        orphan_keys=[str(item) for item in details.get("orphan_keys", [])],
+        truncated=bool(details.get("truncated", False)),
+        error=run.error,
+        created_at=run.created_at,
+        started_at=run.started_at,
+        completed_at=run.completed_at,
+    )
+
+
+def _d7_email_log_response(row) -> AdminEmailLogResponse:
+    return AdminEmailLogResponse(
+        id=str(row.id),
+        user_id=str(row.user_id) if row.user_id else None,
+        recipient_email=row.recipient_email,
+        kind=row.kind,
+        subject=row.subject,
+        status=row.status,
+        error=row.error,
+        attempts=row.attempts,
+        sent_at=row.sent_at,
+        created_at=row.created_at,
+    )
+
+
+def _d7_broadcast_response(row) -> AdminBroadcastResponse:
+    return AdminBroadcastResponse(
+        id=str(row.id),
+        kind=row.kind,
+        title=row.title,
+        body=row.body,
+        channels=list(row.channels),
+        status=row.status,
+        audience_count=row.audience_count,
+        delivered_in_app=row.delivered_in_app,
+        delivered_push=row.delivered_push,
+        delivered_email=row.delivered_email,
+        failed_count=row.failed_count,
+        reason=row.reason,
+        created_at=row.created_at,
+        started_at=row.started_at,
+        completed_at=row.completed_at,
+    )
+
+
+@router.get("/storage/summary", response_model=AdminStorageSummaryResponse)
+async def get_admin_storage_summary(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStorageSummaryResponse:
+    _require_scope(principal, "admin:operations:read")
+    summary = await AdminOperationsService(
+        session, request.app.state.settings
+    ).storage_summary()
+    return AdminStorageSummaryResponse.model_validate(summary)
+
+
+@router.post("/storage/orphan-scans", response_model=AdminStorageRunResponse)
+async def create_admin_orphan_scan(
+    payload: AdminOrphanScanRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStorageRunResponse:
+    _require_owner(principal)
+    run = await AdminOperationsService(
+        session, request.app.state.settings
+    ).create_orphan_scan(actor_user_id=principal.user_id, limit=payload.limit)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.storage.orphan_scan_queued",
+        resource_type="admin_storage_run",
+        resource_id=str(run.id),
+        context=_context(request),
+        reason=payload.reason,
+        details={"limit": payload.limit},
+    )
+    await session.commit()
+    return _d7_storage_run_response(run)
+
+
+@router.get("/storage/runs/{run_id}", response_model=AdminStorageRunResponse)
+async def get_admin_storage_run(
+    run_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStorageRunResponse:
+    _require_owner(principal)
+    run = await AdminOperationsService(
+        session, request.app.state.settings
+    ).get_storage_run(run_id)
+    return _d7_storage_run_response(run)
+
+
+@router.post("/storage/orphan-scans/{run_id}/delete", response_model=AdminStorageRunResponse)
+async def delete_admin_orphan_files(
+    run_id: str,
+    payload: AdminReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStorageRunResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    run = await AdminOperationsService(
+        session, request.app.state.settings
+    ).create_orphan_delete(actor_user_id=principal.user_id, source_run_id=run_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.storage.orphans_delete_queued",
+        resource_type="admin_storage_run",
+        resource_id=str(run.id),
+        context=_context(request),
+        reason=payload.reason,
+        details={"source_run_id": run_id, "orphan_count": run.orphan_count},
+    )
+    await session.commit()
+    return _d7_storage_run_response(run)
+
+
+@router.get("/email/logs", response_model=AdminEmailLogListResponse)
+async def list_admin_email_logs(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    recipient: str | None = Query(default=None),
+    kind: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminEmailLogListResponse:
+    _require_scope(principal, "admin:users:write")
+    items, next_cursor, has_more = await AdminOperationsService(
+        session, request.app.state.settings
+    ).list_email_logs(
+        limit=limit,
+        cursor=cursor,
+        recipient=recipient,
+        kind=kind,
+        status=status_filter,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.logs_viewed",
+        resource_type="email_log",
+        context=_context(request),
+        details={"rows": len(items), "recipient": recipient, "kind": kind, "status": status_filter},
+    )
+    await session.commit()
+    return AdminEmailLogListResponse(
+        items=[_d7_email_log_response(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get("/email/logs/export.csv")
+async def export_admin_email_logs(
+    request: Request,
+    recipient: str | None = Query(default=None),
+    kind: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:users:write")
+    _require_scope(principal, "admin:csv:export")
+    items, _, has_more = await AdminOperationsService(
+        session, request.app.state.settings
+    ).list_email_logs(
+        limit=500,
+        cursor=None,
+        recipient=recipient,
+        kind=kind,
+        status=status_filter,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "recipient_email", "kind", "subject", "status", "attempts", "sent_at", "created_at"])
+    for item in items:
+        writer.writerow([
+            str(item.id),
+            item.recipient_email,
+            item.kind,
+            item.subject,
+            item.status,
+            item.attempts,
+            item.sent_at.isoformat() if item.sent_at else "",
+            item.created_at.isoformat(),
+        ])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.logs_exported",
+        resource_type="email_log",
+        context=_context(request),
+        details={"rows": len(items), "truncated": has_more},
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-email-logs.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
+    )
+
+
+@router.post("/email/logs/{log_id}/resend", response_model=AdminEmailLogResponse)
+async def resend_admin_email(
+    log_id: str,
+    payload: AdminReasonRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminEmailLogResponse:
+    _require_scope(principal, "admin:users:write")
+    log = await AdminOperationsService(
+        session, request.app.state.settings
+    ).resend_email(log_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.resent",
+        resource_type="email_log",
+        resource_id=str(log.id),
+        context=_context(request),
+        reason=payload.reason,
+        details={"kind": log.kind, "recipient": log.recipient_email},
+    )
+    await session.commit()
+    return _d7_email_log_response(log)
+
+
+@router.get("/email/templates", response_model=list[AdminEmailTemplateResponse])
+async def list_admin_email_templates(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> list[AdminEmailTemplateResponse]:
+    _require_owner(principal)
+    rows = await AdminOperationsService(
+        session, request.app.state.settings
+    ).email_templates()
+    return [AdminEmailTemplateResponse.model_validate(item) for item in rows]
+
+
+@router.get("/email/templates/{key}/preview", response_model=AdminEmailPreviewResponse)
+async def preview_admin_email_template(
+    key: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminEmailPreviewResponse:
+    _require_owner(principal)
+    rendered = await AdminOperationsService(
+        session, request.app.state.settings
+    ).preview_email_template(key)
+    return AdminEmailPreviewResponse(
+        subject=rendered.subject,
+        text=rendered.text,
+        html=rendered.html,
+    )
+
+
+@router.put("/email/templates/{key}", response_model=AdminEmailTemplateResponse)
+async def update_admin_email_template(
+    key: str,
+    payload: AdminEmailTemplateUpdateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminEmailTemplateResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminOperationsService(session, request.app.state.settings)
+    before_rows = {item["key"]: item for item in await service.email_templates()}
+    row = await service.update_email_template(
+        key=key,
+        subject=payload.subject,
+        body=payload.body,
+        actor_user_id=principal.user_id,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.template_updated",
+        resource_type="email_template",
+        resource_id=key,
+        context=_context(request),
+        reason=payload.reason,
+        before_state={
+            "subject": before_rows.get(key, {}).get("subject"),
+            "body": before_rows.get(key, {}).get("body"),
+        },
+        after_state={"subject": row.subject, "body": row.body},
+    )
+    await session.commit()
+    await session.refresh(row)
+    return AdminEmailTemplateResponse(
+        key=key,
+        subject=row.subject,
+        body=row.body,
+        overridden=True,
+        updated_at=row.updated_at,
+    )
+
+
+@router.delete("/email/templates/{key}", response_model=AdminActionResponse)
+async def reset_admin_email_template(
+    key: str,
+    payload: AdminReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminOperationsService(session, request.app.state.settings)
+    await service.reset_email_template(key)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.template_reset",
+        resource_type="email_template",
+        resource_id=key,
+        context=_context(request),
+        reason=payload.reason,
+    )
+    await session.commit()
+    return AdminActionResponse(message="Email template reset to default")
+
+
+@router.post("/email/templates/{key}/test", response_model=AdminEmailLogResponse)
+async def test_admin_email_template(
+    key: str,
+    payload: AdminEmailTestRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminEmailLogResponse:
+    _require_owner(principal)
+    log = await AdminOperationsService(
+        session, request.app.state.settings
+    ).send_template_test(key=key, actor_user_id=principal.user_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.email.template_tested",
+        resource_type="email_template",
+        resource_id=key,
+        context=_context(request),
+        reason=payload.reason,
+        details={"recipient": log.recipient_email},
+    )
+    await session.commit()
+    return _d7_email_log_response(log)
+
+
+@router.post("/broadcasts/preview", response_model=AdminBroadcastPreviewResponse)
+async def preview_admin_broadcast(
+    payload: AdminBroadcastPreviewRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBroadcastPreviewResponse:
+    _require_owner(principal)
+    count = await AdminOperationsService(
+        session, request.app.state.settings
+    ).audience_count(payload.kind)
+    return AdminBroadcastPreviewResponse(
+        audience_count=count,
+        kind=payload.kind,
+        channels=payload.channels,
+    )
+
+
+@router.get("/broadcasts", response_model=AdminBroadcastListResponse)
+async def list_admin_broadcasts(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    kind: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBroadcastListResponse:
+    _require_owner(principal)
+    items, next_cursor, has_more = await AdminOperationsService(
+        session, request.app.state.settings
+    ).list_broadcasts(limit=limit, cursor=cursor, kind=kind, status=status_filter)
+    return AdminBroadcastListResponse(
+        items=[_d7_broadcast_response(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get("/broadcasts/export.csv")
+async def export_admin_broadcasts(
+    request: Request,
+    kind: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_owner(principal)
+    items, _, has_more = await AdminOperationsService(
+        session, request.app.state.settings
+    ).list_broadcasts(limit=500, cursor=None, kind=kind, status=status_filter)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id", "kind", "title", "channels", "status", "audience_count",
+        "delivered_in_app", "delivered_push", "delivered_email", "failed_count", "created_at",
+    ])
+    for item in items:
+        writer.writerow([
+            str(item.id), item.kind, item.title, ",".join(item.channels), item.status,
+            item.audience_count, item.delivered_in_app, item.delivered_push,
+            item.delivered_email, item.failed_count, item.created_at.isoformat(),
+        ])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.broadcasts.exported",
+        resource_type="admin_broadcast",
+        context=_context(request),
+        details={"rows": len(items), "truncated": has_more},
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-broadcasts.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
+    )
+
+
+@router.get("/broadcasts/{broadcast_id}", response_model=AdminBroadcastResponse)
+async def get_admin_broadcast(
+    broadcast_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBroadcastResponse:
+    _require_owner(principal)
+    row = await AdminOperationsService(
+        session, request.app.state.settings
+    ).get_broadcast(broadcast_id)
+    return _d7_broadcast_response(row)
+
+
+@router.post("/broadcasts", response_model=AdminBroadcastResponse)
+async def create_admin_broadcast(
+    payload: AdminBroadcastCreateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBroadcastResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    row = await AdminOperationsService(
+        session, request.app.state.settings
+    ).create_broadcast(
+        actor_user_id=principal.user_id,
+        kind=payload.kind,
+        title=payload.title,
+        body=payload.body,
+        channels=payload.channels,
+        reason=payload.reason,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.broadcast.queued",
+        resource_type="admin_broadcast",
+        resource_id=str(row.id),
+        context=_context(request),
+        reason=payload.reason,
+        after_state={
+            "kind": row.kind,
+            "channels": row.channels,
+            "audience_count": row.audience_count,
+        },
+    )
+    await session.commit()
+    return _d7_broadcast_response(row)

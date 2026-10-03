@@ -39,6 +39,7 @@ class AdminStorageSummaryResponse(StrictModel):
 
 class AdminOrphanScanRequest(StrictModel):
     limit: int = Field(default=1000, ge=1, le=5000)
+    reason: str = Field(min_length=3, max_length=500)
 
 
 class AdminStorageRunResponse(StrictModel):
