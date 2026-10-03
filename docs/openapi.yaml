@@ -3580,7 +3580,10 @@
           "email_verified",
           "display_name",
           "locale",
-          "created_at"
+          "created_at",
+          "role",
+          "admin_mfa_enabled",
+          "admin_mfa_verified"
         ],
         "properties": {
           "id": {
@@ -3604,6 +3607,24 @@
           },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "owner",
+              "support",
+              "finance",
+              "admin"
+            ]
+          },
+          "admin_mfa_enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "admin_mfa_verified": {
+            "type": "boolean",
+            "default": false
           }
         },
         "additionalProperties": false
