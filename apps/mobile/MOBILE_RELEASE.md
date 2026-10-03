@@ -53,13 +53,21 @@ A CI/store release must provide all four values. Without them, CI may compile an
 
 ## iOS signing
 
-Release/Profile configuration reads:
+Unsigned CI compilation uses `ios/Flutter/Release.xcconfig` without a Team ID.
+
+For a signed App Store/TestFlight build, copy:
 
 ```text
-SAVESTREAM_IOS_DEVELOPMENT_TEAM
+ios/Flutter/ReleaseSigning.xcconfig.example
 ```
 
-Provide the Apple Developer Team ID in the Xcode/CI environment and install the matching signing certificate/profile through the release system. No Team ID or private signing material is committed.
+to:
+
+```text
+ios/Flutter/ReleaseSigning.xcconfig
+```
+
+and set the real `DEVELOPMENT_TEAM`. The real signing config is gitignored. Install the matching signing certificate/profile through the release system. No private signing material is committed.
 
 ## Legal
 
