@@ -71,9 +71,9 @@ class SsQuotaCard extends StatelessWidget {
               const SizedBox(height: SsSpacing.md),
               LinearProgressIndicator(
                 value: progress! < 0
-                    ? 0
+                    ? 0.0
                     : progress! > 1
-                    ? 1
+                    ? 1.0
                     : progress!,
               ),
             ],
