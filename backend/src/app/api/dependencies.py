@@ -14,7 +14,7 @@ from app.application.pricing.service import PricingService
 from app.application.recordings.service import RecordingService
 from app.application.watches.service import WatchService
 from app.domain.common.errors import ApplicationError
-from app.domain.identity.types import AuthPrincipal, scopes_for_role
+from app.domain.identity.types import AuthPrincipal, is_admin_role, scopes_for_role
 from app.infrastructure.db.models import AuthSession, User
 from app.infrastructure.payments.factory import selected_payment_provider
 from app.infrastructure.security.tokens import TokenError, TokenExpiredError, TokenService
@@ -89,6 +89,10 @@ async def get_current_principal(
         session_id=auth_session.id,
         role=user.role,
         scopes=scopes_for_role(user.role),
+        admin_mfa_verified=(
+            not is_admin_role(user.role)
+            or auth_session.admin_mfa_verified_at is not None
+        ),
     )
 
 
