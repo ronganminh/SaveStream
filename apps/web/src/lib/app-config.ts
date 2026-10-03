@@ -1,5 +1,5 @@
 export type AppMode = "demo" | "production";
-export type AppRole = "guest" | "user" | "admin";
+export type AppRole = "guest" | "user" | "owner" | "support" | "finance" | "admin";
 
 const requestedMode = import.meta.env["VITE_APP_MODE"]?.trim();
 if (requestedMode && requestedMode !== "demo" && requestedMode !== "production") {
@@ -57,6 +57,12 @@ export type FrontendIdentity = {
   role: AppRole;
 };
 
+export const ADMIN_ROLES = ["owner", "support", "finance", "admin"] as const;
+
+export function isAdminRole(role: AppRole): boolean {
+  return (ADMIN_ROLES as readonly string[]).includes(role);
+}
+
 export type RouteAccess = {
   visibility: "public" | "authenticated" | "admin";
   requiresAuth: boolean;
@@ -66,7 +72,7 @@ export type RouteAccess = {
 
 export function canAccessRoute(access: RouteAccess, identity: FrontendIdentity) {
   if (access.requiresAuth && !identity.authenticated) return false;
-  if (access.requiredRole === "admin" && identity.role !== "admin") return false;
+  if (access.requiredRole === "admin" && !isAdminRole(identity.role)) return false;
   return true;
 }
 
