@@ -53,9 +53,10 @@ jobs:
         run: flutter gen-l10n
 
       - name: Check formatting
-        run: >-
-          dart format --output=none --set-exit-if-changed
-          lib/app lib/core lib/features lib/l10n/l10n.dart test
+        run: |
+          dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
+          git diff -- lib/app lib/core lib/features lib/l10n/l10n.dart test
+          git diff --exit-code -- lib/app lib/core lib/features lib/l10n/l10n.dart test
 
       - name: Analyze
         run: flutter analyze --fatal-infos
