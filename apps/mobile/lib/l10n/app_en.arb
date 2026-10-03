@@ -467,5 +467,8 @@
   "notificationPreferencesTitle": "Notification preferences",
   "notificationHistoryTitle": "Notification history",
   "notificationHistoryEmptyTitle": "No notifications yet",
-  "notificationHistoryEmptyBody": "Recording lifecycle notifications will appear here when they are created by the backend."
+  "notificationHistoryEmptyBody": "Recording lifecycle notifications will appear here when they are created by the backend.",
+  "notificationMarkReadFailed": "Couldn’t mark this notification as read. Try again.",
+  "notificationPreferencesSaveFailed": "Couldn’t save your notification preferences. Your previous settings were kept.",
+  "notificationLoadMoreFailed": "Couldn’t load more notifications."
 }

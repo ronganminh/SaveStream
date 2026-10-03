@@ -467,5 +467,8 @@
   "notificationPreferencesTitle": "Tùy chọn thông báo",
   "notificationHistoryTitle": "Lịch sử thông báo",
   "notificationHistoryEmptyTitle": "Chưa có thông báo",
-  "notificationHistoryEmptyBody": "Thông báo vòng đời recording sẽ xuất hiện tại đây khi backend tạo chúng."
+  "notificationHistoryEmptyBody": "Thông báo vòng đời recording sẽ xuất hiện tại đây khi backend tạo chúng.",
+  "notificationMarkReadFailed": "Không thể đánh dấu thông báo là đã đọc. Hãy thử lại.",
+  "notificationPreferencesSaveFailed": "Không thể lưu tùy chọn thông báo. Cài đặt trước đó được giữ nguyên.",
+  "notificationLoadMoreFailed": "Không thể tải thêm thông báo."
 }

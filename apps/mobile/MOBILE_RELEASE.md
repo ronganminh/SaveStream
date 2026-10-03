@@ -20,15 +20,13 @@ Build Android production:
 
 ```bash
 flutter pub get --enforce-lockfile
-python3 -m venv .brand-venv
-.brand-venv/bin/python -m pip install cairosvg==2.7.1
-.brand-venv/bin/python tool/generate_brand_assets.py
-dart run flutter_launcher_icons
-dart run flutter_native_splash:create
+bash tool/generate_native_assets.sh
 flutter build appbundle --release \
   --dart-define=APP_ENV=production \
   --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
 ```
+
+Launcher icons and the native splash are generated from `assets/branding/savestream_mark.svg` and are **not committed**. `tool/generate_native_assets.sh` must run once after cloning, and again whenever the brand mark changes, before any Android or iOS build; without it the build cannot resolve `@mipmap/ic_launcher` or the iOS `AppIcon`. It needs Python 3 and the Cairo library (`brew install cairo` on macOS).
 
 The external Lemon Squeezy checkout gate is deliberately **off by default** for native production builds. Enable it only for a distribution channel whose App Store / Google Play payment policy has been reviewed and approved:
 
@@ -53,7 +51,7 @@ A CI/store release must provide all four values. Without them, CI may compile an
 
 ## iOS signing
 
-Unsigned CI compilation uses `ios/Flutter/Release.xcconfig` without a Team ID.
+CI has no Apple Team ID, so it only compiles the production configuration for the simulator in debug mode (Flutter does not support release builds on the simulator). That check does not validate a signed archive; run `flutter build ipa --release` with the signing config below before a store submission.
 
 For a signed App Store/TestFlight build, copy:
 

@@ -1,4 +1,11 @@
-enum AppNotificationType { recordingStarted, recordingReady, recordingFailed }
+enum AppNotificationType {
+  recordingStarted,
+  recordingReady,
+  recordingFailed,
+
+  /// A notification kind this app version does not know yet.
+  other,
+}
 
 class AppNotification {
   const AppNotification({
@@ -21,6 +28,9 @@ class AppNotification {
   final String? resourceType;
   final String? resourceId;
 
+  /// The Recording this notification points at, when it has one.
+  String? get recordingId => resourceType == 'recording' ? resourceId : null;
+
   AppNotification copyWith({bool? read}) {
     return AppNotification(
       id: id,
@@ -33,4 +43,13 @@ class AppNotification {
       resourceId: resourceId,
     );
   }
+}
+
+class NotificationPage {
+  const NotificationPage({required this.items, this.nextCursor});
+
+  final List<AppNotification> items;
+  final String? nextCursor;
+
+  bool get hasMore => nextCursor != null;
 }
