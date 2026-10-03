@@ -8,6 +8,10 @@ const failures = [];
 const must = (file, text) => {
   if (!read(file).includes(text)) failures.push(file + ": missing " + JSON.stringify(text));
 };
+const mustNormalized = (file, text) => {
+  const source = read(file).replace(/\s+/g, " ");
+  if (!source.includes(text)) failures.push(file + ": missing normalized " + JSON.stringify(text));
+};
 const forbid = (file, text) => {
   if (read(file).includes(text)) failures.push(file + ": forbidden " + JSON.stringify(text));
 };
@@ -130,12 +134,14 @@ must("src/components/app-components.tsx", '{ to: "/admin/users", label: "Users",
   "Email delivery logs",
   "The HTML shell remains version-controlled.",
   "System reaches every active account.",
-  "Marketing reaches only users",
-  "opted in.",
   "Preview audience",
   "Queue broadcast",
   "Re-enter your password, current authenticator code, and the reason for this action.",
 ].forEach((text) => must("src/components/admin/operations-d7.tsx", text));
+mustNormalized(
+  "src/components/admin/operations-d7.tsx",
+  "Marketing reaches only users who opted in.",
+);
 
 must("src/routes/admin/operations.tsx", "@/components/admin/operations-d7");
 must("src/components/app-components.tsx", '{ to: "/admin/operations", label: "Operations", icon: HardDrive }');
