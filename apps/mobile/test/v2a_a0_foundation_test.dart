@@ -103,8 +103,7 @@ void main() {
   });
 
   test('A0 mocks inherit all five base scenarios', () async {
-    final MockEntitlementRepository errorRepository =
-        const MockEntitlementRepository(
+    const MockEntitlementRepository errorRepository = MockEntitlementRepository(
           const MockBehavior(
             scenario: MockScenario.error,
             latency: Duration.zero,
@@ -115,7 +114,7 @@ void main() {
       throwsA(isA<MockRepositoryException>()),
     );
 
-    final MockStoreRepository emptyRepository = const MockStoreRepository(
+    const MockStoreRepository emptyRepository = MockStoreRepository(
       const MockBehavior(scenario: MockScenario.empty, latency: Duration.zero),
     );
     expect(await emptyRepository.listPackages(), isEmpty);
