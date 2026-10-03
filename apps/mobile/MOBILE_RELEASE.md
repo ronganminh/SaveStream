@@ -20,6 +20,9 @@ Build Android production:
 
 ```bash
 flutter pub get --enforce-lockfile
+python3 -m venv .brand-venv
+.brand-venv/bin/python -m pip install cairosvg==2.7.1
+.brand-venv/bin/python tool/generate_brand_assets.py
 dart run flutter_launcher_icons
 dart run flutter_native_splash:create
 flutter build appbundle --release \
@@ -86,6 +89,8 @@ Current backend delivery is in-app only. The app does not claim email/push deliv
 - `pubspec.lock` committed and `flutter pub get --enforce-lockfile` succeeds.
 - Android release is not using debug signing.
 - Store signing secrets are installed outside Git.
+- `assets/branding/savestream_mark.svg` matches the official Brand Kit mark.
+- The official SVG rasterizes successfully before launcher icon/native splash generation.
 - Launcher icon and native splash generators run successfully.
 - Production API resolves over HTTPS.
 - Privacy/Terms URLs are reachable.
