@@ -9,6 +9,7 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
   [GeneratedPluginRegistrant registerWithRegistry:self];
+  BOOL didLaunch = [super application:application didFinishLaunchingWithOptions:launchOptions];
 
   FlutterViewController *controller = (FlutterViewController *)self.window.rootViewController;
   FlutterMethodChannel *deviceInfoChannel =
@@ -32,6 +33,6 @@
     result(FlutterMethodNotImplemented);
   }];
 
-  return [super application:application didFinishLaunchingWithOptions:launchOptions];
+  return didLaunch;
 }
 @end
