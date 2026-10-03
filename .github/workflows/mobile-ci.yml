@@ -69,8 +69,11 @@ jobs:
           --dart-define=APP_ENV=production
           --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
 
-      - name: Phase 17 release audit
-        run: bash tool/phase17_release_audit.sh
+      - name: Report Android App Bundle size
+        run: ls -lh build/app/outputs/bundle/release/app-release.aab
+
+      - name: Mobile release audit
+        run: bash tool/release_audit.sh
 
 
   ios-release-compile:
@@ -112,3 +115,43 @@ jobs:
           flutter build ios --simulator --debug
           --dart-define=APP_ENV=production
           --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+
+  android-emulator-smoke:
+    needs: flutter-checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate native assets
+        run: bash tool/generate_native_assets.sh
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch SaveStream on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          working-directory: apps/mobile
+          script: bash tool/android_emulator_smoke.sh
