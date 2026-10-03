@@ -259,7 +259,23 @@ Thêm các trường bool: `creator_live`, `recording_expiring`, `free_minutes_l
 
 App so phiên bản để hiện màn bắt buộc cập nhật, và hiện màn bảo trì khi `maintenance.active = true`.
 
-## 9. Mã lỗi mới
+## 9. Hỗ trợ và khuyến mãi (do Track D triển khai)
+
+### `POST /v1/support/reports`
+
+Màn "Báo lỗi" của app gửi lên. App lưu nháp và gửi lại khi có mạng.
+
+```json
+{ "message": "Recording stopped after 20 minutes", "recording_id": "rec_123", "diagnostics": { "app_version": "2.0.0", "os": "Android 15", "recorder_state": "…", "error_code": "…" } }
+```
+
+Trả `201`: `{ "report_id": "rpt_123" }`. Không bao giờ gửi file video.
+
+### `POST /v1/credits/redeem`
+
+`{ "code": "WELCOME50" }` → `200`: `{ "cloud_minutes_added": 3000, "cloud_minutes_available": 3000 }`. Mã sai, hết hạn, hết lượt hoặc đã dùng: `409` mã `PROMO_CODE_INVALID`. Giờ từ mã khuyến mãi không làm tài khoản thành Pro trừ khi mã được đánh dấu "tính như đã mua".
+
+## 10. Mã lỗi mới
 
 | Mã | HTTP | Khi nào |
 |---|---|---|
@@ -273,8 +289,11 @@ App so phiên bản để hiện màn bắt buộc cập nhật, và hiện màn
 | `REWARD_LOCKED` | 429 | Tạm khoá phần thưởng |
 | `STORE_RECEIPT_INVALID` | 422 | Hoá đơn store không hợp lệ |
 | `NOT_SOURCE_DEVICE` | 403 | Xoá bản ghi trên máy từ thiết bị khác |
-| `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |\n| `NOT_IMPLEMENTED` | 501 | Route V2 đã được B0 đóng băng contract nhưng phase sở hữu chưa triển khai; chỉ dùng trong giai đoạn rollout |
+| `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |
+| `NOT_IMPLEMENTED` | 501 | Route V2 đã được B0 đóng băng contract nhưng phase sở hữu chưa triển khai; chỉ dùng trong giai đoạn rollout |
+| `CREATOR_BLOCKED` | 403 | Kênh bị chặn toàn hệ thống (khiếu nại) |
+| `PROMO_CODE_INVALID` | 409 | Mã khuyến mãi không dùng được |
 
-## 10. Không thay đổi
+## 11. Không thay đổi
 
 Auth, phiên đăng nhập (`/v1/me/sessions`), số dư và sổ credit, luồng bản ghi cloud hiện có, artifact và link tải, SSE tiến độ bản ghi, xoá tài khoản, thanh toán web qua Lemon Squeezy.

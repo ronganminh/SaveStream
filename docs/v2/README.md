@@ -1,6 +1,6 @@
 # SaveStream V2 — Kế hoạch triển khai theo track
 
-Bộ tài liệu này để giao cho một coding agent (ChatGPT/Codex hoặc tương đương) làm song song 3 track. Mỗi track là một file riêng, chia thành các phase. **Mỗi phase = một nhánh = một PR = CI xanh = merge vào `main`.**
+Bộ tài liệu này để giao cho một coding agent (ChatGPT/Codex hoặc tương đương) làm song song 4 track. Mỗi track là một file riêng, chia thành các phase. **Mỗi phase = một nhánh = một PR = CI xanh = merge vào `main`.**
 
 | File | Nội dung |
 |---|---|
@@ -9,10 +9,11 @@ Bộ tài liệu này để giao cho một coding agent (ChatGPT/Codex hoặc t�
 | [TRACK_A_MOBILE_UI.md](TRACK_A_MOBILE_UI.md) | Track A: giao diện app Flutter, dữ liệu giả trước. |
 | [TRACK_B_BACKEND_WEB.md](TRACK_B_BACKEND_WEB.md) | Track B: backend FastAPI và web. |
 | [TRACK_C_MOBILE_NATIVE.md](TRACK_C_MOBILE_NATIVE.md) | Track C: phần native của app (ghi trên máy, mua trong app, quảng cáo, push) và nối API thật. |
+| [TRACK_D_ADMIN.md](TRACK_D_ADMIN.md) | Track D: trang quản trị, cả backend lẫn web, chỉ trong vùng admin. |
 
 ## Cách dùng
 
-1. Mở 3 phiên agent riêng, mỗi phiên một track.
+1. Mở mỗi track một phiên agent riêng (A, B, C, D).
 2. Cho mỗi phiên truy cập repo và bảo nó đọc: file `README.md` này, `DECISIONS.md`, `API_CONTRACT.md`, file track của nó, và thư mục `design/`.
 3. Ra lệnh: "Làm phase tiếp theo chưa đánh dấu xong trong file track, theo đúng quy trình trong README."
 4. Sau mỗi phase, agent báo lại theo mẫu ở mục "Báo cáo sau mỗi phase".
@@ -68,7 +69,8 @@ Quy tắc bắt buộc:
 | `apps/mobile/lib/app/bootstrap.dart` | C |
 | `apps/mobile/lib/app/savestream_app.dart` | A (chỉ ở phase A0), sau đó không ai sửa |
 | `apps/mobile/test/**` | A và C, mỗi track tạo file test riêng có tiền tố `v2a_` hoặc `v2c_` |
-| `backend/**`, `docs/openapi.yaml`, `docs/api/**`, `apps/web/**` | B |
+| `backend/**`, `docs/openapi.yaml`, `docs/api/**`, `apps/web/**` (trừ vùng admin bên dưới) | B |
+| `backend/src/app/api/routes/admin*.py`, `backend/src/app/api/schemas/admin*.py`, `backend/src/app/application/{admin,audit,operations}/**`, `apps/web/src/routes/admin/**`, `apps/web/src/components/admin/**`, `apps/web/src/repositories/admin-api.ts`, phần `/v1/admin/**` trong `docs/openapi.yaml` | D |
 | `.github/workflows/mobile-*.yml`, `apps/mobile/tool/**` | C |
 | `.github/workflows/backend-*.yml`, `.github/workflows/web-ci.yml` | B |
 | `docs/v2/API_CONTRACT.md` | B (A và C muốn đổi thì mở issue hoặc ghi vào PR, không tự sửa) |
@@ -85,11 +87,15 @@ A0 ──► A1 ► A2 ► A3 ► A4 ► A5 ► A6 ► A7
  │
  └──► C0 ► C1 ► C2(spike, dừng chờ duyệt) ► C3 ► C4 ► C5 ► C6 ► C7 ► C8 ► C9
 B0 ──► B1 ► B2 ► B3 ► B4 ► B5 ► B6 ► B7 ► B8
+        │
+        └──► D0 ► D1 ► D2 ► D3 ► D4 ► D5 ► D6 ► D7 ► D8 ► D9
 ```
 
 - **A0 phải merge trước** khi C0 bắt đầu (C dùng interface và điểm nối do A0 tạo).
 - **B0 phải merge trước** khi C1 bắt đầu (C1 code theo hợp đồng trong `docs/openapi.yaml`).
 - A và B chạy song song từ đầu, không phụ thuộc nhau.
+- **D bắt đầu sau khi B1 merge.** Các phase D cần dữ liệu V2 đợi phase tương ứng của B (ghi ở đầu mỗi phase D).
+- B và D cùng thêm migration Alembic: trước khi merge phải rebase và sửa `down_revision` để chỉ có một đầu migration.
 - Phụ thuộc chi tiết theo từng phase ghi ở đầu mỗi phase.
 
 ## Nguồn thiết kế
