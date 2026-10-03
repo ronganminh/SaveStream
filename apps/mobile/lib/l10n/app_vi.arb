@@ -452,5 +452,16 @@
       }
     }
   },
-  "refreshingLabel": "Đang làm mới…"
+  "refreshingLabel": "Đang làm mới…",
+  "notificationsReleaseSubtitle": "Tùy chọn thông báo vòng đời recording",
+  "notificationsReleaseBody": "Chọn các sự kiện vòng đời recording sẽ xuất hiện trong luồng thông báo trong ứng dụng SaveStream.",
+  "notificationsInAppOnlyBody": "Các cài đặt này chỉ điều khiển thông báo trong ứng dụng. Backend hiện chưa bật gửi email thông báo.",
+  "notificationRecordingStartedTitle": "Recording đã bắt đầu",
+  "notificationRecordingReadyTitle": "Recording đã sẵn sàng",
+  "notificationRecordingFailedTitle": "Recording thất bại",
+  "openLegalDocumentAction": "Mở tài liệu đã công bố",
+  "billingExternalCheckoutDisabledTitle": "Mua credit đang tắt trong bản mobile này",
+  "billingExternalCheckoutDisabledBody": "Bản native này mặc định không mở hosted checkout bên ngoài. Số dư credit và lịch sử thanh toán hiện có vẫn xem được.",
+  "billingPurchasesUnavailableTitle": "Tạm thời không thể mua credit",
+  "billingPurchasesUnavailableBody": "Backend hiện đang tắt checkout. Credit hiện có và quyền truy cập recording của bạn không bị ảnh hưởng."
 }
