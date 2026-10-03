@@ -463,5 +463,9 @@
   "billingExternalCheckoutDisabledTitle": "Mua credit đang tắt trong bản mobile này",
   "billingExternalCheckoutDisabledBody": "Bản native này mặc định không mở hosted checkout bên ngoài. Số dư credit và lịch sử thanh toán hiện có vẫn xem được.",
   "billingPurchasesUnavailableTitle": "Tạm thời không thể mua credit",
-  "billingPurchasesUnavailableBody": "Backend hiện đang tắt checkout. Credit hiện có và quyền truy cập recording của bạn không bị ảnh hưởng."
+  "billingPurchasesUnavailableBody": "Backend hiện đang tắt checkout. Credit hiện có và quyền truy cập recording của bạn không bị ảnh hưởng.",
+  "notificationPreferencesTitle": "Tùy chọn thông báo",
+  "notificationHistoryTitle": "Lịch sử thông báo",
+  "notificationHistoryEmptyTitle": "Chưa có thông báo",
+  "notificationHistoryEmptyBody": "Thông báo vòng đời recording sẽ xuất hiện tại đây khi backend tạo chúng."
 }
