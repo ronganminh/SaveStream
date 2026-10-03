@@ -11,7 +11,7 @@
 - [x] B0 — Đưa hợp đồng V2 vào OpenAPI
 - [x] B1 — Gói Free/Pro và giới hạn theo gói
 - [x] B2 — Hàng chờ slot cloud và tự bật lại sau khi mua — **đã merge PR #86 vào `main`**, merge commit `01d2f44d`
-- [ ] B3 — Thiết bị, push và loại thông báo mới
+- [x] B3 — Thiết bị, push và loại thông báo mới — **đã merge PR #89 vào `main`**, merge commit `6422c072`
 - [ ] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
 - [ ] B5 — Mua trong app (App Store, Google Play)
 - [ ] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn
@@ -96,6 +96,8 @@ Lưu ý tương thích: `Mobile Backend E2E` đang tạo kênh có tự động 
 ---
 
 ## B3 — Thiết bị, push và loại thông báo mới
+
+**Trạng thái:** ✅ Hoàn tất, đã merge PR #89 vào `main` (2026-10-04), merge commit `6422c072`. Gate cuối sau rebase: Backend CI #449 (Python 3.11/3.12) ✅, Backend E2E #81 ✅, Mobile Backend E2E #177 ✅. Migration B3 là `0011_v2_b3_devices_push` nối tiếp `0010_v2_d1_admin_users`.
 
 **Phụ thuộc:** B1.
 
