@@ -213,7 +213,11 @@ export interface AdminRepository {
   getUser(id: string): Promise<AdminUserResponse>;
   updateUser(
     id: string,
-    input: { role?: "user" | "admin"; is_active?: boolean },
+    input: {
+      role?: "user" | "owner" | "support" | "finance" | "admin";
+      is_active?: boolean;
+      reason?: string;
+    },
   ): Promise<AdminUserResponse>;
   listRecordings(
     options?: FilteredPageOptions & { userId?: string },
