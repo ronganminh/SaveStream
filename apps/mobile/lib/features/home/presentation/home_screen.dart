@@ -567,30 +567,44 @@ SsStatusTone _watchStatusTone(WatchStatus status) {
 
 String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
   return switch (status) {
+    RecordingStatus.starting => l10n.recordingStatusStarting,
     RecordingStatus.queued => l10n.recordingStatusQueued,
     RecordingStatus.resolving => l10n.recordingStatusResolving,
     RecordingStatus.waitingLive => l10n.recordingStatusWaitingLive,
+    RecordingStatus.waitingForCloudSlot => l10n.recordingStatusWaitingForCloudSlot,
     RecordingStatus.recording => l10n.recordingStatusRecording,
+    RecordingStatus.reconnecting => l10n.recordingStatusReconnecting,
     RecordingStatus.processing => l10n.recordingStatusProcessing,
     RecordingStatus.uploading => l10n.recordingStatusUploading,
+    RecordingStatus.finalizing => l10n.recordingStatusFinalizing,
     RecordingStatus.completed => l10n.recordingStatusCompleted,
+    RecordingStatus.partial => l10n.recordingStatusPartial,
+    RecordingStatus.recovered => l10n.recordingStatusRecovered,
     RecordingStatus.failed => l10n.recordingStatusFailed,
     RecordingStatus.stopRequested => l10n.recordingStatusStopRequested,
     RecordingStatus.stopped => l10n.recordingStatusStopped,
+    RecordingStatus.missedNoCloudSlot => l10n.recordingStatusMissedNoCloudSlot,
   };
 }
 
 SsStatusTone _recordingStatusTone(RecordingStatus status) {
   return switch (status) {
     RecordingStatus.recording => SsStatusTone.recording,
-    RecordingStatus.completed => SsStatusTone.success,
-    RecordingStatus.failed => SsStatusTone.error,
-    RecordingStatus.stopRequested => SsStatusTone.warning,
+    RecordingStatus.reconnecting ||
+    RecordingStatus.partial ||
+    RecordingStatus.stopRequested ||
     RecordingStatus.stopped => SsStatusTone.warning,
+    RecordingStatus.completed ||
+    RecordingStatus.recovered => SsStatusTone.success,
+    RecordingStatus.failed ||
+    RecordingStatus.missedNoCloudSlot => SsStatusTone.error,
+    RecordingStatus.starting ||
     RecordingStatus.queued ||
     RecordingStatus.resolving ||
     RecordingStatus.waitingLive ||
+    RecordingStatus.waitingForCloudSlot ||
     RecordingStatus.processing ||
-    RecordingStatus.uploading => SsStatusTone.neutral,
+    RecordingStatus.uploading ||
+    RecordingStatus.finalizing => SsStatusTone.neutral,
   };
 }

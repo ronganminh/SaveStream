@@ -10,6 +10,7 @@ import 'package:savestream_mobile/features/devices/domain/models/device_registra
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/local_recordings/data/repositories/mock_local_recording_repository.dart';
+import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/features/rewards/data/repositories/mock_reward_repository.dart';
 import 'package:savestream_mobile/features/rewards/domain/models/reward.dart';
@@ -101,7 +102,7 @@ void main() {
 
   test('A0 mocks inherit all five base scenarios', () async {
     final MockEntitlementRepository errorRepository =
-        MockEntitlementRepository(
+        const MockEntitlementRepository(
       const MockBehavior(
         scenario: MockScenario.error,
         latency: Duration.zero,
@@ -112,7 +113,7 @@ void main() {
       throwsA(isA<MockRepositoryException>()),
     );
 
-    final MockStoreRepository emptyRepository = MockStoreRepository(
+    final MockStoreRepository emptyRepository = const MockStoreRepository(
       const MockBehavior(
         scenario: MockScenario.empty,
         latency: Duration.zero,

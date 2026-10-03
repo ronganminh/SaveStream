@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../features/entitlement/domain/models/entitlement.dart';
-
 import '../../../app/app_settings_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/widgets/savestream_widgets.dart';
+import '../../../features/entitlement/domain/models/entitlement.dart';
 import '../../../l10n/l10n.dart';
 
 class ComponentGalleryScreen extends StatelessWidget {
