@@ -4,7 +4,7 @@
 
 **Mục tiêu:** trang quản trị đầy đủ trong web hiện tại, dưới `/admin`, để chủ dịch vụ quản lý người dùng, tiền, bản ghi, cấu hình, an toàn và báo cáo. Track D làm cả backend lẫn web, nhưng **chỉ trong vùng admin**.
 
-**Hiện trạng:** web đã có 4 trang (`/admin/system`, `/admin/workers`, `/admin/jobs`, `/admin/errors`). Backend đã có API cho người dùng, bản ghi, thanh toán, hoàn tiền, cộng trừ credit, nhật ký và số liệu vận hành trong `backend/src/app/api/routes/admin.py` và `operations.py`, với một vai trò `admin` duy nhất (scope `admin:*`).
+**Hiện trạng:** D0 đã hoàn tất và merge vào `main` qua PR #85. Admin vẫn nằm dưới `/admin`; backend dùng các vai trò `owner`, `support`, `finance` (giữ `admin` làm bí danh tương thích của `owner`), bắt buộc TOTP cho admin, có step-up cho thao tác nguy hiểm và audit mở rộng. Web admin đã nhận các vai trò mới, có MFA gate và các thành phần nền tảng trong `apps/web/src/components/admin/`.
 
 ## Phạm vi file
 
@@ -22,16 +22,32 @@
 
 ## Tiến độ
 
-- [ ] D0 — Nền móng: vai trò, xác thực hai lớp, nhật ký, khung giao diện
-- [ ] D1 — Người dùng và hỗ trợ khách hàng
+- [x] D0 — Nền móng: vai trò, xác thực hai lớp, nhật ký, khung giao diện — **đã merge PR #85 vào main**
+- [x] D1 — Người dùng và hỗ trợ khách hàng — **đã merge PR #88 vào main**
 - [ ] D2 — Thanh toán, hoàn tiền, giờ cloud
 - [ ] D3 — Bản ghi, kênh theo dõi, hàng chờ slot
 - [ ] D4 — Cấu hình hệ thống sửa từ giao diện
 - [ ] D5 — Gói, giá, khuyến mãi, tặng giờ
 - [ ] D6 — Vận hành V2: giao dịch store, ghi trên máy, phần thưởng, thiết bị
-- [ ] D7 — Lưu trữ, email, thông báo hàng loạt
+- [x] D7 — Lưu trữ, email, thông báo hàng loạt — **đã merge PR #90 vào main**
 - [ ] D8 — Khiếu nại và an toàn
 - [ ] D9 — Tổng quan, báo cáo, báo lỗi từ app
+
+### Trạng thái hiện tại
+
+- **D0 hoàn tất.** PR #85 — `V2 D0 — Admin roles, MFA, audit and web foundation` đã merge vào `main`, merge commit `d8c25bc2ec31668d2653faef60c7c8e47b9e7bcc`.
+- **D1 hoàn tất.** PR #88 — `V2 D1 — Admin users and customer support` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D1 merge commit:** `e7711d57858683ae6dfff93f70ba3ed92b5d3165`.
+- **CI cuối D1 trên head `f14897f86aad99f7c341f375fd8bbd0bb6c1f775`:** `Backend CI` xanh trên Python 3.11 và 3.12 (ruff, mypy, pytest, Alembic migration smoke), `Web CI` xanh (format, lint, typecheck, toàn bộ audit scripts, development/production build), `Backend E2E` xanh, `Mobile Backend E2E` xanh.
+- **Rebase/main gate D1:** trước merge, nhánh `v2/d1-admin-users-support` ở trạng thái `ahead`, `behind 0` so với `main` tại `bcf30e35865fab4e40f4490ea8860b3767db46d6`; D1 đã được rebase thủ công qua GitHub lên main mới có B2 trước khi mở PR. Sau merge, `main` trỏ đúng merge commit PR #88.
+- **Phạm vi D1 đã chốt:** Support có thao tác hỗ trợ người dùng nhưng không có scope tiền/hoàn tiền; Finance chỉ đọc dữ liệu người dùng; thao tác khoá/mở khoá và xoá tài khoản cần step-up + reason; “View as user” chỉ đọc, không cấp token/session của user và luôn audit; recording trong D1 chỉ hiện metadata, không phát/tải.
+- **D7 hoàn tất.** PR #90 — `V2 D7 — Admin storage, email and broadcasts` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D7 merge commit:** `cc3160f93ed31cfee84d94e2cc22e1f36014b8b7`.
+- **CI cuối D7 trên head `fc4bb6f006fcd1cd4641e8c9177548f37774dfe9`:** `Backend CI` #482 xanh trên Python 3.11 và 3.12, `Web CI` #164 xanh, `Backend E2E` #88 xanh, `Mobile Backend E2E` #188 xanh.
+- **Rebase/main gate D7:** trước merge, nhánh `v2/d7-admin-storage-email-broadcasts` ở trạng thái `ahead`, `behind 0` so với `main`; không cần rebase bổ sung ở gate cuối.
+- **Phạm vi D7 đã chốt:** storage summary + bounded orphan scan/delete, email logs giữ 90 ngày + resend, template override/preview/test/reset, broadcast system/marketing theo opt-in qua in-app/push/email; thao tác nguy hiểm dùng step-up + reason, mutation/sensitive read được audit.
+- **Các blocker Track D còn lại:** D2 chờ B5; D3 chờ B6 cho `expires_at`; D4 chờ B4+B6 (B1 đã có); D5 chờ D2; D6 chờ D2+B4+B5 (B3 đã có).
+- **Bước Track D tiếp theo:** ưu tiên phase được mở khoá khi Track B merge dependency tương ứng; không tự triển khai thay Track B.
 
 ## Kiểm tra
 
@@ -59,6 +75,8 @@ CI phải xanh: `Backend CI`, `Backend E2E`, `Web CI`, `Mobile Backend E2E`.
 
 ## D0 — Nền móng
 
+**Trạng thái:** ✅ Hoàn tất; PR #85 đã merge vào `main` với merge commit `d8c25bc2ec31668d2653faef60c7c8e47b9e7bcc`.
+
 **Phụ thuộc:** B1 đã merge (để có khái niệm Free/Pro).
 
 1. **Ba vai trò admin** thay cho một vai trò `admin`, trong `domain/identity/types.py`:
@@ -79,7 +97,9 @@ CI phải xanh: `Backend CI`, `Backend E2E`, `Web CI`, `Mobile Backend E2E`.
 
 ## D1 — Người dùng và hỗ trợ khách hàng
 
-**Phụ thuộc:** D0.
+**Trạng thái:** ✅ Hoàn tất; PR #88 đã merge vào `main` với merge commit `e7711d57858683ae6dfff93f70ba3ed92b5d3165`.
+
+**Phụ thuộc:** D0 — đã thoả khi bắt đầu D1.
 
 1. **Danh sách người dùng:** tìm theo email, lọc theo gói (Free/Pro), trạng thái (hoạt động, khoá, chờ xoá), đã xác minh email, ngày đăng ký, nơi mua gần nhất.
 2. **Trang chi tiết người dùng** theo thẻ: hồ sơ, gói và số dư giờ, kênh theo dõi, bản ghi, đơn mua, sổ giao dịch, thiết bị, phiên đăng nhập, thông báo đã gửi, ghi chú nội bộ, nhật ký liên quan.
