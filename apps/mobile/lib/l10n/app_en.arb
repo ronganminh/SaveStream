@@ -482,5 +482,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "nativeRecordingNotificationTitle": "SaveStream is recording",
+  "nativeRecordingNotificationBody": "Recording is active on this device.",
+  "nativeRecordingNotificationStop": "Stop recording",
+  "nativeRecordingChannelName": "Local recording",
+  "nativeKeepAppOpenReminderTitle": "Keep SaveStream open",
+  "nativeKeepAppOpenReminderBody": "Keep the app open while recording on this device.",
+  "nativePushChannelLiveName": "Creator LIVE alerts",
+  "nativePushChannelRecordingName": "Recording alerts",
+  "recordingStatusStarting": "Starting",
+  "recordingStatusWaitingForCloudSlot": "Waiting for cloud slot",
+  "recordingStatusReconnecting": "Reconnecting",
+  "recordingStatusFinalizing": "Finalizing",
+  "recordingStatusPartial": "Partial",
+  "recordingStatusRecovered": "Recovered",
+  "recordingStatusMissedNoCloudSlot": "Missed",
+  "recordingStartingBody": "Preparing the recording on this device.",
+  "recordingWaitingForCloudSlotBody": "The creator is LIVE and this recording is waiting for an available cloud slot.",
+  "recordingReconnectingBody": "The stream connection dropped and SaveStream is reconnecting.",
+  "recordingFinalizingBody": "SaveStream is safely finalizing the local file.",
+  "recordingPartialBody": "The recording was saved, but part of the LIVE was not captured.",
+  "recordingRecoveredBody": "The local recording was recovered after an interruption.",
+  "recordingMissedNoCloudSlotBody": "The LIVE ended before a cloud recording slot became available."
 }

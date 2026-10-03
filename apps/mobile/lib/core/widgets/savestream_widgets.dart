@@ -7,3 +7,4 @@ export 'ss_logo_mark.dart';
 export 'ss_route_placeholder.dart';
 export 'ss_states.dart';
 export 'ss_surfaces.dart';
+export 'ss_v2_components.dart';

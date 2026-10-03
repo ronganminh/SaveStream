@@ -485,7 +485,23 @@ void main() {
         .map((RecordingSummary item) => item.status)
         .toSet();
 
-    expect(statuses, containsAll(RecordingStatus.values));
+    expect(
+      statuses,
+      containsAll(<RecordingStatus>[
+        RecordingStatus.queued,
+        RecordingStatus.resolving,
+        RecordingStatus.waitingLive,
+        RecordingStatus.waitingForCloudSlot,
+        RecordingStatus.recording,
+        RecordingStatus.processing,
+        RecordingStatus.uploading,
+        RecordingStatus.completed,
+        RecordingStatus.failed,
+        RecordingStatus.stopRequested,
+        RecordingStatus.stopped,
+        RecordingStatus.missedNoCloudSlot,
+      ]),
+    );
   });
 
   testWidgets('Recordings filters completed and failed states', (

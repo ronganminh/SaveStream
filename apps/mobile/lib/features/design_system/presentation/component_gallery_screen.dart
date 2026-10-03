@@ -4,6 +4,7 @@ import '../../../app/app_settings_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/widgets/savestream_widgets.dart';
+import '../../../features/entitlement/domain/models/entitlement.dart';
 import '../../../l10n/l10n.dart';
 
 class ComponentGalleryScreen extends StatelessWidget {
@@ -156,6 +157,103 @@ class ComponentGalleryScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  _GallerySection(
+                    title: 'V2 A0',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        const Wrap(
+                          spacing: SsSpacing.sm,
+                          runSpacing: SsSpacing.sm,
+                          children: <Widget>[
+                            SsLocationChip(engine: Engine.local),
+                            SsLocationChip(engine: Engine.cloud),
+                            SsPlanBadge(plan: Plan.free),
+                            SsPlanBadge(plan: Plan.pro),
+                            SsLiveBadge(isLive: true),
+                          ],
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsQuotaCard(
+                          title: 'Cloud time',
+                          value: '133 h 20 min',
+                          subtitle: '3 / 20 creators',
+                          progress: .45,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsInlineAlert(
+                          title: l10n.warningStatus,
+                          message: l10n.errorBody,
+                          tone: SsInlineAlertTone.warning,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsFilterChips(
+                          items: const <String>['All', 'LIVE', 'Offline'],
+                          selectedIndex: 0,
+                          onSelected: (_) {},
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsBannerAdSlot(label: 'Ad slot'),
+                        const SizedBox(height: SsSpacing.md),
+                        SsCreatorTile(
+                          name: l10n.creatorName,
+                          handle: l10n.creatorSubtitle,
+                          isLive: true,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsRecordingTile(
+                          title: l10n.creatorName,
+                          subtitle: '01:23:45',
+                          engine: Engine.cloud,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        SsActiveRecordingCard(
+                          creatorName: l10n.creatorName,
+                          elapsed: '00:12:34',
+                          engine: Engine.local,
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsRecordingBar(
+                          label: '1 recording active',
+                          elapsed: '00:12:34',
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        const SsChecklist(
+                          items: <SsChecklistItem>[
+                            SsChecklistItem(label: 'Finalize file', done: true),
+                            SsChecklistItem(label: 'Save metadata'),
+                          ],
+                        ),
+                        const SizedBox(height: SsSpacing.md),
+                        Wrap(
+                          spacing: SsSpacing.sm,
+                          runSpacing: SsSpacing.sm,
+                          children: <Widget>[
+                            SsSecondaryButton(
+                              label: l10n.showDialogAction,
+                              onPressed: () {
+                                showModalBottomSheet<void>(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return SsBottomSheet(
+                                      title: l10n.confirmTitle,
+                                      child: Text(l10n.confirmBody),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                            SsSecondaryButton(
+                              label: l10n.showSnackbarAction,
+                              onPressed: () {
+                                SsToast.show(context, l10n.snackbarMessage);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   _GallerySection(

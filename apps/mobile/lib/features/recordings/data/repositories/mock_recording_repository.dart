@@ -175,6 +175,35 @@ final class MockRecordingRepository extends MockRepositoryBase
       artifactReady: true,
       thumbnailReady: true,
     ),
+    const RecordingSummary(
+      id: 'rec_011',
+      watchId: 'watch_007',
+      creatorDisplayName: 'Queue Creator',
+      creatorUsername: '@queue_creator',
+      status: RecordingStatus.waitingForCloudSlot,
+      actions: RecordingActions(
+        canStop: false,
+        canRetry: false,
+        canDelete: true,
+      ),
+      startedAt: null,
+      durationSeconds: 0,
+      queuePosition: 1,
+    ),
+    const RecordingSummary(
+      id: 'rec_012',
+      watchId: 'watch_008',
+      creatorDisplayName: 'Missed Creator',
+      creatorUsername: '@missed_creator',
+      status: RecordingStatus.missedNoCloudSlot,
+      actions: RecordingActions(
+        canStop: false,
+        canRetry: false,
+        canDelete: true,
+      ),
+      startedAt: null,
+      durationSeconds: 0,
+    ),
   ];
 
   final List<RecordingSummary> _items;

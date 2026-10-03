@@ -1,3 +1,14 @@
+enum AutoRecordState {
+  off('off'),
+  active('active'),
+  pausedNoCloudMinutes('paused_no_cloud_minutes'),
+  waitingForCloudSlot('waiting_for_cloud_slot');
+
+  const AutoRecordState(this.apiValue);
+
+  final String apiValue;
+}
+
 enum WatchStatus {
   active('active'),
   paused('paused'),
@@ -25,11 +36,13 @@ class CreateWatchCommand {
     required this.sourceType,
     required this.sourceValue,
     required this.autoRecord,
+    this.notifyOnLive = true,
   });
 
   final WatchSourceType sourceType;
   final String sourceValue;
   final bool autoRecord;
+  final bool notifyOnLive;
 }
 
 class WatchSummary {
@@ -42,6 +55,8 @@ class WatchSummary {
     this.sourceType,
     this.sourceValue,
     this.autoRecord = true,
+    this.notifyOnLive = true,
+    this.autoRecordState = AutoRecordState.off,
     this.lastCheckedAt,
     this.lastLiveAt,
   });
@@ -54,6 +69,8 @@ class WatchSummary {
   final WatchSourceType? sourceType;
   final String? sourceValue;
   final bool autoRecord;
+  final bool notifyOnLive;
+  final AutoRecordState autoRecordState;
   final DateTime? lastCheckedAt;
   final DateTime? lastLiveAt;
 
@@ -65,6 +82,8 @@ class WatchSummary {
     WatchSourceType? sourceType,
     String? sourceValue,
     bool? autoRecord,
+    bool? notifyOnLive,
+    AutoRecordState? autoRecordState,
     DateTime? lastCheckedAt,
     DateTime? lastLiveAt,
   }) {
@@ -77,6 +96,8 @@ class WatchSummary {
       sourceType: sourceType ?? this.sourceType,
       sourceValue: sourceValue ?? this.sourceValue,
       autoRecord: autoRecord ?? this.autoRecord,
+      notifyOnLive: notifyOnLive ?? this.notifyOnLive,
+      autoRecordState: autoRecordState ?? this.autoRecordState,
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
       lastLiveAt: lastLiveAt ?? this.lastLiveAt,
     );

@@ -1,14 +1,23 @@
+import '../../../entitlement/domain/models/entitlement.dart';
+
 enum RecordingStatus {
+  starting('starting'),
   queued('queued'),
   resolving('resolving'),
   waitingLive('waiting_live'),
+  waitingForCloudSlot('waiting_for_cloud_slot'),
   recording('recording'),
+  reconnecting('reconnecting'),
   processing('processing'),
   uploading('uploading'),
+  finalizing('finalizing'),
   completed('completed'),
+  partial('partial'),
+  recovered('recovered'),
   failed('failed'),
   stopRequested('stop_requested'),
-  stopped('stopped');
+  stopped('stopped'),
+  missedNoCloudSlot('missed_no_cloud_slot');
 
   const RecordingStatus(this.apiValue);
 
@@ -126,6 +135,10 @@ class RecordingSummary {
     this.thumbnailReady = false,
     this.errorCode,
     this.errorMessage,
+    this.engine = Engine.cloud,
+    this.expiresAt,
+    this.minutesCharged = 0,
+    this.queuePosition,
   });
 
   final String id;
@@ -147,19 +160,30 @@ class RecordingSummary {
   final bool thumbnailReady;
   final String? errorCode;
   final String? errorMessage;
+  final Engine engine;
+  final DateTime? expiresAt;
+  final int minutesCharged;
+  final int? queuePosition;
 
   bool get isActiveLifecycle {
     return switch (status) {
+      RecordingStatus.starting ||
       RecordingStatus.queued ||
       RecordingStatus.resolving ||
       RecordingStatus.waitingLive ||
+      RecordingStatus.waitingForCloudSlot ||
       RecordingStatus.recording ||
+      RecordingStatus.reconnecting ||
       RecordingStatus.processing ||
       RecordingStatus.uploading ||
+      RecordingStatus.finalizing ||
       RecordingStatus.stopRequested => true,
       RecordingStatus.completed ||
+      RecordingStatus.partial ||
+      RecordingStatus.recovered ||
       RecordingStatus.failed ||
-      RecordingStatus.stopped => false,
+      RecordingStatus.stopped ||
+      RecordingStatus.missedNoCloudSlot => false,
     };
   }
 
@@ -177,6 +201,10 @@ class RecordingSummary {
     bool? thumbnailReady,
     String? errorCode,
     String? errorMessage,
+    Engine? engine,
+    DateTime? expiresAt,
+    int? minutesCharged,
+    int? queuePosition,
   }) {
     return RecordingSummary(
       id: id,
@@ -198,6 +226,10 @@ class RecordingSummary {
       thumbnailReady: thumbnailReady ?? this.thumbnailReady,
       errorCode: errorCode ?? this.errorCode,
       errorMessage: errorMessage ?? this.errorMessage,
+      engine: engine ?? this.engine,
+      expiresAt: expiresAt ?? this.expiresAt,
+      minutesCharged: minutesCharged ?? this.minutesCharged,
+      queuePosition: queuePosition ?? this.queuePosition,
     );
   }
 }
