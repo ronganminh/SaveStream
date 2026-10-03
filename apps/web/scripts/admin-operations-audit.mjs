@@ -51,7 +51,7 @@ const forbidIn = (label, source, text) => {
 [
   '"/v1/admin/security/mfa"',
   '"/v1/admin/step-up"',
-  '"/v1/admin/admins"',
+  "/v1/admin/admins",
   '"X-Admin-Step-Up"',
 ].forEach((text) => must("src/repositories/admin-api.ts", text));
 
