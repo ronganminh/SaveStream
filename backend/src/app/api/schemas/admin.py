@@ -6,8 +6,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.api.schemas.billing import PaymentOrderResponse
+from app.api.schemas.credits import CreditBalanceResponse, CreditTransactionResponse
 from app.api.schemas.recordings import Pagination, RecordingResponse
-from app.api.schemas.credits import CreditTransactionResponse
+from app.api.schemas.watches import WatchResponse
 
 
 class StrictModel(BaseModel):
@@ -24,6 +25,9 @@ class AdminUserResponse(StrictModel):
     deletion_requested_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    plan: Literal["free", "pro"] | None = None
+    cloud_minutes_available: int | None = None
+    latest_purchase_provider: str | None = None
 
 
 class AdminUserListResponse(StrictModel):
@@ -145,3 +149,113 @@ class AdminMfaResetRequest(StrictModel):
 class AdminAdminListResponse(StrictModel):
     items: list[AdminUserResponse]
     pagination: Pagination
+
+
+
+class AdminSupportActionRequest(StrictModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminUserProfileUpdateRequest(StrictModel):
+    display_name: str | None = Field(default=None, max_length=160)
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminUserNoteRequest(StrictModel):
+    body: str = Field(min_length=1, max_length=4000)
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminUserNoteResponse(StrictModel):
+    id: str
+    user_id: str
+    author_user_id: str | None
+    body: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class AdminUserSessionResponse(StrictModel):
+    id: str
+    client_type: str
+    user_agent: str | None
+    ip_hint: str | None
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+    revoked_at: datetime | None
+    revoked_reason: str | None
+
+
+class AdminUserNotificationResponse(StrictModel):
+    id: str
+    kind: str
+    title: str
+    body: str
+    resource_type: str | None
+    resource_id: str | None
+    read_at: datetime | None
+    created_at: datetime
+
+
+class AdminEntitlementResponse(StrictModel):
+    plan: Literal["free", "pro"]
+    has_purchased: bool
+    cloud_minutes_available: int
+    max_watches: int
+    max_concurrent_cloud_recordings: int
+    cloud_retention_days: int
+    watch_count: int
+
+
+class AdminUserDetailResponse(StrictModel):
+    user: AdminUserResponse
+    entitlement: AdminEntitlementResponse
+    balance: CreditBalanceResponse
+    watches: list[WatchResponse]
+    recordings: list[RecordingResponse]
+    payments: list[PaymentOrderResponse]
+    ledger: list[CreditTransactionResponse]
+    sessions: list[AdminUserSessionResponse]
+    notifications: list[AdminUserNotificationResponse]
+    notes: list[AdminUserNoteResponse]
+    audit: list[AuditLogResponse]
+
+
+class AdminViewAsUserResponse(StrictModel):
+    user: AdminUserResponse
+    entitlement: AdminEntitlementResponse
+    balance: CreditBalanceResponse
+    watches: list[WatchResponse]
+    recordings: list[RecordingResponse]
+
+
+class AdminPrivacyRequestResponse(StrictModel):
+    id: str
+    user_id: str
+    email: str
+    kind: Literal["delete", "export"]
+    status: Literal["pending", "completed", "cancelled"]
+    requested_at: datetime
+    completed_at: datetime | None = None
+    cancelled_at: datetime | None = None
+
+
+class AdminPrivacyRequestListResponse(StrictModel):
+    items: list[AdminPrivacyRequestResponse]
+
+
+class AdminSearchHit(StrictModel):
+    type: Literal["user", "payment_order", "recording", "request"]
+    id: str
+    label: str
+    detail: str | None = None
+    href: str
+
+
+class AdminSearchResponse(StrictModel):
+    items: list[AdminSearchHit]
+
+
+class AdminActionResponse(StrictModel):
+    message: str
