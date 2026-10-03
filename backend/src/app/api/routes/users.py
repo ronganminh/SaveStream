@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal, cast
+
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
@@ -34,7 +36,10 @@ def _user_response(
 ) -> UserResponse:
     return UserResponse(
         id=str(user.id),
-        role=user.role,
+        role=cast(
+            Literal["user", "owner", "support", "finance", "admin"],
+            user.role,
+        ),
         email=user.email,
         email_verified=user.email_verified_at is not None,
         display_name=user.display_name,
