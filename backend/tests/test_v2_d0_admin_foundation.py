@@ -125,7 +125,7 @@ def test_d0_admin_mfa_rbac_and_step_up_gate(tmp_path) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'd0-rbac.db'}"
     settings = identity_settings(database_url)
 
-    async def seed() -> dict[str, object]:
+    async def seed() -> dict[str, uuid.UUID]:
         database = Database(database_url)
         try:
             async with database.engine.begin() as connection:
@@ -153,7 +153,7 @@ def test_d0_admin_mfa_rbac_and_step_up_gate(tmp_path) -> None:
 
     def principal(role: str, *, verified: bool = True) -> AuthPrincipal:
         return AuthPrincipal(
-            user_id=ids[role],  # type: ignore[arg-type]
+            user_id=ids[role],
             session_id=uuid.uuid4(),
             role=role,
             scopes=scopes_for_role(role),
