@@ -14,8 +14,10 @@ import '../../features/auth/presentation/verify_email_screen.dart';
 import '../../features/billing/presentation/billing_return_screen.dart';
 import '../../features/billing/presentation/billing_screen.dart';
 import '../../features/channels/presentation/add_channel_screen.dart';
+import '../../features/channels/presentation/auto_record_settings_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
+import '../../features/channels/presentation/live_notification_screen.dart';
 import '../../features/credits/presentation/credits_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -300,6 +302,17 @@ GoRouter createAppRouter({
             ),
       ),
       GoRoute(
+        path: '/live/:id',
+        builder: (BuildContext context, GoRouterState state) {
+          return LiveNotificationScreen(
+            watchId: state.pathParameters['id']!,
+            state: liveNotificationStateFromValue(
+              state.uri.queryParameters['state'],
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: AppRoutes.componentGallery,
         builder: (BuildContext context, GoRouterState state) {
           return ComponentGalleryScreen(config: config, settings: settings);
@@ -340,6 +353,14 @@ GoRouter createAppRouter({
                     path: 'add',
                     builder: (BuildContext context, GoRouterState state) {
                       return const AddChannelScreen();
+                    },
+                  ),
+                  GoRoute(
+                    path: ':id/auto-record',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return AutoRecordSettingsScreen(
+                        watchId: state.pathParameters['id']!,
+                      );
                     },
                   ),
                   GoRoute(
