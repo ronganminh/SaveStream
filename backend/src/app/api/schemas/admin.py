@@ -18,7 +18,7 @@ class AdminUserResponse(StrictModel):
     id: str
     email: str
     display_name: str | None
-    role: Literal["user", "admin"]
+    role: Literal["user", "owner", "support", "finance", "admin"]
     is_active: bool
     email_verified_at: datetime | None
     deletion_requested_at: datetime | None
@@ -32,7 +32,7 @@ class AdminUserListResponse(StrictModel):
 
 
 class AdminUserUpdateRequest(StrictModel):
-    role: Literal["user", "admin"] | None = None
+    role: Literal["user", "owner", "support", "finance", "admin"] | None = None
     is_active: bool | None = None
 
     @model_validator(mode="after")
@@ -70,6 +70,7 @@ class AdminCreditAdjustmentResponse(StrictModel):
 class AdminRefundRequest(StrictModel):
     amount_minor: int = Field(gt=0)
     credits: int = Field(gt=0)
+    reason: str = Field(min_length=3, max_length=500)
 
 
 class AdminRefundResponse(StrictModel):
@@ -92,10 +93,54 @@ class AuditLogResponse(StrictModel):
     request_id: str | None
     ip_address: str | None
     user_agent: str | None
+    actor_role: str | None
+    reason: str | None
+    before_state: dict[str, object] | None
+    after_state: dict[str, object] | None
     details: dict[str, object]
     created_at: datetime
 
 
 class AuditLogListResponse(StrictModel):
     items: list[AuditLogResponse]
+    pagination: Pagination
+
+
+class AdminMfaStatusResponse(StrictModel):
+    enabled: bool
+    verified: bool
+
+
+class AdminMfaSetupResponse(StrictModel):
+    secret: str
+    otpauth_uri: str
+    qr_svg: str
+    recovery_codes: list[str]
+
+
+class AdminMfaCodeRequest(StrictModel):
+    code: str = Field(min_length=6, max_length=64)
+
+
+class AdminStepUpRequest(StrictModel):
+    password: str = Field(min_length=1, max_length=128)
+    totp_code: str = Field(min_length=6, max_length=6)
+
+
+class AdminStepUpResponse(StrictModel):
+    token: str
+    expires_at: datetime
+
+
+class AdminRoleUpdateRequest(StrictModel):
+    role: Literal["user", "owner", "support", "finance"]
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminMfaResetRequest(StrictModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminAdminListResponse(StrictModel):
+    items: list[AdminUserResponse]
     pagination: Pagination
