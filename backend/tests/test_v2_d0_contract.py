@@ -41,7 +41,7 @@ def test_d0_admin_openapi_contract() -> None:
     ):
         assert name in schemas
 
-    roles = schemas["UserResponse"]["properties"]["role"]["enum"]
+    roles = schemas["User"]["properties"]["role"]["enum"]
     assert roles == ["user", "owner", "support", "finance", "admin"]
     assert schemas["UserResponse"]["properties"]["admin_mfa_enabled"]["type"] == "boolean"
     assert schemas["UserResponse"]["properties"]["admin_mfa_verified"]["type"] == "boolean"
