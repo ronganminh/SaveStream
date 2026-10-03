@@ -3,7 +3,9 @@ name: Mobile CI
 on:
   push:
     branches:
+      - main
       - feat/flutter-mobile
+      - release/mobile-phase17-readiness
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-ci.yml'
@@ -11,6 +13,7 @@ on:
     paths:
       - 'apps/mobile/**'
       - '.github/workflows/mobile-ci.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,6 +38,20 @@ jobs:
       - name: Resolve dependencies
         run: flutter pub get
 
+      - name: Print generated lockfile when not committed
+        run: |
+          if ! git ls-files --error-unmatch pubspec.lock >/dev/null 2>&1; then
+            echo '===PHASE17_PUBSPEC_LOCK_BEGIN==='
+            cat pubspec.lock
+            echo '===PHASE17_PUBSPEC_LOCK_END==='
+          fi
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Generate native splash
+        run: dart run flutter_native_splash:create
+
       - name: Generate localizations
         run: flutter gen-l10n
 
@@ -48,3 +65,12 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Build production Android App Bundle
+        run: >-
+          flutter build appbundle --release
+          --dart-define=APP_ENV=production
+          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+
+      - name: Phase 17 release audit
+        run: bash tool/phase17_release_audit.sh
