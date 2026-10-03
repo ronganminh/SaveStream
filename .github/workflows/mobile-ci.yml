@@ -52,10 +52,10 @@ jobs:
       - name: Generate localizations
         run: flutter gen-l10n
 
-      - name: Format sources and show pending diff
-        run: |
-          dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
-          git diff -- lib/app lib/core lib/features lib/l10n/l10n.dart test
+      - name: Check formatting
+        run: >-
+          dart format --output=none --set-exit-if-changed
+          lib/app lib/core lib/features lib/l10n/l10n.dart test
 
       - name: Analyze
         run: flutter analyze --fatal-infos
@@ -104,8 +104,8 @@ jobs:
           dart run flutter_native_splash:create
           flutter gen-l10n
 
-      - name: Build production iOS without signing
+      - name: Build production iOS release simulator
         run: >-
-          flutter build ios --release --no-codesign
+          flutter build ios --simulator --release
           --dart-define=APP_ENV=production
           --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
