@@ -8,6 +8,10 @@ const failures = [];
 const must = (file, text) => {
   if (!read(file).includes(text)) failures.push(file + ": missing " + JSON.stringify(text));
 };
+const mustNormalized = (file, text) => {
+  const source = read(file).replace(/\s+/g, " ");
+  if (!source.includes(text)) failures.push(file + ": missing normalized " + JSON.stringify(text));
+};
 const forbid = (file, text) => {
   if (read(file).includes(text)) failures.push(file + ": forbidden " + JSON.stringify(text));
 };
@@ -114,6 +118,33 @@ const forbidIn = (label, source, text) => {
 ].forEach((file) => must(file, "@/components/admin/user-support"));
 
 must("src/components/app-components.tsx", '{ to: "/admin/users", label: "Users", icon: Users }');
+
+[
+  "/v1/admin/storage/summary",
+  "/v1/admin/storage/orphan-scans",
+  "/v1/admin/email/logs",
+  "/v1/admin/email/templates",
+  "/v1/admin/broadcasts",
+  '"X-Admin-Step-Up"',
+].forEach((text) => must("src/repositories/admin-api.ts", text));
+
+[
+  "Storage, email delivery, templates, and broadcast operations.",
+  "Bounded object-storage scan.",
+  "Email delivery logs",
+  "The HTML shell remains version-controlled.",
+  "System reaches every active account.",
+  "Preview audience",
+  "Queue broadcast",
+  "Re-enter your password, current authenticator code, and the reason for this action.",
+].forEach((text) => must("src/components/admin/operations-d7.tsx", text));
+mustNormalized(
+  "src/components/admin/operations-d7.tsx",
+  "Marketing reaches only users who opted in.",
+);
+
+must("src/routes/admin/operations.tsx", "@/components/admin/operations-d7");
+must("src/components/app-components.tsx", '{ to: "/admin/operations", label: "Operations", icon: HardDrive }');
 
 ["Play recording", "Download recording", "presigned", "storage_key"].forEach((text) =>
   forbid("src/components/admin/user-support.tsx", text),
@@ -269,6 +300,34 @@ const d1Test = read("../../backend/tests/test_v2_d1_admin_users.py");
 ].forEach((text) => {
   if (!d1Test.includes(text)) failures.push("D1 backend test: missing " + JSON.stringify(text));
 });
+
+const d7Backend = read("../../backend/src/app/api/routes/admin.py");
+[
+  '"admin.storage.orphan_scan_queued"',
+  '"admin.storage.orphans_delete_queued"',
+  '"admin.email.logs_viewed"',
+  '"admin.email.template_updated"',
+  '"admin.broadcast.queued"',
+  'alias="X-Admin-Step-Up"',
+  "_require_owner(principal)",
+].forEach((text) => {
+  if (!d7Backend.includes(text)) failures.push("D7 backend invariant: missing " + JSON.stringify(text));
+});
+
+const d7Worker = read("../../backend/src/app/infrastructure/admin/d7_worker.py");
+[
+  'NotificationPreference.marketing.is_(True)',
+  '_RATE_LIMIT_SECONDS',
+  'f"admin_{broadcast.kind}"',
+  'MinioStorageClient(settings).list_keys',
+].forEach((text) => {
+  if (!d7Worker.includes(text)) failures.push("D7 worker invariant: missing " + JSON.stringify(text));
+});
+
+const d7Privacy = read("../../backend/src/app/application/privacy/service.py");
+if (!d7Privacy.includes("timedelta(days=90)")) {
+  failures.push("D7 email log retention: missing 90 day pruning");
+}
 
 const backend = read("../../backend/src/app/api/routes/admin.py");
 ["_require_admin(principal)", '"FORBIDDEN"', '"Admin permission is required"'].forEach(

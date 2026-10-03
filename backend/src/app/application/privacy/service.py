@@ -8,6 +8,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.recordings.retention import paid_customer_clause, retention_days
+from app.infrastructure.db.admin_models import AdminEmailLog
 from app.application.recordings.service import utcnow
 from app.infrastructure.db.billing_models import PaymentOrder, Refund
 from app.infrastructure.db.credit_models import CreditLedgerEntry, CreditReservation
@@ -497,4 +498,13 @@ class PrivacyService:
             .where(OneTimeToken.expires_at < now)
             .returning(OneTimeToken.id)
         )
-        return len(list(keys.scalars())) + len(list(tokens.scalars()))
+        email_logs = await self.session.execute(
+            delete(AdminEmailLog)
+            .where(AdminEmailLog.created_at < now - timedelta(days=90))
+            .returning(AdminEmailLog.id)
+        )
+        return (
+            len(list(keys.scalars()))
+            + len(list(tokens.scalars()))
+            + len(list(email_logs.scalars()))
+        )

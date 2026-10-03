@@ -26,6 +26,7 @@ from app.domain.recordings.state import (
     RecordingStatus,
     transition,
 )
+from app.infrastructure.db.admin_models import AdminStorageRun
 from app.infrastructure.db.recording_models import (
     Recording,
     RecordingArtifact,
@@ -299,12 +300,25 @@ async def _cleanup_recording(recording_id: uuid.UUID, settings: AppSettings) -> 
                     )
                 ).all()
             )
+            run = AdminStorageRun(
+                kind="recording_cleanup",
+                status="running",
+                scanned_count=len(artifacts),
+                details={"recording_id": str(recording_id)},
+                started_at=utcnow(),
+            )
+            session.add(run)
+            deleted_count = 0
             for artifact in artifacts:
                 try:
                     await asyncio.to_thread(storage.remove, artifact.storage_key)
                 except Exception:
                     continue
                 artifact.deleted_at = utcnow()
+                deleted_count += 1
+            run.deleted_count = deleted_count
+            run.status = "completed"
+            run.completed_at = utcnow()
             await session.commit()
         shutil.rmtree(
             Path(settings.recording_temp_dir) / str(recording_id),

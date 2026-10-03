@@ -32,6 +32,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
+import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
 import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSystemRouteImport } from './routes/admin/system'
@@ -171,6 +172,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const AdminErrorsRoute = AdminErrorsRouteImport.update({
   id: '/admin/errors',
   path: '/admin/errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOperationsRoute = AdminOperationsRouteImport.update({
+  id: '/admin/operations',
+  path: '/admin/operations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminJobsRoute = AdminJobsRouteImport.update({
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/usage': typeof UsageRoute
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/admin/system': typeof AdminSystemRoute
@@ -417,6 +425,7 @@ export interface FileRoutesById {
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
+  '/admin/operations': typeof AdminOperationsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
@@ -469,6 +478,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/verify-email'
     | '/admin/errors'
+    | '/admin/operations'
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
@@ -514,6 +524,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/usage'
     | '/admin/errors'
+    | '/admin/operations'
     | '/admin/system'
     | '/admin/workers'
     | '/auth/error'
@@ -562,6 +573,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/verify-email'
     | '/admin/errors'
+    | '/admin/operations'
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
@@ -613,6 +625,7 @@ export interface RootRouteChildren {
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
   AdminErrorsRoute: typeof AdminErrorsRoute
+  AdminOperationsRoute: typeof AdminOperationsRoute
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminSystemRoute: typeof AdminSystemRoute
@@ -781,6 +794,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/errors'
       fullPath: '/admin/errors'
       preLoaderRoute: typeof AdminErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/operations': {
+      id: '/admin/operations'
+      path: '/admin/operations'
+      fullPath: '/admin/operations'
+      preLoaderRoute: typeof AdminOperationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/jobs': {
@@ -1094,6 +1114,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
   AdminErrorsRoute: AdminErrorsRoute,
+  AdminOperationsRoute: AdminOperationsRoute,
   AdminJobsRoute: AdminJobsRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminSystemRoute: AdminSystemRoute,

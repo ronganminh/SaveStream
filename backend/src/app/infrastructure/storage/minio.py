@@ -52,6 +52,18 @@ class MinioStorageClient:
     def remove(self, storage_key: str) -> None:
         self.client.remove_object(self.settings.minio_bucket, storage_key)
 
+    def list_keys(self, *, limit: int) -> list[str]:
+        self.ensure_bucket()
+        keys: list[str] = []
+        for item in self.client.list_objects(
+            self.settings.minio_bucket,
+            recursive=True,
+        ):
+            keys.append(item.object_name)
+            if len(keys) >= limit:
+                break
+        return keys
+
     def _ping_sync(self) -> bool:
         return self.client.bucket_exists(self.settings.minio_bucket)
 

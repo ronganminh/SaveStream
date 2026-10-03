@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 from email.message import EmailMessage
 from urllib.parse import quote
 
+from sqlalchemy import select
+
+from app.infrastructure.db.admin_models import AdminEmailLog, AdminEmailTemplate
 from app.infrastructure.db.models import OneTimeToken, User
 from app.infrastructure.email import templates
 from app.infrastructure.db.session import Database
@@ -81,27 +84,66 @@ async def deliver_one_time_token_email(
             expires_in = int(
                 (_aware(token_row.expires_at) - _aware(token_row.created_at)).total_seconds()
             )
+            override = await session.get(AdminEmailTemplate, token_row.purpose)
+            subject_override = override.subject if override is not None else None
+            body_override = override.body if override is not None else None
             if token_row.purpose == "verify_email":
                 email = templates.verify_email(
                     link=f"{cfg.frontend_base_url}/verify-email?token={encoded}",
                     expires_in_seconds=expires_in,
                     site_url=cfg.frontend_base_url,
                     trial_credits=cfg.signup_credits,
+                    subject_override=subject_override,
+                    intro_override=body_override,
                 )
             elif token_row.purpose == "password_reset":
                 email = templates.password_reset(
                     link=f"{cfg.frontend_base_url}/reset-password?token={encoded}",
                     expires_in_seconds=expires_in,
                     site_url=cfg.frontend_base_url,
+                    subject_override=subject_override,
+                    intro_override=body_override,
                 )
             else:
                 return
 
-            SMTPEmailSender(cfg).send(
-                to=user.email,
-                subject=email.subject,
-                text=email.text,
-                html=email.html,
+            dedupe_key = f"identity:{token_row.id}"
+            log = await session.scalar(
+                select(AdminEmailLog).where(AdminEmailLog.dedupe_key == dedupe_key)
             )
+            if log is not None and log.status == "sent":
+                return
+            if log is None:
+                log = AdminEmailLog(
+                    user_id=user.id,
+                    recipient_email=user.email,
+                    kind=token_row.purpose,
+                    subject=email.subject,
+                    status="sending",
+                    dedupe_key=dedupe_key,
+                    attempts=1,
+                )
+                session.add(log)
+            else:
+                log.status = "sending"
+                log.error = None
+                log.attempts += 1
+                log.subject = email.subject
+            await session.commit()
+            try:
+                SMTPEmailSender(cfg).send(
+                    to=user.email,
+                    subject=email.subject,
+                    text=email.text,
+                    html=email.html,
+                )
+            except Exception as exc:
+                log.status = "failed"
+                log.error = (str(exc) or type(exc).__name__)[:4000]
+                await session.commit()
+                raise
+            log.status = "sent"
+            log.sent_at = datetime.now(timezone.utc)
+            await session.commit()
     finally:
         await database.close()

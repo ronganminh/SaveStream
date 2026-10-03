@@ -22,6 +22,8 @@ NotificationKind = Literal[
     "cloud_minutes_exhausted",
     "free_minutes_low",
     "purchase_completed",
+    "admin_system",
+    "admin_marketing",
 ]
 
 
@@ -31,7 +33,7 @@ class NotificationResponse(StrictModel):
     title: str
     body: str
     read: bool
-    resource_type: Literal["recording", "watch"] | None
+    resource_type: Literal["recording", "watch", "broadcast"] | None
     resource_id: str | None
     created_at: datetime
 
