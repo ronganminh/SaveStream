@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_principal, get_identity_service
+from app.api.dependencies import get_current_principal, get_db_session, get_identity_service
 from app.api.schemas.identity import (
     AuthMessage,
     SessionResponse,
@@ -14,13 +15,9 @@ from app.api.schemas.identity import (
 )
 from app.application.identity.service import IdentityService, ip_hint
 from app.application.privacy.service import PrivacyService
-from app.domain.identity.types import AuthPrincipal
+from app.domain.identity.types import AuthPrincipal, is_admin_role
 from app.infrastructure.db.admin_models import AdminMfaCredential
 from app.infrastructure.db.models import AuthSession, User
-from app.api.dependencies import get_db_session
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.domain.identity.types import is_admin_role
 
 router = APIRouter(prefix="/v1", tags=["Users"])
 
