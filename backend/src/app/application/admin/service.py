@@ -221,19 +221,43 @@ class AdminService:
                 )
             row_id = uuid.UUID(cursor_payload["id"])
             if sort_by == "email":
-                value = cursor_payload["email"]
-                primary = User.normalized_email
+                email_value = cursor_payload["email"]
+                if sort_order == "desc":
+                    statement = statement.where(
+                        or_(
+                            User.normalized_email < email_value,
+                            and_(
+                                User.normalized_email == email_value,
+                                User.id < row_id,
+                            ),
+                        )
+                    )
+                else:
+                    statement = statement.where(
+                        or_(
+                            User.normalized_email > email_value,
+                            and_(
+                                User.normalized_email == email_value,
+                                User.id > row_id,
+                            ),
+                        )
+                    )
             else:
-                value = datetime.fromisoformat(cursor_payload["created_at"])
-                primary = User.created_at
-            if sort_order == "desc":
-                statement = statement.where(
-                    or_(primary < value, and_(primary == value, User.id < row_id))
-                )
-            else:
-                statement = statement.where(
-                    or_(primary > value, and_(primary == value, User.id > row_id))
-                )
+                created_value = datetime.fromisoformat(cursor_payload["created_at"])
+                if sort_order == "desc":
+                    statement = statement.where(
+                        or_(
+                            User.created_at < created_value,
+                            and_(User.created_at == created_value, User.id < row_id),
+                        )
+                    )
+                else:
+                    statement = statement.where(
+                        or_(
+                            User.created_at > created_value,
+                            and_(User.created_at == created_value, User.id > row_id),
+                        )
+                    )
 
         primary_sort = User.normalized_email if sort_by == "email" else User.created_at
         if sort_order == "desc":
@@ -776,15 +800,17 @@ class AdminService:
         except ValueError:
             parsed = None
         if parsed is not None:
-            user = await self.session.get(User, parsed)
-            if user is not None and not any(item["id"] == str(user.id) for item in hits):
+            exact_user = await self.session.get(User, parsed)
+            if exact_user is not None and not any(
+                item["id"] == str(exact_user.id) for item in hits
+            ):
                 hits.append(
                     {
                         "type": "user",
-                        "id": str(user.id),
-                        "label": user.email,
+                        "id": str(exact_user.id),
+                        "label": exact_user.email,
                         "detail": "User ID",
-                        "href": f"/admin/users/{user.id}",
+                        "href": f"/admin/users/{exact_user.id}",
                     }
                 )
             payment = await self.session.get(PaymentOrder, parsed)
