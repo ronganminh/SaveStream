@@ -19,6 +19,7 @@ from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.watches.state import WatchStatus, can_resume, validate_user_status
+from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
 
@@ -78,6 +79,17 @@ class WatchService:
 
     async def entitlement_for(self, user_id: uuid.UUID) -> EntitlementSnapshot:
         return await EntitlementService(self.session, self.settings).get(user_id)
+
+    async def waiting_room_ids(self, user_id: uuid.UUID) -> set[str]:
+        rows = await self.session.scalars(
+            select(Recording.source_value).where(
+                Recording.user_id == user_id,
+                Recording.deleted_at.is_(None),
+                Recording.status == "waiting_for_cloud_slot",
+                Recording.source_type == "room_id",
+            )
+        )
+        return set(rows.all())
 
     async def create(
         self,

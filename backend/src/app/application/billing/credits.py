@@ -65,6 +65,9 @@ class BillingCreditService:
             )
         )
         if existing is not None:
+            from app.application.watches.resume import resume_credit_paused_watches
+
+            await resume_credit_paused_watches(self.session, user_id)
             return existing
 
         account = await self._account(user_id)
@@ -82,6 +85,9 @@ class BillingCreditService:
         )
         self.session.add(entry)
         await self.session.flush()
+        from app.application.watches.resume import resume_credit_paused_watches
+
+        await resume_credit_paused_watches(self.session, user_id)
         return entry
 
     async def hold_refund(

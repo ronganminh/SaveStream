@@ -17,6 +17,8 @@ class RecordingStatus(str, Enum):
     FAILED = "failed"
     STOP_REQUESTED = "stop_requested"
     STOPPED = "stopped"
+    WAITING_FOR_CLOUD_SLOT = "waiting_for_cloud_slot"
+    MISSED_NO_CLOUD_SLOT = "missed_no_cloud_slot"
 
 
 ACTIVE_RECORDING_STATUSES = frozenset(
@@ -35,6 +37,7 @@ TERMINAL_RECORDING_STATUSES = frozenset(
         RecordingStatus.COMPLETED,
         RecordingStatus.FAILED,
         RecordingStatus.STOPPED,
+        RecordingStatus.MISSED_NO_CLOUD_SLOT,
     }
 )
 
@@ -75,6 +78,14 @@ _ALLOWED: dict[RecordingStatus, frozenset[RecordingStatus]] = {
     RecordingStatus.COMPLETED: frozenset(),
     RecordingStatus.FAILED: frozenset(),
     RecordingStatus.STOPPED: frozenset(),
+    RecordingStatus.WAITING_FOR_CLOUD_SLOT: frozenset(
+        {
+            RecordingStatus.QUEUED,
+            RecordingStatus.STOPPED,
+            RecordingStatus.MISSED_NO_CLOUD_SLOT,
+        }
+    ),
+    RecordingStatus.MISSED_NO_CLOUD_SLOT: frozenset(),
 }
 
 
@@ -92,6 +103,7 @@ def actions_for_status(status: RecordingStatus) -> RecordingActions:
             RecordingStatus.QUEUED,
             RecordingStatus.WAITING_LIVE,
             RecordingStatus.RECORDING,
+            RecordingStatus.WAITING_FOR_CLOUD_SLOT,
         },
         can_retry=status is RecordingStatus.FAILED,
         can_delete=status in TERMINAL_RECORDING_STATUSES,

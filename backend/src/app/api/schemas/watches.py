@@ -20,7 +20,12 @@ WatchStatusValue = Literal[
     "disabled",
 ]
 LiveStatusValue = Literal["unknown", "offline", "live"]
-AutoRecordStateValue = Literal["off", "active", "paused_no_cloud_minutes"]
+AutoRecordStateValue = Literal[
+    "off",
+    "active",
+    "paused_no_cloud_minutes",
+    "waiting_for_cloud_slot",
+]
 
 
 class WatchResponse(StrictModel):
