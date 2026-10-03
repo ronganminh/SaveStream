@@ -1,13 +1,16 @@
 import 'app_environment.dart';
 
 class AppConfig {
-  const AppConfig({
+  AppConfig({
     required this.environment,
     required this.apiBaseUrl,
-    required this.externalCheckoutEnabled,
-    required this.privacyPolicyUrl,
-    required this.termsOfUseUrl,
-  });
+    this.externalCheckoutEnabled = true,
+    Uri? privacyPolicyUrl,
+    Uri? termsOfUseUrl,
+  }) : privacyPolicyUrl =
+           privacyPolicyUrl ?? Uri.parse('https://savestream.online/privacy'),
+       termsOfUseUrl =
+           termsOfUseUrl ?? Uri.parse('https://savestream.online/terms');
 
   final AppEnvironment environment;
   final Uri apiBaseUrl;
