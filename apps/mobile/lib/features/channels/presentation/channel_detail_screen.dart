@@ -1,18 +1,20 @@
+/// W09/W10/W10-waiting/W11/W12 — Creator detail states.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
+import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
-import '../../recordings/presentation/controllers/recording_providers.dart';
+import 'cloud_hours_upsell_sheet.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
 import 'controllers/watch_providers.dart';
-import 'watch_ui_helpers.dart';
 
 class ChannelDetailScreen extends ConsumerStatefulWidget {
   const ChannelDetailScreen({required this.watchId, super.key});
@@ -25,315 +27,345 @@ class ChannelDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
-  bool _isMutating = false;
-  Object? _mutationError;
+  bool _mutating = false;
 
-  Future<void> _runMutation(Future<void> Function() action) async {
-    setState(() {
-      _isMutating = true;
-      _mutationError = null;
-    });
+  Future<void> _run(Future<void> Function() action) async {
+    if (_mutating) return;
+    setState(() => _mutating = true);
     try {
       await action();
-    } on Object catch (error) {
-      if (mounted) {
-        setState(() {
-          _mutationError = error;
-        });
-      }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isMutating = false;
-        });
-      }
+      if (mounted) setState(() => _mutating = false);
     }
   }
 
-  Future<void> _recordNow(WatchSummary watch) async {
-    RecordingSummary? created;
-    await _runMutation(() async {
-      created = await ref
-          .read(recordingControllerProvider)
-          .create(
-            CreateRecordingCommand(
-              sourceType: _recordingSourceType(watch.sourceType),
-              sourceValue:
-                  watch.sourceValue ??
-                  watch.creatorUsername.replaceFirst('@', ''),
-            ),
-          );
-    });
-    if (_mutationError == null && created != null && mounted) {
-      context.push(AppRoutes.recordingDetail(created!.id));
-    }
-  }
-
-  Future<void> _deleteWatch(WatchSummary watch) async {
-    final AppLocalizations l10n = context.l10n;
-    final bool? confirmed = await SsConfirmDialog.show(
-      context,
-      title: l10n.deleteChannelTitle,
-      message: l10n.deleteChannelMessage(watch.creatorDisplayName),
-      cancelLabel: l10n.cancelAction,
-      confirmLabel: l10n.deleteChannelAction,
+  Future<void> _delete(WatchSummary watch) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(
+          context.l10n.deleteChannelMessage(watch.creatorDisplayName),
+        ),
+        content: Text(context.l10n.deleteChannelMessage(watch.creatorDisplayName)),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.l10n.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.l10n.deleteChannelAction),
+          ),
+        ],
+      ),
     );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    await _runMutation(
-      () => ref.read(watchControllerProvider).delete(watch.id),
-    );
-    if (_mutationError == null && mounted) {
-      context.go(AppRoutes.channels);
-    }
+    if (confirmed != true || !mounted) return;
+    await _run(() => ref.read(watchControllerProvider).delete(watch.id));
+    if (mounted) context.go(AppRoutes.channels);
   }
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final AsyncValue<ChannelDetailViewModel?> detail = ref.watch(
       channelDetailProvider(widget.watchId),
     );
+    final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
+    final AsyncValue<List<RecordingSummary>> allRecordings = ref.watch(
+      watchRecordingsProvider,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.channelDetailTitle)),
+      appBar: AppBar(
+        title: Text(context.l10n.channelDetailTitle),
+      ),
       body: SafeArea(
-        child: SsAsyncRefreshFrame(
-          isRefreshing: detail.isRefreshing,
-          child: detail.when(
-            loading: () => const _ChannelDetailSkeleton(),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: SsAsyncErrorState(
-                error: error,
-                onRetry: () =>
-                    ref.invalidate(channelDetailProvider(widget.watchId)),
+        child: detail.when(
+          loading: () => const _DetailSkeleton(),
+          error: (Object error, StackTrace stack) => Center(
+            child: SsAsyncErrorState(
+              error: error,
+              onRetry: () => ref.invalidate(
+                channelDetailProvider(widget.watchId),
               ),
             ),
-            data: (ChannelDetailViewModel? value) {
-              if (value == null) {
-                return Center(
-                  child: SsEmptyState(
-                    title: l10n.channelNotFoundTitle,
-                    message: l10n.channelNotFoundBody,
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(channelDetailProvider(widget.watchId));
-                  await ref.read(channelDetailProvider(widget.watchId).future);
-                },
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    SsSpacing.lg,
-                    SsSpacing.md,
-                    SsSpacing.lg,
-                    SsSpacing.xxl,
-                  ),
-                  children: <Widget>[
-                    _CreatorCard(watch: value.watch),
-                    if (_mutationError != null) ...<Widget>[
-                      const SizedBox(height: SsSpacing.md),
-                      SsInlineAsyncError(
-                        error: _mutationError!,
-                        messageOverride: _channelMutationMessage(
-                          l10n,
-                          _mutationError!,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: SsSpacing.lg),
-                    _MonitoringCard(
-                      watch: value.watch,
-                      isMutating: _isMutating,
-                      onRecordNow: () => _recordNow(value.watch),
-                      onAutoRecordChanged: (bool enabled) {
-                        _runMutation(
-                          () => ref
-                              .read(watchControllerProvider)
-                              .setAutoRecord(value.watch.id, enabled: enabled),
-                        );
-                      },
-                      onPauseResume: () {
-                        if (value.watch.status == WatchStatus.active) {
-                          _runMutation(
-                            () => ref
-                                .read(watchControllerProvider)
-                                .pause(value.watch.id),
-                          );
-                        } else {
-                          _runMutation(
-                            () => ref
-                                .read(watchControllerProvider)
-                                .resume(value.watch.id),
-                          );
-                        }
-                      },
-                      onDelete: () => _deleteWatch(value.watch),
-                    ),
-                    const SizedBox(height: SsSpacing.xl),
-                    _RecordingHistory(recordings: value.recordings),
-                  ],
-                ),
-              );
-            },
           ),
+          data: (ChannelDetailViewModel? value) {
+            if (value == null) {
+              return SsEmptyState(
+                title: context.l10n.channelNotFoundTitle,
+                message: context.l10n.channelNotFoundBody,
+                icon: Icons.person_off_outlined,
+              );
+            }
+            if (!entitlement.hasValue || !allRecordings.hasValue) {
+              return const _DetailSkeleton();
+            }
+            return _DetailBody(
+              data: value,
+              entitlement: entitlement.requireValue,
+              allRecordings: allRecordings.requireValue,
+              mutating: _mutating,
+              onNotify: (bool enabled) => _run(
+                () => ref
+                    .read(watchControllerProvider)
+                    .setNotifyOnLive(value.watch.id, enabled: enabled),
+              ),
+              onPauseResume: () => _run(
+                () => value.watch.status == WatchStatus.paused
+                    ? ref.read(watchControllerProvider).resume(value.watch.id)
+                    : ref.read(watchControllerProvider).pause(value.watch.id),
+              ),
+              onDelete: () => _delete(value.watch),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _CreatorCard extends StatelessWidget {
-  const _CreatorCard({required this.watch});
-
-  final WatchSummary watch;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              SsAvatar(label: watch.creatorDisplayName, radius: 30),
-              const SizedBox(width: SsSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      watch.creatorDisplayName,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: SsSpacing.xs),
-                    Text(
-                      watch.creatorUsername,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.lg),
-          Wrap(
-            spacing: SsSpacing.sm,
-            runSpacing: SsSpacing.sm,
-            children: <Widget>[
-              SsStatusChip(
-                label: watch.isLive ? l10n.liveStatus : l10n.offlineStatus,
-                tone: watch.isLive
-                    ? SsStatusTone.recording
-                    : SsStatusTone.neutral,
-                icon: watch.isLive
-                    ? Icons.fiber_manual_record_rounded
-                    : Icons.cloud_off_outlined,
-              ),
-              SsStatusChip(
-                label: watchStatusLabel(l10n, watch.status),
-                tone: watchStatusTone(watch.status),
-              ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          Text(
-            watchStatusReason(l10n, watch.status),
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: SsSpacing.lg),
-          _DetailLine(
-            label: l10n.lastCheckedLabel,
-            value: watchTimestamp(context, watch.lastCheckedAt),
-          ),
-          const SizedBox(height: SsSpacing.sm),
-          _DetailLine(
-            label: l10n.lastLiveLabel,
-            value: watchTimestamp(context, watch.lastLiveAt),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MonitoringCard extends StatelessWidget {
-  const _MonitoringCard({
-    required this.watch,
-    required this.isMutating,
-    required this.onRecordNow,
-    required this.onAutoRecordChanged,
+class _DetailBody extends StatelessWidget {
+  const _DetailBody({
+    required this.data,
+    required this.entitlement,
+    required this.allRecordings,
+    required this.mutating,
+    required this.onNotify,
     required this.onPauseResume,
     required this.onDelete,
   });
 
-  final WatchSummary watch;
-  final bool isMutating;
-  final VoidCallback onRecordNow;
-  final ValueChanged<bool> onAutoRecordChanged;
+  final ChannelDetailViewModel data;
+  final Entitlement entitlement;
+  final List<RecordingSummary> allRecordings;
+  final bool mutating;
+  final ValueChanged<bool> onNotify;
   final VoidCallback onPauseResume;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
+    final WatchSummary watch = data.watch;
+    final RecordingSummary? current = _currentRecording(data.recordings);
+    final bool waiting =
+        current?.status == RecordingStatus.waitingForCloudSlot ||
+        watch.autoRecordState == AutoRecordState.waitingForCloudSlot;
+    final bool missed =
+        current?.status == RecordingStatus.missedNoCloudSlot;
+    final bool paused = watch.status == WatchStatus.paused;
 
+    return ListView(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      children: <Widget>[
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                _CreatorHeader(watch: watch),
+                const SizedBox(height: SsSpacing.lg),
+                if (waiting)
+                  _WaitingCard(
+                    recording: current,
+                    entitlement: entitlement,
+                    allRecordings: allRecordings,
+                  )
+                else if (missed)
+                  SsInlineAlert(
+                    title: context.l10n.creatorMissedTitle,
+                    message: context.l10n.creatorMissedBody,
+                    tone: SsInlineAlertTone.warning,
+                  )
+                else if (paused)
+                  SsInlineAlert(
+                    title: context.l10n.watchPausedStatus,
+                    message: context.l10n.creatorPausedBody,
+                    tone: SsInlineAlertTone.warning,
+                  )
+                else if (watch.isLive)
+                  _LiveCard(watch: watch, entitlement: entitlement)
+                else
+                  SsInlineAlert(
+                    title: context.l10n.creatorDetailStatusTitle,
+                    message: context.l10n.creatorOfflineBody,
+                  ),
+                const SizedBox(height: SsSpacing.lg),
+                SsCard(
+                  child: Column(
+                    children: <Widget>[
+                      Semantics(
+                        label: context.l10n.watchNotifyOnLive,
+                        child: SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: watch.notifyOnLive,
+                          title: Text(context.l10n.watchNotifyOnLive),
+                          secondary:
+                              const Icon(Icons.notifications_active_outlined),
+                          onChanged: mutating ? null : onNotify,
+                        ),
+                      ),
+                      const Divider(),
+                      if (entitlement.plan == Plan.pro)
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.cloud_outlined),
+                          title: Text(context.l10n.watchAutoRecordCloud),
+                          subtitle: Text(
+                            watch.autoRecord
+                                ? context.l10n.autoRecordOnLabel
+                                : context.l10n.autoRecordOffLabel,
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push(
+                            AppRoutes.autoRecordSettings(watch.id),
+                          ),
+                        )
+                      else
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.lock_outline_rounded),
+                          title: Text(context.l10n.watchAutoRecordCloud),
+                          subtitle: Text(context.l10n.watchAutoRecordLocked),
+                          onTap: () => showCloudHoursUpsellSheet(context),
+                        ),
+                    ],
+                  ),
+                ),
+                if (data.latestRecording != null) ...<Widget>[
+                  const SizedBox(height: SsSpacing.lg),
+                  SsSectionHeader(
+                    title: context.l10n.creatorRecentRecordingTitle,
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  SsRecordingTile(
+                    title: data.latestRecording!.creatorDisplayName,
+                    subtitle: _recordingSubtitle(
+                      context,
+                      data.latestRecording!,
+                    ),
+                    engine: data.latestRecording!.engine,
+                    onTap: () => context.push(
+                      AppRoutes.recordingDetail(data.latestRecording!.id),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: SsSpacing.xl),
+                SsSecondaryButton(
+                  label: paused
+                      ? context.l10n.resumeMonitoringAction
+                      : context.l10n.pauseMonitoringAction,
+                  icon: paused
+                      ? Icons.play_arrow_rounded
+                      : Icons.pause_rounded,
+                  onPressed: mutating ? null : onPauseResume,
+                ),
+                const SizedBox(height: SsSpacing.sm),
+                TextButton.icon(
+                  onPressed: mutating ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: Text(context.l10n.deleteChannelAction),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CreatorHeader extends StatelessWidget {
+  const _CreatorHeader({required this.watch});
+
+  final WatchSummary watch;
+
+  @override
+  Widget build(BuildContext context) {
+    return SsCard(
+      child: Row(
+        children: <Widget>[
+          SsAvatar(label: watch.creatorDisplayName, radius: 30),
+          const SizedBox(width: SsSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  watch.creatorDisplayName,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(watch.creatorUsername),
+              ],
+            ),
+          ),
+          if (watch.isLive)
+            const SsLiveBadge(isLive: true)
+          else
+            SsStatusChip(
+              label: watch.status == WatchStatus.paused
+                  ? context.l10n.watchPausedStatus
+                  : context.l10n.offlineStatus,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveCard extends StatelessWidget {
+  const _LiveCard({required this.watch, required this.entitlement});
+
+  final WatchSummary watch;
+  final Entitlement entitlement;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool free = entitlement.plan == Plan.free;
     return SsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
-            l10n.monitoringSettingsTitle,
-            style: Theme.of(context).textTheme.titleMedium,
+            context.l10n.creatorLiveSince,
+            style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsSpacing.sm),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: watch.autoRecord,
-            title: Text(l10n.autoRecordTitle),
-            subtitle: Text(l10n.autoRecordDescription),
-            onChanged: isMutating ? null : onAutoRecordChanged,
-          ),
-          const Divider(),
-          const SizedBox(height: SsSpacing.sm),
+          if (free)
+            SsLocationChip(
+              engine: Engine.local,
+              label: context.l10n.localLabel,
+            )
+          else
+            SsLocationChip(
+              engine: Engine.cloud,
+              label: context.l10n.cloudLabel,
+            ),
+          const SizedBox(height: SsSpacing.md),
+          if (free)
+            Text(
+              context.l10n.homeFreeMinutesRemaining(
+                entitlement.local.minutesRemaining,
+                entitlement.local.dailyMinutes,
+              ),
+            )
+          else
+            Text(
+              context.l10n.cloudTimeRemainingValue(
+                formatMinutesAsHoursMinutes(
+                  entitlement.cloudMinutesAvailable,
+                  hoursLabel: context.l10n.timeHoursUnit,
+                  minutesLabel: context.l10n.timeMinutesUnit,
+                ),
+              ),
+            ),
+          const SizedBox(height: SsSpacing.lg),
           SsPrimaryButton(
-            label: l10n.recordNowAction,
+            label: context.l10n.recordNowAction,
             icon: Icons.fiber_manual_record_rounded,
-            onPressed: isMutating ? null : onRecordNow,
-          ),
-          const SizedBox(height: SsSpacing.sm),
-          SsSecondaryButton(
-            label: watch.status == WatchStatus.active
-                ? l10n.pauseMonitoringAction
-                : l10n.resumeMonitoringAction,
-            icon: watch.status == WatchStatus.active
-                ? Icons.pause_rounded
-                : Icons.play_arrow_rounded,
-            onPressed: isMutating ? null : onPauseResume,
-          ),
-          const SizedBox(height: SsSpacing.sm),
-          TextButton.icon(
-            onPressed: isMutating ? null : onDelete,
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            label: Text(
-              l10n.deleteChannelAction,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+            // A3 owns Local/Cloud recording orchestration. A2 deliberately
+            // does not call the legacy cloud create API for Free accounts.
+            onPressed: () {},
           ),
         ],
       ),
@@ -341,187 +373,106 @@ class _MonitoringCard extends StatelessWidget {
   }
 }
 
-class _RecordingHistory extends StatelessWidget {
-  const _RecordingHistory({required this.recordings});
+class _WaitingCard extends StatelessWidget {
+  const _WaitingCard({
+    required this.recording,
+    required this.entitlement,
+    required this.allRecordings,
+  });
 
-  final List<RecordingSummary> recordings;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    if (recordings.isEmpty) {
-      return SsCard(
-        child: SsEmptyState(
-          title: l10n.channelNoRecordingsTitle,
-          message: l10n.channelNoRecordingsBody,
-          icon: Icons.video_library_outlined,
-        ),
-      );
-    }
-
-    final RecordingSummary latest = recordings.first;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.latestRecordingTitle,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: SsSpacing.md),
-        _RecordingTile(recording: latest),
-        const SizedBox(height: SsSpacing.xl),
-        Text(
-          l10n.recordingHistoryTitle,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: SsSpacing.md),
-        ...recordings.map(
-          (RecordingSummary recording) => Padding(
-            padding: const EdgeInsets.only(bottom: SsSpacing.md),
-            child: _RecordingTile(recording: recording),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecordingTile extends StatelessWidget {
-  const _RecordingTile({required this.recording});
-
-  final RecordingSummary recording;
+  final RecordingSummary? recording;
+  final Entitlement entitlement;
+  final List<RecordingSummary> allRecordings;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
+    final List<RecordingSummary> activeCloud = allRecordings
+        .where(
+          (RecordingSummary item) =>
+              item.engine == Engine.cloud &&
+              item.status == RecordingStatus.recording,
+        )
+        .take(entitlement.limits.maxConcurrentCloudRecordings)
+        .toList(growable: false);
 
     return SsCard(
-      child: SsListTile(
-        title: recording.creatorDisplayName,
-        subtitle: recording.id,
-        leading: const Icon(Icons.video_library_outlined),
-        trailing: SsStatusChip(
-          label: _recordingStatusLabel(l10n, recording.status),
-          tone: _recordingStatusTone(recording.status),
-        ),
-        onTap: () => context.push(AppRoutes.recordingDetail(recording.id)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SsInlineAlert(
+            title: context.l10n.creatorWaitingTitle,
+            message: context.l10n.creatorWaitingBody(
+              entitlement.limits.maxConcurrentCloudRecordings,
+            ),
+            tone: SsInlineAlertTone.warning,
+          ),
+          if (recording?.queuePosition != null) ...<Widget>[
+            const SizedBox(height: SsSpacing.md),
+            SsStatusChip(
+              label: context.l10n.queuePositionLabel(
+                recording!.queuePosition!,
+              ),
+              icon: Icons.format_list_numbered_rounded,
+            ),
+          ],
+          if (activeCloud.isNotEmpty) ...<Widget>[
+            const SizedBox(height: SsSpacing.lg),
+            Text(
+              context.l10n.activeCloudSlotsTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: SsSpacing.sm),
+            for (final RecordingSummary item in activeCloud)
+              Padding(
+                padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                child: SsRecordingTile(
+                  title: item.creatorDisplayName,
+                  subtitle: formatDurationHms(
+                    Duration(seconds: item.durationSeconds),
+                  ),
+                  engine: Engine.cloud,
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
 }
 
-class _DetailLine extends StatelessWidget {
-  const _DetailLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-          ),
-        ),
-        const SizedBox(width: SsSpacing.md),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.end,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      ],
-    );
+RecordingSummary? _currentRecording(List<RecordingSummary> recordings) {
+  for (final RecordingSummary item in recordings) {
+    if (item.status == RecordingStatus.waitingForCloudSlot ||
+        item.status == RecordingStatus.missedNoCloudSlot ||
+        item.isActiveLifecycle) {
+      return item;
+    }
   }
+  return recordings.isEmpty ? null : recordings.first;
 }
 
-class _ChannelDetailSkeleton extends StatelessWidget {
-  const _ChannelDetailSkeleton();
+String _recordingSubtitle(
+  BuildContext context,
+  RecordingSummary recording,
+) {
+  return '${context.l10n.recordingDurationLabel}: '
+      '${formatDurationHms(Duration(seconds: recording.durationSeconds))}';
+}
+
+class _DetailSkeleton extends StatelessWidget {
+  const _DetailSkeleton();
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(SsSpacing.lg),
       children: const <Widget>[
-        SsSkeleton(height: 220, radius: SsRadii.lg),
+        SsSkeleton(height: 104, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 210, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.xl),
-        SsSkeleton(width: 180, height: 24),
+        SsSkeleton(height: 180, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 88, radius: SsRadii.lg),
+        SsSkeleton(height: 160, radius: SsRadii.lg),
       ],
     );
   }
-}
-
-String _recordingStatusLabel(AppLocalizations l10n, RecordingStatus status) {
-  return switch (status) {
-    RecordingStatus.starting => l10n.recordingStatusStarting,
-    RecordingStatus.queued => l10n.recordingStatusQueued,
-    RecordingStatus.resolving => l10n.recordingStatusResolving,
-    RecordingStatus.waitingLive => l10n.recordingStatusWaitingLive,
-    RecordingStatus.waitingForCloudSlot =>
-      l10n.recordingStatusWaitingForCloudSlot,
-    RecordingStatus.recording => l10n.recordingStatusRecording,
-    RecordingStatus.reconnecting => l10n.recordingStatusReconnecting,
-    RecordingStatus.processing => l10n.recordingStatusProcessing,
-    RecordingStatus.uploading => l10n.recordingStatusUploading,
-    RecordingStatus.finalizing => l10n.recordingStatusFinalizing,
-    RecordingStatus.completed => l10n.recordingStatusCompleted,
-    RecordingStatus.partial => l10n.recordingStatusPartial,
-    RecordingStatus.recovered => l10n.recordingStatusRecovered,
-    RecordingStatus.failed => l10n.recordingStatusFailed,
-    RecordingStatus.stopRequested => l10n.recordingStatusStopRequested,
-    RecordingStatus.stopped => l10n.recordingStatusStopped,
-    RecordingStatus.missedNoCloudSlot => l10n.recordingStatusMissedNoCloudSlot,
-  };
-}
-
-SsStatusTone _recordingStatusTone(RecordingStatus status) {
-  return switch (status) {
-    RecordingStatus.recording => SsStatusTone.recording,
-    RecordingStatus.reconnecting ||
-    RecordingStatus.partial ||
-    RecordingStatus.stopRequested ||
-    RecordingStatus.stopped => SsStatusTone.warning,
-    RecordingStatus.completed ||
-    RecordingStatus.recovered => SsStatusTone.success,
-    RecordingStatus.failed ||
-    RecordingStatus.missedNoCloudSlot => SsStatusTone.error,
-    RecordingStatus.starting ||
-    RecordingStatus.queued ||
-    RecordingStatus.resolving ||
-    RecordingStatus.waitingLive ||
-    RecordingStatus.waitingForCloudSlot ||
-    RecordingStatus.processing ||
-    RecordingStatus.uploading ||
-    RecordingStatus.finalizing => SsStatusTone.neutral,
-  };
-}
-
-String? _channelMutationMessage(AppLocalizations l10n, Object error) {
-  if (error is ApiException &&
-      error.kind == ApiExceptionKind.insufficientCredits) {
-    return l10n.watchResumeInsufficientCreditMessage;
-  }
-  return null;
-}
-
-RecordingSourceType _recordingSourceType(WatchSourceType? type) {
-  return switch (type) {
-    WatchSourceType.roomId => RecordingSourceType.roomId,
-    WatchSourceType.url => RecordingSourceType.url,
-    WatchSourceType.username || null => RecordingSourceType.username,
-  };
 }
