@@ -9,7 +9,29 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
   [GeneratedPluginRegistrant registerWithRegistry:self];
-  // Override point for customization after application launch.
+
+  FlutterViewController *controller = (FlutterViewController *)self.window.rootViewController;
+  FlutterMethodChannel *deviceInfoChannel =
+      [FlutterMethodChannel methodChannelWithName:@"savestream/device_info"
+                                  binaryMessenger:controller.binaryMessenger];
+  [deviceInfoChannel setMethodCallHandler:^(FlutterMethodCall *call, FlutterResult result) {
+    if ([call.method isEqualToString:@"freeStorageBytes"]) {
+      NSError *error = nil;
+      NSDictionary<NSFileAttributeKey, id> *attributes =
+          [[NSFileManager defaultManager] attributesOfFileSystemForPath:NSHomeDirectory()
+                                                                   error:&error];
+      if (error != nil) {
+        result([FlutterError errorWithCode:@"storage_unavailable"
+                                   message:error.localizedDescription
+                                   details:nil]);
+        return;
+      }
+      result(attributes[NSFileSystemFreeSize] ?: @0);
+      return;
+    }
+    result(FlutterMethodNotImplemented);
+  }];
+
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
 }
 @end
