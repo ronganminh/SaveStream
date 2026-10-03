@@ -28,7 +28,7 @@ jobs:
 
       - name: Resolve mobile dependencies
         working-directory: apps/mobile
-        run: flutter pub get
+        run: flutter pub get --enforce-lockfile
 
       - name: Validate backend E2E Compose
         working-directory: backend
