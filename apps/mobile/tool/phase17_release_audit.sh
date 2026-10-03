@@ -21,8 +21,10 @@ for token in   SAVESTREAM_ANDROID_KEYSTORE_PATH   SAVESTREAM_ANDROID_KEYSTORE_PA
   grep -q "$token" android/app/build.gradle.kts || fail "missing Android signing input $token"
 done
 
-grep -q 'SAVESTREAM_IOS_DEVELOPMENT_TEAM' ios/Flutter/Release.xcconfig ||
-  fail "iOS release Team ID must be configurable"
+grep -q 'ReleaseSigning.xcconfig' ios/Flutter/Release.xcconfig ||
+  fail "iOS release must support optional store signing configuration"
+grep -q 'DEVELOPMENT_TEAM' ios/Flutter/ReleaseSigning.xcconfig.example ||
+  fail "iOS release Team ID signing template is missing"
 
 grep -q "https://api.savestream.online" lib/core/config/app_config.dart ||
   fail "production API default is missing"
