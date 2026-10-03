@@ -122,7 +122,7 @@ void main() {
     expect(find.byType(HomeScreen), findsOneWidget);
   });
 
-  testWidgets('onboarding requires recording permission confirmation', (
+  testWidgets('welcome screen leads signed-out installs into auth', (
     WidgetTester tester,
   ) async {
     final AppSessionController session = signedOutSession(
@@ -134,33 +134,29 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome to SaveStream'), findsOneWidget);
+    expect(find.text('Never miss a LIVE.'), findsOneWidget);
+    expect(find.text('Theme: System'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    // Language can be switched before signing in.
+    await tester.ensureVisible(find.text('English'));
+    await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
-    expect(find.text('Recording continues in the cloud'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    expect(find.text('Không bỏ lỡ LIVE nào.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Tiếng Việt'));
+    await tester.tap(find.text('Tiếng Việt'));
     await tester.pumpAndSettle();
-    expect(find.text('Record responsibly'), findsOneWidget);
 
-    final FilledButton disabledStart = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Get started'),
-    );
-    expect(disabledStart.onPressed, isNull);
-
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-    final Finder getStartedButton = find.widgetWithText(
+    final Finder createAccount = find.widgetWithText(
       FilledButton,
-      'Get started',
+      'Create account',
     );
-    await tester.ensureVisible(getStartedButton);
-    await tester.pumpAndSettle();
-    await tester.tap(getStartedButton);
+    await tester.ensureVisible(createAccount);
+    await tester.tap(createAccount);
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in'), findsWidgets);
+    expect(session.hasCompletedOnboarding, isTrue);
+    expect(find.text('Never miss a LIVE.'), findsNothing);
+    expect(find.byType(TextFormField), findsWidgets);
   });
 
   testWidgets('sign in validates required fields', (WidgetTester tester) async {

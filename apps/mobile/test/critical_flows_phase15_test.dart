@@ -36,20 +36,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome to SaveStream'), findsOneWidget);
+    expect(find.text('Never miss a LIVE.'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Record responsibly'), findsOneWidget);
-    await tester.tap(find.byType(Checkbox));
-    await tester.pump();
-
-    final Finder getStarted = find.widgetWithText(FilledButton, 'Get started');
-    await tester.ensureVisible(getStarted);
-    await tester.tap(getStarted);
+    final Finder signIn = find.widgetWithText(OutlinedButton, 'Sign in');
+    await tester.ensureVisible(signIn);
+    await tester.tap(signIn);
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);

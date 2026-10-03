@@ -18,7 +18,7 @@ import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/credits/presentation/credits_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/onboarding/presentation/onboarding_screen.dart';
+import '../../features/onboarding/presentation/welcome_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
@@ -82,7 +82,16 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (BuildContext context, GoRouterState state) {
-          return OnboardingScreen(session: session);
+          return AnimatedBuilder(
+            animation: settings,
+            builder: (BuildContext context, Widget? child) {
+              return WelcomeScreen(
+                session: session,
+                settings: settings,
+                config: config,
+              );
+            },
+          );
         },
       ),
       GoRoute(
