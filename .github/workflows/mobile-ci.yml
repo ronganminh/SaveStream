@@ -35,16 +35,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Resolve dependencies
-        run: flutter pub get
-
-      - name: Print generated lockfile when not committed
-        run: |
-          if ! git ls-files --error-unmatch pubspec.lock >/dev/null 2>&1; then
-            echo '===PHASE17_PUBSPEC_LOCK_BEGIN==='
-            cat pubspec.lock
-            echo '===PHASE17_PUBSPEC_LOCK_END==='
-          fi
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
 
       - name: Generate launcher icons
         run: dart run flutter_launcher_icons
