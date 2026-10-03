@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block">
+<style>body{margin:0;background:#E7E9EE;font-family:Geist,system-ui,sans-serif;color:#0E111A}a{color:#6D49F4;text-decoration:none}a:hover{color:#5A36E0;text-decoration:underline}@keyframes ssspin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<section style="padding:40px 48px 16px"><div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">SAVESTREAM MOBILE V2 · PROTOTYPE</div><div style="font:700 32px/40px Geist;margin-top:8px">P7 · Nâng cấp Pro &nbsp;·&nbsp; P8 · Khôi phục, Cloud Pack, Pro web</div><div style="display:flex;gap:16px;flex-wrap:wrap;font:600 14px/20px Geist;margin-top:12px"><a href="SaveStream V2 Phase 5 Screens.dc.html">← Phase 5 screens</a></div></section>
+<section style="padding:16px 48px 56px;display:flex;gap:56px;flex-wrap:wrap;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">P7</span><span style="font:600 20px/26px Geist">Free → Pro (IAP)</span></div>
+<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+<div style="{{ vars }}"><div style="margin:10px"><div style="width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+<dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+
+<sc-if value="{{ a.isPlan }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Gói &amp; sử dụng</div></div>
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px">
+<sc-if value="{{ a.isPro }}" hint-placeholder-val="{{ false }}">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font:600 18px/24px Geist">{{ a.proTitle }}</div><div style="font:400 14px/20px Geist;color:var(--text2)">{{ a.proSub }}</div></div><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--primary);color:var(--onPrimary);font:700 12px/16px Geist;letter-spacing:.06em"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">workspace_premium</span>PRO</span></div><div style="height:1px;background:var(--border)"></div><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Cloud hours kỳ này</span><span style="font-family:'Geist Mono';font-weight:500">0 / 30 h</span></div><div style="height:6px;border-radius:999px;background:var(--surface2)"></div><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Watch List</span><span style="font-family:'Geist Mono';font-weight:500">2 / 20 creator</span></div></div>
+</sc-if>
+<sc-if value="{{ a.isFree }}" hint-placeholder-val="{{ true }}">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="font:600 18px/24px Geist">Free</div><div style="font:400 14px/20px Geist;color:var(--text2)">Record Local trên thiết bị này · có quảng cáo</div><div style="height:1px;background:var(--border)"></div><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Phút Free hôm nay</span><span style="font-family:'Geist Mono';font-weight:500">6 / 10 phút</span></div><div style="height:6px;border-radius:999px;background:var(--surface2);overflow:hidden"><div style="width:60%;height:100%;background:var(--local)"></div></div><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Watch List</span><span style="font-family:'Geist Mono';font-weight:500">2 / 3 creator</span></div></div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="font:600 16px/24px Geist">Record trên cloud với Pro</div><div style="font:400 14px/20px Geist;color:var(--text2)">30 giờ cloud mỗi kỳ, tự động record, theo dõi tới 20 creator, không quảng cáo.</div><div onClick="{{ a.openPaywall }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Xem Pro</div></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ a.isPaywall }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px 12px;min-height:56px;flex:none"><div onClick="{{ a.closePaywall }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:var(--surface2)"><span style="font:24px/1 'Material Symbols Rounded'">close</span></div><span style="font:600 14px/20px Geist;color:var(--primary)">Khôi phục giao dịch</span></div>
+<div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:4px 24px 8px">
+<span style="display:inline-flex;align-self:flex-start;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--primary);color:var(--onPrimary);font:700 12px/16px Geist;letter-spacing:.06em"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">workspace_premium</span>PRO</span>
+<div style="font:700 24px/30px Geist;text-wrap:balance">{{ a.headline }}</div><div style="font:400 14px/20px Geist;color:var(--text2);text-wrap:pretty">{{ a.support }}</div>
+<div style="display:flex;flex-direction:column;gap:10px"><sc-for list="{{ a.benefits }}" as="b" hint-placeholder-count="5"><div style="display:flex;gap:12px;align-items:flex-start"><span style="font:22px/1 'Material Symbols Rounded';color:var(--primary)">{{ b.icon }}</span><span style="font:400 15px/21px Geist">{{ b.text }}</span></div></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+<div onClick="{{ a.pickYear }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:14px;background:var(--surface);border:{{ a.yrBorder }}"><span style="width:22px;height:22px;box-sizing:border-box;border-radius:999px;border:{{ a.yrDot }}"></span><div style="flex:1"><div style="display:flex;gap:8px;align-items:center"><span style="font:600 16px/24px Geist">Năm</span><span style="height:24px;display:inline-flex;align-items:center;padding:0 10px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist">Tiết kiệm 33%</span></div><div style="font:400 12px/16px Geist;color:var(--text2)">≈ $3.33/tháng · $39.99 mỗi năm</div></div><span style="font:600 16px/24px 'Geist Mono'">$39.99</span></div>
+<div onClick="{{ a.pickMonth }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:14px;background:var(--surface);border:{{ a.moBorder }}"><span style="width:22px;height:22px;box-sizing:border-box;border-radius:999px;border:{{ a.moDot }}"></span><div style="flex:1"><div style="font:600 16px/24px Geist">Tháng</div><div style="font:400 12px/16px Geist;color:var(--text2)">Thanh toán hằng tháng</div></div><span style="font:600 16px/24px 'Geist Mono'">$4.99</span></div>
+</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:10px;padding:8px 24px 12px">
+<sc-if value="{{ a.showCancelled }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;font:400 13px/18px Geist;color:var(--text2)">Bạn chưa bị trừ tiền.</div></sc-if>
+<sc-if value="{{ a.showFailed }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:12px;padding:10px 14px;border-radius:12px;background:var(--recSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--rec)">error</span><div><div style="font:600 14px/20px Geist">Thanh toán không thành công</div><div style="font:400 14px/20px Geist;color:var(--text2)">Bạn chưa bị trừ tiền. Thử lại sau ít phút.</div></div></div></sc-if>
+<sc-if value="{{ a.showProcessing }}" hint-placeholder-val="{{ false }}"><div style="text-align:center;font:400 13px/18px Geist;color:var(--text2)">Đang xác nhận giao dịch với App Store. Đừng đóng app.</div></sc-if>
+<div onClick="{{ a.buy }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;background:{{ a.ctaBg }};color:{{ a.ctaFg }};font:600 16px/20px Geist">{{ a.spin }}{{ a.ctaLabel }}</div>
+<div style="font:400 12px/16px Geist;color:var(--text2);text-align:center">Tự gia hạn. Huỷ bất cứ lúc nào trong App Store / Google Play.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ a.isSuccess }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;padding:64px 24px 16px"><div style="width:72px;height:72px;border-radius:24px;background:var(--successSubtle);display:flex;align-items:center;justify-content:center"><span style="font:40px/1 'Material Symbols Rounded';color:var(--success);font-variation-settings:'FILL' 1">check_circle</span></div><div style="font:700 28px/36px Geist">Bạn đã là Pro</div><div style="font:400 16px/24px Geist;color:var(--text2)">{{ a.proTitle }} · {{ a.proSub }}</div></div>
+<div style="padding:8px 24px 12px"><div onClick="{{ a.toPlan }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Xong</div></div>
+</sc-if>
+
+<sc-if value="{{ a.isSheet }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;flex-direction:column;justify-content:flex-end"><div style="background:#F2F2F7;color:#000;border-radius:14px 14px 0 0;padding:16px 20px 34px;display:flex;flex-direction:column;gap:12px;font-family:system-ui"><div style="display:flex;justify-content:space-between"><span style="font:600 17px/22px system-ui">App Store</span><span onClick="{{ a.sheetCancel }}" style="cursor:pointer;font:400 17px/22px system-ui;color:#007AFF">Huỷ</span></div><div style="background:#fff;border-radius:12px;padding:12px;display:flex;justify-content:space-between;font:400 15px/20px system-ui"><span>{{ a.proTitle }}</span><span>{{ a.sheetPrice }}</span></div><div onClick="{{ a.sheetConfirm }}" style="cursor:pointer;min-height:50px;border-radius:12px;background:#007AFF;color:#fff;display:flex;align-items:center;justify-content:center;font:600 17px/22px system-ui">Xác nhận bằng Face ID</div><div onClick="{{ a.sheetFail }}" style="cursor:pointer;text-align:center;font:500 12px/16px 'Geist Mono';color:#6B6B70">Mô phỏng: thanh toán thất bại</div></div></div>
+</sc-if>
+</div></div></div>
+<div style="width:280px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48">
+<div style="font:600 12px/16px 'Geist Mono';color:#626671">CONTEXT PAYWALL</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ ctxBtns }}" as="c" hint-placeholder-count="5"><span onClick="{{ c.on }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</span></sc-for></div>
+<div onClick="{{ a.reset }}" style="cursor:pointer;align-self:flex-start;font:600 13px/18px Geist;padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #DBDEE4">Reset P7</div>
+<div>Xem Pro → chọn gói → Tiếp tục → sheet OS. Huỷ = về paywall, không lỗi. Thất bại = banner đỏ. Xác nhận = đang xác nhận ~2 giây → thành công → Plan Pro.</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">P8</span><span style="font:600 20px/26px Geist">Khôi phục · Cloud Pack · Pro web</span></div>
+<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+<div style="{{ vars }}"><div style="margin:10px"><div style="width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+<dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+<sc-if value="{{ b.isPlan }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Gói &amp; sử dụng</div></div>
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px">
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font:600 18px/24px Geist">{{ b.planTitle }}</div><div style="font:400 14px/20px Geist;color:var(--text2)">{{ b.planSub }}</div></div></div>
+<sc-if value="{{ b.isWeb }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-self:flex-start;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">language</span>Quản lý trên web</span></sc-if>
+<div style="height:1px;background:var(--border)"></div><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Cloud Pack</span><span style="font-family:'Geist Mono';font-weight:500">{{ b.packBal }}</span></div></div>
+<sc-if value="{{ b.isWeb }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--infoSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--info)">info</span><div><div style="font:600 14px/20px Geist">Gói này được quản lý trên web</div><div style="font:400 14px/20px Geist;color:var(--text2)">Bạn đã mua Pro tại savestream.app. Không cần mua lại trong app.</div><div style="margin-top:6px;font:600 14px/20px Geist;color:var(--primary)">Mở savestream.app/billing</div></div></div></sc-if>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+<div onClick="{{ b.openPack }}" style="cursor:pointer;min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">add_shopping_cart</span><span style="flex:1;font:400 16px/24px Geist">Mua Cloud Pack</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+<div style="height:1px;background:var(--border);margin-left:50px"></div>
+<div onClick="{{ b.restore }}" style="cursor:pointer;min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">restore</span><span style="flex:1;font:400 16px/24px Geist">Khôi phục giao dịch</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--text2)">chevron_right</span></div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ b.isPack }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;padding:4px 16px 4px 12px;min-height:56px;flex:none"><div onClick="{{ b.toPlan }}" style="cursor:pointer;width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:var(--surface2)"><span style="font:24px/1 'Material Symbols Rounded'">close</span></div></div>
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:14px;padding:8px 24px 12px">
+<div style="font:700 28px/36px Geist">Cloud Pack</div>
+<div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--cloudSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--cloud)">info</span><div><div style="font:600 14px/20px Geist">Cloud Pack không phải Pro</div><div style="font:400 14px/20px Geist;color:var(--text2)">Chỉ cộng giờ cloud, mua một lần, không hết hạn. Bản ghi lưu 7 ngày.</div></div></div>
+<sc-for list="{{ b.packs }}" as="p" hint-placeholder-count="3"><div onClick="{{ p.on }}" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:var(--surface);border:{{ p.border }}"><span style="width:22px;height:22px;box-sizing:border-box;border-radius:999px;border:{{ p.dot }}"></span><div style="flex:1"><div style="font:600 16px/24px Geist">{{ p.label }}</div><div style="font:400 12px/16px Geist;color:var(--text2)">{{ p.per }}</div></div><span style="font:600 16px/24px 'Geist Mono'">{{ p.price }}</span></div></sc-for>
+</div>
+<div style="padding:8px 24px 12px;display:flex;flex-direction:column;gap:10px"><div onClick="{{ b.buyPack }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;background:{{ b.ctaBg }};color:{{ b.ctaFg }};font:600 16px/20px Geist">{{ b.spin }}{{ b.packCta }}</div><div style="font:400 12px/16px Geist;color:var(--text2);text-align:center">Thanh toán một lần. Không tự gia hạn.</div></div>
+</sc-if>
+<sc-if value="{{ b.hasSheet }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:var(--scrim);display:flex;flex-direction:column;justify-content:flex-end"><div style="background:var(--surface);border-radius:24px 24px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:14px"><div style="width:36px;height:5px;border-radius:3px;background:var(--border);align-self:center"></div>
+<div style="display:flex;gap:12px;align-items:center">{{ b.rIcon }}<div style="font:600 18px/24px Geist">{{ b.rTitle }}</div></div>
+<div style="font:400 14px/20px Geist;color:var(--text2)">{{ b.rText }}</div>
+<sc-if value="{{ b.rHasBtn }}" hint-placeholder-val="{{ false }}"><div onClick="{{ b.rAction }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">{{ b.rBtn }}</div><div onClick="{{ b.closeSheet }}" style="cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;font:600 16px/20px Geist;color:var(--primary)">Đóng</div></sc-if>
+</div></div>
+</sc-if>
+<sc-if value="{{ b.toast }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:44px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:var(--text);color:var(--bg);font:500 14px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">check_circle</span>{{ b.toast }}</div></sc-if>
+</div></div></div>
+<div style="width:280px;display:flex;flex-direction:column;gap:12px;font:400 14px/20px Geist;color:#3A3E48">
+<div style="font:600 12px/16px 'Geist Mono';color:#626671">KẾT QUẢ KHÔI PHỤC</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ outBtns }}" as="c" hint-placeholder-count="3"><span onClick="{{ c.on }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</span></sc-for></div>
+<div style="font:600 12px/16px 'Geist Mono';color:#626671">TÀI KHOẢN</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ accBtns }}" as="c" hint-placeholder-count="2"><span onClick="{{ c.on }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</span></sc-for></div>
+<div onClick="{{ b.reset }}" style="cursor:pointer;align-self:flex-start;font:600 13px/18px Geist;padding:8px 12px;border-radius:8px;background:#fff;border:1px solid #DBDEE4">Reset P8</div>
+<div>Khôi phục → đang kiểm tra ~1,5 giây → kết quả theo lựa chọn bên trên. "Không tìm thấy" gợi ý đăng nhập nếu mua trên web. Cloud Pack mua xong cộng vào số dư. Chọn "Pro web" để xem trạng thái Quản lý trên web.</div>
+</div>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static T = {"bg":"#F9FAFC","surface":"#FFFFFF","surface2":"#F2F3F7","text":"#0E111A","text2":"#626671","border":"#DBDEE4","primary":"#6D49F4","onPrimary":"#FFFFFF","primarySubtle":"#F0F0FF","rec":"#E31029","recSubtle":"#FDECEE","success":"#007742","successSubtle":"#E6F4EC","info":"#0074C8","infoSubtle":"#E6F1FA","local":"#0B7A75","cloud":"#2F6FE4","cloudSubtle":"#EAF0FD","scrim":"rgba(9,11,16,.5)"};
+  static CTX = {auto:['Auto-record','Tự động record khi creator LIVE','Không cần mở app hay canh giờ. SaveStream tự bắt đầu record trên cloud.'],watch:['Watch List đầy','Theo dõi tới 20 creator','Bản Free giới hạn 3 creator. Pro mở rộng Watch List và tự record từng creator.'],ios:['iOS nền','Record cả khi bạn khoá màn hình','iPhone dừng record khi SaveStream chạy nền. Pro record trên server nên không bị gián đoạn.'],quota:['Hết phút Free','Record tiếp khi hết phút Free','Bạn đã dùng hết 10 phút Free hôm nay. Pro có 30 giờ cloud mỗi kỳ.'],ads:['Bỏ quảng cáo','Dùng SaveStream không quảng cáo','Bỏ toàn bộ quảng cáo, kèm đầy đủ tính năng Pro.']};
+  static BEN = {bolt:'Tự động record khi creator LIVE',cloud:'SaveStream record trên server, điện thoại không cần online',schedule:'30 giờ cloud mỗi kỳ · 3 recording cùng lúc · lưu 14 ngày',group_add:'Theo dõi tới 20 creator'};
+  static PACKS = [{h:5,label:'5 giờ',price:'$1.99',per:'$0.40/giờ'},{h:20,label:'20 giờ',price:'$5.99',per:'$0.30/giờ · phổ biến'},{h:60,label:'60 giờ',price:'$12.99',per:'$0.22/giờ'}];
+  state = { a: 'plan', pro: false, plan: 'year', ctx: 'auto', note: '', b: 'plan', sheet: '', outcome: 'restored', acc: 'free', pack: 1, bal: 0, packBusy: false, toast: '' };
+  componentWillUnmount() { clearTimeout(this.t1); clearTimeout(this.t2); clearTimeout(this.t3); }
+  spin(c) { return React.createElement('span', { style: { font: "20px/1 'Material Symbols Rounded'", color: c, display: 'inline-block', animation: 'ssspin 1s linear infinite' } }, 'progress_activity'); }
+  renderVals() {
+    const s = this.state, set = o => this.setState(o), C = Component;
+    const on = '2px solid var(--primary)', off = '1px solid var(--border)', dOn = '7px solid var(--primary)', dOff = '2px solid var(--text2)';
+    const yr = s.plan === 'year', proc = s.a === 'processing';
+    const ctx = C.CTX[s.ctx];
+    const a = {
+      isPlan: s.a === 'plan', isPro: s.pro, isFree: !s.pro,
+      isPaywall: ['paywall', 'sheet', 'processing'].includes(s.a), isSheet: s.a === 'sheet', isSuccess: s.a === 'success',
+      proTitle: yr ? 'SaveStream Pro · Năm' : 'SaveStream Pro · Tháng', proSub: yr ? 'Gia hạn 02/10/2027 · App Store' : 'Gia hạn 02/11/2026 · App Store',
+      headline: ctx[1], support: ctx[2], benefits: ['bolt', 'cloud', 'schedule', 'group_add'].map(k => ({ icon: k, text: C.BEN[k] })).concat([{ icon: 'block', text: 'Không quảng cáo' }]),
+      yrBorder: yr ? on : off, yrDot: yr ? dOn : dOff, moBorder: yr ? off : on, moDot: yr ? dOff : dOn,
+      pickYear: () => !proc && set({ plan: 'year', note: '' }), pickMonth: () => !proc && set({ plan: 'month', note: '' }),
+      showCancelled: s.note === 'cancel' && !proc, showFailed: s.note === 'fail' && !proc, showProcessing: proc,
+      ctaLabel: proc ? 'Đang xác nhận…' : (yr ? 'Tiếp tục · $39.99/năm' : 'Tiếp tục · $4.99/tháng'),
+      ctaBg: proc ? 'var(--surface2)' : 'var(--primary)', ctaFg: proc ? 'var(--text2)' : 'var(--onPrimary)', spin: proc ? this.spin('var(--text2)') : null,
+      sheetPrice: yr ? '$39.99 / năm' : '$4.99 / tháng',
+      openPaywall: () => set({ a: 'paywall', note: '' }), closePaywall: () => !proc && set({ a: 'plan' }),
+      buy: () => !proc && set({ a: 'sheet', note: '' }),
+      sheetCancel: () => set({ a: 'paywall', note: 'cancel' }), sheetFail: () => set({ a: 'paywall', note: 'fail' }),
+      sheetConfirm: () => { set({ a: 'processing' }); clearTimeout(this.t1); this.t1 = setTimeout(() => this.setState({ a: 'success', pro: true }), 2000); },
+      toPlan: () => set({ a: 'plan' }), reset: () => { clearTimeout(this.t1); set({ a: 'plan', pro: false, plan: 'year', note: '' }); }
+    };
+    const ctxBtns = Object.keys(C.CTX).map(k => ({ label: C.CTX[k][0], bg: s.ctx === k ? '#0E111A' : '#fff', fg: s.ctx === k ? '#fff' : '#0E111A', on: () => set({ ctx: k, a: s.a === 'plan' ? 'paywall' : s.a }) }));
+    const web = s.acc === 'web', restoredPro = s.acc === 'restored';
+    const R = {
+      checking: ['progress_activity', 'var(--primary)', 'Đang kiểm tra giao dịch…', 'SaveStream đang hỏi App Store về các gói đã mua bằng Apple ID này.', ''],
+      restored: ['check_circle', 'var(--success)', 'Đã khôi phục Pro', 'SaveStream Pro · Năm · gia hạn 12/09/2027', 'Xong'],
+      nothing: ['search_off', 'var(--text2)', 'Không tìm thấy giao dịch', 'Apple ID này chưa mua SaveStream Pro. Nếu bạn đã mua trên web, đăng nhập bằng email đã dùng khi mua.', 'Đăng nhập'],
+      error: ['cloud_off', 'var(--rec)', 'Không kết nối được App Store', 'Kiểm tra kết nối rồi thử lại.', 'Thử lại'],
+      hasPro: ['verified', 'var(--primary)', 'Bạn đã có Pro', 'Pro của bạn được mua trên web và đã áp dụng cho tài khoản này. Bạn không cần mua lại hay khôi phục.', 'Xong']
+    }[s.sheet] || [];
+    const startRestore = () => { set({ sheet: 'checking' }); clearTimeout(this.t2); this.t2 = setTimeout(() => this.setState(st => ({ sheet: st.outcome })), 1500); };
+    const b = {
+      isPlan: s.b === 'plan', isPack: s.b === 'pack', isWeb: web,
+      planTitle: web || restoredPro ? 'SaveStream Pro · Năm' : 'Free', planSub: web ? 'Gia hạn 12/09/2027' : restoredPro ? 'Gia hạn 12/09/2027 · App Store' : 'Record Local trên thiết bị này',
+      packBal: s.bal + ' h', openPack: () => set({ b: 'pack' }), toPlan: () => !s.packBusy && set({ b: 'plan' }),
+      restore: () => web ? set({ sheet: 'hasPro' }) : startRestore(),
+      packs: C.PACKS.map((p, i) => ({ ...p, border: s.pack === i ? on : off, dot: s.pack === i ? dOn : dOff, on: () => !s.packBusy && set({ pack: i }) })),
+      packCta: s.packBusy ? 'Đang xác nhận…' : `Mua ${C.PACKS[s.pack].label} · ${C.PACKS[s.pack].price}`,
+      ctaBg: s.packBusy ? 'var(--surface2)' : 'var(--primary)', ctaFg: s.packBusy ? 'var(--text2)' : 'var(--onPrimary)', spin: s.packBusy ? this.spin('var(--text2)') : null,
+      buyPack: () => { if (s.packBusy) return; set({ packBusy: true }); clearTimeout(this.t3); this.t3 = setTimeout(() => { const h = C.PACKS[this.state.pack].h; this.setState(st => ({ packBusy: false, b: 'plan', bal: st.bal + h, toast: `Đã cộng ${h} giờ Cloud Pack` })); setTimeout(() => this.setState({ toast: '' }), 2500); }, 1500); },
+      hasSheet: !!s.sheet, rIcon: R.length ? React.createElement('span', { style: { font: "28px/1 'Material Symbols Rounded'", color: R[1], fontVariationSettings: "'FILL' 1", display: 'inline-block', animation: s.sheet === 'checking' ? 'ssspin 1s linear infinite' : 'none' } }, R[0]) : null,
+      rTitle: R[2], rText: R[3], rHasBtn: !!R[4], rBtn: R[4],
+      rAction: () => s.sheet === 'error' ? startRestore() : s.sheet === 'restored' ? set({ sheet: '', acc: 'restored' }) : set({ sheet: '' }),
+      closeSheet: () => set({ sheet: '' }), toast: s.toast,
+      reset: () => { clearTimeout(this.t2); clearTimeout(this.t3); set({ b: 'plan', sheet: '', acc: 'free', bal: 0, packBusy: false, toast: '' }); }
+    };
+    const pick = (cur, k) => ({ bg: cur === k ? '#0E111A' : '#fff', fg: cur === k ? '#fff' : '#0E111A' });
+    const outBtns = [['restored', 'Đã khôi phục'], ['nothing', 'Không tìm thấy'], ['error', 'Lỗi']].map(([k, l]) => ({ label: l, ...pick(s.outcome, k), on: () => set({ outcome: k }) }));
+    const accBtns = [['free', 'Free (IAP)'], ['web', 'Pro web']].map(([k, l]) => ({ label: l, ...pick(s.acc === 'restored' ? 'free' : s.acc, k), on: () => set({ acc: k, sheet: '', b: 'plan' }) }));
+    const vars = Object.fromEntries(Object.entries(C.T).map(([k, x]) => ['--' + k, x]));
+    return { a, b, ctxBtns, outBtns, accBtns, vars };
+  }
+}
+</script>
+</body>
+</html>

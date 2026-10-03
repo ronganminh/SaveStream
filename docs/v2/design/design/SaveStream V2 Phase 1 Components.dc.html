@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block">
+<style>body{margin:0;background:#E7E9EE;font-family:Geist,system-ui,sans-serif;color:#0E111A}a{color:#6D49F4;text-decoration:none}a:hover{color:#5A36E0;text-decoration:underline}</style>
+</helmet>
+<section style="padding:48px 48px 24px">
+  <div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">SAVESTREAM MOBILE V2 · PHASE 1</div>
+  <div style="font:700 32px/40px Geist;margin-top:8px">Components + App shell</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;font:600 14px/20px Geist;margin-top:12px">
+    <a href="SaveStream V2 Phase 1 Foundations.dc.html">← Foundations</a>
+    <a href="SaveStream V2 Phase 1 Screens.dc.html">Screens →</a>
+  </div>
+</section>
+<section style="padding:8px 48px 64px;display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="2">
+<div style="{{ t.vars }}">
+<div style="width:820px;background:var(--bg);color:var(--text);border-radius:24px;border:1px solid var(--border);padding:32px;display:flex;flex-direction:column;gap:40px;font-family:Geist">
+  <div style="font:700 22px/28px Geist">{{ t.name }}</div>
+
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsButton · variant × state</div>
+    <div style="display:grid;grid-template-columns:110px repeat(4,minmax(0,1fr));gap:10px;align-items:center">
+      <span></span><span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">default</span><span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">pressed</span><span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">disabled</span><span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">loading</span>
+      <span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">primary</span>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Record ngay</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--primaryPressed);color:var(--onPrimary);font:600 16px/20px Geist">Record ngay</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface2);color:var(--disabled);font:600 16px/20px Geist">Record ngay</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">progress_activity</span>Đang bắt đầu</div>
+      <span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">secondary</span>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist">Mở recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);font:600 16px/20px Geist">Mở recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--disabled);font:600 16px/20px Geist">Mở recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">progress_activity</span>Đang mở</div>
+      <span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">tertiary</span>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;color:var(--primary);font:600 16px/20px Geist">Xem Pro</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--primarySubtle);color:var(--primary);font:600 16px/20px Geist">Xem Pro</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;color:var(--disabled);font:600 16px/20px Geist">Xem Pro</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;color:var(--primary);font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">progress_activity</span>Xem Pro</div>
+      <span style="font:500 12px/16px 'Geist Mono';color:var(--text2)">destructive</span>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--rec);color:#fff;font:600 16px/20px Geist">Dừng recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--recPressed);color:#fff;font:600 16px/20px Geist">Dừng recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface2);color:var(--disabled);font:600 16px/20px Geist">Dừng recording</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:12px;background:var(--rec);color:#fff;font:600 16px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">progress_activity</span>Đang dừng</div>
+    </div>
+    <div style="font:400 12px/16px Geist;color:var(--text2)">Min height 44 (hit target 48 với padding ngoài) · radius 12 · Button 16/600 · loading giữ nguyên width, khoá tap.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsLiveBadge · liveStatus</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span>
+        <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">sync</span>CHECKING</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">help</span>UNKNOWN</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">pause</span>PAUSED</span>
+      </div>
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2);margin-top:8px">SsLocationChip · engine</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:4px;border-radius:999px;background:var(--player)"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></span>
+      </div>
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2);margin-top:8px">SsPlanBadge · plan (FREE | PRO)</div>
+      <div style="display:flex;gap:8px">
+        <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font:700 12px/16px Geist;letter-spacing:.06em">FREE</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--primary);color:var(--onPrimary);font:700 12px/16px Geist;letter-spacing:.06em"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">workspace_premium</span>PRO</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsRecordingStatusPill · recordingStatus</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">progress_activity</span>Đang bắt đầu</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--recSubtle);color:var(--rec);font:600 12px/16px Geist"><span style="width:6px;height:6px;margin:0 2px;border-radius:999px;background:currentColor"></span>Đang record</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">wifi_tethering_error</span>Đang kết nối lại</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">save</span>Đang hoàn tất file</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--infoSubtle);color:var(--info);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">pending</span>Đang xử lý</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">check</span>Hoàn tất</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">contrast</span>Một phần</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">restore</span>Đã khôi phục</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--recSubtle);color:var(--rec);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">error</span>Lỗi</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">hourglass_top</span>Chờ slot cloud</span>
+        <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">do_not_disturb_on</span>Bỏ lỡ · không có slot</span>
+      </div>
+      <div style="font:400 12px/16px 'Geist Mono';color:var(--text2)">STARTING · WAITING_FOR_CLOUD_SLOT · RECORDING · RECONNECTING · FINALIZING · PROCESSING · COMPLETED · PARTIAL · RECOVERED · FAILED · MISSED_NO_CLOUD_SLOT</div>
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2);margin-top:8px">SsCreatorAvatar · 32 / 44 / 56 · live ring</div>
+      <div style="display:flex;gap:16px;align-items:center">
+        <div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 12px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20))">LS</div>
+        <div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .15 240),oklch(.72 .14 195))">MF</div>
+        <div style="width:56px;height:56px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 16px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.68 .16 75),oklch(.65 .18 40))">NS</div>
+        <div style="width:44px;height:44px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--rec)">LS</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsFilterChips · selected / default · SsSkeleton</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--primarySubtle);border:1px solid var(--primary);color:var(--primary);font:600 14px/20px Geist">Tất cả · 8</span>
+      <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist">LIVE · 2</span>
+      <span style="display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font:500 14px/20px Geist"><span style="font:18px/1 'Material Symbols Rounded';color:var(--local)">smartphone</span>Local</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;max-width:380px">
+      <div style="width:44px;height:44px;border-radius:999px;background:var(--surface2)"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px"><div style="height:14px;width:60%;border-radius:6px;background:var(--surface2)"></div><div style="height:12px;width:40%;border-radius:6px;background:var(--surface2)"></div></div>
+      <div style="width:64px;height:24px;border-radius:999px;background:var(--surface2)"></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsQuotaCard · free / free limit / pro</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font:600 14px/20px Geist;color:var(--text2)">Phút Free hôm nay</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 28px/36px 'Geist Mono'">6</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 10 phút còn lại</span></div>
+        <div style="height:6px;border-radius:999px;background:var(--surface2)"><div style="width:60%;height:100%;border-radius:999px;background:var(--primary)"></div></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--warn);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font:600 14px/20px Geist;color:var(--warnFg)">Đã dùng hết phút Free hôm nay</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 28px/36px 'Geist Mono'">0</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 10 phút · reset sau 3 giờ 20 phút</span></div>
+        <div style="height:6px;border-radius:999px;background:var(--surface2)"></div>
+        <div style="font:600 14px/20px Geist;color:var(--primary)">Xem cách có thêm phút</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font:600 14px/20px Geist;color:var(--text2)">Cloud hours kỳ này</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font:600 28px/36px 'Geist Mono'">12,6</span><span style="font:500 16px/24px Geist;color:var(--text2)">/ 30 h · + 5 h Cloud Pack</span></div>
+        <div style="height:6px;border-radius:999px;background:var(--surface2)"><div style="width:42%;height:100%;border-radius:999px;background:var(--cloud)"></div></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsRewardChoiceCard · available / cap reached</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:40px;height:40px;flex:none;border-radius:12px;background:var(--primarySubtle);color:var(--primary);display:flex;align-items:center;justify-content:center"><span style="font:22px/1 'Material Symbols Rounded'">more_time</span></div><div style="flex:1"><div style="font:600 16px/24px Geist">+10 phút cho recording này</div><div style="font:400 14px/20px Geist;color:var(--text2)">Xem 1 quảng cáo. Phút được cộng sau khi server xác nhận.</div></div></div>
+        <div style="display:flex;justify-content:space-between;font:500 12px/16px Geist;color:var(--text2)"><span>Recording này 1/4</span><span>Hôm nay 2/8</span></div>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Xem quảng cáo</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:40px;height:40px;flex:none;border-radius:12px;background:var(--surface2);color:var(--text2);display:flex;align-items:center;justify-content:center"><span style="font:22px/1 'Material Symbols Rounded'">add_to_queue</span></div><div style="flex:1"><div style="font:600 16px/24px Geist">Mở slot #2 trong 1 giờ</div><div style="font:400 14px/20px Geist;color:var(--text2)">Cần 2 quảng cáo. Đã đạt 8/8 hôm nay.</div></div></div>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:var(--surface2);color:var(--disabled);font:600 16px/20px Geist">Hết lượt hôm nay</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsActiveRecordingCard · local (Android)</div>
+      <div style="background:var(--player);color:var(--playerFg);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:6px;align-items:center"><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span></div>
+        <div style="font:600 18px/24px Geist">Lina Studio</div>
+        <div style="font:600 36px/44px 'Geist Mono';font-variant-numeric:tabular-nums">00:06:12</div>
+        <div style="font:400 14px/20px Geist;color:var(--playerMuted)">Lưu trên thiết bị này. Còn 3:48 phút Free.</div>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.2);color:#FF8A96;font:600 16px/20px Geist">Dừng recording</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsRecordingCard · local / cloud</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+        <div style="padding:12px;display:flex;gap:12px"><div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.24 .07 245);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 16px/22px Geist">Mike Fitness</div><div style="font:400 12px/16px Geist;color:var(--text2)">48 ph · Lưu trên thiết bị này</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">check</span>Hoàn tất</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--localSubtle);color:var(--local);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span></div></div></div>
+        <div style="height:1px;background:var(--border);margin:0 12px"></div>
+        <div style="padding:12px;display:flex;gap:12px"><div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.24 .08 325);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div style="font:600 16px/22px Geist">Lina Studio</div><div style="font:400 12px/16px Geist;color:var(--text2)">2 g 14 ph · xoá sau 12 ngày</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">check</span>Hoàn tất</span><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--cloudSubtle);color:var(--cloud);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsInlineAlert · info / success / warning / error / upgrade</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--infoSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--info)">info</span><div><div style="font:600 14px/20px Geist">Giữ app mở khi record</div><div style="font:400 14px/20px Geist;color:var(--text2)">iOS có thể dừng recording khi app chạy nền.</div></div></div>
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--successSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--success)">check_circle</span><div><div style="font:600 14px/20px Geist">Đã cộng 10 phút</div><div style="font:400 14px/20px Geist;color:var(--text2)">Server đã xác nhận phần thưởng.</div></div></div>
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--warnSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--warnFg)">warning</span><div><div style="font:600 14px/20px Geist">Còn 60 giây</div><div style="font:400 14px/20px Geist;color:var(--text2)">Recording sẽ dừng khi hết phút Free.</div></div></div>
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--recSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--rec)">error</span><div><div style="font:600 14px/20px Geist">Không record được</div><div style="font:400 14px/20px Geist;color:var(--text2)">Mất kết nối nguồn LIVE. Phần đã lưu vẫn giữ.</div></div></div>
+      <div style="display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:var(--primarySubtle);grid-column:1 / -1"><span style="font:22px/1 'Material Symbols Rounded';color:var(--primary);font-variation-settings:'FILL' 1">bolt</span><div style="flex:1"><div style="font:600 14px/20px Geist">Tự động record khi creator LIVE</div><div style="font:400 14px/20px Geist;color:var(--text2)">Pro record trên cloud, điện thoại không cần online.</div></div><span style="font:600 14px/20px Geist;color:var(--primary);align-self:center">Xem Pro</span></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsEmptyState</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center">
+        <div style="width:56px;height:56px;border-radius:16px;background:var(--surface2);display:flex;align-items:center;justify-content:center;color:var(--text2)"><span style="font:28px/1 'Material Symbols Rounded'">video_library</span></div>
+        <div style="font:600 18px/24px Geist">Chưa có recording</div>
+        <div style="font:400 14px/20px Geist;color:var(--text2);max-width:260px">Khi creator LIVE, bấm Record ngay để lưu lại.</div>
+        <div style="display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:12px;background:var(--surface);border:1px solid var(--border);font:600 16px/20px Geist">Mở Watch List</div>
+      </div>
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2);margin-top:8px">SsBannerAdSlot</div>
+      <div style="display:flex;flex-direction:column;gap:4px"><span style="font:500 12px/16px Geist;color:var(--text2)">Quảng cáo</span><div style="min-height:56px;border-radius:8px;border:1px dashed var(--border);background:repeating-linear-gradient(135deg,var(--surface2) 0 8px,transparent 8px 16px);display:flex;align-items:center;justify-content:center;font:500 12px/16px 'Geist Mono';color:var(--text2)">adaptive banner · Free only</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsBottomSheet · SsDialog</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:8px 20px 20px;display:flex;flex-direction:column;gap:14px">
+        <div style="width:36px;height:4px;border-radius:999px;background:var(--border);align-self:center"></div>
+        <div style="font:600 18px/24px Geist">2 recording đang chạy</div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 12px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20))">LS</div><span style="flex:1;font:500 16px/24px Geist">Lina Studio</span><span style="font:500 14px/20px 'Geist Mono';color:var(--text2)">01:42:18</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 12px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250))">HB</div><span style="flex:1;font:500 16px/24px Geist">Hà Beauty</span><span style="font:500 14px/20px 'Geist Mono';color:var(--text2)">00:12:04</span></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 40px -20px rgba(0,0,0,.35)">
+        <div style="font:600 18px/24px Geist">Dừng recording?</div>
+        <div style="font:400 14px/20px Geist;color:var(--text2)">Phần đã record được lưu trên thiết bị này.</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end"><div style="display:flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;color:var(--primary);font:600 16px/20px Geist">Huỷ</div><div style="display:flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;background:var(--rec);color:#fff;font:600 16px/20px Geist">Dừng recording</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">SsCreatorTile · free (manual) / pro (auto)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--rec)">LS</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Lina Studio</div><div style="font:400 14px/20px Geist;color:var(--text2)">@linastudio</div></div><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>LIVE</span></div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Record ngay</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:999px;flex:none;display:flex;align-items:center;justify-content:center;font:600 14px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .15 240),oklch(.72 .14 195))">MF</div><div style="flex:1;min-width:0"><div style="font:600 16px/24px Geist">Mike Fitness</div><div style="font:400 14px/20px Geist;color:var(--text2)">Auto-record · Cloud</div></div><span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text2);font:600 12px/16px Geist">OFFLINE</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font:600 13px/18px 'Geist Mono';color:var(--text2)">App shell · SsAppBar + SsRecordingBar (local · cloud · 2 recordings) + SsBottomNav</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+      <div style="width:390px;background:var(--bg);border:1px solid var(--border);border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;gap:8px;padding:12px 16px 12px 20px;border-bottom:1px dashed var(--border)">
+          <div style="flex:1"><div style="font:700 28px/36px Geist">Theo dõi</div><div style="font:400 14px/20px Geist;color:var(--text2)">SsAppBar.large</div></div>
+          <div style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">notifications</span><span style="position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:999px;background:var(--rec);border:2px solid var(--bg)"></span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;padding:8px 12px;border-bottom:1px dashed var(--border)">
+          <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div>
+          <div style="flex:1;font:600 18px/24px Geist">Lina Studio</div>
+          <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">more_vert</span></div>
+        </div>
+        <div style="padding:12px 0 0;display:flex;flex-direction:column;gap:8px">
+          <div style="margin:0 12px;background:var(--player);color:var(--playerFg);border-radius:16px;padding:10px 12px 10px 14px;display:flex;align-items:center;gap:12px">
+            <span style="width:10px;height:10px;flex:none;border-radius:999px;background:var(--rec);box-shadow:0 0 0 4px rgba(227,16,41,.28)"></span>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Geist">Lina Studio</div><div style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted)">00:06:12 · còn 3:48 phút</div></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">smartphone</span>Local</span>
+            <span style="font:22px/1 'Material Symbols Rounded';color:var(--playerMuted)">chevron_right</span>
+          </div>
+          <div style="margin:0 12px;background:var(--player);color:var(--playerFg);border-radius:16px;padding:10px 12px 10px 14px;display:flex;align-items:center;gap:12px">
+            <span style="width:10px;height:10px;flex:none;border-radius:999px;background:var(--rec);box-shadow:0 0 0 4px rgba(227,16,41,.28)"></span>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Geist">Lina Studio</div><div style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted)">01:42:18 · đang record</div></div>
+            <span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span>Cloud</span>
+            <span style="font:22px/1 'Material Symbols Rounded';color:var(--playerMuted)">chevron_right</span>
+          </div>
+          <div style="margin:0 12px;background:var(--player);color:var(--playerFg);border-radius:12px;min-height:44px;padding:0 8px 0 12px;display:flex;align-items:center;gap:10px"><span style="width:8px;height:8px;flex:none;border-radius:999px;background:var(--rec)"></span><span style="flex:1;min-width:0;font:600 14px/20px Geist">Lina Studio · compact</span><span style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted)">01:42:18</span><span style="font:18px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">cloud</span><span style="font:20px/1 'Material Symbols Rounded';color:var(--playerMuted)">chevron_right</span></div>
+          <div style="margin:0 12px 8px;background:var(--player);color:var(--playerFg);border-radius:16px;padding:10px 12px 10px 14px;display:flex;align-items:center;gap:12px">
+            <div style="display:flex;flex:none"><div style="width:28px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 11px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.58 .2 330),oklch(.68 .18 20));border:2px solid var(--player)">LS</div><div style="width:28px;height:28px;margin-left:-8px;border-radius:999px;display:flex;align-items:center;justify-content:center;font:600 11px/1 Geist;color:#fff;background:linear-gradient(135deg,oklch(.55 .2 285),oklch(.65 .16 250));border:2px solid var(--player)">HB</div></div>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Geist">2 recording đang chạy</div><div style="font:500 13px/18px 'Geist Mono';color:var(--playerMuted)">01:42:18 · 00:12:04</div></div>
+            <span style="font:22px/1 'Material Symbols Rounded';color:var(--playerMuted)">expand_less</span>
+          </div>
+          <dc-import name="SsBottomNav" active="watch" hint-size="390px,98px"></dc-import>
+        </div>
+      </div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;font:400 14px/20px Geist;color:var(--text2)">
+        <div>Recording bar nằm trên bottom nav ở mọi tab. Trên Home dùng variant compact (44px). Chỉ ẩn trên Active Recording detail.</div><div>Tab label localize: VI Trang chủ / Theo dõi / Bản ghi / Cài đặt · EN Home / Watch / Recordings / Settings.</div>
+        <div>Tap 1 recording → Active recording. Tap 2 recording → SsBottomSheet chọn.</div>
+        <div>Local bar hiển thị phút Free còn lại; Cloud bar không.</div>
+        <div>Bell: chấm đỏ khi có Activity chưa đọc. Không hiện số.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</sc-for>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static TOK = {
+    light: { bg:'#F9FAFC', surface:'#FFFFFF', surface2:'#F2F3F7', text:'#0E111A', text2:'#626671', disabled:'#A6AAB4', border:'#DBDEE4', primary:'#6D49F4', primaryPressed:'#5A36E0', onPrimary:'#FFFFFF', primarySubtle:'#F0F0FF', rec:'#E31029', recPressed:'#C00D22', recSubtle:'#FDECEE', success:'#007742', successSubtle:'#E6F4EC', warn:'#D38F00', warnFg:'#8A5D00', warnSubtle:'#FDF4E1', info:'#0074C8', infoSubtle:'#E6F1FA', local:'#0B7A75', localSubtle:'#E3F3F2', cloud:'#2F6FE4', cloudSubtle:'#EAF0FD', player:'#12141B', playerFg:'#F7F8FA', playerMuted:'#A3A8B3', shadow:'0 1px 2px rgba(14,17,26,.05)' },
+    dark: { bg:'#090B10', surface:'#11141A', surface2:'#181C24', text:'#ECEEF2', text2:'#9BA1AC', disabled:'#5A606B', border:'#262B35', primary:'#968CFF', primaryPressed:'#8278F5', onPrimary:'#120E2E', primarySubtle:'#1F1B40', rec:'#FF5468', recPressed:'#E63E53', recSubtle:'#2B1117', success:'#3FD18A', successSubtle:'#0D2419', warn:'#F0B43C', warnFg:'#F0B43C', warnSubtle:'#2A2111', info:'#5BB0FF', infoSubtle:'#0E2033', local:'#4CCFC5', localSubtle:'#0E2827', cloud:'#7EA8FF', cloudSubtle:'#141F3A', player:'#04060A', playerFg:'#F7F8FA', playerMuted:'#8F95A1', shadow:'none' }
+  };
+  renderVals() {
+    const v = m => Object.fromEntries(Object.entries(Component.TOK[m]).map(([k, x]) => ['--' + k, x]));
+    return { themes: [{ name: 'Light', vars: v('light') }, { name: 'Dark', vars: v('dark') }] };
+  }
+}
+</script>
+</body>
+</html>

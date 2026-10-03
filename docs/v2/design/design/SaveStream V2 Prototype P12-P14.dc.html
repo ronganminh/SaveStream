@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block">
+<style>body{margin:0;background:#E7E9EE;font-family:Geist,system-ui,sans-serif;color:#0E111A}a{color:#6D49F4;text-decoration:none}a:hover{color:#5A36E0;text-decoration:underline}input{outline:none}@keyframes ssspin{to{transform:rotate(360deg)}}</style>
+</helmet>
+<section style="padding:40px 48px 16px"><div style="font:600 12px/16px 'Geist Mono';color:#626671;letter-spacing:.06em">SAVESTREAM MOBILE V2 · PROTOTYPE</div><div style="font:700 32px/40px Geist;margin-top:8px">P12 · Đăng xuất khi đang record &nbsp;·&nbsp; P13 · Xoá tài khoản &nbsp;·&nbsp; P14 · Phiên hết hạn</div><div style="display:flex;gap:16px;flex-wrap:wrap;font:600 14px/20px Geist;margin-top:12px"><a href="SaveStream V2 Phase 6 Screens.dc.html">S15–S18 · G05 (Phase 6)</a><a href="SaveStream V2 Phase 8 Screens.dc.html">Phase 8</a></div></section>
+<section style="padding:16px 48px 56px;display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start">
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">P12</span><span style="font:600 20px/26px Geist">S15 / S16 · Đăng xuất</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;max-width:410px"><sc-for list="{{ p12.recBtns }}" as="c" hint-placeholder-count="4"><span onClick="{{ c.on }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</span></sc-for><span onClick="{{ p12.toggleFail }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ p12.failBg }};color:{{ p12.failFg }}">Lưu lỗi</span><span onClick="{{ p12.reset }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:#fff;border:1px solid #DBDEE4">Reset</span></div>
+<div style="{{ vars }}"><div style="margin:10px"><div style="width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+<dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+<sc-if value="{{ p12.isAccount }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Bảo mật &amp; tài khoản</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px">
+<sc-if value="{{ p12.hasRecBar }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--player);color:var(--playerFg)"><span style="width:8px;height:8px;border-radius:999px;background:var(--rec)"></span><span style="flex:1;font:500 14px/20px Geist">{{ p12.recBarText }}</span></div></sc-if>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden">
+<div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">mail</span><span style="flex:1;font:400 16px/24px Geist">Email</span><span style="font:400 14px/20px Geist;color:var(--text2)">alex@example.com</span></div>
+<div style="height:1px;background:var(--border);margin-left:50px"></div>
+<div style="min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">devices</span><span style="flex:1;font:400 16px/24px Geist">Thiết bị đã đăng nhập</span><span style="font:400 14px/20px Geist;color:var(--text2)">3</span></div>
+</div>
+<div onClick="{{ p12.tapLogout }}" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:16px;min-height:52px;padding:0 16px;display:flex;align-items:center;gap:12px"><span style="font:22px/1 'Material Symbols Rounded';color:var(--text2)">logout</span><span style="flex:1;font:400 16px/24px Geist">Đăng xuất</span></div>
+</div>
+</sc-if>
+<sc-if value="{{ p12.isWelcome }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:80px 24px 24px"><div style="width:56px;height:56px;border-radius:16px;background:var(--primary);display:flex;align-items:center;justify-content:center;color:var(--onPrimary)"><span style="font:30px/1 'Material Symbols Rounded'">radio_button_checked</span></div><div style="font:700 28px/36px Geist">Đã đăng xuất</div><div style="font:400 15px/22px Geist;color:var(--text2)">{{ p12.welcomeText }}</div><div style="flex:1"></div><div onClick="{{ p12.reset }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Đăng nhập</div></div>
+</sc-if>
+<sc-if value="{{ p12.hasDialog }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px"><div style="background:var(--surface);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px;width:100%;box-sizing:border-box">
+<div style="display:flex;gap:12px;align-items:center">{{ p12.dIcon }}<div style="font:600 20px/26px Geist">{{ p12.dTitle }}</div></div>
+<div style="font:400 14px/20px Geist;color:var(--text2)">{{ p12.dBody }}</div>
+<sc-for list="{{ p12.dLines }}" as="l" hint-placeholder-count="0"><div style="display:flex;gap:10px;align-items:flex-start;font:400 14px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded';color:{{ l.color }}">{{ l.icon }}</span><span>{{ l.text }}</span></div></sc-for>
+<sc-if value="{{ p12.dHasBtns }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ p12.confirm }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:{{ p12.dBtnBg }};color:#fff;font:600 16px/20px Geist;text-align:center;padding:0 16px">{{ p12.dBtn }}</div>
+<div onClick="{{ p12.cancel }}" style="cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;font:600 16px/20px Geist;color:var(--primary)">{{ p12.dCancel }}</div>
+</sc-if>
+</div></div>
+</sc-if>
+</div></div></div>
+<div style="width:390px;font:400 13px/18px Geist;color:#3A3E48">Chọn trạng thái record ở trên rồi bấm Đăng xuất. Local: bắt buộc dừng + lưu xong mới đăng xuất; "Lưu lỗi" → không đăng xuất. Cloud: job tiếp tục trên server.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">P13</span><span style="font:600 20px/26px Geist">S17 → S18 · Xoá tài khoản</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;max-width:410px"><span onClick="{{ p13.toggleRec }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ p13.recBg }};color:{{ p13.recFg }}">Đang có recording</span><span onClick="{{ p13.toggleErr }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:{{ p13.errBg }};color:{{ p13.errFg }}">Lỗi server</span><span onClick="{{ p13.reset }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:#fff;border:1px solid #DBDEE4">Reset</span></div>
+<div style="{{ vars }}"><div style="margin:10px"><div style="width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+<dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+<sc-if value="{{ p13.isStep1 }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Xoá tài khoản</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:4px 16px 12px">
+<div style="font:600 20px/26px Geist">Những gì sẽ bị xoá</div>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:10px;font:400 15px/22px Geist"><span style="font:20px/1 'Material Symbols Rounded';color:var(--rec)">close</span>Tất cả bản ghi Cloud (5) và Watch List (8 creator)</div><div style="display:flex;gap:10px;font:400 15px/22px Geist"><span style="font:20px/1 'Material Symbols Rounded';color:var(--rec)">close</span>Số dư Cloud Pack: 5 h, không hoàn tiền</div><div style="display:flex;gap:10px;font:400 15px/22px Geist"><span style="font:20px/1 'Material Symbols Rounded';color:var(--rec)">close</span>Lịch sử sử dụng và cài đặt</div></div>
+<div style="display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--warnSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--warnFg)">warning</span><div><div style="font:600 14px/20px Geist">Gói Pro không tự huỷ</div><div style="font:400 14px/20px Geist;color:var(--text2)">Huỷ trong App Store trước khi xoá tài khoản.</div><div style="margin-top:6px;font:600 14px/20px Geist;color:var(--primary)">Mở App Store</div></div></div>
+<sc-if value="{{ p13.blocked }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--recSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--rec)">fiber_manual_record</span><div><div style="font:600 14px/20px Geist">Đang có recording</div><div style="font:400 14px/20px Geist;color:var(--text2)">Dừng các recording trước khi xoá tài khoản.</div></div></div></sc-if>
+<div style="flex:1"></div>
+<div onClick="{{ p13.next }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:{{ p13.nextBg }};color:{{ p13.nextFg }};font:600 16px/20px Geist">Tiếp tục</div>
+</div>
+</sc-if>
+<sc-if value="{{ p13.isStep2 }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div onClick="{{ p13.back }}" style="cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Xoá tài khoản</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:4px 16px 12px">
+<div style="font:600 20px/26px Geist">Xác nhận xoá vĩnh viễn</div>
+<div style="font:400 14px/20px Geist;color:var(--text2)">Không thể khôi phục. Nhập mật khẩu để xác nhận. (Gõ "sai" để thử lỗi mật khẩu.)</div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="font:500 14px/20px Geist">Mật khẩu</div><input type="password" value="{{ p13.pw }}" onChange="{{ p13.onPw }}" placeholder="Mật khẩu" style="min-height:48px;padding:0 14px;border-radius:12px;background:var(--surface);border:{{ p13.pwBorder }};color:var(--text);font:400 16px/24px Geist;box-sizing:border-box"></input><sc-if value="{{ p13.pwErr }}" hint-placeholder-val="{{ false }}"><div style="font:400 12px/16px Geist;color:var(--rec)">Mật khẩu không đúng.</div></sc-if></div>
+<div onClick="{{ p13.toggleTick }}" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start"><span style="width:22px;height:22px;flex:none;box-sizing:border-box;border-radius:6px;background:{{ p13.tickBg }};border:{{ p13.tickBorder }};display:flex;align-items:center;justify-content:center;color:var(--onPrimary);font:18px/1 'Material Symbols Rounded'">{{ p13.tickIcon }}</span><span style="font:400 15px/22px Geist">Tôi hiểu bản ghi Cloud, Watch List và Cloud Pack sẽ bị xoá vĩnh viễn.</span></div>
+<div style="flex:1"></div>
+<div onClick="{{ p13.del }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;background:{{ p13.delBg }};color:{{ p13.delFg }};font:600 16px/20px Geist">{{ p13.spin }}{{ p13.delLabel }}</div>
+<div onClick="{{ p13.reset }}" style="cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;font:600 16px/20px Geist;color:var(--primary)">Huỷ</div>
+</div>
+</sc-if>
+<sc-if value="{{ p13.isDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:120px 24px 24px"><div style="width:64px;height:64px;border-radius:20px;background:var(--surface2);display:flex;align-items:center;justify-content:center"><span style="font:34px/1 'Material Symbols Rounded'">check</span></div><div style="font:600 20px/26px Geist">Tài khoản đã được xoá</div><div style="font:400 14px/20px Geist;color:var(--text2)">Dữ liệu trên server sẽ được xoá hoàn toàn trong 30 ngày. Bản ghi Local vẫn còn trên máy cho tới khi bạn gỡ app.</div><div style="flex:1"></div><div onClick="{{ p13.reset }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">Đóng</div></div>
+</sc-if>
+<sc-if value="{{ p13.toast }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:140px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:var(--text);color:var(--bg);font:500 14px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">error</span>{{ p13.toast }}</div></sc-if>
+</div></div></div>
+<div style="width:390px;font:400 13px/18px Geist;color:#3A3E48">"Đang có recording" → bước 1 bị chặn. Bước 2: nút đỏ chỉ bật khi đã nhập mật khẩu và tick. "Lỗi server" → giữ bước 2 + toast.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font:600 12px/1 'Geist Mono';padding:6px 8px;background:#0E111A;color:#fff;border-radius:6px">P14</span><span style="font:600 20px/26px Geist">G05 · Phiên hết hạn khi record Local</span></div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;max-width:410px"><span onClick="{{ p14.expire }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:#0E111A;color:#fff">Mô phỏng: server trả 401</span><span onClick="{{ p14.reset }}" style="cursor:pointer;font:600 12px/16px 'Geist Mono';padding:6px 8px;border-radius:6px;background:#fff;border:1px solid #DBDEE4">Reset</span></div>
+<div style="{{ vars }}"><div style="margin:10px"><div style="width:390px;height:844px;background:var(--bg);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 0 0 10px #15171D,0 40px 80px -30px rgba(0,0,0,.45);font-family:Geist;color:var(--text)">
+<dc-import name="SsStatusBar" hint-size="390px,44px"></dc-import>
+<sc-if value="{{ p14.isRec }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">keyboard_arrow_down</span></div><div style="flex:1"><div style="font:600 18px/24px Geist">Lina Studio</div><div style="font:400 12px/16px Geist;color:var(--text2)">TikTok · Local</div></div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px">
+<div style="background:var(--player);color:var(--playerFg);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px"><div style="display:flex;gap:6px"><span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:var(--rec);color:#fff;font:700 12px/16px Geist;letter-spacing:.04em"><span style="width:6px;height:6px;border-radius:999px;background:#fff"></span>{{ p14.recLabel }}</span></div><div style="font:600 40px/48px 'Geist Mono'">{{ p14.elapsed }}</div><div style="font:400 13px/18px Geist;color:var(--playerMuted)">Lưu trên thiết bị này · {{ p14.size }}</div></div>
+<sc-if value="{{ p14.expired }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--warnSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--warnFg)">lock_clock</span><div><div style="font:600 14px/20px Geist">Phiên đăng nhập đã hết hạn</div><div style="font:400 14px/20px Geist;color:var(--text2)">Recording vẫn tiếp tục và được lưu trên máy này. Đăng nhập lại để gia hạn phút và đồng bộ.</div><div onClick="{{ p14.openSheet }}" style="cursor:pointer;margin-top:6px;font:600 14px/20px Geist;color:var(--primary)">Đăng nhập lại</div></div></div></sc-if>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font:400 14px/20px Geist"><span style="color:var(--text2)">Phút Free còn lại</span><span style="font-family:'Geist Mono'">{{ p14.left }}</span></div><div style="font:400 13px/18px Geist;color:var(--text2)">{{ p14.extendNote }}</div></div>
+<div style="flex:1"></div>
+<div onClick="{{ p14.stop }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;background:var(--rec);color:#fff;font:600 16px/20px Geist">{{ p14.stopLabel }}</div>
+</div>
+</sc-if>
+<sc-if value="{{ p14.isLib }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:4px;padding:4px 12px 4px 8px;min-height:56px;flex:none"><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center"><span style="font:24px/1 'Material Symbols Rounded'">arrow_back</span></div><div style="flex:1;font:600 18px/24px Geist">Bản ghi</div></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:14px;padding:4px 16px 16px">
+<sc-if value="{{ p14.unsynced }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:12px;padding:12px 14px;border-radius:12px;background:var(--warnSubtle)"><span style="font:22px/1 'Material Symbols Rounded';color:var(--warnFg)">lock_clock</span><div><div style="font:600 14px/20px Geist">Đăng nhập để đồng bộ</div><div style="font:400 14px/20px Geist;color:var(--text2)">1 bản ghi đã lưu trên máy nhưng chưa đồng bộ thông tin với tài khoản.</div><div onClick="{{ p14.openSheet }}" style="cursor:pointer;margin-top:6px;font:600 14px/20px Geist;color:var(--primary)">Đăng nhập</div></div></div></sc-if>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px;display:flex;gap:12px"><div style="width:96px;height:64px;flex:none;border-radius:8px;background:oklch(.24 .08 325);display:flex;align-items:center;justify-content:center;color:#fff"><span style="font:28px/1 'Material Symbols Rounded';font-variation-settings:'FILL' 1">play_circle</span></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div style="font:600 16px/22px Geist">Lina Studio</div><div style="font:400 12px/16px Geist;color:var(--text2)">13:22 · {{ p14.savedDur }} · Lưu trên thiết bị này</div><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--successSubtle);color:var(--success);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">check</span>Hoàn tất</span><sc-if value="{{ p14.unsynced }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 10px 0 8px;border-radius:999px;background:var(--warnSubtle);color:var(--warnFg);font:600 12px/16px Geist"><span style="font:16px/1 'Material Symbols Rounded'">sync_problem</span>Chưa đồng bộ</span></sc-if></div></div></div>
+<div style="font:400 14px/20px Geist;color:var(--text2)">Bạn vẫn phát và chia sẻ được bản ghi này.</div>
+</div>
+</sc-if>
+<sc-if value="{{ p14.saving }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px"><div style="background:var(--surface);border-radius:24px;padding:24px;display:flex;gap:12px;align-items:center;width:100%;box-sizing:border-box">{{ p14.spin }}<div style="font:600 18px/24px Geist">Đang lưu bản ghi…</div></div></div></sc-if>
+<sc-if value="{{ p14.sheet }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:var(--scrim);display:flex;flex-direction:column;justify-content:flex-end"><div style="background:var(--surface);border-radius:24px 24px 0 0;padding:10px 20px 34px;display:flex;flex-direction:column;gap:14px"><div style="width:36px;height:5px;border-radius:3px;background:var(--border);align-self:center"></div><div style="font:600 20px/26px Geist">Đăng nhập lại</div><div style="font:400 14px/20px Geist;color:var(--text2)">{{ p14.sheetNote }}</div><div style="min-height:48px;padding:0 14px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;font:400 16px/24px Geist;color:var(--text2)">alex@example.com</div><input type="password" value="{{ p14.pw }}" onChange="{{ p14.onPw }}" placeholder="Mật khẩu" style="min-height:48px;padding:0 14px;border-radius:12px;background:var(--surface);border:2px solid var(--primary);color:var(--text);font:400 16px/24px Geist;box-sizing:border-box"></input><div onClick="{{ p14.login }}" style="cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;background:var(--primary);color:var(--onPrimary);font:600 16px/20px Geist">{{ p14.loginSpin }}Đăng nhập</div><div onClick="{{ p14.closeSheet }}" style="cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;font:600 16px/20px Geist;color:var(--primary)">Để sau</div></div></div>
+</sc-if>
+<sc-if value="{{ p14.toast }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:48px;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:var(--text);color:var(--bg);font:500 14px/20px Geist"><span style="font:20px/1 'Material Symbols Rounded'">check_circle</span>{{ p14.toast }}</div></sc-if>
+</div></div></div>
+<div style="width:390px;font:400 13px/18px Geist;color:#3A3E48">Timer chạy thật. Bấm "server trả 401" → recording không dừng, hiện banner. Đăng nhập lại → đồng bộ. Hoặc Dừng và lưu → bản ghi "Chưa đồng bộ" → Đăng nhập.</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  static T = {"bg":"#F9FAFC","surface":"#FFFFFF","surface2":"#F2F3F7","text":"#0E111A","text2":"#626671","border":"#DBDEE4","primary":"#6D49F4","onPrimary":"#FFFFFF","primarySubtle":"#F0F0FF","rec":"#E31029","recSubtle":"#FDECEE","success":"#007742","successSubtle":"#E6F4EC","warnFg":"#8A5D00","warnSubtle":"#FDF4E1","info":"#0074C8","infoSubtle":"#E6F1FA","local":"#0B7A75","cloud":"#2F6FE4","cloudSubtle":"#EAF0FD","player":"#12141B","playerFg":"#F7F8FA","playerMuted":"#A3A8B3","scrim":"rgba(9,11,16,.5)"};
+  state = { r12: 'local', s12: 'account', fail12: false, rec13: false, err13: false, s13: 'step1', pw13: '', tick13: false, busy13: false, pwErr13: false, toast13: '', s14: 'rec', t14: 18 * 60 + 42, lease14: 3 * 60 + 12, exp14: false, sheet14: false, pw14: '', busy14: false, saving14: false, unsynced14: true, saved14: 0, toast14: '' };
+  componentDidMount() { this.iv = setInterval(() => { if (this.state.s14 !== 'rec' || this.state.saving14) return; if (this.state.lease14 <= 1) { this.stop14(true); return; } this.setState(s => ({ t14: s.t14 + 1, lease14: s.lease14 - 1 })); }, 1000); }
+  componentWillUnmount() { clearInterval(this.iv); [this.a, this.b, this.c, this.d].forEach(clearTimeout); }
+  spin(c, sz = 24) { return React.createElement('span', { style: { font: sz + "px/1 'Material Symbols Rounded'", color: c, display: 'inline-block', animation: 'ssspin 1s linear infinite' } }, 'progress_activity'); }
+  icon(n, c, fill) { return React.createElement('span', { style: { font: "26px/1 'Material Symbols Rounded'", color: c, fontVariationSettings: fill ? "'FILL' 1" : "'FILL' 0" } }, n); }
+  fmt(n) { const h = Math.floor(n / 3600), m = Math.floor(n % 3600 / 60), s = n % 60; return [h, m, s].map(x => String(x).padStart(2, '0')).join(':'); }
+  stop14(auto) { this.setState({ saving14: true, sheet14: false }); clearTimeout(this.c); this.c = setTimeout(() => this.setState(s => ({ saving14: false, s14: 'lib', saved14: s.t14, unsynced14: s.exp14, toast14: auto ? 'Hết phút đã cấp · đã dừng và lưu' : '' })), 1400); }
+  renderVals() {
+    const s = this.state, set = o => this.setState(o);
+    const chip = (on) => ({ bg: on ? '#0E111A' : '#fff', fg: on ? '#fff' : '#0E111A' });
+    // P12
+    const R = s.r12, local = R === 'local' || R === 'both', cloud = R === 'cloud' || R === 'both';
+    let d = {};
+    if (s.s12 === 'dialog') {
+      if (R === 'none') d = { icon: null, title: 'Đăng xuất khỏi SaveStream?', body: 'Bản ghi Local vẫn nằm trên máy này và hiện lại khi bạn đăng nhập cùng tài khoản. Bản ghi Cloud và gói Pro không bị ảnh hưởng.', lines: [], btn: 'Đăng xuất', bg: 'var(--rec)', cancel: 'Huỷ' };
+      else d = { icon: this.icon(local ? 'fiber_manual_record' : 'cloud', local ? 'var(--rec)' : 'var(--cloud)', 1), title: R === 'both' ? 'Đang có 2 recording' : local ? 'Đang record 1 bản ghi' : '2 Cloud recording đang chạy', body: local ? 'Đăng xuất sẽ dừng recording Local và lưu phần đã ghi trên máy này.' : 'SaveStream vẫn record trên server sau khi bạn đăng xuất.', lines: [].concat(local ? [{ icon: 'smartphone', color: 'var(--local)', text: 'Lina Studio · Local · sẽ dừng và lưu' }] : []).concat(cloud ? [{ icon: 'cloud', color: 'var(--cloud)', text: 'Mike Fitness · Cloud · vẫn tiếp tục' }] : []), btn: local ? 'Dừng, lưu và đăng xuất' : 'Đăng xuất', bg: local ? 'var(--rec)' : 'var(--primary)', cancel: local ? 'Tiếp tục record' : 'Huỷ' };
+    } else if (s.s12 === 'saving') d = { icon: this.spin('var(--primary)'), title: 'Đang lưu bản ghi…', body: 'Đừng đóng app. Đăng xuất sẽ tiếp tục sau khi file đã lưu xong trên máy.', lines: [], nob: 1 };
+    else if (s.s12 === 'saveFail') d = { icon: this.icon('error', 'var(--rec)'), title: 'Chưa lưu xong bản ghi', body: 'Bạn chưa bị đăng xuất. Phần đã ghi vẫn còn trên máy.', lines: [], btn: 'Thử lại', bg: 'var(--primary)', cancel: 'Huỷ' };
+    const p12 = {
+      recBtns: [['none', 'Không record'], ['local', 'Local'], ['cloud', 'Cloud'], ['both', 'Local + Cloud']].map(([k, l]) => ({ label: l, ...chip(R === k), on: () => set({ r12: k, s12: 'account' }) })),
+      failBg: s.fail12 ? '#E31029' : '#fff', failFg: s.fail12 ? '#fff' : '#0E111A', toggleFail: () => set({ fail12: !s.fail12 }),
+      isAccount: s.s12 !== 'welcome', isWelcome: s.s12 === 'welcome', hasRecBar: R !== 'none' && s.s12 !== 'welcome',
+      recBarText: R === 'both' ? '2 recording · Local 00:18:42 · Cloud' : local ? 'Lina Studio · Local · 00:18:42' : 'Mike Fitness · Cloud · đang record',
+      welcomeText: cloud ? 'Cloud recording vẫn đang chạy trên server và sẽ có trong tài khoản khi bạn đăng nhập lại.' : 'Bản ghi Local vẫn nằm trên máy này, gắn với tài khoản alex@example.com.',
+      tapLogout: () => set({ s12: 'dialog' }), hasDialog: ['dialog', 'saving', 'saveFail'].includes(s.s12),
+      dIcon: d.icon, dTitle: d.title, dBody: d.body, dLines: d.lines || [], dHasBtns: !d.nob, dBtn: d.btn, dBtnBg: d.bg, dCancel: d.cancel,
+      confirm: () => { if (s.s12 === 'dialog' && !local) return set({ s12: 'welcome' }); set({ s12: 'saving' }); clearTimeout(this.a); this.a = setTimeout(() => this.setState(st => ({ s12: st.fail12 ? 'saveFail' : 'welcome' })), 1500); },
+      cancel: () => set({ s12: 'account' }), reset: () => { clearTimeout(this.a); set({ s12: 'account' }); }
+    };
+    // P13
+    const can = s.pw13.length > 0 && s.tick13 && !s.busy13;
+    const p13 = {
+      recBg: s.rec13 ? '#0E111A' : '#fff', recFg: s.rec13 ? '#fff' : '#0E111A', toggleRec: () => set({ rec13: !s.rec13 }),
+      errBg: s.err13 ? '#E31029' : '#fff', errFg: s.err13 ? '#fff' : '#0E111A', toggleErr: () => set({ err13: !s.err13 }),
+      isStep1: s.s13 === 'step1', isStep2: s.s13 === 'step2', isDone: s.s13 === 'done', blocked: s.rec13,
+      nextBg: s.rec13 ? 'var(--surface2)' : 'var(--primary)', nextFg: s.rec13 ? 'var(--text2)' : 'var(--onPrimary)', next: () => !s.rec13 && set({ s13: 'step2' }), back: () => set({ s13: 'step1' }),
+      pw: s.pw13, onPw: e => set({ pw13: e.target.value, pwErr13: false }), pwErr: s.pwErr13, pwBorder: s.pwErr13 ? '2px solid var(--rec)' : '2px solid var(--primary)',
+      toggleTick: () => set({ tick13: !s.tick13 }), tickBg: s.tick13 ? 'var(--primary)' : 'transparent', tickBorder: s.tick13 ? '0' : '2px solid var(--text2)', tickIcon: s.tick13 ? 'check' : '',
+      delBg: can ? 'var(--rec)' : 'var(--surface2)', delFg: can ? '#fff' : 'var(--text2)', delLabel: s.busy13 ? 'Đang xoá…' : 'Xoá vĩnh viễn tài khoản', spin: s.busy13 ? this.spin('var(--text2)', 20) : null,
+      del: () => { if (!can) return; set({ busy13: true }); clearTimeout(this.b); this.b = setTimeout(() => { const st = this.state; if (st.pw13.trim().toLowerCase() === 'sai') return this.setState({ busy13: false, pwErr13: true }); if (st.err13) { this.setState({ busy13: false, toast13: 'Không xoá được. Thử lại.' }); setTimeout(() => this.setState({ toast13: '' }), 2500); return; } this.setState({ busy13: false, s13: 'done' }); }, 1500); },
+      toast: s.toast13, reset: () => { clearTimeout(this.b); set({ s13: 'step1', pw13: '', tick13: false, busy13: false, pwErr13: false, toast13: '' }); }
+    };
+    // P14
+    const p14 = {
+      isRec: s.s14 === 'rec', isLib: s.s14 === 'lib', expired: s.exp14, recLabel: 'REC', elapsed: this.fmt(s.t14), size: Math.round(s.t14 * 0.19) + ' MB',
+      left: Math.floor(s.lease14 / 60) + ':' + String(s.lease14 % 60).padStart(2, '0'),
+      extendNote: s.exp14 ? '"+10 phút" tạm khoá cho tới khi đăng nhập lại. Hết phút đã cấp → tự dừng và lưu.' : 'Gia hạn 1/4 · quảng cáo hôm nay 2/8 · +10 phút',
+      stopLabel: 'Dừng và lưu', stop: () => this.stop14(false),
+      expire: () => set({ exp14: true }), openSheet: () => set({ sheet14: true }), closeSheet: () => set({ sheet14: false }),
+      sheet: s.sheet14, sheetNote: s.s14 === 'rec' ? 'Recording vẫn chạy phía sau.' : 'Đồng bộ bản ghi đã lưu với tài khoản.',
+      pw: s.pw14, onPw: e => set({ pw14: e.target.value }), loginSpin: s.busy14 ? this.spin('var(--onPrimary)', 20) : null,
+      login: () => { if (s.busy14) return; set({ busy14: true }); clearTimeout(this.d); this.d = setTimeout(() => { this.setState(st => ({ busy14: false, sheet14: false, exp14: false, unsynced14: false, toast14: st.s14 === 'rec' ? 'Đã đăng nhập lại · recording không bị gián đoạn' : 'Đã đồng bộ 1 bản ghi' })); setTimeout(() => this.setState({ toast14: '' }), 2500); }, 1000); },
+      saving: s.saving14, spin: this.spin('var(--primary)'), unsynced: s.unsynced14, savedDur: Math.max(1, Math.round(s.saved14 / 60)) + ' ph', toast: s.toast14,
+      reset: () => { clearTimeout(this.c); clearTimeout(this.d); set({ s14: 'rec', t14: 18 * 60 + 42, lease14: 3 * 60 + 12, exp14: false, sheet14: false, pw14: '', busy14: false, saving14: false, unsynced14: true, toast14: '' }); }
+    };
+    const vars = Object.fromEntries(Object.entries(Component.T).map(([k, x]) => ['--' + k, x]));
+    return { p12, p13, p14, vars };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+# Backlog màn hình
+
+`[x]` = đã có code mẫu trong `lib/features`. `[~]` = route có, đang là placeholder. Claude Code: làm theo thứ tự Phase.
+
+
+## Phase 1
+- [x] **H01** — Home · Free Chưa có recording chạy · 1 creator đang LIVE · user tự bấm Record
+- [~] **H06** — Home · Pro · Cloud đang record Auto-record cloud đã bắt đầu · không ads
+- [x] **W01** — Watch List · Free 2/3 Thông báo LIVE · Record thủ công · auto-record khoá Pro
+- [~] **W03** — Watch List · Pro 8/20 · 2 cloud đang record · đủ 5 liveStatus
+- [x] **L01** — Recordings · Local + Cloud User Free có Cloud Pack · nhóm theo ngày · banner giữa 2 nhóm L
+- [x] **S01** — Settings · Free Không quảng cáo · Restore purchases ở nhóm Tài khoản
+- [~] **S02** — Settings · Pro Gói, kỳ gia hạn, cloud hours, Cloud Pack, lưu 14 ngày
+- [~] **H01-loading** — Home · Loading SsSkeleton giữ đúng layout nội dung thật
+- [~] **H01-offline** — Home · Offline Dữ liệu cache + không cho bắt đầu Record
+- [~] **H01-limit** — Home · Hết phút Free SsQuotaCard limit + paywall ngữ cảnh "hết phút Free"
+- [~] **W01-empty** — Theo dõi · Empty (lần đầu) Trước aha moment: không ads, không paywall
+- [~] **W01-limit** — Theo dõi · Đầy 3/3 Paywall ngữ cảnh "Watch List đầy"
+- [~] **W01-error** — Theo dõi · Error Không tải được danh sách
+- [~] **L01-empty** — Bản ghi · Empty Chưa có recording nào
+- [~] **L01-crossdevice** — Bản ghi · Local từ thiết bị khác Metadata sync, file không có trên máy này
+
+## Phase 2
+- [x] **A01** — Splash Chỉ logo; chuyển ngay khi kiểm tra phiên xong
+- [~] **A02** — Welcome Value prop Free trước, Pro sau
+- [~] **A03** — Sign in Google · Apple (iOS) · email
+- [~] **A03-error** — Sign in · Error Sai email hoặc mật khẩu
+- [~] **A04** — Sign up Họ tên · email · mật khẩu
+- [~] **A05** — Forgot password
+- [~] **A06** — Check email
+- [~] **A06-verify** — Verify email Bắt buộc sau Sign up bằng email
+- [~] **A07** — Intro · Watch & Detect Bước 1/3
+- [~] **A08** — Intro · Local vs Cloud Bước 2/3 · Android
+- [~] **A09** — Notification rationale Bước 3/3 · trước OS prompt
+- [~] **A10** — Android permission rationale Foreground Service + tối ưu pin
+- [~] **A11** — iOS limitation intro Chỉ đảm bảo khi app mở
+- [~] **A12** — Add first creator Đã tìm thấy · helper sử dụng có trách nhiệm
+- [~] **A13** — First creator added
+- [~] **W04** — Add creator Empty
+- [~] **W05** — Add creator · Validating
+- [~] **W06** — Add creator · Found
+- [~] **W07** — Add creator · Not found
+- [~] **W08** — Add creator · Private / unsupported
+- [~] **W08-unavailable** — Add creator · Unavailable
+- [~] **W09** — Creator detail · Offline Free
+- [~] **W10** — Creator detail · LIVE Free · chưa record
+- [~] **W11** — Creator detail · Paused
+- [~] **W12** — Remove confirm SsDialog
+- [~] **W13** — Free watch limit sheet Bấm + khi 3/3
+- [~] **W14** — Auto-record Pro upsell Paywall ngữ cảnh auto-record
+- [~] **W15** — Auto-record settings Pro
+- [~] **W10-waiting** — Creator detail · Chờ slot cloud Pro · creator LIVE nhưng 3/3 slot đang dùng
+- [~] **L01-missed** — Bản ghi · Missed (không có slot cloud) Pro · LIVE kết thúc khi đang chờ
+- [~] **H02** — Home · Empty Chưa có creator
+- [~] **H03** — Home · Creator LIVE, chưa record Aha moment
+- [~] **N04a** — Push · Creator LIVE Lock screen
+- [~] **N04b** — Deep link · Đang kiểm tra Ngay sau khi mở push
+- [~] **N04c** — Deep link · LIVE Còn LIVE → Record ngay
+- [~] **N04d** — Deep link · Livestream đã kết thúc
+
+## Phase 3
+- [x] **R01-android** — Bắt đầu record · Android Sheet xác nhận trước khi record
+- [x] **R01-ios** — Bắt đầu record · iOS Cảnh báo giữ app mở
+- [x] **R02-android** — Active Local Recording · Android RECORDING
+- [x] **R02-ios** — Active Local Recording · iOS RECORDING · giữ app mở
+- [~] **R03** — Starting Đang kết nối tới LIVE
+- [~] **R03-slow** — Starting · chậm Sau ~8 giây
+- [~] **R04** — Reconnecting Mất kết nối nguồn LIVE
+- [~] **R05** — Cảnh báo 60 giây Phút Free sắp hết
+- [~] **R06** — Reward · Offer +10 phút · gia hạn 1/4 · ads 2/8
+- [~] **R07** — Reward · Loading
+- [~] **R08** — Reward · Đang xác nhận Server-side verification
+- [~] **R08-pending** — Reward · Xác nhận chậm Sau ~15 giây chưa có SSV
+- [~] **R08-invalid** — Reward · Không hợp lệ Server từ chối / hết hạn
+- [~] **R09** — Reward · +10 phút Sau khi server xác nhận
+- [~] **R10** — Reward · Không có quảng cáo No-fill / lỗi mạng
+- [~] **R08-locked** — Reward · Tạm khoá Sau nhiều lần xác nhận không hợp lệ
+- [~] **R11** — Reward · Đạt tối đa 4 lần Gia hạn 4/4
+- [~] **R12** — Reward · Hết 8 quảng cáo hôm nay Daily cap
+- [~] **R13** — Slot #2 · 0/2 Creator thứ 2 LIVE khi đang record
+- [~] **R14** — Slot #2 · 1/2
+- [~] **R15** — Slot #2 · Đã mở Mở tới 15:42
+- [~] **R16** — Slot #2 · Hết hạn
+- [~] **R17** — Bộ nhớ sắp đầy
+- [~] **R18** — Bộ nhớ gần hết (< 250 MB) Recording đã dừng
+- [~] **R19** — Xác nhận dừng SsDialog
+- [~] **R20** — Finalizing Checklist, không %
+- [~] **R21** — Completed
+- [~] **R22** — Phát hiện gián đoạn Khi mở lại app · Android
+- [~] **R23** — Recovering Checklist
+- [~] **R24-android** — Recovered / Partial · Android
+- [~] **R24-ios** — Recovered / Partial · iOS
+- [~] **R25-android** — Failed · Android
+- [~] **R25-ios** — Failed · iOS
+- [~] **H04** — Home · Đang record Local
+- [~] **H05** — Home · 2 recording (slot #2) Slot #2 mở tới 15:42
+- [~] **H07** — Home · Đang hoàn tất
+- [~] **H08** — Home · Có bản ghi cần khôi phục
+- [~] **H09** — Home · Hết phút và hết quảng cáo 0/10 phút · 8/8 ads
+- [~] **p13** — — ANDROID SPECIFIC Foreground notification · tối ưu pin · OEM kill Giới hạn: Android có th
+- [~] **AN01** — Foreground notification · nội dung Channel "Recording đang chạy" (IMPORTANCE_LOW) AN01 · F
+- [~] **AN02** — Hướng dẫn tối ưu pin Settings → Record nền AN02 · Hướng dẫn tối ưu pin · Android · · VI ar
+- [~] **AN03** — OEM kill · hướng dẫn theo hãng Xiaomi · HyperOS AN03 · OEM kill · hướng dẫn theo hãng · An
+- [~] **p14** — — iOS SPECIFIC Giữ app mở · gián đoạn khi chạy nền iOS Free chỉ đảm bảo khi app đang mở. K
+- [~] **IO01** — Nhắc quay lại app Local notification khi app vào nền IO01 · Nhắc quay lại app · iOS · · VI
+- [~] **IO02** — Gián đoạn khi chạy nền · iOS =
+- [~] **IO03** — Settings · Record trên iPhone IO03 · Settings · Record trên iPhone · iOS · · VI arrow_back
+
+## Phase 4
+- [x] **L01** — Bản ghi · Pro (Local + Cloud) Group theo ngày
+- [~] **L02** — Bản ghi · Trống Chưa có bản ghi nào
+- [~] **L03** — Kết quả tìm kiếm Tìm theo tên creator · tiêu đề live
+- [~] **L04** — Library · Bộ lọc Nơi lưu · Trạng thái · Sắp xếp
+- [x] **L05** — Library · Không có kết quả
+- [~] **L06** — Local detail Chỉ có trên thiết bị này
+- [~] **L07** — Cloud detail Lưu đến ngày X
+- [~] **L07-expiring** — Cloud detail · Sắp hết hạn Từ 3 ngày trước khi hết hạn
+- [~] **L07-downloading** — Cloud detail · Đang tải về Tiến độ theo byte thật
+- [~] **L07-downloaded** — Cloud detail · Đã tải về thiết bị này
+- [~] **L08** — Video playback Không ad overlay
+- [~] **L08-landscape** — Video playback · Landscape Tự xoay theo thiết bị
+- [~] **L09** — File Local bị mất / di chuyển
+- [~] **L10** — Cloud recording đã hết hạn
+- [~] **L11** — Chi tiết · Đang xử lý Cloud recording sau khi live kết thúc
+- [~] **L12** — Partial / recovered detail Dòng thời gian có đoạn thiếu
+- [~] **L13-local** — Xoá · chỉ Local
+- [~] **L13-cloud** — Xoá · chỉ Cloud
+- [~] **L13-both** — Xoá · Cloud + bản tải xuống
+- [~] **L14** — Share / export · Local Trước native share sheet
+- [~] **L14-cloud** — Share / export · Cloud Không public link trong V1
+- [~] **L14-native** — Share sheet hệ thống OS render
+- [~] **R26** — Cloud active Pro · auto-record
+- [~] **R27** — Cloud processing Checklist, không %
+- [~] **R28** — Cloud failed
+
+## Phase 5
+- [~] **M01** — Plan & Usage · Free Thay màn 12 V1
+- [~] **M02** — Plan & Usage · Pro Kỳ, cloud hours, Cloud Pack
+- [x] **M03** — Pro paywall · full-screen Selector Năm / Tháng
+- [~] **M04** — Paywall · 5 ngữ cảnh Headline + thứ tự lợi ích theo context
+- [~] **M05** — Purchase · đang xử lý Native sheet → chờ xác nhận
+- [~] **M06** — Purchase · thành công
+- [~] **M07** — Purchase · user huỷ Không phải lỗi
+- [~] **M08** — Purchase · thất bại / đang chờ
+- [~] **M09** — Khôi phục giao dịch 4 trạng thái
+- [~] **M10** — Cloud Pack 5 h / 20 h / 60 h
+- [~] **M11** — Quản lý gói Mở store native
+- [~] **M12** — Hết hạn / ân hạn Billing grace period và expired
+- [~] **M13** — Pro mua trên web Managed on web (Lemon Squeezy)
+
+## Phase 6
+- [~] **S03** — Bộ nhớ thiết bị Chỉ áp dụng bản Local
+- [~] **S04** — Record nền Android tối ưu pin · iOS thông tin
+- [~] **S05** — Thông báo Theo loại
+- [~] **S06** — Giao diện
+- [~] **S07** — Ngôn ngữ
+- [~] **S08** — Bảo mật & tài khoản Từ hàng "Bảo mật" ở
+- [~] **S09** — Thiết bị đã đăng nhập
+- [~] **S10** — Đổi mật khẩu
+- [~] **S11** — Trợ giúp
+- [~] **S12** — Báo lỗi
+- [~] **S13** — Điều khoản & quyền riêng tư
+- [~] **S14** — Sử dụng có trách nhiệm
+- [~] **S15** — Đăng xuất Không có recording đang chạy
+- [~] **S16** — Đăng xuất khi đang recording Local + Cloud
+- [~] **S17** — Xoá tài khoản · bước 1 Hậu quả + gói đang chạy
+- [~] **S18** — Xoá tài khoản · bước 2 Xác nhận + kết quả
+- [~] **N01** — Thông báo Inbox
+- [~] **N02** — Thông báo · trống
+- [~] **N03** — Xin quyền thông báo Trước prompt của OS
+- [~] **N04e** — Push · mẫu màn khoá Bổ sung
+- [~] **N05** — Quyền thông báo bị tắt
+- [~] **G01** — Offline Banner toàn cục
+- [~] **G02** — Loading Skeleton
+- [~] **G03** — Lỗi tải Toàn màn + inline
+- [~] **G04** — Bắt buộc cập nhật Version quá cũ
+- [~] **G05** — Phiên đăng nhập hết hạn Đang record Local · không mất dữ liệu
+- [~] **G06** — Bảo trì Máy chủ tạm ngừng
+- [~] **G07** — Toast & snackbar Phản hồi ngắn
+- [~] **matrix** — 6 · MỤC 27 Ma trận Empty / Loading / Error / Offline / Limit Mỗi ô ghi màn hoặc mẫu áp dụn
+
+## Phase 8
+- [~] **Q01** — Home · Pro hết giờ cloud CLOUD_QUOTA_EXHAUSTED
+- [~] **Q02** — Watch List · auto-record tạm dừng PAUSED_NO_CLOUD_MINUTES
+- [~] **Q03** — Push · hết giờ cloud 1 push cho mỗi sự kiện
+- [~] **Q04** — Sau khi mua Cloud Pack Auto-record bật lại · không backfill
+- [~] **Q05** — Cloud Pack hết khi đang record CLOUD_PACK_DEPLETED_DURING_RECORDING
+- [~] **Q06** — Chọn Local hoặc Cloud Free có Cloud Pack
+- [~] **A03-social** — Đăng nhập · Google / Apple iOS: Apple trên cùng
+- [~] **A05b** — Đặt mật khẩu mới Từ link email
+- [~] **A14** — Email đã có tài khoản Liên kết Google / Apple
+- [~] **S10b** — Đặt mật khẩu Tài khoản Google / Apple
+- [~] **A16** — Máy có bản Local của tài khoản khác Sau khi đăng nhập tài khoản mới
+- [~] **C01** — Consent orchestration State machine · không phải 1 màn PLAN Pro → SKIP toàn bộ arrow_forwa
+- [~] **C02** — ATT · trước prompt hệ thống Chỉ iOS, chỉ khi needsTracking
+- [~] **C03** — Form consent (UMP) Do SDK render
+- [~] **M14** — Pro bị thu hồi PRO_REVOKED
+- [~] **X01** — Home · chữ 200%
+- [~] **X02** — Active Recording · chữ 200%
+- [~] **X03** — Paywall · chữ 200%

@@ -33,7 +33,7 @@ CI phải xanh: `flutter-checks`, `ios-release-compile`, `mobile-backend-e2e`.
 ## Quy tắc chung cho mọi phase của Track A
 
 1. **Mỗi màn một file** trong `lib/features/<khu>/presentation/`, dòng comment đầu ghi ID màn theo thiết kế (ví dụ `/// W10 — Creator detail · LIVE`).
-2. **Chữ trên màn:** lấy từ `SCREENS.md` (tiếng Việt) và tự dịch sang tiếng Anh. Thêm cả hai vào `app_en.arb` và `app_vi.arb`. Không viết cứng chữ trong widget.
+2. **Chữ trên màn:** lấy từ `docs/v2/design/docs/SCREENS.md` (tiếng Việt) và tự dịch sang tiếng Anh. Thêm cả hai vào `app_en.arb` và `app_vi.arb`. Không viết cứng chữ trong widget.
 3. **Sửa chữ theo `DECISIONS.md`:**
    - Không có thuê bao: bỏ mọi chỗ "/tháng", "/năm", "gia hạn", "kỳ", "30 giờ mỗi kỳ".
    - "Pro" là tài khoản có giờ đã mua. Lời mời nâng cấp là "Mua giờ cloud".
@@ -41,7 +41,7 @@ CI phải xanh: `flutter-checks`, `ios-release-compile`, `mobile-backend-e2e`.
    - Giờ cloud hiển thị dạng "133 giờ 20 phút", đổi từ phút. Không hiện chữ "credit" trong app.
    - Tên miền: `savestream.online`.
    - Bản ghi cloud lỗi: "không tính phút", không phải "chỉ tính phần đã lưu".
-4. **Trạng thái của mỗi màn:** dựng đủ các biến thể có trong `BACKLOG.md` cho màn đó (loading, empty, error, offline, limit). Loading dùng skeleton giữ đúng bố cục, không dùng vòng xoay toàn màn.
+4. **Trạng thái của mỗi màn:** dựng đủ các biến thể có trong `docs/v2/design/docs/BACKLOG.md` cho màn đó (loading, empty, error, offline, limit). Loading dùng skeleton giữ đúng bố cục, không dùng vòng xoay toàn màn.
 5. **Quảng cáo:** chỉ đặt chỗ bằng widget `SsBannerAdSlot` (tạo ở A0). Chỉ hiện khi `plan == free`, không bao giờ trên màn đang ghi, paywall, màn mua, trình phát, và trước khi người dùng thêm kênh đầu tiên.
 6. **Local/Cloud luôn có icon kèm chữ** (`SsLocationChip`).
 7. **Trợ năng:** vùng chạm tối thiểu 44, chữ co giãn tới 200% không tràn, có `Semantics` cho nhãn trạng thái, đồng hồ và công tắc.
@@ -77,7 +77,7 @@ Việc cần làm:
    - `DeviceInfoService`: `deviceId`, `deviceName`, `freeStorageBytes`, `platform`.
    - Mỗi interface có bản `Fake…` trong `lib/platform/fakes/` để giao diện chạy được và test được. Provider mặc định trả bản fake.
 4. **Điểm nối cho Track C:** thêm tham số `List<Override> extraOverrides` vào `SaveStreamApp` (file `lib/app/savestream_app.dart`), nối vào cuối danh sách `overrides` của `ProviderScope`. Sau phase này không ai sửa file đó nữa; Track C chỉ truyền override từ `bootstrap.dart`.
-5. **Widget dùng chung** trong `lib/core/widgets/`, dựng theo thiết kế (`design/SaveStream V2 Phase 1 Components.dc.html`): `SsLocationChip`, `SsPlanBadge`, `SsLiveBadge`, `SsQuotaCard` (biến thể Free, Free hết phút, Pro), `SsCreatorTile`, `SsRecordingTile`, `SsActiveRecordingCard`, `SsRecordingBar` (thanh nổi trên mọi tab khi đang ghi), `SsInlineAlert`, `SsFilterChips`, `SsBannerAdSlot`, `SsBottomSheet`, `SsToast`, `SsChecklist` (danh sách bước, dùng cho finalizing/processing). Thêm tất cả vào màn `/dev/components`.
+5. **Widget dùng chung** trong `lib/core/widgets/`, dựng theo thiết kế (`docs/v2/design/design/SaveStream V2 Phase 1 Components.dc.html`): `SsLocationChip`, `SsPlanBadge`, `SsLiveBadge`, `SsQuotaCard` (biến thể Free, Free hết phút, Pro), `SsCreatorTile`, `SsRecordingTile`, `SsActiveRecordingCard`, `SsRecordingBar` (thanh nổi trên mọi tab khi đang ghi), `SsInlineAlert`, `SsFilterChips`, `SsBannerAdSlot`, `SsBottomSheet`, `SsToast`, `SsChecklist` (danh sách bước, dùng cho finalizing/processing). Thêm tất cả vào màn `/dev/components`.
 6. **Tiện ích định dạng:** phút sang "X giờ Y phút", đếm ngược "Reset sau X giờ Y phút", dung lượng file, thời lượng `HH:MM:SS`.
 7. **Chuỗi cho phần native** (tạo sẵn trong ARB để Track C dùng, không được đổi tên key sau này):
    `nativeRecordingNotificationTitle`, `nativeRecordingNotificationBody`, `nativeRecordingNotificationStop`, `nativeRecordingChannelName`, `nativeKeepAppOpenReminderTitle`, `nativeKeepAppOpenReminderBody`, `nativePushChannelLiveName`, `nativePushChannelRecordingName`.
@@ -221,7 +221,7 @@ Việc cần làm:
 2. Máy có bản ghi trên máy của tài khoản khác (A16): cảnh báo, không nhập, không đổi chủ.
 3. Luồng xin đồng ý quảng cáo C01–C03: dựng phần màn giải thích trước lời nhắc hệ thống; logic lấy từ `AdsService.consentState`. Pro bỏ qua toàn bộ.
 4. Chữ 200% cho Home, màn đang ghi, màn mua giờ (X01–X03): không có hộp chứa chữ cố định chiều cao, đồng hồ giới hạn 1,5 lần, nút chính dính đáy.
-5. Rà toàn bộ theo `docs/QA.md` của gói thiết kế.
+5. Rà toàn bộ theo `docs/v2/design/docs/QA.md`.
 6. Dọn: xoá chuỗi ARB không còn dùng, màn và widget cũ không còn route nào trỏ tới, mock cũ. Cập nhật `apps/mobile/README.md` cho đúng hiện trạng.
 
 Không dựng: A03-social, A14, S10, S10b, M14 (để đợt sau hoặc đã bỏ).
