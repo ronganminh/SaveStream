@@ -192,6 +192,7 @@ class AdminOperationsService:
         recipient: str | None,
         kind: str | None,
         status: str | None,
+        sort_order: str = "desc",
     ) -> tuple[list[AdminEmailLog], str | None, bool]:
         statement = select(AdminEmailLog)
         if recipient:
@@ -200,19 +201,32 @@ class AdminOperationsService:
             statement = statement.where(AdminEmailLog.kind == kind)
         if status:
             statement = statement.where(AdminEmailLog.status == status)
+        ascending = sort_order == "asc"
         if cursor:
             created_at, row_id = _decode_cursor(cursor)
-            statement = statement.where(
-                or_(
-                    AdminEmailLog.created_at < created_at,
-                    and_(AdminEmailLog.created_at == created_at, AdminEmailLog.id < row_id),
+            if ascending:
+                statement = statement.where(
+                    or_(
+                        AdminEmailLog.created_at > created_at,
+                        and_(AdminEmailLog.created_at == created_at, AdminEmailLog.id > row_id),
+                    )
                 )
-            )
+            else:
+                statement = statement.where(
+                    or_(
+                        AdminEmailLog.created_at < created_at,
+                        and_(AdminEmailLog.created_at == created_at, AdminEmailLog.id < row_id),
+                    )
+                )
+        order = (
+            (AdminEmailLog.created_at.asc(), AdminEmailLog.id.asc())
+            if ascending
+            else (AdminEmailLog.created_at.desc(), AdminEmailLog.id.desc())
+        )
         rows = list(
             (
                 await self.session.scalars(
-                    statement.order_by(AdminEmailLog.created_at.desc(), AdminEmailLog.id.desc())
-                    .limit(limit + 1)
+                    statement.order_by(*order).limit(limit + 1)
                 )
             ).all()
         )
@@ -452,25 +466,45 @@ class AdminOperationsService:
         cursor: str | None,
         kind: str | None,
         status: str | None,
+        query: str | None = None,
+        sort_order: str = "desc",
     ) -> tuple[list[AdminBroadcast], str | None, bool]:
         statement = select(AdminBroadcast)
+        if query:
+            term = f"%{query.strip()}%"
+            statement = statement.where(
+                or_(AdminBroadcast.title.ilike(term), AdminBroadcast.body.ilike(term))
+            )
         if kind:
             statement = statement.where(AdminBroadcast.kind == kind)
         if status:
             statement = statement.where(AdminBroadcast.status == status)
+        ascending = sort_order == "asc"
         if cursor:
             created_at, row_id = _decode_cursor(cursor)
-            statement = statement.where(
-                or_(
-                    AdminBroadcast.created_at < created_at,
-                    and_(AdminBroadcast.created_at == created_at, AdminBroadcast.id < row_id),
+            if ascending:
+                statement = statement.where(
+                    or_(
+                        AdminBroadcast.created_at > created_at,
+                        and_(AdminBroadcast.created_at == created_at, AdminBroadcast.id > row_id),
+                    )
                 )
-            )
+            else:
+                statement = statement.where(
+                    or_(
+                        AdminBroadcast.created_at < created_at,
+                        and_(AdminBroadcast.created_at == created_at, AdminBroadcast.id < row_id),
+                    )
+                )
+        order = (
+            (AdminBroadcast.created_at.asc(), AdminBroadcast.id.asc())
+            if ascending
+            else (AdminBroadcast.created_at.desc(), AdminBroadcast.id.desc())
+        )
         rows = list(
             (
                 await self.session.scalars(
-                    statement.order_by(AdminBroadcast.created_at.desc(), AdminBroadcast.id.desc())
-                    .limit(limit + 1)
+                    statement.order_by(*order).limit(limit + 1)
                 )
             ).all()
         )

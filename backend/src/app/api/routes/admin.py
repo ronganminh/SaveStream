@@ -614,6 +614,7 @@ async def list_admin_recordings(
     cursor: str | None = Query(default=None),
     user_id: uuid.UUID | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminRecordingListResponse:
@@ -1432,6 +1433,7 @@ async def list_admin_email_logs(
         recipient=recipient,
         kind=kind,
         status=status_filter,
+        sort_order=sort_order,
     )
     await AuditService(session).record(
         actor_user_id=principal.user_id,
@@ -1454,6 +1456,7 @@ async def export_admin_email_logs(
     recipient: str | None = Query(default=None),
     kind: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
@@ -1467,6 +1470,7 @@ async def export_admin_email_logs(
         recipient=recipient,
         kind=kind,
         status=status_filter,
+        sort_order=sort_order,
     )
     output = io.StringIO()
     writer = csv.writer(output)
@@ -1689,13 +1693,22 @@ async def list_admin_broadcasts(
     cursor: str | None = Query(default=None),
     kind: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    query: str | None = Query(default=None, max_length=160),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminBroadcastListResponse:
     _require_owner(principal)
     items, next_cursor, has_more = await AdminOperationsService(
         session, request.app.state.settings
-    ).list_broadcasts(limit=limit, cursor=cursor, kind=kind, status=status_filter)
+    ).list_broadcasts(
+        limit=limit,
+        cursor=cursor,
+        kind=kind,
+        status=status_filter,
+        query=query,
+        sort_order=sort_order,
+    )
     return AdminBroadcastListResponse(
         items=[_d7_broadcast_response(item) for item in items],
         pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
@@ -1707,13 +1720,22 @@ async def export_admin_broadcasts(
     request: Request,
     kind: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    query: str | None = Query(default=None, max_length=160),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
     _require_owner(principal)
     items, _, has_more = await AdminOperationsService(
         session, request.app.state.settings
-    ).list_broadcasts(limit=500, cursor=None, kind=kind, status=status_filter)
+    ).list_broadcasts(
+        limit=500,
+        cursor=None,
+        kind=kind,
+        status=status_filter,
+        query=query,
+        sort_order=sort_order,
+    )
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
