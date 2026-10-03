@@ -185,6 +185,10 @@ void main() {
     await tester.tap(checkStatus);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
+    // The refresh and the snapshot refetch it triggers each take one mock
+    // latency window; settle past both before reading the provider.
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(BillingScreen)),

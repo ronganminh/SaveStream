@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/widgets/ss_logo_mark.dart';
+import '../theme/ss_tokens.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -10,7 +11,7 @@ class SplashScreen extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(color: Color(0xFF4F46E5)),
+        decoration: const BoxDecoration(color: SsColors.brandMark),
         child: SafeArea(
           child: Center(
             child: Column(
