@@ -43,8 +43,9 @@ void main() {
   });
 
   test('notification mocks seed all C1 V2 notification kinds', () async {
-    final MockNotificationsRepository repository =
-        MockNotificationsRepository(behavior);
+    final MockNotificationsRepository repository = MockNotificationsRepository(
+      behavior,
+    );
 
     final NotificationPage page = await repository.listNotifications();
 
