@@ -6,7 +6,7 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.api.schemas.recordings import Source
 from app.application.credits.service import CreditService
 from app.application.entitlements.service import EntitlementService
 from app.application.recordings.service import (
@@ -68,6 +68,7 @@ class CloudSlotQueueService:
             container="mp4",
             estimated_max_cost=0,
             actual_cost=None,
+            created_at=utcnow(),
         )
         try:
             async with self.session.begin_nested():
