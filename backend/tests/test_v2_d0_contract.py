@@ -43,8 +43,8 @@ def test_d0_admin_openapi_contract() -> None:
 
     roles = schemas["User"]["properties"]["role"]["enum"]
     assert roles == ["user", "owner", "support", "finance", "admin"]
-    assert schemas["UserResponse"]["properties"]["admin_mfa_enabled"]["type"] == "boolean"
-    assert schemas["UserResponse"]["properties"]["admin_mfa_verified"]["type"] == "boolean"
+    assert schemas["User"]["properties"]["admin_mfa_enabled"]["type"] == "boolean"
+    assert schemas["User"]["properties"]["admin_mfa_verified"]["type"] == "boolean"
 
     step_up = paths["/admin/admins/{user_id}"]["patch"]["parameters"]
     assert any(parameter["name"] == "X-Admin-Step-Up" for parameter in step_up)
