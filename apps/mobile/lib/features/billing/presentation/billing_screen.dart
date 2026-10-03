@@ -17,10 +17,7 @@ import '../domain/models/billing_models.dart';
 import 'controllers/billing_providers.dart';
 
 class BillingScreen extends ConsumerStatefulWidget {
-  const BillingScreen({
-    required this.externalCheckoutEnabled,
-    super.key,
-  });
+  const BillingScreen({required this.externalCheckoutEnabled, super.key});
 
   final bool externalCheckoutEnabled;
 
