@@ -68,6 +68,10 @@ class AuditService:
         resource_id: str | None,
         context: AuditContext,
         details: dict[str, Any] | None = None,
+        actor_role: str | None = None,
+        reason: str | None = None,
+        before_state: dict[str, Any] | None = None,
+        after_state: dict[str, Any] | None = None,
     ) -> AuditLog:
         row = AuditLog(
             actor_user_id=actor_user_id,
@@ -77,6 +81,10 @@ class AuditService:
             request_id=context.request_id,
             ip_address=context.ip_address,
             user_agent=context.user_agent,
+            actor_role=actor_role,
+            reason=reason,
+            before_state=before_state,
+            after_state=after_state,
             details=details or {},
         )
         self.session.add(row)
@@ -91,6 +99,8 @@ class AuditService:
         actor_user_id: uuid.UUID | None = None,
         resource_type: str | None = None,
         action: str | None = None,
+        created_from: datetime | None = None,
+        created_to: datetime | None = None,
     ) -> AuditPage:
         statement = select(AuditLog)
         if actor_user_id is not None:
@@ -99,6 +109,10 @@ class AuditService:
             statement = statement.where(AuditLog.resource_type == resource_type)
         if action is not None:
             statement = statement.where(AuditLog.action == action)
+        if created_from is not None:
+            statement = statement.where(AuditLog.created_at >= created_from)
+        if created_to is not None:
+            statement = statement.where(AuditLog.created_at <= created_to)
         if cursor:
             created_at, row_id = _decode_cursor(cursor)
             statement = statement.where(
