@@ -404,6 +404,87 @@ class PrivacyService:
             )
         return len(users)
 
+    async def anonymize_user(self, user_id: uuid.UUID) -> bool:
+        user = await self.session.get(User, user_id)
+        if user is None or user.deletion_completed_at is not None:
+            return False
+        now = utcnow()
+        recordings = list(
+            (
+                await self.session.scalars(
+                    select(Recording).where(Recording.user_id == user.id)
+                )
+            ).all()
+        )
+        for recording in recordings:
+            if recording.deleted_at is None:
+                recording.deleted_at = now
+                recording.cleanup_requested_at = now
+                await self.outbox.enqueue(
+                    self.session,
+                    topic="recording.cleanup",
+                    aggregate_type="recording",
+                    aggregate_id=str(recording.id),
+                    payload={"recording_id": str(recording.id), "reason": "account_deletion"},
+                )
+            recording.source_value = "deleted"
+            recording.resolved_username = None
+            recording.room_id = None
+            recording.room_session_key = None
+            recording.active_dedupe_key = None
+
+        watches = list(
+            (
+                await self.session.scalars(
+                    select(Watch).where(Watch.user_id == user.id)
+                )
+            ).all()
+        )
+        for watch in watches:
+            watch.source_value = "deleted"
+            watch.resolved_username = None
+            watch.resolved_room_id = None
+            watch.active_dedupe_key = None
+            watch.status = "disabled"
+            watch.next_check_at = None
+            watch.deleted_at = watch.deleted_at or now
+
+        await self.session.execute(
+            delete(PasswordCredential).where(PasswordCredential.user_id == user.id)
+        )
+        await self.session.execute(delete(AuthSession).where(AuthSession.user_id == user.id))
+        await self.session.execute(delete(OneTimeToken).where(OneTimeToken.user_id == user.id))
+        await self.session.execute(delete(ApiKey).where(ApiKey.user_id == user.id))
+        await self.session.execute(
+            delete(UserNotification).where(UserNotification.user_id == user.id)
+        )
+        await self.session.execute(
+            delete(NotificationPreference).where(NotificationPreference.user_id == user.id)
+        )
+        await self.session.execute(
+            update(AuditLog)
+            .where(AuditLog.actor_user_id == user.id)
+            .values(ip_address=None, user_agent=None)
+        )
+        user.email = f"deleted+{user.id.hex}@deleted.savestream.invalid"
+        user.normalized_email = user.email
+        user.display_name = None
+        user.email_verified_at = None
+        user.is_active = False
+        user.deletion_requested_at = user.deletion_requested_at or now
+        user.deletion_completed_at = now
+        self.session.add(
+            AuditLog(
+                actor_user_id=user.id,
+                action="privacy.account_deleted",
+                resource_type="user",
+                resource_id=str(user.id),
+                details={"financial_records_preserved": True},
+            )
+        )
+        await self.session.flush()
+        return True
+
     async def prune_ephemeral(self) -> int:
         now = utcnow()
         keys = await self.session.execute(
