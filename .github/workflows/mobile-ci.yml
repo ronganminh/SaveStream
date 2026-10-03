@@ -104,8 +104,11 @@ jobs:
           dart run flutter_native_splash:create
           flutter gen-l10n
 
-      - name: Build production iOS release simulator
+      # Flutter rejects --release for simulator builds, and an unsigned device
+      # build needs a Development Team. This compiles the production
+      # configuration and native plugins; it does not validate a store archive.
+      - name: Compile production-config iOS app for simulator
         run: >-
-          flutter build ios --simulator --release
+          flutter build ios --simulator --debug
           --dart-define=APP_ENV=production
           --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false

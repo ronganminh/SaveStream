@@ -88,7 +88,7 @@ class AppConfig {
       case AppEnvironment.local:
         return 'http://10.0.2.2:8000';
       case AppEnvironment.staging:
-        return 'https://api-staging.savestream.online';
+        return 'https://staging-api.savestream.online';
       case AppEnvironment.production:
         return 'https://api.savestream.online';
     }

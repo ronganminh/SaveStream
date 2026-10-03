@@ -150,7 +150,7 @@ Environment defaults:
 
 ```text
 local      -> http://10.0.2.2:8000
-staging    -> https://api-staging.savestream.online
+staging    -> https://staging-api.savestream.online
 production -> https://api.savestream.online
 ```
 

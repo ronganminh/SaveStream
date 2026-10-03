@@ -19,7 +19,10 @@ import '../features/credits/domain/repositories/credits_repository.dart';
 import '../features/credits/presentation/controllers/credits_providers.dart';
 import '../features/recordings/domain/repositories/recording_repository.dart';
 import '../features/recordings/presentation/controllers/recording_providers.dart';
+import '../features/settings/domain/repositories/notifications_repository.dart';
 import '../features/settings/domain/repositories/profile_repository.dart';
+import '../features/settings/presentation/controllers/notification_feed_providers.dart';
+import '../features/settings/presentation/controllers/notification_preferences_providers.dart';
 import '../features/settings/presentation/controllers/settings_providers.dart';
 import '../l10n/l10n.dart';
 import 'app_settings_controller.dart';
@@ -40,6 +43,8 @@ class SaveStreamApp extends StatefulWidget {
     this.creditsRepository,
     this.billingRepository,
     this.profileRepository,
+    this.notificationsRepository,
+    this.notificationPreferencesRepository,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     super.key,
@@ -55,6 +60,8 @@ class SaveStreamApp extends StatefulWidget {
   final CreditsRepository? creditsRepository;
   final BillingRepository? billingRepository;
   final ProfileRepository? profileRepository;
+  final NotificationsRepository? notificationsRepository;
+  final NotificationPreferencesRepository? notificationPreferencesRepository;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
 
@@ -122,6 +129,14 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
         if (widget.profileRepository != null)
           profileRepositoryProvider.overrideWithValue(
             widget.profileRepository!,
+          ),
+        if (widget.notificationsRepository != null)
+          notificationsRepositoryProvider.overrideWithValue(
+            widget.notificationsRepository!,
+          ),
+        if (widget.notificationPreferencesRepository != null)
+          notificationPreferencesRepositoryProvider.overrideWithValue(
+            widget.notificationPreferencesRepository!,
           ),
       ],
       child: AnimatedBuilder(

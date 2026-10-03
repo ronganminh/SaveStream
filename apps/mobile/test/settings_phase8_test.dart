@@ -7,8 +7,9 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/features/settings/presentation/legal_link_screen.dart';
+import 'package:savestream_mobile/features/settings/presentation/notification_settings_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
-import 'package:savestream_mobile/features/settings/presentation/settings_info_screen.dart';
 
 void main() {
   AppConfig testConfig() {
@@ -122,7 +123,7 @@ void main() {
   ) async {
     await openSettings(tester);
 
-    Future<void> openInfo(String label) async {
+    Future<void> openInfo(String label, Type screen) async {
       final Finder tile = find.ancestor(
         of: find.text(label),
         matching: find.byType(ListTile),
@@ -132,19 +133,18 @@ void main() {
       await tester.tap(tile);
       await tester.pumpAndSettle();
 
-      expect(find.byType(SettingsInfoScreen), findsOneWidget);
+      expect(find.byType(screen), findsOneWidget);
       expect(find.text(label), findsWidgets);
 
-      final BuildContext context = tester.element(
-        find.byType(SettingsInfoScreen),
-      );
+      final BuildContext context = tester.element(find.byType(screen));
       GoRouter.of(context).pop();
       await tester.pumpAndSettle();
     }
 
-    await openInfo('Notifications');
-    await openInfo('Privacy Policy');
-    await openInfo('Terms of Use');
+    await openInfo('Notifications', NotificationSettingsScreen);
+    expect(find.text('https://savestream.online/privacy'), findsNothing);
+    await openInfo('Privacy Policy', LegalLinkScreen);
+    await openInfo('Terms of Use', LegalLinkScreen);
   });
 
   testWidgets('cancelling Delete Account keeps the session authenticated', (

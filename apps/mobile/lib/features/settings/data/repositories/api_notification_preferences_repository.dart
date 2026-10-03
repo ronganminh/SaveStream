@@ -1,12 +1,15 @@
 import '../../../../core/api/api_client.dart';
 import '../../domain/models/notification_preferences.dart';
+import '../../domain/repositories/notifications_repository.dart';
 
-final class ApiNotificationPreferencesRepository {
+final class ApiNotificationPreferencesRepository
+    implements NotificationPreferencesRepository {
   const ApiNotificationPreferencesRepository({required ApiClient apiClient})
     : _apiClient = apiClient;
 
   final ApiClient _apiClient;
 
+  @override
   Future<NotificationPreferences> getPreferences() async {
     final response = await _apiClient.get<NotificationPreferences>(
       '/v1/me/notification-preferences',
@@ -15,6 +18,7 @@ final class ApiNotificationPreferencesRepository {
     return response.data;
   }
 
+  @override
   Future<NotificationPreferences> updatePreferences(
     NotificationPreferences preferences,
   ) async {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -12,10 +14,36 @@ import 'controllers/notification_preferences_providers.dart';
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
 
-  Future<void> _markRead(WidgetRef ref, AppNotification notification) async {
+  Future<void> _open(
+    BuildContext context,
+    WidgetRef ref,
+    AppNotification notification,
+  ) async {
+    final String? recordingId = notification.recordingId;
+    if (recordingId != null) {
+      context.push(AppRoutes.recordingDetail(recordingId));
+    }
     if (notification.read) return;
-    await ref.read(notificationsRepositoryProvider).markRead(notification.id);
-    ref.invalidate(notificationFeedProvider);
+    try {
+      await ref
+          .read(notificationFeedProvider.notifier)
+          .markRead(notification.id);
+    } on Object {
+      if (!context.mounted) return;
+      SsSnackbar.show(context, context.l10n.notificationMarkReadFailed);
+    }
+  }
+
+  Future<void> _save(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationPreferences next,
+  ) async {
+    final bool saved = await ref
+        .read(notificationPreferencesProvider.notifier)
+        .save(next);
+    if (saved || !context.mounted) return;
+    SsSnackbar.show(context, context.l10n.notificationPreferencesSaveFailed);
   }
 
   @override
@@ -24,7 +52,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final AsyncValue<NotificationPreferences> preferences = ref.watch(
       notificationPreferencesProvider,
     );
-    final AsyncValue<List<AppNotification>> feed = ref.watch(
+    final AsyncValue<NotificationFeedState> feed = ref.watch(
       notificationFeedProvider,
     );
 
@@ -69,25 +97,31 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingStartedTitle,
                         value: value.recordingStarted,
-                        onChanged: (bool enabled) => ref
-                            .read(notificationPreferencesProvider.notifier)
-                            .save(value.copyWith(recordingStarted: enabled)),
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(recordingStarted: enabled),
+                        ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingReadyTitle,
                         value: value.recordingReady,
-                        onChanged: (bool enabled) => ref
-                            .read(notificationPreferencesProvider.notifier)
-                            .save(value.copyWith(recordingReady: enabled)),
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(recordingReady: enabled),
+                        ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingFailedTitle,
                         value: value.recordingFailed,
-                        onChanged: (bool enabled) => ref
-                            .read(notificationPreferencesProvider.notifier)
-                            .save(value.copyWith(recordingFailed: enabled)),
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(recordingFailed: enabled),
+                        ),
                       ),
                     ],
                   ),
@@ -117,8 +151,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       error: error,
                       onRetry: () => ref.invalidate(notificationFeedProvider),
                     ),
-                data: (List<AppNotification> items) {
-                  if (items.isEmpty) {
+                data: (NotificationFeedState data) {
+                  if (data.items.isEmpty) {
                     return SsCard(
                       child: SsEmptyState(
                         icon: Icons.notifications_none_rounded,
@@ -128,19 +162,31 @@ class NotificationSettingsScreen extends ConsumerWidget {
                     );
                   }
                   return Column(
-                    children: items
-                        .map(
-                          (AppNotification item) => Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: SsSpacing.sm,
-                            ),
-                            child: _NotificationCard(
-                              item: item,
-                              onTap: () => _markRead(ref, item),
-                            ),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      for (final AppNotification item in data.items)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+                          child: _NotificationCard(
+                            item: item,
+                            onTap: () => _open(context, ref, item),
                           ),
-                        )
-                        .toList(growable: false),
+                        ),
+                      if (data.loadMoreError != null)
+                        SsInlineAsyncError(
+                          error: data.loadMoreError!,
+                          messageOverride: l10n.notificationLoadMoreFailed,
+                        ),
+                      if (data.hasMore)
+                        SsSecondaryButton(
+                          label: l10n.loadMoreAction,
+                          onPressed: data.isLoadingMore
+                              ? null
+                              : () => ref
+                                    .read(notificationFeedProvider.notifier)
+                                    .loadMore(),
+                        ),
+                    ],
                   );
                 },
               ),
@@ -187,6 +233,7 @@ class _NotificationCard extends StatelessWidget {
       AppNotificationType.recordingStarted => Icons.fiber_manual_record_rounded,
       AppNotificationType.recordingReady => Icons.check_circle_outline_rounded,
       AppNotificationType.recordingFailed => Icons.error_outline_rounded,
+      AppNotificationType.other => Icons.notifications_none_rounded,
     };
     return SsCard(
       child: InkWell(

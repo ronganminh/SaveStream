@@ -22,3 +22,10 @@ ios/.symlinks/
 
 # Local/store signing configuration
 ios/Flutter/ReleaseSigning.xcconfig
+
+# Flutter tool output
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Runner/GeneratedPluginRegistrant.h
+ios/Runner/GeneratedPluginRegistrant.m
+.brand-venv/
