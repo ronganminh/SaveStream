@@ -16,6 +16,7 @@ NotificationKind = Literal[
     "recording_started",
     "recording_ready",
     "recording_failed",
+    "recording_missed",
 ]
 
 
