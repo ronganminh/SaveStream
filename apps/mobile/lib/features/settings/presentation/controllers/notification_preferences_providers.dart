@@ -43,7 +43,6 @@ class NotificationPreferencesController
       } else {
         state = AsyncError<NotificationPreferences>(error, stackTrace);
       }
-      Error.throwWithStackTrace(error, stackTrace);
     }
   }
 }
