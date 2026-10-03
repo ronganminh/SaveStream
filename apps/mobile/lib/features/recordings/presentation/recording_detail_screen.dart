@@ -709,16 +709,23 @@ class _RecordingDetailSkeleton extends StatelessWidget {
 
 IconData _statusIcon(RecordingStatus status) {
   return switch (status) {
+    RecordingStatus.starting => Icons.play_circle_outline_rounded,
     RecordingStatus.queued => Icons.schedule_rounded,
     RecordingStatus.resolving => Icons.search_rounded,
     RecordingStatus.waitingLive => Icons.sensors_rounded,
+    RecordingStatus.waitingForCloudSlot => Icons.hourglass_top_rounded,
     RecordingStatus.recording => Icons.fiber_manual_record_rounded,
+    RecordingStatus.reconnecting => Icons.sync_rounded,
     RecordingStatus.processing => Icons.settings_rounded,
     RecordingStatus.uploading => Icons.cloud_upload_outlined,
+    RecordingStatus.finalizing => Icons.save_outlined,
     RecordingStatus.completed => Icons.check_circle_outline_rounded,
+    RecordingStatus.partial => Icons.warning_amber_rounded,
+    RecordingStatus.recovered => Icons.restore_rounded,
     RecordingStatus.failed => Icons.error_outline_rounded,
     RecordingStatus.stopRequested => Icons.stop_circle_outlined,
     RecordingStatus.stopped => Icons.stop_rounded,
+    RecordingStatus.missedNoCloudSlot => Icons.event_busy_rounded,
   };
 }
 
