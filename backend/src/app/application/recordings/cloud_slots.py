@@ -223,16 +223,21 @@ class CloudSlotQueueService:
                     Watch.user_id == user_id,
                     Watch.deleted_at.is_(None),
                     Watch.auto_record.is_(True),
-                    Watch.status == WatchStatus.ACTIVE.value,
                     Watch.resolved_room_id == recording.source_value,
                 )
             )
             if watch is not None:
-                watch.next_check_at = utcnow()
-                watch.scheduler_lease_id = None
-                watch.scheduler_lease_expires_at = None
-                await self.session.commit()
-                return
+                if watch.status == WatchStatus.ACTIVE.value:
+                    watch.next_check_at = utcnow()
+                    watch.scheduler_lease_id = None
+                    watch.scheduler_lease_expires_at = None
+                    await self.session.commit()
+                # A credit-paused waiter is preserved. Verified purchase credit
+                # reactivates the Watch and schedules the fresh LIVE check.
+                if watch.status == WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value:
+                    return
+                if watch.status == WatchStatus.ACTIVE.value:
+                    return
 
             recording.status = RecordingStatus.MISSED_NO_CLOUD_SLOT.value
             recording.ended_at = utcnow()
