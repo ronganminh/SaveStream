@@ -66,3 +66,35 @@ jobs:
 
       - name: Phase 17 release audit
         run: bash tool/phase17_release_audit.sh
+
+
+  ios-release-compile:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Generate native assets
+        run: |
+          dart run flutter_launcher_icons
+          dart run flutter_native_splash:create
+          flutter gen-l10n
+
+      - name: Build production iOS without signing
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=APP_ENV=production
+          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
