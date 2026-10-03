@@ -191,120 +191,177 @@ class CloudSlotQueueService:
             )
         if rows:
             await self.session.commit()
+            await self.wake_next(user_id)
         return len(rows)
 
-    async def promote_available(self, user_id: uuid.UUID) -> list[Recording]:
-        promoted: list[Recording] = []
+    async def head_waiter(self, user_id: uuid.UUID) -> Recording | None:
+        return await self.session.scalar(
+            select(Recording)
+            .where(
+                Recording.user_id == user_id,
+                Recording.deleted_at.is_(None),
+                Recording.status
+                == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value,
+            )
+            .order_by(Recording.created_at, Recording.id)
+            .limit(1)
+        )
+
+    async def wake_next(self, user_id: uuid.UUID) -> None:
+        """Make the FIFO head due for a fresh LIVE check.
+
+        A terminal recording never promotes from cached live_status. The Watch
+        scheduler re-checks the source and only then calls promote_checked_room.
+        """
+
         while True:
-            entitlement = await EntitlementService(
-                self.session,
-                self.settings,
-            ).get(user_id)
-            if not entitlement.is_pro:
-                break
-
-            active_values = [item.value for item in ACTIVE_RECORDING_STATUSES]
-            active_count = int(
-                await self.session.scalar(
-                    select(func.count())
-                    .select_from(Recording)
-                    .where(
-                        Recording.user_id == user_id,
-                        Recording.deleted_at.is_(None),
-                        Recording.status.in_(active_values),
-                    )
-                )
-                or 0
-            )
-            if active_count >= entitlement.max_concurrent_cloud_recordings:
-                break
-
-            recording = await self.session.scalar(
-                select(Recording)
-                .where(
-                    Recording.user_id == user_id,
-                    Recording.deleted_at.is_(None),
-                    Recording.status
-                    == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value,
-                )
-                .order_by(Recording.created_at, Recording.id)
-                .limit(1)
-                .with_for_update(skip_locked=True)
-            )
+            recording = await self.head_waiter(user_id)
             if recording is None:
-                break
-
+                return
             watch = await self.session.scalar(
                 select(Watch).where(
                     Watch.user_id == user_id,
                     Watch.deleted_at.is_(None),
                     Watch.auto_record.is_(True),
                     Watch.status == WatchStatus.ACTIVE.value,
-                    Watch.live_status == "live",
                     Watch.resolved_room_id == recording.source_value,
                 )
             )
-            if watch is None:
-                recording.status = RecordingStatus.MISSED_NO_CLOUD_SLOT.value
-                recording.ended_at = utcnow()
-                recording.actual_cost = 0
-                recording.active_dedupe_key = None
-                await append_event(
-                    self.session,
-                    recording,
-                    "recording.missed_no_cloud_slot",
-                )
+            if watch is not None:
+                watch.next_check_at = utcnow()
+                watch.scheduler_lease_id = None
+                watch.scheduler_lease_expires_at = None
                 await self.session.commit()
-                continue
+                return
 
-            max_duration = (
-                recording.max_duration_seconds
-                or self.settings.recording_max_duration_seconds
-            )
-            affordable = await CreditService(
-                self.session
-            ).affordable_duration_seconds(
-                user_id=user_id,
-                max_duration_seconds=max_duration,
-            )
-            if affordable <= 0:
-                await self._pause_for_credit(watch)
-                await self.session.commit()
-                break
-            if affordable < max_duration:
-                max_duration = affordable
-                recording.max_duration_seconds = affordable
-
-            try:
-                reservation, estimated_max_cost = await CreditService(
-                    self.session
-                ).reserve_recording(
-                    user_id=user_id,
-                    recording_id=recording.id,
-                    max_duration_seconds=max_duration,
-                )
-            except ApplicationError as exc:
-                if exc.code != "INSUFFICIENT_CREDITS":
-                    raise
-                await self._pause_for_credit(watch)
-                await self.session.commit()
-                break
-
-            recording.estimated_max_cost = estimated_max_cost
-            recording.credit_reservation_id = str(reservation.id)
-            recording.status = RecordingStatus.QUEUED.value
-            await append_event(self.session, recording, "recording.queued")
-            await self.outbox.enqueue(
+            recording.status = RecordingStatus.MISSED_NO_CLOUD_SLOT.value
+            recording.ended_at = utcnow()
+            recording.actual_cost = 0
+            recording.active_dedupe_key = None
+            await append_event(
                 self.session,
-                topic="recording.requested",
-                aggregate_type="recording",
-                aggregate_id=str(recording.id),
-                payload={"recording_id": str(recording.id)},
+                recording,
+                "recording.missed_no_cloud_slot",
             )
             await self.session.commit()
-            await self.session.refresh(recording)
-            promoted.append(recording)
-        return promoted
+
+    async def promote_checked_room(
+        self,
+        *,
+        user_id: uuid.UUID,
+        room_id: str,
+    ) -> Recording | None:
+        """Promote only when the freshly checked room is the FIFO head."""
+
+        entitlement = await EntitlementService(
+            self.session,
+            self.settings,
+        ).get(user_id)
+        if not entitlement.is_pro:
+            return None
+
+        active_values = [item.value for item in ACTIVE_RECORDING_STATUSES]
+        active_count = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Recording)
+                .where(
+                    Recording.user_id == user_id,
+                    Recording.deleted_at.is_(None),
+                    Recording.status.in_(active_values),
+                )
+            )
+            or 0
+        )
+        if active_count >= entitlement.max_concurrent_cloud_recordings:
+            return None
+
+        recording = await self.session.scalar(
+            select(Recording)
+            .where(
+                Recording.user_id == user_id,
+                Recording.deleted_at.is_(None),
+                Recording.status
+                == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value,
+            )
+            .order_by(Recording.created_at, Recording.id)
+            .limit(1)
+            .with_for_update(skip_locked=True)
+        )
+        if recording is None or recording.source_value != room_id:
+            await self.wake_next(user_id)
+            return None
+
+        watch = await self.session.scalar(
+            select(Watch).where(
+                Watch.user_id == user_id,
+                Watch.deleted_at.is_(None),
+                Watch.auto_record.is_(True),
+                Watch.status == WatchStatus.ACTIVE.value,
+                Watch.resolved_room_id == room_id,
+            )
+        )
+        if watch is None:
+            recording.status = RecordingStatus.MISSED_NO_CLOUD_SLOT.value
+            recording.ended_at = utcnow()
+            recording.actual_cost = 0
+            recording.active_dedupe_key = None
+            await append_event(
+                self.session,
+                recording,
+                "recording.missed_no_cloud_slot",
+            )
+            await self.session.commit()
+            await self.wake_next(user_id)
+            return None
+
+        max_duration = (
+            recording.max_duration_seconds
+            or self.settings.recording_max_duration_seconds
+        )
+        affordable = await CreditService(
+            self.session
+        ).affordable_duration_seconds(
+            user_id=user_id,
+            max_duration_seconds=max_duration,
+        )
+        if affordable <= 0:
+            await self._pause_for_credit(watch)
+            await self.session.commit()
+            return None
+        if affordable < max_duration:
+            max_duration = affordable
+            recording.max_duration_seconds = affordable
+
+        try:
+            reservation, estimated_max_cost = await CreditService(
+                self.session
+            ).reserve_recording(
+                user_id=user_id,
+                recording_id=recording.id,
+                max_duration_seconds=max_duration,
+            )
+        except ApplicationError as exc:
+            if exc.code != "INSUFFICIENT_CREDITS":
+                raise
+            await self._pause_for_credit(watch)
+            await self.session.commit()
+            return None
+
+        recording.estimated_max_cost = estimated_max_cost
+        recording.credit_reservation_id = str(reservation.id)
+        recording.status = RecordingStatus.QUEUED.value
+        await append_event(self.session, recording, "recording.queued")
+        await self.outbox.enqueue(
+            self.session,
+            topic="recording.requested",
+            aggregate_type="recording",
+            aggregate_id=str(recording.id),
+            payload={"recording_id": str(recording.id)},
+        )
+        await self.session.commit()
+        await self.session.refresh(recording)
+        return recording
 
     async def _pause_for_credit(self, watch: Watch) -> None:
         watch.status = WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value
