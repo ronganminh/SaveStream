@@ -338,3 +338,226 @@ export const adminFoundationApi = {
     });
   },
 };
+
+
+export type AdminStorageRun = {
+  id: string;
+  kind: string;
+  status: string;
+  scanned_count: number;
+  orphan_count: number;
+  deleted_count: number;
+  orphan_keys: string[];
+  truncated: boolean;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type AdminStorageSummary = {
+  total_bytes: number;
+  by_user: Array<{ user_id: string; email: string; bytes: number }>;
+  daily_trend: Array<{ day: string; bytes: number }>;
+  latest_cleanup: {
+    run_id: string;
+    created_at: string;
+    deleted_count: number;
+    scanned_count: number;
+  } | null;
+};
+
+export type AdminEmailLog = {
+  id: string;
+  user_id: string | null;
+  recipient_email: string;
+  kind: string;
+  subject: string;
+  status: string;
+  error: string | null;
+  attempts: number;
+  sent_at: string | null;
+  created_at: string;
+};
+
+export type AdminEmailTemplate = {
+  key: "verify_email" | "password_reset";
+  subject: string;
+  body: string;
+  overridden: boolean;
+  updated_at: string | null;
+};
+
+export type AdminBroadcast = {
+  id: string;
+  kind: "system" | "marketing";
+  title: string;
+  body: string;
+  channels: Array<"in_app" | "push" | "email">;
+  status: string;
+  audience_count: number;
+  delivered_in_app: number;
+  delivered_push: number;
+  delivered_email: number;
+  failed_count: number;
+  reason: string;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type AdminEmailFilters = {
+  cursor?: string | null;
+  recipient?: string;
+  kind?: string;
+  status?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type AdminBroadcastFilters = {
+  cursor?: string | null;
+  query?: string;
+  kind?: "" | "system" | "marketing";
+  status?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export const adminOperationsApi = {
+  storageSummary() {
+    return apiClient.get<AdminStorageSummary>("/v1/admin/storage/summary");
+  },
+
+  createOrphanScan(limit: number, reason: string) {
+    return apiClient.post<AdminStorageRun>("/v1/admin/storage/orphan-scans", {
+      json: { limit, reason },
+    });
+  },
+
+  getStorageRun(runId: string) {
+    return apiClient.get<AdminStorageRun>(`/v1/admin/storage/runs/${runId}`);
+  },
+
+  deleteOrphans(runId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminStorageRun>(
+      `/v1/admin/storage/orphan-scans/${runId}/delete`,
+      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
+    );
+  },
+
+  listEmailLogs(filters: AdminEmailFilters = {}) {
+    const query = new URLSearchParams({ limit: "50", sort_order: filters.sortOrder ?? "desc" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.recipient) query.set("recipient", filters.recipient);
+    if (filters.kind) query.set("kind", filters.kind);
+    if (filters.status) query.set("status", filters.status);
+    return apiClient.get<{ items: AdminEmailLog[]; pagination: Pagination }>(
+      `/v1/admin/email/logs?${query.toString()}`,
+    );
+  },
+
+  exportEmailLogs(filters: AdminEmailFilters = {}) {
+    const query = new URLSearchParams({ sort_order: filters.sortOrder ?? "desc" });
+    if (filters.recipient) query.set("recipient", filters.recipient);
+    if (filters.kind) query.set("kind", filters.kind);
+    if (filters.status) query.set("status", filters.status);
+    return apiClient.get<string>(`/v1/admin/email/logs/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  resendEmail(logId: string, reason: string) {
+    return apiClient.post<AdminEmailLog>(`/v1/admin/email/logs/${logId}/resend`, {
+      json: { reason },
+    });
+  },
+
+  listEmailTemplates() {
+    return apiClient.get<AdminEmailTemplate[]>("/v1/admin/email/templates");
+  },
+
+  previewEmailTemplate(key: AdminEmailTemplate["key"]) {
+    return apiClient.get<{ subject: string; text: string; html: string }>(
+      `/v1/admin/email/templates/${key}/preview`,
+    );
+  },
+
+  updateEmailTemplate(
+    key: AdminEmailTemplate["key"],
+    subject: string,
+    body: string,
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.request<AdminEmailTemplate>(`/v1/admin/email/templates/${key}`, {
+      method: "PUT",
+      json: { subject, body, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  resetEmailTemplate(
+    key: AdminEmailTemplate["key"],
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.delete<{ message: string }>(`/v1/admin/email/templates/${key}`, {
+      json: { reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  testEmailTemplate(key: AdminEmailTemplate["key"], reason: string) {
+    return apiClient.post<AdminEmailLog>(`/v1/admin/email/templates/${key}/test`, {
+      json: { reason },
+    });
+  },
+
+  previewBroadcast(kind: "system" | "marketing", channels: AdminBroadcast["channels"]) {
+    return apiClient.post<{
+      audience_count: number;
+      kind: "system" | "marketing";
+      channels: AdminBroadcast["channels"];
+    }>("/v1/admin/broadcasts/preview", { json: { kind, channels } });
+  },
+
+  listBroadcasts(filters: AdminBroadcastFilters = {}) {
+    const query = new URLSearchParams({ limit: "50", sort_order: filters.sortOrder ?? "desc" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.query) query.set("query", filters.query);
+    if (filters.kind) query.set("kind", filters.kind);
+    if (filters.status) query.set("status", filters.status);
+    return apiClient.get<{ items: AdminBroadcast[]; pagination: Pagination }>(
+      `/v1/admin/broadcasts?${query.toString()}`,
+    );
+  },
+
+  exportBroadcasts(filters: AdminBroadcastFilters = {}) {
+    const query = new URLSearchParams({ sort_order: filters.sortOrder ?? "desc" });
+    if (filters.query) query.set("query", filters.query);
+    if (filters.kind) query.set("kind", filters.kind);
+    if (filters.status) query.set("status", filters.status);
+    return apiClient.get<string>(`/v1/admin/broadcasts/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  getBroadcast(broadcastId: string) {
+    return apiClient.get<AdminBroadcast>(`/v1/admin/broadcasts/${broadcastId}`);
+  },
+
+  createBroadcast(
+    payload: {
+      kind: "system" | "marketing";
+      channels: AdminBroadcast["channels"];
+      title: string;
+      body: string;
+      reason: string;
+    },
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminBroadcast>("/v1/admin/broadcasts", {
+      json: payload,
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+};
