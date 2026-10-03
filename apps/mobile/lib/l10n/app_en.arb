@@ -463,5 +463,9 @@
   "billingExternalCheckoutDisabledTitle": "Purchases are disabled in this mobile build",
   "billingExternalCheckoutDisabledBody": "This native release does not open external hosted checkout by default. Existing credit balances and payment history remain available.",
   "billingPurchasesUnavailableTitle": "Purchases are temporarily unavailable",
-  "billingPurchasesUnavailableBody": "The backend has checkout disabled right now. Your existing credits and recording access are unaffected."
+  "billingPurchasesUnavailableBody": "The backend has checkout disabled right now. Your existing credits and recording access are unaffected.",
+  "notificationPreferencesTitle": "Notification preferences",
+  "notificationHistoryTitle": "Notification history",
+  "notificationHistoryEmptyTitle": "No notifications yet",
+  "notificationHistoryEmptyBody": "Recording lifecycle notifications will appear here when they are created by the backend."
 }
