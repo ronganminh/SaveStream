@@ -211,6 +211,9 @@ class WatchScheduler:
                 )
                 if promoted is not None:
                     return
+                await self.session.refresh(watch)
+                if watch.status == WatchStatus.PAUSED_INSUFFICIENT_CREDIT.value:
+                    return
             await queue.queue_for_watch(watch, room_id)
             await queue.wake_next(watch.user_id)
             return
