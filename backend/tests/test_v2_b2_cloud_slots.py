@@ -5,7 +5,7 @@ import uuid
 
 from sqlalchemy import func, select
 
-from app.api.schemas.recordings import Source
+from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.api.schemas.watches import CreateWatchRequest
 from app.api.serializers.watches import watch_response
 from app.application.billing.credits import BillingCreditService
@@ -115,6 +115,18 @@ class OfflineChecker:
             username=source.value,
             room_id=self.room_id,
             is_live=False,
+        )
+
+
+class LiveChecker:
+    def __init__(self, room_id: str) -> None:
+        self.room_id = room_id
+
+    async def check(self, source: Source) -> WatchLiveResult:
+        return WatchLiveResult(
+            username=source.value,
+            room_id=self.room_id,
+            is_live=True,
         )
 
 
@@ -270,10 +282,7 @@ def test_v2_b2_failure_refunds_all_credit_and_promotes_oldest_waiter(tmp_path) -
                 principal = _principal(user)
                 active = await RecordingService(session, settings).create(
                     principal,
-                    payload=__import__(
-                        "app.api.schemas.recordings",
-                        fromlist=["CreateRecordingRequest"],
-                    ).CreateRecordingRequest(
+                    payload=CreateRecordingRequest(
                         source=Source(type="room_id", value="active-main"),
                         max_duration_seconds=10,
                     ),
@@ -319,6 +328,20 @@ def test_v2_b2_failure_refunds_all_credit_and_promotes_oldest_waiter(tmp_path) -
                 assert reservation is not None
                 assert reservation.status == "released"
 
+                # A terminal recording only wakes the FIFO head. The fresh LIVE
+                # check promotes it; cached live_status is never trusted.
+                assert first_waiter.status == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value
+                scheduler = WatchScheduler(session, settings)
+                claims = await scheduler.claim_due()
+                first_claim = next(
+                    item for item in claims if item.watch_id == first_watch.id
+                )
+                await scheduler.process_claim(
+                    first_claim,
+                    LiveChecker("room-q1"),
+                )
+                await session.refresh(first_waiter)
+                await session.refresh(second_waiter)
                 assert first_waiter.status == RecordingStatus.QUEUED.value
                 assert first_waiter.credit_reservation_id is not None
                 assert second_waiter.status == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value
@@ -347,6 +370,12 @@ def test_v2_b2_verified_purchase_credit_auto_resumes_paused_watches(tmp_path) ->
                     status="paused_insufficient_credit",
                     live_status="offline",
                 )
+                await configure_test_pricing(session, credits_per_unit=1)
+                waiter = await CloudSlotQueueService(
+                    session, settings
+                ).queue_for_watch(watch, "resume-room")
+                assert waiter.status == RecordingStatus.WAITING_FOR_CLOUD_SLOT.value
+
                 package = CreditPackage(
                     code="b2-resume-package",
                     name="B2 resume package",
@@ -381,6 +410,19 @@ def test_v2_b2_verified_purchase_credit_auto_resumes_paused_watches(tmp_path) ->
                 assert watch.next_check_at is not None
                 assert watch.last_error is None
                 assert (await CreditService(session).balance(user.id)).posted == 50
+
+                scheduler = WatchScheduler(session, settings)
+                claim = next(
+                    item
+                    for item in await scheduler.claim_due()
+                    if item.watch_id == watch.id
+                )
+                await scheduler.process_claim(
+                    claim,
+                    LiveChecker("resume-room"),
+                )
+                await session.refresh(waiter)
+                assert waiter.status == RecordingStatus.QUEUED.value
 
                 await service.grant_purchase(
                     user_id=user.id,
