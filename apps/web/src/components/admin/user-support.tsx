@@ -660,7 +660,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
               ["audit", "Audit"],
               ["privacy", "Privacy"],
               ["view", "View as user"],
-            ].map(([value, label]) => (
+            ] as const).map(([value, label]) => (
               <TabsTrigger key={value} value={value}>
                 {label}
               </TabsTrigger>
