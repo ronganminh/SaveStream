@@ -49,7 +49,7 @@ CI phải xanh: `flutter-checks` (có build Android App Bundle), `ios-release-co
 
 ## C0 — Plugin và khung native
 
-**Phụ thuộc:** A0 đã merge.
+**Phụ thuộc:** A0 **đã merge vào `main`** (PR còn mở thì chưa bắt đầu).
 
 1. Thêm plugin (chọn phiên bản ổn định mới nhất tương thích Flutter 3.47, khoá trong `pubspec.lock`): `connectivity_plus`, `path_provider`, `permission_handler`, `device_info_plus`, `package_info_plus`, `share_plus`, `wakelock_plus`, `video_player`, `in_app_purchase`, `google_mobile_ads`.
    - **Chưa thêm** `firebase_core` và `firebase_messaging` (để C8, vì cần file cấu hình Firebase).
@@ -66,6 +66,8 @@ CI phải xanh: `flutter-checks` (có build Android App Bundle), `ios-release-co
 ## C1 — Repository gọi API V2
 
 **Phụ thuộc:** C0, **B0 đã merge** (code theo `docs/openapi.yaml`). Chạy thật được sau khi B1 merge.
+
+Track A có thể đã sửa tối thiểu vài file ánh xạ trong `data/remote/` khi thêm trường vào model (ngoại lệ số 1 trong README). Rebase lên `main` trước khi bắt đầu và xây tiếp trên các sửa đổi đó, không viết đè.
 
 1. Viết `Api…Repository` cho: `EntitlementRepository`, `AppStatusRepository`, `DeviceRepository`, và mở rộng `ApiWatchRepository` với `notify_on_live`, `auto_record_state`, lỗi `WATCH_LIMIT_REACHED` và `PLAN_REQUIRED`.
 2. Mở rộng `ApiRecordingRepository`: trạng thái `waiting_for_cloud_slot`, `missed_no_cloud_slot`, trường `expires_at`, `minutes_charged`, `queue_position`. Trạng thái lạ không làm hỏng danh sách.

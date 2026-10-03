@@ -10,6 +10,7 @@ Bộ tài liệu này để giao cho một coding agent (ChatGPT/Codex hoặc t�
 | [TRACK_B_BACKEND_WEB.md](TRACK_B_BACKEND_WEB.md) | Track B: backend FastAPI và web. |
 | [TRACK_C_MOBILE_NATIVE.md](TRACK_C_MOBILE_NATIVE.md) | Track C: phần native của app (ghi trên máy, mua trong app, quảng cáo, push) và nối API thật. |
 | [TRACK_D_ADMIN.md](TRACK_D_ADMIN.md) | Track D: trang quản trị, cả backend lẫn web, chỉ trong vùng admin. |
+| [ORCHESTRATOR.md](ORCHESTRATOR.md) | Hướng dẫn cho agent điều phối các phiên chạy song song. |
 
 ## Cách dùng
 
@@ -55,7 +56,7 @@ Quy tắc bắt buộc:
 7. **Không đụng secret, `deploy/`, DNS, hay dữ liệu production.**
 8. **Không thêm tính năng ngoài phạm vi phase.** Thấy thiếu thì ghi vào mục "Ghi chú" của PR.
 
-## Quyền sở hữu file (để 3 track không đạp nhau)
+## Quyền sở hữu file (để các track không đạp nhau)
 
 | Đường dẫn | Track được sửa |
 |---|---|
@@ -68,7 +69,7 @@ Quy tắc bắt buộc:
 | `apps/mobile/pubspec.yaml`, `apps/mobile/pubspec.lock` | **Chỉ C** |
 | `apps/mobile/lib/app/bootstrap.dart` | C |
 | `apps/mobile/lib/app/savestream_app.dart` | A (chỉ ở phase A0), sau đó không ai sửa |
-| `apps/mobile/test/**` | A và C, mỗi track tạo file test riêng có tiền tố `v2a_` hoặc `v2c_` |
+| `apps/mobile/test/**` | A và C. Test **mới** đặt trong file riêng có tiền tố `v2a_` hoặc `v2c_`. Test **cũ**: xem "Ngoại lệ được phép" bên dưới. |
 | `backend/**`, `docs/openapi.yaml`, `docs/api/**`, `apps/web/**` (trừ vùng admin bên dưới) | B |
 | `backend/src/app/api/routes/admin*.py`, `backend/src/app/api/schemas/admin*.py`, `backend/src/app/application/{admin,audit,operations}/**`, `apps/web/src/routes/admin/**`, `apps/web/src/components/admin/**`, `apps/web/src/repositories/admin-api.ts`, phần `/v1/admin/**` trong `docs/openapi.yaml` | D |
 | `.github/workflows/mobile-*.yml`, `apps/mobile/tool/**` | C |
@@ -76,7 +77,27 @@ Quy tắc bắt buộc:
 | `docs/v2/API_CONTRACT.md` | B (A và C muốn đổi thì mở issue hoặc ghi vào PR, không tự sửa) |
 | `docs/v2/DECISIONS.md` | Chỉ chủ repo |
 
-Nếu một phase bắt buộc phải sửa file của track khác, dừng lại và báo, không tự sửa.
+Nếu một phase bắt buộc phải sửa file của track khác ngoài các ngoại lệ dưới đây, dừng lại và báo, không tự sửa.
+
+### Ngoại lệ được phép
+
+Các trường hợp sau được sửa file của track khác, với điều kiện **sửa tối thiểu** và **liệt kê trong mô tả PR** dưới mục "Cross-track changes":
+
+1. **Đổi model thì sửa phần ánh xạ.** Track nào thêm trường hoặc giá trị enum vào model (`domain/models`) được sửa các file ánh xạ tương ứng trong `apps/mobile/lib/features/**/data/remote/**` và `mock_*` / `api_*` repository, chỉ ở mức đủ để biên dịch và giữ hành vi cũ. Logic gọi API mới vẫn do Track C viết.
+2. **Ai làm hỏng test cũ thì sửa test đó.** Test không có tiền tố `v2a_` / `v2c_` là test dùng chung. Thay đổi của bạn làm test cũ fail thì sửa đúng test đó, tối thiểu. Không xoá test trừ khi màn hoặc tính năng nó kiểm tra bị gỡ bỏ theo đúng phase.
+3. **Track B sửa test E2E mobile khi đổi hành vi backend.** Nếu một phase backend làm job `mobile-backend-e2e` đỏ vì quy tắc mới đã chốt (ví dụ B1 chặn tự động ghi với tài khoản Free), Track B sửa `apps/mobile/test/backend_connectivity_e2e_test.dart` và dữ liệu thử liên quan **trong chính PR đó**. Không sửa file mobile nào khác.
+4. **Track D** có ba ngoại lệ ghi trong file track của nó (luồng đăng nhập cho xác thực hai lớp, chỗ đọc cấu hình, quy tắc suy ra Pro).
+
+### Model đóng băng sau A0
+
+Sau khi A0 merge, model trong `apps/mobile/lib/features/**/domain/models/**` và interface trong `apps/mobile/lib/platform/contracts/**` chỉ được **thêm** trường hoặc phương thức có giá trị mặc định. Không đổi tên, không xoá, không đổi kiểu. Cần thay đổi phá vỡ thì dừng và báo chủ repo.
+
+### Xử lý xung đột khi rebase
+
+- Luôn `git fetch origin && git rebase origin/main` ngay trước khi merge, rồi chạy lại kiểm tra.
+- Xung đột trong file test, ARB, `docs/openapi.yaml` hoặc `docs/v2/*.md`: **giữ thay đổi của cả hai bên**. Không lấy nguyên một bên.
+- Xung đột trong file không thuộc track của mình: giữ nguyên bản trên `main`, áp lại phần sửa tối thiểu của mình nếu còn cần.
+- Không dùng `git push --force` lên `main`. Trên nhánh của mình dùng `--force-with-lease`.
 
 Chuỗi hiển thị (ARB) là điểm dễ xung đột nhất. Track C cần chuỗi mới thì dùng các key Track A đã tạo sẵn ở phase A0 (mục "Chuỗi cho phần native"); thiếu key thì báo để Track A thêm.
 
@@ -91,8 +112,9 @@ B0 ──► B1 ► B2 ► B3 ► B4 ► B5 ► B6 ► B7 ► B8
         └──► D0 ► D1 ► D2 ► D3 ► D4 ► D5 ► D6 ► D7 ► D8 ► D9
 ```
 
-- **A0 phải merge trước** khi C0 bắt đầu (C dùng interface và điểm nối do A0 tạo).
-- **B0 phải merge trước** khi C1 bắt đầu (C1 code theo hợp đồng trong `docs/openapi.yaml`).
+- **A0 phải đã merge vào `main`** (không chỉ mở PR) trước khi C0 bắt đầu, vì C dùng interface và điểm nối do A0 tạo.
+- **B0 và A0 phải đã merge** trước khi C1 bắt đầu (C1 code theo hợp đồng trong `docs/openapi.yaml` và theo model của A0).
+- **Mỗi track chỉ có một PR mở tại một thời điểm.** Không bắt đầu phase sau khi PR của phase trước chưa merge.
 - A và B chạy song song từ đầu, không phụ thuộc nhau.
 - **D bắt đầu sau khi B1 merge.** Các phase D cần dữ liệu V2 đợi phase tương ứng của B (ghi ở đầu mỗi phase D).
 - B và D cùng thêm migration Alembic: trước khi merge phải rebase và sửa `down_revision` để chỉ có một đầu migration.

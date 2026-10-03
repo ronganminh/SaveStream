@@ -74,7 +74,7 @@ CI phải xanh: `Backend CI` (Python 3.11 và 3.12), `Backend E2E`, `Mobile Back
 7. Trường `auto_record_state` trong `WatchResponse` (ở phase này: `off`, `active`, `paused_no_cloud_minutes`).
 8. Test: suy ra gói ở mọi tổ hợp (chưa mua, đã mua còn dư, đã mua hết, hoàn tiền), giới hạn kênh, tài khoản tồn từ trước, bộ lập lịch bỏ qua Free.
 
-Lưu ý tương thích: `Mobile Backend E2E` đang tạo kênh có tự động ghi với tài khoản thử. Nếu test đó đỏ vì quy tắc mới, báo chủ repo và Track C; không tự sửa file trong `apps/mobile`.
+Lưu ý tương thích: `Mobile Backend E2E` đang tạo kênh có tự động ghi với tài khoản thử. Nếu job đó đỏ vì quy tắc mới, **sửa `apps/mobile/test/backend_connectivity_e2e_test.dart` và dữ liệu thử liên quan ngay trong PR này** (ngoại lệ số 3 trong README), ví dụ cho tài khoản thử có một đơn đã thanh toán, hoặc tạo kênh không bật tự động ghi. Không sửa file mobile nào khác.
 
 ---
 

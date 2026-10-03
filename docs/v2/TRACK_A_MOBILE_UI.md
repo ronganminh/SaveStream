@@ -47,6 +47,7 @@ CI phải xanh: `flutter-checks`, `ios-release-compile`, `mobile-backend-e2e`.
 7. **Trợ năng:** vùng chạm tối thiểu 44, chữ co giãn tới 200% không tràn, có `Semantics` cho nhãn trạng thái, đồng hồ và công tắc.
 8. **Test:** mỗi phase thêm widget test cho từng màn chính (hiển thị đúng với mock `success`, `empty`, `error`) và test cho controller mới. Không xoá test cũ trừ khi màn đó bị thay; khi thay thì viết lại test tương đương.
 9. **Điều hướng:** thêm route vào `lib/app/router/app_routes.dart` và `app_router.dart`. Giữ `StatefulShellRoute` 4 tab: Home, Theo dõi, Bản ghi, Cài đặt.
+10. **Model đóng băng sau A0:** từ A1 trở đi chỉ được thêm trường hoặc phương thức có giá trị mặc định vào model và interface; không đổi tên, không xoá. Khi thêm, sửa tối thiểu các file ánh xạ trong `data/remote/` và repository để biên dịch được, và liệt kê trong PR (xem "Ngoại lệ được phép" trong README).
 
 ---
 
