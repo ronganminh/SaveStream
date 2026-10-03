@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:savestream_mobile/app/theme/ss_theme.dart';
 import 'package:savestream_mobile/core/formatters/v2_formatters.dart';
 import 'package:savestream_mobile/core/mock/mock_repository_base.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
@@ -133,6 +134,7 @@ void main() {
   testWidgets('A0 shared widgets all render', (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        theme: SsTheme.light(),
         home: Scaffold(
           body: SingleChildScrollView(
             child: Column(
