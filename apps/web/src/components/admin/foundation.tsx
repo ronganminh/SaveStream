@@ -61,13 +61,66 @@ export function AdminTimeline({ items }: { items: readonly string[] }) {
 }
 
 export function AdminGlobalSearch() {
+  const [query, setQuery] = useState("");
+  const [items, setItems] = useState<Awaited<ReturnType<typeof adminFoundationApi.search>>["items"]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const search = async () => {
+    const term = query.trim();
+    if (term.length < 2) {
+      setItems([]);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await adminFoundationApi.search(term);
+      setItems(result.items);
+    } catch (requestError) {
+      setError(authErrorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="relative">
-      <Input
-        aria-label="Global admin search"
-        placeholder="Global search becomes available in D1"
-        disabled
-      />
+      <form
+        className="flex gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void search();
+        }}
+      >
+        <Input
+          aria-label="Global admin search"
+          placeholder="Search email, user ID, order ID, recording ID, or request ID"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <Button type="submit" variant="outline" disabled={busy || query.trim().length < 2}>
+          {busy ? "Searching…" : "Search"}
+        </Button>
+      </form>
+      {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+      {items.length ? (
+        <div className="absolute z-30 mt-2 w-full rounded-lg border bg-background p-2 shadow-lg">
+          {items.map((item) => (
+            <a
+              key={`${item.type}:${item.id}`}
+              href={item.href}
+              className="block rounded-md px-3 py-2 text-sm hover:bg-muted"
+            >
+              <span className="font-medium">{item.label}</span>
+              <span className="ml-2 text-xs uppercase text-muted-foreground">{item.type}</span>
+              {item.detail ? (
+                <span className="mt-1 block text-xs text-muted-foreground">{item.detail}</span>
+              ) : null}
+            </a>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
