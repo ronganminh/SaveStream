@@ -3,3 +3,6 @@
 // release process treats it as deployment configuration.
 CODE_SIGN_STYLE = Automatic
 DEVELOPMENT_TEAM = YOUR_APPLE_DEVELOPMENT_TEAM_ID
+
+// Override the official AdMob test app ID for store builds.
+ADMOB_APP_ID = YOUR_ADMOB_IOS_APP_ID

@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 fail() {
-  echo "Phase 17 release audit failed: $*" >&2
+  echo "Mobile release audit failed: $*" >&2
   exit 1
 }
 
@@ -56,5 +56,26 @@ grep -q "cairosvg.svg2png" tool/generate_brand_assets.py ||
 
 grep -q "billingPurchasesUnavailableTitle" lib/l10n/app_en.arb ||
   fail "billing-disabled UX copy is missing"
+
+for plugin in connectivity_plus path_provider permission_handler device_info_plus package_info_plus share_plus wakelock_plus video_player in_app_purchase google_mobile_ads; do
+  grep -q "^  ${plugin}:" pubspec.yaml || fail "missing C0 plugin ${plugin}"
+done
+
+grep -q "minSdk = 24" android/app/build.gradle.kts ||
+  fail "Android minSdk must be 24 for the C0 plugin set"
+grep -q "min_sdk_android: 24" pubspec.yaml ||
+  fail "launcher icon minSdk must match Android minSdk"
+grep -q "SAVESTREAM_ADMOB_ANDROID_APP_ID" android/app/build.gradle.kts ||
+  fail "Android AdMob build variable is missing"
+grep -q "ca-app-pub-3940256099942544~3347511713" android/app/build.gradle.kts ||
+  fail "Android AdMob test app ID fallback is missing"
+grep -q 'android:name="com.google.android.gms.ads.APPLICATION_ID"' android/app/src/main/AndroidManifest.xml ||
+  fail "Android AdMob application metadata is missing"
+grep -q "GADApplicationIdentifier" ios/Runner/Info.plist ||
+  fail "iOS AdMob application metadata is missing"
+grep -q "ADMOB_APP_ID" ios/Runner/Info.plist ||
+  fail "iOS AdMob build variable is missing"
+grep -q "ca-app-pub-3940256099942544~1458002511" ios/Flutter/Debug.xcconfig ||
+  fail "iOS AdMob test app ID fallback is missing"
 
 echo "Phase 17 mobile release audit passed."
