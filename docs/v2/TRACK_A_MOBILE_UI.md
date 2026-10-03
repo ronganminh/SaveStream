@@ -9,7 +9,7 @@
 ## Tiến độ
 
 - [x] A0 — Nền móng: model, interface, mock, widget dùng chung — **đã merge PR #77 vào `main`**
-- [ ] A1 — Auth và Onboarding — **✅ hoàn tất triển khai trên PR #81, sẵn sàng merge vào `main`**
+- [x] A1 — Auth và Onboarding — **đã merge PR #81 vào `main`**
 - [ ] A2 — Home và Theo dõi
 - [ ] A3 — Luồng ghi (Recording)
 - [ ] A4 — Bản ghi và Trình phát
@@ -22,7 +22,7 @@
 | Phase | Branch / PR | Trạng thái | Kiểm tra |
 |---|---|---|---|
 | A0 | `track-a/a0-foundation` / #77 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
-| A1 | `track-a/a1-auth-onboarding` / #81 | ✅ Hoàn tất triển khai, đã rebase sạch lên `main`, sẵn sàng merge | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
+| A1 | `track-a/a1-auth-onboarding` / #81 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 
 **Quy tắc cập nhật tracking:** chỉ đánh dấu `[x]` khi phase đã merge vào `main`. Phase đang mở PR vẫn giữ `[ ]` và ghi trạng thái ở bảng trên.
 
@@ -102,7 +102,7 @@ Việc cần làm:
 
 ## A1 — Auth và Onboarding
 
-**Trạng thái:** ✅ **HOÀN TẤT TRIỂN KHAI / READY TO MERGE** — PR #81, branch `track-a/a1-auth-onboarding`, đã rebase lên `main` sau khi #77 merge. PR hiện chỉ chứa phạm vi A1.
+**Trạng thái:** ✅ **HOÀN TẤT** — PR #81 đã merge vào `main` ngày 2026-10-04.
 
 **Đã triển khai trong PR #81:**
 - A01 splash theo V2; A03/A03-error, A04, A05, A05b, A06 và A06-verify đã dựng lại nhưng giữ nguyên auth controller/repository.
