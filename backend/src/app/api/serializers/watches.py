@@ -1,11 +1,21 @@
 from typing import cast
 
 from app.api.schemas.recordings import Creator, Source
-from app.api.schemas.watches import LiveStatusValue, WatchResponse, WatchStatusValue
+from app.api.schemas.watches import (
+    AutoRecordStateValue,
+    LiveStatusValue,
+    WatchResponse,
+    WatchStatusValue,
+)
 from app.infrastructure.db.watch_models import Watch
 
 
-def watch_response(watch: Watch) -> WatchResponse:
+def watch_response(
+    watch: Watch,
+    *,
+    is_pro: bool | None = None,
+    has_purchased: bool | None = None,
+) -> WatchResponse:
     creator = None
     if watch.resolved_username:
         creator = Creator(
@@ -13,6 +23,17 @@ def watch_response(watch: Watch) -> WatchResponse:
             display_name=watch.resolved_username,
             avatar_url=None,
         )
+    if not watch.auto_record:
+        auto_record_state: AutoRecordStateValue = "off"
+    elif watch.status == "paused_insufficient_credit" and has_purchased is not False:
+        auto_record_state = "paused_no_cloud_minutes"
+    elif is_pro is False:
+        auto_record_state = "off"
+    elif watch.status == "active":
+        auto_record_state = "active"
+    else:
+        auto_record_state = "off"
+
     return WatchResponse(
         id=str(watch.id),
         source=Source.model_validate(
@@ -22,6 +43,7 @@ def watch_response(watch: Watch) -> WatchResponse:
         status=cast(WatchStatusValue, watch.status),
         live_status=cast(LiveStatusValue, watch.live_status),
         auto_record=watch.auto_record,
+        auto_record_state=auto_record_state,
         last_checked_at=watch.last_checked_at,
         next_check_at=watch.next_check_at,
         last_live_at=watch.last_live_at,

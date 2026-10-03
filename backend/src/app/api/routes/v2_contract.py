@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_principal
+from app.api.dependencies import get_current_principal, get_db_session
+from app.api.schemas.entitlements import (
+    EntitlementLimitsResponse,
+    EntitlementResponse,
+    LocalEntitlementResponse,
+)
+from app.application.entitlements.service import EntitlementService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 
@@ -19,12 +26,43 @@ def _not_implemented(phase: str) -> None:
     )
 
 
-@router.get("/me/entitlement", operation_id="getEntitlement")
+@router.get(
+    "/me/entitlement",
+    response_model=EntitlementResponse,
+    operation_id="getEntitlement",
+)
 async def get_entitlement(
+    request: Request,
     principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del principal
-    _not_implemented("B1")
+    session: AsyncSession = Depends(get_db_session),
+) -> EntitlementResponse:
+    snapshot = await EntitlementService(
+        session,
+        request.app.state.settings,
+    ).get(principal.user_id)
+    return EntitlementResponse(
+        plan=snapshot.plan,
+        has_purchased=snapshot.has_purchased,
+        cloud_minutes_available=snapshot.cloud_minutes_available,
+        limits=EntitlementLimitsResponse(
+            max_watches=snapshot.max_watches,
+            max_concurrent_cloud_recordings=snapshot.max_concurrent_cloud_recordings,
+            cloud_retention_days=snapshot.cloud_retention_days,
+        ),
+        watch_count=snapshot.watch_count,
+        local=LocalEntitlementResponse(
+            enabled=snapshot.local.enabled,
+            unlimited=snapshot.local.unlimited,
+            daily_minutes=snapshot.local.daily_minutes,
+            minutes_remaining=snapshot.local.minutes_remaining,
+            resets_at=snapshot.local.resets_at,
+            rewards_used_today=snapshot.local.rewards_used_today,
+            rewards_cap_per_day=snapshot.local.rewards_cap_per_day,
+            minutes_per_reward=snapshot.local.minutes_per_reward,
+            extensions_cap_per_recording=snapshot.local.extensions_cap_per_recording,
+        ),
+        updated_at=snapshot.updated_at,
+    )
 
 
 @router.post("/local-recordings/sessions", operation_id="createLocalRecordingSession")

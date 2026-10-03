@@ -209,8 +209,6 @@ class RecordingService:
                     if replay is not None:
                         return replay
 
-        await QuotaService(self.session, self.settings).check_recording_create(user_id)
-
         source = Source(type=payload.source.type, value=normalize_source(payload.source))
         active_key = dedupe_key(user_id, source)
         active = await self.session.scalar(
@@ -226,6 +224,8 @@ class RecordingService:
                 status_code=409,
                 details={"recording_id": str(active.id)},
             )
+
+        await QuotaService(self.session, self.settings).check_recording_create(user_id)
 
         recording = Recording(
             user_id=user_id,
