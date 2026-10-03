@@ -10,7 +10,7 @@
 
 - [x] A0 — Nền móng: model, interface, mock, widget dùng chung — **đã merge PR #77 vào `main`**
 - [x] A1 — Auth và Onboarding — **đã merge PR #81 vào `main`**
-- [ ] A2 — Home và Theo dõi
+- [x] A2 — Home và Theo dõi — **đã merge PR #87 vào `main`**
 - [ ] A3 — Luồng ghi (Recording)
 - [ ] A4 — Bản ghi và Trình phát
 - [ ] A5 — Gói, sử dụng và mua giờ
@@ -23,6 +23,7 @@
 |---|---|---|---|
 | A0 | `track-a/a0-foundation` / #77 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 | A1 | `track-a/a1-auth-onboarding` / #81 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
+| A2 | `track-a/a2-home-watching` / #87 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `android-emulator-smoke` ✅ · `mobile-backend-e2e` ✅ |
 
 **Quy tắc cập nhật tracking:** chỉ đánh dấu `[x]` khi phase đã merge vào `main`. Phase đang mở PR vẫn giữ `[ ]` và ghi trạng thái ở bảng trên.
 
@@ -134,6 +135,10 @@ Việc cần làm:
 ---
 
 ## A2 — Home và Theo dõi
+
+**Trạng thái:** ✅ **HOÀN TẤT** — PR #87 đã merge vào `main` ngày 2026-10-04. Merge commit: `d865d9381d9c3a9c2f8cb885a2bfc5954c60626a`.
+
+**Kết quả đã chốt:** Home/Watching V2 theo `DECISIONS.md`; Free 3 creator / Pro 20 creator; tài khoản Free cũ >3 giữ nguyên nhưng bị chặn thêm; công tắc báo khi LIVE theo từng creator; hàng chờ slot cloud + trạng thái Bỏ lỡ; W04–W15 và N04b–N04d; hiển thị giờ/phút, không dùng credit; EN mặc định + VI đầy đủ. CI trước merge xanh `flutter-checks`, `ios-release-compile`, `android-emulator-smoke`, `mobile-backend-e2e`.
 
 **Phụ thuộc:** A1.
 
