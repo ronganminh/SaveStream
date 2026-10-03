@@ -56,11 +56,11 @@ jobs:
 
       - name: Format and commit A0 tests
         run: |
-          dart format test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart
-          if ! git diff --quiet -- test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart; then
+          dart format lib/features/recordings/data/repositories/mock_recording_repository.dart test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart test/app_test.dart
+          if ! git diff --quiet -- lib/features/recordings/data/repositories/mock_recording_repository.dart test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart test/app_test.dart; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart
+            git add lib/features/recordings/data/repositories/mock_recording_repository.dart test/v2a_a0_foundation_test.dart test/recording_phase12_test.dart test/app_test.dart
             git commit -m "style(mobile): format final A0 test"
             git push origin HEAD:${{ github.head_ref || github.ref_name }}
           fi

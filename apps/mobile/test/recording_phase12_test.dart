@@ -94,7 +94,7 @@ void main() {
     },
   );
 
-  test('maps all recording statuses and server action flags', () async {
+  test('maps all cloud recording statuses and server action flags', () async {
     final List<String> statuses = <String>[
       'queued',
       'resolving',
@@ -150,7 +150,7 @@ void main() {
       ],
     );
     expect(items.first.actions.canStop, isTrue);
-    expect(items[8].actions.canRetry, isTrue);
+    expect(items[7].actions.canRetry, isTrue);
     expect(items.last.actions.canDelete, isTrue);
   });
 

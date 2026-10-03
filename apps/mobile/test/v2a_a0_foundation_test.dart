@@ -227,12 +227,16 @@ void main() {
     expect(find.byType(SsBannerAdSlot), findsOneWidget);
     expect(find.byType(SsChecklist), findsOneWidget);
 
+    await tester.ensureVisible(find.text('Open sheet'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Open sheet'));
     await tester.pumpAndSettle();
     expect(find.byType(SsBottomSheet), findsOneWidget);
     Navigator.of(tester.element(find.byType(SsBottomSheet))).pop();
     await tester.pumpAndSettle();
 
+    await tester.ensureVisible(find.text('Show toast'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Show toast'));
     await tester.pump();
     expect(find.text('Toast'), findsOneWidget);
