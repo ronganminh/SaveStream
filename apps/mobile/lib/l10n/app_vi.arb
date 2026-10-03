@@ -482,5 +482,27 @@
         "type": "String"
       }
     }
-  }
+  },
+  "nativeRecordingNotificationTitle": "SaveStream đang ghi",
+  "nativeRecordingNotificationBody": "Bản ghi đang chạy trên thiết bị này.",
+  "nativeRecordingNotificationStop": "Dừng ghi",
+  "nativeRecordingChannelName": "Ghi trên máy",
+  "nativeKeepAppOpenReminderTitle": "Giữ SaveStream luôn mở",
+  "nativeKeepAppOpenReminderBody": "Hãy giữ ứng dụng mở trong khi ghi trên thiết bị này.",
+  "nativePushChannelLiveName": "Thông báo creator LIVE",
+  "nativePushChannelRecordingName": "Thông báo bản ghi",
+  "recordingStatusStarting": "Đang bắt đầu",
+  "recordingStatusWaitingForCloudSlot": "Đang chờ slot cloud",
+  "recordingStatusReconnecting": "Đang kết nối lại",
+  "recordingStatusFinalizing": "Đang hoàn tất",
+  "recordingStatusPartial": "Một phần",
+  "recordingStatusRecovered": "Đã khôi phục",
+  "recordingStatusMissedNoCloudSlot": "Bỏ lỡ",
+  "recordingStartingBody": "Đang chuẩn bị ghi trên thiết bị này.",
+  "recordingWaitingForCloudSlotBody": "Creator đang LIVE và bản ghi đang chờ một slot cloud trống.",
+  "recordingReconnectingBody": "Kết nối luồng bị gián đoạn và SaveStream đang kết nối lại.",
+  "recordingFinalizingBody": "SaveStream đang hoàn tất file trên máy một cách an toàn.",
+  "recordingPartialBody": "Bản ghi đã được lưu nhưng một phần LIVE không được ghi lại.",
+  "recordingRecoveredBody": "Bản ghi trên máy đã được khôi phục sau khi bị gián đoạn.",
+  "recordingMissedNoCloudSlotBody": "LIVE đã kết thúc trước khi có slot cloud trống."
 }

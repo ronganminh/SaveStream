@@ -47,6 +47,7 @@ class SaveStreamApp extends StatefulWidget {
     this.notificationPreferencesRepository,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
+    this.extraOverrides = const <Override>[],
     super.key,
   });
 
@@ -64,6 +65,7 @@ class SaveStreamApp extends StatefulWidget {
   final NotificationPreferencesRepository? notificationPreferencesRepository;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
+  final List<Override> extraOverrides;
 
   @override
   State<SaveStreamApp> createState() => _SaveStreamAppState();
@@ -138,6 +140,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
           notificationPreferencesRepositoryProvider.overrideWithValue(
             widget.notificationPreferencesRepository!,
           ),
+        ...widget.extraOverrides,
       ],
       child: AnimatedBuilder(
         animation: _settings,

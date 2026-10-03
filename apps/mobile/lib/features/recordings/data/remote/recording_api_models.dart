@@ -261,6 +261,7 @@ RecordingStatus recordingStatusFromApi(String value) {
     'queued' => RecordingStatus.queued,
     'resolving' => RecordingStatus.resolving,
     'waiting_live' => RecordingStatus.waitingLive,
+    'waiting_for_cloud_slot' => RecordingStatus.waitingForCloudSlot,
     'recording' => RecordingStatus.recording,
     'processing' => RecordingStatus.processing,
     'uploading' => RecordingStatus.uploading,
@@ -268,6 +269,7 @@ RecordingStatus recordingStatusFromApi(String value) {
     'failed' => RecordingStatus.failed,
     'stop_requested' => RecordingStatus.stopRequested,
     'stopped' => RecordingStatus.stopped,
+    'missed_no_cloud_slot' => RecordingStatus.missedNoCloudSlot,
     _ => throw FormatException('Unsupported Recording status: $value'),
   };
 }

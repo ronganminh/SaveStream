@@ -20,6 +20,8 @@ final class WatchApiModel {
     required this.status,
     required this.liveStatus,
     required this.autoRecord,
+    required this.notifyOnLive,
+    required this.autoRecordState,
     required this.createdAt,
     required this.updatedAt,
     this.lastCheckedAt,
@@ -35,6 +37,8 @@ final class WatchApiModel {
   final WatchStatus status;
   final WatchLiveStatus liveStatus;
   final bool autoRecord;
+  final bool notifyOnLive;
+  final AutoRecordState autoRecordState;
   final DateTime? lastCheckedAt;
   final DateTime? nextCheckAt;
   final DateTime? lastLiveAt;
@@ -77,6 +81,8 @@ final class WatchApiModel {
         ? creatorDisplayName!.trim()
         : _fallbackDisplayName(normalizedUsername);
 
+    final bool autoRecord = _requiredBool(map['auto_record'], 'auto_record');
+
     return WatchApiModel(
       id: _requiredString(map['id'], 'id'),
       sourceType: sourceType,
@@ -87,7 +93,12 @@ final class WatchApiModel {
       liveStatus: _liveStatus(
         _requiredString(map['live_status'], 'live_status'),
       ),
-      autoRecord: _requiredBool(map['auto_record'], 'auto_record'),
+      autoRecord: autoRecord,
+      notifyOnLive: _optionalBool(map['notify_on_live'], 'notify_on_live') ?? true,
+      autoRecordState: _autoRecordState(
+        _optionalString(map['auto_record_state'], 'auto_record_state'),
+        autoRecord: autoRecord,
+      ),
       lastCheckedAt: _optionalDateTime(
         map['last_checked_at'],
         'last_checked_at',
@@ -109,6 +120,8 @@ final class WatchApiModel {
       sourceType: sourceType,
       sourceValue: sourceValue,
       autoRecord: autoRecord,
+      notifyOnLive: notifyOnLive,
+      autoRecordState: autoRecordState,
       lastCheckedAt: lastCheckedAt,
       lastLiveAt: lastLiveAt,
     );
@@ -185,6 +198,14 @@ String? _optionalString(Object? value, String name) {
   return value.trim();
 }
 
+bool? _optionalBool(Object? value, String name) {
+  if (value == null) return null;
+  if (value is! bool) {
+    throw FormatException('Expected nullable $name boolean.');
+  }
+  return value;
+}
+
 bool _requiredBool(Object? value, String name) {
   if (value is! bool) {
     throw FormatException('Expected $name boolean.');
@@ -226,6 +247,19 @@ WatchStatus _watchStatus(String value) {
     'paused_error' => WatchStatus.pausedError,
     'disabled' => WatchStatus.disabled,
     _ => throw FormatException('Unsupported Watch status: $value'),
+  };
+}
+
+AutoRecordState _autoRecordState(String? value, {required bool autoRecord}) {
+  if (value == null) {
+    return autoRecord ? AutoRecordState.active : AutoRecordState.off;
+  }
+  return switch (value) {
+    'off' => AutoRecordState.off,
+    'active' => AutoRecordState.active,
+    'paused_no_cloud_minutes' => AutoRecordState.pausedNoCloudMinutes,
+    'waiting_for_cloud_slot' => AutoRecordState.waitingForCloudSlot,
+    _ => throw FormatException('Unsupported auto_record_state: $value'),
   };
 }
 
