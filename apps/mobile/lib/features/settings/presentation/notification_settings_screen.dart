@@ -12,14 +12,9 @@ import 'controllers/notification_preferences_providers.dart';
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
 
-  Future<void> _markRead(
-    WidgetRef ref,
-    AppNotification notification,
-  ) async {
+  Future<void> _markRead(WidgetRef ref, AppNotification notification) async {
     if (notification.read) return;
-    await ref
-        .read(notificationsRepositoryProvider)
-        .markRead(notification.id);
+    await ref.read(notificationsRepositoryProvider).markRead(notification.id);
     ref.invalidate(notificationFeedProvider);
   }
 
@@ -60,7 +55,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: SsSpacing.sm),
               preferences.when(
-                loading: () => const SsSkeleton(height: 180, radius: SsRadii.lg),
+                loading: () =>
+                    const SsSkeleton(height: 180, radius: SsRadii.lg),
                 error: (Object error, StackTrace stackTrace) =>
                     SsAsyncErrorState(
                       error: error,
@@ -75,7 +71,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         value: value.recordingStarted,
                         onChanged: (bool enabled) => ref
                             .read(notificationPreferencesProvider.notifier)
-                            .update(value.copyWith(recordingStarted: enabled)),
+                            .save(value.copyWith(recordingStarted: enabled)),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -83,7 +79,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         value: value.recordingReady,
                         onChanged: (bool enabled) => ref
                             .read(notificationPreferencesProvider.notifier)
-                            .update(value.copyWith(recordingReady: enabled)),
+                            .save(value.copyWith(recordingReady: enabled)),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -91,7 +87,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         value: value.recordingFailed,
                         onChanged: (bool enabled) => ref
                             .read(notificationPreferencesProvider.notifier)
-                            .update(value.copyWith(recordingFailed: enabled)),
+                            .save(value.copyWith(recordingFailed: enabled)),
                       ),
                     ],
                   ),
@@ -230,9 +226,9 @@ class _NotificationCard extends StatelessWidget {
                     Text(item.body),
                     const SizedBox(height: SsSpacing.xs),
                     Text(
-                      MaterialLocalizations.of(context).formatMediumDate(
-                        item.createdAt.toLocal(),
-                      ),
+                      MaterialLocalizations.of(
+                        context,
+                      ).formatMediumDate(item.createdAt.toLocal()),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
