@@ -60,8 +60,6 @@
   "settingsTitle": "Settings",
   "profileTitle": "Profile",
   "languageTitle": "Language",
-  "creditsTitle": "Credits",
-  "billingTitle": "Billing",
   "phaseRoutePlaceholderBody": "This route is wired and ready for its feature phase.",
   "onboardingPreviewTitle": "Onboarding",
   "onboardingPreviewBody": "The onboarding guard is active. Full onboarding UI arrives in Phase 3.",
@@ -306,36 +304,7 @@
   },
   "settingsCreditsSubtitle": "Balance, reservations, pricing, and transactions",
   "settingsBillingSubtitle": "Buy credits and review payment orders",
-  "creditsLowBalanceTitle": "Available credit is low",
-  "creditsLowBalanceBody": "Some credit is reserved for active work. Add more credit to reduce the risk of monitoring or recording pauses.",
   "buyCreditsAction": "Buy credits",
-  "creditsRecentTransactionsTitle": "Recent transactions",
-  "creditsNoTransactionsTitle": "No transactions yet",
-  "creditsNoTransactionsBody": "Credit purchases and recording charges will appear here.",
-  "creditsAvailableBalanceLabel": "Available",
-  "creditsPostedBalanceLabel": "Posted",
-  "creditsReservedBalanceLabel": "Reserved",
-  "creditsReservedExplanation": "Reserved credit is temporarily held for in-progress recording work. Available credit is the amount you can use now.",
-  "creditsUsageTitle": "Recording usage",
-  "creditsRecordingHoursLabel": "Recording hours",
-  "creditsRecordingCountLabel": "Recordings",
-  "creditsRecordingCostLabel": "Credits spent",
-  "creditsRecordingChargeLabel": "Recording charge",
-  "creditsAddedLabel": "Credit added",
-  "creditsTransactionLabel": "Credit transaction",
-  "billingChoosePackageTitle": "Add credit",
-  "billingChoosePackageBody": "Choose a credit package. Payment is only considered complete after the backend confirms the order status.",
-  "billingNoPackagesTitle": "No packages available",
-  "billingNoPackagesBody": "Credit packages are unavailable right now. Pull to refresh or try again later.",
-  "billingRecentOrdersTitle": "Recent payment orders",
-  "billingNoOrdersTitle": "No payment orders yet",
-  "billingNoOrdersBody": "Your credit purchase attempts will appear here.",
-  "billingPackageCredits": "{credits} credits",
-  "billingRecommendedLabel": "Recommended",
-  "billingPackageDetailBody": "Credits are added only after SaveStream receives backend payment confirmation.",
-  "billingBuyAction": "Buy package",
-  "billingCheckoutStatusTitle": "Payment order",
-  "billingCheckStatusAction": "Check payment status",
   "paymentStatusPending": "Pending",
   "paymentStatusPaid": "Paid",
   "paymentStatusFailed": "Failed",
@@ -346,13 +315,6 @@
   "paymentFailedBody": "The payment failed. No credit is added.",
   "paymentCancelledBody": "This payment order was cancelled.",
   "paymentExpiredBody": "This payment order expired before payment was confirmed.",
-  "@billingPackageCredits": {
-    "placeholders": {
-      "credits": {
-        "type": "String"
-      }
-    }
-  },
   "settingsAccountSectionTitle": "Account",
   "settingsPreferencesSectionTitle": "Preferences",
   "settingsLegalSectionTitle": "Legal",
@@ -405,43 +367,13 @@
   "recordNowAction": "Record now",
   "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
   "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link.",
-  "creditsReservationsTitle": "Credit reservations",
-  "creditsActiveReservationsLabel": "Active reservations",
-  "creditsLatestReservation": "Latest: recording {recordingId} · {status}",
-  "creditsPricingTitle": "Pricing",
-  "creditsPricingUnavailableBody": "Pricing is not configured on the backend yet.",
-  "creditsPricingVersionLabel": "Version",
-  "creditsPricingRulesLabel": "Public rules",
-  "creditsBalanceAfter": "Balance after: {balance}",
-  "billingContinueCheckoutAction": "Continue checkout",
   "paymentStatusCreated": "Created",
   "paymentStatusPartiallyRefunded": "Partially refunded",
   "paymentStatusRefunded": "Refunded",
   "paymentCreatedBody": "The payment order exists, but checkout has not started yet.",
   "paymentPartiallyRefundedBody": "Part of this payment has been refunded.",
   "paymentRefundedBody": "This payment has been refunded.",
-  "billingReturnTitle": "Payment confirmation",
-  "billingOrderNotFoundTitle": "Payment order not found",
-  "billingOrderNotFoundBody": "SaveStream could not find this payment order. Open Billing to review recent orders.",
   "backToBillingAction": "Back to billing",
-  "billingPollingStatusBody": "SaveStream is checking the backend for payment confirmation. Returning from checkout is not proof of payment.",
-  "@creditsLatestReservation": {
-    "placeholders": {
-      "recordingId": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
-  "@creditsBalanceAfter": {
-    "placeholders": {
-      "balance": {
-        "type": "int"
-      }
-    }
-  },
   "nonRetryableErrorTitle": "This can’t be completed",
   "nonRetryableErrorBody": "SaveStream can’t retry this request automatically. Try again later or contact support if the issue continues.",
   "requestIdLabel": "Request ID: {requestId}",
@@ -460,10 +392,7 @@
   "notificationRecordingReadyTitle": "Recording ready",
   "notificationRecordingFailedTitle": "Recording failed",
   "openLegalDocumentAction": "Open published document",
-  "billingExternalCheckoutDisabledTitle": "Purchases are disabled in this mobile build",
-  "billingExternalCheckoutDisabledBody": "This native release does not open external hosted checkout by default. Existing credit balances and payment history remain available.",
   "billingPurchasesUnavailableTitle": "Purchases are temporarily unavailable",
-  "billingPurchasesUnavailableBody": "The backend has checkout disabled right now. Your existing credits and recording access are unaffected.",
   "notificationPreferencesTitle": "Notification preferences",
   "notificationHistoryTitle": "Notification history",
   "notificationHistoryEmptyTitle": "No notifications yet",
@@ -1587,5 +1516,7 @@
   "purchaseContextFreeMinutesTitle": "Keep recording after Free minutes run out",
   "purchaseContextFreeMinutesBody": "Buy cloud hours for server recording instead of waiting for Free minutes to reset.",
   "purchaseContextRemoveAdsTitle": "Remove ads",
-  "purchaseContextRemoveAdsBody": "Buying cloud hours removes SaveStream ads."
+  "purchaseContextRemoveAdsBody": "Buying cloud hours removes SaveStream ads.",
+  "settingsUsageSubtitle": "Cloud hours, creator limits, and restore purchases",
+  "buyMoreCloudHoursAction": "Buy more cloud hours"
 }
