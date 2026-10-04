@@ -3,31 +3,37 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../recordings/data/cloud_artifact_downloader.dart';
-import '../../recordings/domain/repositories/recording_repository.dart';
+import '../../recordings/domain/models/recording_summary.dart';
 import '../../../platform/contracts/share_service.dart';
 
 final class CloudRecordingShareCoordinator {
   CloudRecordingShareCoordinator({
-    required RecordingRepository recordingRepository,
+    required Future<ArtifactDownloadUrl> Function(String artifactId)
+    createDownloadUrl,
     required CloudArtifactDownloader downloader,
     required ShareService shareService,
-  }) : _recordingRepository = recordingRepository,
+    Future<Directory> Function()? tempDirectory,
+  }) : _createDownloadUrl = createDownloadUrl,
        _downloader = downloader,
-       _shareService = shareService;
+       _shareService = shareService,
+       _tempDirectory = tempDirectory ?? getTemporaryDirectory;
 
-  final RecordingRepository _recordingRepository;
+  final Future<ArtifactDownloadUrl> Function(String artifactId)
+  _createDownloadUrl;
   final CloudArtifactDownloader _downloader;
   final ShareService _shareService;
+  final Future<Directory> Function() _tempDirectory;
 
   Future<void> share({
     required String artifactId,
     required String displayName,
     String fileExtension = 'mp4',
   }) async {
-    final download = await _recordingRepository.createArtifactDownloadUrl(
-      artifactId,
-    );
-    final Directory tempRoot = await getTemporaryDirectory();
+    final ArtifactDownloadUrl download = await _createDownloadUrl(artifactId);
+    if (download.isExpired) {
+      throw StateError('Cloud recording URL expired before sharing.');
+    }
+    final Directory tempRoot = await _tempDirectory();
     final Directory shareDirectory = Directory(
       '${tempRoot.path}/savestream-share',
     );
@@ -39,9 +45,8 @@ final class CloudRecordingShareCoordinator {
       '${shareDirectory.path}/$safeArtifactId.$safeExtension',
     );
 
-    await _downloader.download(uri: download.uri, destination: tempFile);
-
     try {
+      await _downloader.download(uri: download.uri, destination: tempFile);
       await _shareService.shareFile(
         filePath: tempFile.path,
         displayName: displayName,
