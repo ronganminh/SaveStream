@@ -134,11 +134,11 @@ def main() -> None:
         response.raise_for_status()
         packages = response.json()["items"]
         e2e_packages = [
-            package for package in packages if package["code"] == "e2e-100"
+            package for package in packages if package["credits"] == 100
         ]
         if len(e2e_packages) != 1:
             raise RuntimeError(
-                f"expected one e2e-100 package, got {len(e2e_packages)}"
+                f"expected one 100-credit E2E package, got {len(e2e_packages)}"
             )
 
         response = client.post(
