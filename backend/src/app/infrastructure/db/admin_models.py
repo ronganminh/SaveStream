@@ -439,13 +439,24 @@ class AdminDailyMetric(Base):
     active_users_monthly: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     free_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     pro_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    free_to_pro_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    free_to_pro_weekly: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     revenue_web_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     revenue_app_store_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     revenue_google_play_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    estimated_store_fee_app_store_usd_minor: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    estimated_store_fee_google_play_usd_minor: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
     recording_running: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     recording_waiting: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     recording_errors_24h: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_total_24h: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cloud_minutes_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_status_counts: Mapped[dict[str, int]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
     recording_capacity_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
     stuck_orders: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     open_complaints: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
