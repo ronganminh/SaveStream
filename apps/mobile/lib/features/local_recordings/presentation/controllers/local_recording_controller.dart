@@ -116,8 +116,10 @@ class LocalRecordingController extends Notifier<LocalRecordingFlowState> {
   LocalRecordingFlowState build() {
     ref.listen<AsyncValue<LocalRecorderState>>(
       localRecorderStateProvider,
-      (AsyncValue<LocalRecorderState>? previous,
-       AsyncValue<LocalRecorderState> next) {
+      (
+        AsyncValue<LocalRecorderState>? previous,
+        AsyncValue<LocalRecorderState> next,
+      ) {
         next.whenData(_applyRecorderState);
       },
     );
