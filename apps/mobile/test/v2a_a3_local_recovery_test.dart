@@ -111,10 +111,7 @@ LocalRecoveryCandidate _candidate() {
 }
 
 final class _RecoveryHarness implements LocalRecoveryService {
-  _RecoveryHarness({
-    required this.candidate,
-    required this.outcome,
-  });
+  _RecoveryHarness({required this.candidate, required this.outcome});
 
   LocalRecoveryCandidate? candidate;
   final LocalRecoveryOutcome outcome;
@@ -131,23 +128,20 @@ final class _RecoveryHarness implements LocalRecoveryService {
   @override
   Future<LocalRecoveryResult> recover(LocalRecoveryCandidate candidate) async {
     _progress.add(
-      const LocalRecoveryProgress(
-        step: LocalRecoveryStep.repairTail,
-      ),
+      const LocalRecoveryProgress(step: LocalRecoveryStep.repairTail),
     );
     await _finish.future;
     _progress.add(
-      const LocalRecoveryProgress(
-        step: LocalRecoveryStep.registerRecording,
-      ),
+      const LocalRecoveryProgress(step: LocalRecoveryStep.registerRecording),
     );
     final LocalRecoveryResult result = LocalRecoveryResult(
       outcome: outcome,
       candidate: candidate,
       recordedSeconds: candidate.recordedSeconds,
       sizeBytes: candidate.sizeBytes,
-      recordingId:
-          outcome == LocalRecoveryOutcome.failed ? null : 'recording_1',
+      recordingId: outcome == LocalRecoveryOutcome.failed
+          ? null
+          : 'recording_1',
     );
     if (outcome != LocalRecoveryOutcome.failed) {
       this.candidate = null;
