@@ -94,11 +94,4 @@ abstract final class AppRoutes {
     ).toString();
   }
 
-  static Uri billingReturnUri(String orderId) {
-    return Uri(
-      scheme: 'savestream',
-      path: billingReturn,
-      queryParameters: <String, String>{'order_id': orderId},
-    );
-  }
 }
