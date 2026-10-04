@@ -85,6 +85,15 @@ def recording_recover_stale() -> int:
     return len(ids)
 
 
+@celery_app.task(name="savestream.notification.b6_scan")
+def notification_b6_scan() -> int:
+    from app.infrastructure.notifications.b6_worker import (
+        run_b6_notification_scan,
+    )
+
+    return run_b6_notification_scan()
+
+
 @celery_app.task(
     bind=True,
     name="savestream.notification.push",

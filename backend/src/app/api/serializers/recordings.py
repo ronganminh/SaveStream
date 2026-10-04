@@ -62,9 +62,12 @@ def recording_response(
         queue_position=queue_position,
         expires_at=(
             expires_at(recording.created_at, retention_days)
-            if status in TERMINAL_RECORDING_STATUSES and recording.deleted_at is None
+            if status in TERMINAL_RECORDING_STATUSES
+            and recording.deleted_at is None
             else None
         ),
+        engine="cloud",
+        minutes_charged=max(recording.actual_cost or 0, 0),
         updated_at=recording.updated_at,
     )
 

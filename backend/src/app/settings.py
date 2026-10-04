@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal, cast
 from urllib.parse import urlparse
 
@@ -42,6 +43,21 @@ def _nonnegative_int_env(name: str, default: int) -> int:
     if value < 0:
         raise ValueError(f"SAVESTREAM_{name} must be zero or greater")
     return value
+
+
+def _optional_datetime_env(name: str) -> datetime | None:
+    raw = _env(name, "")
+    if not raw:
+        return None
+    try:
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(
+            f"SAVESTREAM_{name} must be an ISO 8601 datetime"
+        ) from exc
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _secret_env(name: str, default: str) -> str:
@@ -160,8 +176,8 @@ class AppSettings:
     quota_max_watches_per_user: int = 0
     quota_max_recordings_per_day: int = 0
     quota_max_active_recordings_per_user: int = 0
-    recording_retention_days: int = 0
-    recording_retention_days_free: int = 0
+    recording_retention_days: int = 30
+    recording_retention_days_free: int = 7
     signup_credits: int = 0
     account_deletion_grace_days: int = 0
     retention_check_seconds: int = 3600
@@ -185,6 +201,12 @@ class AppSettings:
     google_play_rtdn_audience: str = ""
     google_play_rtdn_service_account_email: str = ""
     store_purchase_timeout_seconds: float = 15.0
+    app_min_supported_android: str = "1.0.0"
+    app_min_supported_ios: str = "1.0.0"
+    maintenance_active: bool = False
+    maintenance_eta: datetime | None = None
+    recording_expiring_window_hours: int = 24
+    free_minutes_low_threshold: int = 2
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -318,6 +340,24 @@ class AppSettings:
         store_purchase_timeout_seconds = _float_env(
             "STORE_PURCHASE_TIMEOUT_SECONDS",
             15.0,
+        )
+        app_min_supported_android = _env(
+            "APP_MIN_SUPPORTED_ANDROID",
+            "1.0.0",
+        )
+        app_min_supported_ios = _env(
+            "APP_MIN_SUPPORTED_IOS",
+            "1.0.0",
+        )
+        maintenance_active = _bool_env("MAINTENANCE_ACTIVE", False)
+        maintenance_eta = _optional_datetime_env("MAINTENANCE_ETA")
+        recording_expiring_window_hours = _int_env(
+            "RECORDING_EXPIRING_WINDOW_HOURS",
+            24,
+        )
+        free_minutes_low_threshold = _nonnegative_int_env(
+            "FREE_MINUTES_LOW_THRESHOLD",
+            2,
         )
         if push_provider == "fcm" and not push_fcm_service_account_json:
             raise ValueError(
@@ -551,10 +591,10 @@ class AppSettings:
             quota_max_recordings_per_day=quota_max_recordings_day,
             quota_max_active_recordings_per_user=quota_max_active_recordings,
             recording_retention_days=_nonnegative_int_env(
-                "RECORDING_RETENTION_DAYS", 0
+                "RECORDING_RETENTION_DAYS", 30
             ),
             recording_retention_days_free=_nonnegative_int_env(
-                "RECORDING_RETENTION_DAYS_FREE", 0
+                "RECORDING_RETENTION_DAYS_FREE", 7
             ),
             signup_credits=_nonnegative_int_env("SIGNUP_CREDITS", 0),
             account_deletion_grace_days=_nonnegative_int_env(
@@ -583,6 +623,12 @@ class AppSettings:
                 google_play_rtdn_service_account_email
             ),
             store_purchase_timeout_seconds=store_purchase_timeout_seconds,
+            app_min_supported_android=app_min_supported_android,
+            app_min_supported_ios=app_min_supported_ios,
+            maintenance_active=maintenance_active,
+            maintenance_eta=maintenance_eta,
+            recording_expiring_window_hours=recording_expiring_window_hours,
+            free_minutes_low_threshold=free_minutes_low_threshold,
         )
 
 

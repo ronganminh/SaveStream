@@ -15,6 +15,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.schemas.recordings import Source
 from app.application.credits.service import CreditService
+from app.application.notifications.service import (
+    ensure_cloud_minutes_exhausted_notification,
+)
 from app.application.recordings.service import (
     RecordingStateStore,
     append_event,
@@ -238,11 +241,20 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                     checksum_sha256=checksum,
                 )
             )
-            actual_cost = await CreditService(session).settle_recording(
+            credit_service = CreditService(session)
+            actual_cost = await credit_service.settle_recording(
                 recording_id=recording.id,
                 duration_seconds=recording.duration_seconds,
                 bytes_recorded=recording.bytes_recorded,
             )
+            if actual_cost > 0:
+                balance = await credit_service.balance(recording.user_id)
+                if balance.posted == 0:
+                    await ensure_cloud_minutes_exhausted_notification(
+                        session,
+                        user_id=recording.user_id,
+                        recording_id=recording.id,
+                    )
             target = (
                 RecordingStatus.STOPPED
                 if stopped_by_request

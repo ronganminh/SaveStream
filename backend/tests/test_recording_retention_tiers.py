@@ -93,6 +93,10 @@ def test_paid_accounts_keep_recordings_30_days_and_trial_accounts_7(tmp_path) ->
 
 
 def test_free_retention_falls_back_to_paid_value() -> None:
-    settings = replace(identity_settings("sqlite+aiosqlite:///:memory:"), recording_retention_days=30)
+    settings = replace(
+        identity_settings("sqlite+aiosqlite:///:memory:"),
+        recording_retention_days=30,
+        recording_retention_days_free=0,
+    )
     assert retention_days(settings, paid=False) == 30
     assert retention_days(replace(settings, recording_retention_days=0), paid=True) == 0
