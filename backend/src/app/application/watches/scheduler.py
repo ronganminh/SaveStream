@@ -12,6 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.application.creator_safety import watch_creator_block
 from app.application.entitlements.service import EntitlementService
 from app.application.notifications.service import ensure_creator_live_notification
 from app.application.recordings.cloud_slots import CloudSlotQueueService
