@@ -774,6 +774,7 @@ async def adjust_admin_credit(
         amount=payload.amount,
         idempotency_key=idempotency_key,
         reason=payload.reason,
+        counts_as_purchase=payload.counts_as_purchase,
         commit=False,
     )
     await AuditService(session).record(
@@ -787,6 +788,7 @@ async def adjust_admin_credit(
         after_state={
             "transaction_id": str(transaction.id),
             "amount": payload.amount,
+            "counts_as_purchase": payload.counts_as_purchase,
         },
     )
     await session.commit()

@@ -741,6 +741,18 @@ class BillingAdminService:
                 "Payment order not found",
                 status_code=404,
             )
+        if order.provider in {"app_store", "google_play"}:
+            raise ApplicationError(
+                "STORE_REFUND_MANAGED",
+                "Store purchases can only be refunded by Apple or Google",
+                status_code=409,
+            )
+        if order.provider != self.provider.name:
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "Payment provider does not support admin refunds",
+                status_code=409,
+            )
         if PaymentStatus(order.status) not in {
             PaymentStatus.PAID,
             PaymentStatus.PARTIALLY_REFUNDED,

@@ -520,6 +520,7 @@ class CreditAdminService:
         amount: int,
         idempotency_key: str,
         reason: str,
+        counts_as_purchase: bool = False,
         commit: bool = True,
     ) -> CreditLedgerEntry:
         try:
@@ -542,6 +543,8 @@ class CreditAdminService:
                 existing.user_id != user_id
                 or existing.amount != amount
                 or existing.details.get("reason") != reason
+                or bool(existing.details.get("counts_as_purchase", False))
+                != counts_as_purchase
             ):
                 raise ApplicationError(
                     "IDEMPOTENCY_KEY_REUSED",
@@ -583,7 +586,10 @@ class CreditAdminService:
             reference_type="admin_adjustment",
             reference_id=idempotency_key,
             reference_key=reference_key,
-            details={"reason": reason},
+            details={
+                "reason": reason,
+                "counts_as_purchase": counts_as_purchase,
+            },
         )
         self.session.add(entry)
         if commit:
