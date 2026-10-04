@@ -6831,6 +6831,252 @@
           }
         }
       }
+    },
+    "/admin/operations/store-transactions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List App Store and Google Play transactions",
+        "operationId": "listAdminStoreTransactions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminStoreTransactionList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/local-recordings/metrics": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get local recording metrics by day",
+        "operationId": "getAdminLocalRecordingMetrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31,
+              "default": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local recording metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLocalRecordingMetrics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/local-recordings/users/{user_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List local recording sessions for a user",
+        "operationId": "listAdminUserLocalSessions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local recording sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminLocalSessionList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/rewards/metrics": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get rewarded-ad metrics and risk users",
+        "operationId": "getAdminRewardMetrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 31,
+              "default": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reward metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRewardMetrics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/rewards/users/{user_id}/unlock": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Unlock rewarded-ad state for a user",
+        "operationId": "unlockAdminRewardUser",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRewardUnlockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reward state unlocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRewardUnlock"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/devices/distribution": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get device and app-version distribution",
+        "operationId": "getAdminDeviceDistribution",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device distribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDeviceDistribution"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11769,6 +12015,432 @@
             "type": "object",
             "additionalProperties": {
               "$ref": "#/components/schemas/AdminSystemComponentHealth"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminStoreTransaction": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_email",
+          "provider",
+          "provider_reference",
+          "status",
+          "verification_status",
+          "rejection_reason",
+          "credits",
+          "refunded_credits",
+          "paid_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "app_store",
+              "google_play"
+            ]
+          },
+          "provider_reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "pending",
+              "rejected"
+            ]
+          },
+          "rejection_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "refunded_credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paid_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminStoreTransactionList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminStoreTransaction"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLocalRecordingDaily": {
+        "type": "object",
+        "required": [
+          "day",
+          "sessions",
+          "free_minutes_granted",
+          "free_minutes_used",
+          "auto_closed_sessions"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "sessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "free_minutes_granted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "free_minutes_used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "auto_closed_sessions": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLocalRecordingMetrics": {
+        "type": "object",
+        "required": [
+          "days"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminLocalRecordingDaily"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLocalSession": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "creator_username",
+          "device_id",
+          "device_name",
+          "status",
+          "granted_seconds",
+          "free_granted_seconds",
+          "recorded_seconds",
+          "started_at",
+          "lease_expires_at",
+          "end_reason",
+          "auto_closed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "creator_username": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "granted_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "free_granted_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recorded_seconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "lease_expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "end_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "auto_closed": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminLocalSessionList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminLocalSession"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRewardDaily": {
+        "type": "object",
+        "required": [
+          "day",
+          "valid",
+          "invalid",
+          "pending",
+          "expired"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "valid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "expired": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRewardRiskUser": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "user_email",
+          "valid_count",
+          "invalid_count",
+          "invalid_ratio",
+          "invalid_streak",
+          "locked_until"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "valid_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "invalid_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "invalid_streak": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "locked_until": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRewardMetrics": {
+        "type": "object",
+        "required": [
+          "days",
+          "locked_accounts",
+          "high_invalid_users"
+        ],
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRewardDaily"
+            }
+          },
+          "locked_accounts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "high_invalid_users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRewardRiskUser"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRewardUnlockRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRewardUnlock": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "unlocked",
+          "previous_locked_until",
+          "previous_invalid_streak"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "unlocked": {
+            "type": "boolean"
+          },
+          "previous_locked_until": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous_invalid_streak": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDeviceDistributionRow": {
+        "type": "object",
+        "required": [
+          "platform",
+          "app_version",
+          "devices",
+          "active_push_tokens",
+          "removed_push_tokens"
+        ],
+        "properties": {
+          "platform": {
+            "type": "string"
+          },
+          "app_version": {
+            "type": "string"
+          },
+          "devices": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active_push_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removed_push_tokens": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDeviceDistribution": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDeviceDistributionRow"
             }
           }
         },
