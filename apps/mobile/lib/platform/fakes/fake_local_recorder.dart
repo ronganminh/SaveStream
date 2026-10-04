@@ -64,7 +64,10 @@ final class FakeLocalRecorder implements LocalRecorder {
       finalizationStep: LocalFinalizationStep.registerRecording,
     );
     _session = null;
-    _emit(LocalRecorderPhase.stopped);
+    _emit(
+      LocalRecorderPhase.stopped,
+      finalizationStep: LocalFinalizationStep.registerRecording,
+    );
   }
 
   @override
@@ -79,8 +82,10 @@ final class FakeLocalRecorder implements LocalRecorder {
     _emit(LocalRecorderPhase.recording);
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_session == null) return;
+      const int bytesPerSecond = 640 * 1024;
       _recordedSeconds += 1;
-      _sizeBytes += 640 * 1024;
+      _sizeBytes += bytesPerSecond;
+      _freeStorageBytes -= bytesPerSecond;
       _emit(LocalRecorderPhase.recording);
     });
   }
