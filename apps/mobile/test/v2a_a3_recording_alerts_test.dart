@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:savestream_mobile/features/local_recordings/presentation/controllers/rewarded_minutes_controller.dart';
 import 'package:savestream_mobile/features/local_recordings/presentation/local_recording_alerts.dart';
 import 'package:savestream_mobile/l10n/l10n.dart';
 import 'package:savestream_mobile/platform/contracts/local_recorder.dart';
@@ -24,6 +25,8 @@ void main() {
           remainingSeconds: 600,
           isUnlimited: false,
           minutesPerReward: 10,
+          extensionsCap: 4,
+          rewardState: RewardedMinutesState(),
         ),
       ),
     );
@@ -56,6 +59,8 @@ void main() {
           remainingSeconds: 58,
           isUnlimited: false,
           minutesPerReward: 10,
+          extensionsCap: 4,
+          rewardState: RewardedMinutesState(),
           onMinuteWarningEntered: () => warningCalls += 1,
         ),
       ),
@@ -81,6 +86,8 @@ void main() {
           remainingSeconds: 57,
           isUnlimited: false,
           minutesPerReward: 10,
+          extensionsCap: 4,
+          rewardState: RewardedMinutesState(),
           onMinuteWarningEntered: () => warningCalls += 1,
         ),
       ),
@@ -89,5 +96,34 @@ void main() {
 
     expect(warningCalls, 1);
     expect(find.text('Advertisement'), findsNothing);
+  });
+
+  testWidgets('R08 locked hides reward retry action', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        LocalRecordingAlerts(
+          state: const LocalRecorderState(
+            phase: LocalRecorderPhase.recording,
+            recordedSeconds: 550,
+            sizeBytes: 220 * 1024 * 1024,
+          ),
+          creatorName: 'Lina Studio',
+          remainingSeconds: 50,
+          isUnlimited: false,
+          minutesPerReward: 10,
+          extensionsCap: 4,
+          rewardState: const RewardedMinutesState(
+            phase: RewardedMinutesPhase.locked,
+            extensionCount: 1,
+          ),
+          onRewardRequested: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('Rewarded ads temporarily locked'), findsOneWidget);
+    expect(find.text('+10 minutes (watch an ad)'), findsNothing);
   });
 }
