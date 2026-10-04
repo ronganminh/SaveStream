@@ -28,7 +28,7 @@
 - [x] D3 — Bản ghi, kênh theo dõi, hàng chờ slot — **đã merge PR #110 vào main**
 - [x] D4 — Cấu hình hệ thống sửa từ giao diện — **đã merge PR #115 vào main**
 - [x] D5 — Gói, giá, khuyến mãi, tặng giờ — **đã merge PR #101 vào main**
-- [ ] D6 — Vận hành V2: giao dịch store, ghi trên máy, phần thưởng, thiết bị
+- [x] D6 — Vận hành V2: giao dịch store, ghi trên máy, phần thưởng, thiết bị — **đã merge PR #119 vào main**
 - [x] D7 — Lưu trữ, email, thông báo hàng loạt — **đã merge PR #90 vào main**
 - [ ] D8 — Khiếu nại và an toàn
 - [ ] D9 — Tổng quan, báo cáo, báo lỗi từ app
@@ -56,6 +56,10 @@
 - **Rebase/main gate D2:** trước merge, nhánh `v2/d2-admin-payments-credits` ở trạng thái `ahead`, `behind 0` so với `main` tại `2d327aa31eb4a43ea13429503bb5e19fc3e8f0bc`; không cần rebase bổ sung ở gate cuối.
 - **Phạm vi D2 đã chốt:** web refund từ admin với preview + step-up + reason; store refund chỉ theo Apple/Google; clawback credit không âm; stuck-order reconcile idempotent; global ledger + CSV; manual minutes với `counts_as_purchase` mặc định false; stuck reservation chỉ release khi recording terminal; Support chỉ đọc order, Finance/Owner mới thao tác tiền. Revenue admin hiển thị gross USD trước phí store và phí store ước tính riêng.
 - **D5 hoàn tất.** PR #101 — `V2 D5 — Admin packages, promotions and bulk grants` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D6 hoàn tất.** PR #119 — `V2 D6 — Store, local recording, rewards and device operations` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D6 merge commit:** `4828b81ef6cf696b8fedbe2adbc413baee6112ec`.
+- **CI cuối D6 trên head `5f0d8989e841e45d3c994b7bdda0613d8062fbfe`:** `Backend CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh; Web CI không được trigger vì PR không đổi file web.
+- **Phạm vi merge D6:** store transaction list/status/refund-credit fields; local-recording daily metrics + per-user sessions; rewarded-ad metrics/risk + Owner unlock step-up/audit; device/platform/app-version distribution + active/removed push-token counts; OpenAPI + contract test.
 - **D5 merge commit:** `3e3daa3ab8d0c35539b5d3095cbd82ad561cf6a2`.
 - **CI cuối D5 trên head `4281ddba8d8e2b88d8052a3f312001e633c9023e`:** `Backend CI`, `Web CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh.
 - **Rebase/main gate D5:** trước merge, nhánh `v2/d5-admin-packages-promotions` ở trạng thái `behind 0`; migration D5 đã đổi thành `0015_v2_d5_packages_promotions` nối sau B4 `0014_v2_b4_local_recordings`.
@@ -64,8 +68,8 @@
 - **CI cuối D7 trên head `fc4bb6f006fcd1cd4641e8c9177548f37774dfe9`:** `Backend CI` #482 xanh trên Python 3.11 và 3.12, `Web CI` #164 xanh, `Backend E2E` #88 xanh, `Mobile Backend E2E` #188 xanh.
 - **Rebase/main gate D7:** trước merge, nhánh `v2/d7-admin-storage-email-broadcasts` ở trạng thái `ahead`, `behind 0` so với `main`; không cần rebase bổ sung ở gate cuối.
 - **Phạm vi D7 đã chốt:** storage summary + bounded orphan scan/delete, email logs giữ 90 ngày + resend, template override/preview/test/reset, broadcast system/marketing theo opt-in qua in-app/push/email; thao tác nguy hiểm dùng step-up + reason, mutation/sensitive read được audit.
-- **Các blocker Track D còn lại:** Track B B0→B8 đã hoàn tất; D6 và D8 đã mở khóa. D9 còn chờ D6.
-- **Bước Track D tiếp theo:** D6.
+- **Các blocker Track D còn lại:** D8 đã mở khóa từ D3; D9 đã mở khóa sau khi D6 merge.
+- **Bước Track D tiếp theo:** D8, sau đó D9.
 
 ## Kiểm tra
 
