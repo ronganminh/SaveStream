@@ -117,7 +117,6 @@ class _RecordingPlatformBridgeState
     }
 
     if (active &&
-        session != null &&
         state != null &&
         creatorName != null &&
         entitlement != null) {
