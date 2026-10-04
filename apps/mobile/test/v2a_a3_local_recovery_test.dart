@@ -27,7 +27,7 @@ void main() {
             const FakeDeviceInfoService(platform: DevicePlatform.android),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const LocalRecoveryScreen(),
@@ -75,7 +75,7 @@ void main() {
             const FakeDeviceInfoService(platform: DevicePlatform.ios),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const LocalRecoveryScreen(),
