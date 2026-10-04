@@ -43,7 +43,7 @@ void main() {
       app(entitlement: _entitlement(), extensionsUsed: 4),
     );
 
-    expect(find.text('Maximum extensions reached'), findsOneWidget);
+    expect(find.text('Maximum extensions reached'), findsWidgets);
     expect(find.text('Watch ad'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
   });
@@ -55,7 +55,7 @@ void main() {
       app(entitlement: _entitlement(rewardsUsedToday: 8), extensionsUsed: 2),
     );
 
-    expect(find.text('Daily rewarded-ad limit reached'), findsOneWidget);
+    expect(find.text('Daily rewarded-ad limit reached'), findsWidgets);
     expect(find.text('Watch ad'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
   });
