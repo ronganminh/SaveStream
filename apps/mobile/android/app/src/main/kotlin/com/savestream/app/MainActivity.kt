@@ -58,6 +58,7 @@ class MainActivity : FlutterActivity() {
                 "start" -> {
                     val args = call.arguments as? Map<*, *>
                     val sessionId = args?.get("session_id") as? String
+                    val userId = args?.get("user_id") as? String
                     val watchId = args?.get("watch_id") as? String
                     val deviceId = args?.get("device_id") as? String
                     val streamUrl = args?.get("stream_url") as? String
@@ -66,6 +67,7 @@ class MainActivity : FlutterActivity() {
                     val rawHeaders = args?.get("stream_headers") as? Map<*, *>
                     if (
                         sessionId == null ||
+                            userId == null ||
                             watchId == null ||
                             deviceId == null ||
                             streamUrl == null ||
@@ -81,6 +83,7 @@ class MainActivity : FlutterActivity() {
                         LocalRecordingService.start(
                             context = this,
                             sessionId = sessionId,
+                            userId = userId,
                             watchId = watchId,
                             deviceId = deviceId,
                             streamUrl = streamUrl,
@@ -97,31 +100,41 @@ class MainActivity : FlutterActivity() {
                 }
                 "recover" -> {
                     val sessionId = call.argument<String>("session_id")
-                    if (sessionId == null) {
-                        result.error("INVALID_ARGUMENTS", "Missing recovery session id.", null)
+                    val userId = call.argument<String>("user_id")
+                    if (sessionId == null || userId == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing recovery identity.", null)
                     } else {
-                        LocalRecordingService.recover(this, sessionId)
+                        LocalRecordingService.recover(this, userId, sessionId)
                         result.success(null)
                     }
                 }
-                "findInterrupted" -> result.success(
-                    LocalRecordingService.findInterrupted(this),
-                )
+                "findInterrupted" -> {
+                    val userId = call.argument<String>("user_id")
+                    if (userId == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing user id.", null)
+                    } else {
+                        result.success(
+                            LocalRecordingService.findInterrupted(this, userId),
+                        )
+                    }
+                }
                 "markRegistered" -> {
                     val sessionId = call.argument<String>("session_id")
-                    if (sessionId == null) {
-                        result.error("INVALID_ARGUMENTS", "Missing session id.", null)
+                    val userId = call.argument<String>("user_id")
+                    if (sessionId == null || userId == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing registration identity.", null)
                     } else {
-                        LocalRecordingService.markRegistered(this, sessionId)
+                        LocalRecordingService.markRegistered(this, userId, sessionId)
                         result.success(null)
                     }
                 }
                 "deleteInterrupted" -> {
                     val sessionId = call.argument<String>("session_id")
-                    if (sessionId == null) {
-                        result.error("INVALID_ARGUMENTS", "Missing session id.", null)
+                    val userId = call.argument<String>("user_id")
+                    if (sessionId == null || userId == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing interrupted identity.", null)
                     } else {
-                        LocalRecordingService.deleteInterrupted(this, sessionId)
+                        LocalRecordingService.deleteInterrupted(this, userId, sessionId)
                         result.success(null)
                     }
                 }
