@@ -8,10 +8,7 @@ import 'a5_purchase_controller.dart';
 import 'a5_store_providers.dart';
 
 class CloudHoursPurchaseScreen extends ConsumerWidget {
-  const CloudHoursPurchaseScreen({
-    required this.contextType,
-    super.key,
-  });
+  const CloudHoursPurchaseScreen({required this.contextType, super.key});
 
   final CloudHoursPurchaseContext contextType;
 
@@ -60,7 +57,8 @@ class CloudHoursPurchaseScreen extends ConsumerWidget {
                       SsPrimaryButton(
                         label: context.l10n.buyCloudHoursAction,
                         isLoading:
-                            purchase.phase == CloudHoursPurchasePhase.processing &&
+                            purchase.phase ==
+                                CloudHoursPurchasePhase.processing &&
                             purchase.selectedProductId == offer.productId,
                         onPressed:
                             purchase.phase == CloudHoursPurchasePhase.processing
@@ -84,13 +82,10 @@ class CloudHoursPurchaseScreen extends ConsumerWidget {
               const SizedBox(height: SsSpacing.md),
               SsSecondaryButton(
                 label: context.l10n.restorePurchasesAction,
-                onPressed:
-                    purchase.phase == CloudHoursPurchasePhase.restoring
+                onPressed: purchase.phase == CloudHoursPurchasePhase.restoring
                     ? null
                     : () => ref
-                          .read(
-                            cloudHoursPurchaseControllerProvider.notifier,
-                          )
+                          .read(cloudHoursPurchaseControllerProvider.notifier)
                           .restore(),
               ),
               if (purchase.phase != CloudHoursPurchasePhase.idle) ...<Widget>[
@@ -101,9 +96,7 @@ class CloudHoursPurchaseScreen extends ConsumerWidget {
                       ? null
                       : purchase.isRestore
                       ? () => ref
-                            .read(
-                              cloudHoursPurchaseControllerProvider.notifier,
-                            )
+                            .read(cloudHoursPurchaseControllerProvider.notifier)
                             .restore()
                       : () {
                           CloudHoursOffer? selected;
@@ -140,8 +133,7 @@ class _PurchaseStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String message = switch (state.phase) {
-      CloudHoursPurchasePhase.processing =>
-        context.l10n.purchaseProcessingBody,
+      CloudHoursPurchasePhase.processing => context.l10n.purchaseProcessingBody,
       CloudHoursPurchasePhase.pending => context.l10n.purchasePendingBody,
       CloudHoursPurchasePhase.credited => context.l10n.purchaseSuccessBody,
       CloudHoursPurchasePhase.cancelled => context.l10n.purchaseCancelledBody,
@@ -176,10 +168,7 @@ class _PurchaseStatus extends StatelessWidget {
   }
 }
 
-String _title(
-  AppLocalizations l10n,
-  CloudHoursPurchaseContext value,
-) {
+String _title(AppLocalizations l10n, CloudHoursPurchaseContext value) {
   return switch (value) {
     CloudHoursPurchaseContext.autoRecord => l10n.purchaseContextAutoRecordTitle,
     CloudHoursPurchaseContext.watchLimit => l10n.purchaseContextWatchLimitTitle,
@@ -191,10 +180,7 @@ String _title(
   };
 }
 
-String _subtitle(
-  AppLocalizations l10n,
-  CloudHoursPurchaseContext value,
-) {
+String _subtitle(AppLocalizations l10n, CloudHoursPurchaseContext value) {
   return switch (value) {
     CloudHoursPurchaseContext.autoRecord => l10n.purchaseContextAutoRecordBody,
     CloudHoursPurchaseContext.watchLimit => l10n.purchaseContextWatchLimitBody,
