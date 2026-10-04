@@ -28,8 +28,9 @@ class _IosRecordingGuidanceScreenState
   }
 
   Future<void> _loadReminder() async {
-    final bool enabled =
-        await ref.read(recordingPlatformServiceProvider).iosReturnReminderEnabled;
+    final bool enabled = await ref
+        .read(recordingPlatformServiceProvider)
+        .iosReturnReminderEnabled;
     if (mounted) {
       setState(() => _reminderEnabled = enabled);
     }
