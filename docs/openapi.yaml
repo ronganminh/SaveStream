@@ -734,6 +734,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden; may return CREATOR_BLOCKED for a globally restricted creator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
             "content": {
@@ -1075,6 +1085,16 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden; may return CREATOR_BLOCKED for a globally restricted creator",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Error",
             "content": {
@@ -1132,7 +1152,7 @@
             }
           },
           "403": {
-            "description": "PLAN_REQUIRED",
+            "description": "Forbidden; may return CREATOR_BLOCKED for a globally restricted creator",
             "content": {
               "application/json": {
                 "schema": {
@@ -6418,7 +6438,7 @@
             }
           },
           "403": {
-            "description": "Admin permission or step-up required",
+            "description": "Forbidden; may return CREATOR_BLOCKED for a globally restricted creator",
             "content": {
               "application/json": {
                 "schema": {
@@ -7071,6 +7091,366 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminDeviceDistribution"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/complaints": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create complaint case",
+        "operationId": "createAdminComplaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminComplaintCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Complaint case created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplaint"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint write permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List complaint cases",
+        "operationId": "listAdminComplaints",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complaint cases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplaintList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/complaints/{complaint_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get complaint case",
+        "operationId": "getAdminComplaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complaint case",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplaint"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Complaint not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update complaint case",
+        "operationId": "updateAdminComplaint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "complaint_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminComplaintUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Complaint case updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminComplaint"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint write permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/creator-blocks": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Block creator globally",
+        "operationId": "blockAdminCreator",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreatorBlockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Creator blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCreatorBlock"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint permission or step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/creator-blocks/{block_id}/unblock": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Unblock creator globally",
+        "operationId": "unblockAdminCreator",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreatorUnblockRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Creator unblocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCreatorBlock"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint permission or step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -12441,6 +12821,401 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminDeviceDistributionRow"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminComplaintEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "actor_user_id",
+          "note",
+          "metadata",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "actor_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminComplaint": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "complainant_name",
+          "complainant_email",
+          "channel_source_type",
+          "channel_source_value",
+          "recording_id",
+          "summary",
+          "body",
+          "status",
+          "assigned_to_user_id",
+          "created_by_user_id",
+          "resolved_at",
+          "created_at",
+          "updated_at",
+          "timeline"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "copyright",
+              "abuse"
+            ]
+          },
+          "complainant_name": {
+            "type": "string"
+          },
+          "complainant_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "channel_source_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel_source_value": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "recording_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "reviewing",
+              "resolved",
+              "rejected"
+            ]
+          },
+          "assigned_to_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolved_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminComplaintEvent"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminComplaintList": {
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminComplaint"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminComplaintCreateRequest": {
+        "type": "object",
+        "required": [
+          "kind",
+          "complainant_name",
+          "complainant_email",
+          "summary",
+          "body"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "copyright",
+              "abuse"
+            ]
+          },
+          "complainant_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "complainant_email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 320
+          },
+          "channel_source_type": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "username",
+              "room_id",
+              "url",
+              null
+            ]
+          },
+          "channel_source_value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048
+          },
+          "recording_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 240
+          },
+          "body": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20000
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminComplaintUpdateRequest": {
+        "type": "object",
+        "required": [
+          "status",
+          "reason"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "reviewing",
+              "resolved",
+              "rejected"
+            ]
+          },
+          "assigned_to_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCreatorBlockRequest": {
+        "type": "object",
+        "required": [
+          "source_type",
+          "source_value",
+          "reason"
+        ],
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "username",
+              "room_id",
+              "url"
+            ]
+          },
+          "source_value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "complaint_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCreatorUnblockRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCreatorBlock": {
+        "type": "object",
+        "required": [
+          "id",
+          "source_type",
+          "source_value",
+          "complaint_id",
+          "reason",
+          "blocked_by_user_id",
+          "active",
+          "unblocked_at",
+          "unblock_reason",
+          "created_at",
+          "stopped_recording_ids",
+          "paused_watch_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source_type": {
+            "type": "string"
+          },
+          "source_value": {
+            "type": "string"
+          },
+          "complaint_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "blocked_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "unblocked_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unblock_reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "stopped_recording_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "paused_watch_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },
