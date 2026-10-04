@@ -95,7 +95,33 @@ class CloudHoursPurchaseScreen extends ConsumerWidget {
               ),
               if (purchase.phase != CloudHoursPurchasePhase.idle) ...<Widget>[
                 const SizedBox(height: SsSpacing.md),
-                _PurchaseStatus(state: purchase),
+                _PurchaseStatus(
+                  state: purchase,
+                  onRetry: purchase.phase != CloudHoursPurchasePhase.failed
+                      ? null
+                      : purchase.isRestore
+                      ? () => ref
+                            .read(
+                              cloudHoursPurchaseControllerProvider.notifier,
+                            )
+                            .restore()
+                      : () {
+                          CloudHoursOffer? selected;
+                          for (final CloudHoursOffer item in items) {
+                            if (item.productId == purchase.selectedProductId) {
+                              selected = item;
+                              break;
+                            }
+                          }
+                          if (selected != null) {
+                            ref
+                                .read(
+                                  cloudHoursPurchaseControllerProvider.notifier,
+                                )
+                                .buy(selected);
+                          }
+                        },
+                ),
               ],
             ],
           ),
@@ -106,9 +132,10 @@ class CloudHoursPurchaseScreen extends ConsumerWidget {
 }
 
 class _PurchaseStatus extends StatelessWidget {
-  const _PurchaseStatus({required this.state});
+  const _PurchaseStatus({required this.state, required this.onRetry});
 
   final CloudHoursPurchaseState state;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -124,12 +151,27 @@ class _PurchaseStatus extends StatelessWidget {
       CloudHoursPurchasePhase.idle => '',
     };
 
-    return SsInlineAlert(
-      title: context.l10n.buyCloudHoursAction,
-      message: message,
-      tone: state.phase == CloudHoursPurchasePhase.failed
-          ? SsInlineAlertTone.warning
-          : SsInlineAlertTone.info,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SsInlineAlert(
+          title: state.isRestore
+              ? context.l10n.restorePurchasesAction
+              : context.l10n.buyCloudHoursAction,
+          message: message,
+          tone: state.phase == CloudHoursPurchasePhase.failed
+              ? SsInlineAlertTone.warning
+              : SsInlineAlertTone.info,
+        ),
+        if (onRetry != null) ...<Widget>[
+          const SizedBox(height: SsSpacing.sm),
+          SsSecondaryButton(
+            label: context.l10n.retryAction,
+            icon: Icons.refresh_rounded,
+            onPressed: onRetry,
+          ),
+        ],
+      ],
     );
   }
 }
