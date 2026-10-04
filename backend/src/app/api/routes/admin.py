@@ -999,7 +999,7 @@ async def request_admin_recording_playback_access(
         raise ApplicationError(
             "CREATOR_BLOCKED",
             "This recording is unavailable due to a safety restriction",
-            status_code=451,
+            status_code=403,
             retryable=False,
         )
     artifact = await service.playback_artifact(recording_id)
