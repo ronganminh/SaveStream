@@ -12,6 +12,8 @@ import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
+import '../../../platform/contracts/local_recovery_service.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
@@ -26,6 +28,9 @@ class HomeScreen extends ConsumerWidget {
       homeDashboardProvider,
     );
     final bool online = ref.watch(appOnlineProvider).value ?? true;
+    final LocalRecoveryCandidate? interrupted = ref
+        .watch(interruptedLocalRecordingProvider)
+        .value;
     final String? displayName = dashboard.value?.metrics.displayName;
 
     return Scaffold(
@@ -64,7 +69,11 @@ class HomeScreen extends ConsumerWidget {
                       ref.invalidate(homeDashboardProvider);
                       await ref.read(homeDashboardProvider.future);
                     },
-                    child: _HomeDashboard(data: data, online: online),
+                    child: _HomeDashboard(
+                      data: data,
+                      online: online,
+                      interrupted: interrupted,
+                    ),
                   ),
                 ),
               ),
@@ -77,10 +86,15 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HomeDashboard extends StatelessWidget {
-  const _HomeDashboard({required this.data, required this.online});
+  const _HomeDashboard({
+    required this.data,
+    required this.online,
+    required this.interrupted,
+  });
 
   final HomeDashboardViewModel data;
   final bool online;
+  final LocalRecoveryCandidate? interrupted;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +126,25 @@ class _HomeDashboard extends StatelessWidget {
                     title: context.l10n.homeOfflineTitle,
                     message: context.l10n.homeOfflineBody,
                     tone: SsInlineAlertTone.warning,
+                  ),
+                ],
+                if (interrupted case final LocalRecoveryCandidate item) ...<Widget>[
+                  const SizedBox(height: SsSpacing.md),
+                  SsInlineAlert(
+                    title: context.l10n.localRecoveryInterruptedTitle,
+                    message: context.l10n.homeRecoveryAvailableBody(
+                      item.creatorDisplayName,
+                      formatDurationHms(
+                        Duration(seconds: item.recordedSeconds),
+                      ),
+                    ),
+                    tone: SsInlineAlertTone.warning,
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  SsSecondaryButton(
+                    label: context.l10n.localRecoveryRecoverAction,
+                    icon: Icons.restore_rounded,
+                    onPressed: () => context.push(AppRoutes.localRecovery),
                   ),
                 ],
                 if (data.watches.isEmpty) ...<Widget>[
@@ -285,7 +318,8 @@ class _HomeDashboard extends StatelessWidget {
       ],
       if (data.hasAhaMoment &&
           local.minutesRemaining > 0 &&
-          online) ...<Widget>[
+          online &&
+          interrupted == null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
           child: Column(
