@@ -4,7 +4,7 @@ import asyncio
 import csv
 import io
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
@@ -3811,4 +3811,262 @@ async def get_admin_overview(
         month_revenue_app_store_usd_minor=month["app_store"],
         month_revenue_google_play_usd_minor=month["google_play"],
         month_estimated_store_fee_usd_minor=month["store_fee"],
+    )
+
+
+
+def _d9_report_window(
+    date_from: date | None,
+    date_to: date | None,
+) -> tuple[date, date, bool]:
+    end_day = date_to or datetime.now(timezone.utc).date()
+    start_day = date_from or (end_day - timedelta(days=29))
+    if start_day > end_day:
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "date_from must be on or before date_to",
+            status_code=400,
+        )
+    truncated = (end_day - start_day).days + 1 > 366
+    if truncated:
+        start_day = end_day - timedelta(days=365)
+    return start_day, end_day, truncated
+
+
+async def _audit_d9_report_export(
+    *,
+    session: AsyncSession,
+    request: Request,
+    principal: AuthPrincipal,
+    report: str,
+    rows: int,
+    date_from: date,
+    date_to: date,
+    truncated: bool,
+) -> None:
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.report.exported",
+        resource_type="admin_report",
+        resource_id=report,
+        context=_context(request),
+        details={
+            "report": report,
+            "rows": rows,
+            "date_from": date_from.isoformat(),
+            "date_to": date_to.isoformat(),
+            "truncated": truncated,
+        },
+    )
+    await session.commit()
+
+
+def _d9_csv_response(
+    output: io.StringIO,
+    *,
+    filename: str,
+    truncated: bool,
+) -> Response:
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "X-Result-Truncated": "true" if truncated else "false",
+        },
+    )
+
+
+@router.get("/reports/revenue.csv")
+async def export_admin_revenue_report(
+    request: Request,
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:reports:read")
+    _require_scope(principal, "admin:csv:export")
+    start_day, end_day, truncated = _d9_report_window(date_from, date_to)
+    rows = await AdminOverviewService(session).daily_range(
+        start_day=start_day,
+        end_day=end_day,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "day",
+        "web_gross_usd",
+        "app_store_gross_usd",
+        "google_play_gross_usd",
+        "total_gross_usd",
+        "app_store_estimated_fee_usd",
+        "google_play_estimated_fee_usd",
+        "total_estimated_store_fee_usd",
+    ])
+    for row in rows:
+        total = (
+            row.revenue_web_usd_minor
+            + row.revenue_app_store_usd_minor
+            + row.revenue_google_play_usd_minor
+        )
+        fee = (
+            row.estimated_store_fee_app_store_usd_minor
+            + row.estimated_store_fee_google_play_usd_minor
+        )
+        writer.writerow([
+            row.day.isoformat(),
+            f"{row.revenue_web_usd_minor / 100:.2f}",
+            f"{row.revenue_app_store_usd_minor / 100:.2f}",
+            f"{row.revenue_google_play_usd_minor / 100:.2f}",
+            f"{total / 100:.2f}",
+            f"{row.estimated_store_fee_app_store_usd_minor / 100:.2f}",
+            f"{row.estimated_store_fee_google_play_usd_minor / 100:.2f}",
+            f"{fee / 100:.2f}",
+        ])
+    await _audit_d9_report_export(
+        session=session,
+        request=request,
+        principal=principal,
+        report="revenue",
+        rows=len(rows),
+        date_from=start_day,
+        date_to=end_day,
+        truncated=truncated,
+    )
+    return _d9_csv_response(
+        output,
+        filename="savestream-revenue-usd.csv",
+        truncated=truncated,
+    )
+
+
+@router.get("/reports/new-users.csv")
+async def export_admin_new_users_report(
+    request: Request,
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:reports:read")
+    _require_scope(principal, "admin:csv:export")
+    start_day, end_day, truncated = _d9_report_window(date_from, date_to)
+    rows = await AdminOverviewService(session).daily_range(
+        start_day=start_day,
+        end_day=end_day,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "day", "new_users", "dau", "wau", "mau",
+        "free_users", "pro_users", "free_to_pro_7d",
+    ])
+    for row in rows:
+        writer.writerow([
+            row.day.isoformat(),
+            row.new_users,
+            row.active_users_daily,
+            row.active_users_weekly,
+            row.active_users_monthly,
+            row.free_users,
+            row.pro_users,
+            row.free_to_pro_weekly,
+        ])
+    await _audit_d9_report_export(
+        session=session,
+        request=request,
+        principal=principal,
+        report="new_users",
+        rows=len(rows),
+        date_from=start_day,
+        date_to=end_day,
+        truncated=truncated,
+    )
+    return _d9_csv_response(
+        output,
+        filename="savestream-new-users.csv",
+        truncated=truncated,
+    )
+
+
+@router.get("/reports/cloud-usage.csv")
+async def export_admin_cloud_usage_report(
+    request: Request,
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:reports:read")
+    _require_scope(principal, "admin:csv:export")
+    start_day, end_day, truncated = _d9_report_window(date_from, date_to)
+    rows = await AdminOverviewService(session).daily_range(
+        start_day=start_day,
+        end_day=end_day,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["day", "cloud_minutes_used", "cloud_hours_used"])
+    for row in rows:
+        writer.writerow([
+            row.day.isoformat(),
+            row.cloud_minutes_used,
+            f"{row.cloud_minutes_used / 60:.2f}",
+        ])
+    await _audit_d9_report_export(
+        session=session,
+        request=request,
+        principal=principal,
+        report="cloud_usage",
+        rows=len(rows),
+        date_from=start_day,
+        date_to=end_day,
+        truncated=truncated,
+    )
+    return _d9_csv_response(
+        output,
+        filename="savestream-cloud-usage.csv",
+        truncated=truncated,
+    )
+
+
+@router.get("/reports/recordings.csv")
+async def export_admin_recordings_status_report(
+    request: Request,
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:reports:read")
+    _require_scope(principal, "admin:csv:export")
+    start_day, end_day, truncated = _d9_report_window(date_from, date_to)
+    rows = await AdminOverviewService(session).daily_range(
+        start_day=start_day,
+        end_day=end_day,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["day", "status", "count"])
+    output_rows = 0
+    for row in rows:
+        for status, count in sorted(row.recording_status_counts.items()):
+            writer.writerow([row.day.isoformat(), status, count])
+            output_rows += 1
+    await _audit_d9_report_export(
+        session=session,
+        request=request,
+        principal=principal,
+        report="recordings_by_status",
+        rows=output_rows,
+        date_from=start_day,
+        date_to=end_day,
+        truncated=truncated,
+    )
+    return _d9_csv_response(
+        output,
+        filename="savestream-recordings-by-status.csv",
+        truncated=truncated,
     )
