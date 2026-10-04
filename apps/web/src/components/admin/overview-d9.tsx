@@ -97,6 +97,16 @@ function OverviewBody() {
     (latest?.revenue_web_usd_minor ?? 0) +
     (latest?.revenue_app_store_usd_minor ?? 0) +
     (latest?.revenue_google_play_usd_minor ?? 0);
+  const accountTotal = (latest?.free_users ?? 0) + (latest?.pro_users ?? 0);
+  const freePercent =
+    latest && accountTotal > 0 ? Math.round((latest.free_users / accountTotal) * 100) : 0;
+  const proPercent =
+    latest && accountTotal > 0 ? Math.round((latest.pro_users / accountTotal) * 100) : 0;
+  const monthGross = data
+    ? data.month_revenue_web_usd_minor +
+      data.month_revenue_app_store_usd_minor +
+      data.month_revenue_google_play_usd_minor
+    : 0;
   const capacity =
     latest && latest.recording_capacity_limit
       ? latest.recording_running / latest.recording_capacity_limit
@@ -164,8 +174,12 @@ function OverviewBody() {
           }
         />
         <AdminMetricCard
-          label="Free / Pro"
-          value={latest ? `${latest.free_users} / ${latest.pro_users}` : "—"}
+          label="Free / Pro ratio"
+          value={
+            latest
+              ? `${freePercent}% / ${proPercent}% (${latest.free_users} / ${latest.pro_users})`
+              : "—"
+          }
         />
         <AdminMetricCard
           label="Free → Pro (7d)"
@@ -241,7 +255,11 @@ function OverviewBody() {
             }
           />
         </div>
-        <div className="grid gap-3 border-t p-5 md:grid-cols-4">
+        <div className="grid gap-3 border-t p-5 md:grid-cols-5">
+          <AdminMetricCard
+            label="Month · Gross total"
+            value={data ? usd(monthGross) : "—"}
+          />
           <AdminMetricCard
             label="Month · Web"
             value={data ? usd(data.month_revenue_web_usd_minor) : "—"}
