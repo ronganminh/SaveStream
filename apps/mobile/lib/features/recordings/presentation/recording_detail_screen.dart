@@ -784,6 +784,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                                       ),
                                     ).replace(
                                       queryParameters: <String, String>{
+                                        'source': 'cloud',
                                         'title':
                                             widget.recording.creatorDisplayName,
                                         'duration': widget
