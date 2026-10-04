@@ -133,13 +133,18 @@ def main() -> None:
         response = client.get(f"{api}/v1/billing/packages", headers=headers)
         response.raise_for_status()
         packages = response.json()["items"]
-        if len(packages) != 1:
-            raise RuntimeError(f"expected one E2E package, got {len(packages)}")
+        e2e_packages = [
+            package for package in packages if package["code"] == "e2e-100"
+        ]
+        if len(e2e_packages) != 1:
+            raise RuntimeError(
+                f"expected one e2e-100 package, got {len(e2e_packages)}"
+            )
 
         response = client.post(
             f"{api}/v1/billing/payment-orders",
             headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
-            json={"package_id": packages[0]["id"]},
+            json={"package_id": e2e_packages[0]["id"]},
         )
         response.raise_for_status()
         order = response.json()

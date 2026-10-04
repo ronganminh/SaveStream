@@ -18,12 +18,19 @@ class Money(StrictModel):
     currency: str = Field(min_length=3, max_length=3)
 
 
+class StoreProductIds(StrictModel):
+    app_store: str
+    google_play: str
+
+
 class CreditPackageResponse(StrictModel):
     id: str
     name: str
     credits: int = Field(ge=1)
     price: Money
     active: bool
+    store_product_ids: StoreProductIds | None = None
+    cloud_minutes: int | None = Field(default=None, ge=1)
 
 
 class CreditPackageListResponse(StrictModel):
@@ -86,6 +93,24 @@ class CheckoutRequest(StrictModel):
 class CheckoutResponse(StrictModel):
     checkout_url: str
     payment_order: PaymentOrderResponse
+
+
+StorePurchasePlatform = Literal["app_store", "google_play"]
+StorePurchaseStatus = Literal["credited", "pending", "rejected"]
+
+
+class StorePurchaseRequest(StrictModel):
+    platform: StorePurchasePlatform
+    product_id: str = Field(min_length=1, max_length=160)
+    transaction_id: str = Field(min_length=1, max_length=255)
+    receipt: str = Field(min_length=1)
+
+
+class StorePurchaseResponse(StrictModel):
+    status: StorePurchaseStatus
+    payment_order_id: str
+    cloud_minutes_added: int = Field(ge=0)
+    cloud_minutes_available: int = Field(ge=0)
 
 
 class PublicRecordingRate(StrictModel):

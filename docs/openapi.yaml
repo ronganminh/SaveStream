@@ -2580,14 +2580,14 @@
         ],
         "summary": "Verify and credit an App Store or Google Play purchase",
         "operationId": "createStorePurchase",
-        "description": "Contract frozen in B0; implemented in B5. The backend verifies the receipt/token before posting credit.",
+        "description": "Implemented in B5. The backend verifies the App Store signed transaction or Google Play purchase token before posting credit. Replays of the same store transaction are idempotent.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B5"
         },
         "requestBody": {
@@ -2613,16 +2613,6 @@
           },
           "422": {
             "description": "STORE_RECEIPT_INVALID",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5045,6 +5035,108 @@
           }
         }
       }
+    },
+    "/webhooks/app-store": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Receive App Store Server Notifications V2",
+        "operationId": "appStoreWebhook",
+        "description": "Implemented in B5. Verifies Apple's signedPayload and applies REFUND revocations idempotently.",
+        "security": [],
+        "x-savestream-implementation": {
+          "status": "implemented",
+          "phase": "B5"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Notification accepted"
+          },
+          "422": {
+            "description": "Invalid or unsupported signed notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Store verification disabled or unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/google-play": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Receive Google Play real-time developer notifications",
+        "operationId": "googlePlayWebhook",
+        "description": "Implemented in B5. Verifies the Pub/Sub OIDC identity token and applies one-time-product voided purchases idempotently.",
+        "security": [],
+        "x-savestream-implementation": {
+          "status": "implemented",
+          "phase": "B5"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Notification accepted"
+          },
+          "422": {
+            "description": "Invalid or unsupported RTDN notification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Store verification disabled or unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6367,12 +6459,12 @@
           },
           "store_product_ids": {
             "$ref": "#/components/schemas/StoreProductIds",
-            "description": "V2 in-app purchase product IDs. Optional during rollout; populated in B5."
+            "description": "App Store and Google Play product IDs for this one-time credit package. Canonical B5 packages populate both."
           },
           "cloud_minutes": {
             "type": "integer",
             "minimum": 1,
-            "description": "Cloud minutes granted by this package; 1 credit = 1 minute. Optional during rollout; populated in B5."
+            "description": "Cloud minutes granted by this one-time package. 1 credit = 1 minute; purchased minutes do not expire."
           }
         },
         "additionalProperties": false

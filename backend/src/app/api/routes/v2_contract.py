@@ -142,15 +142,6 @@ async def admob_ssv_webhook(request: Request) -> None:
     _not_implemented("B4")
 
 
-@router.post("/billing/store-purchases", operation_id="createStorePurchase")
-async def create_store_purchase(
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del request, principal
-    _not_implemented("B5")
-
-
 @router.get("/app/status", operation_id="getAppStatus")
 async def get_app_status() -> None:
     _not_implemented("B6")
