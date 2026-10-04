@@ -7,17 +7,25 @@ import 'android_local_recording_channels.dart';
 import 'contracts/local_recovery_service.dart';
 
 final class AndroidLocalRecoveryService implements LocalRecoveryService {
-  AndroidLocalRecoveryService({required LocalRecordingRepository repository})
-    : _repository = repository;
+  AndroidLocalRecoveryService({
+    required LocalRecordingRepository repository,
+    required Future<String> Function() currentUserId,
+  }) : _repository = repository,
+       _currentUserId = currentUserId;
 
   final LocalRecordingRepository _repository;
+  final Future<String> Function() _currentUserId;
   final StreamController<LocalRecoveryProgress> _progress =
       StreamController<LocalRecoveryProgress>.broadcast();
 
   @override
   Future<LocalRecoveryCandidate?> findInterrupted() async {
+    final String userId = await _currentUserId();
     final Map<dynamic, dynamic>? raw = await androidLocalRecordingMethodChannel
-        .invokeMapMethod<dynamic, dynamic>('findInterrupted');
+        .invokeMapMethod<dynamic, dynamic>(
+          'findInterrupted',
+          <String, Object?>{'user_id': userId},
+        );
     if (raw == null) {
       return null;
     }
@@ -59,9 +67,13 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
     _progress.add(
       const LocalRecoveryProgress(step: LocalRecoveryStep.repairTail),
     );
+    final String userId = await _currentUserId();
     await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'recover',
-      <String, Object?>{'session_id': candidate.tempId},
+      <String, Object?>{
+        'session_id': candidate.tempId,
+        'user_id': userId,
+      },
     );
     final Map<dynamic, dynamic> event = await completed.timeout(
       const Duration(seconds: 30),
@@ -101,7 +113,10 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
     );
     await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'markRegistered',
-      <String, Object?>{'session_id': candidate.tempId},
+      <String, Object?>{
+        'session_id': candidate.tempId,
+        'user_id': userId,
+      },
     );
 
     return LocalRecoveryResult(
@@ -116,10 +131,14 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
   }
 
   @override
-  Future<void> deleteTemporary(String tempId) {
-    return androidLocalRecordingMethodChannel.invokeMethod<void>(
+  Future<void> deleteTemporary(String tempId) async {
+    final String userId = await _currentUserId();
+    await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'deleteInterrupted',
-      <String, Object?>{'session_id': tempId},
+      <String, Object?>{
+        'session_id': tempId,
+        'user_id': userId,
+      },
     );
   }
 
