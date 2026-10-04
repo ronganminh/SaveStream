@@ -1133,5 +1133,49 @@
     }
   },
   "secondLocalSlotBusy": "Cả hai slot Local đang được sử dụng.",
-  "secondLocalSlotReopenAction": "Mở lại slot Local #2"
+  "secondLocalSlotReopenAction": "Mở lại slot Local #2",
+  "localRecordingStorageLowTitle": "Bộ nhớ sắp đầy",
+  "localRecordingStorageLowBody": "Còn {free} · khoảng {minutes} phút ghi. Recording sẽ dừng an toàn khi còn dưới 250 MB.",
+  "@localRecordingStorageLowBody": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStorageCriticalTitle": "Bộ nhớ gần hết",
+  "localRecordingStorageCriticalBody": "Còn dưới 250 MB. Recording đang dừng an toàn và phần đã ghi đang được lưu.",
+  "localRecordingStopConfirmTitle": "Dừng recording?",
+  "localRecordingStopConfirmBody": "Phần đã ghi ({duration}) sẽ được lưu trên thiết bị này. Phút Free chưa dùng vẫn được giữ.",
+  "@localRecordingStopConfirmBody": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingContinueAction": "Tiếp tục record",
+  "localRecordingFinalizingTitle": "Đang hoàn tất bản ghi",
+  "localRecordingFinalizeStopStep": "Dừng ghi",
+  "localRecordingFinalizeFlushStep": "Ghi dữ liệu cuối vào file",
+  "localRecordingFinalizeVerifyStep": "Kiểm tra file",
+  "localRecordingFinalizeRegisterStep": "Thêm vào Bản ghi",
+  "localRecordingFinalizingBody": "Giữ SaveStream mở tới khi xong. File được lưu trên thiết bị này.",
+  "localRecordingCompletedTitle": "Đã lưu bản ghi",
+  "localRecordingCompletedMeta": "{duration} · {size} · Lưu trên thiết bị này",
+  "@localRecordingCompletedMeta": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingOpenAction": "Mở recording",
+  "localRecordingHomeAction": "Về Trang chủ"
 }
