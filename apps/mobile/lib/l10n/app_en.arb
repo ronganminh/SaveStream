@@ -879,5 +879,81 @@
         "type": "String"
       }
     }
-  }
+  },
+  "localRecordingStartTitle": "Record {name}",
+  "@localRecordingStartTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeStorage": "{value} free",
+  "@localRecordingFreeStorage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSlot": "Local slot {used}/{limit}",
+  "@localRecordingSlot": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingAndroidStartTitle": "You can switch apps",
+  "localRecordingAndroidStartBody": "Android shows an ongoing recording notification until you stop.",
+  "localRecordingStartAction": "Start recording",
+  "localRecordingActiveTitle": "Active recording",
+  "localRecordingElapsedSemantics": "Recording time {duration}",
+  "@localRecordingElapsedSemantics": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSavedHere": "Saved on this device · {size}",
+  "@localRecordingSavedHere": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeRemainingTitle": "Free time remaining",
+  "localRecordingRewardCaps": "Extensions 0/{extensionsCap} · Rewarded ads today {rewardsUsed}/{rewardsCap}",
+  "@localRecordingRewardCaps": {
+    "placeholders": {
+      "extensionsCap": {
+        "type": "int"
+      },
+      "rewardsUsed": {
+        "type": "int"
+      },
+      "rewardsCap": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStopAction": "Stop recording",
+  "localRecordingConnectingBody": "Connecting to {name}'s LIVE…",
+  "@localRecordingConnectingBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingErrorTitle": "Recording failed",
+  "localRecordingStatusActive": "Recording",
+  "localRecordingAndroidActiveTitle": "Recording in the background",
+  "localRecordingAndroidActiveBody": "You can switch apps. Android keeps an ongoing recording notification until you stop.",
+  "localRecordingIosActiveBody": "Keep SaveStream in the foreground and do not lock the screen while recording."
 }
