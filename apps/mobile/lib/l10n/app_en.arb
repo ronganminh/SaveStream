@@ -1064,5 +1064,7 @@
       }
     }
   },
-  "rewardMinutesWorkingAction": "Working…"
+  "rewardMinutesWorkingAction": "Working…",
+  "rewardMinutesLockedTitle": "Rewarded ads temporarily locked",
+  "rewardMinutesLockedBody": "Several rewards could not be confirmed. Try again later. Recording continues until your remaining Free time runs out."
 }
