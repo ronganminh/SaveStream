@@ -12,6 +12,7 @@ def test_d4_runtime_settings_contract() -> None:
     paths = document["paths"]
 
     assert paths["/admin/settings"]["get"]["operationId"] == "listAdminRuntimeSettings"
+    assert paths["/admin/system/status"]["get"]["operationId"] == "getAdminSystemStatus"
 
     update = paths["/admin/settings/{setting_key}"]["put"]
     assert update["operationId"] == "updateAdminRuntimeSetting"
@@ -31,3 +32,5 @@ def test_d4_runtime_settings_contract() -> None:
     assert "AdminRuntimeSetting" in schemas
     assert "AdminRuntimeSettingUpdateRequest" in schemas
     assert "AdminRuntimeSettingResetRequest" in schemas
+    assert "AdminSystemStatus" in schemas
+    assert "AdminSystemComponentHealth" in schemas
