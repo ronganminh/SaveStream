@@ -7,9 +7,9 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/device_info_service.dart';
 import '../../../platform/contracts/local_recovery_service.dart';
 import '../../../platform/platform_providers.dart';
+import '../../devices/domain/models/device_registration.dart';
 import 'controllers/local_recovery_providers.dart';
 
 class LocalRecoveryScreen extends ConsumerStatefulWidget {
@@ -445,13 +445,22 @@ class _NoRecoveryBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SsEmptyState(
-        icon: Icons.check_circle_outline_rounded,
-        title: context.l10n.localRecoveryNoneTitle,
-        message: context.l10n.localRecoveryNoneBody,
-        action: SsPrimaryButton(
-          label: context.l10n.localRecordingHomeAction,
-          onPressed: onHome,
+      child: Padding(
+        padding: const EdgeInsets.all(SsSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SsEmptyState(
+              icon: Icons.check_circle_outline_rounded,
+              title: context.l10n.localRecoveryNoneTitle,
+              message: context.l10n.localRecoveryNoneBody,
+            ),
+            const SizedBox(height: SsSpacing.lg),
+            SsPrimaryButton(
+              label: context.l10n.localRecordingHomeAction,
+              onPressed: onHome,
+            ),
+          ],
         ),
       ),
     );
