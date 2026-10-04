@@ -1064,5 +1064,7 @@
       }
     }
   },
-  "rewardMinutesWorkingAction": "Đang xử lý…"
+  "rewardMinutesWorkingAction": "Đang xử lý…",
+  "rewardMinutesLockedTitle": "Tạm khoá quảng cáo nhận thưởng",
+  "rewardMinutesLockedBody": "Có nhiều lượt xác nhận không thành công. Thử lại sau. Recording vẫn tiếp tục tới khi hết phút Free còn lại."
 }
