@@ -443,6 +443,7 @@ class LocalRecordingFinalizingBody extends StatelessWidget {
                       SsChecklistItem(
                         label: labels[index],
                         done: index < current.index,
+                        active: index == current.index,
                       ),
                   ],
                 ),
