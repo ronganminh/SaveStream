@@ -3800,9 +3800,15 @@ async def get_admin_overview(
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminOverviewResponse:
     _require_scope(principal, "admin:reports:read")
-    rows = await AdminOverviewService(session).series(days=days)
+    service = AdminOverviewService(session)
+    rows = await service.series(days=days)
+    month = await service.month_totals()
     items = [AdminDailyMetricResponse.model_validate(row) for row in rows]
     return AdminOverviewResponse(
         latest=items[-1] if items else None,
         series=items,
+        month_revenue_web_usd_minor=month["web"],
+        month_revenue_app_store_usd_minor=month["app_store"],
+        month_revenue_google_play_usd_minor=month["google_play"],
+        month_estimated_store_fee_usd_minor=month["store_fee"],
     )
