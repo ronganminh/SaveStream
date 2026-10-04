@@ -811,10 +811,23 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                         icon: Icons.play_arrow_rounded,
                         onPressed: _isOpening
                             ? null
-                            : () => _openArtifact(
-                                artifact,
-                                mode: LaunchMode.platformDefault,
-                              ),
+                            : () {
+                                final Uri uri = Uri.parse(
+                                  AppRoutes.recordingPlayer(
+                                    widget.recording.id,
+                                  ),
+                                ).replace(
+                                  queryParameters: <String, String>{
+                                    'title':
+                                        widget.recording.creatorDisplayName,
+                                    'duration': widget
+                                        .recording
+                                        .durationSeconds
+                                        .toString(),
+                                  },
+                                );
+                                context.push(uri.toString());
+                              },
                       ),
                     ),
                     const SizedBox(width: SsSpacing.sm),
@@ -921,7 +934,9 @@ class _ActionsCard extends StatelessWidget {
             color: Theme.of(context).colorScheme.error,
           ),
           label: Text(
-            l10n.deleteRecordingAction,
+            recording.engine == Engine.cloud
+                ? l10n.deleteCloudRecordingAction
+                : l10n.deleteRecordingAction,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
           ),
         ),
