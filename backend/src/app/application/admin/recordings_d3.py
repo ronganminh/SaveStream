@@ -392,7 +392,8 @@ class AdminRecordingService:
     async def capacity_metrics(self) -> dict[str, object]:
         now = utcnow()
         history_start = (
-            now.replace(minute=0, second=0, microsecond=0) - timedelta(days=7)
+            now.replace(minute=0, second=0, microsecond=0)
+            - timedelta(hours=(7 * 24) - 1)
         )
         current_in_use = int(
             await self.session.scalar(
