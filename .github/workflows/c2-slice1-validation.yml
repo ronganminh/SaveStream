@@ -1,0 +1,42 @@
+name: C2 Slice 1 Validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Format C2 slice
+        run: >-
+          dart format
+          tool/spike_local_recording
+          test/v2c_c2_local_recording_spike_test.dart
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Test C2 slice
+        run: flutter test test/v2c_c2_local_recording_spike_test.dart
+      - name: Print formatted C2 files
+        if: always()
+        run: |
+          echo '--- BEGIN STREAM PROBE ---'
+          cat tool/spike_local_recording/stream_probe.dart
+          echo '--- END STREAM PROBE ---'
+          echo '--- BEGIN RECORD CLI ---'
+          cat tool/spike_local_recording/bin/record_stream.dart
+          echo '--- END RECORD CLI ---'
+          echo '--- BEGIN C2 TEST ---'
+          cat test/v2c_c2_local_recording_spike_test.dart
+          echo '--- END C2 TEST ---'
