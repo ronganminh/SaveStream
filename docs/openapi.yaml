@@ -7687,6 +7687,691 @@
           }
         }
       }
+    },
+    "/support/reports": {
+      "post": {
+        "tags": [
+          "Support"
+        ],
+        "summary": "Submit an in-app support report",
+        "operationId": "createSupportReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportReportCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report accepted for 180-day retention",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportReportResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Related recording not found for current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-reports": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List retained in-app support reports",
+        "operationId": "listAdminSupportReports",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "assigned_to_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Support report queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSupportReportList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Support-report read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-reports/{report_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get support report detail",
+        "operationId": "getAdminSupportReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Support report detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSupportReport"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Support report not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update support report status or assignee",
+        "operationId": "updateAdminSupportReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminSupportReportUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Support report updated and audited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSupportReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/overview": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Read precomputed admin overview snapshots",
+        "operationId": "getAdminOverview",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 90,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregate-only admin overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverview"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/revenue.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export revenue report",
+        "operationId": "exportAdminRevenueReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily gross USD revenue by channel with estimated store fees.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/new-users.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export user growth report",
+        "operationId": "exportAdminNewUsersReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily new users, DAU/WAU/MAU, Free/Pro and rolling 7-day conversions.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/cloud-usage.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export cloud usage report",
+        "operationId": "exportAdminCloudUsageReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily cloud minutes and hours used.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/recordings.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export recording status report",
+        "operationId": "exportAdminRecordingStatusReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily recording counts grouped by status.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/support-reports/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export retained app support reports",
+        "operationId": "exportAdminSupportReports",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "assigned_to_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded app-report CSV export",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when more than 500 rows matched.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Support-report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -13587,6 +14272,360 @@
             "items": {
               "type": "string"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SupportReportCreateRequest": {
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 20000
+          },
+          "recording_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diagnostics": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SupportReportResponse": {
+        "type": "object",
+        "required": [
+          "report_id"
+        ],
+        "properties": {
+          "report_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSupportReport": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_email",
+          "recording_id",
+          "description",
+          "diagnostic_log",
+          "app_version",
+          "platform",
+          "status",
+          "assigned_to_user_id",
+          "resolved_at",
+          "expires_at",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "recording_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "diagnostic_log": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "app_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "platform": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "reviewing",
+              "resolved",
+              "closed"
+            ]
+          },
+          "assigned_to_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolved_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "updated_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSupportReportList": {
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminSupportReport"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSupportReportUpdateRequest": {
+        "type": "object",
+        "required": [
+          "status",
+          "reason"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "new",
+              "reviewing",
+              "resolved",
+              "closed"
+            ]
+          },
+          "assigned_to_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDailyMetric": {
+        "type": "object",
+        "required": [
+          "day",
+          "new_users",
+          "active_users_daily",
+          "active_users_weekly",
+          "active_users_monthly",
+          "free_users",
+          "pro_users",
+          "free_to_pro_weekly",
+          "revenue_web_usd_minor",
+          "revenue_app_store_usd_minor",
+          "revenue_google_play_usd_minor",
+          "estimated_store_fee_app_store_usd_minor",
+          "estimated_store_fee_google_play_usd_minor",
+          "recording_running",
+          "recording_waiting",
+          "recording_errors_24h",
+          "recording_total_24h",
+          "cloud_minutes_used",
+          "recording_status_counts",
+          "recording_capacity_limit",
+          "stuck_orders",
+          "open_complaints",
+          "computed_at"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date"
+          },
+          "new_users": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active_users_daily": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active_users_weekly": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active_users_monthly": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "free_users": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pro_users": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revenue_web_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revenue_app_store_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "revenue_google_play_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_waiting": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_errors_24h": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_capacity_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stuck_orders": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "open_complaints": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "computed_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "free_to_pro_weekly": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_store_fee_app_store_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_store_fee_google_play_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_total_24h": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cloud_minutes_used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_status_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminOverview": {
+        "type": "object",
+        "required": [
+          "latest",
+          "series",
+          "month_revenue_web_usd_minor",
+          "month_revenue_app_store_usd_minor",
+          "month_revenue_google_play_usd_minor",
+          "month_estimated_store_fee_usd_minor"
+        ],
+        "properties": {
+          "latest": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdminDailyMetric"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDailyMetric"
+            }
+          },
+          "month_revenue_web_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_revenue_app_store_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_revenue_google_play_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_estimated_store_fee_usd_minor": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "additionalProperties": false

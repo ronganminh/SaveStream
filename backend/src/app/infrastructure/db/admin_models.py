@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, Uuid, func
+from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, JSON, String, Text, UniqueConstraint, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.db.models import Base
@@ -374,5 +374,92 @@ class AdminSecuritySignal(Base):
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AdminSupportReport(Base):
+    __tablename__ = "admin_support_reports"
+    __table_args__ = (
+        Index("ix_admin_support_reports_status_created", "status", "created_at"),
+        Index("ix_admin_support_reports_assignee_status", "assigned_to_user_id", "status"),
+        Index("ix_admin_support_reports_user_created", "user_id", "created_at"),
+        Index("ix_admin_support_reports_expires", "expires_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    recording_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("recordings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    diagnostic_log: Mapped[dict[str, Any]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    app_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    platform: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="new")
+    assigned_to_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class AdminDailyMetric(Base):
+    __tablename__ = "admin_daily_metrics"
+
+    day: Mapped[date] = mapped_column(Date, primary_key=True)
+    new_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active_users_daily: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active_users_weekly: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    active_users_monthly: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    free_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pro_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    free_to_pro_weekly: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    revenue_web_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    revenue_app_store_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    revenue_google_play_usd_minor: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    estimated_store_fee_app_store_usd_minor: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    estimated_store_fee_google_play_usd_minor: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0
+    )
+    recording_running: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_waiting: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_errors_24h: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_total_24h: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    cloud_minutes_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    recording_status_counts: Mapped[dict[str, int]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    recording_capacity_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=6)
+    stuck_orders: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    open_complaints: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

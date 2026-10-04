@@ -1453,3 +1453,142 @@ export const adminSafetyApi = {
     );
   },
 };
+
+
+export type AdminDailyMetric = {
+  day: string;
+  new_users: number;
+  active_users_daily: number;
+  active_users_weekly: number;
+  active_users_monthly: number;
+  free_users: number;
+  pro_users: number;
+  free_to_pro_weekly: number;
+  revenue_web_usd_minor: number;
+  revenue_app_store_usd_minor: number;
+  revenue_google_play_usd_minor: number;
+  estimated_store_fee_app_store_usd_minor: number;
+  estimated_store_fee_google_play_usd_minor: number;
+  recording_running: number;
+  recording_waiting: number;
+  recording_errors_24h: number;
+  recording_total_24h: number;
+  cloud_minutes_used: number;
+  recording_status_counts: Record<string, number>;
+  recording_capacity_limit: number;
+  stuck_orders: number;
+  open_complaints: number;
+  computed_at: string;
+};
+
+export type AdminOverview = {
+  latest: AdminDailyMetric | null;
+  series: AdminDailyMetric[];
+  month_revenue_web_usd_minor: number;
+  month_revenue_app_store_usd_minor: number;
+  month_revenue_google_play_usd_minor: number;
+  month_estimated_store_fee_usd_minor: number;
+};
+
+export type AdminSupportReport = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  recording_id: string | null;
+  description: string;
+  diagnostic_log: Record<string, unknown>;
+  app_version: string | null;
+  platform: string | null;
+  status: "new" | "reviewing" | "resolved" | "closed";
+  assigned_to_user_id: string | null;
+  resolved_at: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export const adminD9Api = {
+  overview(days = 30) {
+    return apiClient.get<AdminOverview>(`/v1/admin/overview?days=${days}`);
+  },
+
+  exportReport(
+    kind: "revenue" | "new-users" | "cloud-usage" | "recordings",
+    dateFrom?: string,
+    dateTo?: string,
+  ) {
+    const query = new URLSearchParams();
+    if (dateFrom) query.set("date_from", dateFrom);
+    if (dateTo) query.set("date_to", dateTo);
+    const suffix = query.toString();
+    return apiClient.get<string>(
+      `/v1/admin/reports/${kind}.csv${suffix ? `?${suffix}` : ""}`,
+      { responseMode: "text" },
+    );
+  },
+
+  listSupportReports(filters: {
+    cursor?: string | null | undefined;
+    status?: string | undefined;
+    assignedToUserId?: string | undefined;
+    query?: string | undefined;
+    sortOrder?: "asc" | "desc" | undefined;
+  } = {}) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.status) query.set("status", filters.status);
+    if (filters.assignedToUserId) {
+      query.set("assigned_to_user_id", filters.assignedToUserId);
+    }
+    if (filters.query) query.set("query", filters.query);
+    query.set("sort_order", filters.sortOrder ?? "desc");
+    return apiClient.get<{
+      items: AdminSupportReport[];
+      next_cursor: string | null;
+      has_more: boolean;
+    }>(`/v1/admin/support-reports?${query.toString()}`);
+  },
+
+  exportSupportReports(filters: {
+    status?: string | undefined;
+    assignedToUserId?: string | undefined;
+    query?: string | undefined;
+    sortOrder?: "asc" | "desc" | undefined;
+  } = {}) {
+    const query = new URLSearchParams();
+    if (filters.status) query.set("status", filters.status);
+    if (filters.assignedToUserId) {
+      query.set("assigned_to_user_id", filters.assignedToUserId);
+    }
+    if (filters.query) query.set("query", filters.query);
+    query.set("sort_order", filters.sortOrder ?? "desc");
+    return apiClient.get<string>(
+      `/v1/admin/support-reports/export.csv?${query.toString()}`,
+      { responseMode: "text" },
+    );
+  },
+
+  getSupportReport(reportId: string) {
+    return apiClient.get<AdminSupportReport>(
+      `/v1/admin/support-reports/${encodeURIComponent(reportId)}`,
+    );
+  },
+
+  updateSupportReport(
+    reportId: string,
+    status: AdminSupportReport["status"],
+    assignedToUserId: string | null,
+    reason: string,
+  ) {
+    return apiClient.patch<AdminSupportReport>(
+      `/v1/admin/support-reports/${encodeURIComponent(reportId)}`,
+      {
+        json: {
+          status,
+          assigned_to_user_id: assignedToUserId,
+          reason,
+        },
+      },
+    );
+  },
+};

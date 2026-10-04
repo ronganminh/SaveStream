@@ -27,6 +27,7 @@ from app.api.routes.users import router as users_router
 from app.api.routes.watches import router as watches_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.store_webhooks import router as store_webhooks_router
+from app.api.routes.support import router as support_router
 from app.api.routes.v2_contract import router as v2_contract_router
 from app.infrastructure.db.session import Database
 from app.infrastructure.metrics.registry import MetricsMiddleware, MetricsRegistry
@@ -102,6 +103,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(billing_router)
     app.include_router(webhooks_router)
     app.include_router(store_webhooks_router)
+    app.include_router(support_router)
     app.include_router(v2_contract_router)
     app.include_router(admin_router)
     app.include_router(operations_router)

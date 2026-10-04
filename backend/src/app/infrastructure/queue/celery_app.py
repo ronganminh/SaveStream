@@ -59,6 +59,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.notification.b6_scan",
                 "schedule": float(cfg.retention_check_seconds),
             },
+            "admin-d9-rollup": {
+                "task": "savestream.admin.d9_rollup",
+                "schedule": 3600.0,
+            },
         },
     )
     return app

@@ -139,6 +139,13 @@ def admin_broadcast(broadcast_id: str) -> None:
     run_broadcast(broadcast_id)
 
 
+@celery_app.task(name="savestream.admin.d9_rollup")
+def admin_d9_rollup() -> dict[str, int | str]:
+    from app.infrastructure.admin.d9_worker import run_d9_rollup
+
+    return run_d9_rollup()
+
+
 @celery_app.task(name="savestream.admin.bulk_grant")
 def admin_bulk_grant(bulk_grant_id: str) -> None:
     from app.infrastructure.admin.d5_worker import run_bulk_grant
