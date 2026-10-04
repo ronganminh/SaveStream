@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -147,7 +148,7 @@ class ActiveRecordingBar extends StatelessWidget {
                 children: <Widget>[
                   for (final ActiveRecordingBarItem item in items)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: SsSpacing.sm),
                       child: SsRecordingTile(
                         title: item.creatorName,
                         subtitle: formatDurationHms(
