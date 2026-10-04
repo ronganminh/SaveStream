@@ -4,6 +4,11 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_principal, get_db_session
+from app.api.schemas.app_status import (
+    AppStatusResponse,
+    MaintenanceStatus,
+    MinimumSupportedVersions,
+)
 from app.api.schemas.entitlements import (
     EntitlementLimitsResponse,
     EntitlementResponse,
@@ -142,6 +147,20 @@ async def admob_ssv_webhook(request: Request) -> None:
     _not_implemented("B4")
 
 
-@router.get("/app/status", operation_id="getAppStatus")
-async def get_app_status() -> None:
-    _not_implemented("B6")
+@router.get(
+    "/app/status",
+    response_model=AppStatusResponse,
+    operation_id="getAppStatus",
+)
+async def get_app_status(request: Request) -> AppStatusResponse:
+    settings = request.app.state.settings
+    return AppStatusResponse(
+        min_supported_version=MinimumSupportedVersions(
+            android=settings.app_min_supported_android,
+            ios=settings.app_min_supported_ios,
+        ),
+        maintenance=MaintenanceStatus(
+            active=settings.maintenance_active,
+            eta=settings.maintenance_eta,
+        ),
+    )

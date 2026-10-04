@@ -51,6 +51,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.privacy.retention",
                 "schedule": float(cfg.retention_check_seconds),
             },
+            "b6-retention-notifications": {
+                "task": "savestream.notification.b6_scan",
+                "schedule": float(cfg.retention_check_seconds),
+            },
         },
     )
     return app

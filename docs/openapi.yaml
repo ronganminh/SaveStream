@@ -2719,9 +2719,9 @@
         ],
         "summary": "Get minimum supported app versions and maintenance state",
         "operationId": "getAppStatus",
-        "description": "Public V2 status endpoint. Contract frozen in B0; implemented in B6.",
+        "description": "Implemented in B6. Public server-controlled minimum app versions and maintenance state.",
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B6"
         },
         "responses": {
@@ -2731,16 +2731,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AppStatus"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -6340,7 +6330,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the cloud artifact expires under retention policy. V2 semantics are finalized in B6; null while not applicable."
+            "description": "Cloud retention expiry. B6 uses 30 days for accounts with a paid purchase and 7 days otherwise; null while not applicable."
           },
           "engine": {
             "type": "string",
@@ -6348,13 +6338,13 @@
               "cloud"
             ],
             "default": "cloud",
-            "description": "V2 field frozen in B0; populated in B6."
+            "description": "Recording engine. B6 cloud recordings return cloud."
           },
           "minutes_charged": {
             "type": "integer",
             "minimum": 0,
             "default": 0,
-            "description": "Cloud minutes charged for this recording. Failed recordings are fully refunded. Implemented in B6."
+            "description": "Actual cloud minutes charged for this recording. Failed recordings are fully refunded."
           },
           "queue_position": {
             "oneOf": [

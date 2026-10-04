@@ -30,6 +30,7 @@ def test_phase9_privacy_export_deletion_and_retention(tmp_path) -> None:
             ),
             account_deletion_grace_days=0,
             recording_retention_days=1,
+            recording_retention_days_free=1,
         )
         database = Database(settings.database_url)
         try:

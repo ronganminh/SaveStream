@@ -4,7 +4,7 @@ import base64
 import json
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Literal
 
 from sqlalchemy import and_, or_, select
@@ -394,6 +394,141 @@ async def ensure_purchase_completed_notification(
         kind="purchase_completed",
         title="Purchase completed",
         body=f"{order.credits} cloud minutes were added to your account.",
+        resource_type=None,
+        resource_id=None,
+        dedupe_key=dedupe_key,
+    )
+    session.add(notification)
+    await session.flush()
+    await OutboxWriter().enqueue(
+        session,
+        topic="notification.push",
+        aggregate_type="notification",
+        aggregate_id=str(notification.id),
+        payload={"notification_id": str(notification.id)},
+    )
+    return notification
+
+
+
+async def ensure_recording_expiring_notification(
+    session: AsyncSession,
+    recording: Recording,
+    *,
+    expires_at: datetime,
+) -> UserNotification | None:
+    preferences = await session.get(
+        NotificationPreference,
+        recording.user_id,
+    )
+    if preferences is not None and not preferences.recording_expiring:
+        return None
+
+    dedupe_key = f"recording:{recording.id}:recording_expiring"
+    notification_id = uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        f"savestream:{recording.user_id}:{dedupe_key}",
+    )
+    existing = await session.get(UserNotification, notification_id)
+    if existing is not None:
+        return existing
+
+    notification = UserNotification(
+        id=notification_id,
+        user_id=recording.user_id,
+        kind="recording_expiring",
+        title="Recording expires soon",
+        body="This cloud recording will expire in about 24 hours.",
+        resource_type="recording",
+        resource_id=str(recording.id),
+        dedupe_key=dedupe_key,
+    )
+    session.add(notification)
+    await session.flush()
+    await OutboxWriter().enqueue(
+        session,
+        topic="notification.push",
+        aggregate_type="notification",
+        aggregate_id=str(notification.id),
+        payload={
+            "notification_id": str(notification.id),
+            "expires_at": aware(expires_at).isoformat(),
+        },
+    )
+    return notification
+
+
+async def ensure_cloud_minutes_exhausted_notification(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    recording_id: uuid.UUID,
+) -> UserNotification:
+    dedupe_key = (
+        f"recording:{recording_id}:cloud_minutes_exhausted"
+    )
+    notification_id = uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        f"savestream:{user_id}:{dedupe_key}",
+    )
+    existing = await session.get(UserNotification, notification_id)
+    if existing is not None:
+        return existing
+
+    notification = UserNotification(
+        id=notification_id,
+        user_id=user_id,
+        kind="cloud_minutes_exhausted",
+        title="Cloud minutes exhausted",
+        body="Your available cloud recording minutes have reached zero.",
+        resource_type="recording",
+        resource_id=str(recording_id),
+        dedupe_key=dedupe_key,
+    )
+    session.add(notification)
+    await session.flush()
+    await OutboxWriter().enqueue(
+        session,
+        topic="notification.push",
+        aggregate_type="notification",
+        aggregate_id=str(notification.id),
+        payload={"notification_id": str(notification.id)},
+    )
+    return notification
+
+
+async def ensure_free_minutes_low_notification(
+    session: AsyncSession,
+    *,
+    user_id: uuid.UUID,
+    usage_day: date,
+    minutes_remaining: int,
+    threshold: int,
+) -> UserNotification | None:
+    if minutes_remaining > threshold:
+        return None
+    preferences = await session.get(NotificationPreference, user_id)
+    if preferences is not None and not preferences.free_minutes_low:
+        return None
+
+    dedupe_key = f"free-minutes-low:{usage_day.isoformat()}"
+    notification_id = uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        f"savestream:{user_id}:{dedupe_key}",
+    )
+    existing = await session.get(UserNotification, notification_id)
+    if existing is not None:
+        return existing
+
+    notification = UserNotification(
+        id=notification_id,
+        user_id=user_id,
+        kind="free_minutes_low",
+        title="Free recording minutes are low",
+        body=(
+            f"You have {max(minutes_remaining, 0)} free local "
+            "recording minutes left today."
+        ),
         resource_type=None,
         resource_id=None,
         dedupe_key=dedupe_key,
