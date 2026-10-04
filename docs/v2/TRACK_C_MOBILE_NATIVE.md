@@ -11,13 +11,17 @@
 - [x] C0 — Plugin và khung native
 - [x] C1 — Repository gọi API V2
 - [x] C2 — Thử nghiệm kỹ thuật ghi trên máy (**code xong; chưa test thiết bị, dời sang APK cuối**)
-- [ ] C3 — Ghi trên máy cho Android
-- [ ] C4 — Ghi trên máy cho iOS
+- [x] C3 — Ghi trên máy cho Android (**code xong; chưa test thiết bị thật, dời sang APK cuối**)
+- [ ] C4 — Ghi trên máy cho iOS (**hoãn hẳn; bản đầu Android-only**)
 - [ ] C5 — Trình phát, thư viện file, chia sẻ, tải bản cloud
 - [ ] C6 — Mua trong app
 - [ ] C7 — Quảng cáo và xin đồng ý
 - [ ] C8 — Push và deep link (**cần dự án Firebase**)
 - [ ] C9 — Hoàn thiện để phát hành
+
+## Chính sách phát hành nền tảng
+
+Theo quyết định của chủ repo ngày 2026-10-04, bản phát hành đầu tiên là **Android-only**. C4 được hoãn hẳn và không phải blocker cho C5–C9. Với C5–C9, iOS chỉ cần giữ ở mức **biên dịch được trong CI** (`ios-release-compile` xanh); không yêu cầu chạy thật, ký app, hay kiểm thử thiết bị iOS. Không được diễn giải compile-only là đã kiểm thử iOS runtime.
 
 ## Kiểm tra (chạy trong `apps/mobile` trước khi mở PR)
 
@@ -43,7 +47,7 @@ CI phải xanh: `flutter-checks` (có build Android App Bundle), `ios-release-co
 5. **Chuỗi hiển thị trong phần native** (thông báo "đang ghi" của Android, nhắc quay lại app của iOS): lấy từ các key `native*` Track A đã tạo trong ARB, truyền từ Dart xuống native. Không viết cứng trong Kotlin hay Swift.
 6. **Quyền hệ thống:** mỗi quyền thêm vào `AndroidManifest.xml` hoặc `Info.plist` phải có lý do ghi trong PR, và chuỗi mô tả quyền của iOS phải có cả EN và VI (`InfoPlist.strings`).
 7. **Test:** logic thuần Dart có unit test với bản giả của kênh native; phần chỉ chạy được trên thiết bị thật thì ghi kịch bản kiểm tay vào `apps/mobile/MOBILE_RELEASE.md`.
-8. Mỗi phase kết thúc bằng việc chạy app trên ít nhất một máy ảo Android và ghi kết quả vào PR. Phần iOS cần máy Mac có Xcode; nếu không có, nói rõ "chưa chạy trên iOS" trong PR.
+8. Mỗi phase kết thúc bằng việc chạy app trên ít nhất một máy ảo Android và ghi kết quả vào PR. Với C5–C9, iOS chỉ cần `ios-release-compile` xanh; không yêu cầu chạy thật trên iOS theo quyết định Android-only ở trên.
 
 ---
 
@@ -106,6 +110,8 @@ Chủ repo đọc và duyệt phương án rồi mới làm C3.
 
 ## C3 — Ghi trên máy cho Android
 
+**Trạng thái:** hoàn tất code và CI; chưa test thiết bị Android thật. Kiểm thử thiết bị thật được dời sang vòng APK cuối theo quyết định chủ repo.
+
 **Phụ thuộc:** C2 đã được duyệt, A3 đã merge, B4 đã merge (để chạy thật).
 
 1. Bản thật của `LocalRecorder` cho Android theo phương án đã duyệt: Foreground Service với thông báo "đang ghi" (kênh mức thấp, có nút Dừng; bấm Dừng thì dừng và hoàn tất file, không mở app).
@@ -122,15 +128,14 @@ Chủ repo đọc và duyệt phương án rồi mới làm C3.
 
 ## C4 — Ghi trên máy cho iOS
 
-**Trạng thái:** hoãn theo quyết định chủ repo ngày 2026-10-04; chờ môi trường Mac/Xcode và thiết bị iOS thật. Không chốt/merge C4 bằng compile-only.
+**Trạng thái:** **hoãn hẳn theo quyết định chủ repo ngày 2026-10-04.** Bản phát hành đầu tiên là Android-only. Không triển khai/chạy thật C4 trong vòng phát hành này; không yêu cầu Mac/Xcode, ký app, hoặc thiết bị iOS thật. C4 không chặn C5–C9.
 
-**Phụ thuộc:** C3. Cần máy Mac có Xcode và thiết bị iOS thật.
+Nếu sau này chủ repo mở lại C4, khi đó mới thực hiện các mục runtime iOS bên dưới. Trong C5–C9 hiện tại, yêu cầu duy nhất cho iOS là `ios-release-compile` phải xanh; compile-only không được xem là bằng chứng runtime.
 
 1. Bản thật của `LocalRecorder` cho iOS. Giữ màn hình sáng (`wakelock_plus`) chỉ khi đang ghi ở tiền cảnh.
 2. Khi app vào nền: gửi thông báo cục bộ nhắc quay lại app (dùng key `nativeKeepAppOpenReminder*`), và xử lý phiên bị gián đoạn theo kết quả C2.
 3. Khôi phục và báo trạng thái giống C3.
 4. Chuỗi mô tả quyền trong `InfoPlist.strings` (EN, VI).
-5. Nếu không có môi trường iOS: dừng, báo chủ repo, không merge code iOS chưa chạy thử.
 
 ---
 
