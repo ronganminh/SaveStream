@@ -1238,5 +1238,16 @@
   "localRecoveryFailedIosBody": "File tạm không còn đủ dữ liệu đọc được sau khi iOS dừng SaveStream.",
   "localRecoveryDeleteTempAction": "Xoá file tạm",
   "localRecoveryNoneTitle": "Không có recording bị gián đoạn",
-  "localRecoveryNoneBody": "Không có file Local tạm nào đang chờ khôi phục."
+  "localRecoveryNoneBody": "Không có file Local tạm nào đang chờ khôi phục.",
+  "homeRecoveryAvailableBody": "{name} · đã ghi {duration}, có thể khôi phục.",
+  "@homeRecoveryAvailableBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  }
 }
