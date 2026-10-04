@@ -89,9 +89,11 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     final LocalRecordingConfirmationController confirmation = ref.read(
       localRecordingConfirmationControllerProvider,
     );
-    final bool shouldConfirm = !skipConfirmation &&
+    final bool shouldConfirm =
+        !skipConfirmation &&
         await confirmation.shouldConfirm(
-          force: !entitlement.local.unlimited &&
+          force:
+              !entitlement.local.unlimited &&
               entitlement.local.minutesRemaining <= 0,
         );
     if (!mounted) return;
@@ -142,11 +144,7 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     if (engine == null || !mounted) return;
 
     if (engine == Engine.local) {
-      await _startLocalRecording(
-        watch,
-        entitlement,
-        skipConfirmation: true,
-      );
+      await _startLocalRecording(watch, entitlement, skipConfirmation: true);
       return;
     }
 
