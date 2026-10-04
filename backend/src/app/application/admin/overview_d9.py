@@ -149,8 +149,11 @@ class AdminOverviewService:
         positive_credit_users = set(
             (
                 await self.session.scalars(
-                    select(CreditAccount.user_id).where(
-                        CreditAccount.posted_balance > 0
+                    select(CreditAccount.user_id)
+                    .join(User, User.id == CreditAccount.user_id)
+                    .where(
+                        User.role == "user",
+                        CreditAccount.posted_balance > 0,
                     )
                 )
             ).all()
