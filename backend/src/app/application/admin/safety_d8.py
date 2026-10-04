@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,14 +12,20 @@ from app.application.admin.recordings_d3 import AdminRecordingService
 from app.application.creator_safety import normalize_creator_source
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
-from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES, RecordingStatus
+from app.domain.recordings.state import (
+    ACTIVE_RECORDING_STATUSES,
+    TERMINAL_RECORDING_STATUSES,
+    RecordingStatus,
+)
 from app.domain.watches.state import WatchStatus
 from app.infrastructure.db.admin_models import (
     AdminComplaintCase,
     AdminComplaintEvent,
     AdminCreatorBlock,
+    AdminSecuritySignal,
 )
-from app.infrastructure.db.models import UserNotification
+from app.infrastructure.db.local_recording_models import RewardIntent, RewardUserState
+from app.infrastructure.db.models import AuthSession, User, UserNotification
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.infrastructure.queue.outbox import OutboxWriter
@@ -458,6 +464,210 @@ class AdminSafetyService:
             )
         await self.session.flush()
         return block, stopped_recording_ids, paused_watch_ids
+
+    async def suspicious_accounts(
+        self,
+        *,
+        limit: int = 200,
+    ) -> list[dict[str, object]]:
+        now = utcnow()
+        day_start = now - timedelta(hours=24)
+        week_start = now - timedelta(days=7)
+
+        recent_users = list(
+            (
+                await self.session.scalars(
+                    select(User)
+                    .where(User.created_at >= week_start)
+                    .order_by(User.created_at.desc())
+                    .limit(5000)
+                )
+            ).all()
+        )
+        all_users = {
+            user.id: user
+            for user in (
+                await self.session.scalars(
+                    select(User).where(User.role == "user")
+                )
+            ).all()
+        }
+
+        session_rows = (
+            await self.session.execute(
+                select(
+                    AuthSession.user_id,
+                    AuthSession.ip_address,
+                    AuthSession.created_at,
+                ).where(
+                    AuthSession.created_at >= week_start,
+                    AuthSession.ip_address.is_not(None),
+                )
+            )
+        ).all()
+        ips_by_user: dict[uuid.UUID, set[str]] = {}
+        users_by_ip: dict[str, set[uuid.UUID]] = {}
+        recent_user_ids = {user.id for user in recent_users}
+        for user_id, ip_address, _created_at in session_rows:
+            if not ip_address:
+                continue
+            ips_by_user.setdefault(user_id, set()).add(ip_address)
+            if user_id in recent_user_ids:
+                users_by_ip.setdefault(ip_address, set()).add(user_id)
+
+        rate_rows = (
+            await self.session.execute(
+                select(
+                    AdminSecuritySignal.ip_address,
+                    AdminSecuritySignal.created_at,
+                ).where(
+                    AdminSecuritySignal.event_type == "rate_limited",
+                    AdminSecuritySignal.created_at >= day_start,
+                    AdminSecuritySignal.ip_address.is_not(None),
+                )
+            )
+        ).all()
+        rate_hits_by_ip: dict[str, int] = {}
+        for ip_address, _created_at in rate_rows:
+            if ip_address:
+                rate_hits_by_ip[ip_address] = rate_hits_by_ip.get(ip_address, 0) + 1
+
+        reward_rows = (
+            await self.session.execute(
+                select(RewardIntent.user_id, RewardIntent.status).where(
+                    RewardIntent.created_at >= week_start,
+                    RewardIntent.status.in_(("valid", "invalid")),
+                )
+            )
+        ).all()
+        reward_counts: dict[uuid.UUID, dict[str, int]] = {}
+        for user_id, status in reward_rows:
+            counts = reward_counts.setdefault(user_id, {"valid": 0, "invalid": 0})
+            counts[status] += 1
+
+        reward_states = {
+            state.user_id: state
+            for state in (
+                await self.session.scalars(select(RewardUserState))
+            ).all()
+        }
+
+        candidate_ids = set(all_users)
+        items: list[dict[str, object]] = []
+        for user_id in candidate_ids:
+            user = all_users[user_id]
+            user_ips = ips_by_user.get(user_id, set())
+            rate_hits = sum(rate_hits_by_ip.get(ip, 0) for ip in user_ips)
+            shared_signup_accounts = max(
+                (len(users_by_ip.get(ip, set())) for ip in user_ips),
+                default=0,
+            )
+            counts = reward_counts.get(user_id, {"valid": 0, "invalid": 0})
+            reward_total = counts["valid"] + counts["invalid"]
+            invalid_ratio = (
+                counts["invalid"] / reward_total if reward_total else 0.0
+            )
+            state = reward_states.get(user_id)
+            locked_until = state.locked_until if state is not None else None
+            invalid_streak = state.invalid_streak if state is not None else 0
+
+            reasons: list[str] = []
+            if rate_hits >= 3:
+                reasons.append("repeated_rate_limits")
+            if shared_signup_accounts >= 3:
+                reasons.append("shared_signup_ip")
+            if counts["invalid"] >= 3 and invalid_ratio >= 0.5:
+                reasons.append("high_invalid_reward_ratio")
+            if locked_until is not None and _aware(locked_until) > now:
+                reasons.append("reward_locked")
+            if invalid_streak >= 3 and "high_invalid_reward_ratio" not in reasons:
+                reasons.append("reward_invalid_streak")
+            if not reasons:
+                continue
+
+            items.append(
+                {
+                    "user_id": str(user.id),
+                    "email": user.email,
+                    "created_at": user.created_at,
+                    "rate_limit_hits_24h": rate_hits,
+                    "shared_signup_ip_accounts_7d": shared_signup_accounts,
+                    "reward_valid_7d": counts["valid"],
+                    "reward_invalid_7d": counts["invalid"],
+                    "reward_invalid_ratio_7d": invalid_ratio,
+                    "reward_invalid_streak": invalid_streak,
+                    "reward_locked_until": locked_until,
+                    "reasons": reasons,
+                }
+            )
+
+        items.sort(
+            key=lambda item: (
+                len(item["reasons"]),
+                int(item["rate_limit_hits_24h"]),
+                int(item["reward_invalid_7d"]),
+            ),
+            reverse=True,
+        )
+        return items[:limit]
+
+    async def delete_blocked_recordings(
+        self,
+        *,
+        block_id: str,
+        principal: AuthPrincipal,
+        reason: str,
+    ) -> tuple[AdminCreatorBlock, list[str], list[str]]:
+        try:
+            parsed = uuid.UUID(block_id)
+        except ValueError as exc:
+            raise ApplicationError(
+                "RESOURCE_NOT_FOUND", "Creator block not found", status_code=404
+            ) from exc
+        block = await self.session.get(AdminCreatorBlock, parsed)
+        if block is None or block.unblocked_at is not None:
+            raise ApplicationError(
+                "RESOURCE_NOT_FOUND", "Active creator block not found", status_code=404
+            )
+
+        recordings = await self._matching_recordings(
+            block.source_type,
+            block.source_value,
+        )
+        recording_service = AdminRecordingService(self.session, self.settings)
+        deleted: list[str] = []
+        pending: list[str] = []
+        for recording in recordings:
+            status = RecordingStatus(recording.status)
+            if status in TERMINAL_RECORDING_STATUSES:
+                await recording_service.delete_recording(str(recording.id))
+                deleted.append(str(recording.id))
+                continue
+            if status is RecordingStatus.WAITING_FOR_CLOUD_SLOT:
+                await recording_service.stop_recording(str(recording.id))
+                await recording_service.delete_recording(str(recording.id))
+                deleted.append(str(recording.id))
+                continue
+            if status in ACTIVE_RECORDING_STATUSES:
+                await recording_service.stop_recording(str(recording.id))
+                pending.append(str(recording.id))
+
+        if block.complaint_id is not None:
+            self.session.add(
+                AdminComplaintEvent(
+                    complaint_id=block.complaint_id,
+                    actor_user_id=principal.user_id,
+                    action="blocked_recordings_delete_requested",
+                    note=reason,
+                    metadata_json={
+                        "block_id": str(block.id),
+                        "deleted_recording_ids": deleted,
+                        "pending_stop_recording_ids": pending,
+                    },
+                )
+            )
+        await self.session.flush()
+        return block, deleted, pending
 
     async def unblock_creator(
         self,
