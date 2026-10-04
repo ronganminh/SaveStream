@@ -359,7 +359,7 @@ class SsChecklist extends StatelessWidget {
               item.done
                   ? Icons.check_circle_rounded
                   : item.active
-                  ? Icons.progress_activity_rounded
+                  ? Icons.sync_rounded
                   : Icons.radio_button_unchecked_rounded,
             ),
             title: Text(item.label),
