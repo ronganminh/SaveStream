@@ -56,15 +56,16 @@ class LocalRecordingScreen extends ConsumerWidget {
       );
     }
 
-    final LocalRecorderState state =
-        recorder.value ??
-        const LocalRecorderState(phase: LocalRecorderPhase.starting);
+    final LocalRecorderState state = _stateOrStarting(recorder);
     final LocalRecordingSession? session = controller.activeSession;
-    final int remainingSeconds = session == null
-        ? 0
-        : (session.grantedSeconds - state.recordedSeconds)
-            .clamp(0, session.grantedSeconds)
-            .toInt();
+    final int remainingSeconds = _remainingSeconds(
+      session,
+      state.recordedSeconds,
+    );
+    final bool canStop =
+        session != null && state.phase != LocalRecorderPhase.finalizing;
+    final LocalEntitlement localEntitlement = entitlement.requireValue.local;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -93,7 +94,7 @@ class LocalRecordingScreen extends ConsumerWidget {
                             children: <Widget>[
                               Text(
                                 creator.creatorDisplayName,
-                                style: Theme.of(context).textTheme.headlineSmall,
+                                style: textTheme.headlineSmall,
                               ),
                               Text(creator.creatorUsername),
                             ],
@@ -132,19 +133,16 @@ class LocalRecordingScreen extends ConsumerWidget {
                       state: state,
                       creatorName: creator.creatorDisplayName,
                     ),
-                    if (!entitlement.requireValue.local.unlimited &&
+                    if (!localEntitlement.unlimited &&
                         session != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.lg),
                       SsQuotaCard(
                         title: context.l10n.localRecordingFreeRemainingTitle,
                         value: _formatCountdown(remainingSeconds),
                         subtitle: context.l10n.localRecordingRewardCaps(
-                          entitlement
-                              .requireValue
-                              .local
-                              .extensionsCapPerRecording,
-                          entitlement.requireValue.local.rewardsUsedToday,
-                          entitlement.requireValue.local.rewardsCapPerDay,
+                          localEntitlement.extensionsCapPerRecording,
+                          localEntitlement.rewardsUsedToday,
+                          localEntitlement.rewardsCapPerDay,
                         ),
                       ),
                     ],
@@ -156,9 +154,7 @@ class LocalRecordingScreen extends ConsumerWidget {
                     SsPrimaryButton(
                       label: context.l10n.localRecordingStopAction,
                       icon: Icons.stop_circle_outlined,
-                      onPressed:
-                          session == null ||
-                              state.phase == LocalRecorderPhase.finalizing
+                      onPressed: !canStop
                           ? null
                           : () async {
                               await controller.stop(
@@ -176,6 +172,24 @@ class LocalRecordingScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  LocalRecorderState _stateOrStarting(
+    AsyncValue<LocalRecorderState> recorder,
+  ) {
+    return recorder.value ??
+        const LocalRecorderState(phase: LocalRecorderPhase.starting);
+  }
+
+  int _remainingSeconds(
+    LocalRecordingSession? session,
+    int recordedSeconds,
+  ) {
+    if (session == null) return 0;
+    return (session.grantedSeconds - recordedSeconds).clamp(
+      0,
+      session.grantedSeconds,
     );
   }
 
