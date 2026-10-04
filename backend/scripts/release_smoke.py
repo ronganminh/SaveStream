@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 import httpx
@@ -10,6 +11,59 @@ import httpx
 def fail(message: str) -> int:
     print(f"FAIL: {message}", file=sys.stderr)
     return 1
+
+
+def _check_app_status(client: httpx.Client, api: str) -> str | None:
+    response = client.get(api + "/v1/app/status")
+    if response.status_code != 200:
+        return f"/v1/app/status returned {response.status_code}"
+    try:
+        payload = response.json()
+    except ValueError:
+        return "/v1/app/status returned invalid JSON"
+    if not isinstance(payload, dict):
+        return "/v1/app/status returned a non-object payload"
+    versions = payload.get("min_supported_version")
+    maintenance = payload.get("maintenance")
+    if not isinstance(versions, dict) or not {
+        "android",
+        "ios",
+    }.issubset(versions):
+        return "/v1/app/status is missing min_supported_version.android/ios"
+    if not isinstance(maintenance, dict) or "active" not in maintenance:
+        return "/v1/app/status is missing maintenance.active"
+    return None
+
+
+def _check_entitlement(
+    client: httpx.Client,
+    api: str,
+    access_token: str | None,
+) -> str | None:
+    headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
+    response = client.get(api + "/v1/me/entitlement", headers=headers)
+    if not access_token:
+        if response.status_code != 401:
+            return (
+                "/v1/me/entitlement without release-smoke credentials must return "
+                f"401, got {response.status_code}"
+            )
+        return None
+    if response.status_code != 200:
+        return f"/v1/me/entitlement returned {response.status_code}"
+    try:
+        payload = response.json()
+    except ValueError:
+        return "/v1/me/entitlement returned invalid JSON"
+    if not isinstance(payload, dict):
+        return "/v1/me/entitlement returned a non-object payload"
+    if payload.get("plan") not in {"free", "pro"}:
+        return "/v1/me/entitlement returned an invalid plan"
+    if not isinstance(payload.get("limits"), dict):
+        return "/v1/me/entitlement is missing limits"
+    if not isinstance(payload.get("local"), dict):
+        return "/v1/me/entitlement is missing local entitlement"
+    return None
 
 
 def main() -> int:
@@ -34,6 +88,9 @@ def main() -> int:
 
     api = args.api_origin.rstrip("/")
     frontend = args.frontend_origin.rstrip("/")
+    release_smoke_access_token = os.environ.get(
+        "SAVESTREAM_RELEASE_SMOKE_ACCESS_TOKEN"
+    )
 
     with httpx.Client(
         timeout=args.timeout,
@@ -43,6 +100,17 @@ def main() -> int:
             response = client.get(api + path)
             if response.status_code != 200:
                 return fail(f"{path} returned {response.status_code}")
+
+        app_status_error = _check_app_status(client, api)
+        if app_status_error:
+            return fail(app_status_error)
+        entitlement_error = _check_entitlement(
+            client,
+            api,
+            release_smoke_access_token,
+        )
+        if entitlement_error:
+            return fail(entitlement_error)
 
         live = client.get(api + "/health/live")
         required_headers = {
@@ -127,7 +195,16 @@ def main() -> int:
     print("production release smoke passed")
     print(f"api origin: {api}")
     print(f"frontend origin: {frontend}")
-    print("checked: health, headers, CORS, docs disabled, auth boundary, webhook signature")
+    entitlement_mode = (
+        "authenticated entitlement"
+        if release_smoke_access_token
+        else "entitlement auth boundary"
+    )
+    print(
+        "checked: health, app status, "
+        f"{entitlement_mode}, headers, CORS, docs disabled, auth boundary, "
+        "webhook signature"
+    )
     return 0
 
 

@@ -146,3 +146,47 @@ Operations alerts always log. SMTP is additional when `SAVESTREAM_OPS_ALERT_EMAI
 - provider event ID/reference when payment-related.
 
 Do not collect or paste access tokens, refresh tokens, payment secrets, webhook secrets or storage credentials into tickets.
+
+
+## V2 recording capacity before paid launch
+
+Production cloud recordings run on the dedicated `recordings` Celery queue. The current
+production compose default is **6 concurrent recording worker slots**. V2 allows each Pro
+account up to **3 simultaneous cloud recordings**, so six worker slots can saturate with only
+two fully active Pro accounts.
+
+Capacity planning rule:
+
+```text
+required_recording_slots =
+  ceil(expected_simultaneously_active_pro_accounts * 3 * headroom_factor)
+```
+
+Use a headroom factor of at least `1.25` for launch planning, then validate the chosen value
+with a load probe on the actual VPS before changing production. Do not raise concurrency from
+the runbook alone: every recording slot can consume stream bandwidth, temporary disk,
+FFmpeg/process memory, outbound upload bandwidth, Redis/Celery capacity, and object-storage
+throughput.
+
+Before enabling paid sales:
+
+1. Measure CPU, memory, temporary disk usage, disk I/O and network ingress/egress while running
+   representative simultaneous recordings.
+2. Check the `recordings` queue depth and task start delay. A growing queue means worker
+   capacity is below demand even if API latency is healthy.
+3. Increase `SAVESTREAM_RECORDING_CONCURRENCY` in the production deployment environment from
+   the current default of 6 only to the highest value proven stable by the load test.
+4. Restart only the dedicated recorder worker and verify its effective Celery concurrency.
+5. Run `backend/scripts/release_smoke.py` and create several concurrent test recordings.
+6. Watch active recordings, waiting-for-cloud-slot count, missed-no-cloud-slot count, recorder
+   CPU/memory, temporary disk, upload failures and recording start latency for at least one
+   representative peak window.
+
+Per-user cloud-slot waiting is separate from system capacity. `waiting_for_cloud_slot` means
+the user has exhausted their own 3-slot entitlement; a Celery task waiting in the
+`recordings` queue means the whole deployment has exhausted recorder workers. Both need to be
+monitored because increasing the per-user limit does not increase server capacity.
+
+If recorder CPU, memory, disk or bandwidth approaches the host limit, scale recorder capacity
+before increasing paid traffic. Never compensate by weakening the per-user credit or
+entitlement checks.

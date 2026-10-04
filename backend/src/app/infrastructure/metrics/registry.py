@@ -70,13 +70,22 @@ class MetricsRegistry:
                     % (_escape(method), _escape(route), count_value)
                 )
 
-        gauges = {
+        gauges: dict[str, int | float] = {
             "savestream_active_recordings": snapshot.active_recordings,
             "savestream_failed_recordings_recent": snapshot.failed_recordings_recent,
             "savestream_pending_outbox_events": snapshot.pending_outbox_events,
             "savestream_unprocessed_payment_events": snapshot.unprocessed_payment_events,
             "savestream_pending_payment_orders": snapshot.pending_payment_orders,
             "savestream_paused_error_watches": snapshot.paused_error_watches,
+            "savestream_waiting_for_cloud_slot_recordings": (
+                snapshot.waiting_for_cloud_slot_recordings
+            ),
+            "savestream_missed_no_cloud_slot_recordings": (
+                snapshot.missed_no_cloud_slot_recordings
+            ),
+            "savestream_local_recording_sessions": snapshot.local_recording_sessions,
+            "savestream_reward_validity_ratio": snapshot.reward_validity_ratio,
+            "savestream_store_transactions": snapshot.store_transactions,
         }
         for name, value in gauges.items():
             lines.append(f"# TYPE {name} gauge")
