@@ -1238,5 +1238,16 @@
   "localRecoveryFailedIosBody": "The temporary file does not contain enough readable data after iOS stopped SaveStream.",
   "localRecoveryDeleteTempAction": "Delete temporary file",
   "localRecoveryNoneTitle": "No interrupted recording found",
-  "localRecoveryNoneBody": "There is no temporary Local recording waiting for recovery."
+  "localRecoveryNoneBody": "There is no temporary Local recording waiting for recovery.",
+  "homeRecoveryAvailableBody": "{name} · {duration} recorded can be recovered.",
+  "@homeRecoveryAvailableBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  }
 }
