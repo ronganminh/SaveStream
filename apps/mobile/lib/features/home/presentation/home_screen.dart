@@ -276,7 +276,7 @@ class _HomeDashboard extends StatelessWidget {
     return <Widget>[
       if (secondSlotOpen && secondaryActive) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
-        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt),
+        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt!),
       ],
       if (secondSlotExpired) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
@@ -489,6 +489,11 @@ class _HomeDashboard extends StatelessWidget {
           engine: Engine.cloud,
           onTap: () => context.push(AppRoutes.recordingDetail(active.id)),
         ),
+        const SizedBox(height: SsSpacing.md),
+        SsInlineAlert(
+          title: l10n.cloudLabel,
+          message: l10n.cloudRecordingServerBody,
+        ),
       ],
       const SizedBox(height: SsSpacing.lg),
       SsQuotaCard(
@@ -513,23 +518,25 @@ class _HomeDashboard extends StatelessWidget {
           tone: SsInlineAlertTone.info,
         ),
       ],
-      const SizedBox(height: SsSpacing.lg),
-      SsSectionHeader(
-        title: l10n.channelsTitle,
-        actionLabel: l10n.sectionExampleAction,
-        onAction: () => context.go(AppRoutes.channels),
-      ),
-      const SizedBox(height: SsSpacing.sm),
-      for (final WatchSummary watch in data.featuredWatches)
-        Padding(
-          padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-          child: SsCreatorTile(
-            name: watch.creatorDisplayName,
-            handle: watch.creatorUsername,
-            isLive: watch.isLive,
-            onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
-          ),
+      if (active == null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsSectionHeader(
+          title: l10n.channelsTitle,
+          actionLabel: l10n.sectionExampleAction,
+          onAction: () => context.go(AppRoutes.channels),
         ),
+        const SizedBox(height: SsSpacing.sm),
+        for (final WatchSummary watch in data.featuredWatches)
+          Padding(
+            padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+            child: SsCreatorTile(
+              name: watch.creatorDisplayName,
+              handle: watch.creatorUsername,
+              isLive: watch.isLive,
+              onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+            ),
+          ),
+      ],
     ];
   }
 }
