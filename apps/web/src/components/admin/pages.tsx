@@ -4,10 +4,10 @@ import { AdminSystemPage as LegacyAdminSystemPage } from "@/components/app-pages
 import {
   AdminErrorsPage as LegacyAdminErrorsPage,
   AdminJobDetailPage as LegacyAdminJobDetailPage,
-  AdminJobsPage as LegacyAdminJobsPage,
   AdminWorkersPage as LegacyAdminWorkersPage,
 } from "@/components/app-pages-more";
 import { AdminMfaGate } from "@/components/admin/foundation";
+import { AdminRecordingOperationsPage } from "@/components/admin/recordings-d3";
 
 function ProtectedAdminPage({ children }: { children: ReactNode }) {
   return <AdminMfaGate>{children}</AdminMfaGate>;
@@ -32,7 +32,7 @@ export function AdminWorkersPage() {
 export function AdminJobsPage() {
   return (
     <ProtectedAdminPage>
-      <LegacyAdminJobsPage />
+      <AdminRecordingOperationsPage />
     </ProtectedAdminPage>
   );
 }
