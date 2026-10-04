@@ -127,6 +127,13 @@ from app.api.schemas.admin_d8 import (
     AdminSuspiciousAccountListResponse,
     AdminSuspiciousAccountResponse,
 )
+from app.api.schemas.admin_d9 import (
+    AdminDailyMetricResponse,
+    AdminOverviewResponse,
+    AdminSupportReportListResponse,
+    AdminSupportReportResponse,
+    AdminSupportReportUpdateRequest,
+)
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
     AdminBroadcastListResponse,
@@ -154,10 +161,12 @@ from app.api.serializers.watches import watch_response
 from app.application.admin.bulk_grants_d5 import AdminBulkGrantService
 from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
+from app.application.admin.overview_d9 import AdminOverviewService
 from app.application.admin.payments_d2 import AdminFinanceService
 from app.application.admin.operations_d6 import AdminV2OperationsService
 from app.application.admin.recordings_d3 import AdminRecordingService
 from app.application.runtime_settings import RuntimeSettingsService
+from app.application.support_reports import SupportReportService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.admin.system_d4 import AdminSystemStatusService
@@ -171,7 +180,7 @@ from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
-from app.infrastructure.db.admin_models import AdminComplaintCase
+from app.infrastructure.db.admin_models import AdminComplaintCase, AdminSupportReport
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.payments.factory import selected_payment_provider
 
@@ -3660,4 +3669,140 @@ async def delete_admin_blocked_recordings(
         block_id=str(block.id),
         deleted_recording_ids=deleted,
         pending_stop_recording_ids=pending,
+    )
+
+
+
+def _admin_support_report_response(
+    report: AdminSupportReport,
+    user_email: str,
+) -> AdminSupportReportResponse:
+    return AdminSupportReportResponse(
+        id=str(report.id),
+        user_id=str(report.user_id),
+        user_email=user_email,
+        recording_id=str(report.recording_id) if report.recording_id else None,
+        description=report.description,
+        diagnostic_log=report.diagnostic_log,
+        app_version=report.app_version,
+        platform=report.platform,
+        status=cast(
+            Literal["new", "reviewing", "resolved", "closed"],
+            report.status,
+        ),
+        assigned_to_user_id=(
+            str(report.assigned_to_user_id)
+            if report.assigned_to_user_id
+            else None
+        ),
+        resolved_at=report.resolved_at,
+        expires_at=report.expires_at,
+        created_at=report.created_at,
+        updated_at=report.updated_at,
+    )
+
+
+@router.get(
+    "/support-reports",
+    response_model=AdminSupportReportListResponse,
+)
+async def list_admin_support_reports(
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    assigned_to_user_id: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSupportReportListResponse:
+    _require_scope(principal, "admin:support_reports:read")
+    rows, next_cursor, has_more = await SupportReportService(
+        session
+    ).list_admin_reports(
+        limit=limit,
+        cursor=cursor,
+        status=status_filter,
+        assigned_to_user_id=assigned_to_user_id,
+        query=query,
+    )
+    return AdminSupportReportListResponse(
+        items=[
+            _admin_support_report_response(report, email)
+            for report, email in rows
+        ],
+        next_cursor=next_cursor,
+        has_more=has_more,
+    )
+
+
+@router.get(
+    "/support-reports/{report_id}",
+    response_model=AdminSupportReportResponse,
+)
+async def get_admin_support_report(
+    report_id: str,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSupportReportResponse:
+    _require_scope(principal, "admin:support_reports:read")
+    report, email = await SupportReportService(session).get_admin_report(report_id)
+    return _admin_support_report_response(report, email)
+
+
+@router.patch(
+    "/support-reports/{report_id}",
+    response_model=AdminSupportReportResponse,
+)
+async def update_admin_support_report(
+    report_id: str,
+    payload: AdminSupportReportUpdateRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSupportReportResponse:
+    _require_scope(principal, "admin:support_reports:write")
+    service = SupportReportService(session)
+    report, email, before = await service.update_admin_report(
+        report_id=report_id,
+        status=payload.status,
+        assigned_to_user_id=payload.assigned_to_user_id,
+    )
+    after = {
+        "status": report.status,
+        "assigned_to_user_id": (
+            str(report.assigned_to_user_id)
+            if report.assigned_to_user_id
+            else None
+        ),
+    }
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.support_report.updated",
+        resource_type="support_report",
+        resource_id=str(report.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state=before,
+        after_state=after,
+    )
+    await session.commit()
+    return _admin_support_report_response(report, email)
+
+
+@router.get(
+    "/overview",
+    response_model=AdminOverviewResponse,
+)
+async def get_admin_overview(
+    days: int = Query(default=30, ge=1, le=90),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminOverviewResponse:
+    _require_scope(principal, "admin:reports:read")
+    rows = await AdminOverviewService(session).series(days=days)
+    items = [AdminDailyMetricResponse.model_validate(row) for row in rows]
+    return AdminOverviewResponse(
+        latest=items[-1] if items else None,
+        series=items,
     )
