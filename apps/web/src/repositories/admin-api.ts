@@ -1463,13 +1463,18 @@ export type AdminDailyMetric = {
   active_users_monthly: number;
   free_users: number;
   pro_users: number;
-  free_to_pro_users: number;
+  free_to_pro_weekly: number;
   revenue_web_usd_minor: number;
   revenue_app_store_usd_minor: number;
   revenue_google_play_usd_minor: number;
+  estimated_store_fee_app_store_usd_minor: number;
+  estimated_store_fee_google_play_usd_minor: number;
   recording_running: number;
   recording_waiting: number;
   recording_errors_24h: number;
+  recording_total_24h: number;
+  cloud_minutes_used: number;
+  recording_status_counts: Record<string, number>;
   recording_capacity_limit: number;
   stuck_orders: number;
   open_complaints: number;
@@ -1479,6 +1484,10 @@ export type AdminDailyMetric = {
 export type AdminOverview = {
   latest: AdminDailyMetric | null;
   series: AdminDailyMetric[];
+  month_revenue_web_usd_minor: number;
+  month_revenue_app_store_usd_minor: number;
+  month_revenue_google_play_usd_minor: number;
+  month_estimated_store_fee_usd_minor: number;
 };
 
 export type AdminSupportReport = {
