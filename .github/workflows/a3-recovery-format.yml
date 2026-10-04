@@ -1,0 +1,48 @@
+name: A3 Recovery Format
+
+on:
+  push:
+    branches:
+      - tmp/a3-format-recovery-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Format A3 recovery files
+        run: |
+          dart format \
+            lib/platform/contracts/local_recovery_service.dart \
+            lib/platform/fakes/fake_local_recovery_service.dart \
+            lib/platform/platform_providers.dart \
+            lib/features/local_recordings/presentation/controllers/local_recovery_providers.dart \
+            lib/features/local_recordings/presentation/local_recovery_screen.dart \
+            lib/features/home/presentation/home_screen.dart \
+            lib/app/router/app_routes.dart \
+            lib/app/router/app_router.dart \
+            test/v2a_a3_local_recovery_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "style(mobile): apply Dart 3.47.0 recovery formatter [formatted]"
+          git push
