@@ -26,7 +26,7 @@
 - [x] D1 — Người dùng và hỗ trợ khách hàng — **đã merge PR #88 vào main**
 - [x] D2 — Thanh toán, hoàn tiền, giờ cloud — **đã merge PR #99 vào main**
 - [x] D3 — Bản ghi, kênh theo dõi, hàng chờ slot — **đã merge PR #110 vào main**
-- [ ] D4 — Cấu hình hệ thống sửa từ giao diện
+- [x] D4 — Cấu hình hệ thống sửa từ giao diện — **đã merge PR #115 vào main**
 - [x] D5 — Gói, giá, khuyến mãi, tặng giờ — **đã merge PR #101 vào main**
 - [ ] D6 — Vận hành V2: giao dịch store, ghi trên máy, phần thưởng, thiết bị
 - [x] D7 — Lưu trữ, email, thông báo hàng loạt — **đã merge PR #90 vào main**
@@ -43,6 +43,10 @@
 - **Phạm vi D1 đã chốt:** Support có thao tác hỗ trợ người dùng nhưng không có scope tiền/hoàn tiền; Finance chỉ đọc dữ liệu người dùng; thao tác khoá/mở khoá và xoá tài khoản cần step-up + reason; “View as user” chỉ đọc, không cấp token/session của user và luôn audit; recording trong D1 chỉ hiện metadata, không phát/tải.
 - **D2 hoàn tất.** PR #99 — `V2 D2 — Admin payments, refunds and cloud minutes` đã merge vào `main` ngày 2026-10-04 (UTC+7).
 - **D3 hoàn tất.** PR #110 — `V2 D3 — Admin recordings, watches and cloud-slot operations` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D4 hoàn tất.** PR #115 — `V2 D4 — Runtime settings and admin system configuration` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D4 merge commit:** `41b78c837bb069c19547d150c952da3d6432533c`.
+- **CI cuối D4 trên head `951cb5d58678aadd54e218041d9391d8af16f27a`:** `Backend CI`, `Web CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh.
+- **Phạm vi D4 đã chốt:** runtime settings lưu DB + cache ngắn + allowlist an toàn; Owner-only update/reset có step-up + reason + audit; Track B consumers đọc runtime config; payment channel gates; maintenance/min-version; System health + Owner settings UI; không expose secret/infrastructure credentials.
 - **D3 merge commit:** `29ce8229830b2b5ac4332dd71a85466b5241e89c`.
 - **CI cuối D3 trên rebased head `5bc69502067b43323fb6e9a8c4d3222c77f17a20`:** `Backend CI`, `Web CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh.
 - **Rebase/main gate D3:** trước merge, nhánh D3 ở trạng thái `behind 0` trên `main` đã hoàn tất Track B B0→B8.
@@ -60,8 +64,8 @@
 - **CI cuối D7 trên head `fc4bb6f006fcd1cd4641e8c9177548f37774dfe9`:** `Backend CI` #482 xanh trên Python 3.11 và 3.12, `Web CI` #164 xanh, `Backend E2E` #88 xanh, `Mobile Backend E2E` #188 xanh.
 - **Rebase/main gate D7:** trước merge, nhánh `v2/d7-admin-storage-email-broadcasts` ở trạng thái `ahead`, `behind 0` so với `main`; không cần rebase bổ sung ở gate cuối.
 - **Phạm vi D7 đã chốt:** storage summary + bounded orphan scan/delete, email logs giữ 90 ngày + resend, template override/preview/test/reset, broadcast system/marketing theo opt-in qua in-app/push/email; thao tác nguy hiểm dùng step-up + reason, mutation/sensitive read được audit.
-- **Các blocker Track D còn lại:** Track B B0→B8 đã hoàn tất; D4, D6 và D8 đều đã mở khóa. D9 còn chờ D6.
-- **Bước Track D tiếp theo:** D4, sau đó D6.
+- **Các blocker Track D còn lại:** Track B B0→B8 đã hoàn tất; D6 và D8 đã mở khóa. D9 còn chờ D6.
+- **Bước Track D tiếp theo:** D6.
 
 ## Kiểm tra
 
