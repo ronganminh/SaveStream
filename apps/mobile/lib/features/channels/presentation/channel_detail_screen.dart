@@ -11,6 +11,7 @@ import '../../../l10n/l10n.dart';
 import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../local_recordings/presentation/local_recording_start_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
@@ -48,18 +49,30 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
   ) async {
     if (entitlement.plan != Plan.free) return;
 
-    final deviceInfo = ref.read(deviceInfoServiceProvider);
-    final int freeStorageBytes = await deviceInfo.freeStorageBytes;
+    final LocalRecordingConfirmationController confirmation = ref.read(
+      localRecordingConfirmationControllerProvider,
+    );
+    final bool shouldConfirm = await confirmation.shouldConfirm(
+      force: entitlement.local.minutesRemaining <= 0,
+    );
     if (!mounted) return;
 
-    final bool confirmed = await showLocalRecordingStartSheet(
-      context: context,
-      creatorName: watch.creatorDisplayName,
-      entitlement: entitlement,
-      platform: deviceInfo.platform,
-      freeStorageBytes: freeStorageBytes,
-    );
-    if (!confirmed || !mounted) return;
+    if (shouldConfirm) {
+      final deviceInfo = ref.read(deviceInfoServiceProvider);
+      final int freeStorageBytes = await deviceInfo.freeStorageBytes;
+      if (!mounted) return;
+
+      final bool confirmed = await showLocalRecordingStartSheet(
+        context: context,
+        creatorName: watch.creatorDisplayName,
+        entitlement: entitlement,
+        platform: deviceInfo.platform,
+        freeStorageBytes: freeStorageBytes,
+      );
+      if (!confirmed || !mounted) return;
+      await confirmation.markConfirmed();
+      if (!mounted) return;
+    }
 
     try {
       final LocalRecordingController recordingController = ref.read(
