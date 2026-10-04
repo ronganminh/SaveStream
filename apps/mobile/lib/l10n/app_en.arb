@@ -1132,5 +1132,6 @@
       }
     }
   },
-  "secondLocalSlotBusy": "Both Local recording slots are already in use."
+  "secondLocalSlotBusy": "Both Local recording slots are already in use.",
+  "secondLocalSlotReopenAction": "Open Local slot #2 again"
 }
