@@ -143,10 +143,7 @@ class RewardedMinutesController extends Notifier<RewardedMinutesState> {
     }
   }
 
-  void _applyApiException(
-    ApiException error, {
-    required int extensionCount,
-  }) {
+  void _applyApiException(ApiException error, {required int extensionCount}) {
     final RewardedMinutesPhase phase = switch (error.code) {
       'REWARD_LOCKED' => RewardedMinutesPhase.locked,
       'REWARD_DAILY_CAP_REACHED' => RewardedMinutesPhase.dailyCap,
@@ -156,8 +153,7 @@ class RewardedMinutesController extends Notifier<RewardedMinutesState> {
     state = state.copyWith(
       phase: phase,
       extensionCount: extensionCount,
-      errorMessage:
-          phase == RewardedMinutesPhase.error ? error.message : null,
+      errorMessage: phase == RewardedMinutesPhase.error ? error.message : null,
       clearError: phase != RewardedMinutesPhase.error,
     );
   }
