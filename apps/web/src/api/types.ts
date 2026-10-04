@@ -121,7 +121,10 @@ export type RecordingResponse = {
   error: RecordingError | null;
   created_at: string;
   updated_at: string;
+  engine?: "cloud";
   expires_at?: string | null;
+  minutes_charged?: number;
+  queue_position?: number | null;
 };
 
 export type RecordingListResponse = {
