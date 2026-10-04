@@ -7,6 +7,12 @@ enum AppNotificationType {
   other,
 }
 
+/// V2 notification kinds added by the product contract.
+///
+/// Kept separate from [AppNotificationType] so Track C can map the new wire
+/// values without forcing presentation changes before A6.
+enum AppNotificationV2Type { creatorLive, recordingExpiring, freeMinutesLow }
+
 class AppNotification {
   const AppNotification({
     required this.id,
@@ -17,6 +23,7 @@ class AppNotification {
     required this.createdAt,
     this.resourceType,
     this.resourceId,
+    this.v2Type,
   });
 
   final String id;
@@ -27,6 +34,7 @@ class AppNotification {
   final DateTime createdAt;
   final String? resourceType;
   final String? resourceId;
+  final AppNotificationV2Type? v2Type;
 
   /// The Recording this notification points at, when it has one.
   String? get recordingId => resourceType == 'recording' ? resourceId : null;
@@ -41,6 +49,7 @@ class AppNotification {
       createdAt: createdAt,
       resourceType: resourceType,
       resourceId: resourceId,
+      v2Type: v2Type,
     );
   }
 }

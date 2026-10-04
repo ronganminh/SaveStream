@@ -28,6 +28,37 @@ final class MockNotificationsRepository extends MockRepositoryBase
       read: true,
       createdAt: DateTime.utc(2026, 10, 2, 8),
     ),
+    AppNotification(
+      id: 'notification-creator-live',
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.creatorLive,
+      title: 'Creator is LIVE',
+      body: '@alex.live is LIVE now.',
+      read: false,
+      createdAt: DateTime.utc(2026, 10, 2, 7, 45),
+      resourceType: 'watch',
+      resourceId: 'watch_001',
+    ),
+    AppNotification(
+      id: 'notification-expiring',
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.recordingExpiring,
+      title: 'Recording expires soon',
+      body: 'A cloud recording will expire soon.',
+      read: false,
+      createdAt: DateTime.utc(2026, 10, 2, 7, 30),
+      resourceType: 'recording',
+      resourceId: 'recording-completed',
+    ),
+    AppNotification(
+      id: 'notification-free-minutes-low',
+      type: AppNotificationType.other,
+      v2Type: AppNotificationV2Type.freeMinutesLow,
+      title: 'Free minutes are running low',
+      body: 'You are close to using today\'s Free recording minutes.',
+      read: false,
+      createdAt: DateTime.utc(2026, 10, 2, 7, 15),
+    ),
   ];
 
   @override
@@ -60,6 +91,9 @@ final class MockNotificationPreferencesRepository extends MockRepositoryBase
     recordingStarted: true,
     recordingReady: true,
     recordingFailed: true,
+    creatorLive: true,
+    recordingExpiring: true,
+    freeMinutesLow: true,
   );
 
   @override
