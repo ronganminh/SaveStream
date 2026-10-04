@@ -17,7 +17,9 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/local_recording_models.dart';
 import 'controllers/local_recording_controller.dart';
+import 'controllers/rewarded_minutes_controller.dart';
 import 'local_recording_alerts.dart';
+import 'local_recording_reward_sheet.dart';
 
 class LocalRecordingScreen extends ConsumerWidget {
   const LocalRecordingScreen({required this.watchId, super.key});
@@ -35,6 +37,9 @@ class LocalRecordingScreen extends ConsumerWidget {
     );
     final LocalRecordingController controller = ref.watch(
       localRecordingControllerProvider,
+    );
+    final RewardedMinutesState rewarded = ref.watch(
+      rewardedMinutesControllerProvider,
     );
 
     if (!watch.hasValue || !entitlement.hasValue) {
@@ -134,6 +139,17 @@ class LocalRecordingScreen extends ConsumerWidget {
                       remainingSeconds: remainingSeconds,
                       isUnlimited: localEntitlement.unlimited,
                       minutesPerReward: localEntitlement.minutesPerReward,
+                      extensionsCap:
+                          localEntitlement.extensionsCapPerRecording,
+                      rewardState: rewarded,
+                      onRewardRequested: () {
+                        showRewardedMinutesSheet(
+                          context: context,
+                          ref: ref,
+                          entitlement: localEntitlement,
+                          extensionsUsed: rewarded.extensionCount,
+                        );
+                      },
                     ),
                     if (!localEntitlement.unlimited &&
                         session != null) ...<Widget>[
@@ -141,11 +157,15 @@ class LocalRecordingScreen extends ConsumerWidget {
                       SsQuotaCard(
                         title: context.l10n.localRecordingFreeRemainingTitle,
                         value: _formatCountdown(remainingSeconds),
-                        subtitle: context.l10n.localRecordingRewardCaps(
-                          localEntitlement.extensionsCapPerRecording,
-                          localEntitlement.rewardsUsedToday,
-                          localEntitlement.rewardsCapPerDay,
-                        ),
+                        subtitle:
+                            '${context.l10n.rewardMinutesExtensionProgress(
+                              rewarded.extensionCount,
+                              localEntitlement.extensionsCapPerRecording,
+                            )} · '
+                            '${context.l10n.rewardMinutesDailyProgress(
+                              localEntitlement.rewardsUsedToday,
+                              localEntitlement.rewardsCapPerDay,
+                            )}',
                       ),
                     ],
                     const SizedBox(height: SsSpacing.lg),
