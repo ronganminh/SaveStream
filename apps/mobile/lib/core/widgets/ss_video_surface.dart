@@ -37,8 +37,8 @@ class _SsVideoSurfaceState extends State<SsVideoSurface> {
     final int durationMs = duration.inMilliseconds <= 0
         ? 1
         : duration.inMilliseconds;
-    final double progress =
-        (controller.position.inMilliseconds / durationMs).clamp(0.0, 1.0);
+    final double progress = (controller.position.inMilliseconds / durationMs)
+        .clamp(0.0, 1.0);
 
     return Semantics(
       container: true,
@@ -50,7 +50,9 @@ class _SsVideoSurfaceState extends State<SsVideoSurface> {
           child: Column(
             children: <Widget>[
               const Expanded(
-                child: Center(child: Icon(Icons.play_circle_outline_rounded, size: 56)),
+                child: Center(
+                  child: Icon(Icons.play_circle_outline_rounded, size: 56),
+                ),
               ),
               Slider(
                 value: progress,

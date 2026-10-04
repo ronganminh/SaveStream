@@ -9,20 +9,21 @@ import '../models/recording_library_item.dart';
 
 final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
     FutureProvider<List<RecordingLibraryItem>>((Ref ref) async {
-      final String currentDeviceId =
-          await ref.watch(deviceInfoServiceProvider).deviceId;
-      final List<RecordingSummary> cloud =
-          await ref.watch(recordingRepositoryProvider).listRecordings();
-      final List<LocalRecordingSummary> local =
-          await ref.watch(localRecordingRepositoryProvider).list();
+      final String currentDeviceId = await ref
+          .watch(deviceInfoServiceProvider)
+          .deviceId;
+      final List<RecordingSummary> cloud = await ref
+          .watch(recordingRepositoryProvider)
+          .listRecordings();
+      final List<LocalRecordingSummary> local = await ref
+          .watch(localRecordingRepositoryProvider)
+          .list();
 
       final List<RecordingLibraryItem> items = <RecordingLibraryItem>[
         ...cloud.map(libraryItemFromCloud),
         ...local.map(
-          (LocalRecordingSummary item) => libraryItemFromLocal(
-            item,
-            currentDeviceId: currentDeviceId,
-          ),
+          (LocalRecordingSummary item) =>
+              libraryItemFromLocal(item, currentDeviceId: currentDeviceId),
         ),
       ];
 
