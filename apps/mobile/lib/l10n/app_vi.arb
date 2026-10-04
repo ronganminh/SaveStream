@@ -1303,5 +1303,61 @@
         "type": "int"
       }
     }
+  },
+  "homeRecordingRemaining": "còn {remaining}",
+  "@homeRecordingRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingTitle": "Đang hoàn tất {name}",
+  "@homeFinalizingTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingStep": "Bước {current}/{total} · {label}",
+  "@homeFinalizingStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSecondSlotOpenBody": "Slot Local #2 mở tới {time}.",
+  "@homeSecondSlotOpenBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDailyRecordingExhaustedTitle": "Đã dùng hết phút Free và quảng cáo hôm nay",
+  "homeDailyRecordingExhaustedBody": "0 / {daily} phút Free · {used}/{cap} quảng cáo. Reset sau {reset}.",
+  "@homeDailyRecordingExhaustedBody": {
+    "placeholders": {
+      "daily": {
+        "type": "int"
+      },
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      },
+      "reset": {
+        "type": "String"
+      }
+    }
   }
 }
