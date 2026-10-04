@@ -1,0 +1,34 @@
+name: A5 Final2 Format
+
+on:
+  push:
+    branches:
+      - tmp/a5-final2-format-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/app/router/app_router.dart lib/app/router/app_routes.dart lib/features/settings/presentation/settings_screen.dart lib/features/store/presentation/a5_purchase_controller.dart lib/features/store/presentation/a5_store_providers.dart lib/features/store/presentation/a5_usage_screen.dart lib/features/store/presentation/cloud_hours_purchase_screen.dart test/app_test.dart test/critical_flows_phase15_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/lib/app/router/app_router.dart apps/mobile/lib/app/router/app_routes.dart apps/mobile/lib/features/settings/presentation/settings_screen.dart apps/mobile/lib/features/store/presentation/a5_purchase_controller.dart apps/mobile/lib/features/store/presentation/a5_store_providers.dart apps/mobile/lib/features/store/presentation/a5_usage_screen.dart apps/mobile/lib/features/store/presentation/cloud_hours_purchase_screen.dart apps/mobile/test/app_test.dart apps/mobile/test/critical_flows_phase15_test.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(mobile): format A5 final2 [formatted]"
+          git push
