@@ -480,7 +480,7 @@ class RecordingService:
             raise ApplicationError(
                 "CREATOR_BLOCKED",
                 "This recording is unavailable due to a safety restriction",
-                status_code=451,
+                status_code=403,
                 retryable=False,
             )
         return artifact
