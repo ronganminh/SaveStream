@@ -4,7 +4,7 @@ Phase 17 turns the Flutter client into a release-ready native package while keep
 
 ## Product model
 
-The mobile app is a client for SaveStream cloud recording. It does **not** record livestreams on-device and does not persist recording artifacts into app storage.
+SaveStream V2 supports both cloud recording and local recording on the user's device. Cloud artifacts remain authoritative for cloud recordings; local recording files stay in app-private device storage.
 
 Recording Play / Download requests a fresh backend presigned artifact URL and opens it through the platform/browser. The backend/cloud storage remains the source of truth.
 
@@ -104,3 +104,17 @@ Current backend delivery is in-app only. The app does not claim email/push deliv
 - Backend checkout-disabled/503 state renders as unavailable, not as payment success.
 - Auth, Watch, Recording, artifact URL, Credits, Billing history, notification preferences and account deletion smoke tests pass.
 - Version/build numbers are incremented before submission.
+
+
+## C3 Android local-recording final APK checks
+
+Real-device checks are intentionally deferred to the final APK pass. Record model, Android version, battery start/end, free storage start/end, recorded duration and resulting file size for each run.
+
+- Record for 10 minutes in foreground, then repeat with the screen locked.
+- Start recording, switch to another app for 10 minutes, and confirm the foreground service remains active.
+- Disconnect networking for 30 seconds, reconnect, and verify reconnecting returns to recording without charging/claiming disconnected time.
+- Force-stop or kill the app during capture, relaunch, and verify the interrupted file is detected and recovery ends as recovered or partial.
+- Reduce free storage below 250 MB and verify recording stops safely without deleting captured bytes.
+- Use the notification stop action once implemented and verify stopping finalizes the file without opening the app.
+- Sign out while a granted lease is active and verify capture is not truncated solely because the auth session ended.
+- Verify app-private files remain associated with the source user and are hidden after a different account signs in.
