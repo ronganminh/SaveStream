@@ -4,7 +4,7 @@ import asyncio
 
 import pytest
 
-from app.application.admin.settings_d4 import RuntimeSettingsService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.entitlements.service import EntitlementService
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.models import Base, User
