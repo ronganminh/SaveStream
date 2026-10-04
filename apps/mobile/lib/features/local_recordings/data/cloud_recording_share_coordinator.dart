@@ -39,10 +39,7 @@ final class CloudRecordingShareCoordinator {
       '${shareDirectory.path}/$safeArtifactId.$safeExtension',
     );
 
-    await _downloader.download(
-      uri: download.uri,
-      destination: tempFile,
-    );
+    await _downloader.download(uri: download.uri, destination: tempFile);
 
     try {
       await _shareService.shareFile(

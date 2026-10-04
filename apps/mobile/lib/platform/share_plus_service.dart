@@ -11,10 +11,7 @@ final class SharePlusService implements ShareService {
     String? displayName,
   }) async {
     await SharePlus.instance.share(
-      ShareParams(
-        files: <XFile>[XFile(filePath)],
-        title: displayName,
-      ),
+      ShareParams(files: <XFile>[XFile(filePath)], title: displayName),
     );
   }
 }

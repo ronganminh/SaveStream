@@ -3,10 +3,8 @@ import 'dart:io';
 
 import '../../../platform/contracts/device_info_service.dart';
 
-typedef CloudDownloadProgress = void Function({
-  required int receivedBytes,
-  required int? totalBytes,
-});
+typedef CloudDownloadProgress =
+    void Function({required int receivedBytes, required int? totalBytes});
 
 final class CloudDownloadResult {
   const CloudDownloadResult({
@@ -112,10 +110,7 @@ final class CloudArtifactDownloader {
       await for (final List<int> chunk in response) {
         await output.writeFrom(chunk);
         receivedBytes += chunk.length;
-        onProgress?.call(
-          receivedBytes: receivedBytes,
-          totalBytes: totalBytes,
-        );
+        onProgress?.call(receivedBytes: receivedBytes, totalBytes: totalBytes);
       }
       await output.flush();
     } finally {

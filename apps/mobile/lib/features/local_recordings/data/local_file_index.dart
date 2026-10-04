@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../../domain/models/local_recording_models.dart';
+import '../domain/models/local_recording_models.dart';
 
 enum LocalFilePresence { present, missing, moved }
 
@@ -69,7 +69,9 @@ final class LocalFileIndex {
         .toList(growable: false);
 
     final List<File> orphanFiles = userFiles.entries
-        .where((MapEntry<String, File> entry) => !backendIds.contains(entry.key))
+        .where(
+          (MapEntry<String, File> entry) => !backendIds.contains(entry.key),
+        )
         .map((MapEntry<String, File> entry) => entry.value)
         .toList(growable: false);
 
