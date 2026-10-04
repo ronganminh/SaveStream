@@ -105,9 +105,7 @@ class _UsageSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(SsSpacing.lg),
-      children: const <Widget>[
-        SsSkeleton(height: 180, radius: SsRadii.lg),
-      ],
+      children: const <Widget>[SsSkeleton(height: 180, radius: SsRadii.lg)],
     );
   }
 }

@@ -50,9 +50,10 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
 
   @override
   CloudHoursPurchaseState build() {
-    _subscription = ref.watch(purchaseServiceProvider).purchaseEvents.listen(
-      _handlePurchaseEvent,
-    );
+    _subscription = ref
+        .watch(purchaseServiceProvider)
+        .purchaseEvents
+        .listen(_handlePurchaseEvent);
     ref.onDispose(() => _subscription?.cancel());
     return const CloudHoursPurchaseState();
   }
@@ -106,7 +107,9 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
       return;
     }
 
-    final DevicePlatform platform = ref.read(deviceInfoServiceProvider).platform;
+    final DevicePlatform platform = ref
+        .read(deviceInfoServiceProvider)
+        .platform;
     final StorePurchaseResult result = await ref
         .read(storeRepositoryProvider)
         .submitPurchase(
