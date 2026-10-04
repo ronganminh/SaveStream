@@ -43,17 +43,19 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
           ),
           data: (List<RecordingLibraryItem> items) {
             final String normalized = _query.trim().toLowerCase();
-            final List<RecordingLibraryItem> visible = items.where((
-              RecordingLibraryItem item,
-            ) {
-              final bool storageMatches =
-                  _storage == null || item.storage == _storage;
-              final bool queryMatches =
-                  normalized.isEmpty ||
-                  item.creatorDisplayName.toLowerCase().contains(normalized) ||
-                  item.creatorHandle.toLowerCase().contains(normalized);
-              return storageMatches && queryMatches;
-            }).toList(growable: false);
+            final List<RecordingLibraryItem> visible = items
+                .where((RecordingLibraryItem item) {
+                  final bool storageMatches =
+                      _storage == null || item.storage == _storage;
+                  final bool queryMatches =
+                      normalized.isEmpty ||
+                      item.creatorDisplayName.toLowerCase().contains(
+                        normalized,
+                      ) ||
+                      item.creatorHandle.toLowerCase().contains(normalized);
+                  return storageMatches && queryMatches;
+                })
+                .toList(growable: false);
 
             return RefreshIndicator(
               onRefresh: () async {
@@ -109,7 +111,8 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                       message: context.l10n.emptyRecordingsBody,
                     )
                   else
-                    for (final RecordingLibraryItem item in visible) ...<Widget>[
+                    for (final RecordingLibraryItem item
+                        in visible) ...<Widget>[
                       _LibraryCard(item: item),
                       const SizedBox(height: SsSpacing.md),
                     ],
@@ -173,7 +176,8 @@ class _LibraryCard extends StatelessWidget {
                 ),
                 Text(context.l10n.recordingCrossDeviceUnavailable),
               ],
-              if (item.issue == RecordingLibraryIssue.missedNoCloudSlot) ...<Widget>[
+              if (item.issue ==
+                  RecordingLibraryIssue.missedNoCloudSlot) ...<Widget>[
                 const SizedBox(height: SsSpacing.sm),
                 Text(context.l10n.recordingMissedNoCloudSlotBody),
               ],
