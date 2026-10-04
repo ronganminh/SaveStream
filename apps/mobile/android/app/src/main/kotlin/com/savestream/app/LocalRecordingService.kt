@@ -157,7 +157,11 @@ class LocalRecordingService : Service() {
             "Interrupted recording metadata is invalid.",
         )
         val tempFile = File(metadataFile.parentFile, "$tempId.part")
-        finalizeRecoveredFile(tempFile, metadataFile, metadata)
+        if (tempFile.exists()) {
+            finalizeRecoveredFile(tempFile, metadataFile, metadata)
+        } else {
+            emitPendingRegistration(metadataFile, metadata)
+        }
     }
 
     private fun capture(
@@ -340,6 +344,31 @@ class LocalRecordingService : Service() {
             finalizationStep = "registerRecording",
             errorMessage = failureMessage,
             endReason = endReason,
+        )
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    private fun emitPendingRegistration(
+        metadataFile: File,
+        metadata: JSONObject,
+    ) {
+        val sessionId = metadata.optString("session_id")
+        val format = metadata.optString("stream_format", "flv")
+        val extension = if (format == "hls") "ts" else "flv"
+        val finalFile = File(metadataFile.parentFile, "$sessionId.$extension")
+        val size = if (finalFile.exists()) {
+            finalFile.length()
+        } else {
+            metadata.optLong("size_bytes", 0L)
+        }
+        emitState(
+            "stopped",
+            recordedSeconds = metadata.optInt("recorded_seconds", 0),
+            sizeBytes = size,
+            freeBytesOverride = freeStorageBytes(metadataFile.parentFile),
+            finalizationStep = "registerRecording",
+            endReason = metadata.optString("end_reason", "interrupted"),
         )
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
