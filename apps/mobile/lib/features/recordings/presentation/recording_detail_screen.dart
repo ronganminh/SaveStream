@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
@@ -704,37 +703,6 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
       if (mounted) {
         setState(() => _downloadProgress = null);
         SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
-      }
-    }
-  }
-
-  Future<void> _openArtifact(
-    RecordingArtifactSummary artifact, {
-    required LaunchMode mode,
-  }) async {
-    setState(() {
-      _isOpening = true;
-    });
-    try {
-      final ArtifactDownloadUrl download = await ref
-          .read(recordingControllerProvider)
-          .createArtifactDownloadUrl(artifact.id);
-      if (download.isExpired) {
-        throw StateError('Artifact URL expired before use.');
-      }
-      final bool opened = await launchUrl(download.uri, mode: mode);
-      if (!opened) {
-        throw StateError('Unable to open artifact URL.');
-      }
-    } on Object {
-      if (mounted) {
-        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isOpening = false;
-        });
       }
     }
   }
