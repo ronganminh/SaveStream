@@ -47,13 +47,18 @@ class AdminDailyMetricResponse(StrictModel):
     active_users_monthly: int = Field(ge=0)
     free_users: int = Field(ge=0)
     pro_users: int = Field(ge=0)
-    free_to_pro_users: int = Field(ge=0)
+    free_to_pro_weekly: int = Field(ge=0)
     revenue_web_usd_minor: int = Field(ge=0)
     revenue_app_store_usd_minor: int = Field(ge=0)
     revenue_google_play_usd_minor: int = Field(ge=0)
+    estimated_store_fee_app_store_usd_minor: int = Field(ge=0)
+    estimated_store_fee_google_play_usd_minor: int = Field(ge=0)
     recording_running: int = Field(ge=0)
     recording_waiting: int = Field(ge=0)
     recording_errors_24h: int = Field(ge=0)
+    recording_total_24h: int = Field(ge=0)
+    cloud_minutes_used: int = Field(ge=0)
+    recording_status_counts: dict[str, int]
     recording_capacity_limit: int = Field(ge=1)
     stuck_orders: int = Field(ge=0)
     open_complaints: int = Field(ge=0)
@@ -63,3 +68,7 @@ class AdminDailyMetricResponse(StrictModel):
 class AdminOverviewResponse(StrictModel):
     latest: AdminDailyMetricResponse | None
     series: list[AdminDailyMetricResponse]
+    month_revenue_web_usd_minor: int = Field(ge=0)
+    month_revenue_app_store_usd_minor: int = Field(ge=0)
+    month_revenue_google_play_usd_minor: int = Field(ge=0)
+    month_estimated_store_fee_usd_minor: int = Field(ge=0)
