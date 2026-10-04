@@ -966,5 +966,103 @@
         "type": "int"
       }
     }
-  }
+  },
+  "genericErrorTitle": "Something went wrong",
+  "closeAction": "Close",
+  "rewardMinutesOfferTitle": "+{minutes} minutes for this recording",
+  "@rewardMinutesOfferTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesOfferBody": "Watch 1 ad. {minutes} minutes are added only after SaveStream confirms the reward. Recording continues while you watch.",
+  "@rewardMinutesOfferBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesExtensionProgress": "Extensions for this recording {used}/{cap}",
+  "@rewardMinutesExtensionProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyProgress": "Rewarded ads today {used}/{cap}",
+  "@rewardMinutesDailyProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWatchAdAction": "Watch ad",
+  "rewardMinutesLoadingTitle": "Loading ad",
+  "rewardMinutesLoadingBody": "Recording continues while the ad loads.",
+  "rewardMinutesVerifyingTitle": "Confirming reward",
+  "rewardMinutesAdCompleteStep": "Ad completed",
+  "rewardMinutesVerifyStep": "Confirm with SaveStream",
+  "rewardMinutesGrantStep": "Add {minutes} minutes to recording",
+  "@rewardMinutesGrantStep": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesPendingTitle": "Reward confirmation is taking longer",
+  "rewardMinutesPendingBody": "Minutes will be added as soon as SaveStream confirms. Recording keeps running.",
+  "rewardMinutesSuccessTitle": "Added {minutes} minutes",
+  "@rewardMinutesSuccessTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesSuccessBody": "Server confirmed. Extension {used}/{cap} for this recording.",
+  "@rewardMinutesSuccessBody": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesNoFillTitle": "No ad available right now",
+  "rewardMinutesNoFillBody": "Try again in a few minutes. Recording continues until your remaining Free time runs out.",
+  "rewardMinutesInvalidTitle": "Reward could not be confirmed",
+  "rewardMinutesInvalidBody": "The ad view was invalid or expired. No minutes were added.",
+  "rewardMinutesMaxTitle": "Maximum extensions reached",
+  "rewardMinutesMaxBody": "Each recording can be extended up to {cap} times. It will stop and save when the remaining Free time runs out.",
+  "@rewardMinutesMaxBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyCapTitle": "Daily rewarded-ad limit reached",
+  "rewardMinutesDailyCapBody": "You have used {cap}/{cap} rewarded ads today. The daily limit resets automatically.",
+  "@rewardMinutesDailyCapBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWorkingAction": "Working…"
 }
