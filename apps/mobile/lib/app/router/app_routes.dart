@@ -93,5 +93,4 @@ abstract final class AppRoutes {
       queryParameters: <String, String>{'name': name, 'handle': handle},
     ).toString();
   }
-
 }
