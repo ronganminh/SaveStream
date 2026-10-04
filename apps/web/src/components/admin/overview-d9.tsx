@@ -84,21 +84,6 @@ function OverviewBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed]);
 
-  const exportCsv = async () => {
-    try {
-      const csv = await adminD9Api.exportSupportReports({
-        query: query.trim() || undefined,
-        status: status || undefined,
-        sortOrder,
-      });
-      downloadCsv("savestream-app-reports.csv", csv);
-    } catch (error) {
-      toast.error("Could not export app reports", {
-        description: authErrorMessage(error),
-      });
-    }
-  };
-
   if (!allowed) {
     return (
       <PermissionPanel>
@@ -522,6 +507,21 @@ function ReportsBody() {
     // Filters are applied explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed]);
+
+  const exportCsv = async () => {
+    try {
+      const csv = await adminD9Api.exportSupportReports({
+        query: query.trim() || undefined,
+        status: status || undefined,
+        sortOrder,
+      });
+      downloadCsv("savestream-app-reports.csv", csv);
+    } catch (error) {
+      toast.error("Could not export app reports", {
+        description: authErrorMessage(error),
+      });
+    }
+  };
 
   if (!allowed) {
     return (
