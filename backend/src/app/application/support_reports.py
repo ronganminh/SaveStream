@@ -174,7 +174,7 @@ class SupportReportService:
                     ),
                 )
             )
-        rows = list(
+        raw_rows = list(
             (
                 await self.session.execute(
                     statement.order_by(
@@ -184,6 +184,7 @@ class SupportReportService:
                 )
             ).all()
         )
+        rows = [(row[0], row[1]) for row in raw_rows]
         has_more = len(rows) > limit
         page = rows[:limit]
         next_cursor = (
