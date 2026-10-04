@@ -182,10 +182,9 @@ class SecondLocalSlotController extends Notifier<SecondLocalSlotState> {
   }
 
   Future<void> _acceptValidReward() async {
-    final int verified = (state.verifiedRewards + 1).clamp(
-      0,
-      rewardsRequired,
-    );
+    final int verified = state.verifiedRewards >= rewardsRequired
+        ? rewardsRequired
+        : state.verifiedRewards + 1;
     if (verified < rewardsRequired) {
       state = state.copyWith(
         phase: SecondLocalSlotPhase.progress,
