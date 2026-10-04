@@ -89,9 +89,14 @@ class LocalRecordingService : Service() {
         val directory = File(filesDir, "local_recordings/$deviceId").apply { mkdirs() }
         val tempFile = File(directory, "$sessionId.part")
         val metadataFile = File(directory, "$sessionId.json")
-        val startedAtMs = System.currentTimeMillis()
+        val existingMetadata = readMetadata(metadataFile)
+        val initialRecordedSeconds = existingMetadata?.optInt("recorded_seconds", 0) ?: 0
+        val startedAtMs =
+            existingMetadata?.optLong("started_at_ms", System.currentTimeMillis())
+                ?: System.currentTimeMillis()
+        val remainingSeconds = (grantedSeconds - initialRecordedSeconds).coerceAtLeast(0)
         val leaseDeadlineElapsedMs =
-            SystemClock.elapsedRealtime() + grantedSeconds * 1000L
+            SystemClock.elapsedRealtime() + remainingSeconds * 1000L
 
         persistMetadata(
             metadataFile = metadataFile,
@@ -104,11 +109,15 @@ class LocalRecordingService : Service() {
             grantedSeconds = grantedSeconds,
             startedAtMs = startedAtMs,
             interruptedAtMs = null,
-            recordedSeconds = 0,
+            recordedSeconds = initialRecordedSeconds,
             sizeBytes = tempFile.length(),
         )
 
-        emitState("starting", sizeBytes = tempFile.length())
+        emitState(
+            "starting",
+            recordedSeconds = initialRecordedSeconds,
+            sizeBytes = tempFile.length(),
+        )
         capture(
             sessionId = sessionId,
             watchId = watchId,
@@ -121,7 +130,7 @@ class LocalRecordingService : Service() {
             leaseDeadlineElapsedMs = leaseDeadlineElapsedMs,
             tempFile = tempFile,
             metadataFile = metadataFile,
-            initialRecordedMillis = 0L,
+            initialRecordedMillis = initialRecordedSeconds * 1000L,
         )
     }
 
@@ -286,7 +295,8 @@ class LocalRecordingService : Service() {
             finalizationStep = "flushFile",
         )
 
-        val finalFile = finalizeFile(tempFile, streamFormat)
+        val interrupted = endReason == "interrupted"
+        val finalFile = if (interrupted) null else finalizeFile(tempFile, streamFormat)
         val recordedSeconds = (recordedMillis / 1000L).toInt()
         persistMetadata(
             metadataFile = metadataFile,
@@ -302,9 +312,11 @@ class LocalRecordingService : Service() {
             recordedSeconds = recordedSeconds,
             sizeBytes = finalFile?.length() ?: sizeBytes,
         )
-        markPendingRegistration(metadataFile, endReason)
+        if (!interrupted) {
+            markPendingRegistration(metadataFile, endReason)
+        }
 
-        val phase = if (endReason == "interrupted" && failureMessage != null) "error" else "stopped"
+        val phase = if (interrupted && failureMessage != null) "error" else "stopped"
         emitState(
             phase,
             recordedSeconds = recordedSeconds,
