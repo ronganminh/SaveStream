@@ -62,7 +62,7 @@ class _IosRecordingGuidanceScreenState
                 SsListTile(
                   title: context.l10n.iosScreenAwakeTitle,
                   subtitle: context.l10n.iosScreenAwakeBody,
-                  leading: const Icon(Icons.screen_lock_portrait_outlined),
+                  leading: const Icon(Icons.screen_lock_portrait),
                 ),
                 const Divider(),
                 SsListTile(
