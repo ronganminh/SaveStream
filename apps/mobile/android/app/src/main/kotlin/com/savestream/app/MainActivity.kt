@@ -17,6 +17,7 @@ class MainActivity : FlutterActivity() {
     private val localRecordingChannel = "savestream/local_recording"
     private val localRecordingEvents = "savestream/local_recording/events"
     private val recordingPlatformChannel = "savestream/recording_platform"
+    private val recordingPlatformActions = "savestream/recording_platform/actions"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -127,6 +128,21 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+
+        EventChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            recordingPlatformActions,
+        ).setStreamHandler(
+            object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    RecordingPlatformActionEventBus.attach(events)
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    RecordingPlatformActionEventBus.attach(null)
+                }
+            },
+        )
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
