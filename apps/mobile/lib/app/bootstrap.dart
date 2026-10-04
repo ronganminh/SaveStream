@@ -8,6 +8,7 @@ import '../core/errors/app_error_reporter.dart';
 import '../core/storage/shared_preferences_app_settings_store.dart';
 import '../features/app_status/data/repositories/api_app_status_repository.dart';
 import '../features/auth/data/auth_runtime.dart';
+import '../features/auth/data/current_user_id_source.dart';
 import '../features/billing/data/repositories/api_billing_repository.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
 import '../features/credits/data/repositories/api_credits_repository.dart';
@@ -65,8 +66,11 @@ Future<void> bootstrap() async {
   final deviceRepository = ApiDeviceRepository(
     apiClient: authenticatedApiClient,
   );
+  final CurrentUserIdSource currentUserIdSource = CurrentUserIdSource(
+    apiClient: authenticatedApiClient,
+  );
   final AndroidLocalRecorder? androidLocalRecorder = Platform.isAndroid
-      ? AndroidLocalRecorder()
+      ? AndroidLocalRecorder(currentUserId: currentUserIdSource.get)
       : null;
   final ApiLocalRecordingRepository? localRecordingRepository =
       androidLocalRecorder == null
@@ -78,7 +82,10 @@ Future<void> bootstrap() async {
   final AndroidLocalRecoveryService? androidLocalRecoveryService =
       localRecordingRepository == null
       ? null
-      : AndroidLocalRecoveryService(repository: localRecordingRepository);
+      : AndroidLocalRecoveryService(
+          repository: localRecordingRepository,
+          currentUserId: currentUserIdSource.get,
+        );
   final AndroidRecordingPlatformService? androidRecordingPlatformService =
       Platform.isAndroid ? AndroidRecordingPlatformService() : null;
 
