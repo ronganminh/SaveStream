@@ -47,7 +47,8 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
     final LocalRecordingController controller = ref.watch(
       localRecordingControllerProvider,
     );
-    final bool isSecondary = controller.secondarySession?.watchId == widget.watchId;
+    final bool isSecondary =
+        controller.secondarySession?.watchId == widget.watchId;
     final bool isPrimary = controller.activeSession?.watchId == widget.watchId;
     final AsyncValue<LocalRecorderState> recorder = ref.watch(
       isSecondary
