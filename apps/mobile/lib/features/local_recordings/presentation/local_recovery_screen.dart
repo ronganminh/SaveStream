@@ -390,7 +390,7 @@ class _PlatformRecoveryAdvice extends StatelessWidget {
           child: SsTextAction(
             label: context.l10n.localRecoveryViewProAction,
             icon: Icons.cloud_outlined,
-            onPressed: () => context.push(AppRoutes.credits),
+            onPressed: () => context.push(AppRoutes.cloudHoursLocation('iosBackground')),
           ),
         ),
       ],
