@@ -1248,9 +1248,10 @@ export const adminRuntimeSettingsApi = {
   },
 
   update(key: string, value: unknown, reason: string, stepUpToken: string) {
-    return apiClient.put<AdminRuntimeSetting>(
+    return apiClient.request<AdminRuntimeSetting>(
       `/v1/admin/settings/${encodeURIComponent(key)}`,
       {
+        method: "PUT",
         json: { value, reason },
         headers: stepUpHeaders(stepUpToken),
       },
