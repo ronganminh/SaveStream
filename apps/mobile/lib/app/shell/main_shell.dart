@@ -46,14 +46,14 @@ class MainShell extends ConsumerWidget {
               icon: const Icon(Icons.add_rounded),
               label: Text(l10n.addChannelAction),
             ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          if (!hideRecordingBar && activeRecordings.isNotEmpty)
-            ActiveRecordingBar(items: activeRecordings),
-          MediaQuery.withClampedTextScaling(
-            maxScaleFactor: 1.2,
-            child: NavigationBar(
+      bottomNavigationBar: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.2,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (!hideRecordingBar && activeRecordings.isNotEmpty)
+              ActiveRecordingBar(items: activeRecordings),
+            NavigationBar(
               height: textScale >= 1.4 ? 64 : null,
               labelBehavior: navigationLabelBehavior,
               selectedIndex: navigationShell.currentIndex,
@@ -86,8 +86,8 @@ class MainShell extends ConsumerWidget {
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
