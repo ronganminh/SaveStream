@@ -29,6 +29,7 @@ import '../../features/onboarding/presentation/intro_watch_detect_screen.dart';
 import '../../features/onboarding/presentation/ios_recording_info_screen.dart';
 import '../../features/onboarding/presentation/notification_rationale_screen.dart';
 import '../../features/onboarding/presentation/welcome_screen.dart';
+import '../../features/local_recordings/presentation/local_recording_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
@@ -309,6 +310,14 @@ GoRouter createAppRouter({
             state: liveNotificationStateFromValue(
               state.uri.queryParameters['state'],
             ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recordings/local/:watchId',
+        builder: (BuildContext context, GoRouterState state) {
+          return LocalRecordingScreen(
+            watchId: state.pathParameters['watchId']!,
           );
         },
       ),
