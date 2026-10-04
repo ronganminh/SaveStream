@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/storage/app_settings_store.dart';
 import '../../../../core/storage/shared_preferences_app_settings_store.dart';
 
-const String _localRecordingConfirmedKey =
-    'local_recording_start_confirmed_v1';
+const String _localRecordingConfirmedKey = 'local_recording_start_confirmed_v1';
 
 final Provider<AppSettingsStore> localRecordingSettingsStoreProvider =
-    Provider<AppSettingsStore>((Ref ref) => SharedPreferencesAppSettingsStore());
+    Provider<AppSettingsStore>(
+      (Ref ref) => SharedPreferencesAppSettingsStore(),
+    );
 
 final Provider<LocalRecordingConfirmationController>
 localRecordingConfirmationControllerProvider =
@@ -18,17 +19,14 @@ localRecordingConfirmationControllerProvider =
     });
 
 class LocalRecordingConfirmationController {
-  const LocalRecordingConfirmationController({
-    required AppSettingsStore store,
-  }) : _store = store;
+  const LocalRecordingConfirmationController({required AppSettingsStore store})
+    : _store = store;
 
   final AppSettingsStore _store;
 
   Future<bool> shouldConfirm({bool force = false}) async {
     if (force) return true;
-    final String? value = await _store.readString(
-      _localRecordingConfirmedKey,
-    );
+    final String? value = await _store.readString(_localRecordingConfirmedKey);
     return value != 'true';
   }
 
