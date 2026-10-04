@@ -9,13 +9,13 @@ import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../../platform/contracts/local_recorder.dart';
+import '../../../platform/contracts/local_recovery_service.dart';
 import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
-import '../../../platform/contracts/local_recovery_service.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
@@ -276,7 +276,7 @@ class _HomeDashboard extends StatelessWidget {
     return <Widget>[
       if (secondSlotOpen && secondaryActive) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
-        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt!),
+        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt),
       ],
       if (secondSlotExpired) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
@@ -319,7 +319,7 @@ class _HomeDashboard extends StatelessWidget {
         HomeLocalRecordingCard(
           creatorName: primaryWatch.creatorDisplayName,
           watchId: primaryWatch.id,
-          state: primaryLocalState,
+          state: primaryLocalState!,
           remainingSeconds: primaryRemaining,
           unlimited: local.unlimited,
         ),
@@ -331,7 +331,7 @@ class _HomeDashboard extends StatelessWidget {
         HomeLocalRecordingCard(
           creatorName: secondaryWatch.creatorDisplayName,
           watchId: secondaryWatch.id,
-          state: secondaryLocalState,
+          state: secondaryLocalState!,
           remainingSeconds: secondaryRemaining,
           unlimited: local.unlimited,
         ),
