@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
-import '../../domain/models/recording_summary.dart';
+import '../domain/models/recording_summary.dart';
 import 'cloud_artifact_downloader.dart';
 
 final class CloudRecordingFileService {
@@ -25,9 +25,24 @@ final class CloudRecordingFileService {
     return Directory('${support.path}/cloud_recordings');
   }
 
-  Future<File?> existingFile(String recordingId) async {
+  Future<File?> existingFile(
+    String recordingId, {
+    int? expectedSizeBytes,
+  }) async {
     final File file = await _destination(recordingId);
-    return await file.exists() ? file : null;
+    if (!await file.exists()) {
+      return null;
+    }
+    if (expectedSizeBytes != null &&
+        await file.length() != expectedSizeBytes) {
+      return null;
+    }
+    return file;
+  }
+
+  Future<int> existingBytes(String recordingId) async {
+    final File file = await _destination(recordingId);
+    return await file.exists() ? file.length() : 0;
   }
 
   Future<File> download({
