@@ -24,6 +24,7 @@ abstract final class AppRoutes {
   static const String channels = '/channels';
   static const String addChannel = '/channels/add';
   static const String recordings = '/recordings';
+  static const String localRecovery = '/recordings/recovery';
   static const String credits = '/credits';
   static const String billing = '/billing';
   static const String billingReturn = '/billing/return';
