@@ -1066,5 +1066,71 @@
   },
   "rewardMinutesWorkingAction": "Working…",
   "rewardMinutesLockedTitle": "Rewarded ads temporarily locked",
-  "rewardMinutesLockedBody": "Several rewards could not be confirmed. Try again later. Recording continues until your remaining Free time runs out."
+  "rewardMinutesLockedBody": "Several rewards could not be confirmed. Try again later. Recording continues until your remaining Free time runs out.",
+  "timeUnknownLabel": "server confirmation",
+  "secondLocalSlotTitle": "Open Local slot #2 for 1 hour",
+  "secondLocalSlotOfferBody": "Watch 2 rewarded ads to record one more creator at the same time. The server confirms both rewards before the slot opens.",
+  "secondLocalSlotProgress": "Ads to open slot {used}/{required}",
+  "@secondLocalSlotProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotSharedQuotaTitle": "Free minutes are shared",
+  "secondLocalSlotSharedQuotaBody": "Two Local recordings at the same time consume Free recording time twice as fast.",
+  "secondLocalSlotVerifyStep": "Confirm slot reward {current}/{required}",
+  "@secondLocalSlotVerifyStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotPendingBody": "Slot progress will update when SaveStream receives server confirmation.",
+  "secondLocalSlotUnlockedTitle": "Local slot #2 is open",
+  "secondLocalSlotUnlockedBody": "You can start one more Local recording until {time}. An active second recording is not stopped when the slot later expires.",
+  "@secondLocalSlotUnlockedBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotExpiredTitle": "Local slot #2 has closed",
+  "secondLocalSlotExpiredBody": "The slot closed at {time}. Opening it again requires 2 verified rewarded ads.",
+  "@secondLocalSlotExpiredBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotRecordNow": "Record {name} now",
+  "@secondLocalSlotRecordNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotWatchAdAction": "Watch ad {current}/{required}",
+  "@secondLocalSlotWatchAdAction": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotBusy": "Both Local recording slots are already in use."
 }
