@@ -8,15 +8,18 @@ final class ApiLocalRecordingRepository implements LocalRecordingRepository {
   ApiLocalRecordingRepository({
     required ApiClient apiClient,
     IdempotencyKeyGenerator? idempotencyKeyGenerator,
+    Future<void> Function(String sessionId)? onRegistered,
   }) : _apiClient = apiClient,
        _idempotencyKeyGenerator =
-           idempotencyKeyGenerator ?? SecureIdempotencyKeyGenerator();
+           idempotencyKeyGenerator ?? SecureIdempotencyKeyGenerator(),
+       _onRegistered = onRegistered;
 
   static const int _pageSize = 100;
   static const int _rewardExtensionSeconds = 10 * 60;
 
   final ApiClient _apiClient;
   final IdempotencyKeyGenerator _idempotencyKeyGenerator;
+  final Future<void> Function(String sessionId)? _onRegistered;
   final Map<String, LocalRecordingSession> _sessions =
       <String, LocalRecordingSession>{};
 
@@ -97,6 +100,7 @@ final class ApiLocalRecordingRepository implements LocalRecordingRepository {
     for (final LocalRecordingSummary item in items) {
       if (item.id == sessionId) {
         _sessions.remove(sessionId);
+        await _onRegistered?.call(sessionId);
         return item;
       }
     }
