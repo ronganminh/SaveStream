@@ -403,9 +403,17 @@ class CloudRecordingLifecycleCard extends StatelessWidget {
             children: <Widget>[
               const Icon(Icons.cloud_off_outlined),
               const SizedBox(width: SsSpacing.sm),
-              Text(
-                context.l10n.cloudRecordingFailedTitle,
-                style: Theme.of(context).textTheme.titleLarge,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      context.l10n.recordingFailureTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Text(context.l10n.cloudRecordingFailedTitle),
+                  ],
+                ),
               ),
             ],
           ),
