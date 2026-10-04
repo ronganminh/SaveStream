@@ -51,8 +51,11 @@ class MainShell extends ConsumerWidget {
         children: <Widget>[
           if (!hideRecordingBar && activeRecordings.isNotEmpty)
             ActiveRecordingBar(items: activeRecordings),
-          NavigationBar(
-            labelBehavior: navigationLabelBehavior,
+          MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.2,
+            child: NavigationBar(
+              height: textScale >= 1.4 ? 64 : null,
+              labelBehavior: navigationLabelBehavior,
             selectedIndex: navigationShell.currentIndex,
             onDestinationSelected: (int index) {
               navigationShell.goBranch(
@@ -60,8 +63,8 @@ class MainShell extends ConsumerWidget {
                 initialLocation: index == navigationShell.currentIndex,
               );
             },
-            destinations: <NavigationDestination>[
-              NavigationDestination(
+              destinations: <NavigationDestination>[
+                NavigationDestination(
                 icon: const Icon(Icons.home_outlined),
                 selectedIcon: const Icon(Icons.home_rounded),
                 label: l10n.navHome,
@@ -76,12 +79,13 @@ class MainShell extends ConsumerWidget {
                 selectedIcon: const Icon(Icons.video_library_rounded),
                 label: l10n.navRecordings,
               ),
-              NavigationDestination(
-                icon: const Icon(Icons.settings_outlined),
-                selectedIcon: const Icon(Icons.settings_rounded),
-                label: l10n.navSettings,
-              ),
-            ],
+                NavigationDestination(
+                  icon: const Icon(Icons.settings_outlined),
+                  selectedIcon: const Icon(Icons.settings_rounded),
+                  label: l10n.navSettings,
+                ),
+              ],
+            ),
           ),
         ],
       ),
