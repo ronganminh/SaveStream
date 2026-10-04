@@ -42,6 +42,8 @@ abstract final class AppRoutes {
   static String autoRecordSettings(String id) =>
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
+  static String localRecording(String watchId) =>
+      '/recordings/local/' + watchId;
 
   static String liveNotification(String id, {String state = 'checking'}) {
     return Uri(
