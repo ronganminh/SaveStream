@@ -36,3 +36,14 @@ class AdminRuntimeSettingUpdateRequest(StrictModel):
 
 class AdminRuntimeSettingResetRequest(StrictModel):
     reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminSystemComponentHealth(StrictModel):
+    status: Literal["ok", "error"]
+    detail: str | None
+
+
+class AdminSystemStatusResponse(StrictModel):
+    backend_version: str
+    started_at: datetime
+    components: dict[str, AdminSystemComponentHealth]
