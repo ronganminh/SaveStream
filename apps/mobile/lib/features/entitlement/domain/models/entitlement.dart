@@ -25,6 +25,8 @@ class LocalEntitlement {
     required this.rewardsCapPerDay,
     required this.minutesPerReward,
     required this.extensionsCapPerRecording,
+    this.maxConcurrentSessions = 1,
+    this.secondSlotExpiresAt,
   });
 
   final bool enabled;
@@ -36,6 +38,8 @@ class LocalEntitlement {
   final int rewardsCapPerDay;
   final int minutesPerReward;
   final int extensionsCapPerRecording;
+  final int maxConcurrentSessions;
+  final DateTime? secondSlotExpiresAt;
 }
 
 class Entitlement {
