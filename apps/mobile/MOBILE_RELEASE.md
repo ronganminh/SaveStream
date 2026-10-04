@@ -115,7 +115,7 @@ Real-device checks are intentionally deferred to the final APK pass. Record mode
 - Disconnect networking for 30 seconds, reconnect, and verify reconnecting returns to recording without charging/claiming disconnected time.
 - Force-stop or kill the app during capture, relaunch, and verify the interrupted file is detected and recovery ends as recovered or partial.
 - Reduce free storage below 250 MB and verify recording stops safely without deleting captured bytes.
-- Use the notification stop action once implemented and verify stopping finalizes the file without opening the app.
+- Use the notification Stop action and verify stopping finalizes the file without opening the app.
 - Sign out while a granted lease is active and verify capture is not truncated solely because the auth session ended.
 - Verify app-private files remain under the source `user_id` and are hidden after a different account signs in; sign back into the original account and confirm they are visible again.
 - Check the Android battery-optimization state shown by the app, open the corresponding system battery settings, switch to unrestricted where supported, then return and confirm the state refreshes.
