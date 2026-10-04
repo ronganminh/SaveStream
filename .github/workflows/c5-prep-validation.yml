@@ -1,0 +1,47 @@
+name: C5 Prep Validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Format C5 prep
+        run: >-
+          dart format
+          lib/features/local_recordings/data/api_local_recording_delete_service.dart
+          lib/features/local_recordings/data/cloud_recording_share_coordinator.dart
+          lib/features/local_recordings/data/local_file_index.dart
+          lib/features/recordings/data/cloud_artifact_downloader.dart
+          lib/platform/share_plus_service.dart
+          test/v2c_c5_local_storage_test.dart
+      - name: Analyze independent C5 prep
+        run: >-
+          dart analyze
+          lib/features/local_recordings/data/api_local_recording_delete_service.dart
+          lib/features/local_recordings/data/local_file_index.dart
+          lib/features/recordings/data/cloud_artifact_downloader.dart
+          test/v2c_c5_local_storage_test.dart
+      - name: Test independent C5 prep
+        run: flutter test test/v2c_c5_local_storage_test.dart
+      - name: Print formatted files
+        if: always()
+        run: |
+          for file in             lib/features/local_recordings/data/api_local_recording_delete_service.dart             lib/features/local_recordings/data/cloud_recording_share_coordinator.dart             lib/features/local_recordings/data/local_file_index.dart             lib/features/recordings/data/cloud_artifact_downloader.dart             lib/platform/share_plus_service.dart             test/v2c_c5_local_storage_test.dart; do
+            echo "--- BEGIN $file ---"
+            cat "$file"
+            echo "--- END $file ---"
+          done
