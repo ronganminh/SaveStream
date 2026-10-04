@@ -404,9 +404,18 @@ class AdminOverviewService:
         return row
 
     async def purge_expired_support_reports(self) -> int:
-        result = await self.session.execute(
+        now = utcnow()
+        count = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(AdminSupportReport)
+                .where(AdminSupportReport.expires_at <= now)
+            )
+            or 0
+        )
+        await self.session.execute(
             delete(AdminSupportReport).where(
-                AdminSupportReport.expires_at <= utcnow()
+                AdminSupportReport.expires_at <= now
             )
         )
-        return int(result.rowcount or 0)
+        return count
