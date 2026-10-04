@@ -25,6 +25,21 @@ def test_d9_support_report_and_overview_contract() -> None:
         "updateAdminSupportReport"
     )
     assert paths["/admin/overview"]["get"]["operationId"] == "getAdminOverview"
+    assert paths["/admin/support-reports/export.csv"]["get"]["operationId"] == (
+        "exportAdminSupportReports"
+    )
+    assert paths["/admin/reports/revenue.csv"]["get"]["operationId"] == (
+        "exportAdminRevenueReport"
+    )
+    assert paths["/admin/reports/new-users.csv"]["get"]["operationId"] == (
+        "exportAdminNewUsersReport"
+    )
+    assert paths["/admin/reports/cloud-usage.csv"]["get"]["operationId"] == (
+        "exportAdminCloudUsageReport"
+    )
+    assert paths["/admin/reports/recordings.csv"]["get"]["operationId"] == (
+        "exportAdminRecordingStatusReport"
+    )
 
     support_schema = document["components"]["schemas"]["SupportReportCreateRequest"]
     assert set(support_schema["required"]) == {"message"}
@@ -44,6 +59,24 @@ def test_d9_support_report_and_overview_contract() -> None:
     ):
         assert name in schemas
 
+    metric_required = set(schemas["AdminDailyMetric"]["required"])
+    assert {
+        "free_to_pro_weekly",
+        "estimated_store_fee_app_store_usd_minor",
+        "estimated_store_fee_google_play_usd_minor",
+        "recording_total_24h",
+        "cloud_minutes_used",
+        "recording_status_counts",
+    } <= metric_required
+
+    overview_required = set(schemas["AdminOverview"]["required"])
+    assert {
+        "month_revenue_web_usd_minor",
+        "month_revenue_app_store_usd_minor",
+        "month_revenue_google_play_usd_minor",
+        "month_estimated_store_fee_usd_minor",
+    } <= overview_required
+
 
 def test_d9_diagnostics_reject_media_payload_keys() -> None:
     SupportReportCreateRequest(
@@ -60,6 +93,16 @@ def test_d9_diagnostics_reject_media_payload_keys() -> None:
         except ValueError:
             continue
         raise AssertionError(f"diagnostics key {key!r} should be rejected")
+
+    try:
+        SupportReportCreateRequest(
+            message="Nested media should fail",
+            diagnostics={"device": {"logs": [{"video": "forbidden"}]}},
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("nested media diagnostic payload should be rejected")
 
 
 def test_d9_role_matrix_for_overview_and_support_reports() -> None:
