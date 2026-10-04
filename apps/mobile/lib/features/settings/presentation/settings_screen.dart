@@ -179,30 +179,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: SsSpacing.xl),
-            _SectionLabel(label: l10n.settingsRecordingSectionTitle),
-            const SizedBox(height: SsSpacing.sm),
-            SsCard(
-              child: SsListTile(
-                title: platform == DevicePlatform.android
-                    ? l10n.settingsAndroidRecordingTitle
-                    : l10n.settingsIosRecordingTitle,
-                subtitle: platform == DevicePlatform.android
-                    ? l10n.settingsAndroidRecordingSubtitle
-                    : l10n.settingsIosRecordingSubtitle,
-                leading: Icon(
-                  platform == DevicePlatform.android
-                      ? Icons.battery_alert
-                      : Icons.phone_iphone_rounded,
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => context.push(
-                  platform == DevicePlatform.android
-                      ? AppRoutes.androidRecordingGuide
-                      : AppRoutes.iosRecordingGuide,
-                ),
-              ),
-            ),
-            const SizedBox(height: SsSpacing.xl),
             _SectionLabel(label: l10n.settingsLegalSectionTitle),
             const SizedBox(height: SsSpacing.sm),
             SsCard(
@@ -256,6 +232,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: _accountBusy ? null : _deleteAccount,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsRecordingSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: SsListTile(
+                title: platform == DevicePlatform.android
+                    ? l10n.settingsAndroidRecordingTitle
+                    : l10n.settingsIosRecordingTitle,
+                subtitle: platform == DevicePlatform.android
+                    ? l10n.settingsAndroidRecordingSubtitle
+                    : l10n.settingsIosRecordingSubtitle,
+                leading: Icon(
+                  platform == DevicePlatform.android
+                      ? Icons.battery_alert
+                      : Icons.phone_iphone_rounded,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push(
+                  platform == DevicePlatform.android
+                      ? AppRoutes.androidRecordingGuide
+                      : AppRoutes.iosRecordingGuide,
+                ),
               ),
             ),
             if (widget.config.developerToolsEnabled) ...<Widget>[
