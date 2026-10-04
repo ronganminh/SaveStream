@@ -14,6 +14,7 @@ import '../../channels/presentation/controllers/watch_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../domain/models/local_recording_models.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import 'controllers/local_recording_controller.dart';
 
@@ -60,10 +61,9 @@ class LocalRecordingScreen extends ConsumerWidget {
     final LocalRecordingSession? session = controller.activeSession;
     final int remainingSeconds = session == null
         ? 0
-        : (session.grantedSeconds - state.recordedSeconds).clamp(
-            0,
-            session.grantedSeconds,
-          );
+        : (session.grantedSeconds - state.recordedSeconds)
+              .clamp(0, session.grantedSeconds)
+              .toInt();
 
     return Scaffold(
       appBar: AppBar(
@@ -160,6 +160,9 @@ class LocalRecordingScreen extends ConsumerWidget {
                               await controller.stop(
                                 status: RecordingStatus.completed,
                               );
+                              if (context.mounted) {
+                                context.pop();
+                              }
                             },
                     ),
                   ],
