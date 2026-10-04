@@ -4,8 +4,8 @@ import '../../../../platform/platform_providers.dart';
 import '../../../local_recordings/domain/models/local_recording_models.dart';
 import '../../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../domain/models/recording_summary.dart';
-import 'recording_providers.dart';
 import '../models/recording_library_item.dart';
+import 'recording_providers.dart';
 
 final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
     FutureProvider<List<RecordingLibraryItem>>((Ref ref) async {
@@ -37,8 +37,7 @@ final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
       return List<RecordingLibraryItem>.unmodifiable(items);
     });
 
-final FutureProviderFamily<LocalRecordingSummary?, String>
-localRecordingLibraryDetailProvider =
+final localRecordingLibraryDetailProvider =
     FutureProvider.family<LocalRecordingSummary?, String>((
       Ref ref,
       String id,
