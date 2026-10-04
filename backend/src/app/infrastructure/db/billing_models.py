@@ -27,6 +27,14 @@ class CreditPackage(Base):
     __tablename__ = "credit_packages"
     __table_args__ = (
         UniqueConstraint("code", name="uq_credit_packages_code"),
+        UniqueConstraint(
+            "app_store_product_id",
+            name="uq_credit_packages_app_store_product_id",
+        ),
+        UniqueConstraint(
+            "google_play_product_id",
+            name="uq_credit_packages_google_play_product_id",
+        ),
         CheckConstraint("credits > 0", name="credits_positive"),
         CheckConstraint("amount_minor >= 0", name="amount_minor_nonnegative"),
         Index("ix_credit_packages_active", "active", "created_at"),
@@ -39,6 +47,14 @@ class CreditPackage(Base):
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    app_store_product_id: Mapped[str | None] = mapped_column(
+        String(160),
+        nullable=True,
+    )
+    google_play_product_id: Mapped[str | None] = mapped_column(
+        String(160),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

@@ -17,6 +17,7 @@ from app.infrastructure.db.models import NotificationPreference, UserNotificatio
 from app.infrastructure.db.watch_models import Watch
 from app.infrastructure.queue.outbox import OutboxWriter
 from app.infrastructure.db.recording_models import Recording
+from app.infrastructure.db.billing_models import PaymentOrder
 
 
 def utcnow() -> datetime:
@@ -360,6 +361,41 @@ async def ensure_creator_live_notification(
         body=f"{handle} is LIVE now.",
         resource_type="watch",
         resource_id=str(watch.id),
+        dedupe_key=dedupe_key,
+    )
+    session.add(notification)
+    await session.flush()
+    await OutboxWriter().enqueue(
+        session,
+        topic="notification.push",
+        aggregate_type="notification",
+        aggregate_id=str(notification.id),
+        payload={"notification_id": str(notification.id)},
+    )
+    return notification
+
+
+async def ensure_purchase_completed_notification(
+    session: AsyncSession,
+    order: PaymentOrder,
+) -> UserNotification:
+    dedupe_key = f"payment_order:{order.id}:purchase_completed"
+    notification_id = uuid.uuid5(
+        uuid.NAMESPACE_URL,
+        f"savestream:{order.user_id}:{dedupe_key}",
+    )
+    existing = await session.get(UserNotification, notification_id)
+    if existing is not None:
+        return existing
+
+    notification = UserNotification(
+        id=notification_id,
+        user_id=order.user_id,
+        kind="purchase_completed",
+        title="Purchase completed",
+        body=f"{order.credits} cloud minutes were added to your account.",
+        resource_type=None,
+        resource_id=None,
         dedupe_key=dedupe_key,
     )
     session.add(notification)

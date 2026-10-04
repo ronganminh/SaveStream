@@ -92,13 +92,18 @@ def fund_credits(
     )
     packages_response.raise_for_status()
     packages = packages_response.json()["items"]
-    if len(packages) != 1:
-        raise RuntimeError(f"expected one E2E package, got {len(packages)}")
+    e2e_packages = [
+        package for package in packages if package["credits"] == 100
+    ]
+    if len(e2e_packages) != 1:
+        raise RuntimeError(
+            f"expected one 100-credit E2E package, got {len(e2e_packages)}"
+        )
 
     order_response = client.post(
         f"{api}/v1/billing/payment-orders",
         headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
-        json={"package_id": packages[0]["id"]},
+        json={"package_id": e2e_packages[0]["id"]},
     )
     order_response.raise_for_status()
     order = order_response.json()

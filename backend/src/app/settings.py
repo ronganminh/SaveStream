@@ -172,6 +172,19 @@ class AppSettings:
     push_fcm_base_url: str = "https://fcm.googleapis.com"
     push_fcm_token_url: str = "https://oauth2.googleapis.com/token"
     push_timeout_seconds: float = 10.0
+    store_purchase_provider: str = "disabled"
+    app_store_bundle_id: str = ""
+    app_store_issuer_id: str = ""
+    app_store_key_id: str = ""
+    app_store_private_key: str = field(default="", repr=False)
+    app_store_root_certificates_json: str = field(default="", repr=False)
+    app_store_app_apple_id: int = 0
+    app_store_environment: str = "sandbox"
+    google_play_package_name: str = ""
+    google_play_service_account_json: str = field(default="", repr=False)
+    google_play_rtdn_audience: str = ""
+    google_play_rtdn_service_account_email: str = ""
+    store_purchase_timeout_seconds: float = 15.0
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -260,6 +273,52 @@ class AppSettings:
             "https://oauth2.googleapis.com/token",
         )
         push_timeout_seconds = _float_env("PUSH_TIMEOUT_SECONDS", 10.0)
+        store_purchase_provider = _env(
+            "STORE_PURCHASE_PROVIDER",
+            "disabled",
+        ).lower()
+        if store_purchase_provider not in {"disabled", "fake", "live"}:
+            raise ValueError(
+                "SAVESTREAM_STORE_PURCHASE_PROVIDER must be one of "
+                "disabled, fake, live"
+            )
+        app_store_bundle_id = _env("APP_STORE_BUNDLE_ID", "")
+        app_store_issuer_id = _env("APP_STORE_ISSUER_ID", "")
+        app_store_key_id = _env("APP_STORE_KEY_ID", "")
+        app_store_private_key = _secret_env("APP_STORE_PRIVATE_KEY", "")
+        app_store_root_certificates_json = _secret_env(
+            "APP_STORE_ROOT_CERTIFICATES_JSON",
+            "",
+        )
+        app_store_app_apple_id = _nonnegative_int_env(
+            "APP_STORE_APP_APPLE_ID",
+            0,
+        )
+        app_store_environment = _env(
+            "APP_STORE_ENVIRONMENT",
+            "sandbox",
+        ).lower()
+        if app_store_environment not in {"sandbox", "production"}:
+            raise ValueError(
+                "SAVESTREAM_APP_STORE_ENVIRONMENT must be sandbox or production"
+            )
+        google_play_package_name = _env("GOOGLE_PLAY_PACKAGE_NAME", "")
+        google_play_service_account_json = _secret_env(
+            "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
+            "",
+        )
+        google_play_rtdn_audience = _env(
+            "GOOGLE_PLAY_RTDN_AUDIENCE",
+            "",
+        )
+        google_play_rtdn_service_account_email = _env(
+            "GOOGLE_PLAY_RTDN_SERVICE_ACCOUNT_EMAIL",
+            "",
+        )
+        store_purchase_timeout_seconds = _float_env(
+            "STORE_PURCHASE_TIMEOUT_SECONDS",
+            15.0,
+        )
         if push_provider == "fcm" and not push_fcm_service_account_json:
             raise ValueError(
                 "SAVESTREAM_PUSH_FCM_SERVICE_ACCOUNT_JSON is required when "
@@ -274,6 +333,26 @@ class AppSettings:
                 "SAVESTREAM_E2E_STREAM_BASE_URL is required for fake_http recording backend"
             )
         if environment_raw == "production":
+            if store_purchase_provider == "fake":
+                raise ValueError(
+                    "SAVESTREAM_STORE_PURCHASE_PROVIDER cannot be fake in production"
+                )
+            if store_purchase_provider == "live" and (
+                not app_store_bundle_id
+                or not app_store_issuer_id
+                or not app_store_key_id
+                or not app_store_private_key
+                or not app_store_root_certificates_json
+                or app_store_app_apple_id <= 0
+                or not google_play_package_name
+                or not google_play_service_account_json
+                or not google_play_rtdn_audience
+                or not google_play_rtdn_service_account_email
+            ):
+                raise ValueError(
+                    "Apple and Google store credentials must be configured "
+                    "when SAVESTREAM_STORE_PURCHASE_PROVIDER=live in production"
+                )
             if push_provider == "fcm" and (
                 not push_fcm_base_url.startswith("https://")
                 or not push_fcm_token_url.startswith("https://")
@@ -489,6 +568,21 @@ class AppSettings:
             push_fcm_base_url=push_fcm_base_url,
             push_fcm_token_url=push_fcm_token_url,
             push_timeout_seconds=push_timeout_seconds,
+            store_purchase_provider=store_purchase_provider,
+            app_store_bundle_id=app_store_bundle_id,
+            app_store_issuer_id=app_store_issuer_id,
+            app_store_key_id=app_store_key_id,
+            app_store_private_key=app_store_private_key,
+            app_store_root_certificates_json=app_store_root_certificates_json,
+            app_store_app_apple_id=app_store_app_apple_id,
+            app_store_environment=app_store_environment,
+            google_play_package_name=google_play_package_name,
+            google_play_service_account_json=google_play_service_account_json,
+            google_play_rtdn_audience=google_play_rtdn_audience,
+            google_play_rtdn_service_account_email=(
+                google_play_rtdn_service_account_email
+            ),
+            store_purchase_timeout_seconds=store_purchase_timeout_seconds,
         )
 
 

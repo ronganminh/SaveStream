@@ -57,8 +57,12 @@ class BillingCreditService:
         user_id: uuid.UUID,
         payment_order_id: uuid.UUID,
         credits: int,
+        idempotency_reference: str | None = None,
     ) -> CreditLedgerEntry:
-        reference_key = f"payment:{payment_order_id}:grant"
+        reference_key = (
+            idempotency_reference
+            or f"payment:{payment_order_id}:grant"
+        )
         existing = await self.session.scalar(
             select(CreditLedgerEntry).where(
                 CreditLedgerEntry.reference_key == reference_key
@@ -181,3 +185,51 @@ class BillingCreditService:
         self.session.add(entry)
         await self.session.flush()
         return entry
+
+
+    async def revoke_store_purchase(
+        self,
+        *,
+        user_id: uuid.UUID,
+        payment_order_id: uuid.UUID,
+        event_id: str,
+        credits: int,
+    ) -> int:
+        """Claw back store credits without taking the account below zero/reserved."""
+
+        reference_key = f"store-refund:{event_id}"
+        existing = await self.session.scalar(
+            select(CreditLedgerEntry).where(
+                CreditLedgerEntry.reference_key == reference_key
+            )
+        )
+        if existing is not None:
+            return max(0, -existing.amount)
+
+        account = await self._account(user_id)
+        reserved = await self._reserved(account.id)
+        removable = max(account.posted_balance - reserved, 0)
+        deducted = min(max(credits, 0), removable)
+        if deducted <= 0:
+            return 0
+
+        account.posted_balance -= deducted
+        self.session.add(
+            CreditLedgerEntry(
+                account_id=account.id,
+                user_id=user_id,
+                entry_type="refund",
+                amount=-deducted,
+                balance_after=account.posted_balance,
+                reference_type="store_refund",
+                reference_id=str(payment_order_id),
+                reference_key=reference_key,
+                details={
+                    "source": "store_notification",
+                    "requested_credits": credits,
+                    "deducted_credits": deducted,
+                },
+            )
+        )
+        await self.session.flush()
+        return deducted

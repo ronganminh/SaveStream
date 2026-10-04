@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Query, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_billing_service, require_scopes
+from app.api.dependencies import (
+    get_billing_service,
+    get_db_session,
+    require_scopes,
+)
 from app.api.schemas.billing import (
     CheckoutRequest,
     CheckoutResponse,
@@ -10,11 +15,15 @@ from app.api.schemas.billing import (
     CreditPackageListResponse,
     PaymentOrderListResponse,
     PaymentOrderResponse,
+    StorePurchaseRequest,
+    StorePurchaseResponse,
 )
 from app.api.schemas.recordings import Pagination
 from app.api.serializers.billing import package_response, payment_order_response
 from app.application.billing.service import BillingService
+from app.application.billing.store import StorePurchaseService
 from app.domain.identity.types import AuthPrincipal
+from app.infrastructure.store.factory import store_receipt_verifier_for_platform
 
 router = APIRouter(prefix="/v1/billing", tags=["Billing"])
 
@@ -118,4 +127,33 @@ async def create_payment_checkout(
     return CheckoutResponse(
         checkout_url=result.checkout_url,
         payment_order=payment_order_response(result.payment_order),
+    )
+
+
+@router.post(
+    "/store-purchases",
+    response_model=StorePurchaseResponse,
+    operation_id="createStorePurchase",
+)
+async def create_store_purchase(
+    payload: StorePurchaseRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(require_scopes("billing:write")),
+    session: AsyncSession = Depends(get_db_session),
+) -> StorePurchaseResponse:
+    verifier = store_receipt_verifier_for_platform(
+        request.app.state.settings,
+        payload.platform,
+    )
+    result = await StorePurchaseService(session, verifier).purchase(
+        user_id=principal.user_id,
+        product_id=payload.product_id,
+        transaction_id=payload.transaction_id,
+        receipt=payload.receipt,
+    )
+    return StorePurchaseResponse(
+        status=result.status,
+        payment_order_id=str(result.payment_order_id),
+        cloud_minutes_added=result.cloud_minutes_added,
+        cloud_minutes_available=result.cloud_minutes_available,
     )
