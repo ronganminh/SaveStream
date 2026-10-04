@@ -50,9 +50,7 @@ void main() {
     try {
       final StreamProbeResult result = await StreamProbe().run(
         StreamProbeRequest(
-          uri: Uri.parse(
-            'http://127.0.0.1:${server.port}/sample.flv',
-          ),
+          uri: Uri.parse('http://127.0.0.1:${server.port}/sample.flv'),
           outputFile: output,
           maxDuration: const Duration(seconds: 5),
           headers: const <String, String>{'x-spike-token': 'expected'},
