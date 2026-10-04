@@ -119,7 +119,8 @@ class _RecordingPlatformBridgeState
       });
     }
 
-    if (session != null &&
+    if (active &&
+        session != null &&
         state != null &&
         creatorName != null &&
         entitlement != null) {
