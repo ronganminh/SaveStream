@@ -422,6 +422,252 @@ export type AdminBroadcastFilters = {
   sortOrder?: "asc" | "desc";
 };
 
+
+export type AdminPaymentChannel = "web" | "app_store" | "google_play";
+export type AdminPaymentOrder = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  package_id: string;
+  package_code: string;
+  package_name: string;
+  status:
+    | "created"
+    | "pending"
+    | "paid"
+    | "failed"
+    | "cancelled"
+    | "expired"
+    | "partially_refunded"
+    | "refunded";
+  purchase_channel: AdminPaymentChannel;
+  provider: string | null;
+  provider_transaction_id: string | null;
+  credits: number;
+  amount_minor: number;
+  currency: string;
+  refunded_credits: number;
+  refunded_amount_minor: number;
+  gross_usd_minor: number | null;
+  estimated_store_fee_minor: number | null;
+  estimated_store_fee_rate_bps: number | null;
+  refund_mode: "admin_web" | "store_managed";
+  paid_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminPaymentFilters = {
+  cursor?: string | null;
+  query?: string;
+  status?: string;
+  channel?: "" | AdminPaymentChannel;
+  packageId?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type AdminPaymentDetail = {
+  order: AdminPaymentOrder;
+  timeline: Array<{
+    at: string;
+    event: string;
+    status: string | null;
+    detail: string | null;
+  }>;
+};
+
+export type AdminRefundPreview = {
+  payment_order_id: string;
+  amount_minor: number;
+  corresponding_credits: number;
+  deducted_credits: number;
+  balance_available: number;
+  remaining_refundable_amount_minor: number;
+  remaining_refundable_credits: number;
+};
+
+export type AdminStuckPayment = {
+  order: AdminPaymentOrder;
+  reason: "pending_too_long" | "paid_missing_credit";
+};
+
+export type AdminLedgerCategory = "purchase" | "spend" | "refund" | "adjustment" | "gift";
+export type AdminLedgerEntry = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  category: AdminLedgerCategory;
+  type: string;
+  amount: number;
+  balance_after: number;
+  reference_type: string;
+  reference_id: string | null;
+  reason: string | null;
+  counts_as_purchase: boolean;
+  created_at: string;
+};
+
+export type AdminLedgerFilters = {
+  cursor?: string | null;
+  userId?: string;
+  category?: "" | AdminLedgerCategory;
+  createdFrom?: string;
+  createdTo?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type AdminStuckReservation = {
+  id: string;
+  user_id: string;
+  recording_id: string;
+  recording_status: string;
+  reserved: number;
+  settled: number;
+  released: number;
+  remaining_reserved: number;
+  created_at: string;
+};
+
+export const adminFinanceApi = {
+  listPayments(filters: AdminPaymentFilters = {}) {
+    const query = new URLSearchParams({ limit: "50", sort_order: filters.sortOrder ?? "desc" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.query) query.set("query", filters.query);
+    if (filters.status) query.set("status", filters.status);
+    if (filters.channel) query.set("channel", filters.channel);
+    if (filters.packageId) query.set("package_id", filters.packageId);
+    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
+    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    return apiClient.get<{ items: AdminPaymentOrder[]; pagination: Pagination }>(
+      `/v1/admin/payments?${query.toString()}`,
+    );
+  },
+
+  paymentDetail(orderId: string) {
+    return apiClient.get<AdminPaymentDetail>(`/v1/admin/payments/${orderId}`);
+  },
+
+  exportPayments(filters: AdminPaymentFilters = {}) {
+    const query = new URLSearchParams({ sort_order: filters.sortOrder ?? "desc" });
+    if (filters.query) query.set("query", filters.query);
+    if (filters.status) query.set("status", filters.status);
+    if (filters.channel) query.set("channel", filters.channel);
+    if (filters.packageId) query.set("package_id", filters.packageId);
+    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
+    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    return apiClient.get<string>(`/v1/admin/payments/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  refundPreview(orderId: string, amountMinor: number) {
+    return apiClient.get<AdminRefundPreview>(
+      `/v1/admin/payments/${orderId}/refund-preview?amount_minor=${amountMinor}`,
+    );
+  },
+
+  refund(
+    orderId: string,
+    amountMinor: number,
+    credits: number,
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<{
+      id: string;
+      payment_order_id: string;
+      status: string;
+      credits: number;
+      amount_minor: number;
+    }>(`/v1/admin/payments/${orderId}/refunds`, {
+      json: { amount_minor: amountMinor, credits, reason },
+      headers: {
+        ...stepUpHeaders(stepUpToken),
+        "Idempotency-Key": crypto.randomUUID(),
+      },
+    });
+  },
+
+  stuckPayments(cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<{ items: AdminStuckPayment[]; pagination: Pagination }>(
+      `/v1/admin/payments/stuck?${query.toString()}`,
+    );
+  },
+
+  reconcilePayment(orderId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<{ payment_order_id: string; action: string; status: string }>(
+      `/v1/admin/payments/${orderId}/reconcile`,
+      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
+    );
+  },
+
+  listLedger(filters: AdminLedgerFilters = {}) {
+    const query = new URLSearchParams({ limit: "50", sort_order: filters.sortOrder ?? "desc" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.userId) query.set("user_id", filters.userId);
+    if (filters.category) query.set("category", filters.category);
+    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
+    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    return apiClient.get<{ items: AdminLedgerEntry[]; pagination: Pagination }>(
+      `/v1/admin/credits/ledger?${query.toString()}`,
+    );
+  },
+
+  exportLedger(filters: AdminLedgerFilters = {}) {
+    const query = new URLSearchParams({ sort_order: filters.sortOrder ?? "desc" });
+    if (filters.userId) query.set("user_id", filters.userId);
+    if (filters.category) query.set("category", filters.category);
+    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
+    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    return apiClient.get<string>(`/v1/admin/credits/ledger/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  adjustCredits(
+    userId: string,
+    amount: number,
+    reason: string,
+    countsAsPurchase: boolean,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<{ transaction: CreditTransactionResponse }>(
+      "/v1/admin/credits/adjustments",
+      {
+        json: {
+          user_id: userId,
+          amount,
+          reason,
+          counts_as_purchase: countsAsPurchase,
+        },
+        headers: {
+          ...stepUpHeaders(stepUpToken),
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+      },
+    );
+  },
+
+  stuckReservations(cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<{ items: AdminStuckReservation[]; pagination: Pagination }>(
+      `/v1/admin/credits/stuck-reservations?${query.toString()}`,
+    );
+  },
+
+  releaseReservation(reservationId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<{ reservation: AdminStuckReservation; released_credits: number }>(
+      `/v1/admin/credits/stuck-reservations/${reservationId}/release`,
+      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
+    );
+  },
+};
+
 export const adminOperationsApi = {
   storageSummary() {
     return apiClient.get<AdminStorageSummary>("/v1/admin/storage/summary");
