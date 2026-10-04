@@ -1066,5 +1066,71 @@
   },
   "rewardMinutesWorkingAction": "Đang xử lý…",
   "rewardMinutesLockedTitle": "Tạm khoá quảng cáo nhận thưởng",
-  "rewardMinutesLockedBody": "Có nhiều lượt xác nhận không thành công. Thử lại sau. Recording vẫn tiếp tục tới khi hết phút Free còn lại."
+  "rewardMinutesLockedBody": "Có nhiều lượt xác nhận không thành công. Thử lại sau. Recording vẫn tiếp tục tới khi hết phút Free còn lại.",
+  "timeUnknownLabel": "xác nhận từ server",
+  "secondLocalSlotTitle": "Mở slot Local #2 trong 1 giờ",
+  "secondLocalSlotOfferBody": "Xem 2 quảng cáo nhận thưởng để record thêm 1 creator cùng lúc. Server phải xác nhận đủ 2 phần thưởng trước khi mở slot.",
+  "secondLocalSlotProgress": "Quảng cáo mở slot {used}/{required}",
+  "@secondLocalSlotProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotSharedQuotaTitle": "Phút Free dùng chung",
+  "secondLocalSlotSharedQuotaBody": "Hai recording Local cùng lúc sẽ dùng thời gian Free nhanh gấp đôi.",
+  "secondLocalSlotVerifyStep": "Xác nhận phần thưởng slot {current}/{required}",
+  "@secondLocalSlotVerifyStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotPendingBody": "Tiến độ mở slot sẽ cập nhật khi SaveStream nhận xác nhận từ server.",
+  "secondLocalSlotUnlockedTitle": "Slot Local #2 đã mở",
+  "secondLocalSlotUnlockedBody": "Bạn có thể bắt đầu thêm 1 recording Local tới {time}. Recording thứ hai đang chạy sẽ không bị dừng khi slot hết hạn.",
+  "@secondLocalSlotUnlockedBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotExpiredTitle": "Slot Local #2 đã đóng",
+  "secondLocalSlotExpiredBody": "Slot đã đóng lúc {time}. Mở lại cần 2 quảng cáo được server xác nhận.",
+  "@secondLocalSlotExpiredBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotRecordNow": "Record ngay {name}",
+  "@secondLocalSlotRecordNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotWatchAdAction": "Xem quảng cáo {current}/{required}",
+  "@secondLocalSlotWatchAdAction": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotBusy": "Cả hai slot Local đang được sử dụng."
 }
