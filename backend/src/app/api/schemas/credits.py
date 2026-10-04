@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.recordings import Pagination
 
@@ -52,3 +52,14 @@ class PricingResponse(StrictModel):
     version: str
     credit_unit: Literal["credit"] = "credit"
     rules: list[dict[str, Any]]
+
+
+class RedeemPromotionRequest(StrictModel):
+    code: str = Field(min_length=3, max_length=64)
+
+
+class RedeemPromotionResponse(StrictModel):
+    code: str
+    cloud_minutes_added: int
+    cloud_minutes_available: int
+    counts_as_purchase: bool

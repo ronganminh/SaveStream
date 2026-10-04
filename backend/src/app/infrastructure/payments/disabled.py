@@ -37,8 +37,9 @@ class DisabledPaymentProvider:
         amount_minor: int,
         currency: str,
         return_url: str,
+        variant_id: str | None = None,
     ) -> CheckoutSession:
-        del order_id, amount_minor, currency, return_url
+        del order_id, amount_minor, currency, return_url, variant_id
         _payments_disabled()
 
     async def create_refund(

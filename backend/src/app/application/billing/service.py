@@ -150,7 +150,7 @@ class BillingService:
                 await self.session.scalars(
                     select(CreditPackage)
                     .where(CreditPackage.active.is_(True))
-                    .order_by(CreditPackage.credits, CreditPackage.id)
+                    .order_by(CreditPackage.display_order, CreditPackage.credits, CreditPackage.id)
                 )
             ).all()
         )
@@ -328,6 +328,14 @@ class BillingService:
             if order.checkout_url:
                 return CheckoutResult(order.checkout_url, order)
 
+        package = await self.session.get(CreditPackage, order.package_id)
+        if package is None:
+            raise ApplicationError(
+                "INTERNAL_ERROR",
+                "Payment order package is missing",
+                status_code=500,
+            )
+
         status = PaymentStatus(order.status)
         if status is PaymentStatus.PENDING and order.checkout_url:
             checkout_url = order.checkout_url
@@ -337,6 +345,7 @@ class BillingService:
                 amount_minor=order.amount_minor,
                 currency=order.currency,
                 return_url=return_url,
+                variant_id=package.web_variant_id,
             )
             order.provider = self.provider.name
             order.provider_reference = session.provider_reference

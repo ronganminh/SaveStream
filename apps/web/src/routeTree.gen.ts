@@ -33,6 +33,7 @@ import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
 import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
+import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
@@ -178,6 +179,11 @@ const AdminErrorsRoute = AdminErrorsRouteImport.update({
 const AdminOperationsRoute = AdminOperationsRouteImport.update({
   id: '/admin/operations',
   path: '/admin/operations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCatalogRoute = AdminCatalogRouteImport.update({
+  id: '/admin/catalog',
+  path: '/admin/catalog',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/usage': typeof UsageRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/admin/users': typeof AdminUsersIndexRoute
@@ -434,6 +442,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -488,6 +497,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/catalog'
     | '/admin/payments'
     | '/admin/jobs'
     | '/admin/users'
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/catalog'
     | '/admin/payments'
     | '/admin/system'
     | '/admin/workers'
@@ -585,6 +596,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/catalog'
     | '/admin/payments'
     | '/admin/jobs'
     | '/admin/users'
@@ -638,6 +650,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
+  AdminCatalogRoute: typeof AdminCatalogRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
@@ -814,6 +827,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/operations'
       fullPath: '/admin/operations'
       preLoaderRoute: typeof AdminOperationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/catalog': {
+      id: '/admin/catalog'
+      path: '/admin/catalog'
+      fullPath: '/admin/catalog'
+      preLoaderRoute: typeof AdminCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/payments': {
@@ -1135,6 +1155,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminOperationsRoute: AdminOperationsRoute,
+  AdminCatalogRoute: AdminCatalogRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminJobsRoute: AdminJobsRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,

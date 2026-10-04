@@ -52,6 +52,7 @@ class LemonSqueezyPaymentProvider:
         amount_minor: int,
         currency: str,
         return_url: str,
+        variant_id: str | None = None,
     ) -> CheckoutSession:
         del currency
         payload = {
@@ -81,7 +82,7 @@ class LemonSqueezyPaymentProvider:
                     "variant": {
                         "data": {
                             "type": "variants",
-                            "id": self.settings.lemon_squeezy_variant_id,
+                            "id": variant_id or self.settings.lemon_squeezy_variant_id,
                         }
                     },
                 },
