@@ -18,6 +18,7 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/local_recording_models.dart';
 import 'controllers/local_recording_controller.dart';
+import 'controllers/recording_platform_controller.dart';
 import 'controllers/rewarded_minutes_controller.dart';
 import 'local_recording_alerts.dart';
 import 'local_recording_reward_sheet.dart';
@@ -313,6 +314,16 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
               endReason: endReason,
               status: RecordingStatus.completed,
             );
+      if (!mounted) return;
+      await ref
+          .read(recordingPlatformControllerProvider)
+          .showCompleted(
+            l10n: context.l10n,
+            creatorName: summary.creatorDisplayName,
+            recordedSeconds: summary.recordedSeconds,
+            sizeBytes: summary.sizeBytes,
+            recordingId: summary.id,
+          );
       if (!mounted) return;
       setState(() {
         _completed = summary;
