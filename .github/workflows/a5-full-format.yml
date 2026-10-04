@@ -1,0 +1,34 @@
+name: A5 Full Format
+
+on:
+  push:
+    branches:
+      - tmp/a5-full-format-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
+      - name: Commit formatter output and remove temp workflow
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/a5-full-format.yml
+          git add apps/mobile/lib/app apps/mobile/lib/core apps/mobile/lib/features apps/mobile/lib/l10n/l10n.dart apps/mobile/test
+          git commit -m "style(mobile): format A5 full scope [formatted]"
+          git push
