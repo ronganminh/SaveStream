@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
 import '../router/app_routes.dart';
@@ -27,7 +28,7 @@ class MainShell extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: navigationShell,
+      body: RecordingPlatformBridge(child: navigationShell),
       floatingActionButton: compactFab
           ? FloatingActionButton(
               tooltip: l10n.addChannelAction,
