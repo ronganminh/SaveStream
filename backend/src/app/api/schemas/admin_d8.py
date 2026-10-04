@@ -94,3 +94,31 @@ class AdminCreatorBlockResponse(StrictModel):
     created_at: datetime
     stopped_recording_ids: list[str] = Field(default_factory=list)
     paused_watch_ids: list[str] = Field(default_factory=list)
+
+
+class AdminSuspiciousAccountResponse(StrictModel):
+    user_id: str
+    email: str
+    created_at: datetime
+    rate_limit_hits_24h: int = Field(ge=0)
+    shared_signup_ip_accounts_7d: int = Field(ge=0)
+    reward_valid_7d: int = Field(ge=0)
+    reward_invalid_7d: int = Field(ge=0)
+    reward_invalid_ratio_7d: float = Field(ge=0, le=1)
+    reward_invalid_streak: int = Field(ge=0)
+    reward_locked_until: datetime | None
+    reasons: list[str]
+
+
+class AdminSuspiciousAccountListResponse(StrictModel):
+    items: list[AdminSuspiciousAccountResponse]
+
+
+class AdminDeleteBlockedRecordingsRequest(StrictModel):
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminDeleteBlockedRecordingsResponse(StrictModel):
+    block_id: str
+    deleted_recording_ids: list[str]
+    pending_stop_recording_ids: list[str]
