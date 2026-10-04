@@ -1,8 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:savestream_mobile/core/mock/mock_repository_base.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
-import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/entitlement/domain/repositories/entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
