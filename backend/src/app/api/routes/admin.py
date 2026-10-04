@@ -5,7 +5,7 @@ import csv
 import io
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import cast
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
@@ -3165,7 +3165,7 @@ async def _admin_complaint_response(
     )
     return AdminComplaintResponse(
         id=str(case.id),
-        kind=case.kind,
+        kind=cast(Literal["copyright", "abuse"], case.kind),
         complainant_name=case.complainant_name,
         complainant_email=case.complainant_email,
         channel_source_type=case.channel_source_type,
@@ -3173,7 +3173,10 @@ async def _admin_complaint_response(
         recording_id=str(case.recording_id) if case.recording_id else None,
         summary=case.summary,
         body=case.body,
-        status=case.status,
+        status=cast(
+            Literal["new", "reviewing", "resolved", "rejected"],
+            case.status,
+        ),
         assigned_to_user_id=(
             str(case.assigned_to_user_id) if case.assigned_to_user_id else None
         ),
