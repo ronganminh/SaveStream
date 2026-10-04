@@ -1532,6 +1532,7 @@ export const adminD9Api = {
     status?: string;
     assignedToUserId?: string;
     query?: string;
+    sortOrder?: "asc" | "desc";
   } = {}) {
     const query = new URLSearchParams({ limit: "50" });
     if (filters.cursor) query.set("cursor", filters.cursor);
@@ -1540,11 +1541,31 @@ export const adminD9Api = {
       query.set("assigned_to_user_id", filters.assignedToUserId);
     }
     if (filters.query) query.set("query", filters.query);
+    query.set("sort_order", filters.sortOrder ?? "desc");
     return apiClient.get<{
       items: AdminSupportReport[];
       next_cursor: string | null;
       has_more: boolean;
     }>(`/v1/admin/support-reports?${query.toString()}`);
+  },
+
+  exportSupportReports(filters: {
+    status?: string;
+    assignedToUserId?: string;
+    query?: string;
+    sortOrder?: "asc" | "desc";
+  } = {}) {
+    const query = new URLSearchParams();
+    if (filters.status) query.set("status", filters.status);
+    if (filters.assignedToUserId) {
+      query.set("assigned_to_user_id", filters.assignedToUserId);
+    }
+    if (filters.query) query.set("query", filters.query);
+    query.set("sort_order", filters.sortOrder ?? "desc");
+    return apiClient.get<string>(
+      `/v1/admin/support-reports/export.csv?${query.toString()}`,
+      { responseMode: "text" },
+    );
   },
 
   getSupportReport(reportId: string) {
