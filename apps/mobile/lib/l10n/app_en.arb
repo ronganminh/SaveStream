@@ -955,5 +955,16 @@
   "localRecordingStatusActive": "Recording",
   "localRecordingAndroidActiveTitle": "Recording in the background",
   "localRecordingAndroidActiveBody": "You can switch apps. Android keeps an ongoing recording notification until you stop.",
-  "localRecordingIosActiveBody": "Keep SaveStream in the foreground and do not lock the screen while recording."
+  "localRecordingIosActiveBody": "Keep SaveStream in the foreground and do not lock the screen while recording.",
+  "localRecordingConnectingSlowBody": "Connecting is taking longer than usual…",
+  "localRecordingMinuteWarningTitle": "Less than 1 minute of Free time left",
+  "localRecordingMinuteWarningBody": "Recording will stop and save when your Free time runs out.",
+  "localRecordingRewardMinutesAction": "+{minutes} minutes (watch an ad)",
+  "@localRecordingRewardMinutesAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }
