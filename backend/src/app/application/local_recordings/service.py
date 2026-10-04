@@ -19,6 +19,7 @@ from app.api.schemas.local_recordings import (
 )
 from app.api.schemas.recordings import Source
 from app.application.entitlements.service import EntitlementService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.notifications.service import (
     ensure_free_minutes_low_notification,
 )
@@ -140,7 +141,10 @@ class LocalRecordingService:
             )
         )
         used = row.used_minutes if row is not None else 0
-        return max(self.settings.free_local_daily_minutes - used, 0)
+        free_daily_minutes = await RuntimeSettingsService(
+            self.session, self.settings
+        ).integer("free_local_daily_minutes")
+        return max(free_daily_minutes - used, 0)
 
     async def active_slot_grant(
         self,
@@ -313,7 +317,10 @@ class LocalRecordingService:
                 now=now,
                 session_id=None,
             )
-            granted_seconds = self.settings.reward_minutes * 60
+            reward_minutes = await RuntimeSettingsService(
+                self.session, self.settings
+            ).integer("reward_minutes")
+            granted_seconds = reward_minutes * 60
             reward.session_id = None
         else:
             remaining = await self.minutes_remaining(user_id, now=now)
@@ -442,7 +449,10 @@ class LocalRecordingService:
             )
         now = utcnow()
         if row.unlimited:
-            if self.settings.pro_local_recording != "unlimited":
+            pro_local_recording = await RuntimeSettingsService(
+                self.session, self.settings
+            ).string("pro_local_recording")
+            if pro_local_recording != "unlimited":
                 raise ApplicationError(
                     "LOCAL_RECORDING_DISABLED",
                     "Local recording is disabled for Pro accounts",
@@ -463,7 +473,10 @@ class LocalRecordingService:
                 session_id=row.id,
             )
             reward.session_id = row.id
-            extra = self.settings.reward_minutes * 60
+            reward_minutes = await RuntimeSettingsService(
+                self.session, self.settings
+            ).integer("reward_minutes")
+            extra = reward_minutes * 60
 
         old_expiry = max(aware(row.lease_expires_at), now)
         new_expiry = old_expiry + timedelta(seconds=extra)
@@ -527,8 +540,11 @@ class LocalRecordingService:
             usage_day = aware(row.started_at).date()
             usage = await self._usage(user_id, usage_day, lock=True)
             usage.used_minutes += math.ceil(free_seconds / 60)
+            free_daily_minutes = await RuntimeSettingsService(
+                self.session, self.settings
+            ).integer("free_local_daily_minutes")
             remaining = max(
-                self.settings.free_local_daily_minutes - usage.used_minutes,
+                free_daily_minutes - usage.used_minutes,
                 0,
             )
             await ensure_free_minutes_low_notification(
@@ -570,8 +586,11 @@ class LocalRecordingService:
                 usage_day = aware(row.started_at).date()
                 usage = await self._usage(row.user_id, usage_day, lock=True)
                 usage.used_minutes += math.ceil(row.free_granted_seconds / 60)
+                free_daily_minutes = await RuntimeSettingsService(
+                    self.session, self.settings
+                ).integer("free_local_daily_minutes")
                 remaining = max(
-                    self.settings.free_local_daily_minutes - usage.used_minutes,
+                    free_daily_minutes - usage.used_minutes,
                     0,
                 )
                 await ensure_free_minutes_low_notification(

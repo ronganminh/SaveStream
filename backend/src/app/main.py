@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -45,6 +46,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         redis = RedisClient(cfg.redis_url)
         minio = MinioStorageClient(cfg)
         app.state.settings = cfg
+        app.state.started_at = datetime.now(timezone.utc)
         app.state.database = database
         app.state.redis = redis
         app.state.rate_limiter = RedisRateLimiter(redis.client)

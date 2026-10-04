@@ -71,6 +71,13 @@ from app.api.schemas.admin_d3 import (
     AdminWatchChannelListResponse,
     AdminWatchChannelResponse,
 )
+from app.api.schemas.admin_d4 import (
+    AdminRuntimeSettingListResponse,
+    AdminRuntimeSettingResetRequest,
+    AdminRuntimeSettingResponse,
+    AdminRuntimeSettingUpdateRequest,
+    AdminSystemStatusResponse,
+)
 from app.api.schemas.admin_d5 import (
     AdminBulkGrantCreateRequest,
     AdminBulkGrantDeliveryListResponse,
@@ -118,8 +125,10 @@ from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.payments_d2 import AdminFinanceService
 from app.application.admin.recordings_d3 import AdminRecordingService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
+from app.application.admin.system_d4 import AdminSystemStatusService
 from app.application.audit.service import AuditContext, AuditService
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.identity.service import ip_hint
@@ -2847,3 +2856,117 @@ async def list_admin_bulk_grant_deliveries(
         ],
         pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
     )
+
+
+
+@router.get("/system/status", response_model=AdminSystemStatusResponse)
+async def get_admin_system_status(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> AdminSystemStatusResponse:
+    _require_scope(principal, "admin:operations:read")
+    status = await AdminSystemStatusService(
+        request.app.state.settings,
+        database=request.app.state.database,
+        redis=request.app.state.redis,
+        storage=request.app.state.minio,
+    ).status(
+        backend_version=request.app.version,
+        started_at=request.app.state.started_at,
+    )
+    return AdminSystemStatusResponse.model_validate(status)
+
+
+@router.get("/settings", response_model=AdminRuntimeSettingListResponse)
+async def list_admin_runtime_settings(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRuntimeSettingListResponse:
+    _require_owner(principal)
+    items = await RuntimeSettingsService(
+        session, request.app.state.settings
+    ).list_settings()
+    return AdminRuntimeSettingListResponse(
+        items=[AdminRuntimeSettingResponse.model_validate(item) for item in items]
+    )
+
+
+@router.put(
+    "/settings/{setting_key}",
+    response_model=AdminRuntimeSettingResponse,
+)
+async def update_admin_runtime_setting(
+    setting_key: str,
+    payload: AdminRuntimeSettingUpdateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRuntimeSettingResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = RuntimeSettingsService(session, request.app.state.settings)
+    before, after = await service.update(
+        setting_key,
+        payload.value,
+        actor_user_id=principal.user_id,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.runtime_setting.updated",
+        resource_type="runtime_setting",
+        resource_id=setting_key,
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"value": before},
+        after_state={"value": after},
+    )
+    await session.commit()
+    items = await service.list_settings()
+    item = next(item for item in items if item["key"] == setting_key)
+    return AdminRuntimeSettingResponse.model_validate(item)
+
+
+@router.post(
+    "/settings/{setting_key}/reset",
+    response_model=AdminRuntimeSettingResponse,
+)
+async def reset_admin_runtime_setting(
+    setting_key: str,
+    payload: AdminRuntimeSettingResetRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRuntimeSettingResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = RuntimeSettingsService(session, request.app.state.settings)
+    before, after = await service.reset(setting_key)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.runtime_setting.reset",
+        resource_type="runtime_setting",
+        resource_id=setting_key,
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"value": before},
+        after_state={"value": after, "source": "environment"},
+    )
+    await session.commit()
+    items = await service.list_settings()
+    item = next(item for item in items if item["key"] == setting_key)
+    return AdminRuntimeSettingResponse.model_validate(item)

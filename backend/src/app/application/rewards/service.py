@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.local_recordings import CreateRewardRequest
 from app.application.rewards.ports import VerifiedRewardCallback
+from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.local_recording_models import (
     LocalRecordingSession,
@@ -74,12 +75,15 @@ class RewardService:
             )
             or 0
         )
-        if valid_today >= self.settings.reward_daily_cap:
+        reward_daily_cap = await RuntimeSettingsService(
+            self.session, self.settings
+        ).integer("reward_daily_cap")
+        if valid_today >= reward_daily_cap:
             raise ApplicationError(
                 "REWARD_DAILY_CAP_REACHED",
                 "Daily rewarded-ad limit reached",
                 status_code=409,
-                details={"limit": self.settings.reward_daily_cap},
+                details={"limit": reward_daily_cap},
             )
 
         session_id: uuid.UUID | None = None
@@ -228,7 +232,10 @@ class RewardService:
             )
             or 0
         )
-        if valid_today >= self.settings.reward_daily_cap:
+        reward_daily_cap = await RuntimeSettingsService(
+            self.session, self.settings
+        ).integer("reward_daily_cap")
+        if valid_today >= reward_daily_cap:
             reward.status = "expired"
             reward.transaction_id = callback.transaction_id
             reward.verified_at = now

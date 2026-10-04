@@ -6611,6 +6611,226 @@
           }
         }
       }
+    },
+    "/admin/settings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List owner-editable runtime settings",
+        "operationId": "listAdminRuntimeSettings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Safe runtime settings only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRuntimeSettingList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/settings/{setting_key}": {
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Override an owner-editable runtime setting",
+        "operationId": "updateAdminRuntimeSetting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "setting_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRuntimeSettingUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRuntimeSetting"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid value",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner permission and step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Setting is not exposed to Admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/settings/{setting_key}/reset": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reset a runtime setting to its environment default",
+        "operationId": "resetAdminRuntimeSetting",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "setting_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRuntimeSettingResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reset setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRuntimeSetting"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Owner permission and step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/system/status": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get safe backend dependency health for Admin",
+        "operationId": "getAdminSystemStatus",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "System status without secret values",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSystemStatus"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin operations read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -11376,6 +11596,179 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminCapacityHourly"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRuntimeSetting": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "description",
+          "value",
+          "default_value",
+          "source",
+          "minimum",
+          "maximum",
+          "choices",
+          "nullable",
+          "updated_by_user_id",
+          "updated_at"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "bool",
+              "int",
+              "version",
+              "enum",
+              "datetime"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "value": {},
+          "default_value": {},
+          "source": {
+            "type": "string",
+            "enum": [
+              "database",
+              "environment"
+            ]
+          },
+          "minimum": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "maximum": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nullable": {
+            "type": "boolean"
+          },
+          "updated_by_user_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRuntimeSettingList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminRuntimeSetting"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRuntimeSettingUpdateRequest": {
+        "type": "object",
+        "required": [
+          "value",
+          "reason"
+        ],
+        "properties": {
+          "value": {},
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRuntimeSettingResetRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSystemComponentHealth": {
+        "type": "object",
+        "required": [
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error"
+            ]
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSystemStatus": {
+        "type": "object",
+        "required": [
+          "backend_version",
+          "started_at",
+          "components"
+        ],
+        "properties": {
+          "backend_version": {
+            "type": "string"
+          },
+          "started_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "components": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AdminSystemComponentHealth"
             }
           }
         },

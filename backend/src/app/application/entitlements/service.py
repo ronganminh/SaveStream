@@ -8,6 +8,7 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
 from app.infrastructure.db.local_recording_models import (
@@ -74,6 +75,18 @@ class EntitlementService:
         balance = await CreditService(self.session).balance(user_id)
         is_pro = has_purchased and balance.available > 0
         plan: EntitlementPlan = "pro" if is_pro else "free"
+        runtime = RuntimeSettingsService(self.session, self.settings)
+        pro_local_recording = await runtime.string("pro_local_recording")
+        free_local_daily_minutes = await runtime.integer("free_local_daily_minutes")
+        reward_daily_cap = await runtime.integer("reward_daily_cap")
+        reward_minutes = await runtime.integer("reward_minutes")
+        free_max_watches = await runtime.integer("free_max_watches")
+        pro_max_watches = await runtime.integer("pro_max_watches")
+        pro_max_concurrent = await runtime.integer(
+            "pro_max_concurrent_cloud_recordings"
+        )
+        paid_retention_days = await runtime.integer("recording_retention_days")
+        free_retention_days = await runtime.integer("recording_retention_days_free")
 
         watch_count = int(
             await self.session.scalar(
@@ -127,23 +140,23 @@ class EntitlementService:
 
         pro_local_enabled = (
             not is_pro
-            or self.settings.pro_local_recording == "unlimited"
+            or pro_local_recording == "unlimited"
         )
         local = LocalEntitlementSnapshot(
             enabled=pro_local_enabled,
             unlimited=(
                 is_pro
-                and self.settings.pro_local_recording == "unlimited"
+                and pro_local_recording == "unlimited"
             ),
-            daily_minutes=self.settings.free_local_daily_minutes,
+            daily_minutes=free_local_daily_minutes,
             minutes_remaining=max(
-                self.settings.free_local_daily_minutes - used_minutes,
+                free_local_daily_minutes - used_minutes,
                 0,
             ),
             resets_at=resets_at,
             rewards_used_today=rewards_used_today,
-            rewards_cap_per_day=self.settings.reward_daily_cap,
-            minutes_per_reward=self.settings.reward_minutes,
+            rewards_cap_per_day=reward_daily_cap,
+            minutes_per_reward=reward_minutes,
             extensions_cap_per_recording=self.settings.reward_extensions_cap,
             max_concurrent_sessions=2 if slot_grant is not None else 1,
             second_slot_expires_at=(
@@ -155,16 +168,16 @@ class EntitlementService:
             plan=plan,
             has_purchased=has_purchased,
             cloud_minutes_available=balance.available,
-            max_watches=(
-                self.PRO_MAX_WATCHES if is_pro else self.FREE_MAX_WATCHES
-            ),
-            max_concurrent_cloud_recordings=(
-                self.PRO_MAX_CONCURRENT_CLOUD_RECORDINGS if is_pro else 0
-            ),
+            max_watches=(pro_max_watches if is_pro else free_max_watches),
+            max_concurrent_cloud_recordings=(pro_max_concurrent if is_pro else 0),
             # Retention follows purchase history, matching the existing backend:
             # accounts that have ever retained a paid order keep cloud files for
             # the paid retention window even after their available balance hits 0.
-            cloud_retention_days=30 if has_purchased else 7,
+            cloud_retention_days=(
+                paid_retention_days
+                if has_purchased
+                else (free_retention_days or paid_retention_days)
+            ),
             watch_count=watch_count,
             local=local,
             updated_at=now,

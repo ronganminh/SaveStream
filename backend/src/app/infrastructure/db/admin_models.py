@@ -216,3 +216,21 @@ class AdminWatchCheckMetric(Base):
     checked_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
+
+
+class AdminRuntimeSetting(Base):
+    __tablename__ = "admin_runtime_settings"
+
+    key: Mapped[str] = mapped_column(String(96), primary_key=True)
+    value: Mapped[Any] = mapped_column(JSON, nullable=False)
+    updated_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )

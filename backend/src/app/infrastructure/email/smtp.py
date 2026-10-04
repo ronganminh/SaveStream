@@ -9,6 +9,7 @@ from urllib.parse import quote
 
 from sqlalchemy import select
 
+from app.application.runtime_settings import RuntimeSettingsService
 from app.infrastructure.db.admin_models import AdminEmailLog, AdminEmailTemplate
 from app.infrastructure.db.models import OneTimeToken, User
 from app.infrastructure.email import templates
@@ -88,11 +89,14 @@ async def deliver_one_time_token_email(
             subject_override = override.subject if override is not None else None
             body_override = override.body if override is not None else None
             if token_row.purpose == "verify_email":
+                signup_credits = await RuntimeSettingsService(
+                    session, cfg
+                ).integer("signup_credits")
                 email = templates.verify_email(
                     link=f"{cfg.frontend_base_url}/verify-email?token={encoded}",
                     expires_in_seconds=expires_in,
                     site_url=cfg.frontend_base_url,
-                    trial_credits=cfg.signup_credits,
+                    trial_credits=signup_credits,
                     subject_override=subject_override,
                     intro_override=body_override,
                 )

@@ -8,6 +8,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.db.models import (
@@ -247,8 +248,11 @@ class IdentityService:
         user.email_verified_at = user.email_verified_at or now
         row.consumed_at = now
         if first_verification:
+            signup_credits = await RuntimeSettingsService(
+                self.session, self.settings
+            ).integer("signup_credits")
             await CreditService(self.session).grant_signup_credits(
-                user.id, self.settings.signup_credits
+                user.id, signup_credits
             )
         await self._audit(
             action="identity.email_verified",
