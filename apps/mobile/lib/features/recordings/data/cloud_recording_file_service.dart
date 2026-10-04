@@ -33,8 +33,7 @@ final class CloudRecordingFileService {
     if (!await file.exists()) {
       return null;
     }
-    if (expectedSizeBytes != null &&
-        await file.length() != expectedSizeBytes) {
+    if (expectedSizeBytes != null && await file.length() != expectedSizeBytes) {
       return null;
     }
     return file;
