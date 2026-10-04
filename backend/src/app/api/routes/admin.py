@@ -124,7 +124,7 @@ from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.payments_d2 import AdminFinanceService
 from app.application.admin.recordings_d3 import AdminRecordingService
-from app.application.admin.settings_d4 import RuntimeSettingsService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.audit.service import AuditContext, AuditService
