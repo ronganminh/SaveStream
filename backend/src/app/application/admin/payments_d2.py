@@ -441,9 +441,8 @@ class AdminFinanceService:
             )
         )
         cutoff = utcnow() - PENDING_STUCK_AFTER
-        stuck: list[tuple[object, str]] = []
-        for row in rows:
-            order = row[0]
+        stuck: list[tuple[PaymentOrder, str, str, str, str]] = []
+        for order, email, package_code, package_name in rows:
             reason: str | None = None
             if (
                 order.status == PaymentStatus.PENDING.value
@@ -460,23 +459,23 @@ class AdminFinanceService:
             ):
                 reason = "paid_missing_credit"
             if reason is not None:
-                stuck.append((row, reason))
+                stuck.append((order, email, package_code, package_name, reason))
         has_more = len(stuck) > limit or len(rows) > limit * 5
         selected = stuck[:limit]
-        items = [
+        items: list[dict[str, object]] = [
             {
                 "order": self.payment_payload(
-                    item[0][0],
-                    user_email=item[0][1],
-                    package_code=item[0][2],
-                    package_name=item[0][3],
+                    item[0],
+                    user_email=item[1],
+                    package_code=item[2],
+                    package_name=item[3],
                 ),
-                "reason": item[1],
+                "reason": item[4],
             }
             for item in selected
         ]
         next_cursor = (
-            _encode_cursor(selected[-1][0][0].created_at, selected[-1][0][0].id)
+            _encode_cursor(selected[-1][0].created_at, selected[-1][0].id)
             if has_more and selected
             else None
         )
