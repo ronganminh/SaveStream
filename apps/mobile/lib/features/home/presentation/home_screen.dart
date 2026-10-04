@@ -8,15 +8,18 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/local_recorder.dart';
 import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
 import '../../../platform/contracts/local_recovery_service.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
+import 'home_recording_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,6 +33,15 @@ class HomeScreen extends ConsumerWidget {
     final bool online = ref.watch(appOnlineProvider).value ?? true;
     final LocalRecoveryCandidate? interrupted = ref
         .watch(interruptedLocalRecordingProvider)
+        .value;
+    final LocalRecordingController localController = ref.watch(
+      localRecordingControllerProvider,
+    );
+    final LocalRecorderState? primaryLocalState = ref
+        .watch(localRecorderStateProvider)
+        .value;
+    final LocalRecorderState? secondaryLocalState = ref
+        .watch(secondaryLocalRecorderStateProvider)
         .value;
     final String? displayName = dashboard.value?.metrics.displayName;
 
@@ -73,6 +85,9 @@ class HomeScreen extends ConsumerWidget {
                       data: data,
                       online: online,
                       interrupted: interrupted,
+                      localController: localController,
+                      primaryLocalState: primaryLocalState,
+                      secondaryLocalState: secondaryLocalState,
                     ),
                   ),
                 ),
@@ -90,11 +105,17 @@ class _HomeDashboard extends StatelessWidget {
     required this.data,
     required this.online,
     required this.interrupted,
+    required this.localController,
+    required this.primaryLocalState,
+    required this.secondaryLocalState,
   });
 
   final HomeDashboardViewModel data;
   final bool online;
   final LocalRecoveryCandidate? interrupted;
+  final LocalRecordingController localController;
+  final LocalRecorderState? primaryLocalState;
+  final LocalRecorderState? secondaryLocalState;
 
   @override
   Widget build(BuildContext context) {
