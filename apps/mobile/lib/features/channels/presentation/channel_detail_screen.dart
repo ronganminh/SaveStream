@@ -14,6 +14,7 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../local_recordings/presentation/local_recording_start_sheet.dart';
+import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
@@ -49,6 +50,35 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
   ) async {
     if (entitlement.plan != Plan.free) return;
 
+    final LocalRecordingController recordingController = ref.read(
+      localRecordingControllerProvider,
+    );
+    if (recordingController.hasActiveSession) {
+      if (recordingController.hasSecondarySession) {
+        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+        return;
+      }
+      final bool startSecond = await showSecondLocalSlotSheet(
+        context: context,
+        ref: ref,
+        entitlement: entitlement.local,
+        targetCreatorName: watch.creatorDisplayName,
+      );
+      if (!startSecond || !mounted) return;
+
+      try {
+        await recordingController.startSecond(watchId: watch.id);
+        if (mounted) {
+          context.push(AppRoutes.localRecording(watch.id));
+        }
+      } on Object {
+        if (mounted) {
+          SsToast.show(context, context.l10n.localRecordingErrorTitle);
+        }
+      }
+      return;
+    }
+
     final LocalRecordingConfirmationController confirmation = ref.read(
       localRecordingConfirmationControllerProvider,
     );
@@ -75,9 +105,6 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     }
 
     try {
-      final LocalRecordingController recordingController = ref.read(
-        localRecordingControllerProvider,
-      );
       await recordingController.start(watchId: watch.id);
       if (mounted) {
         context.push(AppRoutes.localRecording(watch.id));
