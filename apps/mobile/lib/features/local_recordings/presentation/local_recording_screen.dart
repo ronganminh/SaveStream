@@ -17,6 +17,7 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/local_recording_models.dart';
 import 'controllers/local_recording_controller.dart';
+import 'local_recording_alerts.dart';
 
 class LocalRecordingScreen extends ConsumerWidget {
   const LocalRecordingScreen({required this.watchId, super.key});
@@ -129,9 +130,12 @@ class LocalRecordingScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: SsSpacing.lg),
-                    _PhaseAlert(
+                    LocalRecordingAlerts(
                       state: state,
                       creatorName: creator.creatorDisplayName,
+                      remainingSeconds: remainingSeconds,
+                      isUnlimited: localEntitlement.unlimited,
+                      minutesPerReward: localEntitlement.minutesPerReward,
                     ),
                     if (!localEntitlement.unlimited &&
                         session != null) ...<Widget>[
@@ -198,46 +202,6 @@ class LocalRecordingScreen extends ConsumerWidget {
     final int rest = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:'
         '${rest.toString().padLeft(2, '0')}';
-  }
-}
-
-class _PhaseAlert extends StatelessWidget {
-  const _PhaseAlert({required this.state, required this.creatorName});
-
-  final LocalRecorderState state;
-  final String creatorName;
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (state.phase) {
-      LocalRecorderPhase.starting => SsInlineAlert(
-        title: context.l10n.recordingStatusStarting,
-        message: context.l10n.localRecordingConnectingBody(creatorName),
-      ),
-      LocalRecorderPhase.reconnecting => SsInlineAlert(
-        title: context.l10n.recordingStatusReconnecting,
-        message: context.l10n.recordingReconnectingBody,
-        tone: SsInlineAlertTone.warning,
-      ),
-      LocalRecorderPhase.finalizing => SsInlineAlert(
-        title: context.l10n.recordingStatusFinalizing,
-        message: context.l10n.recordingFinalizingBody,
-      ),
-      LocalRecorderPhase.error => SsInlineAlert(
-        title: context.l10n.localRecordingErrorTitle,
-        message: state.errorMessage,
-        tone: SsInlineAlertTone.error,
-      ),
-      LocalRecorderPhase.idle ||
-      LocalRecorderPhase.recording ||
-      LocalRecorderPhase.stopped => SsInlineAlert(
-        title: context.l10n.localRecordingStatusActive,
-        message: context.l10n.localRecordingSavedHere(
-          formatFileSize(state.sizeBytes),
-        ),
-        tone: SsInlineAlertTone.success,
-      ),
-    };
   }
 }
 
