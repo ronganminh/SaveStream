@@ -120,14 +120,15 @@ class _LocalDetailBody extends ConsumerWidget {
                 label: context.l10n.playRecordingAction,
                 icon: Icons.play_arrow_rounded,
                 onPressed: () {
-                  final Uri uri = Uri.parse(
-                    AppRoutes.recordingPlayer(recording.id),
-                  ).replace(
-                    queryParameters: <String, String>{
-                      'title': recording.creatorDisplayName,
-                      'duration': recording.recordedSeconds.toString(),
-                    },
-                  );
+                  final Uri uri =
+                      Uri.parse(
+                        AppRoutes.recordingPlayer(recording.id),
+                      ).replace(
+                        queryParameters: <String, String>{
+                          'title': recording.creatorDisplayName,
+                          'duration': recording.recordedSeconds.toString(),
+                        },
+                      );
                   context.push(uri.toString());
                 },
               ),

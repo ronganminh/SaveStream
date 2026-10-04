@@ -259,10 +259,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
 }
 
 class _CloudRetentionNotice extends StatelessWidget {
-  const _CloudRetentionNotice({
-    required this.expiresAt,
-    required this.now,
-  });
+  const _CloudRetentionNotice({required this.expiresAt, required this.now});
 
   final DateTime expiresAt;
   final DateTime now;
@@ -812,20 +809,21 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                         onPressed: _isOpening
                             ? null
                             : () {
-                                final Uri uri = Uri.parse(
-                                  AppRoutes.recordingPlayer(
-                                    widget.recording.id,
-                                  ),
-                                ).replace(
-                                  queryParameters: <String, String>{
-                                    'title':
-                                        widget.recording.creatorDisplayName,
-                                    'duration': widget
-                                        .recording
-                                        .durationSeconds
-                                        .toString(),
-                                  },
-                                );
+                                final Uri uri =
+                                    Uri.parse(
+                                      AppRoutes.recordingPlayer(
+                                        widget.recording.id,
+                                      ),
+                                    ).replace(
+                                      queryParameters: <String, String>{
+                                        'title':
+                                            widget.recording.creatorDisplayName,
+                                        'duration': widget
+                                            .recording
+                                            .durationSeconds
+                                            .toString(),
+                                      },
+                                    );
                                 context.push(uri.toString());
                               },
                       ),
@@ -866,11 +864,11 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                   SsSecondaryButton(
                     label: l10n.shareRecordingAction,
                     icon: Icons.ios_share_rounded,
-                    onPressed: () => ref.read(shareServiceProvider).shareFile(
-                          filePath:
-                              '/downloads/${widget.recording.id}.mp4',
-                          displayName:
-                              widget.recording.creatorDisplayName,
+                    onPressed: () => ref
+                        .read(shareServiceProvider)
+                        .shareFile(
+                          filePath: '/downloads/${widget.recording.id}.mp4',
+                          displayName: widget.recording.creatorDisplayName,
                         ),
                   ),
                   const SizedBox(height: SsSpacing.sm),
