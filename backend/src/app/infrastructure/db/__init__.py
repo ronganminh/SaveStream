@@ -55,3 +55,20 @@ __all__ += [
 from .billing_models import CreditPackage, PaymentEvent, PaymentOrder, Refund
 
 __all__ += ["CreditPackage", "PaymentEvent", "PaymentOrder", "Refund"]
+
+
+from .local_recording_models import (
+    LocalDailyUsage,
+    LocalRecordingSession,
+    LocalSlotGrant,
+    RewardIntent,
+    RewardUserState,
+)
+
+__all__ += [
+    "LocalDailyUsage",
+    "LocalRecordingSession",
+    "LocalSlotGrant",
+    "RewardIntent",
+    "RewardUserState",
+]

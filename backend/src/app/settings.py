@@ -207,6 +207,19 @@ class AppSettings:
     maintenance_eta: datetime | None = None
     recording_expiring_window_hours: int = 24
     free_minutes_low_threshold: int = 2
+    pro_local_recording: str = "unlimited"
+    free_local_daily_minutes: int = 10
+    reward_provider: str = "disabled"
+    reward_daily_cap: int = 8
+    reward_minutes: int = 10
+    reward_extensions_cap: int = 4
+    local_unlimited_lease_seconds: int = 14_400
+    local_lease_grace_seconds: int = 60
+    reward_valid_seconds: int = 86_400
+    reward_invalid_lock_threshold: int = 3
+    reward_lock_seconds: int = 3_600
+    reward_verifier_timeout_seconds: float = 10.0
+    admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -359,6 +372,51 @@ class AppSettings:
             "FREE_MINUTES_LOW_THRESHOLD",
             2,
         )
+        pro_local_recording = _env(
+            "PRO_LOCAL_RECORDING",
+            "unlimited",
+        ).lower()
+        if pro_local_recording not in {"unlimited", "disabled"}:
+            raise ValueError(
+                "SAVESTREAM_PRO_LOCAL_RECORDING must be unlimited or disabled"
+            )
+        free_local_daily_minutes = _nonnegative_int_env(
+            "FREE_LOCAL_DAILY_MINUTES",
+            10,
+        )
+        reward_provider = _env("REWARD_PROVIDER", "disabled").lower()
+        if reward_provider not in {"disabled", "fake", "admob"}:
+            raise ValueError(
+                "SAVESTREAM_REWARD_PROVIDER must be disabled, fake, or admob"
+            )
+        reward_daily_cap = _nonnegative_int_env("REWARD_DAILY_CAP", 8)
+        reward_minutes = _nonnegative_int_env("REWARD_MINUTES", 10)
+        reward_extensions_cap = _nonnegative_int_env(
+            "REWARD_EXTENSIONS_CAP",
+            4,
+        )
+        local_unlimited_lease_seconds = _int_env(
+            "LOCAL_UNLIMITED_LEASE_SECONDS",
+            14_400,
+        )
+        local_lease_grace_seconds = _nonnegative_int_env(
+            "LOCAL_LEASE_GRACE_SECONDS",
+            60,
+        )
+        reward_valid_seconds = _int_env("REWARD_VALID_SECONDS", 86_400)
+        reward_invalid_lock_threshold = _int_env(
+            "REWARD_INVALID_LOCK_THRESHOLD",
+            3,
+        )
+        reward_lock_seconds = _int_env("REWARD_LOCK_SECONDS", 3_600)
+        reward_verifier_timeout_seconds = _float_env(
+            "REWARD_VERIFIER_TIMEOUT_SECONDS",
+            10.0,
+        )
+        admob_ssv_keys_url = _env(
+            "ADMOB_SSV_KEYS_URL",
+            "https://www.gstatic.com/admob/reward/verifier-keys.json",
+        )
         if push_provider == "fcm" and not push_fcm_service_account_json:
             raise ValueError(
                 "SAVESTREAM_PUSH_FCM_SERVICE_ACCOUNT_JSON is required when "
@@ -376,6 +434,14 @@ class AppSettings:
             if store_purchase_provider == "fake":
                 raise ValueError(
                     "SAVESTREAM_STORE_PURCHASE_PROVIDER cannot be fake in production"
+                )
+            if reward_provider == "fake":
+                raise ValueError(
+                    "SAVESTREAM_REWARD_PROVIDER cannot be fake in production"
+                )
+            if reward_provider == "admob" and not admob_ssv_keys_url.startswith("https://"):
+                raise ValueError(
+                    "SAVESTREAM_ADMOB_SSV_KEYS_URL must use https in production"
                 )
             if store_purchase_provider == "live" and (
                 not app_store_bundle_id
@@ -629,6 +695,19 @@ class AppSettings:
             maintenance_eta=maintenance_eta,
             recording_expiring_window_hours=recording_expiring_window_hours,
             free_minutes_low_threshold=free_minutes_low_threshold,
+            pro_local_recording=pro_local_recording,
+            free_local_daily_minutes=free_local_daily_minutes,
+            reward_provider=reward_provider,
+            reward_daily_cap=reward_daily_cap,
+            reward_minutes=reward_minutes,
+            reward_extensions_cap=reward_extensions_cap,
+            local_unlimited_lease_seconds=local_unlimited_lease_seconds,
+            local_lease_grace_seconds=local_lease_grace_seconds,
+            reward_valid_seconds=reward_valid_seconds,
+            reward_invalid_lock_threshold=reward_invalid_lock_threshold,
+            reward_lock_seconds=reward_lock_seconds,
+            reward_verifier_timeout_seconds=reward_verifier_timeout_seconds,
+            admob_ssv_keys_url=admob_ssv_keys_url,
         )
 
 

@@ -31,6 +31,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.recording.recover_stale",
                 "schedule": 60.0,
             },
+            "expire-local-recording-leases": {
+                "task": "savestream.local_recordings.expire",
+                "schedule": 60.0,
+            },
             "watch-scheduler-tick": {
                 "task": "savestream.watch.scheduler_tick",
                 "schedule": float(cfg.watch_scheduler_tick_seconds),

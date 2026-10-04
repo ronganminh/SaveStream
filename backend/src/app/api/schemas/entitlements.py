@@ -26,6 +26,8 @@ class LocalEntitlementResponse(StrictModel):
     rewards_cap_per_day: int
     minutes_per_reward: int
     extensions_cap_per_recording: int
+    max_concurrent_sessions: int
+    second_slot_expires_at: datetime | None
 
 
 class EntitlementResponse(StrictModel):

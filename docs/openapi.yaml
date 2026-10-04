@@ -2103,14 +2103,14 @@
         ],
         "summary": "Start local recording session",
         "operationId": "createLocalRecordingSession",
-        "description": "Contract frozen in B0; implemented in B4. Requires Idempotency-Key.",
+        "description": "Implemented in B4. Requires Idempotency-Key.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2168,16 +2168,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2189,14 +2179,14 @@
         ],
         "summary": "Extend local recording session",
         "operationId": "extendLocalRecordingSession",
-        "description": "Contract frozen in B0; implemented in B4. Successful extension has no response body.",
+        "description": "Implemented in B4. Successful extension has no response body.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2232,16 +2222,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2253,14 +2233,14 @@
         ],
         "summary": "Finish local recording session",
         "operationId": "finishLocalRecordingSession",
-        "description": "Contract frozen in B0; implemented in B4. Idempotent for repeated identical payloads. Successful finish has no response body.",
+        "description": "Implemented in B4. Idempotent for repeated identical payloads. Successful finish has no response body.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2286,16 +2266,6 @@
         "responses": {
           "204": {
             "description": "Finished"
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2307,14 +2277,14 @@
         ],
         "summary": "List local recording metadata",
         "operationId": "listLocalRecordings",
-        "description": "Contract frozen in B0; implemented in B4. No local video bytes are stored by the backend.",
+        "description": "Implemented in B4. No local video bytes are stored by the backend.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2335,16 +2305,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2356,14 +2316,14 @@
         ],
         "summary": "Delete local recording metadata",
         "operationId": "deleteLocalRecording",
-        "description": "Contract frozen in B0; implemented in B4. Only the source device may delete the metadata.",
+        "description": "Implemented in B4. Only the source device may delete the metadata.",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2398,16 +2358,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2419,14 +2369,14 @@
         ],
         "summary": "Create rewarded-ad intent",
         "operationId": "createReward",
-        "description": "Contract frozen in B0; implemented in B4.",
+        "description": "Implemented in B4. ",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "requestBody": {
@@ -2469,16 +2419,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2490,14 +2430,14 @@
         ],
         "summary": "Get rewarded-ad verification status",
         "operationId": "getReward",
-        "description": "Contract frozen in B0; implemented in B4.",
+        "description": "Implemented in B4. ",
         "security": [
           {
             "bearerAuth": []
           }
         ],
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "parameters": [
@@ -2520,16 +2460,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
           }
         }
       }
@@ -2541,9 +2471,9 @@
         ],
         "summary": "AdMob server-side verification callback",
         "operationId": "admobSsvWebhook",
-        "description": "Contract frozen in B0; implemented in B4. The provider-defined signed query string is verified from the raw request; individual provider parameters are intentionally not frozen here.",
+        "description": "Implemented in B4. The provider-defined signed query string is verified from the raw request; individual provider parameters are intentionally not frozen here.",
         "x-savestream-implementation": {
-          "status": "contract-only",
+          "status": "implemented",
           "phase": "B4"
         },
         "responses": {
@@ -2552,16 +2482,6 @@
           },
           "400": {
             "description": "Invalid SSV signature or payload",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "B0 contract placeholder. Runtime returns NOT_IMPLEMENTED until the owning V2 backend phase lands.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7454,7 +7374,9 @@
           "rewards_used_today",
           "rewards_cap_per_day",
           "minutes_per_reward",
-          "extensions_cap_per_recording"
+          "extensions_cap_per_recording",
+          "max_concurrent_sessions",
+          "second_slot_expires_at"
         ],
         "properties": {
           "enabled": {
@@ -7489,6 +7411,23 @@
           "extensions_cap_per_recording": {
             "type": "integer",
             "minimum": 0
+          },
+          "max_concurrent_sessions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2,
+            "description": "Number of simultaneous local recording slots currently available. The second slot is unlocked by two verified local_slot rewards."
+          },
+          "second_slot_expires_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Expiry of the rewarded second local recording slot, or null when only the base slot is available."
           }
         },
         "additionalProperties": false
