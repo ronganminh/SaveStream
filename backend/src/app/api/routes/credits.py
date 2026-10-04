@@ -1,17 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
-from app.api.dependencies import get_credit_service, require_scopes
+from app.api.dependencies import get_credit_service, get_db_session, require_scopes
 from app.api.schemas.credits import (
     CreditBalanceResponse,
     CreditReservationListResponse,
     CreditTransactionListResponse,
+    RedeemPromotionRequest,
+    RedeemPromotionResponse,
 )
 from app.api.schemas.recordings import Pagination
 from app.api.serializers.credits import reservation_response, transaction_response
+from app.application.admin.catalog_d5 import PromotionRedemptionService
 from app.application.credits.service import CreditService
 from app.domain.identity.types import AuthPrincipal
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/v1/credits", tags=["Credits"])
 
@@ -80,4 +84,34 @@ async def list_credit_reservations(
             next_cursor=page.next_cursor,
             has_more=page.has_more,
         ),
+    )
+
+
+
+@router.post(
+    "/redeem",
+    response_model=RedeemPromotionResponse,
+    operation_id="redeemPromotion",
+)
+async def redeem_promotion(
+    payload: RedeemPromotionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(require_scopes("credits:read")),
+    session: AsyncSession = Depends(get_db_session),
+) -> RedeemPromotionResponse:
+    await request.app.state.rate_limiter.hit(
+        scope="promotion:redeem",
+        identifier=str(principal.user_id),
+        limit=10,
+        window_seconds=3600,
+    )
+    promo, entry = await PromotionRedemptionService(session).redeem(
+        user_id=principal.user_id,
+        code=payload.code,
+    )
+    return RedeemPromotionResponse(
+        code=promo.code,
+        cloud_minutes_added=entry.amount,
+        cloud_minutes_available=entry.balance_after,
+        counts_as_purchase=promo.counts_as_purchase,
     )
