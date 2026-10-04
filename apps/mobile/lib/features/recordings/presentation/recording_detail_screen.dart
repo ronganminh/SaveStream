@@ -853,8 +853,11 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                   Text(
                     _downloaded
                         ? l10n.recordingDownloadedBody
-                        : l10n.recordingDownloadingValue(
-                            (_downloadProgress! * 100).round(),
+                        : l10n.recordingDownloadingBytes(
+                            formatBytes(
+                              (artifact.sizeBytes * _downloadProgress!).round(),
+                            ),
+                            formatBytes(artifact.sizeBytes),
                           ),
                   ),
                 ],
@@ -869,6 +872,22 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                           displayName:
                               widget.recording.creatorDisplayName,
                         ),
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  TextButton.icon(
+                    onPressed: () async {
+                      await ref
+                          .read(recordingControllerProvider)
+                          .delete(widget.recording.id);
+                      if (!mounted) return;
+                      setState(() {
+                        _downloaded = false;
+                        _downloadProgress = null;
+                      });
+                      context.go(AppRoutes.recordings);
+                    },
+                    icon: const Icon(Icons.delete_forever_outlined),
+                    label: Text(l10n.deleteCloudAndDownloadedAction),
                   ),
                 ],
               ],
