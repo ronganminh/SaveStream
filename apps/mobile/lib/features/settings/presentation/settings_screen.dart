@@ -87,7 +87,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final DevicePlatform platform = ref.watch(deviceInfoServiceProvider).platform;
+    final DevicePlatform platform = ref
+        .watch(deviceInfoServiceProvider)
+        .platform;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
