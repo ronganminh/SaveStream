@@ -359,4 +359,3 @@ final class _FakeRecordingRepository implements RecordingRepository {
     );
   }
 }
-
