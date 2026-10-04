@@ -79,52 +79,56 @@ void main() {
     );
   });
 
-  test('finish maps stopped to completed and returns listed metadata', () async {
-    final _FakeAdapter adapter = _FakeAdapter((
-      RequestOptions options,
-      int call,
-    ) {
-      if (call == 1) {
-        expect(options.method, 'POST');
-        expect(
-          options.path,
-          '/v1/local-recordings/sessions/session-1/finish',
-        );
-        expect(options.data, <String, Object?>{
-          'recorded_seconds': 42,
-          'size_bytes': 1234,
-          'end_reason': 'user_stopped',
-          'status': 'completed',
+  test(
+    'finish maps stopped to completed and returns listed metadata',
+    () async {
+      final _FakeAdapter adapter = _FakeAdapter((
+        RequestOptions options,
+        int call,
+      ) {
+        if (call == 1) {
+          expect(options.method, 'POST');
+          expect(
+            options.path,
+            '/v1/local-recordings/sessions/session-1/finish',
+          );
+          expect(options.data, <String, Object?>{
+            'recorded_seconds': 42,
+            'size_bytes': 1234,
+            'end_reason': 'user_stopped',
+            'status': 'completed',
+          });
+          return ResponseBody.fromString('', 204);
+        }
+        expect(options.method, 'GET');
+        expect(options.path, '/v1/local-recordings');
+        return _jsonResponse(200, <String, Object?>{
+          'items': <Object?>[_summaryJson()],
+          'pagination': <String, Object?>{
+            'next_cursor': null,
+            'has_more': false,
+          },
         });
-        return ResponseBody.fromString('', 204);
-      }
-      expect(options.method, 'GET');
-      expect(options.path, '/v1/local-recordings');
-      return _jsonResponse(200, <String, Object?>{
-        'items': <Object?>[_summaryJson()],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
       });
-    });
-    final ApiLocalRecordingRepository repository = ApiLocalRecordingRepository(
-      apiClient: _clientFor(adapter),
-      idempotencyKeyGenerator: const _FixedIdempotencyKeyGenerator(),
-    );
+      final ApiLocalRecordingRepository repository =
+          ApiLocalRecordingRepository(
+            apiClient: _clientFor(adapter),
+            idempotencyKeyGenerator: const _FixedIdempotencyKeyGenerator(),
+          );
 
-    final summary = await repository.finish(
-      'session-1',
-      recordedSeconds: 42,
-      sizeBytes: 1234,
-      endReason: RecordingEndReason.userStopped,
-      status: RecordingStatus.stopped,
-    );
+      final summary = await repository.finish(
+        'session-1',
+        recordedSeconds: 42,
+        sizeBytes: 1234,
+        endReason: RecordingEndReason.userStopped,
+        status: RecordingStatus.stopped,
+      );
 
-    expect(summary.id, 'session-1');
-    expect(summary.status, RecordingStatus.completed);
-    expect(summary.recordedSeconds, 42);
-  });
+      expect(summary.id, 'session-1');
+      expect(summary.status, RecordingStatus.completed);
+      expect(summary.recordedSeconds, 42);
+    },
+  );
 }
 
 Map<String, Object?> _sessionJson() {
@@ -204,8 +208,7 @@ final class _FakeAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-final class _FixedIdempotencyKeyGenerator
-    implements IdempotencyKeyGenerator {
+final class _FixedIdempotencyKeyGenerator implements IdempotencyKeyGenerator {
   const _FixedIdempotencyKeyGenerator();
 
   @override
