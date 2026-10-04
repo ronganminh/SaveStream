@@ -312,7 +312,9 @@ class _HomeDashboard extends StatelessWidget {
           step: secondaryLocalState?.finalizationStep,
         ),
       ],
-      if (primaryActive && primaryWatch != null && primaryLocalState != null) ...<Widget>[
+      if (primaryActive &&
+          primaryWatch != null &&
+          primaryLocalState != null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         HomeLocalRecordingCard(
           creatorName: primaryWatch.creatorDisplayName,
