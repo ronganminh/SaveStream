@@ -81,6 +81,10 @@ class AdminCreatorUnblockRequest(StrictModel):
     reason: str = Field(min_length=3, max_length=500)
 
 
+class AdminCreatorBlockListResponse(StrictModel):
+    items: list["AdminCreatorBlockResponse"]
+
+
 class AdminCreatorBlockResponse(StrictModel):
     id: str
     source_type: str
