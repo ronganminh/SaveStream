@@ -294,6 +294,24 @@ class RuntimeSettingsService:
         overrides = await self._overrides()
         return overrides.get(key, definition.default(self.settings))
 
+    async def boolean(self, key: str) -> bool:
+        value = await self.value(key)
+        if type(value) is not bool:
+            raise RuntimeError(f"{key} is not a boolean runtime setting")
+        return value
+
+    async def integer(self, key: str) -> int:
+        value = await self.value(key)
+        if type(value) is not int:
+            raise RuntimeError(f"{key} is not an integer runtime setting")
+        return value
+
+    async def string(self, key: str) -> str:
+        value = await self.value(key)
+        if not isinstance(value, str):
+            raise RuntimeError(f"{key} is not a string runtime setting")
+        return value
+
     async def list_settings(self) -> list[dict[str, object]]:
         rows = {
             row.key: row
