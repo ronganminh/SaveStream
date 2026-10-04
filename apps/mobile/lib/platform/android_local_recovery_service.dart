@@ -22,10 +22,9 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
   Future<LocalRecoveryCandidate?> findInterrupted() async {
     final String userId = await _currentUserId();
     final Map<dynamic, dynamic>? raw = await androidLocalRecordingMethodChannel
-        .invokeMapMethod<dynamic, dynamic>(
-          'findInterrupted',
-          <String, Object?>{'user_id': userId},
-        );
+        .invokeMapMethod<dynamic, dynamic>('findInterrupted', <String, Object?>{
+          'user_id': userId,
+        });
     if (raw == null) {
       return null;
     }
@@ -70,10 +69,7 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
     final String userId = await _currentUserId();
     await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'recover',
-      <String, Object?>{
-        'session_id': candidate.tempId,
-        'user_id': userId,
-      },
+      <String, Object?>{'session_id': candidate.tempId, 'user_id': userId},
     );
     final Map<dynamic, dynamic> event = await completed.timeout(
       const Duration(seconds: 30),
@@ -113,10 +109,7 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
     );
     await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'markRegistered',
-      <String, Object?>{
-        'session_id': candidate.tempId,
-        'user_id': userId,
-      },
+      <String, Object?>{'session_id': candidate.tempId, 'user_id': userId},
     );
 
     return LocalRecoveryResult(
@@ -135,10 +128,7 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
     final String userId = await _currentUserId();
     await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'deleteInterrupted',
-      <String, Object?>{
-        'session_id': tempId,
-        'user_id': userId,
-      },
+      <String, Object?>{'session_id': tempId, 'user_id': userId},
     );
   }
 
