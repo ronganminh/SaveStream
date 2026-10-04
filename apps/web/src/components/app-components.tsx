@@ -145,6 +145,7 @@ const mainNav = [
   { to: "/usage", label: "Usage & Billing", icon: Gauge },
 ] as const;
 const adminNav = [
+  { to: "/admin/overview", label: "Overview", icon: LayoutDashboard },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/catalog", label: "Catalog", icon: Sparkles },
@@ -153,6 +154,7 @@ const adminNav = [
   { to: "/admin/workers", label: "Workers", icon: MonitorCog },
   { to: "/admin/jobs", label: "Recordings", icon: FileVideo },
   { to: "/admin/safety", label: "Safety", icon: ShieldAlert },
+  { to: "/admin/reports", label: "App Reports", icon: AlertTriangle },
   { to: "/admin/errors", label: isDemoMode ? "Errors" : "Audit", icon: AlertTriangle },
 ] as const;
 
@@ -424,6 +426,15 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
   const { identity } = useAuth();
   const account = useShellAccount();
   const canSeeAdmin = isAdminRole(identity.role);
+  const visibleAdminNav = adminNav.filter((entry) => {
+    if (entry.to === "/admin/overview") {
+      return ["owner", "admin", "finance"].includes(identity.role);
+    }
+    if (entry.to === "/admin/reports") {
+      return ["owner", "admin", "support"].includes(identity.role);
+    }
+    return true;
+  });
   const item = (
     it:
       | (typeof mainNav)[number]
@@ -492,7 +503,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
                 <ShieldCheck className="size-3" />
                 {t("Admin")}
               </p>
-              {adminNav.map(item)}
+              {visibleAdminNav.map(item)}
             </div>
           )}
         </nav>
