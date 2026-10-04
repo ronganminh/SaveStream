@@ -329,6 +329,12 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
+        path: AppRoutes.androidRecordingGuide,
+        builder: (BuildContext context, GoRouterState state) {
+          return const AndroidRecordingInfoScreen();
+        },
+      ),
+      GoRoute(
         path: AppRoutes.componentGallery,
         builder: (BuildContext context, GoRouterState state) {
           return ComponentGalleryScreen(config: config, settings: settings);
