@@ -139,8 +139,7 @@ class LocalRecordingScreen extends ConsumerWidget {
                       remainingSeconds: remainingSeconds,
                       isUnlimited: localEntitlement.unlimited,
                       minutesPerReward: localEntitlement.minutesPerReward,
-                      extensionsCap:
-                          localEntitlement.extensionsCapPerRecording,
+                      extensionsCap: localEntitlement.extensionsCapPerRecording,
                       rewardState: rewarded,
                       onRewardRequested: () {
                         showRewardedMinutesSheet(
@@ -158,14 +157,8 @@ class LocalRecordingScreen extends ConsumerWidget {
                         title: context.l10n.localRecordingFreeRemainingTitle,
                         value: _formatCountdown(remainingSeconds),
                         subtitle:
-                            '${context.l10n.rewardMinutesExtensionProgress(
-                              rewarded.extensionCount,
-                              localEntitlement.extensionsCapPerRecording,
-                            )} · '
-                            '${context.l10n.rewardMinutesDailyProgress(
-                              localEntitlement.rewardsUsedToday,
-                              localEntitlement.rewardsCapPerDay,
-                            )}',
+                            '${context.l10n.rewardMinutesExtensionProgress(rewarded.extensionCount, localEntitlement.extensionsCapPerRecording)} · '
+                            '${context.l10n.rewardMinutesDailyProgress(localEntitlement.rewardsUsedToday, localEntitlement.rewardsCapPerDay)}',
                       ),
                     ],
                     const SizedBox(height: SsSpacing.lg),
