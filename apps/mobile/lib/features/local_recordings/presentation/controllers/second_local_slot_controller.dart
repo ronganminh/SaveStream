@@ -129,6 +129,7 @@ class SecondLocalSlotController extends Notifier<SecondLocalSlotState> {
     if (expiresAt != null && !expiresAt.isAfter(DateTime.now())) {
       state = state.copyWith(
         phase: SecondLocalSlotPhase.expired,
+        verifiedRewards: 0,
         expiresAt: expiresAt,
         clearError: true,
       );
