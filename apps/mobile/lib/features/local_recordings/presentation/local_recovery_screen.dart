@@ -30,7 +30,9 @@ class _LocalRecoveryScreenState extends ConsumerState<LocalRecoveryScreen> {
     final AsyncValue<LocalRecoveryCandidate?> candidate = ref.watch(
       interruptedLocalRecordingProvider,
     );
-    final DevicePlatform platform = ref.watch(deviceInfoServiceProvider).platform;
+    final DevicePlatform platform = ref
+        .watch(deviceInfoServiceProvider)
+        .platform;
 
     return Scaffold(
       appBar: AppBar(
@@ -63,9 +65,7 @@ class _LocalRecoveryScreenState extends ConsumerState<LocalRecoveryScreen> {
               return _RecoveringBody(candidate: value);
             }
             if (value == null) {
-              return _NoRecoveryBody(
-                onHome: () => context.go(AppRoutes.home),
-              );
+              return _NoRecoveryBody(onHome: () => context.go(AppRoutes.home));
             }
             return _InterruptedBody(
               candidate: value,
@@ -175,10 +175,7 @@ class _InterruptedBody extends StatelessWidget {
           onPressed: onRecover,
         ),
         const SizedBox(height: SsSpacing.sm),
-        SsSecondaryButton(
-          label: context.l10n.laterAction,
-          onPressed: onLater,
-        ),
+        SsSecondaryButton(label: context.l10n.laterAction, onPressed: onLater),
       ],
     );
   }
@@ -280,9 +277,7 @@ class _RecoveryResultBody extends StatelessWidget {
               const SizedBox(height: SsSpacing.sm),
               Text(
                 context.l10n.localRecoveryKeptDuration(
-                  formatDurationHms(
-                    Duration(seconds: result.recordedSeconds),
-                  ),
+                  formatDurationHms(Duration(seconds: result.recordedSeconds)),
                 ),
               ),
             ],
@@ -295,9 +290,8 @@ class _RecoveryResultBody extends StatelessWidget {
           SsPrimaryButton(
             label: context.l10n.localRecordingOpenAction,
             icon: Icons.play_circle_outline_rounded,
-            onPressed: () => context.push(
-              AppRoutes.recordingDetail(result.recordingId!),
-            ),
+            onPressed: () =>
+                context.push(AppRoutes.recordingDetail(result.recordingId!)),
           ),
         const SizedBox(height: SsSpacing.sm),
         SsSecondaryButton(
@@ -424,9 +418,7 @@ class _CandidateCard extends StatelessWidget {
           Text(
             context.l10n.localRecoveryCandidateMeta(
               _formatTime(context, candidate.startedAt),
-              formatDurationHms(
-                Duration(seconds: candidate.recordedSeconds),
-              ),
+              formatDurationHms(Duration(seconds: candidate.recordedSeconds)),
             ),
           ),
         ],
@@ -490,7 +482,7 @@ class _RecoveryFrame extends StatelessWidget {
 }
 
 String _formatTime(BuildContext context, DateTime value) {
-  return MaterialLocalizations.of(context).formatTimeOfDay(
-    TimeOfDay.fromDateTime(value.toLocal()),
-  );
+  return MaterialLocalizations.of(
+    context,
+  ).formatTimeOfDay(TimeOfDay.fromDateTime(value.toLocal()));
 }
