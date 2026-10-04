@@ -966,5 +966,103 @@
         "type": "int"
       }
     }
-  }
+  },
+  "genericErrorTitle": "Đã xảy ra lỗi",
+  "closeAction": "Đóng",
+  "rewardMinutesOfferTitle": "+{minutes} phút cho recording này",
+  "@rewardMinutesOfferTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesOfferBody": "Xem 1 quảng cáo. {minutes} phút chỉ được cộng sau khi SaveStream xác nhận phần thưởng. Recording vẫn tiếp tục trong lúc xem.",
+  "@rewardMinutesOfferBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesExtensionProgress": "Gia hạn recording này {used}/{cap}",
+  "@rewardMinutesExtensionProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyProgress": "Quảng cáo hôm nay {used}/{cap}",
+  "@rewardMinutesDailyProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWatchAdAction": "Xem quảng cáo",
+  "rewardMinutesLoadingTitle": "Đang tải quảng cáo",
+  "rewardMinutesLoadingBody": "Recording vẫn tiếp tục trong lúc tải quảng cáo.",
+  "rewardMinutesVerifyingTitle": "Đang xác nhận phần thưởng",
+  "rewardMinutesAdCompleteStep": "Đã xem hết quảng cáo",
+  "rewardMinutesVerifyStep": "Xác nhận với SaveStream",
+  "rewardMinutesGrantStep": "Cộng {minutes} phút vào recording",
+  "@rewardMinutesGrantStep": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesPendingTitle": "Đang xác nhận phần thưởng…",
+  "rewardMinutesPendingBody": "Phút sẽ được cộng ngay khi SaveStream xác nhận. Recording vẫn tiếp tục.",
+  "rewardMinutesSuccessTitle": "Đã cộng {minutes} phút",
+  "@rewardMinutesSuccessTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesSuccessBody": "Server đã xác nhận. Gia hạn {used}/{cap} cho recording này.",
+  "@rewardMinutesSuccessBody": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesNoFillTitle": "Chưa có quảng cáo lúc này",
+  "rewardMinutesNoFillBody": "Thử lại sau ít phút. Recording vẫn tiếp tục tới khi hết phút Free còn lại.",
+  "rewardMinutesInvalidTitle": "Không xác nhận được phần thưởng",
+  "rewardMinutesInvalidBody": "Lượt xem không hợp lệ hoặc đã hết hạn. Không cộng phút.",
+  "rewardMinutesMaxTitle": "Đã gia hạn tối đa",
+  "rewardMinutesMaxBody": "Mỗi recording được gia hạn tối đa {cap} lần. Recording sẽ dừng và lưu khi hết phút Free còn lại.",
+  "@rewardMinutesMaxBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyCapTitle": "Đã dùng hết quảng cáo nhận thưởng hôm nay",
+  "rewardMinutesDailyCapBody": "Bạn đã dùng {cap}/{cap} quảng cáo hôm nay. Giới hạn sẽ tự reset theo ngày.",
+  "@rewardMinutesDailyCapBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWorkingAction": "Đang xử lý…"
 }
