@@ -58,11 +58,11 @@ class LocalRecordingController {
     _recorderSubscription = _recorder.watch().listen((LocalRecorderState next) {
       _latestRecorderState = next;
     });
-    _secondaryRecorderSubscription = _secondaryRecorder.watch().listen(
-      (LocalRecorderState next) {
-        _latestSecondaryRecorderState = next;
-      },
-    );
+    _secondaryRecorderSubscription = _secondaryRecorder.watch().listen((
+      LocalRecorderState next,
+    ) {
+      _latestSecondaryRecorderState = next;
+    });
   }
 
   final LocalRecordingRepository _repository;
@@ -123,14 +123,14 @@ class LocalRecordingController {
     }
   }
 
-  Future<LocalRecordingSession> startSecond({
-    required String watchId,
-  }) async {
+  Future<LocalRecordingSession> startSecond({required String watchId}) async {
     if (_activeSession == null) {
       throw StateError('The primary local recording session is not active.');
     }
     if (_secondarySession != null) {
-      throw StateError('The secondary local recording session is already active.');
+      throw StateError(
+        'The secondary local recording session is already active.',
+      );
     }
 
     final String deviceId = await _deviceInfo.deviceId;
