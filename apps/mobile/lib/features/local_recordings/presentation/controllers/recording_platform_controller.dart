@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/l10n.dart';
-import '../../../devices/domain/models/device_registration.dart';
 import '../../../../platform/contracts/local_recorder.dart';
 import '../../../../platform/contracts/recording_platform_service.dart';
 import '../../../../platform/platform_providers.dart';
+import '../../../devices/domain/models/device_registration.dart';
 
 final Provider<RecordingPlatformController> recordingPlatformControllerProvider =
     Provider<RecordingPlatformController>((Ref ref) {
@@ -93,6 +93,9 @@ class RecordingPlatformController {
     required int sizeBytes,
     required String recordingId,
   }) {
+    if (_service.platform != DevicePlatform.android) {
+      return Future<void>.value();
+    }
     return _service.updateRecordingNotification(
       RecordingNotificationSpec(
         kind: RecordingNotificationKind.completed,
@@ -113,6 +116,9 @@ class RecordingPlatformController {
     required AppLocalizations l10n,
     required String creatorName,
   }) {
+    if (_service.platform != DevicePlatform.android) {
+      return Future<void>.value();
+    }
     return _service.updateRecordingNotification(
       RecordingNotificationSpec(
         kind: RecordingNotificationKind.interrupted,
