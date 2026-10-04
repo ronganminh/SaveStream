@@ -14,7 +14,7 @@
 - [x] B3 — Thiết bị, push và loại thông báo mới — **đã merge PR #89 vào `main`**, merge commit `6422c072`
 - [ ] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
 - [x] B5 — Mua trong app (App Store, Google Play) — **đã merge PR #91 vào `main`**, merge commit `63278793`
-- [ ] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn
+- [x] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn — **đã merge PR #98 vào `main`**, merge commit `fc781169`
 - [ ] B7 — Web theo V2
 - [ ] B8 — Năng lực máy chủ và tài liệu vận hành
 
@@ -150,6 +150,8 @@ Không cần tài khoản Apple/Google để hoàn thành phase; bản thật đ
 ---
 
 ## B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn
+
+**Trạng thái:** ✅ Hoàn tất, đã merge PR #98 vào `main` (2026-10-04), merge commit `fc781169`. Gate cuối trên head `b2b4af9`: Backend CI #577 ✅, Backend E2E #103 ✅, Mobile Backend E2E #232 ✅.
 
 **Phụ thuộc:** B3.
 
