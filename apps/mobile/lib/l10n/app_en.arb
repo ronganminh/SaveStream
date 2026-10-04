@@ -1359,5 +1359,95 @@
         "type": "String"
       }
     }
-  }
+  },
+  "doneAction": "Done",
+  "nativeRecordingActiveBody": "{name} · {elapsed} · Local · {remaining} Free remaining",
+  "@nativeRecordingActiveBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
+  },
+  "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
+  "@nativeRecordingActiveUnlimitedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectTitle": "Reconnecting · {name}",
+  "@nativeRecordingReconnectTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectBody": "Connection to the LIVE source was lost. The recorded part is still safe.",
+  "nativeRecordingMinuteWarningTitle": "Less than 1 minute Free · {name}",
+  "@nativeRecordingMinuteWarningTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingMinuteWarningBody": "Open SaveStream to add 10 minutes. Rewarded ads only run inside the app.",
+  "nativeRecordingFinalizingTitle": "Finishing recording",
+  "nativeRecordingFinalizingBody": "{name} · saving on this device",
+  "@nativeRecordingFinalizingBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingSavedTitle": "Recording saved",
+  "nativeRecordingSavedBody": "{name} · {duration} · {size} · stored on this device",
+  "@nativeRecordingSavedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "duration": {"type": "String"},
+      "size": {"type": "String"}
+    }
+  },
+  "nativeRecordingInterruptedTitle": "Recording was interrupted",
+  "nativeRecordingInterruptedBody": "Open SaveStream to recover the recorded part.",
+  "androidBackgroundGuideTitle": "Make Local recording more reliable",
+  "androidBatteryOptimizationTitle": "Battery optimization",
+  "androidBatteryOptimizationOn": "On",
+  "androidBatteryOptimizationOff": "Unrestricted",
+  "androidBatteryOptimizationBody": "Android can stop SaveStream while saving battery. Allow SaveStream to run without restriction to reduce interruptions.",
+  "androidBatteryStepOpen": "Open SaveStream battery settings",
+  "androidBatteryStepUnrestricted": "Choose “Unrestricted”",
+  "androidBatteryStepReturn": "Return to SaveStream",
+  "androidOpenBatterySettingsAction": "Open battery settings",
+  "androidOemGuideAction": "View device-specific guidance",
+  "androidOemGuideTitle": "Keep SaveStream running on {device}",
+  "@androidOemGuideTitle": {
+    "placeholders": {
+      "device": {"type": "String"}
+    }
+  },
+  "androidOemGenericBody": "Your Android version may have extra background restrictions. Review the app and battery settings for SaveStream.",
+  "androidOemXiaomiBody": "HyperOS can close SaveStream in the background even while a recording notification is visible.",
+  "androidOemSamsungBody": "Samsung can place apps into sleeping or deep-sleeping lists and interrupt Local recording.",
+  "androidOemOppoBody": "Oppo, Realme, and Vivo can apply additional background and auto-start restrictions.",
+  "androidOemHuaweiBody": "Huawei can manage app launch and background activity aggressively.",
+  "androidOemAutostartStep": "Allow SaveStream to auto-start",
+  "androidOemBatteryStep": "Set battery use to “Unrestricted”",
+  "androidOemRecentAppsStep": "Keep SaveStream available in recent apps",
+  "androidOemSamsungSleepStep": "Remove SaveStream from Sleeping apps",
+  "androidOemAppLaunchStep": "Allow automatic launch and background activity",
+  "androidOpenAppSettingsAction": "Open app settings",
+  "iosRecordingGuideTitle": "Record on iPhone",
+  "iosKeepOpenTitle": "Keep SaveStream open while recording",
+  "iosKeepOpenBody": "iOS can stop Local recording when SaveStream goes into the background.",
+  "iosScreenAwakeTitle": "Keep the screen awake while recording",
+  "iosScreenAwakeBody": "SaveStream keeps the screen awake during an active Local recording. Locking the phone yourself can still interrupt recording.",
+  "iosRecoveryGuideTitle": "Recover after an interruption",
+  "iosRecoveryGuideBody": "When SaveStream opens again, it automatically checks for an interrupted Local recording.",
+  "iosReturnReminderTitle": "Remind me to return to SaveStream",
+  "iosReturnReminderBody": "Schedule a local reminder when SaveStream goes to the background during Local recording.",
+  "iosCloudIndependentTitle": "No need to keep iPhone open",
+  "iosCloudIndependentBody": "Cloud recording runs on SaveStream servers and does not depend on the phone staying online.",
+  "settingsAndroidRecordingTitle": "Background recording",
+  "settingsAndroidRecordingSubtitle": "Battery and device guidance",
+  "settingsIosRecordingTitle": "Record on iPhone",
+  "settingsIosRecordingSubtitle": "Keep-open and recovery guidance"
 }
