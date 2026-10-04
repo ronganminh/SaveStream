@@ -13,10 +13,12 @@ from app.infrastructure.db.credit_models import CreditAccount, CreditLedgerEntry
 from app.infrastructure.db.models import AuthSession, Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
+from app.infrastructure.db.watch_models import Watch
 
 
 def test_d9_rollup_revenue_usage_and_retention(tmp_path) -> None:
     async def run() -> None:
+        assert Watch.__tablename__ == "watches"
         database = Database(
             f"sqlite+aiosqlite:///{tmp_path / 'd9-reporting.db'}"
         )
