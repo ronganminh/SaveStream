@@ -73,7 +73,7 @@ void main() {
     expect(find.text('Write final data to file'), findsOneWidget);
     expect(find.text('Verify file'), findsOneWidget);
     expect(find.text('Add to Recordings'), findsOneWidget);
-    expect(find.byIcon(Icons.progress_activity_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.sync_rounded), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
   });
 
