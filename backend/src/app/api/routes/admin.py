@@ -76,6 +76,7 @@ from app.api.schemas.admin_d4 import (
     AdminRuntimeSettingResetRequest,
     AdminRuntimeSettingResponse,
     AdminRuntimeSettingUpdateRequest,
+    AdminSystemStatusResponse,
 )
 from app.api.schemas.admin_d5 import (
     AdminBulkGrantCreateRequest,
@@ -127,6 +128,7 @@ from app.application.admin.recordings_d3 import AdminRecordingService
 from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
+from app.application.admin.system_d4 import AdminSystemStatusService
 from app.application.audit.service import AuditContext, AuditService
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.identity.service import ip_hint
@@ -2855,6 +2857,24 @@ async def list_admin_bulk_grant_deliveries(
         pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
     )
 
+
+
+@router.get("/system/status", response_model=AdminSystemStatusResponse)
+async def get_admin_system_status(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+) -> AdminSystemStatusResponse:
+    _require_scope(principal, "admin:operations:read")
+    status = await AdminSystemStatusService(
+        request.app.state.settings,
+        database=request.app.state.database,
+        redis=request.app.state.redis,
+        storage=request.app.state.minio,
+    ).status(
+        backend_version=request.app.version,
+        started_at=request.app.state.started_at,
+    )
+    return AdminSystemStatusResponse.model_validate(status)
 
 
 @router.get("/settings", response_model=AdminRuntimeSettingListResponse)
