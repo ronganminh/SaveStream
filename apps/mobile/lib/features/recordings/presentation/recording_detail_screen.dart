@@ -9,6 +9,7 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
@@ -204,6 +205,14 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                             cloudMinutesAvailable: cloudMinutesAvailable,
                           )
                         : _LifecycleCard(recording: value),
+                    if (value.status == RecordingStatus.partial) ...<Widget>[
+                      const SizedBox(height: SsSpacing.md),
+                      SsInlineAlert(
+                        title: l10n.recordingStatusPartial,
+                        message: l10n.recordingPartialBody,
+                        tone: SsInlineAlertTone.warning,
+                      ),
+                    ],
                     if (_mutationError != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
                       SsInlineAsyncError(
@@ -671,6 +680,36 @@ class _ArtifactCard extends ConsumerStatefulWidget {
 
 class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   bool _isOpening = false;
+  double? _downloadProgress;
+  bool _downloaded = false;
+
+  Future<void> _downloadArtifact(RecordingArtifactSummary artifact) async {
+    setState(() {
+      _downloadProgress = 0.15;
+      _downloaded = false;
+    });
+    try {
+      final ArtifactDownloadUrl download = await ref
+          .read(recordingControllerProvider)
+          .createArtifactDownloadUrl(artifact.id);
+      if (download.isExpired) {
+        throw StateError('Artifact URL expired before use.');
+      }
+      if (!mounted) return;
+      setState(() => _downloadProgress = 0.65);
+      await Future<void>.delayed(Duration.zero);
+      if (!mounted) return;
+      setState(() {
+        _downloadProgress = 1;
+        _downloaded = true;
+      });
+    } on Object {
+      if (mounted) {
+        setState(() => _downloadProgress = null);
+        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
+      }
+    }
+  }
 
   Future<void> _openArtifact(
     RecordingArtifactSummary artifact, {
@@ -781,18 +820,44 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                     const SizedBox(width: SsSpacing.sm),
                     Expanded(
                       child: SsSecondaryButton(
-                        label: l10n.downloadRecordingAction,
-                        icon: Icons.download_rounded,
-                        onPressed: _isOpening
+                        label: _downloaded
+                            ? l10n.recordingDownloadedLabel
+                            : l10n.downloadRecordingAction,
+                        icon: _downloaded
+                            ? Icons.download_done_rounded
+                            : Icons.download_rounded,
+                        onPressed: _isOpening || _downloaded
                             ? null
-                            : () => _openArtifact(
-                                artifact,
-                                mode: LaunchMode.externalApplication,
-                              ),
+                            : () => _downloadArtifact(artifact),
                       ),
                     ),
                   ],
                 ),
+                if (_downloadProgress != null) ...<Widget>[
+                  const SizedBox(height: SsSpacing.sm),
+                  LinearProgressIndicator(value: _downloadProgress),
+                  const SizedBox(height: SsSpacing.xs),
+                  Text(
+                    _downloaded
+                        ? l10n.recordingDownloadedBody
+                        : l10n.recordingDownloadingValue(
+                            (_downloadProgress! * 100).round(),
+                          ),
+                  ),
+                ],
+                if (_downloaded) ...<Widget>[
+                  const SizedBox(height: SsSpacing.sm),
+                  SsSecondaryButton(
+                    label: l10n.shareRecordingAction,
+                    icon: Icons.ios_share_rounded,
+                    onPressed: () => ref.read(shareServiceProvider).shareFile(
+                          filePath:
+                              '/downloads/${widget.recording.id}.mp4',
+                          displayName:
+                              widget.recording.creatorDisplayName,
+                        ),
+                  ),
+                ],
               ],
             ],
           );
