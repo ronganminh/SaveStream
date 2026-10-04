@@ -218,6 +218,50 @@ class _HomeDashboard extends StatelessWidget {
     final bool secondSlotExpired =
         secondSlotExpiresAt != null &&
         !secondSlotExpiresAt.isAfter(DateTime.now());
+    final bool secondSlotOpen =
+        secondSlotExpiresAt != null &&
+        secondSlotExpiresAt.isAfter(DateTime.now());
+    final primarySession = localController.activeSession;
+    final secondarySession = localController.secondarySession;
+    WatchSummary? primaryWatch;
+    WatchSummary? secondaryWatch;
+    for (final WatchSummary watch in data.watches) {
+      if (watch.id == primarySession?.watchId) primaryWatch = watch;
+      if (watch.id == secondarySession?.watchId) secondaryWatch = watch;
+    }
+    final bool primaryActive =
+        primarySession != null && _isHomeActivePhase(primaryLocalState?.phase);
+    final bool secondaryActive =
+        secondarySession != null &&
+        _isHomeActivePhase(secondaryLocalState?.phase);
+    final bool primaryFinalizing =
+        primarySession != null &&
+        primaryLocalState?.phase == LocalRecorderPhase.finalizing;
+    final bool secondaryFinalizing =
+        secondarySession != null &&
+        secondaryLocalState?.phase == LocalRecorderPhase.finalizing;
+    final bool hasLocalActivity =
+        primaryActive ||
+        secondaryActive ||
+        primaryFinalizing ||
+        secondaryFinalizing;
+    final bool fullyExhausted =
+        local.minutesRemaining == 0 &&
+        local.rewardsUsedToday >= local.rewardsCapPerDay;
+    final int primaryRemainingRaw = primarySession == null
+        ? 0
+        : primarySession.grantedSeconds -
+              (primaryLocalState?.recordedSeconds ?? 0);
+    final int secondaryRemainingRaw = secondarySession == null
+        ? 0
+        : secondarySession.grantedSeconds -
+              (secondaryLocalState?.recordedSeconds ?? 0);
+    final int primaryRemaining = primaryRemainingRaw > 0
+        ? primaryRemainingRaw
+        : 0;
+    final int secondaryRemaining = secondaryRemainingRaw > 0
+        ? secondaryRemainingRaw
+        : 0;
     final int limit = entitlement.limits.maxWatches;
     final int remainingSlots = (limit - data.watches.length)
         .clamp(0, limit)
@@ -230,6 +274,10 @@ class _HomeDashboard extends StatelessWidget {
     );
 
     return <Widget>[
+      if (secondSlotOpen && secondaryActive) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt),
+      ],
       if (secondSlotExpired) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsInlineAlert(
@@ -250,7 +298,43 @@ class _HomeDashboard extends StatelessWidget {
               : () => context.push(AppRoutes.channelDetail(secondLive.id)),
         ),
       ],
-      if (live != null) ...<Widget>[
+      if (primaryFinalizing && primaryWatch != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeFinalizingRecordingCard(
+          creatorName: primaryWatch.creatorDisplayName,
+          step: primaryLocalState?.finalizationStep,
+        ),
+      ],
+      if (secondaryFinalizing && secondaryWatch != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeFinalizingRecordingCard(
+          creatorName: secondaryWatch.creatorDisplayName,
+          step: secondaryLocalState?.finalizationStep,
+        ),
+      ],
+      if (primaryActive && primaryWatch != null && primaryLocalState != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeLocalRecordingCard(
+          creatorName: primaryWatch.creatorDisplayName,
+          watchId: primaryWatch.id,
+          state: primaryLocalState,
+          remainingSeconds: primaryRemaining,
+          unlimited: local.unlimited,
+        ),
+      ],
+      if (secondaryActive &&
+          secondaryWatch != null &&
+          secondaryLocalState != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.md),
+        HomeLocalRecordingCard(
+          creatorName: secondaryWatch.creatorDisplayName,
+          watchId: secondaryWatch.id,
+          state: secondaryLocalState,
+          remainingSeconds: secondaryRemaining,
+          unlimited: local.unlimited,
+        ),
+      ],
+      if (live != null && !hasLocalActivity && interrupted == null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
           child: Column(
@@ -296,7 +380,16 @@ class _HomeDashboard extends StatelessWidget {
             ? 0
             : local.minutesRemaining / local.dailyMinutes,
       ),
-      if (local.minutesRemaining == 0) ...<Widget>[
+      if (fullyExhausted) ...<Widget>[
+        const SizedBox(height: SsSpacing.md),
+        HomeDailyRecordingExhaustedCard(
+          dailyMinutes: local.dailyMinutes,
+          rewardsUsed: local.rewardsUsedToday,
+          rewardsCap: local.rewardsCapPerDay,
+          resetLabel: reset,
+          onBuyCloudHours: () => showCloudHoursUpsellSheet(context),
+        ),
+      ] else if (local.minutesRemaining == 0) ...<Widget>[
         const SizedBox(height: SsSpacing.md),
         SsInlineAlert(
           title: l10n.homeMinutesExhaustedTitle,
@@ -341,7 +434,9 @@ class _HomeDashboard extends StatelessWidget {
       if (data.hasAhaMoment &&
           local.minutesRemaining > 0 &&
           online &&
-          interrupted == null) ...<Widget>[
+          interrupted == null &&
+          !hasLocalActivity &&
+          !fullyExhausted) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
           child: Column(
@@ -366,6 +461,12 @@ class _HomeDashboard extends StatelessWidget {
         SsBannerAdSlot(label: l10n.advertisementLabel),
       ],
     ];
+  }
+
+  bool _isHomeActivePhase(LocalRecorderPhase? phase) {
+    return phase == LocalRecorderPhase.starting ||
+        phase == LocalRecorderPhase.recording ||
+        phase == LocalRecorderPhase.reconnecting;
   }
 
   List<Widget> _buildPro(BuildContext context, Entitlement entitlement) {
