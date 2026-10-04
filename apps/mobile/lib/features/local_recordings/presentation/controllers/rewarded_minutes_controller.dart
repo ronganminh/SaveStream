@@ -48,8 +48,9 @@ class RewardedMinutesState {
   }
 }
 
-final Provider<Duration> rewardVerificationTimeoutProvider =
-    Provider<Duration>((Ref ref) => const Duration(seconds: 15));
+final Provider<Duration> rewardVerificationTimeoutProvider = Provider<Duration>(
+  (Ref ref) => const Duration(seconds: 15),
+);
 
 final Provider<Duration> rewardVerificationPollIntervalProvider =
     Provider<Duration>((Ref ref) => const Duration(seconds: 1));
@@ -148,9 +149,7 @@ class RewardedMinutesController extends Notifier<RewardedMinutesState> {
     required LocalRecordingController recording,
   }) async {
     final Duration timeout = ref.read(rewardVerificationTimeoutProvider);
-    final Duration interval = ref.read(
-      rewardVerificationPollIntervalProvider,
-    );
+    final Duration interval = ref.read(rewardVerificationPollIntervalProvider);
     final DateTime deadline = DateTime.now().add(timeout);
 
     while (true) {
