@@ -160,8 +160,6 @@ void main() {
 
     expect(find.text('Stopped'), findsWidgets);
   });
-
-
 }
 
 final class _TerminalStopRecordingRepository implements RecordingRepository {
