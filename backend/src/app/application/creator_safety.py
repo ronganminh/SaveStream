@@ -47,7 +47,7 @@ async def ensure_creator_not_blocked(
         raise ApplicationError(
             "CREATOR_BLOCKED",
             "This creator is unavailable due to a safety restriction",
-            status_code=451,
+            status_code=403,
             retryable=False,
         )
 
