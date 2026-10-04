@@ -139,7 +139,13 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
+    final Finder stopButton = find.widgetWithText(
+      FilledButton,
+      'Stop recording',
+    );
+    await tester.ensureVisible(stopButton);
+    await tester.pump();
+    await tester.tap(stopButton);
     await tester.pumpAndSettle();
 
     expect(find.text('Stop cloud recording?'), findsOneWidget);
