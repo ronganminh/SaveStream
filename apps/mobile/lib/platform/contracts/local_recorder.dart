@@ -10,17 +10,34 @@ enum LocalRecorderPhase {
   error,
 }
 
+enum LocalStorageState { ok, low, critical }
+
+enum LocalFinalizationStep {
+  stopCapture,
+  flushFile,
+  verifyFile,
+  registerRecording,
+}
+
 class LocalRecorderState {
   const LocalRecorderState({
     required this.phase,
     this.recordedSeconds = 0,
     this.sizeBytes = 0,
+    this.storageState = LocalStorageState.ok,
+    this.freeStorageBytes,
+    this.estimatedStorageMinutes,
+    this.finalizationStep,
     this.errorMessage,
   });
 
   final LocalRecorderPhase phase;
   final int recordedSeconds;
   final int sizeBytes;
+  final LocalStorageState storageState;
+  final int? freeStorageBytes;
+  final int? estimatedStorageMinutes;
+  final LocalFinalizationStep? finalizationStep;
   final String? errorMessage;
 }
 
