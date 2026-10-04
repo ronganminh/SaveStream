@@ -1249,5 +1249,40 @@
         "type": "String"
       }
     }
-  }
+  },
+  "proManualRecordTitle": "Record {name}",
+  "@proManualRecordTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordLocalTitle": "Local · on this device",
+  "proManualRecordLocalUnlimitedBody": "Does not use cloud hours. Local recording is unlimited for this account.",
+  "proManualRecordLocalMeteredBody": "Does not use cloud hours. Local recording limits come from your account settings.",
+  "proManualRecordLocalDisabledBody": "Local recording is currently disabled for this account.",
+  "proManualRecordCloudTitle": "Cloud · on SaveStream servers",
+  "proManualRecordCloudBody": "Uses cloud hours. {remaining} available. Your phone does not need to stay online.",
+  "@proManualRecordCloudBody": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordCloudEmptyBody": "No cloud hours are available.",
+  "proManualRecordLocalAction": "Record Local",
+  "proManualRecordCloudAction": "Record Cloud · use cloud hours",
+  "cloudRecordingServerBody": "SaveStream is recording on the server. Your phone does not need to stay online.",
+  "cloudRecordingProcessingTitle": "Processing on server",
+  "cloudRecordingProcessStopStep": "Stop recording",
+  "cloudRecordingProcessMergeStep": "Merge and verify file",
+  "cloudRecordingProcessPreviewStep": "Create preview",
+  "cloudRecordingProcessReadyStep": "Ready to play",
+  "cloudRecordingProcessingBody": "You can close the app. SaveStream will update the recording when server processing finishes.",
+  "cloudRecordingFailedTitle": "Cloud recording failed",
+  "cloudRecordingFailedRefundBody": "Cloud hours for the failed recording are refunded by the server. If a saved artifact exists, you can still open it.",
+  "cloudRecordingStopConfirmTitle": "Stop cloud recording?",
+  "cloudRecordingStopConfirmBody": "SaveStream will stop recording on the server and then process the saved part."
 }
