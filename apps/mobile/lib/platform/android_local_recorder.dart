@@ -56,10 +56,14 @@ final class AndroidLocalRecorder implements LocalRecorder {
     await start(session);
   }
 
-  Future<void> markRegistered(String sessionId) {
-    return androidLocalRecordingMethodChannel.invokeMethod<void>(
+  Future<void> markRegistered(String sessionId) async {
+    final String userId = await _currentUserId();
+    await androidLocalRecordingMethodChannel.invokeMethod<void>(
       'markRegistered',
-      <String, Object?>{'session_id': sessionId},
+      <String, Object?>{
+        'session_id': sessionId,
+        'user_id': userId,
+      },
     );
   }
 
