@@ -23,6 +23,7 @@ import '../../features/design_system/presentation/component_gallery_screen.dart'
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/local_recordings/presentation/local_recording_screen.dart';
 import '../../features/local_recordings/presentation/local_recovery_screen.dart';
+import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/onboarding/presentation/add_first_creator_screen.dart';
 import '../../features/onboarding/presentation/android_recording_info_screen.dart';
 import '../../features/onboarding/presentation/first_creator_added_screen.dart';
@@ -320,8 +321,10 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/recordings/local/:watchId',
         builder: (BuildContext context, GoRouterState state) {
-          return LocalRecordingScreen(
-            watchId: state.pathParameters['watchId']!,
+          return RecordingPlatformBridge(
+            child: LocalRecordingScreen(
+              watchId: state.pathParameters['watchId']!,
+            ),
           );
         },
       ),
