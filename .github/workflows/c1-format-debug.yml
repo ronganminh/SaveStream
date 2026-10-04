@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - tmp/c1-format-20261004
+  pull_request:
 
 permissions:
   contents: read
