@@ -22,10 +22,32 @@ from app.api.schemas.recordings import Pagination
 from app.api.serializers.billing import package_response, payment_order_response
 from app.application.billing.service import BillingService
 from app.application.billing.store import StorePurchaseService
+from app.application.runtime_settings import RuntimeSettingsService
+from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.store.factory import store_receipt_verifier_for_platform
 
 router = APIRouter(prefix="/v1/billing", tags=["Billing"])
+
+
+async def _require_payment_channel(
+    session: AsyncSession,
+    request: Request,
+    *,
+    setting_key: str,
+    channel: str,
+) -> None:
+    enabled = await RuntimeSettingsService(
+        session, request.app.state.settings
+    ).boolean(setting_key)
+    if not enabled:
+        raise ApplicationError(
+            "SERVICE_UNAVAILABLE",
+            f"{channel} payments are disabled",
+            status_code=503,
+            retryable=False,
+            details={"channel": channel},
+        )
 
 
 @router.get(
@@ -51,10 +73,18 @@ async def list_packages(
 )
 async def create_payment_order(
     payload: CreatePaymentOrderRequest,
+    request: Request,
     idempotency_key: str = Header(alias="Idempotency-Key"),
     principal: AuthPrincipal = Depends(require_scopes("billing:write")),
     service: BillingService = Depends(get_billing_service),
+    session: AsyncSession = Depends(get_db_session),
 ) -> PaymentOrderResponse:
+    await _require_payment_channel(
+        session,
+        request,
+        setting_key="payment_web_enabled",
+        channel="web",
+    )
     order = await service.create_order(
         user_id=principal.user_id,
         package_id=payload.package_id,
@@ -114,10 +144,18 @@ async def get_payment_order(
 async def create_payment_checkout(
     payment_order_id: str,
     payload: CheckoutRequest,
+    request: Request,
     idempotency_key: str = Header(alias="Idempotency-Key"),
     principal: AuthPrincipal = Depends(require_scopes("billing:write")),
     service: BillingService = Depends(get_billing_service),
+    session: AsyncSession = Depends(get_db_session),
 ) -> CheckoutResponse:
+    await _require_payment_channel(
+        session,
+        request,
+        setting_key="payment_web_enabled",
+        channel="web",
+    )
     result = await service.checkout(
         user_id=principal.user_id,
         payment_order_id=payment_order_id,
@@ -141,6 +179,17 @@ async def create_store_purchase(
     principal: AuthPrincipal = Depends(require_scopes("billing:write")),
     session: AsyncSession = Depends(get_db_session),
 ) -> StorePurchaseResponse:
+    setting_key = (
+        "payment_app_store_enabled"
+        if payload.platform == "app_store"
+        else "payment_google_play_enabled"
+    )
+    await _require_payment_channel(
+        session,
+        request,
+        setting_key=setting_key,
+        channel=payload.platform,
+    )
     verifier = store_receipt_verifier_for_platform(
         request.app.state.settings,
         payload.platform,
