@@ -141,10 +141,8 @@ class LocalRecordingScreen extends ConsumerWidget {
                       minutesPerReward: localEntitlement.minutesPerReward,
                       extensionsCap: localEntitlement.extensionsCapPerRecording,
                       rewardState: rewarded,
-                      onRewardRequested: _canRequestReward(
-                        rewarded,
-                        localEntitlement,
-                      )
+                      onRewardRequested:
+                          _canRequestReward(rewarded, localEntitlement)
                           ? () {
                               showRewardedMinutesSheet(
                                 context: context,
