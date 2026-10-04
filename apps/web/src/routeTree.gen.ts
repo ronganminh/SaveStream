@@ -39,6 +39,8 @@ import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSystemRouteImport } from './routes/admin/system'
 import { Route as AdminSafetyRouteImport } from './routes/admin/safety'
+import { Route as AdminOverviewD9RouteImport } from './routes/admin/overview'
+import { Route as AdminReportsD9RouteImport } from './routes/admin/reports'
 import { Route as AdminWorkersRouteImport } from './routes/admin/workers'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as BillingIndexRouteImport } from './routes/billing.index'
@@ -212,6 +214,16 @@ const AdminSafetyRoute = AdminSafetyRouteImport.update({
   path: '/admin/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminOverviewD9Route = AdminOverviewD9RouteImport.update({
+  id: '/admin/overview',
+  path: '/admin/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReportsD9Route = AdminReportsD9RouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWorkersRoute = AdminWorkersRouteImport.update({
   id: '/admin/workers',
   path: '/admin/workers',
@@ -354,6 +366,8 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
   '/admin/safety': typeof AdminSafetyRoute
+  '/admin/overview': typeof AdminOverviewD9Route
+  '/admin/reports': typeof AdminReportsD9Route
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -403,6 +417,8 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AdminUsersIndexRoute
   '/admin/system': typeof AdminSystemRoute
   '/admin/safety': typeof AdminSafetyRoute
+  '/admin/overview': typeof AdminOverviewD9Route
+  '/admin/reports': typeof AdminReportsD9Route
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -456,6 +472,8 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
   '/admin/safety': typeof AdminSafetyRoute
+  '/admin/overview': typeof AdminOverviewD9Route
+  '/admin/reports': typeof AdminReportsD9Route
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -512,6 +530,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/system'
     | '/admin/safety'
+    | '/admin/overview'
+    | '/admin/reports'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -559,6 +579,8 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/system'
     | '/admin/safety'
+    | '/admin/overview'
+    | '/admin/reports'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -613,6 +635,8 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/system'
     | '/admin/safety'
+    | '/admin/overview'
+    | '/admin/reports'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -668,6 +692,8 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminSystemRoute: typeof AdminSystemRoute
   AdminSafetyRoute: typeof AdminSafetyRoute
+  AdminOverviewD9Route: typeof AdminOverviewD9Route
+  AdminReportsD9Route: typeof AdminReportsD9Route
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
 }
@@ -882,6 +908,20 @@ declare module '@tanstack/react-router' {
       path: '/admin/safety'
       fullPath: '/admin/safety'
       preLoaderRoute: typeof AdminSafetyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/overview': {
+      id: '/admin/overview'
+      path: '/admin/overview'
+      fullPath: '/admin/overview'
+      preLoaderRoute: typeof AdminOverviewD9RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsD9RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/workers': {
@@ -1181,6 +1221,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminSystemRoute: AdminSystemRoute,
   AdminSafetyRoute: AdminSafetyRoute,
+  AdminOverviewD9Route: AdminOverviewD9Route,
+  AdminReportsD9Route: AdminReportsD9Route,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
 }
