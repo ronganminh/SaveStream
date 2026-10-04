@@ -146,6 +146,7 @@ from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.admin.system_d4 import AdminSystemStatusService
+from app.application.creator_safety import recording_creator_block
 from app.application.audit.service import AuditContext, AuditService
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.identity.service import ip_hint
@@ -983,6 +984,13 @@ async def request_admin_recording_playback_access(
     )
     service = AdminRecordingService(session, request.app.state.settings)
     recording = await service.get_recording(recording_id)
+    if await recording_creator_block(session, recording) is not None:
+        raise ApplicationError(
+            "CREATOR_BLOCKED",
+            "This recording is unavailable due to a safety restriction",
+            status_code=451,
+            retryable=False,
+        )
     artifact = await service.playback_artifact(recording_id)
     url = await asyncio.to_thread(
         request.app.state.minio.presigned_get_url,
