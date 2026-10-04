@@ -128,3 +128,10 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
     );
   }
 }
+
+CloudHoursPurchaseContext cloudHoursPurchaseContextFromValue(String? value) {
+  return CloudHoursPurchaseContext.values.firstWhere(
+    (CloudHoursPurchaseContext item) => item.name == value,
+    orElse: () => CloudHoursPurchaseContext.autoRecord,
+  );
+}
