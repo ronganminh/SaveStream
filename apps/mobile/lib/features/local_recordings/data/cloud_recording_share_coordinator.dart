@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 
+import '../../../platform/contracts/share_service.dart';
 import '../../recordings/data/cloud_artifact_downloader.dart';
 import '../../recordings/domain/models/recording_summary.dart';
-import '../../../platform/contracts/share_service.dart';
 
 final class CloudRecordingShareCoordinator {
   CloudRecordingShareCoordinator({
