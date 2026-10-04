@@ -1512,6 +1512,21 @@ export const adminD9Api = {
     return apiClient.get<AdminOverview>(`/v1/admin/overview?days=${days}`);
   },
 
+  exportReport(
+    kind: "revenue" | "new-users" | "cloud-usage" | "recordings",
+    dateFrom?: string,
+    dateTo?: string,
+  ) {
+    const query = new URLSearchParams();
+    if (dateFrom) query.set("date_from", dateFrom);
+    if (dateTo) query.set("date_to", dateTo);
+    const suffix = query.toString();
+    return apiClient.get<string>(
+      `/v1/admin/reports/${kind}.csv${suffix ? `?${suffix}` : ""}`,
+      { responseMode: "text" },
+    );
+  },
+
   listSupportReports(filters: {
     cursor?: string | null;
     status?: string;
