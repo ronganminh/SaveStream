@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../features/devices/domain/models/device_registration.dart';
 import '../contracts/recording_platform_service.dart';
 
@@ -24,6 +26,15 @@ final class FakeRecordingPlatformService implements RecordingPlatformService {
   bool batterySettingsOpened = false;
   bool appSettingsOpened = false;
   RecordingNotificationSpec? lastNotification;
+  final StreamController<RecordingPlatformAction> _actions =
+      StreamController<RecordingPlatformAction>.broadcast();
+
+  @override
+  Stream<RecordingPlatformAction> get actionStream => _actions.stream;
+
+  void emitAction(RecordingPlatformAction action) {
+    _actions.add(action);
+  }
 
   void setAndroidState(AndroidRecordingPlatformState value) {
     _androidState = value;
@@ -80,4 +91,6 @@ final class FakeRecordingPlatformService implements RecordingPlatformService {
   Future<void> setIosScreenAwake(bool enabled) async {
     screenAwake = enabled;
   }
+
+  Future<void> dispose() => _actions.close();
 }
