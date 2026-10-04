@@ -5137,6 +5137,504 @@
           }
         }
       }
+    },
+    "/admin/payments": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List payment orders",
+        "operationId": "listAdminPayments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "web",
+                "app_store",
+                "google_play",
+                null
+              ]
+            }
+          },
+          {
+            "name": "package_id",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export payment orders CSV",
+        "operationId": "exportAdminPaymentsCsv",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/stuck": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List stuck payment orders",
+        "operationId": "listAdminStuckPayments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/{payment_order_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get payment order detail",
+        "operationId": "getAdminPayment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/{payment_order_id}/refund-preview": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Preview web refund",
+        "operationId": "previewAdminRefund",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "amount_minor",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/{payment_order_id}/refunds": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Request web refund",
+        "operationId": "refundAdminPayment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRefundRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/payments/{payment_order_id}/reconcile": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Reconcile payment order",
+        "operationId": "reconcileAdminPayment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/credits/ledger": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List global cloud-minute ledger",
+        "operationId": "listAdminCreditLedger",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/credits/ledger/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export cloud-minute ledger CSV",
+        "operationId": "exportAdminCreditLedgerCsv",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/credits/adjustments": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Adjust user cloud minutes",
+        "operationId": "adjustAdminCredit",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCreditAdjustmentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/credits/stuck-reservations": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List stuck credit reservations",
+        "operationId": "listAdminStuckReservations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/credits/stuck-reservations/{reservation_id}/release": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Release stuck credit reservation",
+        "operationId": "releaseAdminStuckReservation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "reservation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8600,6 +9098,348 @@
           }
         },
         "additionalProperties": false
+      },
+      "AdminPaymentOrder": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_email",
+          "package_id",
+          "package_code",
+          "package_name",
+          "status",
+          "purchase_channel",
+          "credits",
+          "amount_minor",
+          "currency",
+          "refunded_credits",
+          "refunded_amount_minor",
+          "refund_mode",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "package_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "package_code": {
+            "type": "string"
+          },
+          "package_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "purchase_channel": {
+            "type": "string",
+            "enum": [
+              "web",
+              "app_store",
+              "google_play"
+            ]
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider_transaction_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string"
+          },
+          "refunded_credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "refunded_amount_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gross_usd_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "estimated_store_fee_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "estimated_store_fee_rate_bps": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "refund_mode": {
+            "type": "string",
+            "enum": [
+              "admin_web",
+              "store_managed"
+            ]
+          },
+          "paid_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminRefundPreview": {
+        "type": "object",
+        "required": [
+          "payment_order_id",
+          "amount_minor",
+          "corresponding_credits",
+          "deducted_credits",
+          "balance_available",
+          "remaining_refundable_amount_minor",
+          "remaining_refundable_credits"
+        ],
+        "properties": {
+          "payment_order_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "corresponding_credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deducted_credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "balance_available": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining_refundable_amount_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining_refundable_credits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "AdminRefundRequest": {
+        "type": "object",
+        "required": [
+          "amount_minor",
+          "credits",
+          "reason"
+        ],
+        "properties": {
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminCreditAdjustmentRequest": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "amount",
+          "reason"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          },
+          "counts_as_purchase": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "AdminLedgerEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_email",
+          "category",
+          "type",
+          "amount",
+          "balance_after",
+          "reference_type",
+          "counts_as_purchase",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "purchase",
+              "spend",
+              "refund",
+              "adjustment",
+              "gift"
+            ]
+          },
+          "type": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "balance_after": {
+            "type": "integer"
+          },
+          "reference_type": {
+            "type": "string"
+          },
+          "reference_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts_as_purchase": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminStuckReservation": {
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "recording_id",
+          "recording_status",
+          "reserved",
+          "settled",
+          "released",
+          "remaining_reserved",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recording_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recording_status": {
+            "type": "string"
+          },
+          "reserved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "settled": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "released": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining_reserved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       }
     }
   }

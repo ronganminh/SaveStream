@@ -33,6 +33,7 @@ import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
 import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
+import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSystemRouteImport } from './routes/admin/system'
@@ -177,6 +178,11 @@ const AdminErrorsRoute = AdminErrorsRouteImport.update({
 const AdminOperationsRoute = AdminOperationsRouteImport.update({
   id: '/admin/operations',
   path: '/admin/operations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/admin/payments',
+  path: '/admin/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminJobsRoute = AdminJobsRouteImport.update({
@@ -330,6 +336,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
@@ -376,6 +383,7 @@ export interface FileRoutesByTo {
   '/usage': typeof UsageRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/admin/system': typeof AdminSystemRoute
@@ -426,6 +434,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
@@ -479,6 +488,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/payments'
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
@@ -525,6 +535,7 @@ export interface FileRouteTypes {
     | '/usage'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/payments'
     | '/admin/system'
     | '/admin/workers'
     | '/auth/error'
@@ -574,6 +585,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/admin/errors'
     | '/admin/operations'
+    | '/admin/payments'
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
@@ -626,6 +638,7 @@ export interface RootRouteChildren {
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminOperationsRoute: typeof AdminOperationsRoute
+  AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminSystemRoute: typeof AdminSystemRoute
@@ -801,6 +814,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/operations'
       fullPath: '/admin/operations'
       preLoaderRoute: typeof AdminOperationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/admin/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/jobs': {
@@ -1115,6 +1135,7 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminOperationsRoute: AdminOperationsRoute,
+  AdminPaymentsRoute: AdminPaymentsRoute,
   AdminJobsRoute: AdminJobsRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminSystemRoute: AdminSystemRoute,

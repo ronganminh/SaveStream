@@ -7,6 +7,7 @@ from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db.billing_models import PaymentOrder
+from app.infrastructure.db.credit_models import CreditLedgerEntry
 from app.settings import AppSettings
 
 # Accounts that have bought credits keep recordings longer than trial-only accounts.
@@ -19,7 +20,7 @@ def paid_customer_clause():
 
 
 async def has_paid_purchase(session: AsyncSession, user_id: uuid.UUID) -> bool:
-    return bool(
+    paid_order = bool(
         await session.scalar(
             select(
                 exists().where(
@@ -28,6 +29,24 @@ async def has_paid_purchase(session: AsyncSession, user_id: uuid.UUID) -> bool:
                 )
             )
         )
+    )
+    if paid_order:
+        return True
+
+    purchase_adjustments = list(
+        (
+            await session.scalars(
+                select(CreditLedgerEntry).where(
+                    CreditLedgerEntry.user_id == user_id,
+                    CreditLedgerEntry.reference_type == "admin_adjustment",
+                    CreditLedgerEntry.amount > 0,
+                )
+            )
+        ).all()
+    )
+    return any(
+        bool(entry.details.get("counts_as_purchase", False))
+        for entry in purchase_adjustments
     )
 
 

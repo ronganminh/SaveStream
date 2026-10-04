@@ -66,6 +66,7 @@ class AdminCreditAdjustmentRequest(StrictModel):
     user_id: str
     amount: int
     reason: str = Field(min_length=3, max_length=500)
+    counts_as_purchase: bool = False
 
 
 class AdminCreditAdjustmentResponse(StrictModel):

@@ -112,29 +112,24 @@ class BillingCreditService:
 
         account = await self._account(user_id)
         reserved = await self._reserved(account.id)
-        new_balance = account.posted_balance - credits
-        if new_balance < reserved or new_balance < 0:
-            raise ApplicationError(
-                "INSUFFICIENT_CREDITS",
-                "Available credit is insufficient for this refund",
-                status_code=409,
-                details={
-                    "posted": account.posted_balance,
-                    "reserved": reserved,
-                    "refund_credits": credits,
-                },
-            )
+        removable = max(account.posted_balance - reserved, 0)
+        deducted = min(max(credits, 0), removable)
+        new_balance = account.posted_balance - deducted
         account.posted_balance = new_balance
         entry = CreditLedgerEntry(
             account_id=account.id,
             user_id=user_id,
             entry_type="refund",
-            amount=-credits,
+            amount=-deducted,
             balance_after=new_balance,
             reference_type="refund",
             reference_id=str(refund_id),
             reference_key=reference_key,
-            details={"state": "held_for_provider_refund"},
+            details={
+                "state": "held_for_provider_refund",
+                "requested_credits": credits,
+                "deducted_credits": deducted,
+            },
         )
         self.session.add(entry)
         await self.session.flush()
@@ -169,23 +164,27 @@ class BillingCreditService:
                 status_code=500,
             )
 
+        restored = max(0, -hold.amount)
         account = await self._account(user_id)
-        account.posted_balance += credits
+        account.posted_balance += restored
         entry = CreditLedgerEntry(
             account_id=account.id,
             user_id=user_id,
             entry_type="grant",
-            amount=credits,
+            amount=restored,
             balance_after=account.posted_balance,
             reference_type="refund_compensation",
             reference_id=str(refund_id),
             reference_key=reference_key,
-            details={"reason": "provider_refund_failed"},
+            details={
+                "reason": "provider_refund_failed",
+                "requested_credits": credits,
+                "restored_credits": restored,
+            },
         )
         self.session.add(entry)
         await self.session.flush()
         return entry
-
 
     async def revoke_store_purchase(
         self,
