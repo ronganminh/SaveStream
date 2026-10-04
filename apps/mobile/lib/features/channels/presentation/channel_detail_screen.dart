@@ -8,8 +8,11 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
+import '../../local_recordings/presentation/local_recording_start_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
@@ -36,6 +39,39 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
       await action();
     } finally {
       if (mounted) setState(() => _mutating = false);
+    }
+  }
+
+  Future<void> _startLocalRecording(
+    WatchSummary watch,
+    Entitlement entitlement,
+  ) async {
+    if (entitlement.plan != Plan.free) return;
+
+    final deviceInfo = ref.read(deviceInfoServiceProvider);
+    final int freeStorageBytes = await deviceInfo.freeStorageBytes;
+    if (!mounted) return;
+
+    final bool confirmed = await showLocalRecordingStartSheet(
+      context: context,
+      creatorName: watch.creatorDisplayName,
+      entitlement: entitlement,
+      platform: deviceInfo.platform,
+      freeStorageBytes: freeStorageBytes,
+    );
+    if (!confirmed || !mounted) return;
+
+    try {
+      await ref
+          .read(localRecordingControllerProvider)
+          .start(watchId: watch.id);
+      if (mounted) {
+        context.push(AppRoutes.localRecording(watch.id));
+      }
+    } on Object {
+      if (mounted) {
+        SsToast.show(context, context.l10n.localRecordingErrorTitle);
+      }
     }
   }
 
@@ -114,6 +150,10 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                     ? ref.read(watchControllerProvider).resume(value.watch.id)
                     : ref.read(watchControllerProvider).pause(value.watch.id),
               ),
+              onRecord: () => _startLocalRecording(
+                value.watch,
+                entitlement.requireValue,
+              ),
               onDelete: () => _delete(value.watch),
             );
           },
@@ -131,6 +171,7 @@ class _DetailBody extends StatelessWidget {
     required this.mutating,
     required this.onNotify,
     required this.onPauseResume,
+    required this.onRecord,
     required this.onDelete,
   });
 
@@ -140,6 +181,7 @@ class _DetailBody extends StatelessWidget {
   final bool mutating;
   final ValueChanged<bool> onNotify;
   final VoidCallback onPauseResume;
+  final VoidCallback onRecord;
   final VoidCallback onDelete;
 
   @override
@@ -182,7 +224,11 @@ class _DetailBody extends StatelessWidget {
                     tone: SsInlineAlertTone.warning,
                   )
                 else if (watch.isLive)
-                  _LiveCard(watch: watch, entitlement: entitlement)
+                  _LiveCard(
+                    watch: watch,
+                    entitlement: entitlement,
+                    onRecord: onRecord,
+                  )
                 else
                   SsInlineAlert(
                     title: context.l10n.creatorDetailStatusTitle,
@@ -311,10 +357,15 @@ class _CreatorHeader extends StatelessWidget {
 }
 
 class _LiveCard extends StatelessWidget {
-  const _LiveCard({required this.watch, required this.entitlement});
+  const _LiveCard({
+    required this.watch,
+    required this.entitlement,
+    required this.onRecord,
+  });
 
   final WatchSummary watch;
   final Entitlement entitlement;
+  final VoidCallback onRecord;
 
   @override
   Widget build(BuildContext context) {
@@ -357,9 +408,7 @@ class _LiveCard extends StatelessWidget {
           SsPrimaryButton(
             label: context.l10n.recordNowAction,
             icon: Icons.fiber_manual_record_rounded,
-            // A3 owns Local/Cloud recording orchestration. A2 deliberately
-            // does not call the legacy cloud create API for Free accounts.
-            onPressed: () {},
+            onPressed: free ? onRecord : null,
           ),
         ],
       ),
