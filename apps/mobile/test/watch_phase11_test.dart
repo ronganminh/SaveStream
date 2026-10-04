@@ -122,7 +122,7 @@ void main() {
     },
   );
 
-  test('create sends typed source and auto_record payload', () async {
+  test('create sends typed source and V2 Watch payload', () async {
     final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,
       int call,
@@ -131,7 +131,7 @@ void main() {
       expect(options.path, '/v1/watches');
       final Map<String, Object?> data = options.data! as Map<String, Object?>;
       expect(data['auto_record'], isTrue);
-      expect(data.containsKey('notify_on_live'), isFalse);
+      expect(data['notify_on_live'], isTrue);
       expect(data['source'], <String, Object?>{
         'type': 'username',
         'value': '@ada_live',
