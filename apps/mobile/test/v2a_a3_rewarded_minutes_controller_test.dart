@@ -116,10 +116,7 @@ void main() {
   test('polls pending reward until valid before extending', () async {
     final _Harness harness = await _Harness.create(
       adResult: true,
-      statuses: <RewardStatus>[
-        RewardStatus.pending,
-        RewardStatus.valid,
-      ],
+      statuses: <RewardStatus>[RewardStatus.pending, RewardStatus.valid],
     );
     addTearDown(harness.dispose);
 
@@ -287,10 +284,8 @@ final class _AdsSpy implements AdsService {
 }
 
 final class _RewardRepositorySpy implements RewardRepository {
-  _RewardRepositorySpy({
-    required List<RewardStatus> statuses,
-    this.createError,
-  }) : _statuses = List<RewardStatus>.from(statuses);
+  _RewardRepositorySpy({required List<RewardStatus> statuses, this.createError})
+    : _statuses = List<RewardStatus>.from(statuses);
 
   final List<RewardStatus> _statuses;
   final ApiException? createError;
