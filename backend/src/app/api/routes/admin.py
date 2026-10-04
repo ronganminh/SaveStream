@@ -166,6 +166,7 @@ from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
+from app.infrastructure.db.admin_models import AdminComplaintCase
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.payments.factory import selected_payment_provider
 
@@ -3148,7 +3149,7 @@ async def get_admin_device_distribution(
 
 async def _admin_complaint_response(
     service: AdminSafetyService,
-    case,
+    case: AdminComplaintCase,
     *,
     include_timeline: bool,
 ) -> AdminComplaintResponse:
