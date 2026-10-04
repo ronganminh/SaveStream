@@ -1528,11 +1528,11 @@ export const adminD9Api = {
   },
 
   listSupportReports(filters: {
-    cursor?: string | null;
-    status?: string;
-    assignedToUserId?: string;
-    query?: string;
-    sortOrder?: "asc" | "desc";
+    cursor?: string | null | undefined;
+    status?: string | undefined;
+    assignedToUserId?: string | undefined;
+    query?: string | undefined;
+    sortOrder?: "asc" | "desc" | undefined;
   } = {}) {
     const query = new URLSearchParams({ limit: "50" });
     if (filters.cursor) query.set("cursor", filters.cursor);
@@ -1550,10 +1550,10 @@ export const adminD9Api = {
   },
 
   exportSupportReports(filters: {
-    status?: string;
-    assignedToUserId?: string;
-    query?: string;
-    sortOrder?: "asc" | "desc";
+    status?: string | undefined;
+    assignedToUserId?: string | undefined;
+    query?: string | undefined;
+    sortOrder?: "asc" | "desc" | undefined;
   } = {}) {
     const query = new URLSearchParams();
     if (filters.status) query.set("status", filters.status);
