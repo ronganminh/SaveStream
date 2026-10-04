@@ -95,7 +95,7 @@ class _AndroidRecordingBackgroundScreenState
                 const SizedBox(height: SsSpacing.lg),
                 SsPrimaryButton(
                   label: context.l10n.androidOpenBatterySettingsAction,
-                  icon: Icons.battery_alert_outlined,
+                  icon: Icons.battery_alert,
                   onPressed: () => ref
                       .read(recordingPlatformServiceProvider)
                       .openBatterySettings(),
