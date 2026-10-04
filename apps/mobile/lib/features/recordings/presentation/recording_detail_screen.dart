@@ -6,9 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
+import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_providers.dart';
 import 'recording_ui_helpers.dart';
@@ -132,6 +134,10 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     final AsyncValue<RecordingSummary?> recording = _isForeground
         ? ref.watch(recordingRealtimeProvider(widget.recordingId))
         : ref.watch(recordingDetailProvider(widget.recordingId));
+    final int? cloudMinutesAvailable = ref
+        .watch(entitlementProvider)
+        .value
+        ?.cloudMinutesAvailable;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recordingDetailTitle)),
@@ -179,7 +185,10 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     _CreatorHeader(recording: value),
                     const SizedBox(height: SsSpacing.lg),
                     value.engine == Engine.cloud
-                        ? CloudRecordingLifecycleCard(recording: value)
+                        ? CloudRecordingLifecycleCard(
+                            recording: value,
+                            cloudMinutesAvailable: cloudMinutesAvailable,
+                          )
                         : _LifecycleCard(recording: value),
                     if (_mutationError != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
@@ -275,10 +284,12 @@ class _CreatorHeader extends StatelessWidget {
 class CloudRecordingLifecycleCard extends StatelessWidget {
   const CloudRecordingLifecycleCard({
     required this.recording,
+    this.cloudMinutesAvailable,
     super.key,
   });
 
   final RecordingSummary recording;
+  final int? cloudMinutesAvailable;
 
   @override
   Widget build(BuildContext context) {
@@ -317,6 +328,18 @@ class CloudRecordingLifecycleCard extends StatelessWidget {
           ),
           const SizedBox(height: SsSpacing.sm),
           Text(context.l10n.cloudRecordingServerBody),
+          if (cloudMinutesAvailable case final int minutes) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            Text(
+              context.l10n.cloudTimeRemainingValue(
+                formatMinutesAsHoursMinutes(
+                  minutes,
+                  hoursLabel: context.l10n.timeHoursUnit,
+                  minutesLabel: context.l10n.timeMinutesUnit,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: SsSpacing.md),
           SsInlineAlert(
             title: context.l10n.recordingPlaybackNotReadyTitle,
