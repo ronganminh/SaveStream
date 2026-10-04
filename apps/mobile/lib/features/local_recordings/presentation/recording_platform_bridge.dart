@@ -1,3 +1,4 @@
+/// AN01 / IO01 — Native recording notification and iOS lifecycle bridge.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
