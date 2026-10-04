@@ -10,7 +10,7 @@
 
 - [x] C0 — Plugin và khung native
 - [x] C1 — Repository gọi API V2
-- [ ] C2 — Thử nghiệm kỹ thuật ghi trên máy (**dừng chờ duyệt**)
+- [x] C2 — Thử nghiệm kỹ thuật ghi trên máy (**code xong; chưa test thiết bị, dời sang APK cuối**)
 - [ ] C3 — Ghi trên máy cho Android
 - [ ] C4 — Ghi trên máy cho iOS
 - [ ] C5 — Trình phát, thư viện file, chia sẻ, tải bản cloud
