@@ -1177,5 +1177,6 @@
     }
   },
   "localRecordingOpenAction": "Mở recording",
-  "localRecordingHomeAction": "Về Trang chủ"
+  "localRecordingHomeAction": "Về Trang chủ",
+  "localRecordingCleanStorageAction": "Dọn bản ghi cũ"
 }
