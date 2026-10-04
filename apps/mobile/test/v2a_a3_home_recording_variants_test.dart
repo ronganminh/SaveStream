@@ -105,7 +105,7 @@ void main() {
     );
 
     expect(find.text('Local slot #2 is open'), findsOneWidget);
-    expect(find.textContaining('15:42'), findsOneWidget);
+    expect(find.textContaining('Local slot #2 is open until'), findsOneWidget);
   });
 
   testWidgets('H07 finalizing shows step number instead of percent', (
