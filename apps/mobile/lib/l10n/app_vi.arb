@@ -1178,5 +1178,65 @@
   },
   "localRecordingOpenAction": "Mở recording",
   "localRecordingHomeAction": "Về Trang chủ",
-  "localRecordingCleanStorageAction": "Dọn bản ghi cũ"
+  "localRecordingCleanStorageAction": "Dọn bản ghi cũ",
+  "localRecoveryTitle": "Khôi phục recording",
+  "localRecoveryInterruptedTitle": "Recording bị gián đoạn",
+  "localRecoveryInterruptedAndroidBody": "Android đã dừng SaveStream lúc {time}, có thể do tiết kiệm pin. Phần đã ghi vẫn có thể khôi phục.",
+  "@localRecoveryInterruptedAndroidBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryInterruptedIosBody": "iOS đã dừng SaveStream lúc {time} sau khi app rời foreground. Phần đã ghi vẫn có thể khôi phục.",
+  "@localRecoveryInterruptedIosBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryOfflineTitle": "Khôi phục ngay trên thiết bị",
+  "localRecoveryOfflineBody": "Khôi phục không cần mạng và không dùng phút Free.",
+  "localRecoveryRecoveringBody": "Giữ SaveStream mở trong lúc sửa và kiểm tra file Local. Không hiển thị phần trăm ước lượng.",
+  "localRecoveryRecoverAction": "Khôi phục",
+  "localRecoveryCandidateMeta": "Bắt đầu {time} · đã ghi {duration} · Local",
+  "@localRecoveryCandidateMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryRecoveringTitle": "Đang khôi phục bản ghi",
+  "localRecoveryFindStep": "Tìm file tạm",
+  "localRecoveryRepairStep": "Sửa phần cuối file",
+  "localRecoveryVerifyStep": "Kiểm tra thời lượng",
+  "localRecoveryRegisterStep": "Thêm vào Bản ghi",
+  "localRecoveryPartialTitle": "Đã khôi phục một phần",
+  "localRecoveryRecoveredTitle": "Đã khôi phục bản ghi",
+  "localRecoveryKeptDuration": "Giữ được {duration} nội dung đã ghi.",
+  "@localRecoveryKeptDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryAndroidAdviceTitle": "Giảm gián đoạn trên Android",
+  "localRecoveryAndroidAdviceBody": "Tối ưu pin có thể dừng Local recording. Cho phép SaveStream chạy không hạn chế để giảm gián đoạn.",
+  "localRecoveryAndroidGuideAction": "Xem hướng dẫn recording Android",
+  "localRecoveryIosAdviceTitle": "Lần sau, giữ SaveStream mở",
+  "localRecoveryIosAdviceBody": "iOS có thể dừng Local recording khi SaveStream rời foreground. Cloud recording không phụ thuộc điện thoại luôn mở.",
+  "localRecoveryViewProAction": "Xem lựa chọn cloud",
+  "localRecoveryFailedTitle": "Không khôi phục được bản ghi",
+  "localRecoveryFailedAndroidBody": "File tạm bị hỏng hoặc không còn tồn tại sau khi Android dừng SaveStream.",
+  "localRecoveryFailedIosBody": "File tạm không còn đủ dữ liệu đọc được sau khi iOS dừng SaveStream.",
+  "localRecoveryDeleteTempAction": "Xoá file tạm",
+  "localRecoveryNoneTitle": "Không có recording bị gián đoạn",
+  "localRecoveryNoneBody": "Không có file Local tạm nào đang chờ khôi phục."
 }
