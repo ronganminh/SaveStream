@@ -769,7 +769,12 @@ class _ActionsCard extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<Widget> actions = <Widget>[];
 
-    if (recording.actions.canStop) {
+    final bool canStopActive =
+        recording.actions.canStop &&
+        (recording.status == RecordingStatus.recording ||
+            recording.status == RecordingStatus.reconnecting);
+
+    if (canStopActive) {
       actions.add(
         SsPrimaryButton(
           label: l10n.stopRecordingAction,
