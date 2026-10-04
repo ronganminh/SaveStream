@@ -1133,5 +1133,49 @@
     }
   },
   "secondLocalSlotBusy": "Both Local recording slots are already in use.",
-  "secondLocalSlotReopenAction": "Open Local slot #2 again"
+  "secondLocalSlotReopenAction": "Open Local slot #2 again",
+  "localRecordingStorageLowTitle": "Storage is running low",
+  "localRecordingStorageLowBody": "{free} free · about {minutes} minutes of recording left. Recording will stop safely below 250 MB.",
+  "@localRecordingStorageLowBody": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStorageCriticalTitle": "Storage is almost full",
+  "localRecordingStorageCriticalBody": "Less than 250 MB remains. Recording is stopping safely and the recorded part is being saved.",
+  "localRecordingStopConfirmTitle": "Stop recording?",
+  "localRecordingStopConfirmBody": "The recorded part ({duration}) will be saved on this device. Unused Free minutes stay available.",
+  "@localRecordingStopConfirmBody": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingContinueAction": "Continue recording",
+  "localRecordingFinalizingTitle": "Finishing recording",
+  "localRecordingFinalizeStopStep": "Stop capture",
+  "localRecordingFinalizeFlushStep": "Write final data to file",
+  "localRecordingFinalizeVerifyStep": "Verify file",
+  "localRecordingFinalizeRegisterStep": "Add to Recordings",
+  "localRecordingFinalizingBody": "Keep SaveStream open until this finishes. The file is stored on this device.",
+  "localRecordingCompletedTitle": "Recording saved",
+  "localRecordingCompletedMeta": "{duration} · {size} · Stored on this device",
+  "@localRecordingCompletedMeta": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingOpenAction": "Open recording",
+  "localRecordingHomeAction": "Back to Home"
 }
