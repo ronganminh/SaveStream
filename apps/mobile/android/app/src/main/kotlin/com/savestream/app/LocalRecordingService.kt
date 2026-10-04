@@ -74,6 +74,9 @@ class LocalRecordingService : Service() {
         val sessionId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return stopWithError(
             "Missing local recording session id.",
         )
+        val userId = intent.getStringExtra(EXTRA_USER_ID) ?: return stopWithError(
+            "Missing local recording user id.",
+        )
         val watchId = intent.getStringExtra(EXTRA_WATCH_ID).orEmpty()
         val deviceId = intent.getStringExtra(EXTRA_DEVICE_ID).orEmpty()
         val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL) ?: return stopWithError(
@@ -87,7 +90,10 @@ class LocalRecordingService : Service() {
             return stopWithError("Local recording lease is empty.")
         }
 
-        val directory = File(filesDir, "local_recordings/$deviceId").apply { mkdirs() }
+        val directory = File(
+            filesDir,
+            "local_recordings/$userId/$deviceId",
+        ).apply { mkdirs() }
         val tempFile = File(directory, "$sessionId.part")
         val metadataFile = File(directory, "$sessionId.json")
         val existingMetadata = readMetadata(metadataFile)
@@ -102,6 +108,7 @@ class LocalRecordingService : Service() {
         persistMetadata(
             metadataFile = metadataFile,
             sessionId = sessionId,
+            userId = userId,
             watchId = watchId,
             deviceId = deviceId,
             streamUrl = streamUrl,
@@ -121,6 +128,7 @@ class LocalRecordingService : Service() {
         )
         capture(
             sessionId = sessionId,
+            userId = userId,
             watchId = watchId,
             deviceId = deviceId,
             streamUrl = streamUrl,
@@ -139,7 +147,10 @@ class LocalRecordingService : Service() {
         val tempId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return stopWithError(
             "Missing interrupted recording id.",
         )
-        val metadataFile = findMetadata(tempId) ?: return stopWithError(
+        val userId = intent.getStringExtra(EXTRA_USER_ID) ?: return stopWithError(
+            "Missing interrupted recording user id.",
+        )
+        val metadataFile = findMetadata(userId, tempId) ?: return stopWithError(
             "Interrupted recording metadata was not found.",
         )
         val metadata = readMetadata(metadataFile) ?: return stopWithError(
@@ -151,6 +162,7 @@ class LocalRecordingService : Service() {
 
     private fun capture(
         sessionId: String,
+        userId: String,
         watchId: String,
         deviceId: String,
         streamUrl: String,
@@ -236,6 +248,7 @@ class LocalRecordingService : Service() {
                             persistMetadata(
                                 metadataFile = metadataFile,
                                 sessionId = sessionId,
+                                userId = userId,
                                 watchId = watchId,
                                 deviceId = deviceId,
                                 streamUrl = streamUrl,
@@ -302,6 +315,7 @@ class LocalRecordingService : Service() {
         persistMetadata(
             metadataFile = metadataFile,
             sessionId = sessionId,
+            userId = userId,
             watchId = watchId,
             deviceId = deviceId,
             streamUrl = streamUrl,
@@ -427,6 +441,7 @@ class LocalRecordingService : Service() {
     private fun persistMetadata(
         metadataFile: File,
         sessionId: String,
+        userId: String,
         watchId: String,
         deviceId: String,
         streamUrl: String,
@@ -440,6 +455,7 @@ class LocalRecordingService : Service() {
     ) {
         val json = JSONObject()
             .put("session_id", sessionId)
+            .put("user_id", userId)
             .put("watch_id", watchId)
             .put("device_id", deviceId)
             .put("stream_url", streamUrl)
@@ -457,8 +473,8 @@ class LocalRecordingService : Service() {
         metadataFile.writeText(json.toString())
     }
 
-    private fun findMetadata(tempId: String): File? {
-        val root = File(filesDir, "local_recordings")
+    private fun findMetadata(userId: String, tempId: String): File? {
+        val root = File(filesDir, "local_recordings/$userId")
         return root.walkTopDown().firstOrNull {
             it.isFile && it.name == "$tempId.json"
         }
@@ -601,6 +617,7 @@ class LocalRecordingService : Service() {
         private const val ACTION_RECOVER =
             "com.savestream.app.localrecording.RECOVER"
         private const val EXTRA_SESSION_ID = "session_id"
+        private const val EXTRA_USER_ID = "user_id"
         private const val EXTRA_WATCH_ID = "watch_id"
         private const val EXTRA_DEVICE_ID = "device_id"
         private const val EXTRA_STREAM_URL = "stream_url"
@@ -617,8 +634,11 @@ class LocalRecordingService : Service() {
         private const val MAX_CHUNK_GAP_MS = 2_000L
         private const val CRITICAL_STORAGE_BYTES = 250L * 1024L * 1024L
 
-        fun findInterrupted(context: Context): Map<String, Any?>? {
-            val root = File(context.filesDir, "local_recordings")
+        fun findInterrupted(
+            context: Context,
+            userId: String,
+        ): Map<String, Any?>? {
+            val root = File(context.filesDir, "local_recordings/$userId")
             if (!root.exists()) {
                 return null
             }
@@ -662,8 +682,12 @@ class LocalRecordingService : Service() {
             )
         }
 
-        fun markRegistered(context: Context, sessionId: String) {
-            val root = File(context.filesDir, "local_recordings")
+        fun markRegistered(
+            context: Context,
+            userId: String,
+            sessionId: String,
+        ) {
+            val root = File(context.filesDir, "local_recordings/$userId")
             val metadataFile = root.walkTopDown().firstOrNull {
                 it.isFile && it.name == "$sessionId.json"
             } ?: return
@@ -676,8 +700,12 @@ class LocalRecordingService : Service() {
             }
         }
 
-        fun deleteInterrupted(context: Context, sessionId: String) {
-            val root = File(context.filesDir, "local_recordings")
+        fun deleteInterrupted(
+            context: Context,
+            userId: String,
+            sessionId: String,
+        ) {
+            val root = File(context.filesDir, "local_recordings/$userId")
             val metadataFile = root.walkTopDown().firstOrNull {
                 it.isFile && it.name == "$sessionId.json"
             } ?: return
@@ -721,6 +749,7 @@ class LocalRecordingService : Service() {
         fun start(
             context: Context,
             sessionId: String,
+            userId: String,
             watchId: String,
             deviceId: String,
             streamUrl: String,
@@ -731,6 +760,7 @@ class LocalRecordingService : Service() {
             val intent = Intent(context, LocalRecordingService::class.java)
                 .setAction(ACTION_START)
                 .putExtra(EXTRA_SESSION_ID, sessionId)
+                .putExtra(EXTRA_USER_ID, userId)
                 .putExtra(EXTRA_WATCH_ID, watchId)
                 .putExtra(EXTRA_DEVICE_ID, deviceId)
                 .putExtra(EXTRA_STREAM_URL, streamUrl)
@@ -746,9 +776,14 @@ class LocalRecordingService : Service() {
             context.startService(intent)
         }
 
-        fun recover(context: Context, sessionId: String) {
+        fun recover(
+            context: Context,
+            userId: String,
+            sessionId: String,
+        ) {
             val intent = Intent(context, LocalRecordingService::class.java)
                 .setAction(ACTION_RECOVER)
+                .putExtra(EXTRA_USER_ID, userId)
                 .putExtra(EXTRA_SESSION_ID, sessionId)
             ContextCompat.startForegroundService(context, intent)
         }
