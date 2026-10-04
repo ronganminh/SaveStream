@@ -377,9 +377,7 @@ class _PlatformRecoveryAdvice extends StatelessWidget {
             child: SsTextAction(
               label: context.l10n.localRecoveryAndroidGuideAction,
               icon: Icons.battery_saver_outlined,
-              onPressed: () => context.push(
-                AppRoutes.onboardingAndroidPermission,
-              ),
+              onPressed: () => context.push(AppRoutes.androidRecordingGuide),
             ),
           ),
         ],
