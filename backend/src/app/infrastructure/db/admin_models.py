@@ -234,3 +234,121 @@ class AdminRuntimeSetting(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
+
+
+class AdminComplaintCase(Base):
+    __tablename__ = "admin_complaint_cases"
+    __table_args__ = (
+        Index("ix_admin_complaints_status_created", "status", "created_at"),
+        Index("ix_admin_complaints_assignee_status", "assigned_to_user_id", "status"),
+        Index("ix_admin_complaints_recording", "recording_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    complainant_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    complainant_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    channel_source_type: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    channel_source_value: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    recording_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("recordings.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    summary: Mapped[str] = mapped_column(String(240), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="new")
+    assigned_to_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class AdminComplaintEvent(Base):
+    __tablename__ = "admin_complaint_events"
+    __table_args__ = (
+        Index("ix_admin_complaint_events_case_created", "complaint_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    complaint_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("admin_complaint_cases.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    action: Mapped[str] = mapped_column(String(48), nullable=False)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, nullable=False, default=dict
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AdminCreatorBlock(Base):
+    __tablename__ = "admin_creator_blocks"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_type",
+            "source_value",
+            name="uq_admin_creator_blocks_source",
+        ),
+        Index("ix_admin_creator_blocks_active", "unblocked_at", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    source_type: Mapped[str] = mapped_column(String(24), nullable=False)
+    source_value: Mapped[str] = mapped_column(String(2048), nullable=False)
+    complaint_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("admin_complaint_cases.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    blocked_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    unblocked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    unblocked_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    unblock_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
