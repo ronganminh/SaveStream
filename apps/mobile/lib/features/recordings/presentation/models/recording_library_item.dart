@@ -1,4 +1,3 @@
-import '../../../entitlement/domain/models/entitlement.dart';
 import '../../../local_recordings/domain/models/local_recording_models.dart';
 import '../../domain/models/recording_summary.dart';
 
