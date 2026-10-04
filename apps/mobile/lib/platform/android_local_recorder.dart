@@ -20,18 +20,16 @@ final class AndroidLocalRecorder implements LocalRecorder {
   @override
   Future<void> start(LocalRecordingSession session) async {
     _session = session;
-    await androidLocalRecordingMethodChannel.invokeMethod<void>(
-      'start',
-      <String, Object?>{
-        'session_id': session.sessionId,
-        'watch_id': session.watchId,
-        'device_id': session.deviceId,
-        'stream_url': session.streamUrl.toString(),
-        'stream_format': session.streamFormat.name,
-        'stream_headers': session.streamHeaders,
-        'granted_seconds': session.grantedSeconds,
-      },
-    );
+    await androidLocalRecordingMethodChannel
+        .invokeMethod<void>('start', <String, Object?>{
+          'session_id': session.sessionId,
+          'watch_id': session.watchId,
+          'device_id': session.deviceId,
+          'stream_url': session.streamUrl.toString(),
+          'stream_format': session.streamFormat.name,
+          'stream_headers': session.streamHeaders,
+          'granted_seconds': session.grantedSeconds,
+        });
   }
 
   @override
@@ -84,8 +82,8 @@ final class AndroidLocalRecorder implements LocalRecorder {
         _ => LocalStorageState.ok,
       },
       freeStorageBytes: (map['free_storage_bytes'] as num?)?.toInt(),
-      estimatedStorageMinutes:
-          (map['estimated_storage_minutes'] as num?)?.toInt(),
+      estimatedStorageMinutes: (map['estimated_storage_minutes'] as num?)
+          ?.toInt(),
       finalizationStep: switch (map['finalization_step']) {
         'stopCapture' => LocalFinalizationStep.stopCapture,
         'flushFile' => LocalFinalizationStep.flushFile,
