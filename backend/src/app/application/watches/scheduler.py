@@ -115,6 +115,15 @@ class WatchScheduler:
         if watch is None or watch.status != WatchStatus.ACTIVE.value:
             return
 
+        if await watch_creator_block(self.session, watch) is not None:
+            watch.status = WatchStatus.PAUSED.value
+            watch.next_check_at = None
+            watch.scheduler_lease_id = None
+            watch.scheduler_lease_expires_at = None
+            watch.last_error = "creator_blocked"
+            await self.session.commit()
+            return
+
         now = utcnow()
         check_started = time.perf_counter()
         source = Source.model_validate(
