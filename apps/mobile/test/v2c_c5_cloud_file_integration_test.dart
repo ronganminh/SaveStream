@@ -14,43 +14,48 @@ import 'package:savestream_mobile/platform/contracts/share_service.dart';
 import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
 
 void main() {
-  test('indexed repository exposes local file and deletes metadata plus file', () async {
-    final Directory root = await Directory.systemTemp.createTemp('c5-indexed-');
-    addTearDown(() => root.delete(recursive: true));
+  test(
+    'indexed repository exposes local file and deletes metadata plus file',
+    () async {
+      final Directory root = await Directory.systemTemp.createTemp(
+        'c5-indexed-',
+      );
+      addTearDown(() => root.delete(recursive: true));
 
-    final Directory deviceDirectory = Directory(
-      '${root.path}/user-1/device-1',
-    );
-    await deviceDirectory.create(recursive: true);
-    final File media = await File(
-      '${deviceDirectory.path}/local-1.flv',
-    ).writeAsBytes(<int>[1, 2, 3]);
-    final File sidecar = await File(
-      '${deviceDirectory.path}/local-1.json',
-    ).writeAsString('{}');
+      final Directory deviceDirectory = Directory(
+        '${root.path}/user-1/device-1',
+      );
+      await deviceDirectory.create(recursive: true);
+      final File media = await File(
+        '${deviceDirectory.path}/local-1.flv',
+      ).writeAsBytes(<int>[1, 2, 3]);
+      final File sidecar = await File(
+        '${deviceDirectory.path}/local-1.json',
+      ).writeAsString('{}');
 
-    final _FakeLocalRecordingRepository delegate =
-        _FakeLocalRecordingRepository(<LocalRecordingSummary>[
-          _localSummary('local-1'),
-        ]);
-    final IndexedLocalRecordingRepository repository =
-        IndexedLocalRecordingRepository(
-          delegate: delegate,
-          currentUserId: () async => 'user-1',
-          currentDeviceId: () async => 'device-1',
-          rootDirectory: () async => root,
-        );
+      final _FakeLocalRecordingRepository delegate =
+          _FakeLocalRecordingRepository(<LocalRecordingSummary>[
+            _localSummary('local-1'),
+          ]);
+      final IndexedLocalRecordingRepository repository =
+          IndexedLocalRecordingRepository(
+            delegate: delegate,
+            currentUserId: () async => 'user-1',
+            currentDeviceId: () async => 'device-1',
+            rootDirectory: () async => root,
+          );
 
-    final List<LocalRecordingSummary> listed = await repository.list();
-    expect(listed.single.fileAvailable, isTrue);
-    expect(listed.single.filePath, media.path);
+      final List<LocalRecordingSummary> listed = await repository.list();
+      expect(listed.single.fileAvailable, isTrue);
+      expect(listed.single.filePath, media.path);
 
-    await repository.delete('local-1', deviceId: 'device-1');
+      await repository.delete('local-1', deviceId: 'device-1');
 
-    expect(delegate.deleted, <String>['local-1@device-1']);
-    expect(await media.exists(), isFalse);
-    expect(await sidecar.exists(), isFalse);
-  });
+      expect(delegate.deleted, <String>['local-1@device-1']);
+      expect(await media.exists(), isFalse);
+      expect(await sidecar.exists(), isFalse);
+    },
+  );
 
   test('cloud file service resumes into app-private persistent file', () async {
     final HttpServer server = await HttpServer.bind(
@@ -104,61 +109,66 @@ void main() {
     expect((await service.existingFile('rec-1'))?.path, downloaded.path);
   });
 
-  test('cloud share uses fresh URL and removes temporary file after share', () async {
-    final HttpServer server = await HttpServer.bind(
-      InternetAddress.loopbackIPv4,
-      0,
-    );
-    addTearDown(() => server.close(force: true));
+  test(
+    'cloud share uses fresh URL and removes temporary file after share',
+    () async {
+      final HttpServer server = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      addTearDown(() => server.close(force: true));
 
-    final Future<void> serving = server.first.then((HttpRequest request) async {
-      request.response.statusCode = HttpStatus.ok;
-      request.response.contentLength = 4;
-      request.response.add(utf8.encode('data'));
-      await request.response.close();
-    });
+      final Future<void> serving = server.first.then((
+        HttpRequest request,
+      ) async {
+        request.response.statusCode = HttpStatus.ok;
+        request.response.contentLength = 4;
+        request.response.add(utf8.encode('data'));
+        await request.response.close();
+      });
 
-    final Directory temp = await Directory.systemTemp.createTemp('c5-share-');
-    addTearDown(() => temp.delete(recursive: true));
+      final Directory temp = await Directory.systemTemp.createTemp('c5-share-');
+      addTearDown(() => temp.delete(recursive: true));
 
-    final FakeShareService shareService = FakeShareService();
-    final CloudArtifactDownloader downloader = CloudArtifactDownloader(
-      deviceInfo: const FakeDeviceInfoService(storageBytes: 1024 * 1024),
-      storageReserveBytes: 0,
-    );
-    addTearDown(downloader.close);
+      final FakeShareService shareService = FakeShareService();
+      final CloudArtifactDownloader downloader = CloudArtifactDownloader(
+        deviceInfo: const FakeDeviceInfoService(storageBytes: 1024 * 1024),
+        storageReserveBytes: 0,
+      );
+      addTearDown(downloader.close);
 
-    int urlCalls = 0;
-    final CloudRecordingShareCoordinator coordinator =
-        CloudRecordingShareCoordinator(
-          createDownloadUrl: (String artifactId) async {
-            urlCalls += 1;
-            return ArtifactDownloadUrl(
-              uri: Uri.parse(
-                'http://${server.address.address}:${server.port}/artifact',
-              ),
-              expiresAt: DateTime.now().toUtc().add(
-                const Duration(minutes: 5),
-              ),
-            );
-          },
-          downloader: downloader,
-          shareService: shareService,
-          tempDirectory: () async => temp,
-        );
+      int urlCalls = 0;
+      final CloudRecordingShareCoordinator coordinator =
+          CloudRecordingShareCoordinator(
+            createDownloadUrl: (String artifactId) async {
+              urlCalls += 1;
+              return ArtifactDownloadUrl(
+                uri: Uri.parse(
+                  'http://${server.address.address}:${server.port}/artifact',
+                ),
+                expiresAt: DateTime.now().toUtc().add(
+                  const Duration(minutes: 5),
+                ),
+              );
+            },
+            downloader: downloader,
+            shareService: shareService,
+            tempDirectory: () async => temp,
+          );
 
-    await coordinator.share(
-      artifactId: 'artifact-1',
-      displayName: 'Creator recording',
-    );
-    await serving;
+      await coordinator.share(
+        artifactId: 'artifact-1',
+        displayName: 'Creator recording',
+      );
+      await serving;
 
-    expect(urlCalls, 1);
-    expect(shareService.sharedFiles, hasLength(1));
-    final String sharedPath = shareService.sharedFiles.single.filePath;
-    expect(sharedPath, contains('savestream-share'));
-    expect(await File(sharedPath).exists(), isFalse);
-  });
+      expect(urlCalls, 1);
+      expect(shareService.sharedFiles, hasLength(1));
+      final String sharedPath = shareService.sharedFiles.single.filePath;
+      expect(sharedPath, contains('savestream-share'));
+      expect(await File(sharedPath).exists(), isFalse);
+    },
+  );
 }
 
 LocalRecordingSummary _localSummary(String id) {
@@ -200,10 +210,7 @@ final class _FakeLocalRecordingRepository implements LocalRecordingRepository {
   }
 
   @override
-  Future<LocalRecordingSession> extend(
-    String sessionId, {
-    String? rewardId,
-  }) {
+  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId}) {
     throw UnimplementedError();
   }
 
