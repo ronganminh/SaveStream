@@ -68,40 +68,37 @@ void main() {
     expect(find.text('01:12:40 · 00:02:18'), findsOneWidget);
   });
 
-  testWidgets('H04 Local active card shows elapsed and server lease remaining', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      app(
-        const HomeLocalRecordingCard(
-          creatorName: 'Lina Studio',
-          watchId: 'watch_1',
-          state: LocalRecorderState(
-            phase: LocalRecorderPhase.recording,
-            recordedSeconds: 372,
-            sizeBytes: 214 * 1024 * 1024,
+  testWidgets(
+    'H04 Local active card shows elapsed and server lease remaining',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        app(
+          const HomeLocalRecordingCard(
+            creatorName: 'Lina Studio',
+            watchId: 'watch_1',
+            state: LocalRecorderState(
+              phase: LocalRecorderPhase.recording,
+              recordedSeconds: 372,
+              sizeBytes: 214 * 1024 * 1024,
+            ),
+            remainingSeconds: 228,
+            unlimited: false,
           ),
-          remainingSeconds: 228,
-          unlimited: false,
         ),
-      ),
-    );
+      );
 
-    expect(find.text('Lina Studio'), findsOneWidget);
-    expect(find.text('00:06:12'), findsOneWidget);
-    expect(find.textContaining('00:03:48 remaining'), findsOneWidget);
-    expect(find.text('Local'), findsOneWidget);
-  });
+      expect(find.text('Lina Studio'), findsOneWidget);
+      expect(find.text('00:06:12'), findsOneWidget);
+      expect(find.textContaining('00:03:48 remaining'), findsOneWidget);
+      expect(find.text('Local'), findsOneWidget);
+    },
+  );
 
   testWidgets('H05 second Local slot shows server expiry', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      app(
-        HomeSecondSlotOpenCard(
-          expiresAt: DateTime(2026, 10, 4, 15, 42),
-        ),
-      ),
+      app(HomeSecondSlotOpenCard(expiresAt: DateTime(2026, 10, 4, 15, 42))),
     );
 
     expect(find.text('Local slot #2 is open'), findsOneWidget);
@@ -121,10 +118,7 @@ void main() {
     );
 
     expect(find.text('Finishing Lina Studio'), findsOneWidget);
-    expect(
-      find.text('Step 2/4 · Write final data to file'),
-      findsOneWidget,
-    );
+    expect(find.text('Step 2/4 · Write final data to file'), findsOneWidget);
     expect(find.textContaining('%'), findsNothing);
   });
 
