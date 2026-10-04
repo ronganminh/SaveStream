@@ -47,7 +47,8 @@ abstract final class AppRoutes {
   static String autoRecordSettings(String id) =>
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
-  static String localRecordingDetail(String id) => '/recordings/local-file/' + id;
+  static String localRecordingDetail(String id) =>
+      '/recordings/local-file/' + id;
   static String recordingPlayer(String id) => '/recordings/player/' + id;
   static String localRecording(String watchId) =>
       '/recordings/local/' + watchId;
