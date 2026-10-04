@@ -32,11 +32,7 @@ final Provider<PushService> pushServiceProvider = Provider<PushService>(
 );
 
 final Provider<ConnectivityService> connectivityServiceProvider =
-    Provider<ConnectivityService>(
-      (Ref ref) => const FakeConnectivityService(),
-    );
+    Provider<ConnectivityService>((Ref ref) => const FakeConnectivityService());
 
 final Provider<DeviceInfoService> deviceInfoServiceProvider =
-    Provider<DeviceInfoService>(
-      (Ref ref) => const FakeDeviceInfoService(),
-    );
+    Provider<DeviceInfoService>((Ref ref) => const FakeDeviceInfoService());
