@@ -21,6 +21,16 @@ def test_d8_complaints_safety_contract() -> None:
         },
         "/admin/creator-blocks": {
             "post": "blockAdminCreator",
+            "get": "listAdminCreatorBlocks",
+        },
+        "/admin/complaints/export.csv": {
+            "get": "exportAdminComplaints",
+        },
+        "/admin/creator-blocks/{block_id}/delete-recordings": {
+            "post": "deleteAdminBlockedRecordings",
+        },
+        "/admin/safety/suspicious-accounts": {
+            "get": "listAdminSuspiciousAccounts",
         },
         "/admin/creator-blocks/{block_id}/unblock": {
             "post": "unblockAdminCreator",
@@ -33,6 +43,7 @@ def test_d8_complaints_safety_contract() -> None:
     for path in (
         "/admin/creator-blocks",
         "/admin/creator-blocks/{block_id}/unblock",
+        "/admin/creator-blocks/{block_id}/delete-recordings",
     ):
         operation = paths[path]["post"]
         assert any(
@@ -49,6 +60,10 @@ def test_d8_complaints_safety_contract() -> None:
         "AdminCreatorBlock",
         "AdminCreatorBlockRequest",
         "AdminCreatorUnblockRequest",
+        "AdminCreatorBlockList",
+        "AdminSuspiciousAccountList",
+        "AdminDeleteBlockedRecordingsRequest",
+        "AdminDeleteBlockedRecordingsResponse",
     ):
         assert name in schemas
 
@@ -57,3 +72,10 @@ def test_d8_complaints_safety_contract() -> None:
     assert "CREATOR_BLOCKED" in paths[
         "/artifacts/{artifact_id}/download-url"
     ]["post"]["responses"]["403"]["description"]
+
+
+def test_d8_complaint_csv_contract_is_bounded_admin_export() -> None:
+    document = json.loads(OPENAPI.read_text(encoding="utf-8"))
+    operation = document["paths"]["/admin/complaints/export.csv"]["get"]
+    assert operation["operationId"] == "exportAdminComplaints"
+    assert "text/csv" in operation["responses"]["200"]["content"]
