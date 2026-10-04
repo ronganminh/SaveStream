@@ -327,8 +327,7 @@ void main() {
     expect(find.text('@ada_live'), findsOneWidget);
 
     await tester.tap(find.text('Recordings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
 
@@ -418,36 +417,22 @@ void main() {
     expect(find.text('Recent recording'), findsOneWidget);
   });
 
-  testWidgets('Recordings pagination exposes all lifecycle statuses', (
+  testWidgets('Recordings merged library exposes cloud lifecycle statuses', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.text('Recordings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(RecordingsScreen)),
     );
-    final RecordingListController controller = container.read(
-      recordingListControllerProvider.notifier,
+    final List<RecordingLibraryItem> items = await container.read(
+      recordingLibraryProvider.future,
     );
-
-    final Future<void> secondPage = controller.loadMore();
-    await tester.pump(const Duration(milliseconds: 200));
-    await secondPage;
-
-    final Future<void> thirdPage = controller.loadMore();
-    await tester.pump(const Duration(milliseconds: 200));
-    await thirdPage;
-    await tester.pump();
-
-    final Set<RecordingStatus> statuses = container
-        .read(recordingListControllerProvider)
-        .requireValue
-        .items
-        .map((RecordingSummary item) => item.status)
+    final Set<RecordingStatus> statuses = items
+        .map((RecordingLibraryItem item) => item.status)
         .toSet();
 
     expect(
@@ -469,28 +454,23 @@ void main() {
     );
   });
 
-  testWidgets('Recordings filters completed and failed states', (
+  testWidgets('Recordings merged library supports search and storage filter', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.text('Recordings'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'Studio North');
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Completed'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-
-    expect(find.text('Minh Streams'), findsOneWidget);
-    expect(find.text('Studio North'), findsNothing);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Failed'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-
     expect(find.text('Studio North'), findsOneWidget);
     expect(find.text('Minh Streams'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), '');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Cloud'));
+    await tester.pump();
+    expect(find.text('Minh Streams'), findsOneWidget);
   });
 
   testWidgets('active recording Stop action follows canStop flag', (
@@ -499,8 +479,7 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.text('Recordings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Ada Live'));
     await tester.pump();
@@ -535,12 +514,7 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.text('Recordings'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Failed'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Studio North'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
