@@ -191,10 +191,12 @@ class LocalRecordingScreen extends ConsumerWidget {
     int recordedSeconds,
   ) {
     if (session == null) return 0;
-    return (session.grantedSeconds - recordedSeconds).clamp(
-      0,
-      session.grantedSeconds,
-    );
+    final int remaining = session.grantedSeconds - recordedSeconds;
+    if (remaining <= 0) return 0;
+    if (remaining >= session.grantedSeconds) {
+      return session.grantedSeconds;
+    }
+    return remaining;
   }
 
   String _formatCountdown(int seconds) {
