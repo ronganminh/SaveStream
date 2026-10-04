@@ -82,12 +82,9 @@ class SecondLocalSlotSheet extends ConsumerWidget {
     return switch (phase) {
       SecondLocalSlotPhase.unlocked =>
         context.l10n.secondLocalSlotUnlockedTitle,
-      SecondLocalSlotPhase.expired =>
-        context.l10n.secondLocalSlotExpiredTitle,
-      SecondLocalSlotPhase.locked =>
-        context.l10n.rewardMinutesLockedTitle,
-      SecondLocalSlotPhase.dailyCap =>
-        context.l10n.rewardMinutesDailyCapTitle,
+      SecondLocalSlotPhase.expired => context.l10n.secondLocalSlotExpiredTitle,
+      SecondLocalSlotPhase.locked => context.l10n.rewardMinutesLockedTitle,
+      SecondLocalSlotPhase.dailyCap => context.l10n.rewardMinutesDailyCapTitle,
       _ => context.l10n.secondLocalSlotTitle,
     };
   }
@@ -104,8 +101,7 @@ class SecondLocalSlotSheet extends ConsumerWidget {
         : dailyUsed;
 
     return switch (phase) {
-      SecondLocalSlotPhase.idle ||
-      SecondLocalSlotPhase.progress => Column(
+      SecondLocalSlotPhase.idle || SecondLocalSlotPhase.progress => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(context.l10n.secondLocalSlotOfferBody),
@@ -263,8 +259,8 @@ class SecondLocalSlotSheet extends ConsumerWidget {
 
   String _formatTime(BuildContext context, DateTime? value) {
     if (value == null) return context.l10n.timeUnknownLabel;
-    return MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(value.toLocal()),
-    );
+    return MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(value.toLocal()));
   }
 }
