@@ -49,6 +49,15 @@ Future<void> bootstrap() async {
   );
   await authRuntime.sessionManager.restoreSession();
   final authenticatedApiClient = authRuntime.authenticatedApiClient;
+  final entitlementRepository = ApiEntitlementRepository(
+    apiClient: authenticatedApiClient,
+  );
+  final appStatusRepository = ApiAppStatusRepository(
+    apiClient: authenticatedApiClient,
+  );
+  final deviceRepository = ApiDeviceRepository(
+    apiClient: authenticatedApiClient,
+  );
 
   runApp(
     SaveStreamApp(
@@ -84,13 +93,13 @@ Future<void> bootstrap() async {
         ),
         deviceInfoServiceProvider.overrideWithValue(DeviceInfoPlusService()),
         entitlementRepositoryProvider.overrideWithValue(
-          ApiEntitlementRepository(apiClient: authenticatedApiClient),
+          entitlementRepository,
         ),
         appStatusRepositoryProvider.overrideWithValue(
-          ApiAppStatusRepository(apiClient: authenticatedApiClient),
+          appStatusRepository,
         ),
         deviceRepositoryProvider.overrideWithValue(
-          ApiDeviceRepository(apiClient: authenticatedApiClient),
+          deviceRepository,
         ),
       ],
     ),
