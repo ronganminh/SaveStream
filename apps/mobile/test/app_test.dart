@@ -20,7 +20,9 @@ import 'package:savestream_mobile/features/credits/presentation/credits_screen.d
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
+import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_library_controller.dart';
 import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_providers.dart';
+import 'package:savestream_mobile/features/recordings/presentation/models/recording_library_item.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
