@@ -1,0 +1,34 @@
+name: A4 Format
+
+on:
+  push:
+    branches:
+      - tmp/a4-format-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/core/widgets/ss_video_surface.dart lib/features/recordings/presentation/controllers/recording_library_controller.dart lib/features/recordings/presentation/models/recording_library_item.dart test/v2a_a4_recordings_player_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/lib/core/widgets/ss_video_surface.dart apps/mobile/lib/features/recordings/presentation/controllers/recording_library_controller.dart apps/mobile/lib/features/recordings/presentation/models/recording_library_item.dart apps/mobile/test/v2a_a4_recordings_player_test.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(mobile): format A4 slice [formatted]"
+          git push
