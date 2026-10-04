@@ -68,9 +68,7 @@ void main() {
       ),
     );
 
-    final status = await ApiAppStatusRepository(
-      apiClient: client,
-    ).getStatus();
+    final status = await ApiAppStatusRepository(apiClient: client).getStatus();
 
     expect(status.minSupportedVersion.android, '0.0.0');
     expect(status.minSupportedVersion.ios, '0.0.0');
@@ -96,7 +94,7 @@ void main() {
       );
       return ResponseBody.fromString('', 204);
     });
-    final DeviceRegistration device = const DeviceRegistration(
+    const DeviceRegistration device = DeviceRegistration(
       deviceId: 'dev/1',
       platform: DevicePlatform.android,
       pushToken: 'push-token',
@@ -153,6 +151,7 @@ void main() {
           },
         });
       }
+
       expect(options.queryParameters['cursor'], 'next-1');
       return _jsonResponse(200, <String, Object?>{
         'items': <Object?>[_watchJson(id: 'watch-2')],
@@ -167,10 +166,10 @@ void main() {
       apiClient: _clientFor(listAdapter),
     ).listWatches();
 
-    expect(watches.map((WatchSummary item) => item.id), <String>[
-      'watch-1',
-      'watch-2',
-    ]);
+    expect(
+      watches.map((WatchSummary item) => item.id),
+      <String>['watch-1', 'watch-2'],
+    );
     expect(listAdapter.calls, 2);
   });
 
@@ -194,45 +193,35 @@ void main() {
     'notification preferences map V2 fields in both directions',
     () async {
       final _FakeAdapter adapter = _FakeAdapter((
-      RequestOptions options,
-      int call,
+        RequestOptions options,
+        int call,
       ) {
-      if (call == 1) {
-        expect(options.method, 'GET');
-        return _jsonResponse(200, <String, Object?>{
-          'recording_started': true,
-          'recording_ready': true,
-          'recording_failed': true,
-          'creator_live': false,
-          'recording_expiring': true,
-          'free_minutes_low': false,
-          'email_supported': false,
-          'updated_at': '2026-10-04T00:00:00Z',
-        });
-      }
+        if (call == 1) {
+          expect(options.method, 'GET');
+          return _jsonResponse(200, _notificationPreferencesJson(
+            creatorLive: false,
+            recordingExpiring: true,
+            freeMinutesLow: false,
+          ));
+        }
 
-      expect(options.method, 'PATCH');
-      expect(
-        options.data,
-        <String, Object?>{
-          'recording_started': true,
-          'recording_ready': true,
-          'recording_failed': true,
-          'creator_live': true,
-          'recording_expiring': false,
-          'free_minutes_low': true,
-        },
-      );
-      return _jsonResponse(200, <String, Object?>{
-        'recording_started': true,
-        'recording_ready': true,
-        'recording_failed': true,
-        'creator_live': true,
-        'recording_expiring': false,
-        'free_minutes_low': true,
-        'email_supported': false,
-        'updated_at': '2026-10-04T00:00:00Z',
-      });
+        expect(options.method, 'PATCH');
+        expect(
+          options.data,
+          <String, Object?>{
+            'recording_started': true,
+            'recording_ready': true,
+            'recording_failed': true,
+            'creator_live': true,
+            'recording_expiring': false,
+            'free_minutes_low': true,
+          },
+        );
+        return _jsonResponse(200, _notificationPreferencesJson(
+          creatorLive: true,
+          recordingExpiring: false,
+          freeMinutesLow: true,
+        ));
       });
       final ApiNotificationPreferencesRepository repository =
           ApiNotificationPreferencesRepository(
@@ -244,38 +233,40 @@ void main() {
       expect(initial.recordingExpiring, isTrue);
       expect(initial.freeMinutesLow, isFalse);
 
-      final NotificationPreferences updated = await repository.updatePreferences(
-      initial.copyWith(
-        creatorLive: true,
-        recordingExpiring: false,
-        freeMinutesLow: true,
-      ),
-      );
+      final NotificationPreferences updated = await repository
+          .updatePreferences(
+            initial.copyWith(
+              creatorLive: true,
+              recordingExpiring: false,
+              freeMinutesLow: true,
+            ),
+          );
       expect(updated.creatorLive, isTrue);
       expect(updated.recordingExpiring, isFalse);
       expect(updated.freeMinutesLow, isTrue);
-  });
+    },
+  );
 
   test(
     'notification feed maps exposed V2 types and tolerates others',
     () async {
       final ApiNotificationsRepository repository = ApiNotificationsRepository(
-      apiClient: _clientFor(
-        _FakeAdapter((RequestOptions options, int call) {
-          return _jsonResponse(200, <String, Object?>{
-            'items': <Object?>[
-              _notificationJson(id: 'n1', type: 'creator_live'),
-              _notificationJson(id: 'n2', type: 'recording_expiring'),
-              _notificationJson(id: 'n3', type: 'free_minutes_low'),
-              _notificationJson(id: 'n4', type: 'recording_missed'),
-            ],
-            'pagination': <String, Object?>{
-              'next_cursor': null,
-              'has_more': false,
-            },
-          });
-        }),
-      ),
+        apiClient: _clientFor(
+          _FakeAdapter((RequestOptions options, int call) {
+            return _jsonResponse(200, <String, Object?>{
+              'items': <Object?>[
+                _notificationJson(id: 'n1', type: 'creator_live'),
+                _notificationJson(id: 'n2', type: 'recording_expiring'),
+                _notificationJson(id: 'n3', type: 'free_minutes_low'),
+                _notificationJson(id: 'n4', type: 'recording_missed'),
+              ],
+              'pagination': <String, Object?>{
+                'next_cursor': null,
+                'has_more': false,
+              },
+            });
+          }),
+        ),
       );
 
       final page = await repository.listNotifications();
@@ -287,7 +278,8 @@ void main() {
       expect(page.items[2].v2Type, AppNotificationV2Type.freeMinutesLow);
       expect(page.items[3].type, AppNotificationType.other);
       expect(page.items[3].v2Type, isNull);
-  });
+    },
+  );
 
   test(
     'recording maps V2 queue/retention fields and tolerates new status',
@@ -420,6 +412,23 @@ Map<String, Object?> _watchJson({
     'next_check_at': null,
     'last_live_at': null,
     'created_at': '2026-10-04T00:00:00Z',
+    'updated_at': '2026-10-04T00:00:00Z',
+  };
+}
+
+Map<String, Object?> _notificationPreferencesJson({
+  required bool creatorLive,
+  required bool recordingExpiring,
+  required bool freeMinutesLow,
+}) {
+  return <String, Object?>{
+    'recording_started': true,
+    'recording_ready': true,
+    'recording_failed': true,
+    'creator_live': creatorLive,
+    'recording_expiring': recordingExpiring,
+    'free_minutes_low': freeMinutesLow,
+    'email_supported': false,
     'updated_at': '2026-10-04T00:00:00Z',
   };
 }
