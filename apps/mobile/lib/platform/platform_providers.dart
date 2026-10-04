@@ -6,6 +6,7 @@ import 'contracts/device_info_service.dart';
 import 'contracts/local_recorder.dart';
 import 'contracts/local_recovery_service.dart';
 import 'contracts/purchase_service.dart';
+import 'contracts/recording_platform_service.dart';
 import 'contracts/push_service.dart';
 import 'fakes/fake_ads_service.dart';
 import 'fakes/fake_connectivity_service.dart';
@@ -13,6 +14,7 @@ import 'fakes/fake_device_info_service.dart';
 import 'fakes/fake_local_recorder.dart';
 import 'fakes/fake_local_recovery_service.dart';
 import 'fakes/fake_purchase_service.dart';
+import 'fakes/fake_recording_platform_service.dart';
 import 'fakes/fake_push_service.dart';
 
 final Provider<LocalRecorder> localRecorderProvider = Provider<LocalRecorder>(
@@ -27,6 +29,11 @@ final Provider<LocalRecoveryService> localRecoveryServiceProvider =
 
 final Provider<PurchaseService> purchaseServiceProvider =
     Provider<PurchaseService>((Ref ref) => FakePurchaseService());
+
+final Provider<RecordingPlatformService> recordingPlatformServiceProvider =
+    Provider<RecordingPlatformService>(
+      (Ref ref) => FakeRecordingPlatformService(),
+    );
 
 final Provider<AdsService> adsServiceProvider = Provider<AdsService>(
   (Ref ref) => const FakeAdsService(),
