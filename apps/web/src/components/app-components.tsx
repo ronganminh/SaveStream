@@ -454,7 +454,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       )}
     >
       <it.icon className="size-4" />
-      <span>{t(it.label)}</span>
+      <span>{it.to.startsWith("/admin/") ? it.label : t(it.label)}</span>
     </Link>
   );
   return (
@@ -501,7 +501,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <div className="border-t pt-5">
               <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
                 <ShieldCheck className="size-3" />
-                {t("Admin")}
+                Admin
               </p>
               {visibleAdminNav.map(item)}
             </div>
