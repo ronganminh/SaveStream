@@ -1461,5 +1461,11 @@
   "cloudRecordingExpiresValue": "Kept until {date}",
   "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
   "cloudRecordingExpiringSoon": "This cloud recording expires within 3 days. Download it if you want to keep a local copy.",
-  "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download."
+  "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download.",
+  "recordingDownloadedLabel": "Downloaded",
+  "recordingDownloadedBody": "Saved on this device. You can play or share the local copy.",
+  "recordingDownloadingBytes": "Downloading {done} of {total}",
+  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "deleteCloudRecordingAction": "Delete cloud recording",
+  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy"
 }
