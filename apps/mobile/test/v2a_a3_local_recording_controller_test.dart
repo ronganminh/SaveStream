@@ -41,17 +41,14 @@ void main() {
       expect(controller.activeSession, same(session));
     });
 
-    test(
-      'passes rewarded extension id when starting a rewarded session',
-      () async {
-        await controller.start(
-          watchId: 'watch_rewarded',
-          rewardId: 'reward_123',
-        );
+    test('passes reward id into rewarded start', () async {
+      await controller.start(
+        watchId: 'watch_rewarded',
+        rewardId: 'reward_123',
+      );
 
-        expect(repository.startRewardId, 'reward_123');
-      },
-    );
+      expect(repository.startRewardId, 'reward_123');
+    });
 
     test('finishes with recorder seconds and bytes', () async {
       await controller.start(watchId: 'watch_finish');
@@ -86,17 +83,14 @@ void main() {
       expect(repository.startCalls, 1);
     });
 
-    test(
-      'recovery delegates to the local recorder only for an active session',
-      () async {
-        expect(controller.recover, throwsStateError);
+    test('recover requires and delegates an active session', () async {
+      expect(controller.recover, throwsStateError);
 
-        await controller.start(watchId: 'watch_recover');
-        await controller.recover();
+      await controller.start(watchId: 'watch_recover');
+      await controller.recover();
 
-        expect(recorder.recoverCalls, 1);
-      },
-    );
+      expect(recorder.recoverCalls, 1);
+    });
   });
 }
 
