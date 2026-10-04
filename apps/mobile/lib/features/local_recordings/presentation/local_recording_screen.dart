@@ -141,14 +141,19 @@ class LocalRecordingScreen extends ConsumerWidget {
                       minutesPerReward: localEntitlement.minutesPerReward,
                       extensionsCap: localEntitlement.extensionsCapPerRecording,
                       rewardState: rewarded,
-                      onRewardRequested: () {
-                        showRewardedMinutesSheet(
-                          context: context,
-                          ref: ref,
-                          entitlement: localEntitlement,
-                          extensionsUsed: rewarded.extensionCount,
-                        );
-                      },
+                      onRewardRequested: _canRequestReward(
+                        rewarded,
+                        localEntitlement,
+                      )
+                          ? () {
+                              showRewardedMinutesSheet(
+                                context: context,
+                                ref: ref,
+                                entitlement: localEntitlement,
+                                extensionsUsed: rewarded.extensionCount,
+                              );
+                            }
+                          : null,
                     ),
                     if (!localEntitlement.unlimited &&
                         session != null) ...<Widget>[
@@ -188,6 +193,19 @@ class LocalRecordingScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  bool _canRequestReward(
+    RewardedMinutesState rewarded,
+    LocalEntitlement entitlement,
+  ) {
+    if (rewarded.extensionCount >= entitlement.extensionsCapPerRecording) {
+      return false;
+    }
+    if (entitlement.rewardsUsedToday >= entitlement.rewardsCapPerDay) {
+      return false;
+    }
+    return rewarded.phase != RewardedMinutesPhase.locked;
   }
 
   LocalRecorderState _stateOrStarting(AsyncValue<LocalRecorderState> recorder) {
