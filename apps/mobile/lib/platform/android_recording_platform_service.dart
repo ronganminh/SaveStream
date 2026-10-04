@@ -12,15 +12,17 @@ final class AndroidRecordingPlatformService
       androidRecordingPlatformActionEventChannel
           .receiveBroadcastStream()
           .where((dynamic event) => event is String)
-          .map<RecordingPlatformAction>((dynamic event) => switch (event) {
-                'stop_recording' => RecordingPlatformAction.stopRecording,
-                'open_recording' => RecordingPlatformAction.openRecording,
-                'recover_interrupted' =>
-                  RecordingPlatformAction.recoverInterrupted,
-                _ => throw FormatException(
-                    'Unknown recording platform action: $event',
-                  ),
-              });
+          .map<RecordingPlatformAction>(
+            (dynamic event) => switch (event) {
+              'stop_recording' => RecordingPlatformAction.stopRecording,
+              'open_recording' => RecordingPlatformAction.openRecording,
+              'recover_interrupted' =>
+                RecordingPlatformAction.recoverInterrupted,
+              _ => throw FormatException(
+                'Unknown recording platform action: $event',
+              ),
+            },
+          );
 
   @override
   Future<AndroidRecordingPlatformState> get androidState async {
@@ -47,21 +49,15 @@ final class AndroidRecordingPlatformService
   }
 
   @override
-  Future<void> openBatterySettings() =>
-      androidRecordingPlatformMethodChannel.invokeMethod<void>(
-        'openBatterySettings',
-      );
+  Future<void> openBatterySettings() => androidRecordingPlatformMethodChannel
+      .invokeMethod<void>('openBatterySettings');
 
   @override
-  Future<void> openAppSettings() =>
-      androidRecordingPlatformMethodChannel.invokeMethod<void>(
-        'openAppSettings',
-      );
+  Future<void> openAppSettings() => androidRecordingPlatformMethodChannel
+      .invokeMethod<void>('openAppSettings');
 
   @override
-  Future<void> updateRecordingNotification(
-    RecordingNotificationSpec spec,
-  ) {
+  Future<void> updateRecordingNotification(RecordingNotificationSpec spec) {
     final bool ongoing =
         spec.kind != RecordingNotificationKind.completed &&
         spec.kind != RecordingNotificationKind.interrupted;
@@ -88,9 +84,7 @@ final class AndroidRecordingPlatformService
   Future<void> setIosReturnReminderEnabled(bool enabled) async {}
 
   @override
-  Future<void> scheduleIosReturnReminder({
-    required String creatorName,
-  }) async {}
+  Future<void> scheduleIosReturnReminder({required String creatorName}) async {}
 
   @override
   Future<void> cancelIosReturnReminder() async {}
