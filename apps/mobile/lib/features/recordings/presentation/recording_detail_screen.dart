@@ -178,7 +178,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     _CreatorHeader(recording: value),
                     const SizedBox(height: SsSpacing.lg),
                     value.engine == Engine.cloud
-                        ? _CloudLifecycleCard(recording: value)
+                        ? CloudRecordingLifecycleCard(recording: value)
                         : _LifecycleCard(recording: value),
                     if (_mutationError != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
@@ -271,8 +271,11 @@ class _CreatorHeader extends StatelessWidget {
   }
 }
 
-class _CloudLifecycleCard extends StatelessWidget {
-  const _CloudLifecycleCard({required this.recording});
+class CloudRecordingLifecycleCard extends StatelessWidget {
+  const CloudRecordingLifecycleCard({
+    required this.recording,
+    super.key,
+  });
 
   final RecordingSummary recording;
 
