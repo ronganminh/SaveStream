@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.application.recordings.service import utcnow
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
 from app.infrastructure.db.billing_models import PaymentEvent, PaymentOrder
+from app.infrastructure.db.local_recording_models import LocalRecordingSession, RewardIntent
 from app.infrastructure.db.models import OutboxEvent
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
@@ -23,6 +24,11 @@ class OperationalSnapshot:
     unprocessed_payment_events: int
     pending_payment_orders: int
     paused_error_watches: int
+    waiting_for_cloud_slot_recordings: int = 0
+    missed_no_cloud_slot_recordings: int = 0
+    local_recording_sessions: int = 0
+    reward_validity_ratio: float = 0.0
+    store_transactions: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -105,6 +111,64 @@ class OperationsService:
             )
             or 0
         )
+        waiting_for_cloud_slot_recordings = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Recording)
+                .where(
+                    Recording.deleted_at.is_(None),
+                    Recording.status == "waiting_for_cloud_slot",
+                )
+            )
+            or 0
+        )
+        missed_no_cloud_slot_recordings = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(Recording)
+                .where(
+                    Recording.deleted_at.is_(None),
+                    Recording.status == "missed_no_cloud_slot",
+                )
+            )
+            or 0
+        )
+        local_recording_sessions = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(LocalRecordingSession)
+                .where(LocalRecordingSession.deleted_at.is_(None))
+            )
+            or 0
+        )
+        reward_valid = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(RewardIntent.status == "valid")
+            )
+            or 0
+        )
+        reward_invalid = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(RewardIntent.status == "invalid")
+            )
+            or 0
+        )
+        reward_verified = reward_valid + reward_invalid
+        reward_validity_ratio = (
+            reward_valid / reward_verified if reward_verified else 0.0
+        )
+        store_transactions = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(PaymentOrder)
+                .where(PaymentOrder.provider.in_(("app_store", "google_play")))
+            )
+            or 0
+        )
         return OperationalSnapshot(
             active_recordings=active_recordings,
             failed_recordings_recent=failed_recordings_recent,
@@ -112,6 +176,11 @@ class OperationsService:
             unprocessed_payment_events=unprocessed_payment_events,
             pending_payment_orders=pending_payment_orders,
             paused_error_watches=paused_error_watches,
+            waiting_for_cloud_slot_recordings=waiting_for_cloud_slot_recordings,
+            missed_no_cloud_slot_recordings=missed_no_cloud_slot_recordings,
+            local_recording_sessions=local_recording_sessions,
+            reward_validity_ratio=reward_validity_ratio,
+            store_transactions=store_transactions,
         )
 
 

@@ -25,6 +25,11 @@ def test_phase8_alert_thresholds_and_metrics_render() -> None:
         unprocessed_payment_events=4,
         pending_payment_orders=7,
         paused_error_watches=5,
+        waiting_for_cloud_slot_recordings=6,
+        missed_no_cloud_slot_recordings=2,
+        local_recording_sessions=4,
+        reward_validity_ratio=0.75,
+        store_transactions=9,
     )
     alerts = evaluate_alerts(snapshot, settings)
     assert {item.code for item in alerts} == {
@@ -46,3 +51,8 @@ def test_phase8_alert_thresholds_and_metrics_render() -> None:
     assert 'route="/v1/recordings/{recording_id}"' in rendered
     assert "savestream_pending_outbox_events 2" in rendered
     assert "savestream_unprocessed_payment_events 4" in rendered
+    assert "savestream_waiting_for_cloud_slot_recordings 6" in rendered
+    assert "savestream_missed_no_cloud_slot_recordings 2" in rendered
+    assert "savestream_local_recording_sessions 4" in rendered
+    assert "savestream_reward_validity_ratio 0.75" in rendered
+    assert "savestream_store_transactions 9" in rendered
