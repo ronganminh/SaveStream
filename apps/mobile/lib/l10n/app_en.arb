@@ -1449,5 +1449,6 @@
   "settingsAndroidRecordingTitle": "Background recording",
   "settingsAndroidRecordingSubtitle": "Battery and device guidance",
   "settingsIosRecordingTitle": "Record on iPhone",
-  "settingsIosRecordingSubtitle": "Keep-open and recovery guidance"
+  "settingsIosRecordingSubtitle": "Keep-open and recovery guidance",
+  "settingsRecordingSectionTitle": "Recording"
 }
