@@ -157,8 +157,6 @@ void main() {
       expect(revisions, 1);
     });
   });
-
-
 }
 
 final class _FakeAuthRepository implements AuthRepository {
@@ -361,4 +359,3 @@ final class _FakeRecordingRepository implements RecordingRepository {
     );
   }
 }
-
