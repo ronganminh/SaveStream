@@ -17,10 +17,7 @@ import 'package:savestream_mobile/platform/fakes/fake_recording_platform_service
 import 'package:savestream_mobile/platform/platform_providers.dart';
 
 void main() {
-  Widget localized({
-    required Widget child,
-    dynamic overrides = const [],
-  }) {
+  Widget localized({required Widget child, dynamic overrides = const []}) {
     return ProviderScope(
       overrides: overrides,
       child: MaterialApp(
