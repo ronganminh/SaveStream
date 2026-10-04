@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
@@ -59,6 +60,17 @@ from app.api.schemas.admin_d2 import (
     AdminStuckReservationListResponse,
     AdminStuckReservationResponse,
 )
+from app.api.schemas.admin_d3 import (
+    AdminCapacityResponse,
+    AdminDetectorMetricsResponse,
+    AdminPlaybackAccessResponse,
+    AdminQueueItemResponse,
+    AdminQueueResponse,
+    AdminRecordingReasonRequest,
+    AdminRecordingRetentionRequest,
+    AdminWatchChannelListResponse,
+    AdminWatchChannelResponse,
+)
 from app.api.schemas.admin_d5 import (
     AdminBulkGrantCreateRequest,
     AdminBulkGrantDeliveryListResponse,
@@ -105,6 +117,7 @@ from app.application.admin.bulk_grants_d5 import AdminBulkGrantService
 from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.payments_d2 import AdminFinanceService
+from app.application.admin.recordings_d3 import AdminRecordingService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.audit.service import AuditContext, AuditService
@@ -115,6 +128,7 @@ from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
+from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.payments.factory import selected_payment_provider
 
 router = APIRouter(
@@ -220,6 +234,28 @@ def _entitlement_response(snapshot: EntitlementSnapshot) -> AdminEntitlementResp
         cloud_retention_days=snapshot.cloud_retention_days,
         watch_count=snapshot.watch_count,
     )
+
+
+async def _admin_recording_responses(
+    service: AdminRecordingService,
+    recordings: list[Recording],
+) -> list[RecordingResponse]:
+    positions = await service.queue_positions(recordings)
+    retention_by_user: dict[uuid.UUID, int] = {}
+    responses: list[RecordingResponse] = []
+    for recording in recordings:
+        days = retention_by_user.get(recording.user_id)
+        if days is None:
+            days = await service.retention_days_for_user(recording.user_id)
+            retention_by_user[recording.user_id] = days
+        responses.append(
+            recording_response(
+                recording,
+                retention_days=days,
+                queue_position=positions.get(recording.id),
+            )
+        )
+    return responses
 
 
 @router.get("/security/mfa", response_model=AdminMfaStatusResponse)
@@ -647,20 +683,102 @@ async def list_admin_recordings(
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
     user_id: uuid.UUID | None = Query(default=None),
+    channel: str | None = Query(default=None, max_length=2048),
     status_filter: str | None = Query(default=None, alias="status"),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminRecordingListResponse:
     _require_scope(principal, "admin:recordings:read")
-    page = await AdminService(session, request.app.state.settings).list_recordings(
+    service = AdminRecordingService(session, request.app.state.settings)
+    items, next_cursor, has_more = await service.list_recordings(
         limit=limit,
         cursor=cursor,
         user_id=user_id,
+        channel=channel,
         status=status_filter,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
     )
     return AdminRecordingListResponse(
-        items=[recording_response(item) for item in page.items],
-        pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
+        items=await _admin_recording_responses(service, items),
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get("/recordings/export.csv")
+async def export_admin_recordings_csv(
+    request: Request,
+    user_id: uuid.UUID | None = Query(default=None),
+    channel: str | None = Query(default=None, max_length=2048),
+    status_filter: str | None = Query(default=None, alias="status"),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:recordings:read")
+    _require_scope(principal, "admin:csv:export")
+    service = AdminRecordingService(session, request.app.state.settings)
+    items, _, has_more = await service.list_recordings(
+        limit=500,
+        cursor=None,
+        user_id=user_id,
+        channel=channel,
+        status=status_filter,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
+    )
+    responses = await _admin_recording_responses(service, items)
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "id",
+            "user_id",
+            "channel",
+            "status",
+            "queue_position",
+            "expires_at",
+            "minutes_charged",
+            "created_at",
+        ]
+    )
+    for recording, response in zip(items, responses, strict=True):
+        writer.writerow(
+            [
+                response.id,
+                str(recording.user_id),
+                recording.resolved_username or recording.source_value,
+                response.status,
+                response.queue_position or "",
+                response.expires_at.isoformat() if response.expires_at else "",
+                response.minutes_charged,
+                response.created_at.isoformat(),
+            ]
+        )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.recordings.exported",
+        resource_type="recording",
+        resource_id=None,
+        context=_context(request),
+        details={"rows": len(items), "truncated": has_more},
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-recordings.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
     )
 
 
@@ -672,8 +790,119 @@ async def get_admin_recording(
     session: AsyncSession = Depends(get_db_session),
 ) -> RecordingResponse:
     _require_scope(principal, "admin:recordings:read")
-    recording = await AdminService(session, request.app.state.settings).get_recording(recording_id)
-    return recording_response(recording)
+    service = AdminRecordingService(session, request.app.state.settings)
+    recording = await service.get_recording(recording_id)
+    return (await _admin_recording_responses(service, [recording]))[0]
+
+
+@router.post("/recordings/{recording_id}/stop", response_model=RecordingResponse)
+async def stop_admin_recording(
+    recording_id: str,
+    payload: AdminRecordingReasonRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> RecordingResponse:
+    _require_scope(principal, "admin:recordings:write")
+    service = AdminRecordingService(session, request.app.state.settings)
+    recording, previous = await service.stop_recording(recording_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.recording.stopped",
+        resource_type="recording",
+        resource_id=str(recording.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"status": previous.value},
+        after_state={"status": recording.status},
+    )
+    await session.commit()
+    if previous.value == "waiting_for_cloud_slot":
+        await service.wake_next(recording.user_id)
+    try:
+        await request.app.state.redis.client.set(
+            f"savestream:recording:stop:{recording.id}",
+            "1",
+            ex=86400,
+        )
+    except Exception:
+        pass
+    return (await _admin_recording_responses(service, [recording]))[0]
+
+
+@router.delete(
+    "/recordings/{recording_id}",
+    status_code=204,
+    response_model=None,
+)
+async def delete_admin_recording(
+    recording_id: str,
+    payload: AdminRecordingReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    _require_scope(principal, "admin:recordings:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminRecordingService(session, request.app.state.settings)
+    recording = await service.delete_recording(recording_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.recording.deleted",
+        resource_type="recording",
+        resource_id=str(recording.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"deleted_at": None},
+        after_state={"deleted_at": recording.deleted_at.isoformat() if recording.deleted_at else None},
+    )
+    await session.commit()
+
+
+@router.patch(
+    "/recordings/{recording_id}/retention",
+    response_model=RecordingResponse,
+)
+async def extend_admin_recording_retention(
+    recording_id: str,
+    payload: AdminRecordingRetentionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> RecordingResponse:
+    _require_scope(principal, "admin:recordings:write")
+    service = AdminRecordingService(session, request.app.state.settings)
+    recording, previous = await service.extend_retention(
+        recording_id,
+        expires_at=payload.expires_at,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.recording.retention_extended",
+        resource_type="recording",
+        resource_id=str(recording.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"expires_at": previous.isoformat() if previous else None},
+        after_state={
+            "expires_at": (
+                recording.retention_expires_at.isoformat()
+                if recording.retention_expires_at
+                else None
+            )
+        },
+    )
+    await session.commit()
+    return (await _admin_recording_responses(service, [recording]))[0]
 
 
 @router.post("/recordings/{recording_id}/retry", response_model=AdminRetryRecordingResponse)
@@ -704,6 +933,132 @@ async def retry_admin_recording(
     return AdminRetryRecordingResponse(
         original_recording_id=str(original.id),
         recording=recording_response(retry),
+    )
+
+
+@router.post(
+    "/recordings/{recording_id}/playback-access",
+    response_model=AdminPlaybackAccessResponse,
+)
+async def request_admin_recording_playback_access(
+    recording_id: str,
+    payload: AdminRecordingReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPlaybackAccessResponse:
+    _require_scope(principal, "admin:recordings:read")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminRecordingService(session, request.app.state.settings)
+    recording = await service.get_recording(recording_id)
+    artifact = await service.playback_artifact(recording_id)
+    url = await asyncio.to_thread(
+        request.app.state.minio.presigned_get_url,
+        artifact.storage_key,
+    )
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        seconds=request.app.state.settings.artifact_presign_seconds
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.recording.playback_access_requested",
+        resource_type="recording",
+        resource_id=str(recording.id),
+        context=_context(request),
+        reason=payload.reason,
+        details={"artifact_id": str(artifact.id)},
+    )
+    await session.commit()
+    return AdminPlaybackAccessResponse(
+        url=url,
+        expires_at=expires_at,
+        artifact_id=str(artifact.id),
+    )
+
+
+@router.get("/recording-queue", response_model=AdminQueueResponse)
+async def get_admin_recording_queue(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminQueueResponse:
+    _require_scope(principal, "admin:recordings:read")
+    service = AdminRecordingService(session, request.app.state.settings)
+    rows, next_cursor, has_more = await service.list_waiting_queue(
+        limit=limit,
+        cursor=cursor,
+    )
+    recordings = [recording for recording, _ in rows]
+    positions = await service.queue_positions(recordings)
+    return AdminQueueResponse(
+        items=[
+            AdminQueueItemResponse(
+                recording_id=str(recording.id),
+                user_id=str(recording.user_id),
+                user_email=email,
+                channel=recording.resolved_username or recording.source_value,
+                waiting_since=recording.created_at,
+                queue_position=positions.get(recording.id, 1),
+            )
+            for recording, email in rows
+        ],
+        missed_today=await service.missed_today_count(),
+        next_cursor=next_cursor,
+        has_more=has_more,
+    )
+
+
+@router.get("/detector/metrics", response_model=AdminDetectorMetricsResponse)
+async def get_admin_detector_metrics(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminDetectorMetricsResponse:
+    _require_scope(principal, "admin:watches:read")
+    metrics = await AdminRecordingService(
+        session, request.app.state.settings
+    ).detector_metrics()
+    return AdminDetectorMetricsResponse.model_validate(metrics)
+
+
+@router.get("/capacity", response_model=AdminCapacityResponse)
+async def get_admin_recording_capacity(
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminCapacityResponse:
+    _require_scope(principal, "admin:recordings:read")
+    metrics = await AdminRecordingService(
+        session, request.app.state.settings
+    ).capacity_metrics()
+    return AdminCapacityResponse.model_validate(metrics)
+
+
+@router.get("/watches/channels", response_model=AdminWatchChannelListResponse)
+async def list_admin_watch_channels(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminWatchChannelListResponse:
+    _require_scope(principal, "admin:watches:read")
+    items, next_cursor, has_more = await AdminRecordingService(
+        session, request.app.state.settings
+    ).list_watch_channels(limit=limit, cursor=cursor)
+    return AdminWatchChannelListResponse(
+        items=[AdminWatchChannelResponse.model_validate(item) for item in items],
+        next_cursor=next_cursor,
+        has_more=has_more,
     )
 
 

@@ -1047,3 +1047,168 @@ export const adminOperationsApi = {
     });
   },
 };
+
+
+export type AdminRecordingFilters = {
+  cursor?: string | null;
+  userId?: string;
+  channel?: string;
+  status?: string;
+  createdFrom?: string;
+  createdTo?: string;
+  sortOrder?: "asc" | "desc";
+};
+
+export type AdminPlaybackAccess = {
+  url: string;
+  expires_at: string;
+  artifact_id: string;
+};
+
+export type AdminQueueItem = {
+  recording_id: string;
+  user_id: string;
+  user_email: string;
+  channel: string;
+  waiting_since: string;
+  queue_position: number;
+};
+
+export type AdminQueue = {
+  items: AdminQueueItem[];
+  missed_today: number;
+  next_cursor: string | null;
+  has_more: boolean;
+};
+
+export type AdminWatchChannel = {
+  source_type: string;
+  channel: string;
+  followers: number;
+  auto_record_count: number;
+  paused_count: number;
+  failing_count: number;
+  max_failure_count: number;
+  last_checked_at: string | null;
+  last_error: string | null;
+};
+
+export type AdminDetectorHourly = {
+  hour: string;
+  checks: number;
+  failures: number;
+  failure_rate: number | null;
+  average_latency_ms: number | null;
+};
+
+export type AdminDetectorMetrics = {
+  last_run_at: string | null;
+  last_latency_ms: number | null;
+  average_latency_ms_1h: number | null;
+  failure_rate_1h: number | null;
+  hourly: AdminDetectorHourly[];
+};
+
+export type AdminCapacityHourly = {
+  hour: string;
+  max_concurrent: number;
+  limit: number;
+};
+
+export type AdminCapacity = {
+  current_in_use: number;
+  global_limit: number;
+  hourly: AdminCapacityHourly[];
+};
+
+function adminRecordingQuery(filters: AdminRecordingFilters = {}) {
+  const query = new URLSearchParams({
+    limit: "50",
+    sort_order: filters.sortOrder ?? "desc",
+  });
+  if (filters.cursor) query.set("cursor", filters.cursor);
+  if (filters.userId) query.set("user_id", filters.userId);
+  if (filters.channel) query.set("channel", filters.channel);
+  if (filters.status) query.set("status", filters.status);
+  if (filters.createdFrom) {
+    query.set("created_from", new Date(filters.createdFrom).toISOString());
+  }
+  if (filters.createdTo) {
+    query.set("created_to", new Date(filters.createdTo).toISOString());
+  }
+  return query;
+}
+
+export const adminRecordingOpsApi = {
+  listRecordings(filters: AdminRecordingFilters = {}) {
+    return apiClient.get<{ items: RecordingResponse[]; pagination: Pagination }>(
+      `/v1/admin/recordings?${adminRecordingQuery(filters).toString()}`,
+    );
+  },
+
+  exportRecordings(filters: AdminRecordingFilters = {}) {
+    const query = adminRecordingQuery(filters);
+    query.delete("limit");
+    return apiClient.get<string>(`/v1/admin/recordings/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  stop(recordingId: string, reason: string) {
+    return apiClient.post<RecordingResponse>(`/v1/admin/recordings/${recordingId}/stop`, {
+      json: { reason },
+    });
+  },
+
+  retry(recordingId: string) {
+    return apiClient.post<{ original_recording_id: string; recording: RecordingResponse }>(
+      `/v1/admin/recordings/${recordingId}/retry`,
+      { headers: { "Idempotency-Key": crypto.randomUUID() } },
+    );
+  },
+
+  delete(recordingId: string, reason: string, stepUpToken: string) {
+    return apiClient.delete<void>(`/v1/admin/recordings/${recordingId}`, {
+      json: { reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  extendRetention(recordingId: string, expiresAt: string, reason: string) {
+    return apiClient.patch<RecordingResponse>(
+      `/v1/admin/recordings/${recordingId}/retention`,
+      { json: { expires_at: new Date(expiresAt).toISOString(), reason } },
+    );
+  },
+
+  requestPlayback(recordingId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminPlaybackAccess>(
+      `/v1/admin/recordings/${recordingId}/playback-access`,
+      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
+    );
+  },
+
+  queue(cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<AdminQueue>(`/v1/admin/recording-queue?${query.toString()}`);
+  },
+
+  watchChannels(cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<{
+      items: AdminWatchChannel[];
+      next_cursor: string | null;
+      has_more: boolean;
+    }>(`/v1/admin/watches/channels?${query.toString()}`);
+  },
+
+  detectorMetrics() {
+    return apiClient.get<AdminDetectorMetrics>("/v1/admin/detector/metrics");
+  },
+
+  capacity() {
+    return apiClient.get<AdminCapacity>("/v1/admin/capacity");
+  },
+};

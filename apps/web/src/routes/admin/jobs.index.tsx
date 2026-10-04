@@ -6,8 +6,8 @@ import { AdminJobsPage } from "@/components/admin/pages";
 export const Route = createFileRoute("/admin/jobs/")({
   head: () =>
     meta(
-      "Recording jobs",
-      "Inspect backend recording records and retry supported failed recordings.",
+      "Recordings & LIVE operations",
+      "Administer cloud recordings, watched channels, LIVE detector health, queue pressure, and capacity.",
     ),
   component: AdminJobsPage,
 });

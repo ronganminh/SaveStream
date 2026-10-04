@@ -5940,6 +5940,677 @@
           }
         }
       }
+    },
+    "/admin/recordings": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List cloud recordings for admin",
+        "operationId": "listAdminRecordings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RecordingStatus"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UtcDateTime"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UtcDateTime"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminRecordingListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin recording read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recordings/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export cloud recordings as CSV",
+        "operationId": "exportAdminRecordings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "channel",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RecordingStatus"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UtcDateTime"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UtcDateTime"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV export",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recordings/{recording_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get cloud recording for admin",
+        "operationId": "getAdminRecording",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recording"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete cloud recording and stored artifact",
+        "operationId": "deleteAdminRecording",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRecordingReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/admin/recordings/{recording_id}/stop": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Stop active cloud recording",
+        "operationId": "stopAdminRecording",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRecordingReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Stop requested",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recording"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recordings/{recording_id}/retry": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Retry failed cloud recording",
+        "operationId": "retryAdminRecording",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retry created"
+          }
+        }
+      }
+    },
+    "/admin/recordings/{recording_id}/retention": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Extend cloud recording retention",
+        "operationId": "extendAdminRecordingRetention",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRecordingRetentionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retention updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recording"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recordings/{recording_id}/playback-access": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Request short-lived playback access",
+        "operationId": "requestAdminRecordingPlaybackAccess",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminRecordingReasonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Short-lived signed playback/download URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPlaybackAccessResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin permission or step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recording or artifact not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/recording-queue": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List recordings waiting for a cloud slot",
+        "operationId": "getAdminRecordingQueue",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminQueueResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/watches/channels": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List aggregated watched channels",
+        "operationId": "listAdminWatchChannels",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated watch channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWatchChannelListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/detector/metrics": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get LIVE detector health metrics",
+        "operationId": "getAdminDetectorMetrics",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detector metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDetectorMetrics"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin watch read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/capacity": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get global recording capacity metrics",
+        "operationId": "getAdminRecordingCapacity",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Capacity metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCapacity"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Admin recording read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -10350,6 +11021,365 @@
             "type": "boolean"
           }
         }
+      },
+      "AdminRecordingListResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "pagination"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recording"
+            }
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRecordingReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminRecordingRetentionRequest": {
+        "type": "object",
+        "required": [
+          "expires_at",
+          "reason"
+        ],
+        "properties": {
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminPlaybackAccessResponse": {
+        "type": "object",
+        "required": [
+          "url",
+          "expires_at",
+          "artifact_id"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expires_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "artifact_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminQueueItemResponse": {
+        "type": "object",
+        "required": [
+          "recording_id",
+          "user_id",
+          "user_email",
+          "channel",
+          "waiting_since",
+          "queue_position"
+        ],
+        "properties": {
+          "recording_id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "waiting_since": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "queue_position": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminQueueResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "missed_today",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminQueueItemResponse"
+            }
+          },
+          "missed_today": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminWatchChannel": {
+        "type": "object",
+        "required": [
+          "source_type",
+          "channel",
+          "followers",
+          "auto_record_count",
+          "paused_count",
+          "failing_count",
+          "max_failure_count",
+          "last_checked_at",
+          "last_error"
+        ],
+        "properties": {
+          "source_type": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string"
+          },
+          "followers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "auto_record_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paused_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failing_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max_failure_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "last_checked_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminWatchChannelListResponse": {
+        "type": "object",
+        "required": [
+          "items",
+          "next_cursor",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminWatchChannel"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDetectorHourly": {
+        "type": "object",
+        "required": [
+          "hour",
+          "checks",
+          "failures",
+          "failure_rate",
+          "average_latency_ms"
+        ],
+        "properties": {
+          "hour": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "checks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failure_rate": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "average_latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDetectorMetrics": {
+        "type": "object",
+        "required": [
+          "last_run_at",
+          "last_latency_ms",
+          "average_latency_ms_1h",
+          "failure_rate_1h",
+          "hourly"
+        ],
+        "properties": {
+          "last_run_at": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_latency_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "average_latency_ms_1h": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "failure_rate_1h": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "hourly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminDetectorHourly"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCapacityHourly": {
+        "type": "object",
+        "required": [
+          "hour",
+          "max_concurrent",
+          "limit"
+        ],
+        "properties": {
+          "hour": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "max_concurrent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCapacity": {
+        "type": "object",
+        "required": [
+          "current_in_use",
+          "global_limit",
+          "hourly"
+        ],
+        "properties": {
+          "current_in_use": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "global_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "hourly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCapacityHourly"
+            }
+          }
+        },
+        "additionalProperties": false
       }
     }
   }
