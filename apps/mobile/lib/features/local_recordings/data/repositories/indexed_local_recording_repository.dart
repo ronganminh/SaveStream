@@ -6,7 +6,8 @@ import '../../domain/models/local_recording_models.dart';
 import '../../domain/repositories/local_recording_repository.dart';
 import '../local_file_index.dart';
 
-final class IndexedLocalRecordingRepository implements LocalRecordingRepository {
+final class IndexedLocalRecordingRepository
+    implements LocalRecordingRepository {
   IndexedLocalRecordingRepository({
     required LocalRecordingRepository delegate,
     required Future<String> Function() currentUserId,
@@ -41,10 +42,7 @@ final class IndexedLocalRecordingRepository implements LocalRecordingRepository 
   }
 
   @override
-  Future<LocalRecordingSession> extend(
-    String sessionId, {
-    String? rewardId,
-  }) {
+  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId}) {
     return _delegate.extend(sessionId, rewardId: rewardId);
   }
 
@@ -73,11 +71,7 @@ final class IndexedLocalRecordingRepository implements LocalRecordingRepository 
     final Directory root = await _rootDirectory();
     final LocalFileReconciliation reconciliation = await LocalFileIndex(
       root: root,
-    ).reconcile(
-      userId: userId,
-      deviceId: deviceId,
-      backendRecordings: backend,
-    );
+    ).reconcile(userId: userId, deviceId: deviceId, backendRecordings: backend);
 
     return List<LocalRecordingSummary>.unmodifiable(
       reconciliation.entries.map((LocalFileIndexEntry entry) {
@@ -106,9 +100,8 @@ final class IndexedLocalRecordingRepository implements LocalRecordingRepository 
 
     final String userId = await _currentUserId();
     final Directory root = await _rootDirectory();
-    await LocalFileIndex(root: root).deleteRecordingFiles(
-      userId: userId,
-      recordingId: id,
-    );
+    await LocalFileIndex(
+      root: root,
+    ).deleteRecordingFiles(userId: userId, recordingId: id);
   }
 }
