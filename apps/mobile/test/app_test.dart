@@ -515,6 +515,12 @@ void main() {
     expect(find.text('Retry recording'), findsNothing);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Stop cloud recording?'), findsOneWidget);
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Stop recording').last,
+    );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
     await tester.pump(const Duration(milliseconds: 200));
