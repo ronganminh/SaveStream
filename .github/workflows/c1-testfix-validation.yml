@@ -1,0 +1,38 @@
+name: C1 Testfix Validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Format full mobile scope
+        run: dart format lib/app lib/core lib/features lib/l10n/l10n.dart test
+      - name: Run affected tests
+        run: >-
+          flutter test
+          test/watch_phase11_test.dart
+          test/mobile_release_phase17_test.dart
+          test/v2c_c1_api_repositories_test.dart
+      - name: Print formatted files
+        if: always()
+        run: |
+          echo '--- BEGIN WATCH TEST ---'
+          cat test/watch_phase11_test.dart
+          echo '--- END WATCH TEST ---'
+          echo '--- BEGIN RELEASE TEST ---'
+          cat test/mobile_release_phase17_test.dart
+          echo '--- END RELEASE TEST ---'
