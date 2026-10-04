@@ -190,11 +190,13 @@ void main() {
     expect(planError.message, isNotEmpty);
   });
 
-  test('notification preferences map V2 fields in both directions', () async {
-    final _FakeAdapter adapter = _FakeAdapter((
+  test(
+    'notification preferences map V2 fields in both directions',
+    () async {
+      final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,
       int call,
-    ) {
+      ) {
       if (call == 1) {
         expect(options.method, 'GET');
         return _jsonResponse(200, <String, Object?>{
@@ -231,29 +233,33 @@ void main() {
         'email_supported': false,
         'updated_at': '2026-10-04T00:00:00Z',
       });
-    });
-    final ApiNotificationPreferencesRepository repository =
-        ApiNotificationPreferencesRepository(apiClient: _clientFor(adapter));
+      });
+      final ApiNotificationPreferencesRepository repository =
+          ApiNotificationPreferencesRepository(
+            apiClient: _clientFor(adapter),
+          );
 
-    final NotificationPreferences initial = await repository.getPreferences();
-    expect(initial.creatorLive, isFalse);
-    expect(initial.recordingExpiring, isTrue);
-    expect(initial.freeMinutesLow, isFalse);
+      final NotificationPreferences initial = await repository.getPreferences();
+      expect(initial.creatorLive, isFalse);
+      expect(initial.recordingExpiring, isTrue);
+      expect(initial.freeMinutesLow, isFalse);
 
-    final NotificationPreferences updated = await repository.updatePreferences(
+      final NotificationPreferences updated = await repository.updatePreferences(
       initial.copyWith(
         creatorLive: true,
         recordingExpiring: false,
         freeMinutesLow: true,
       ),
-    );
-    expect(updated.creatorLive, isTrue);
-    expect(updated.recordingExpiring, isFalse);
-    expect(updated.freeMinutesLow, isTrue);
+      );
+      expect(updated.creatorLive, isTrue);
+      expect(updated.recordingExpiring, isFalse);
+      expect(updated.freeMinutesLow, isTrue);
   });
 
-  test('notification feed maps exposed V2 types and tolerates others', () async {
-    final ApiNotificationsRepository repository = ApiNotificationsRepository(
+  test(
+    'notification feed maps exposed V2 types and tolerates others',
+    () async {
+      final ApiNotificationsRepository repository = ApiNotificationsRepository(
       apiClient: _clientFor(
         _FakeAdapter((RequestOptions options, int call) {
           return _jsonResponse(200, <String, Object?>{
@@ -270,17 +276,17 @@ void main() {
           });
         }),
       ),
-    );
+      );
 
-    final page = await repository.listNotifications();
+      final page = await repository.listNotifications();
 
-    expect(page.items, hasLength(4));
-    expect(page.items[0].type, AppNotificationType.other);
-    expect(page.items[0].v2Type, AppNotificationV2Type.creatorLive);
-    expect(page.items[1].v2Type, AppNotificationV2Type.recordingExpiring);
-    expect(page.items[2].v2Type, AppNotificationV2Type.freeMinutesLow);
-    expect(page.items[3].type, AppNotificationType.other);
-    expect(page.items[3].v2Type, isNull);
+      expect(page.items, hasLength(4));
+      expect(page.items[0].type, AppNotificationType.other);
+      expect(page.items[0].v2Type, AppNotificationV2Type.creatorLive);
+      expect(page.items[1].v2Type, AppNotificationV2Type.recordingExpiring);
+      expect(page.items[2].v2Type, AppNotificationV2Type.freeMinutesLow);
+      expect(page.items[3].type, AppNotificationType.other);
+      expect(page.items[3].v2Type, isNull);
   });
 
   test(
