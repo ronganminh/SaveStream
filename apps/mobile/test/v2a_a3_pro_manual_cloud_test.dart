@@ -33,10 +33,7 @@ void main() {
 
     expect(find.text('Record Lina Studio'), findsOneWidget);
     expect(find.text('Local · on this device'), findsOneWidget);
-    expect(
-      find.textContaining('Does not use cloud hours'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Does not use cloud hours'), findsOneWidget);
     expect(find.text('Record Local'), findsOneWidget);
     expect(find.textContaining('5 h'), findsOneWidget);
   });
@@ -128,10 +125,7 @@ void main() {
     );
 
     expect(find.text('Cloud recording failed'), findsOneWidget);
-    expect(
-      find.textContaining('refunded by the server'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('refunded by the server'), findsOneWidget);
     expect(find.text('Source connection lost.'), findsOneWidget);
   });
 }
