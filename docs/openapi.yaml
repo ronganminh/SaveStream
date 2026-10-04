@@ -7967,6 +7967,302 @@
           }
         }
       }
+    },
+    "/admin/reports/revenue.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export revenue report",
+        "operationId": "exportAdminRevenueReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily gross USD revenue by channel with estimated store fees.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/new-users.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export user growth report",
+        "operationId": "exportAdminNewUsersReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily new users, DAU/WAU/MAU, Free/Pro and rolling 7-day conversions.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/cloud-usage.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export cloud usage report",
+        "operationId": "exportAdminCloudUsageReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily cloud minutes and hours used.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reports/recordings.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export recording status report",
+        "operationId": "exportAdminRecordingStatusReport",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily recording counts grouped by status.",
+            "headers": {
+              "X-Result-Truncated": {
+                "description": "True when the requested window exceeded the 366-day export bound.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "true",
+                    "false"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Report read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14064,13 +14360,18 @@
           "active_users_monthly",
           "free_users",
           "pro_users",
-          "free_to_pro_users",
+          "free_to_pro_weekly",
           "revenue_web_usd_minor",
           "revenue_app_store_usd_minor",
           "revenue_google_play_usd_minor",
+          "estimated_store_fee_app_store_usd_minor",
+          "estimated_store_fee_google_play_usd_minor",
           "recording_running",
           "recording_waiting",
           "recording_errors_24h",
+          "recording_total_24h",
+          "cloud_minutes_used",
+          "recording_status_counts",
           "recording_capacity_limit",
           "stuck_orders",
           "open_complaints",
@@ -14102,10 +14403,6 @@
             "minimum": 0
           },
           "pro_users": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "free_to_pro_users": {
             "type": "integer",
             "minimum": 0
           },
@@ -14147,6 +14444,33 @@
           },
           "computed_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "free_to_pro_weekly": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_store_fee_app_store_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_store_fee_google_play_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_total_24h": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cloud_minutes_used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "recording_status_counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
           }
         },
         "additionalProperties": false
@@ -14155,7 +14479,11 @@
         "type": "object",
         "required": [
           "latest",
-          "series"
+          "series",
+          "month_revenue_web_usd_minor",
+          "month_revenue_app_store_usd_minor",
+          "month_revenue_google_play_usd_minor",
+          "month_estimated_store_fee_usd_minor"
         ],
         "properties": {
           "latest": {
@@ -14173,6 +14501,22 @@
             "items": {
               "$ref": "#/components/schemas/AdminDailyMetric"
             }
+          },
+          "month_revenue_web_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_revenue_app_store_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_revenue_google_play_usd_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "month_estimated_store_fee_usd_minor": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "additionalProperties": false
