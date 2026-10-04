@@ -8,13 +8,18 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/local_recorder.dart';
+import '../../../platform/contracts/local_recovery_service.dart';
 import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
+import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
+import 'home_recording_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -26,6 +31,18 @@ class HomeScreen extends ConsumerWidget {
       homeDashboardProvider,
     );
     final bool online = ref.watch(appOnlineProvider).value ?? true;
+    final LocalRecoveryCandidate? interrupted = ref
+        .watch(interruptedLocalRecordingProvider)
+        .value;
+    final LocalRecordingController localController = ref.watch(
+      localRecordingControllerProvider,
+    );
+    final LocalRecorderState? primaryLocalState = ref
+        .watch(localRecorderStateProvider)
+        .value;
+    final LocalRecorderState? secondaryLocalState = ref
+        .watch(secondaryLocalRecorderStateProvider)
+        .value;
     final String? displayName = dashboard.value?.metrics.displayName;
 
     return Scaffold(
@@ -64,7 +81,14 @@ class HomeScreen extends ConsumerWidget {
                       ref.invalidate(homeDashboardProvider);
                       await ref.read(homeDashboardProvider.future);
                     },
-                    child: _HomeDashboard(data: data, online: online),
+                    child: _HomeDashboard(
+                      data: data,
+                      online: online,
+                      interrupted: interrupted,
+                      localController: localController,
+                      primaryLocalState: primaryLocalState,
+                      secondaryLocalState: secondaryLocalState,
+                    ),
                   ),
                 ),
               ),
@@ -77,10 +101,21 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HomeDashboard extends StatelessWidget {
-  const _HomeDashboard({required this.data, required this.online});
+  const _HomeDashboard({
+    required this.data,
+    required this.online,
+    required this.interrupted,
+    required this.localController,
+    required this.primaryLocalState,
+    required this.secondaryLocalState,
+  });
 
   final HomeDashboardViewModel data;
   final bool online;
+  final LocalRecoveryCandidate? interrupted;
+  final LocalRecordingController localController;
+  final LocalRecorderState? primaryLocalState;
+  final LocalRecorderState? secondaryLocalState;
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +147,26 @@ class _HomeDashboard extends StatelessWidget {
                     title: context.l10n.homeOfflineTitle,
                     message: context.l10n.homeOfflineBody,
                     tone: SsInlineAlertTone.warning,
+                  ),
+                ],
+                if (interrupted
+                    case final LocalRecoveryCandidate item) ...<Widget>[
+                  const SizedBox(height: SsSpacing.md),
+                  SsInlineAlert(
+                    title: context.l10n.localRecoveryInterruptedTitle,
+                    message: context.l10n.homeRecoveryAvailableBody(
+                      item.creatorDisplayName,
+                      formatDurationHms(
+                        Duration(seconds: item.recordedSeconds),
+                      ),
+                    ),
+                    tone: SsInlineAlertTone.warning,
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  SsSecondaryButton(
+                    label: context.l10n.localRecoveryRecoverAction,
+                    icon: Icons.restore_rounded,
+                    onPressed: () => context.push(AppRoutes.localRecovery),
                   ),
                 ],
                 if (data.watches.isEmpty) ...<Widget>[
@@ -156,6 +211,57 @@ class _HomeDashboard extends StatelessWidget {
     final WatchSummary? live = data.liveWatches.isEmpty
         ? null
         : data.liveWatches.first;
+    final WatchSummary? secondLive = data.liveWatches.length > 1
+        ? data.liveWatches[1]
+        : null;
+    final DateTime? secondSlotExpiresAt = local.secondSlotExpiresAt;
+    final bool secondSlotExpired =
+        secondSlotExpiresAt != null &&
+        !secondSlotExpiresAt.isAfter(DateTime.now());
+    final bool secondSlotOpen =
+        secondSlotExpiresAt != null &&
+        secondSlotExpiresAt.isAfter(DateTime.now());
+    final primarySession = localController.activeSession;
+    final secondarySession = localController.secondarySession;
+    WatchSummary? primaryWatch;
+    WatchSummary? secondaryWatch;
+    for (final WatchSummary watch in data.watches) {
+      if (watch.id == primarySession?.watchId) primaryWatch = watch;
+      if (watch.id == secondarySession?.watchId) secondaryWatch = watch;
+    }
+    final bool primaryActive =
+        primarySession != null && _isHomeActivePhase(primaryLocalState?.phase);
+    final bool secondaryActive =
+        secondarySession != null &&
+        _isHomeActivePhase(secondaryLocalState?.phase);
+    final bool primaryFinalizing =
+        primarySession != null &&
+        primaryLocalState?.phase == LocalRecorderPhase.finalizing;
+    final bool secondaryFinalizing =
+        secondarySession != null &&
+        secondaryLocalState?.phase == LocalRecorderPhase.finalizing;
+    final bool hasLocalActivity =
+        primaryActive ||
+        secondaryActive ||
+        primaryFinalizing ||
+        secondaryFinalizing;
+    final bool fullyExhausted =
+        local.minutesRemaining == 0 &&
+        local.rewardsUsedToday >= local.rewardsCapPerDay;
+    final int primaryRemainingRaw = primarySession == null
+        ? 0
+        : primarySession.grantedSeconds -
+              (primaryLocalState?.recordedSeconds ?? 0);
+    final int secondaryRemainingRaw = secondarySession == null
+        ? 0
+        : secondarySession.grantedSeconds -
+              (secondaryLocalState?.recordedSeconds ?? 0);
+    final int primaryRemaining = primaryRemainingRaw > 0
+        ? primaryRemainingRaw
+        : 0;
+    final int secondaryRemaining = secondaryRemainingRaw > 0
+        ? secondaryRemainingRaw
+        : 0;
     final int limit = entitlement.limits.maxWatches;
     final int remainingSlots = (limit - data.watches.length)
         .clamp(0, limit)
@@ -168,7 +274,69 @@ class _HomeDashboard extends StatelessWidget {
     );
 
     return <Widget>[
-      if (live != null) ...<Widget>[
+      if (secondSlotOpen && secondaryActive) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt),
+      ],
+      if (secondSlotExpired) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsInlineAlert(
+          title: l10n.secondLocalSlotExpiredTitle,
+          message: l10n.secondLocalSlotExpiredBody(
+            MaterialLocalizations.of(context).formatTimeOfDay(
+              TimeOfDay.fromDateTime(secondSlotExpiresAt.toLocal()),
+            ),
+          ),
+          tone: SsInlineAlertTone.warning,
+        ),
+        const SizedBox(height: SsSpacing.sm),
+        SsSecondaryButton(
+          label: l10n.secondLocalSlotReopenAction,
+          icon: Icons.layers_outlined,
+          onPressed: secondLive == null
+              ? null
+              : () => context.push(AppRoutes.channelDetail(secondLive.id)),
+        ),
+      ],
+      if (primaryFinalizing && primaryWatch != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeFinalizingRecordingCard(
+          creatorName: primaryWatch.creatorDisplayName,
+          step: primaryLocalState?.finalizationStep,
+        ),
+      ],
+      if (secondaryFinalizing && secondaryWatch != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeFinalizingRecordingCard(
+          creatorName: secondaryWatch.creatorDisplayName,
+          step: secondaryLocalState?.finalizationStep,
+        ),
+      ],
+      if (primaryActive &&
+          primaryWatch != null &&
+          primaryLocalState != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        HomeLocalRecordingCard(
+          creatorName: primaryWatch.creatorDisplayName,
+          watchId: primaryWatch.id,
+          state: primaryLocalState!,
+          remainingSeconds: primaryRemaining,
+          unlimited: local.unlimited,
+        ),
+      ],
+      if (secondaryActive &&
+          secondaryWatch != null &&
+          secondaryLocalState != null) ...<Widget>[
+        const SizedBox(height: SsSpacing.md),
+        HomeLocalRecordingCard(
+          creatorName: secondaryWatch.creatorDisplayName,
+          watchId: secondaryWatch.id,
+          state: secondaryLocalState!,
+          remainingSeconds: secondaryRemaining,
+          unlimited: local.unlimited,
+        ),
+      ],
+      if (live != null && !hasLocalActivity && interrupted == null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
           child: Column(
@@ -214,7 +382,16 @@ class _HomeDashboard extends StatelessWidget {
             ? 0
             : local.minutesRemaining / local.dailyMinutes,
       ),
-      if (local.minutesRemaining == 0) ...<Widget>[
+      if (fullyExhausted) ...<Widget>[
+        const SizedBox(height: SsSpacing.md),
+        HomeDailyRecordingExhaustedCard(
+          dailyMinutes: local.dailyMinutes,
+          rewardsUsed: local.rewardsUsedToday,
+          rewardsCap: local.rewardsCapPerDay,
+          resetLabel: reset,
+          onBuyCloudHours: () => showCloudHoursUpsellSheet(context),
+        ),
+      ] else if (local.minutesRemaining == 0) ...<Widget>[
         const SizedBox(height: SsSpacing.md),
         SsInlineAlert(
           title: l10n.homeMinutesExhaustedTitle,
@@ -258,7 +435,10 @@ class _HomeDashboard extends StatelessWidget {
       ],
       if (data.hasAhaMoment &&
           local.minutesRemaining > 0 &&
-          online) ...<Widget>[
+          online &&
+          interrupted == null &&
+          !hasLocalActivity &&
+          !fullyExhausted) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
           child: Column(
@@ -285,6 +465,12 @@ class _HomeDashboard extends StatelessWidget {
     ];
   }
 
+  bool _isHomeActivePhase(LocalRecorderPhase? phase) {
+    return phase == LocalRecorderPhase.starting ||
+        phase == LocalRecorderPhase.recording ||
+        phase == LocalRecorderPhase.reconnecting;
+  }
+
   List<Widget> _buildPro(BuildContext context, Entitlement entitlement) {
     final AppLocalizations l10n = context.l10n;
     final String cloudTime = formatMinutesAsHoursMinutes(
@@ -304,6 +490,11 @@ class _HomeDashboard extends StatelessWidget {
           elapsed: formatDurationHms(Duration(seconds: active.durationSeconds)),
           engine: Engine.cloud,
           onTap: () => context.push(AppRoutes.recordingDetail(active.id)),
+        ),
+        const SizedBox(height: SsSpacing.md),
+        SsInlineAlert(
+          title: l10n.cloudLabel,
+          message: l10n.cloudRecordingServerBody,
         ),
       ],
       const SizedBox(height: SsSpacing.lg),
@@ -329,23 +520,25 @@ class _HomeDashboard extends StatelessWidget {
           tone: SsInlineAlertTone.info,
         ),
       ],
-      const SizedBox(height: SsSpacing.lg),
-      SsSectionHeader(
-        title: l10n.channelsTitle,
-        actionLabel: l10n.sectionExampleAction,
-        onAction: () => context.go(AppRoutes.channels),
-      ),
-      const SizedBox(height: SsSpacing.sm),
-      for (final WatchSummary watch in data.featuredWatches)
-        Padding(
-          padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-          child: SsCreatorTile(
-            name: watch.creatorDisplayName,
-            handle: watch.creatorUsername,
-            isLive: watch.isLive,
-            onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
-          ),
+      if (active == null) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsSectionHeader(
+          title: l10n.channelsTitle,
+          actionLabel: l10n.sectionExampleAction,
+          onAction: () => context.go(AppRoutes.channels),
         ),
+        const SizedBox(height: SsSpacing.sm),
+        for (final WatchSummary watch in data.featuredWatches)
+          Padding(
+            padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+            child: SsCreatorTile(
+              name: watch.creatorDisplayName,
+              handle: watch.creatorUsername,
+              isLive: watch.isLive,
+              onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+            ),
+          ),
+      ],
     ];
   }
 }

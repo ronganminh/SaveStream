@@ -6,29 +6,112 @@ import '../contracts/local_recorder.dart';
 final class FakeLocalRecorder implements LocalRecorder {
   final StreamController<LocalRecorderState> _states =
       StreamController<LocalRecorderState>.broadcast();
+
   LocalRecordingSession? _session;
+  Timer? _ticker;
+  int _recordedSeconds = 0;
+  int _sizeBytes = 0;
+  int _freeStorageBytes = 18 * 1024 * 1024 * 1024;
 
   @override
   Stream<LocalRecorderState> watch() => _states.stream;
 
   @override
   Future<void> start(LocalRecordingSession session) async {
+    _ticker?.cancel();
     _session = session;
+    _recordedSeconds = 0;
+    _sizeBytes = 0;
+    _freeStorageBytes = 18 * 1024 * 1024 * 1024;
+
     _states.add(const LocalRecorderState(phase: LocalRecorderPhase.starting));
-    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.recording));
+    await Future<void>.delayed(Duration.zero);
+
+    if (_session?.sessionId != session.sessionId) return;
+    _emit(LocalRecorderPhase.recording);
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_session == null) return;
+      _recordedSeconds += 1;
+      const int bytesPerSecond = 640 * 1024;
+      _sizeBytes += bytesPerSecond;
+      _freeStorageBytes -= bytesPerSecond;
+      _emit(LocalRecorderPhase.recording);
+    });
   }
 
   @override
   Future<void> stop() async {
     if (_session == null) return;
-    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.finalizing));
+    _ticker?.cancel();
+    _ticker = null;
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.stopCapture,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.flushFile,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.verifyFile,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.registerRecording,
+    );
     _session = null;
-    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.stopped));
+    _emit(
+      LocalRecorderPhase.stopped,
+      finalizationStep: LocalFinalizationStep.registerRecording,
+    );
   }
 
   @override
   Future<void> recover() async {
-    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.reconnecting));
-    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.recording));
+    if (_session == null) return;
+    _ticker?.cancel();
+    _ticker = null;
+    _emit(LocalRecorderPhase.reconnecting);
+    await Future<void>.delayed(Duration.zero);
+
+    if (_session == null) return;
+    _emit(LocalRecorderPhase.recording);
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_session == null) return;
+      const int bytesPerSecond = 640 * 1024;
+      _recordedSeconds += 1;
+      _sizeBytes += bytesPerSecond;
+      _freeStorageBytes -= bytesPerSecond;
+      _emit(LocalRecorderPhase.recording);
+    });
+  }
+
+  void _emit(
+    LocalRecorderPhase phase, {
+    LocalFinalizationStep? finalizationStep,
+  }) {
+    final int estimatedMinutes = _freeStorageBytes <= 0
+        ? 0
+        : _freeStorageBytes ~/ (640 * 1024 * 60);
+    final LocalStorageState storageState = _freeStorageBytes < 250 * 1024 * 1024
+        ? LocalStorageState.critical
+        : estimatedMinutes <= 15
+        ? LocalStorageState.low
+        : LocalStorageState.ok;
+    _states.add(
+      LocalRecorderState(
+        phase: phase,
+        recordedSeconds: _recordedSeconds,
+        sizeBytes: _sizeBytes,
+        storageState: storageState,
+        freeStorageBytes: _freeStorageBytes,
+        estimatedStorageMinutes: estimatedMinutes,
+        finalizationStep: finalizationStep,
+      ),
+    );
   }
 }

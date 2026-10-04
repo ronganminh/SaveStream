@@ -9,6 +9,8 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/platform_providers.dart';
+import '../../devices/domain/models/device_registration.dart';
 import 'controllers/settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -85,6 +87,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final DevicePlatform platform = ref
+        .watch(deviceInfoServiceProvider)
+        .platform;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -227,6 +232,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: _accountBusy ? null : _deleteAccount,
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
+            _SectionLabel(label: l10n.settingsRecordingSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: SsListTile(
+                title: platform == DevicePlatform.android
+                    ? l10n.settingsAndroidRecordingTitle
+                    : l10n.settingsIosRecordingTitle,
+                subtitle: platform == DevicePlatform.android
+                    ? l10n.settingsAndroidRecordingSubtitle
+                    : l10n.settingsIosRecordingSubtitle,
+                leading: Icon(
+                  platform == DevicePlatform.android
+                      ? Icons.battery_alert
+                      : Icons.phone_iphone_rounded,
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.push(
+                  platform == DevicePlatform.android
+                      ? AppRoutes.androidRecordingGuide
+                      : AppRoutes.iosRecordingGuide,
+                ),
               ),
             ),
             if (widget.config.developerToolsEnabled) ...<Widget>[

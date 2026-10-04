@@ -879,5 +879,576 @@
         "type": "String"
       }
     }
-  }
+  },
+  "localRecordingStartTitle": "Record {name}",
+  "@localRecordingStartTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeStorage": "{value} free",
+  "@localRecordingFreeStorage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSlot": "Local slot {used}/{limit}",
+  "@localRecordingSlot": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingAndroidStartTitle": "You can switch apps",
+  "localRecordingAndroidStartBody": "Android shows an ongoing recording notification until you stop.",
+  "localRecordingStartAction": "Start recording",
+  "localRecordingActiveTitle": "Active recording",
+  "localRecordingElapsedSemantics": "Recording time {duration}",
+  "@localRecordingElapsedSemantics": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSavedHere": "Saved on this device · {size}",
+  "@localRecordingSavedHere": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeRemainingTitle": "Free time remaining",
+  "localRecordingRewardCaps": "Extensions 0/{extensionsCap} · Rewarded ads today {rewardsUsed}/{rewardsCap}",
+  "@localRecordingRewardCaps": {
+    "placeholders": {
+      "extensionsCap": {
+        "type": "int"
+      },
+      "rewardsUsed": {
+        "type": "int"
+      },
+      "rewardsCap": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStopAction": "Stop recording",
+  "localRecordingConnectingBody": "Connecting to {name}'s LIVE…",
+  "@localRecordingConnectingBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingErrorTitle": "Recording failed",
+  "localRecordingStatusActive": "Recording",
+  "localRecordingAndroidActiveTitle": "Recording in the background",
+  "localRecordingAndroidActiveBody": "You can switch apps. Android keeps an ongoing recording notification until you stop.",
+  "localRecordingIosActiveBody": "Keep SaveStream in the foreground and do not lock the screen while recording.",
+  "localRecordingConnectingSlowBody": "Connecting is taking longer than usual…",
+  "localRecordingMinuteWarningTitle": "Less than 1 minute of Free time left",
+  "localRecordingMinuteWarningBody": "Recording will stop and save when your Free time runs out.",
+  "localRecordingRewardMinutesAction": "+{minutes} minutes (watch an ad)",
+  "@localRecordingRewardMinutesAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "genericErrorTitle": "Something went wrong",
+  "closeAction": "Close",
+  "rewardMinutesOfferTitle": "+{minutes} minutes for this recording",
+  "@rewardMinutesOfferTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesOfferBody": "Watch 1 ad. {minutes} minutes are added only after SaveStream confirms the reward. Recording continues while you watch.",
+  "@rewardMinutesOfferBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesExtensionProgress": "Extensions for this recording {used}/{cap}",
+  "@rewardMinutesExtensionProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyProgress": "Rewarded ads today {used}/{cap}",
+  "@rewardMinutesDailyProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWatchAdAction": "Watch ad",
+  "rewardMinutesLoadingTitle": "Loading ad",
+  "rewardMinutesLoadingBody": "Recording continues while the ad loads.",
+  "rewardMinutesVerifyingTitle": "Confirming reward",
+  "rewardMinutesAdCompleteStep": "Ad completed",
+  "rewardMinutesVerifyStep": "Confirm with SaveStream",
+  "rewardMinutesGrantStep": "Add {minutes} minutes to recording",
+  "@rewardMinutesGrantStep": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesPendingTitle": "Reward confirmation is taking longer",
+  "rewardMinutesPendingBody": "Minutes will be added as soon as SaveStream confirms. Recording keeps running.",
+  "rewardMinutesSuccessTitle": "Added {minutes} minutes",
+  "@rewardMinutesSuccessTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesSuccessBody": "Server confirmed. Extension {used}/{cap} for this recording.",
+  "@rewardMinutesSuccessBody": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesNoFillTitle": "No ad available right now",
+  "rewardMinutesNoFillBody": "Try again in a few minutes. Recording continues until your remaining Free time runs out.",
+  "rewardMinutesInvalidTitle": "Reward could not be confirmed",
+  "rewardMinutesInvalidBody": "The ad view was invalid or expired. No minutes were added.",
+  "rewardMinutesMaxTitle": "Maximum extensions reached",
+  "rewardMinutesMaxBody": "Each recording can be extended up to {cap} times. It will stop and save when the remaining Free time runs out.",
+  "@rewardMinutesMaxBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesDailyCapTitle": "Daily rewarded-ad limit reached",
+  "rewardMinutesDailyCapBody": "You have used {cap}/{cap} rewarded ads today. The daily limit resets automatically.",
+  "@rewardMinutesDailyCapBody": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardMinutesWorkingAction": "Working…",
+  "rewardMinutesLockedTitle": "Rewarded ads temporarily locked",
+  "rewardMinutesLockedBody": "Several rewards could not be confirmed. Try again later. Recording continues until your remaining Free time runs out.",
+  "timeUnknownLabel": "server confirmation",
+  "secondLocalSlotTitle": "Open Local slot #2 for 1 hour",
+  "secondLocalSlotOfferBody": "Watch 2 rewarded ads to record one more creator at the same time. The server confirms both rewards before the slot opens.",
+  "secondLocalSlotProgress": "Ads to open slot {used}/{required}",
+  "@secondLocalSlotProgress": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotSharedQuotaTitle": "Free minutes are shared",
+  "secondLocalSlotSharedQuotaBody": "Two Local recordings at the same time consume Free recording time twice as fast.",
+  "secondLocalSlotVerifyStep": "Confirm slot reward {current}/{required}",
+  "@secondLocalSlotVerifyStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotPendingBody": "Slot progress will update when SaveStream receives server confirmation.",
+  "secondLocalSlotUnlockedTitle": "Local slot #2 is open",
+  "secondLocalSlotUnlockedBody": "You can start one more Local recording until {time}. An active second recording is not stopped when the slot later expires.",
+  "@secondLocalSlotUnlockedBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotExpiredTitle": "Local slot #2 has closed",
+  "secondLocalSlotExpiredBody": "The slot closed at {time}. Opening it again requires 2 verified rewarded ads.",
+  "@secondLocalSlotExpiredBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotRecordNow": "Record {name} now",
+  "@secondLocalSlotRecordNow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "secondLocalSlotWatchAdAction": "Watch ad {current}/{required}",
+  "@secondLocalSlotWatchAdAction": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "secondLocalSlotBusy": "Both Local recording slots are already in use.",
+  "secondLocalSlotReopenAction": "Open Local slot #2 again",
+  "localRecordingStorageLowTitle": "Storage is running low",
+  "localRecordingStorageLowBody": "{free} free · about {minutes} minutes of recording left. Recording will stop safely below 250 MB.",
+  "@localRecordingStorageLowBody": {
+    "placeholders": {
+      "free": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStorageCriticalTitle": "Storage is almost full",
+  "localRecordingStorageCriticalBody": "Less than 250 MB remains. Recording is stopping safely and the recorded part is being saved.",
+  "localRecordingStopConfirmTitle": "Stop recording?",
+  "localRecordingStopConfirmBody": "The recorded part ({duration}) will be saved on this device. Unused Free minutes stay available.",
+  "@localRecordingStopConfirmBody": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingContinueAction": "Continue recording",
+  "localRecordingFinalizingTitle": "Finishing recording",
+  "localRecordingFinalizeStopStep": "Stop capture",
+  "localRecordingFinalizeFlushStep": "Write final data to file",
+  "localRecordingFinalizeVerifyStep": "Verify file",
+  "localRecordingFinalizeRegisterStep": "Add to Recordings",
+  "localRecordingFinalizingBody": "Keep SaveStream open until this finishes. The file is stored on this device.",
+  "localRecordingCompletedTitle": "Recording saved",
+  "localRecordingCompletedMeta": "{duration} · {size} · Stored on this device",
+  "@localRecordingCompletedMeta": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingOpenAction": "Open recording",
+  "localRecordingHomeAction": "Back to Home",
+  "localRecordingCleanStorageAction": "Clean up old recordings",
+  "localRecoveryTitle": "Recover recording",
+  "localRecoveryInterruptedTitle": "Recording was interrupted",
+  "localRecoveryInterruptedAndroidBody": "Android stopped SaveStream at {time}, possibly because of battery saving. The recorded part can still be recovered.",
+  "@localRecoveryInterruptedAndroidBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryInterruptedIosBody": "iOS stopped SaveStream at {time} after the app left the foreground. The recorded part can still be recovered.",
+  "@localRecoveryInterruptedIosBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryOfflineTitle": "Recovery stays on this device",
+  "localRecoveryOfflineBody": "Recovery does not need the internet and does not use Free recording minutes.",
+  "localRecoveryRecoveringBody": "Keep SaveStream open while it repairs and verifies the local file. No percentage is estimated.",
+  "localRecoveryRecoverAction": "Recover",
+  "localRecoveryCandidateMeta": "Started {time} · {duration} recorded · Local",
+  "@localRecoveryCandidateMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryRecoveringTitle": "Recovering recording",
+  "localRecoveryFindStep": "Find temporary file",
+  "localRecoveryRepairStep": "Repair file tail",
+  "localRecoveryVerifyStep": "Verify duration",
+  "localRecoveryRegisterStep": "Add to Recordings",
+  "localRecoveryPartialTitle": "Partially recovered",
+  "localRecoveryRecoveredTitle": "Recording recovered",
+  "localRecoveryKeptDuration": "Kept {duration} of recorded media.",
+  "@localRecoveryKeptDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryAndroidAdviceTitle": "Reduce interruptions on Android",
+  "localRecoveryAndroidAdviceBody": "Battery optimization can stop Local recording. Allow SaveStream to run without restriction to reduce interruptions.",
+  "localRecoveryAndroidGuideAction": "View Android recording guide",
+  "localRecoveryIosAdviceTitle": "Next time, keep SaveStream open",
+  "localRecoveryIosAdviceBody": "iOS can stop Local recording when SaveStream leaves the foreground. Cloud recording does not depend on the phone staying open.",
+  "localRecoveryViewProAction": "View cloud options",
+  "localRecoveryFailedTitle": "Could not recover recording",
+  "localRecoveryFailedAndroidBody": "The temporary file is damaged or no longer available after Android stopped SaveStream.",
+  "localRecoveryFailedIosBody": "The temporary file does not contain enough readable data after iOS stopped SaveStream.",
+  "localRecoveryDeleteTempAction": "Delete temporary file",
+  "localRecoveryNoneTitle": "No interrupted recording found",
+  "localRecoveryNoneBody": "There is no temporary Local recording waiting for recovery.",
+  "homeRecoveryAvailableBody": "{name} · {duration} recorded can be recovered.",
+  "@homeRecoveryAvailableBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordTitle": "Record {name}",
+  "@proManualRecordTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordLocalTitle": "Local · on this device",
+  "proManualRecordLocalUnlimitedBody": "Does not use cloud hours. Local recording is unlimited for this account.",
+  "proManualRecordLocalMeteredBody": "Does not use cloud hours. Local recording limits come from your account settings.",
+  "proManualRecordLocalDisabledBody": "Local recording is currently disabled for this account.",
+  "proManualRecordCloudTitle": "Cloud · on SaveStream servers",
+  "proManualRecordCloudBody": "Uses cloud hours. {remaining} available. Your phone does not need to stay online.",
+  "@proManualRecordCloudBody": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordCloudEmptyBody": "No cloud hours are available.",
+  "proManualRecordLocalAction": "Record Local",
+  "proManualRecordCloudAction": "Record Cloud · use cloud hours",
+  "cloudRecordingServerBody": "SaveStream is recording on the server. Your phone does not need to stay online.",
+  "cloudRecordingProcessingTitle": "Processing on server",
+  "cloudRecordingProcessStopStep": "Stop recording",
+  "cloudRecordingProcessMergeStep": "Merge and verify file",
+  "cloudRecordingProcessPreviewStep": "Create preview",
+  "cloudRecordingProcessReadyStep": "Ready to play",
+  "cloudRecordingProcessingBody": "You can close the app. SaveStream will update the recording when server processing finishes.",
+  "cloudRecordingFailedTitle": "Cloud recording failed",
+  "cloudRecordingFailedRefundBody": "Cloud hours for the failed recording are refunded by the server. If a saved artifact exists, you can still open it.",
+  "cloudRecordingStopConfirmTitle": "Stop cloud recording?",
+  "cloudRecordingStopConfirmBody": "SaveStream will stop recording on the server and then process the saved part.",
+  "cloudRecordingStartError": "Could not start cloud recording.",
+  "recordingPlaybackNotReadyTitle": "Playback is not available while recording",
+  "recordingPlaybackNotReadyBody": "The recording can be played after the LIVE ends and server processing finishes.",
+  "recordingBarSingle": "{name} is recording",
+  "@recordingBarSingle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingBarMultiple": "{count} recordings running",
+  "@recordingBarMultiple": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRecordingRemaining": "{remaining} remaining",
+  "@homeRecordingRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingTitle": "Finishing {name}",
+  "@homeFinalizingTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingStep": "Step {current}/{total} · {label}",
+  "@homeFinalizingStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSecondSlotOpenBody": "Local slot #2 is open until {time}.",
+  "@homeSecondSlotOpenBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDailyRecordingExhaustedTitle": "Free recording and rewarded ads are used up today",
+  "homeDailyRecordingExhaustedBody": "0 / {daily} Free minutes · {used}/{cap} rewarded ads. Resets in {reset}.",
+  "@homeDailyRecordingExhaustedBody": {
+    "placeholders": {
+      "daily": {
+        "type": "int"
+      },
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      },
+      "reset": {
+        "type": "String"
+      }
+    }
+  },
+  "doneAction": "Done",
+  "nativeRecordingActiveBody": "{name} · {elapsed} · Local · {remaining} Free remaining",
+  "@nativeRecordingActiveBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
+  },
+  "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
+  "@nativeRecordingActiveUnlimitedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectTitle": "Reconnecting · {name}",
+  "@nativeRecordingReconnectTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectBody": "Connection to the LIVE source was lost. The recorded part is still safe.",
+  "nativeRecordingMinuteWarningTitle": "Less than 1 minute Free · {name}",
+  "@nativeRecordingMinuteWarningTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingMinuteWarningBody": "Open SaveStream to add 10 minutes. Rewarded ads only run inside the app.",
+  "nativeRecordingFinalizingTitle": "Finishing recording",
+  "nativeRecordingFinalizingBody": "{name} · saving on this device",
+  "@nativeRecordingFinalizingBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingSavedTitle": "Recording saved",
+  "nativeRecordingSavedBody": "{name} · {duration} · {size} · stored on this device",
+  "@nativeRecordingSavedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "duration": {"type": "String"},
+      "size": {"type": "String"}
+    }
+  },
+  "nativeRecordingInterruptedTitle": "Recording was interrupted",
+  "nativeRecordingInterruptedBody": "Open SaveStream to recover the recorded part.",
+  "androidBackgroundGuideTitle": "Make Local recording more reliable",
+  "androidBatteryOptimizationTitle": "Battery optimization",
+  "androidBatteryOptimizationOn": "On",
+  "androidBatteryOptimizationOff": "Unrestricted",
+  "androidBatteryOptimizationBody": "Android can stop SaveStream while saving battery. Allow SaveStream to run without restriction to reduce interruptions.",
+  "androidBatteryStepOpen": "Open SaveStream battery settings",
+  "androidBatteryStepUnrestricted": "Choose “Unrestricted”",
+  "androidBatteryStepReturn": "Return to SaveStream",
+  "androidOpenBatterySettingsAction": "Open battery settings",
+  "androidOemGuideAction": "View device-specific guidance",
+  "androidOemGuideTitle": "Keep SaveStream running on {device}",
+  "@androidOemGuideTitle": {
+    "placeholders": {
+      "device": {"type": "String"}
+    }
+  },
+  "androidOemGenericBody": "Your Android version may have extra background restrictions. Review the app and battery settings for SaveStream.",
+  "androidOemXiaomiBody": "HyperOS can close SaveStream in the background even while a recording notification is visible.",
+  "androidOemSamsungBody": "Samsung can place apps into sleeping or deep-sleeping lists and interrupt Local recording.",
+  "androidOemOppoBody": "Oppo, Realme, and Vivo can apply additional background and auto-start restrictions.",
+  "androidOemHuaweiBody": "Huawei can manage app launch and background activity aggressively.",
+  "androidOemAutostartStep": "Allow SaveStream to auto-start",
+  "androidOemBatteryStep": "Set battery use to “Unrestricted”",
+  "androidOemRecentAppsStep": "Keep SaveStream available in recent apps",
+  "androidOemSamsungSleepStep": "Remove SaveStream from Sleeping apps",
+  "androidOemAppLaunchStep": "Allow automatic launch and background activity",
+  "androidOpenAppSettingsAction": "Open app settings",
+  "iosRecordingGuideTitle": "Record on iPhone",
+  "iosKeepOpenTitle": "Keep SaveStream open while recording",
+  "iosKeepOpenBody": "iOS can stop Local recording when SaveStream goes into the background.",
+  "iosScreenAwakeTitle": "Keep the screen awake while recording",
+  "iosScreenAwakeBody": "SaveStream keeps the screen awake during an active Local recording. Locking the phone yourself can still interrupt recording.",
+  "iosRecoveryGuideTitle": "Recover after an interruption",
+  "iosRecoveryGuideBody": "When SaveStream opens again, it automatically checks for an interrupted Local recording.",
+  "iosReturnReminderTitle": "Remind me to return to SaveStream",
+  "iosReturnReminderBody": "Schedule a local reminder when SaveStream goes to the background during Local recording.",
+  "iosCloudIndependentTitle": "No need to keep iPhone open",
+  "iosCloudIndependentBody": "Cloud recording runs on SaveStream servers and does not depend on the phone staying online.",
+  "settingsAndroidRecordingTitle": "Background recording",
+  "settingsAndroidRecordingSubtitle": "Battery and device guidance",
+  "settingsIosRecordingTitle": "Record on iPhone",
+  "settingsIosRecordingSubtitle": "Keep-open and recovery guidance",
+  "settingsRecordingSectionTitle": "Recording"
 }

@@ -8,13 +8,20 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
+import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
+import '../../local_recordings/presentation/local_recording_start_sheet.dart';
+import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
+import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
 import 'cloud_hours_upsell_sheet.dart';
 import 'controllers/watch_providers.dart';
+import 'pro_manual_record_sheet.dart';
 
 class ChannelDetailScreen extends ConsumerStatefulWidget {
   const ChannelDetailScreen({required this.watchId, super.key});
@@ -36,6 +43,127 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
       await action();
     } finally {
       if (mounted) setState(() => _mutating = false);
+    }
+  }
+
+  Future<void> _startLocalRecording(
+    WatchSummary watch,
+    Entitlement entitlement, {
+    bool skipConfirmation = false,
+  }) async {
+    if (!entitlement.local.enabled) return;
+
+    final LocalRecordingController recordingController = ref.read(
+      localRecordingControllerProvider,
+    );
+    if (recordingController.hasActiveSession) {
+      if (entitlement.plan == Plan.pro) {
+        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+        return;
+      }
+      if (recordingController.hasSecondarySession) {
+        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+        return;
+      }
+      final bool startSecond = await showSecondLocalSlotSheet(
+        context: context,
+        ref: ref,
+        entitlement: entitlement.local,
+        targetCreatorName: watch.creatorDisplayName,
+      );
+      if (!startSecond || !mounted) return;
+
+      try {
+        await recordingController.startSecond(watchId: watch.id);
+        if (mounted) {
+          context.push(AppRoutes.localRecording(watch.id));
+        }
+      } on Object {
+        if (mounted) {
+          SsToast.show(context, context.l10n.localRecordingErrorTitle);
+        }
+      }
+      return;
+    }
+
+    final LocalRecordingConfirmationController confirmation = ref.read(
+      localRecordingConfirmationControllerProvider,
+    );
+    final bool shouldConfirm =
+        !skipConfirmation &&
+        await confirmation.shouldConfirm(
+          force:
+              !entitlement.local.unlimited &&
+              entitlement.local.minutesRemaining <= 0,
+        );
+    if (!mounted) return;
+
+    if (shouldConfirm) {
+      final deviceInfo = ref.read(deviceInfoServiceProvider);
+      final int freeStorageBytes = await deviceInfo.freeStorageBytes;
+      if (!mounted) return;
+
+      final bool confirmed = await showLocalRecordingStartSheet(
+        context: context,
+        creatorName: watch.creatorDisplayName,
+        entitlement: entitlement,
+        platform: deviceInfo.platform,
+        freeStorageBytes: freeStorageBytes,
+      );
+      if (!confirmed || !mounted) return;
+      await confirmation.markConfirmed();
+      if (!mounted) return;
+    }
+
+    try {
+      await recordingController.start(watchId: watch.id);
+      if (mounted) {
+        context.push(AppRoutes.localRecording(watch.id));
+      }
+    } on Object {
+      if (mounted) {
+        SsToast.show(context, context.l10n.localRecordingErrorTitle);
+      }
+    }
+  }
+
+  Future<void> _startManualRecording(
+    WatchSummary watch,
+    Entitlement entitlement,
+  ) async {
+    if (entitlement.plan == Plan.free) {
+      await _startLocalRecording(watch, entitlement);
+      return;
+    }
+
+    final Engine? engine = await showProManualRecordSheet(
+      context: context,
+      creatorName: watch.creatorDisplayName,
+      entitlement: entitlement,
+    );
+    if (engine == null || !mounted) return;
+
+    if (engine == Engine.local) {
+      await _startLocalRecording(watch, entitlement, skipConfirmation: true);
+      return;
+    }
+
+    try {
+      final RecordingSummary created = await ref
+          .read(recordingControllerProvider)
+          .create(
+            CreateRecordingCommand(
+              sourceType: RecordingSourceType.username,
+              sourceValue: watch.creatorUsername,
+            ),
+          );
+      if (mounted) {
+        context.push(AppRoutes.recordingDetail(created.id));
+      }
+    } on Object {
+      if (mounted) {
+        SsToast.show(context, context.l10n.cloudRecordingStartError);
+      }
     }
   }
 
@@ -114,6 +242,8 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                     ? ref.read(watchControllerProvider).resume(value.watch.id)
                     : ref.read(watchControllerProvider).pause(value.watch.id),
               ),
+              onRecord: () =>
+                  _startManualRecording(value.watch, entitlement.requireValue),
               onDelete: () => _delete(value.watch),
             );
           },
@@ -131,6 +261,7 @@ class _DetailBody extends StatelessWidget {
     required this.mutating,
     required this.onNotify,
     required this.onPauseResume,
+    required this.onRecord,
     required this.onDelete,
   });
 
@@ -140,6 +271,7 @@ class _DetailBody extends StatelessWidget {
   final bool mutating;
   final ValueChanged<bool> onNotify;
   final VoidCallback onPauseResume;
+  final VoidCallback onRecord;
   final VoidCallback onDelete;
 
   @override
@@ -182,7 +314,11 @@ class _DetailBody extends StatelessWidget {
                     tone: SsInlineAlertTone.warning,
                   )
                 else if (watch.isLive)
-                  _LiveCard(watch: watch, entitlement: entitlement)
+                  _LiveCard(
+                    watch: watch,
+                    entitlement: entitlement,
+                    onRecord: onRecord,
+                  )
                 else
                   SsInlineAlert(
                     title: context.l10n.creatorDetailStatusTitle,
@@ -311,10 +447,15 @@ class _CreatorHeader extends StatelessWidget {
 }
 
 class _LiveCard extends StatelessWidget {
-  const _LiveCard({required this.watch, required this.entitlement});
+  const _LiveCard({
+    required this.watch,
+    required this.entitlement,
+    required this.onRecord,
+  });
 
   final WatchSummary watch;
   final Entitlement entitlement;
+  final VoidCallback onRecord;
 
   @override
   Widget build(BuildContext context) {
@@ -331,9 +472,20 @@ class _LiveCard extends StatelessWidget {
           if (free)
             SsLocationChip(engine: Engine.local, label: context.l10n.localLabel)
           else
-            SsLocationChip(
-              engine: Engine.cloud,
-              label: context.l10n.cloudLabel,
+            Wrap(
+              spacing: SsSpacing.sm,
+              runSpacing: SsSpacing.sm,
+              children: <Widget>[
+                if (entitlement.local.enabled)
+                  SsLocationChip(
+                    engine: Engine.local,
+                    label: context.l10n.localLabel,
+                  ),
+                SsLocationChip(
+                  engine: Engine.cloud,
+                  label: context.l10n.cloudLabel,
+                ),
+              ],
             ),
           const SizedBox(height: SsSpacing.md),
           if (free)
@@ -357,9 +509,12 @@ class _LiveCard extends StatelessWidget {
           SsPrimaryButton(
             label: context.l10n.recordNowAction,
             icon: Icons.fiber_manual_record_rounded,
-            // A3 owns Local/Cloud recording orchestration. A2 deliberately
-            // does not call the legacy cloud create API for Free accounts.
-            onPressed: () {},
+            onPressed:
+                free ||
+                    entitlement.local.enabled ||
+                    entitlement.cloudMinutesAvailable > 0
+                ? onRecord
+                : null,
           ),
         ],
       ),

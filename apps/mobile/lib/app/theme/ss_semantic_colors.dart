@@ -71,6 +71,22 @@ class SsSemanticColors extends ThemeExtension<SsSemanticColors> {
 }
 
 extension SsSemanticColorsContext on BuildContext {
-  SsSemanticColors get semanticColors =>
-      Theme.of(this).extension<SsSemanticColors>()!;
+  SsSemanticColors get semanticColors {
+    final ThemeData theme = Theme.of(this);
+    final SsSemanticColors? semantic = theme.extension<SsSemanticColors>();
+    if (semantic != null) return semantic;
+
+    final ColorScheme colors = theme.colorScheme;
+    return SsSemanticColors(
+      success: colors.tertiary,
+      warning: colors.secondary,
+      error: colors.error,
+      recording: colors.error,
+      info: colors.primary,
+      successSubtle: colors.tertiaryContainer,
+      warningSubtle: colors.secondaryContainer,
+      errorSubtle: colors.errorContainer,
+      infoSubtle: colors.primaryContainer,
+    );
+  }
 }

@@ -6,8 +6,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
+import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_providers.dart';
 import 'recording_ui_helpers.dart';
@@ -88,6 +91,22 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     }
   }
 
+  Future<void> _stop(RecordingSummary recording) async {
+    if (recording.engine == Engine.cloud) {
+      final bool? confirmed = await SsConfirmDialog.show(
+        context,
+        title: context.l10n.cloudRecordingStopConfirmTitle,
+        message: context.l10n.cloudRecordingStopConfirmBody,
+        cancelLabel: context.l10n.cancelAction,
+        confirmLabel: context.l10n.stopRecordingAction,
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    await _runMutation(
+      () => ref.read(recordingControllerProvider).stop(recording.id),
+    );
+  }
+
   Future<void> _delete(RecordingSummary recording) async {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await SsConfirmDialog.show(
@@ -115,6 +134,10 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     final AsyncValue<RecordingSummary?> recording = _isForeground
         ? ref.watch(recordingRealtimeProvider(widget.recordingId))
         : ref.watch(recordingDetailProvider(widget.recordingId));
+    final int? cloudMinutesAvailable = ref
+        .watch(entitlementProvider)
+        .value
+        ?.cloudMinutesAvailable;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.recordingDetailTitle)),
@@ -161,7 +184,12 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                   children: <Widget>[
                     _CreatorHeader(recording: value),
                     const SizedBox(height: SsSpacing.lg),
-                    _LifecycleCard(recording: value),
+                    value.engine == Engine.cloud
+                        ? CloudRecordingLifecycleCard(
+                            recording: value,
+                            cloudMinutesAvailable: cloudMinutesAvailable,
+                          )
+                        : _LifecycleCard(recording: value),
                     if (_mutationError != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
                       SsInlineAsyncError(
@@ -172,7 +200,8 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                         ),
                       ),
                     ],
-                    if (value.status == RecordingStatus.failed) ...<Widget>[
+                    if (value.status == RecordingStatus.failed &&
+                        value.engine != Engine.cloud) ...<Widget>[
                       const SizedBox(height: SsSpacing.lg),
                       _FailureCard(recording: value),
                     ],
@@ -184,11 +213,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     _ActionsCard(
                       recording: value,
                       isMutating: _isMutating,
-                      onStop: () => _runMutation(
-                        () => ref
-                            .read(recordingControllerProvider)
-                            .stop(value.id),
-                      ),
+                      onStop: () => _stop(value),
                       onRetry: () => _retry(value),
                       onDelete: () => _delete(value),
                     ),
@@ -249,6 +274,164 @@ class _CreatorHeader extends StatelessWidget {
             icon: recording.status == RecordingStatus.recording
                 ? Icons.fiber_manual_record_rounded
                 : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CloudRecordingLifecycleCard extends StatelessWidget {
+  const CloudRecordingLifecycleCard({
+    required this.recording,
+    this.cloudMinutesAvailable,
+    super.key,
+  });
+
+  final RecordingSummary recording;
+  final int? cloudMinutesAvailable;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (recording.status) {
+      RecordingStatus.recording => _cloudRecording(context),
+      RecordingStatus.stopRequested ||
+      RecordingStatus.processing ||
+      RecordingStatus.uploading ||
+      RecordingStatus.finalizing => _cloudProcessing(context),
+      RecordingStatus.failed => _cloudFailed(context),
+      _ => _LifecycleCard(recording: recording),
+    };
+  }
+
+  Widget _cloudRecording(BuildContext context) {
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              SsLocationChip(
+                engine: Engine.cloud,
+                label: context.l10n.cloudLabel,
+              ),
+              const Spacer(),
+              const SsLiveBadge(isLive: true),
+            ],
+          ),
+          const SizedBox(height: SsSpacing.md),
+          Text(
+            context.l10n.recordingElapsedValue(
+              formatDuration(recording.durationSeconds),
+            ),
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: SsSpacing.sm),
+          Text(context.l10n.cloudRecordingServerBody),
+          if (cloudMinutesAvailable case final int minutes) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            Text(
+              context.l10n.cloudTimeRemainingValue(
+                formatMinutesAsHoursMinutes(
+                  minutes,
+                  hoursLabel: context.l10n.timeHoursUnit,
+                  minutesLabel: context.l10n.timeMinutesUnit,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: SsSpacing.md),
+          SsInlineAlert(
+            title: context.l10n.recordingPlaybackNotReadyTitle,
+            message: context.l10n.recordingPlaybackNotReadyBody,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cloudProcessing(BuildContext context) {
+    final int currentStep = switch (recording.status) {
+      RecordingStatus.stopRequested => 0,
+      RecordingStatus.processing => 1,
+      RecordingStatus.uploading => 2,
+      RecordingStatus.finalizing => 3,
+      _ => 0,
+    };
+    final List<String> labels = <String>[
+      context.l10n.cloudRecordingProcessStopStep,
+      context.l10n.cloudRecordingProcessMergeStep,
+      context.l10n.cloudRecordingProcessPreviewStep,
+      context.l10n.cloudRecordingProcessReadyStep,
+    ];
+
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            context.l10n.cloudRecordingProcessingTitle,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: SsSpacing.md),
+          SsChecklist(
+            items: <SsChecklistItem>[
+              for (int index = 0; index < labels.length; index += 1)
+                SsChecklistItem(
+                  label: labels[index],
+                  done: index < currentStep,
+                  active: index == currentStep,
+                ),
+            ],
+          ),
+          const SizedBox(height: SsSpacing.md),
+          SsInlineAlert(
+            title: context.l10n.cloudLabel,
+            message: context.l10n.cloudRecordingProcessingBody,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cloudFailed(BuildContext context) {
+    return SsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.cloud_off_outlined),
+              const SizedBox(width: SsSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      context.l10n.recordingFailureTitle,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    Text(context.l10n.cloudRecordingFailedTitle),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: SsSpacing.md),
+          if (recording.errorMessage != null) Text(recording.errorMessage!),
+          if (recording.durationSeconds > 0) ...<Widget>[
+            const SizedBox(height: SsSpacing.sm),
+            Text(
+              context.l10n.recordingElapsedValue(
+                formatDuration(recording.durationSeconds),
+              ),
+            ),
+          ],
+          const SizedBox(height: SsSpacing.md),
+          SsInlineAlert(
+            title: context.l10n.cloudLabel,
+            message: context.l10n.cloudRecordingFailedRefundBody,
+            tone: SsInlineAlertTone.warning,
           ),
         ],
       ),
@@ -586,7 +769,12 @@ class _ActionsCard extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final List<Widget> actions = <Widget>[];
 
-    if (recording.actions.canStop) {
+    final bool canStopActive =
+        recording.actions.canStop &&
+        (recording.status == RecordingStatus.recording ||
+            recording.status == RecordingStatus.reconnecting);
+
+    if (canStopActive) {
       actions.add(
         SsPrimaryButton(
           label: l10n.stopRecordingAction,

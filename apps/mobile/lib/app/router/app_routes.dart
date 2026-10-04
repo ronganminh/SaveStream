@@ -24,6 +24,7 @@ abstract final class AppRoutes {
   static const String channels = '/channels';
   static const String addChannel = '/channels/add';
   static const String recordings = '/recordings';
+  static const String localRecovery = '/recordings/recovery';
   static const String credits = '/credits';
   static const String billing = '/billing';
   static const String billingReturn = '/billing/return';
@@ -33,6 +34,10 @@ abstract final class AppRoutes {
   static const String language = '/settings/language';
   static const String theme = '/settings/theme';
   static const String notifications = '/settings/notifications';
+  static const String androidRecordingGuide = '/settings/recording/android';
+  static const String androidOemRecordingGuide =
+      '/settings/recording/android/oem';
+  static const String iosRecordingGuide = '/settings/recording/ios';
   static const String privacy = '/settings/privacy';
   static const String terms = '/settings/terms';
 
@@ -42,6 +47,8 @@ abstract final class AppRoutes {
   static String autoRecordSettings(String id) =>
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
+  static String localRecording(String watchId) =>
+      '/recordings/local/' + watchId;
 
   static String liveNotification(String id, {String state = 'checking'}) {
     return Uri(
