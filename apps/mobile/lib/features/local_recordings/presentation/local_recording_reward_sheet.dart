@@ -119,6 +119,7 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
       ),
       RewardedMinutesPhase.noFill => context.l10n.rewardMinutesNoFillTitle,
       RewardedMinutesPhase.invalid => context.l10n.rewardMinutesInvalidTitle,
+      RewardedMinutesPhase.locked => context.l10n.rewardMinutesLockedTitle,
       RewardedMinutesPhase.maxExtensions => context.l10n.rewardMinutesMaxTitle,
       RewardedMinutesPhase.dailyCap => context.l10n.rewardMinutesDailyCapTitle,
       RewardedMinutesPhase.error => context.l10n.genericErrorTitle,
@@ -200,6 +201,11 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
         message: context.l10n.rewardMinutesInvalidBody,
         tone: SsInlineAlertTone.error,
       ),
+      RewardedMinutesPhase.locked => SsInlineAlert(
+        title: context.l10n.rewardMinutesLockedTitle,
+        message: context.l10n.rewardMinutesLockedBody,
+        tone: SsInlineAlertTone.warning,
+      ),
       RewardedMinutesPhase.maxExtensions => SsInlineAlert(
         title: context.l10n.rewardMinutesMaxTitle,
         message: context.l10n.rewardMinutesMaxBody(
@@ -226,6 +232,7 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
     final bool canStart =
         phase == RewardedMinutesPhase.idle ||
         phase == RewardedMinutesPhase.noFill ||
+        phase == RewardedMinutesPhase.invalid ||
         phase == RewardedMinutesPhase.error;
 
     return Column(
