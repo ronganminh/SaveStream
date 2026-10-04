@@ -1272,3 +1272,184 @@ export const adminRuntimeSettingsApi = {
     return apiClient.get<AdminSystemStatus>("/v1/admin/system/status");
   },
 };
+
+
+export type AdminComplaintEvent = {
+  id: string;
+  action: string;
+  actor_user_id: string | null;
+  note: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type AdminComplaint = {
+  id: string;
+  kind: "copyright" | "abuse";
+  complainant_name: string;
+  complainant_email: string;
+  channel_source_type: string | null;
+  channel_source_value: string | null;
+  recording_id: string | null;
+  summary: string;
+  body: string;
+  status: "new" | "reviewing" | "resolved" | "rejected";
+  assigned_to_user_id: string | null;
+  created_by_user_id: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+  timeline: AdminComplaintEvent[];
+};
+
+export type AdminComplaintFilters = {
+  cursor?: string | null;
+  status?: string;
+  kind?: string;
+  query?: string;
+};
+
+export type AdminCreatorBlock = {
+  id: string;
+  source_type: string;
+  source_value: string;
+  complaint_id: string | null;
+  reason: string;
+  blocked_by_user_id: string | null;
+  active: boolean;
+  unblocked_at: string | null;
+  unblock_reason: string | null;
+  created_at: string;
+  stopped_recording_ids: string[];
+  paused_watch_ids: string[];
+};
+
+export type AdminSuspiciousAccount = {
+  user_id: string;
+  email: string;
+  created_at: string;
+  rate_limit_hits_24h: number;
+  shared_signup_ip_accounts_7d: number;
+  reward_valid_7d: number;
+  reward_invalid_7d: number;
+  reward_invalid_ratio_7d: number;
+  reward_invalid_streak: number;
+  reward_locked_until: string | null;
+  reasons: string[];
+};
+
+function complaintQuery(filters: AdminComplaintFilters = {}) {
+  const query = new URLSearchParams({ limit: "50" });
+  if (filters.cursor) query.set("cursor", filters.cursor);
+  if (filters.status) query.set("status", filters.status);
+  if (filters.kind) query.set("kind", filters.kind);
+  if (filters.query) query.set("query", filters.query);
+  return query;
+}
+
+export const adminSafetyApi = {
+  listComplaints(filters: AdminComplaintFilters = {}) {
+    return apiClient.get<{
+      items: AdminComplaint[];
+      next_cursor: string | null;
+      has_more: boolean;
+    }>(`/v1/admin/complaints?${complaintQuery(filters).toString()}`);
+  },
+
+  exportComplaints(filters: AdminComplaintFilters = {}) {
+    const query = complaintQuery(filters);
+    query.delete("limit");
+    query.delete("cursor");
+    return apiClient.get<string>(`/v1/admin/complaints/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
+  },
+
+  getComplaint(complaintId: string) {
+    return apiClient.get<AdminComplaint>(
+      `/v1/admin/complaints/${encodeURIComponent(complaintId)}`,
+    );
+  },
+
+  createComplaint(payload: {
+    kind: "copyright" | "abuse";
+    complainant_name: string;
+    complainant_email: string;
+    channel_source_type?: "username" | "room_id" | "url" | null;
+    channel_source_value?: string | null;
+    recording_id?: string | null;
+    summary: string;
+    body: string;
+  }) {
+    return apiClient.post<AdminComplaint>("/v1/admin/complaints", { json: payload });
+  },
+
+  updateComplaint(
+    complaintId: string,
+    status: AdminComplaint["status"],
+    assignedToUserId: string | null,
+    reason: string,
+  ) {
+    return apiClient.patch<AdminComplaint>(
+      `/v1/admin/complaints/${encodeURIComponent(complaintId)}`,
+      {
+        json: {
+          status,
+          assigned_to_user_id: assignedToUserId,
+          reason,
+        },
+      },
+    );
+  },
+
+  listCreatorBlocks(activeOnly = true) {
+    return apiClient.get<{ items: AdminCreatorBlock[] }>(
+      `/v1/admin/creator-blocks?active_only=${activeOnly ? "true" : "false"}`,
+    );
+  },
+
+  blockCreator(
+    payload: {
+      source_type: "username" | "room_id" | "url";
+      source_value: string;
+      complaint_id?: string | null;
+      reason: string;
+    },
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminCreatorBlock>("/v1/admin/creator-blocks", {
+      json: payload,
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  unblockCreator(blockId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminCreatorBlock>(
+      `/v1/admin/creator-blocks/${encodeURIComponent(blockId)}/unblock`,
+      {
+        json: { reason },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
+  },
+
+  deleteBlockedRecordings(blockId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<{
+      block_id: string;
+      deleted_recording_ids: string[];
+      pending_stop_recording_ids: string[];
+    }>(
+      `/v1/admin/creator-blocks/${encodeURIComponent(blockId)}/delete-recordings`,
+      {
+        json: { reason },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
+  },
+
+  suspiciousAccounts(limit = 100) {
+    return apiClient.get<{ items: AdminSuspiciousAccount[] }>(
+      `/v1/admin/safety/suspicious-accounts?limit=${limit}`,
+    );
+  },
+};
