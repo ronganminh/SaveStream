@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:riverpod/riverpod.dart' show Override;
-import 'package:riverpod/riverpod.dart' show Override;
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/local_recordings/presentation/controllers/recording_platform_controller.dart';
 import 'package:savestream_mobile/features/local_recordings/presentation/local_recovery_screen.dart';
@@ -21,7 +19,7 @@ import 'package:savestream_mobile/platform/platform_providers.dart';
 void main() {
   Widget localized({
     required Widget child,
-    List<Override> overrides = const <Override>[],
+    dynamic overrides = const [],
   }) {
     return ProviderScope(
       overrides: overrides,
@@ -40,7 +38,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           recordingPlatformServiceProvider.overrideWithValue(service),
         ],
         child: const Scaffold(body: Text('platform')),
@@ -80,7 +78,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           recordingPlatformServiceProvider.overrideWithValue(service),
         ],
         child: const Scaffold(body: Text('ios')),
@@ -123,7 +121,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           recordingPlatformServiceProvider.overrideWithValue(service),
         ],
         child: const AndroidRecordingBackgroundScreen(),
@@ -150,7 +148,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           recordingPlatformServiceProvider.overrideWithValue(service),
         ],
         child: const AndroidOemRecordingGuidanceScreen(),
@@ -182,7 +180,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           localRecoveryServiceProvider.overrideWithValue(recovery),
           deviceInfoServiceProvider.overrideWithValue(
             const FakeDeviceInfoService(platform: DevicePlatform.ios),
@@ -209,7 +207,7 @@ void main() {
 
     await tester.pumpWidget(
       localized(
-        overrides: <Override>[
+        overrides: [
           recordingPlatformServiceProvider.overrideWithValue(service),
         ],
         child: const IosRecordingGuidanceScreen(),
