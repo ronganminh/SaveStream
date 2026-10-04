@@ -1,0 +1,41 @@
+name: A3 Format Debug
+
+on:
+  push:
+    branches:
+      - tmp/a3-format-20261004
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Run formatter and print exact files
+        run: |
+          dart format \
+            lib/features/channels/presentation/channel_detail_screen.dart \
+            lib/features/local_recordings/presentation/local_recording_screen.dart \
+            test/v2a_a3_local_recording_controller_test.dart \
+            test/v2a_a3_recording_alerts_test.dart
+          for f in \
+            lib/features/channels/presentation/channel_detail_screen.dart \
+            lib/features/local_recordings/presentation/local_recording_screen.dart \
+            test/v2a_a3_local_recording_controller_test.dart \
+            test/v2a_a3_recording_alerts_test.dart
+          do
+            echo "--- BEGIN $f ---"
+            cat "$f"
+            echo "--- END $f ---"
+          done
