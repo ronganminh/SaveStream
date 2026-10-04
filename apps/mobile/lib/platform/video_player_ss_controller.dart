@@ -83,14 +83,10 @@ final class VideoPlayerSsController extends ChangeNotifier
     );
   }
 
-  Future<void> close() async {
-    if (_closed) return;
-    _closed = true;
-    _player.removeListener(_relay);
+  Future<void> _disposePlayer() async {
     await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     await SystemChrome.setPreferredOrientations(<DeviceOrientation>[]);
     await _player.dispose();
-    super.dispose();
   }
 
   void _relay() {
@@ -101,6 +97,10 @@ final class VideoPlayerSsController extends ChangeNotifier
 
   @override
   void dispose() {
-    unawaited(close());
+    if (_closed) return;
+    _closed = true;
+    _player.removeListener(_relay);
+    unawaited(_disposePlayer());
+    super.dispose();
   }
 }
