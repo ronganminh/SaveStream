@@ -30,6 +30,7 @@ import '../../features/onboarding/presentation/ios_recording_info_screen.dart';
 import '../../features/onboarding/presentation/notification_rationale_screen.dart';
 import '../../features/onboarding/presentation/welcome_screen.dart';
 import '../../features/local_recordings/presentation/local_recording_screen.dart';
+import '../../features/local_recordings/presentation/local_recovery_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
@@ -319,6 +320,12 @@ GoRouter createAppRouter({
           return LocalRecordingScreen(
             watchId: state.pathParameters['watchId']!,
           );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.localRecovery,
+        builder: (BuildContext context, GoRouterState state) {
+          return const LocalRecoveryScreen();
         },
       ),
       GoRoute(
