@@ -16,9 +16,11 @@ import '../../local_recordings/presentation/controllers/local_recording_controll
 import '../../local_recordings/presentation/local_recording_start_sheet.dart';
 import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
+import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
 import 'cloud_hours_upsell_sheet.dart';
+import 'pro_manual_record_sheet.dart';
 import 'controllers/watch_providers.dart';
 
 class ChannelDetailScreen extends ConsumerStatefulWidget {
@@ -46,14 +48,19 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
 
   Future<void> _startLocalRecording(
     WatchSummary watch,
-    Entitlement entitlement,
-  ) async {
-    if (entitlement.plan != Plan.free) return;
+    Entitlement entitlement, {
+    bool skipConfirmation = false,
+  }) async {
+    if (!entitlement.local.enabled) return;
 
     final LocalRecordingController recordingController = ref.read(
       localRecordingControllerProvider,
     );
     if (recordingController.hasActiveSession) {
+      if (entitlement.plan == Plan.pro) {
+        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+        return;
+      }
       if (recordingController.hasSecondarySession) {
         SsToast.show(context, context.l10n.secondLocalSlotBusy);
         return;
@@ -82,9 +89,11 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     final LocalRecordingConfirmationController confirmation = ref.read(
       localRecordingConfirmationControllerProvider,
     );
-    final bool shouldConfirm = await confirmation.shouldConfirm(
-      force: entitlement.local.minutesRemaining <= 0,
-    );
+    final bool shouldConfirm = !skipConfirmation &&
+        await confirmation.shouldConfirm(
+          force: !entitlement.local.unlimited &&
+              entitlement.local.minutesRemaining <= 0,
+        );
     if (!mounted) return;
 
     if (shouldConfirm) {
@@ -112,6 +121,50 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     } on Object {
       if (mounted) {
         SsToast.show(context, context.l10n.localRecordingErrorTitle);
+      }
+    }
+  }
+
+  Future<void> _startManualRecording(
+    WatchSummary watch,
+    Entitlement entitlement,
+  ) async {
+    if (entitlement.plan == Plan.free) {
+      await _startLocalRecording(watch, entitlement);
+      return;
+    }
+
+    final Engine? engine = await showProManualRecordSheet(
+      context: context,
+      creatorName: watch.creatorDisplayName,
+      entitlement: entitlement,
+    );
+    if (engine == null || !mounted) return;
+
+    if (engine == Engine.local) {
+      await _startLocalRecording(
+        watch,
+        entitlement,
+        skipConfirmation: true,
+      );
+      return;
+    }
+
+    try {
+      final RecordingSummary created = await ref
+          .read(recordingControllerProvider)
+          .create(
+            CreateRecordingCommand(
+              sourceType: RecordingSourceType.username,
+              sourceValue: watch.creatorUsername,
+            ),
+          );
+      if (mounted) {
+        context.push(AppRoutes.recordingDetail(created.id));
+      }
+    } on Object {
+      if (mounted) {
+        SsToast.show(context, context.l10n.cloudRecordingStartError);
       }
     }
   }
@@ -192,7 +245,7 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                     : ref.read(watchControllerProvider).pause(value.watch.id),
               ),
               onRecord: () =>
-                  _startLocalRecording(value.watch, entitlement.requireValue),
+                  _startManualRecording(value.watch, entitlement.requireValue),
               onDelete: () => _delete(value.watch),
             );
           },
@@ -421,9 +474,20 @@ class _LiveCard extends StatelessWidget {
           if (free)
             SsLocationChip(engine: Engine.local, label: context.l10n.localLabel)
           else
-            SsLocationChip(
-              engine: Engine.cloud,
-              label: context.l10n.cloudLabel,
+            Wrap(
+              spacing: SsSpacing.sm,
+              runSpacing: SsSpacing.sm,
+              children: <Widget>[
+                if (entitlement.local.enabled)
+                  SsLocationChip(
+                    engine: Engine.local,
+                    label: context.l10n.localLabel,
+                  ),
+                SsLocationChip(
+                  engine: Engine.cloud,
+                  label: context.l10n.cloudLabel,
+                ),
+              ],
             ),
           const SizedBox(height: SsSpacing.md),
           if (free)
@@ -447,7 +511,12 @@ class _LiveCard extends StatelessWidget {
           SsPrimaryButton(
             label: context.l10n.recordNowAction,
             icon: Icons.fiber_manual_record_rounded,
-            onPressed: free ? onRecord : null,
+            onPressed:
+                free ||
+                    entitlement.local.enabled ||
+                    entitlement.cloudMinutesAvailable > 0
+                ? onRecord
+                : null,
           ),
         ],
       ),
