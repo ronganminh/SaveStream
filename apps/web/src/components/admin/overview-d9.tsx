@@ -84,6 +84,21 @@ function OverviewBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowed]);
 
+  const exportCsv = async () => {
+    try {
+      const csv = await adminD9Api.exportSupportReports({
+        query: query.trim() || undefined,
+        status: status || undefined,
+        sortOrder,
+      });
+      downloadCsv("savestream-app-reports.csv", csv);
+    } catch (error) {
+      toast.error("Could not export app reports", {
+        description: authErrorMessage(error),
+      });
+    }
+  };
+
   if (!allowed) {
     return (
       <PermissionPanel>
@@ -474,18 +489,25 @@ function ReportsBody() {
   const [reports, setReports] = useState<AdminSupportReport[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<AdminSupportReport | null>(null);
 
-  const load = async () => {
+  const load = async (cursor?: string | null) => {
     if (!allowed) return;
     setBusy(true);
     try {
       const result = await adminD9Api.listSupportReports({
+        cursor: cursor ?? null,
         query: query.trim() || undefined,
         status: status || undefined,
+        sortOrder,
       });
       setReports(result.items);
+      setNextCursor(result.next_cursor);
+      setHasMore(result.has_more);
     } catch (error) {
       toast.error("Could not load app reports", {
         description: authErrorMessage(error),
@@ -521,7 +543,7 @@ function ReportsBody() {
           </Button>
         }
       />
-      <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-3">
+      <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-5">
         <Input
           placeholder="Search email or description"
           value={query}
@@ -538,7 +560,21 @@ function ReportsBody() {
           <option value="resolved">Resolved</option>
           <option value="closed">Closed</option>
         </select>
-        <Button onClick={() => void load()}>Apply filters</Button>
+        <select
+          className="h-9 rounded-md border bg-background px-3 text-sm"
+          value={sortOrder}
+          onChange={(event) =>
+            setSortOrder(event.target.value as "asc" | "desc")
+          }
+        >
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+        <Button onClick={() => void load(null)}>Apply filters</Button>
+        <Button variant="outline" onClick={() => void exportCsv()}>
+          <Download className="mr-2 size-4" />
+          CSV
+        </Button>
       </div>
 
       <div className="mt-4">
@@ -593,6 +629,18 @@ function ReportsBody() {
           </tbody>
         </AdminDataTable>
       </div>
+
+      {hasMore && nextCursor && (
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            onClick={() => void load(nextCursor)}
+            disabled={busy}
+          >
+            Next page
+          </Button>
+        </div>
+      )}
 
       <ReportDialog
         report={selected}
