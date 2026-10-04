@@ -472,7 +472,7 @@ void main() {
     await tester.enterText(find.byType(TextField), '');
     await tester.tap(find.widgetWithText(ChoiceChip, 'Cloud'));
     await tester.pump();
-    expect(find.text('Minh Streams'), findsWidgets);
+    expect(find.text('Cloud'), findsWidgets);
   });
 
   testWidgets('active recording Stop action follows canStop flag', (
@@ -532,7 +532,7 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('Retry recording'), findsOneWidget);
-    expect(find.text('Delete recording'), findsOneWidget);
+    expect(find.text('Delete cloud recording'), findsOneWidget);
     expect(find.text('Stop recording'), findsNothing);
 
     await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
