@@ -17,6 +17,10 @@ import 'package:savestream_mobile/features/entitlement/data/repositories/api_ent
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
+import 'package:savestream_mobile/features/settings/data/repositories/api_notification_preferences_repository.dart';
+import 'package:savestream_mobile/features/settings/data/repositories/api_notifications_repository.dart';
+import 'package:savestream_mobile/features/settings/domain/models/app_notification.dart';
+import 'package:savestream_mobile/features/settings/domain/models/notification_preferences.dart';
 
 void main() {
   test('entitlement decodes V2 minutes and limits', () async {
@@ -186,6 +190,99 @@ void main() {
     expect(planError.message, isNotEmpty);
   });
 
+  test('notification preferences map V2 fields in both directions', () async {
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      if (call == 1) {
+        expect(options.method, 'GET');
+        return _jsonResponse(200, <String, Object?>{
+          'recording_started': true,
+          'recording_ready': true,
+          'recording_failed': true,
+          'creator_live': false,
+          'recording_expiring': true,
+          'free_minutes_low': false,
+          'email_supported': false,
+          'updated_at': '2026-10-04T00:00:00Z',
+        });
+      }
+
+      expect(options.method, 'PATCH');
+      expect(
+        options.data,
+        <String, Object?>{
+          'recording_started': true,
+          'recording_ready': true,
+          'recording_failed': true,
+          'creator_live': true,
+          'recording_expiring': false,
+          'free_minutes_low': true,
+        },
+      );
+      return _jsonResponse(200, <String, Object?>{
+        'recording_started': true,
+        'recording_ready': true,
+        'recording_failed': true,
+        'creator_live': true,
+        'recording_expiring': false,
+        'free_minutes_low': true,
+        'email_supported': false,
+        'updated_at': '2026-10-04T00:00:00Z',
+      });
+    });
+    final ApiNotificationPreferencesRepository repository =
+        ApiNotificationPreferencesRepository(apiClient: _clientFor(adapter));
+
+    final NotificationPreferences initial = await repository.getPreferences();
+    expect(initial.creatorLive, isFalse);
+    expect(initial.recordingExpiring, isTrue);
+    expect(initial.freeMinutesLow, isFalse);
+
+    final NotificationPreferences updated = await repository.updatePreferences(
+      initial.copyWith(
+        creatorLive: true,
+        recordingExpiring: false,
+        freeMinutesLow: true,
+      ),
+    );
+    expect(updated.creatorLive, isTrue);
+    expect(updated.recordingExpiring, isFalse);
+    expect(updated.freeMinutesLow, isTrue);
+  });
+
+  test('notification feed maps exposed V2 types and tolerates others', () async {
+    final ApiNotificationsRepository repository = ApiNotificationsRepository(
+      apiClient: _clientFor(
+        _FakeAdapter((RequestOptions options, int call) {
+          return _jsonResponse(200, <String, Object?>{
+            'items': <Object?>[
+              _notificationJson(id: 'n1', type: 'creator_live'),
+              _notificationJson(id: 'n2', type: 'recording_expiring'),
+              _notificationJson(id: 'n3', type: 'free_minutes_low'),
+              _notificationJson(id: 'n4', type: 'recording_missed'),
+            ],
+            'pagination': <String, Object?>{
+              'next_cursor': null,
+              'has_more': false,
+            },
+          });
+        }),
+      ),
+    );
+
+    final page = await repository.listNotifications();
+
+    expect(page.items, hasLength(4));
+    expect(page.items[0].type, AppNotificationType.other);
+    expect(page.items[0].v2Type, AppNotificationV2Type.creatorLive);
+    expect(page.items[1].v2Type, AppNotificationV2Type.recordingExpiring);
+    expect(page.items[2].v2Type, AppNotificationV2Type.freeMinutesLow);
+    expect(page.items[3].type, AppNotificationType.other);
+    expect(page.items[3].v2Type, isNull);
+  });
+
   test(
     'recording maps V2 queue/retention fields and tolerates new status',
     () async {
@@ -318,6 +415,22 @@ Map<String, Object?> _watchJson({
     'last_live_at': null,
     'created_at': '2026-10-04T00:00:00Z',
     'updated_at': '2026-10-04T00:00:00Z',
+  };
+}
+
+Map<String, Object?> _notificationJson({
+  required String id,
+  required String type,
+}) {
+  return <String, Object?>{
+    'id': id,
+    'type': type,
+    'title': 'Title',
+    'body': 'Body',
+    'read': false,
+    'created_at': '2026-10-04T00:00:00Z',
+    'resource_type': type == 'creator_live' ? 'watch' : 'recording',
+    'resource_id': 'resource-$id',
   };
 }
 
