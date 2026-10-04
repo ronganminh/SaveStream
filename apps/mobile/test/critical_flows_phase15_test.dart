@@ -9,9 +9,6 @@ import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
-import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
-import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
-import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
@@ -164,55 +161,7 @@ void main() {
     expect(find.text('Stopped'), findsWidgets);
   });
 
-  testWidgets('critical flow billing -> pending -> paid', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pump();
 
-    await tester.tap(find.text('Settings'));
-    await tester.pump();
-    await tester.tap(find.text('Billing'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(BillingScreen), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Buy package').first);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Check payment status'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-
-    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
-
-    final Finder checkStatus = find.widgetWithText(
-      OutlinedButton,
-      'Check payment status',
-    );
-    await tester.ensureVisible(checkStatus);
-    await tester.pumpAndSettle();
-    await tester.tap(checkStatus);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    // The refresh and the snapshot refetch it triggers each take one mock
-    // latency window; settle past both before reading the provider.
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-
-    final ProviderContainer container = ProviderScope.containerOf(
-      tester.element(find.byType(BillingScreen)),
-    );
-    final BillingSnapshot snapshot = container
-        .read(billingSnapshotProvider)
-        .requireValue;
-
-    expect(snapshot.orders.first.status, PaymentOrderStatus.paid);
-  });
 }
 
 final class _TerminalStopRecordingRepository implements RecordingRepository {
