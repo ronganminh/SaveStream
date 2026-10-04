@@ -902,7 +902,6 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                 SsSecondaryButton(
                   label: l10n.shareRecordingAction,
                   icon: Icons.ios_share_rounded,
-                  isLoading: _isSharing,
                   onPressed: _isSharing
                       ? null
                       : () => _shareArtifact(artifact),
