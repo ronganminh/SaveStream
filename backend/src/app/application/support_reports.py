@@ -244,6 +244,17 @@ class SupportReportService:
                     "Invalid assignee id",
                     status_code=400,
                 ) from exc
+            assignee = await self.session.get(User, assigned)
+            if (
+                assignee is None
+                or assignee.role not in {"owner", "support", "admin"}
+                or not assignee.is_active
+            ):
+                raise ApplicationError(
+                    "VALIDATION_ERROR",
+                    "Assignee must be an active Owner or Support administrator",
+                    status_code=400,
+                )
         report.status = status
         report.assigned_to_user_id = assigned
         report.resolved_at = utcnow() if status in {"resolved", "closed"} else None
