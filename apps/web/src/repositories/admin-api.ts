@@ -1453,3 +1453,97 @@ export const adminSafetyApi = {
     );
   },
 };
+
+
+export type AdminDailyMetric = {
+  day: string;
+  new_users: number;
+  active_users_daily: number;
+  active_users_weekly: number;
+  active_users_monthly: number;
+  free_users: number;
+  pro_users: number;
+  free_to_pro_users: number;
+  revenue_web_usd_minor: number;
+  revenue_app_store_usd_minor: number;
+  revenue_google_play_usd_minor: number;
+  recording_running: number;
+  recording_waiting: number;
+  recording_errors_24h: number;
+  recording_capacity_limit: number;
+  stuck_orders: number;
+  open_complaints: number;
+  computed_at: string;
+};
+
+export type AdminOverview = {
+  latest: AdminDailyMetric | null;
+  series: AdminDailyMetric[];
+};
+
+export type AdminSupportReport = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  recording_id: string | null;
+  description: string;
+  diagnostic_log: Record<string, unknown>;
+  app_version: string | null;
+  platform: string | null;
+  status: "new" | "reviewing" | "resolved" | "closed";
+  assigned_to_user_id: string | null;
+  resolved_at: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export const adminD9Api = {
+  overview(days = 30) {
+    return apiClient.get<AdminOverview>(`/v1/admin/overview?days=${days}`);
+  },
+
+  listSupportReports(filters: {
+    cursor?: string | null;
+    status?: string;
+    assignedToUserId?: string;
+    query?: string;
+  } = {}) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (filters.cursor) query.set("cursor", filters.cursor);
+    if (filters.status) query.set("status", filters.status);
+    if (filters.assignedToUserId) {
+      query.set("assigned_to_user_id", filters.assignedToUserId);
+    }
+    if (filters.query) query.set("query", filters.query);
+    return apiClient.get<{
+      items: AdminSupportReport[];
+      next_cursor: string | null;
+      has_more: boolean;
+    }>(`/v1/admin/support-reports?${query.toString()}`);
+  },
+
+  getSupportReport(reportId: string) {
+    return apiClient.get<AdminSupportReport>(
+      `/v1/admin/support-reports/${encodeURIComponent(reportId)}`,
+    );
+  },
+
+  updateSupportReport(
+    reportId: string,
+    status: AdminSupportReport["status"],
+    assignedToUserId: string | null,
+    reason: string,
+  ) {
+    return apiClient.patch<AdminSupportReport>(
+      `/v1/admin/support-reports/${encodeURIComponent(reportId)}`,
+      {
+        json: {
+          status,
+          assigned_to_user_id: assignedToUserId,
+          reason,
+        },
+      },
+    );
+  },
+};
