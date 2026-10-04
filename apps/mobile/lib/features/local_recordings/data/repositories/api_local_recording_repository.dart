@@ -168,10 +168,8 @@ LocalRecordingSession _decodeSession(
       _ => throw FormatException('Unsupported local stream format: $format'),
     },
     streamHeaders: rawHeaders.map(
-      (String key, dynamic value) => MapEntry<String, String>(
-        key,
-        value as String,
-      ),
+      (String key, dynamic value) =>
+          MapEntry<String, String>(key, value as String),
     ),
   );
 }
@@ -218,8 +216,9 @@ LocalRecordingSummary _decodeSummary(dynamic json) {
       'partial' => RecordingStatus.partial,
       'recovered' => RecordingStatus.recovered,
       'failed' => RecordingStatus.failed,
-      final String value =>
-        throw FormatException('Unsupported local recording status: $value'),
+      final String value => throw FormatException(
+        'Unsupported local recording status: $value',
+      ),
     },
   );
 }
