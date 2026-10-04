@@ -8,6 +8,7 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/api/api_exception.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../entitlement/domain/models/entitlement.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_providers.dart';
 import 'recording_ui_helpers.dart';
