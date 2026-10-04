@@ -43,6 +43,32 @@ export type WatchListResponse = {
   pagination: Pagination;
 };
 
+export type EntitlementResponse = {
+  plan: "free" | "pro";
+  has_purchased: boolean;
+  cloud_minutes_available: number;
+  limits: {
+    max_watches: number;
+    max_concurrent_cloud_recordings: number;
+    cloud_retention_days: number;
+  };
+  watch_count: number;
+  local: {
+    enabled: boolean;
+    unlimited: boolean;
+    daily_minutes: number;
+    minutes_remaining: number;
+    resets_at: string;
+    rewards_used_today: number;
+    rewards_cap_per_day: number;
+    minutes_per_reward: number;
+    extensions_cap_per_recording: number;
+    max_concurrent_sessions: number;
+    second_slot_expires_at: string | null;
+  };
+  updated_at: string;
+};
+
 export type CreateWatchRequest = {
   source: Source;
   auto_record: boolean;
@@ -57,11 +83,13 @@ export type RecordingStatusValue =
   | "queued"
   | "resolving"
   | "waiting_live"
+  | "waiting_for_cloud_slot"
   | "recording"
   | "processing"
   | "uploading"
   | "completed"
   | "failed"
+  | "missed_no_cloud_slot"
   | "stop_requested"
   | "stopped";
 
@@ -203,6 +231,11 @@ export type CreditPackageResponse = {
   credits: number;
   price: Money;
   active: boolean;
+  store_product_ids: {
+    app_store: string;
+    google_play: string;
+  } | null;
+  cloud_minutes: number | null;
 };
 
 export type CreditPackageListResponse = {

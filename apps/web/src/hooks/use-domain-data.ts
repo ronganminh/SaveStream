@@ -20,6 +20,7 @@ export const domainQueryKeys = {
   paymentOrders: ["billing", "payment-orders"] as const,
   paymentOrder: (id: string) => ["billing", "payment-orders", id] as const,
   currentUser: ["account", "current-user"] as const,
+  entitlement: ["account", "entitlement"] as const,
   sessions: ["account", "sessions"] as const,
   usage: ["usage", "current"] as const,
 };
@@ -192,6 +193,16 @@ export function usePaymentOrderData(id: string | null | undefined, enabled = tru
       const status = current.state.data?.status;
       return status === "created" || status === "pending" ? 2500 : false;
     },
+  });
+  return { query, state: toResourceState(query) };
+}
+
+export function useEntitlementData(enabled = true) {
+  const signedIn = useSignedIn();
+  const query = useQuery({
+    queryKey: domainQueryKeys.entitlement,
+    queryFn: () => repositories.users.getEntitlement(),
+    enabled: signedIn && enabled,
   });
   return { query, state: toResourceState(query) };
 }

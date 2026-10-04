@@ -34,6 +34,9 @@ must("src/hooks/use-channel-mutations.ts", "useResumeChannelMutation");
 must("src/hooks/use-channel-mutations.ts", "useDeleteChannelMutation");
 must("src/hooks/use-channel-mutations.ts", "invalidateQueries");
 must("src/hooks/use-domain-data.ts", "useChannelData");
+must("src/hooks/use-domain-data.ts", "useEntitlementData");
+must("src/hooks/use-channel-mutations.ts", "WATCH_LIMIT_REACHED");
+must("src/hooks/use-channel-mutations.ts", "PLAN_REQUIRED");
 must("src/lib/tiktok-source.ts", "parseTikTokSource");
 
 const components = "src/components/app-components.tsx";
@@ -52,6 +55,8 @@ const commandSearch = block(
 mustIn("AddChannelDialog", addChannel, "useCreateChannelMutation()");
 mustIn("AddChannelDialog", addChannel, "createChannel.mutateAsync");
 mustIn("AddChannelDialog", addChannel, "channelsQuery.data");
+mustIn("AddChannelDialog", addChannel, "useEntitlementData");
+mustIn("AddChannelDialog", addChannel, "auto_record: !isFree");
 forbidIn("AddChannelDialog", addChannel, "channels.find(");
 forbidIn("AddChannelDialog", addChannel, "channels.some(");
 
@@ -66,6 +71,7 @@ forbidIn("CommandSearch", commandSearch, "channels.map(");
 
 const pages = "src/components/app-pages.tsx";
 const onboarding = block(pages, "export function OnboardingPage", "export function OverviewPage");
+const channelsPage = block(pages, "export function ChannelsPage", "export function ChannelDetailPage");
 const detailPage = block(pages, "export function ChannelDetailPage", "export function RecordingsPage");
 const detail = block(pages, "function ChannelDetail({", "function RecordingHeader()");
 
@@ -73,6 +79,10 @@ mustIn("OnboardingPage", onboarding, "useCreateChannelMutation()");
 mustIn("OnboardingPage", onboarding, "createChannel.mutateAsync");
 forbidIn("OnboardingPage", onboarding, "channels[");
 forbidIn("OnboardingPage", onboarding, "setTimeout(");
+
+mustIn("ChannelsPage", channelsPage, "limits.max_watches");
+mustIn("ChannelsPage", channelsPage, "watch_count");
+mustIn("ChannelsPage", channelsPage, "10 trial credits");
 
 mustIn("ChannelDetailPage", detailPage, "useChannelData(id)");
 mustIn("ChannelDetailPage", detailPage, "useRecordingsData()");

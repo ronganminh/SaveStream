@@ -143,6 +143,45 @@ const vi: Record<string, string> = {
   Processing: "Đang xử lý",
   Ready: "Sẵn sàng",
   Waiting: "Đang chờ",
+  Missed: "Bỏ lỡ",
+  "Recording missed": "Đã bỏ lỡ bản ghi",
+  "Waiting for a cloud recording slot": "Đang chờ ô ghi đám mây",
+  "The livestream ended before a cloud recording slot became available. No credits were charged.":
+    "Livestream đã kết thúc trước khi có ô ghi đám mây. Không bị trừ credit.",
+  "This page updates automatically as your recording is processed.":
+    "Trang này tự động cập nhật khi bản ghi được xử lý.",
+  "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.":
+    "Mua giờ đám mây một lần và dùng khi các kênh phát trực tiếp. Không thuê bao, không phí định kỳ.",
+  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.":
+    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng qua App Store hoặc Google Play.",
+  "Free web accounts get 10 trial credits after email verification and can monitor up to 3 channels.":
+    "Tài khoản web Free nhận 10 credit dùng thử sau khi xác minh email và có thể theo dõi tối đa 3 kênh.",
+  "The Free mobile app may show banner and rewarded ads. Rewarded ads can grant additional local-recording time after server-side verification.":
+    "Ứng dụng mobile Free có thể hiển thị quảng cáo banner và quảng cáo thưởng. Quảng cáo thưởng có thể cấp thêm thời gian ghi trên máy sau khi máy chủ xác minh.",
+  "Mobile purchases are one-time purchases processed by the App Store or Google Play; web purchases are processed by Lemon Squeezy.":
+    "Mua trên mobile là mua một lần qua App Store hoặc Google Play; mua trên web được xử lý bởi Lemon Squeezy.",
+  "Mobile devices may register a device identifier, push token, platform, and locale so SaveStream can deliver notifications and open the correct screen.":
+    "Thiết bị mobile có thể đăng ký mã thiết bị, push token, nền tảng và ngôn ngữ để SaveStream gửi thông báo và mở đúng màn hình.",
+  "The Free mobile app uses advertising services for banner and rewarded ads. Those services may receive device or advertising identifiers needed to deliver and verify ads.":
+    "Ứng dụng mobile Free dùng dịch vụ quảng cáo cho banner và quảng cáo thưởng. Các dịch vụ này có thể nhận mã thiết bị hoặc mã quảng cáo cần thiết để phân phối và xác minh quảng cáo.",
+  "Free mobile advertising": "Quảng cáo trên ứng dụng mobile Free",
+  "Advertising in the Free mobile app": "Quảng cáo trong ứng dụng mobile Free",
+  "Apple App Store and Google Play — processing one-time mobile purchases and store-managed refunds.":
+    "Apple App Store và Google Play — xử lý giao dịch mua một lần trên mobile và hoàn tiền do cửa hàng quản lý.",
+  "Google services — rewarded-ad verification in the Free mobile app and push notification delivery.":
+    "Dịch vụ Google — xác minh quảng cáo thưởng trong ứng dụng mobile Free và gửi thông báo đẩy.",
+  "One-time cloud-hour purchases. No subscription and nothing renews automatically.":
+    "Mua giờ đám mây một lần. Không thuê bao và không tự động gia hạn.",
+  "Free web trial": "Dùng thử Free trên web",
+  "No recurring fee": "Không phí định kỳ",
+  "Trial credits": "Credit dùng thử",
+  "10 minutes of cloud recording": "10 phút ghi đám mây",
+  "Free web limit": "Giới hạn web Free",
+  "One-time hour packs": "Gói giờ mua một lần",
+  "Credits never expire. Buy more whenever you need additional cloud recording time.":
+    "Credit không hết hạn. Mua thêm khi bạn cần thêm thời gian ghi đám mây.",
+  "Buy once": "Mua một lần",
+  "Mobile purchases": "Mua trên mobile",
   Offline: "Ngoại tuyến",
   Paused: "Tạm dừng",
   Error: "Lỗi",

@@ -130,6 +130,48 @@ for (const secretOrDirectProvider of [
   }
 }
 
+
+// V2 B7: one-time hour catalog and legal copy must not regress to subscriptions.
+for (const text of [
+  'name: "Starter"',
+  "credits: 3_000",
+  "amount_minor: 999",
+  'name: "Standard"',
+  "credits: 9_000",
+  "amount_minor: 2_499",
+  'name: "Premium"',
+  "credits: 24_000",
+  "amount_minor: 5_999",
+]) {
+  must("src/repositories/demo.ts", text);
+}
+for (const text of [
+  "formatApproxHours",
+  "One-time cloud-hour purchases",
+  "10 trial credits",
+  "App Store or Google Play",
+]) {
+  must("src/components/app-pages.tsx", text);
+}
+for (const text of [
+  "Manage subscription",
+  "Cancel subscription",
+  "Resume subscription",
+  "Pro · Monthly",
+]) {
+  forbid("src/components/app-pages.tsx", text);
+}
+for (const text of [
+  'h: t("Free mobile advertising")',
+  'h: t("Advertising in the Free mobile app")',
+  "App Store or Google Play",
+  "push token",
+]) {
+  must("src/components/app-pages-more.tsx", text);
+}
+must("src/lib/preferences.tsx", 'useState<Language>("en")');
+must("src/lib/preferences.tsx", '"The same Starter, Standard, and Premium hour packs');
+
 const deployDocs = read("../../deploy/vps/EXTERNAL_PROVIDERS.md");
 for (const text of [
   "Lemon Squeezy Test Mode",

@@ -31,6 +31,10 @@ const FORBIDDEN = [
   "does not invent",
   "Sign in to view current packages",
   "Live public status is not available yet",
+  "Manage subscription",
+  "Cancel subscription",
+  "Resume subscription",
+  "Pro · Monthly",
 ];
 const failures = [];
 const fail = (m) => failures.push(m);

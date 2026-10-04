@@ -2,20 +2,17 @@ import { useEffect, useSyncExternalStore } from "react";
 
 import { useNotificationsData } from "@/hooks/use-notifications";
 import { isDemoMode } from "@/lib/app-config";
-import {
-  notifications as demoNotifications,
-  type Notification,
-} from "@/mocks/fixtures";
-import { repositories } from "@/repositories";
+import { notifications as demoNotifications } from "@/mocks/fixtures";
+import { repositories, type NotificationModel } from "@/repositories";
 
-let state: Notification[] = isDemoMode
+let state: NotificationModel[] = isDemoMode
   ? demoNotifications.map((item) => ({ ...item }))
   : [];
 
 const subscribers = new Set<() => void>();
 const emit = () => subscribers.forEach((subscriber) => subscriber());
 
-function replaceState(next: Notification[]) {
+function replaceState(next: NotificationModel[]) {
   state = next.map((item) => ({ ...item }));
   emit();
 }
