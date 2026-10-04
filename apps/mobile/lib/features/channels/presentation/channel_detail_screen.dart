@@ -20,8 +20,8 @@ import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../domain/models/channel_detail_view_model.dart';
 import '../domain/models/watch_summary.dart';
 import 'cloud_hours_upsell_sheet.dart';
-import 'pro_manual_record_sheet.dart';
 import 'controllers/watch_providers.dart';
+import 'pro_manual_record_sheet.dart';
 
 class ChannelDetailScreen extends ConsumerStatefulWidget {
   const ChannelDetailScreen({required this.watchId, super.key});
