@@ -316,7 +316,7 @@ class CloudRecordingLifecycleCard extends StatelessWidget {
                 label: context.l10n.cloudLabel,
               ),
               const Spacer(),
-              SsLiveBadge(isLive: true),
+              const SsLiveBadge(isLive: true),
             ],
           ),
           const SizedBox(height: SsSpacing.md),
