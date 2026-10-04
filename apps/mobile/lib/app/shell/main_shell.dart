@@ -56,29 +56,29 @@ class MainShell extends ConsumerWidget {
             child: NavigationBar(
               height: textScale >= 1.4 ? 64 : null,
               labelBehavior: navigationLabelBehavior,
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: (int index) {
-              navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              );
-            },
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: (int index) {
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
               destinations: <NavigationDestination>[
                 NavigationDestination(
-                icon: const Icon(Icons.home_outlined),
-                selectedIcon: const Icon(Icons.home_rounded),
-                label: l10n.navHome,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.visibility_outlined),
-                selectedIcon: const Icon(Icons.visibility_rounded),
-                label: l10n.navChannels,
-              ),
-              NavigationDestination(
-                icon: const Icon(Icons.video_library_outlined),
-                selectedIcon: const Icon(Icons.video_library_rounded),
-                label: l10n.navRecordings,
-              ),
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: const Icon(Icons.home_rounded),
+                  label: l10n.navHome,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.visibility_outlined),
+                  selectedIcon: const Icon(Icons.visibility_rounded),
+                  label: l10n.navChannels,
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.video_library_outlined),
+                  selectedIcon: const Icon(Icons.video_library_rounded),
+                  label: l10n.navRecordings,
+                ),
                 NavigationDestination(
                   icon: const Icon(Icons.settings_outlined),
                   selectedIcon: const Icon(Icons.settings_rounded),
