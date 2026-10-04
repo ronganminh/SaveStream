@@ -1132,5 +1132,6 @@
       }
     }
   },
-  "secondLocalSlotBusy": "Cả hai slot Local đang được sử dụng."
+  "secondLocalSlotBusy": "Cả hai slot Local đang được sử dụng.",
+  "secondLocalSlotReopenAction": "Mở lại slot Local #2"
 }
