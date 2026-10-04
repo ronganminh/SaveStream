@@ -42,10 +42,7 @@ void main() {
     });
 
     test('passes reward id into rewarded start', () async {
-      await controller.start(
-        watchId: 'watch_rewarded',
-        rewardId: 'reward_123',
-      );
+      await controller.start(watchId: 'watch_rewarded', rewardId: 'reward_123');
 
       expect(repository.startRewardId, 'reward_123');
     });
@@ -76,10 +73,7 @@ void main() {
     test('rejects a second local session while one is active', () async {
       await controller.start(watchId: 'watch_first');
 
-      expect(
-        () => controller.start(watchId: 'watch_second'),
-        throwsStateError,
-      );
+      expect(() => controller.start(watchId: 'watch_second'), throwsStateError);
       expect(repository.startCalls, 1);
     });
 
@@ -167,10 +161,7 @@ final class _RecordingRepositorySpy implements LocalRecordingRepository {
   }
 
   @override
-  Future<LocalRecordingSession> extend(
-    String sessionId, {
-    String? rewardId,
-  }) {
+  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId}) {
     throw UnimplementedError();
   }
 
