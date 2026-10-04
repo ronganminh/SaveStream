@@ -14,8 +14,8 @@ import '../../channels/presentation/controllers/watch_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../domain/models/local_recording_models.dart';
 import '../../recordings/domain/models/recording_summary.dart';
+import '../domain/models/local_recording_models.dart';
 import 'controllers/local_recording_controller.dart';
 
 class LocalRecordingScreen extends ConsumerWidget {
@@ -56,14 +56,15 @@ class LocalRecordingScreen extends ConsumerWidget {
       );
     }
 
-    final LocalRecorderState state = recorder.value ??
+    final LocalRecorderState state =
+        recorder.value ??
         const LocalRecorderState(phase: LocalRecorderPhase.starting);
     final LocalRecordingSession? session = controller.activeSession;
     final int remainingSeconds = session == null
         ? 0
         : (session.grantedSeconds - state.recordedSeconds)
-              .clamp(0, session.grantedSeconds)
-              .toInt();
+            .clamp(0, session.grantedSeconds)
+            .toInt();
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +139,10 @@ class LocalRecordingScreen extends ConsumerWidget {
                         title: context.l10n.localRecordingFreeRemainingTitle,
                         value: _formatCountdown(remainingSeconds),
                         subtitle: context.l10n.localRecordingRewardCaps(
-                          entitlement.requireValue.local.extensionsCapPerRecording,
+                          entitlement
+                              .requireValue
+                              .local
+                              .extensionsCapPerRecording,
                           entitlement.requireValue.local.rewardsUsedToday,
                           entitlement.requireValue.local.rewardsCapPerDay,
                         ),
