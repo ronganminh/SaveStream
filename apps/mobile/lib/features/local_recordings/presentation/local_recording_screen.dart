@@ -1,0 +1,259 @@
+/// R02-android/R02-ios/R03/R04 — Active Local recording states.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../app/theme/ss_tokens.dart';
+import '../../../core/formatters/v2_formatters.dart';
+import '../../../core/widgets/savestream_widgets.dart';
+import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/local_recorder.dart';
+import '../../../platform/platform_providers.dart';
+import '../../channels/domain/models/watch_summary.dart';
+import '../../channels/presentation/controllers/watch_providers.dart';
+import '../../devices/domain/models/device_registration.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../recordings/domain/models/recording_summary.dart';
+import 'controllers/local_recording_controller.dart';
+
+class LocalRecordingScreen extends ConsumerWidget {
+  const LocalRecordingScreen({required this.watchId, super.key});
+
+  final String watchId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<WatchSummary?> watch = ref.watch(
+      watchDetailProvider(watchId),
+    );
+    final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
+    final AsyncValue<LocalRecorderState> recorder = ref.watch(
+      localRecorderStateProvider,
+    );
+    final LocalRecordingController controller = ref.watch(
+      localRecordingControllerProvider,
+    );
+
+    if (!watch.hasValue || !entitlement.hasValue) {
+      return const Scaffold(
+        body: SafeArea(child: _LocalRecordingSkeleton()),
+      );
+    }
+    final WatchSummary? creator = watch.value;
+    if (creator == null) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: SsEmptyState(
+              icon: Icons.person_off_outlined,
+              title: context.l10n.channelNotFoundTitle,
+              message: context.l10n.channelNotFoundBody,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final LocalRecorderState state = recorder.value ??
+        const LocalRecorderState(phase: LocalRecorderPhase.starting);
+    final LocalRecordingSession? session = controller.activeSession;
+    final int remainingSeconds = session == null
+        ? 0
+        : (session.grantedSeconds - state.recordedSeconds).clamp(
+            0,
+            session.grantedSeconds,
+          );
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded),
+        ),
+        title: Text(context.l10n.localRecordingActiveTitle),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(SsSpacing.lg),
+          children: <Widget>[
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 680),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                creator.creatorDisplayName,
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              Text(creator.creatorUsername),
+                            ],
+                          ),
+                        ),
+                        const SsLiveBadge(isLive: true),
+                      ],
+                    ),
+                    const SizedBox(height: SsSpacing.lg),
+                    SsLocationChip(
+                      engine: Engine.local,
+                      label: context.l10n.localLabel,
+                    ),
+                    const SizedBox(height: SsSpacing.lg),
+                    Semantics(
+                      label: context.l10n.localRecordingElapsedSemantics(
+                        formatDurationHms(
+                          Duration(seconds: state.recordedSeconds),
+                        ),
+                      ),
+                      child: Text(
+                        formatDurationHms(
+                          Duration(seconds: state.recordedSeconds),
+                        ),
+                        style: Theme.of(context).textTheme.displaySmall,
+                      ),
+                    ),
+                    const SizedBox(height: SsSpacing.xs),
+                    Text(
+                      context.l10n.localRecordingSavedHere(
+                        formatFileSize(state.sizeBytes),
+                      ),
+                    ),
+                    const SizedBox(height: SsSpacing.lg),
+                    _PhaseAlert(
+                      state: state,
+                      creatorName: creator.creatorDisplayName,
+                    ),
+                    if (!entitlement.requireValue.local.unlimited &&
+                        session != null) ...<Widget>[
+                      const SizedBox(height: SsSpacing.lg),
+                      SsQuotaCard(
+                        title: context.l10n.localRecordingFreeRemainingTitle,
+                        value: _formatCountdown(remainingSeconds),
+                        subtitle: context.l10n.localRecordingRewardCaps(
+                          entitlement.requireValue.local.extensionsCapPerRecording,
+                          entitlement.requireValue.local.rewardsUsedToday,
+                          entitlement.requireValue.local.rewardsCapPerDay,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: SsSpacing.lg),
+                    _PlatformAlert(
+                      platform: ref.watch(deviceInfoServiceProvider).platform,
+                    ),
+                    const SizedBox(height: SsSpacing.lg),
+                    SsPrimaryButton(
+                      label: context.l10n.localRecordingStopAction,
+                      icon: Icons.stop_circle_outlined,
+                      onPressed:
+                          session == null ||
+                              state.phase == LocalRecorderPhase.finalizing
+                          ? null
+                          : () async {
+                              await controller.stop(
+                                status: RecordingStatus.completed,
+                              );
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatCountdown(int seconds) {
+    final int minutes = seconds ~/ 60;
+    final int rest = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:'
+        '${rest.toString().padLeft(2, '0')}';
+  }
+}
+
+class _PhaseAlert extends StatelessWidget {
+  const _PhaseAlert({required this.state, required this.creatorName});
+
+  final LocalRecorderState state;
+  final String creatorName;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (state.phase) {
+      LocalRecorderPhase.starting => SsInlineAlert(
+        title: context.l10n.recordingStatusStarting,
+        message: context.l10n.localRecordingConnectingBody(creatorName),
+      ),
+      LocalRecorderPhase.reconnecting => SsInlineAlert(
+        title: context.l10n.recordingStatusReconnecting,
+        message: context.l10n.recordingReconnectingBody,
+        tone: SsInlineAlertTone.warning,
+      ),
+      LocalRecorderPhase.finalizing => SsInlineAlert(
+        title: context.l10n.recordingStatusFinalizing,
+        message: context.l10n.recordingFinalizingBody,
+      ),
+      LocalRecorderPhase.error => SsInlineAlert(
+        title: context.l10n.localRecordingErrorTitle,
+        message: state.errorMessage,
+        tone: SsInlineAlertTone.error,
+      ),
+      LocalRecorderPhase.idle ||
+      LocalRecorderPhase.recording ||
+      LocalRecorderPhase.stopped => SsInlineAlert(
+        title: context.l10n.localRecordingStatusActive,
+        message: context.l10n.localRecordingSavedHere(
+          formatFileSize(state.sizeBytes),
+        ),
+        tone: SsInlineAlertTone.success,
+      ),
+    };
+  }
+}
+
+class _PlatformAlert extends StatelessWidget {
+  const _PlatformAlert({required this.platform});
+
+  final DevicePlatform platform;
+
+  @override
+  Widget build(BuildContext context) {
+    if (platform == DevicePlatform.android) {
+      return SsInlineAlert(
+        title: context.l10n.localRecordingAndroidActiveTitle,
+        message: context.l10n.localRecordingAndroidActiveBody,
+      );
+    }
+    return SsInlineAlert(
+      title: context.l10n.nativeKeepAppOpenReminderTitle,
+      message: context.l10n.localRecordingIosActiveBody,
+    );
+  }
+}
+
+class _LocalRecordingSkeleton extends StatelessWidget {
+  const _LocalRecordingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      children: const <Widget>[
+        SsSkeleton(height: 72, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 140, radius: SsRadii.lg),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 110, radius: SsRadii.lg),
+      ],
+    );
+  }
+}
