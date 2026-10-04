@@ -116,10 +116,7 @@ class _RecordingPlatformBridgeState
       });
     }
 
-    if (active &&
-        state != null &&
-        creatorName != null &&
-        entitlement != null) {
+    if (active && state != null && creatorName != null && entitlement != null) {
       final int rawRemaining = session.grantedSeconds - state.recordedSeconds;
       final int remaining = rawRemaining > 0 ? rawRemaining : 0;
       final String signature =
