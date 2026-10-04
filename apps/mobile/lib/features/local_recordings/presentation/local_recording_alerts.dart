@@ -17,6 +17,7 @@ class LocalRecordingAlerts extends StatefulWidget {
     required this.remainingSeconds,
     required this.isUnlimited,
     required this.minutesPerReward,
+    required this.extensionsCap,
     required this.rewardState,
     this.onRewardRequested,
     this.onMinuteWarningEntered,
@@ -28,6 +29,7 @@ class LocalRecordingAlerts extends StatefulWidget {
   final int remainingSeconds;
   final bool isUnlimited;
   final int minutesPerReward;
+  final int extensionsCap;
   final RewardedMinutesState rewardState;
   final VoidCallback? onRewardRequested;
   final VoidCallback? onMinuteWarningEntered;
@@ -149,7 +151,7 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
         title: context.l10n.rewardMinutesSuccessTitle(widget.minutesPerReward),
         message: context.l10n.rewardMinutesSuccessBody(
           widget.rewardState.extensionCount,
-          widget.rewardState.extensionCount,
+          widget.extensionsCap,
         ),
         tone: SsInlineAlertTone.success,
       ),
