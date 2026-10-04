@@ -64,6 +64,8 @@ class LocalRecordingSummary {
     required this.recordedSeconds,
     required this.sizeBytes,
     required this.status,
+    this.filePath,
+    this.fileAvailable = true,
   });
 
   final String id;
@@ -76,4 +78,6 @@ class LocalRecordingSummary {
   final int recordedSeconds;
   final int sizeBytes;
   final RecordingStatus status;
+  final String? filePath;
+  final bool fileAvailable;
 }

@@ -6,332 +6,188 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../domain/models/recording_summary.dart';
-import 'controllers/recording_providers.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import 'controllers/recording_library_controller.dart';
+import 'models/recording_library_item.dart';
 import 'recording_ui_helpers.dart';
 
-class RecordingsScreen extends ConsumerWidget {
+/// L01 — Unified local + cloud recording library.
+class RecordingsScreen extends ConsumerStatefulWidget {
   const RecordingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final AsyncValue<RecordingListState> recordings = ref.watch(
-      recordingListControllerProvider,
+  ConsumerState<RecordingsScreen> createState() => _RecordingsScreenState();
+}
+
+class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
+  RecordingLibraryStorage? _storage;
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final AsyncValue<List<RecordingLibraryItem>> library = ref.watch(
+      recordingLibraryProvider,
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.recordingsTitle)),
+      appBar: AppBar(title: Text(context.l10n.recordingsTitle)),
       body: SafeArea(
-        child: recordings.when(
+        child: library.when(
           loading: () => const _RecordingsSkeleton(),
           error: (Object error, StackTrace stackTrace) => Center(
             child: SsAsyncErrorState(
               error: error,
-              onRetry: () =>
-                  ref.read(recordingListControllerProvider.notifier).refresh(),
+              onRetry: () => ref.invalidate(recordingLibraryProvider),
             ),
           ),
-          data: (RecordingListState state) => _RecordingListBody(state: state),
+          data: (List<RecordingLibraryItem> items) {
+            final String normalized = _query.trim().toLowerCase();
+            final List<RecordingLibraryItem> visible = items
+                .where((RecordingLibraryItem item) {
+                  final bool storageMatches =
+                      _storage == null || item.storage == _storage;
+                  final bool queryMatches =
+                      normalized.isEmpty ||
+                      item.creatorDisplayName.toLowerCase().contains(
+                        normalized,
+                      ) ||
+                      item.creatorHandle.toLowerCase().contains(normalized);
+                  return storageMatches && queryMatches;
+                })
+                .toList(growable: false);
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(recordingLibraryProvider);
+                await ref.read(recordingLibraryProvider.future);
+              },
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  SsSpacing.lg,
+                  SsSpacing.md,
+                  SsSpacing.lg,
+                  SsSpacing.xxl,
+                ),
+                children: <Widget>[
+                  TextField(
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      hintText: context.l10n.recordingSearchHint,
+                    ),
+                    onChanged: (String value) => setState(() => _query = value),
+                  ),
+                  const SizedBox(height: SsSpacing.md),
+                  Wrap(
+                    spacing: SsSpacing.sm,
+                    children: <Widget>[
+                      ChoiceChip(
+                        label: Text(context.l10n.recordingFilterAll),
+                        selected: _storage == null,
+                        onSelected: (_) => setState(() => _storage = null),
+                      ),
+                      ChoiceChip(
+                        label: Text(context.l10n.localLabel),
+                        selected: _storage == RecordingLibraryStorage.local,
+                        onSelected: (_) => setState(
+                          () => _storage = RecordingLibraryStorage.local,
+                        ),
+                      ),
+                      ChoiceChip(
+                        label: Text(context.l10n.cloudLabel),
+                        selected: _storage == RecordingLibraryStorage.cloud,
+                        onSelected: (_) => setState(
+                          () => _storage = RecordingLibraryStorage.cloud,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: SsSpacing.lg),
+                  if (visible.isEmpty)
+                    SsEmptyState(
+                      icon: Icons.video_library_outlined,
+                      title: context.l10n.emptyRecordingsTitle,
+                      message: context.l10n.emptyRecordingsBody,
+                    )
+                  else
+                    for (final RecordingLibraryItem item
+                        in visible) ...<Widget>[
+                      _LibraryCard(item: item),
+                      const SizedBox(height: SsSpacing.md),
+                    ],
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _RecordingListBody extends ConsumerWidget {
-  const _RecordingListBody({required this.state});
+class _LibraryCard extends StatelessWidget {
+  const _LibraryCard({required this.item});
 
-  final RecordingListState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-
-    return Column(
-      children: <Widget>[
-        if (state.isRefreshing)
-          Semantics(
-            label: l10n.refreshingLabel,
-            child: const LinearProgressIndicator(minHeight: 2),
-          ),
-        if (state.refreshError != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              SsSpacing.lg,
-              SsSpacing.sm,
-              SsSpacing.lg,
-              0,
-            ),
-            child: SsInlineAsyncError(
-              error: state.refreshError!,
-              onRetry: () =>
-                  ref.read(recordingListControllerProvider.notifier).refresh(),
-            ),
-          ),
-        SizedBox(
-          height: 58,
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(
-              SsSpacing.lg,
-              SsSpacing.sm,
-              SsSpacing.lg,
-              SsSpacing.sm,
-            ),
-            scrollDirection: Axis.horizontal,
-            itemCount: RecordingFilter.values.length,
-            separatorBuilder: (_, _) => const SizedBox(width: SsSpacing.sm),
-            itemBuilder: (BuildContext context, int index) {
-              final RecordingFilter filter = RecordingFilter.values[index];
-              return ChoiceChip(
-                selected: state.filter == filter,
-                label: Text(recordingFilterLabel(l10n, filter)),
-                onSelected: (_) => ref
-                    .read(recordingListControllerProvider.notifier)
-                    .setFilter(filter),
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: () =>
-                ref.read(recordingListControllerProvider.notifier).refresh(),
-            child: state.items.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.all(SsSpacing.xl),
-                    children: <Widget>[
-                      const SizedBox(height: 120),
-                      SsEmptyState(
-                        icon: Icons.video_library_outlined,
-                        title: l10n.emptyRecordingsTitle,
-                        message: _emptyMessage(l10n, state.filter),
-                      ),
-                    ],
-                  )
-                : ListView.separated(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(
-                      SsSpacing.lg,
-                      SsSpacing.sm,
-                      SsSpacing.lg,
-                      SsSpacing.xxl,
-                    ),
-                    itemCount: state.items.length + 1,
-                    separatorBuilder: (_, _) =>
-                        const SizedBox(height: SsSpacing.md),
-                    itemBuilder: (BuildContext context, int index) {
-                      if (index == state.items.length) {
-                        return _LoadMoreSection(state: state);
-                      }
-                      return _RecordingCard(recording: state.items[index]);
-                    },
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecordingCard extends StatelessWidget {
-  const _RecordingCard({required this.recording});
-
-  final RecordingSummary recording;
+  final RecordingLibraryItem item;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final bool local = item.storage == RecordingLibraryStorage.local;
+    final String route = local
+        ? AppRoutes.localRecordingDetail(item.id)
+        : AppRoutes.recordingDetail(item.id);
 
     return SsCard(
       child: InkWell(
-        onTap: () => context.push(AppRoutes.recordingDetail(recording.id)),
+        onTap: () => context.push(route),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: SsSpacing.xs),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  SsAvatar(label: recording.creatorDisplayName, radius: 24),
-                  const SizedBox(width: SsSpacing.md),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          recording.creatorDisplayName,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: SsSpacing.xs),
-                        Text(
-                          recording.creatorUsername,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: colors.onSurfaceVariant),
-                        ),
-                      ],
+                    child: Text(
+                      item.creatorDisplayName,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
+                  ),
+                  SsLocationChip(
+                    engine: local ? Engine.local : Engine.cloud,
+                    label: local
+                        ? context.l10n.localLabel
+                        : context.l10n.cloudLabel,
                   ),
                 ],
               ),
+              const SizedBox(height: SsSpacing.xs),
+              Text(item.creatorHandle),
               const SizedBox(height: SsSpacing.sm),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: SsStatusChip(
-                  label: recordingStatusLabel(l10n, recording.status),
-                  tone: recordingStatusTone(recording.status),
-                  icon: recording.status == RecordingStatus.recording
-                      ? Icons.fiber_manual_record_rounded
-                      : null,
+              SsStatusChip(
+                label: recordingStatusLabel(context.l10n, item.status),
+                tone: recordingStatusTone(item.status),
+              ),
+              if (item.isCrossDevice) ...<Widget>[
+                const SizedBox(height: SsSpacing.sm),
+                Text(
+                  context.l10n.recordingCrossDeviceValue(item.deviceName ?? ''),
                 ),
-              ),
-              const SizedBox(height: SsSpacing.md),
-              Text(
-                recordingStatusDescription(l10n, recording.status),
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
-              ),
-              const SizedBox(height: SsSpacing.md),
-              Wrap(
-                spacing: SsSpacing.lg,
-                runSpacing: SsSpacing.sm,
-                children: <Widget>[
-                  _CardMeta(
-                    label: l10n.recordingStartedLabel,
-                    value: recordingTimestamp(context, recording.startedAt),
-                  ),
-                  _CardMeta(
-                    label: l10n.recordingDurationLabel,
-                    value: formatDuration(recording.durationSeconds),
-                  ),
-                  _CardMeta(
-                    label: l10n.recordingSizeLabel,
-                    value: formatBytes(
-                      recording.sizeBytes ?? recording.bytesRecorded,
-                    ),
-                  ),
-                  _CardMeta(
-                    label: l10n.recordingCostLabel,
-                    value: formatCredits(recording.costCredits),
-                  ),
-                ],
-              ),
-              const SizedBox(height: SsSpacing.md),
-              Wrap(
-                spacing: SsSpacing.sm,
-                runSpacing: SsSpacing.sm,
-                children: <Widget>[
-                  SsStatusChip(
-                    label: recording.artifactReady
-                        ? l10n.artifactReadyLabel
-                        : l10n.artifactPendingLabel,
-                    tone: recording.artifactReady
-                        ? SsStatusTone.success
-                        : SsStatusTone.neutral,
-                    icon: Icons.inventory_2_outlined,
-                  ),
-                  SsStatusChip(
-                    label: recording.thumbnailReady
-                        ? l10n.thumbnailReadyLabel
-                        : l10n.thumbnailPendingLabel,
-                    tone: recording.thumbnailReady
-                        ? SsStatusTone.success
-                        : SsStatusTone.neutral,
-                    icon: Icons.image_outlined,
-                  ),
-                ],
-              ),
-              if (recording.progress != null &&
-                  recording.status != RecordingStatus.completed) ...<Widget>[
-                const SizedBox(height: SsSpacing.md),
-                LinearProgressIndicator(value: recording.progress),
+                Text(context.l10n.recordingCrossDeviceUnavailable),
               ],
+              if (item.issue ==
+                  RecordingLibraryIssue.missedNoCloudSlot) ...<Widget>[
+                const SizedBox(height: SsSpacing.sm),
+                Text(context.l10n.recordingMissedNoCloudSlotBody),
+              ],
+              const SizedBox(height: SsSpacing.sm),
+              Text(
+                '${formatDuration(item.durationSeconds)} · ${formatBytes(item.sizeBytes)}',
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
-}
-
-class _CardMeta extends StatelessWidget {
-  const _CardMeta({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      width: 145,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 2),
-          Text(value, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoadMoreSection extends ConsumerWidget {
-  const _LoadMoreSection({required this.state});
-
-  final RecordingListState state;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-
-    if (state.nextCursor == null && state.loadMoreError == null) {
-      return Padding(
-        padding: const EdgeInsets.only(top: SsSpacing.sm),
-        child: Center(
-          child: Text(
-            l10n.recordingEndOfListLabel,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ),
-      );
-    }
-
-    if (state.isLoadingMore) {
-      return const Padding(
-        padding: EdgeInsets.all(SsSpacing.lg),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (state.loadMoreError != null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: SsSpacing.sm),
-        child: SsInlineAsyncError(
-          error: state.loadMoreError!,
-          messageOverride: l10n.recordingLoadMoreFailed,
-          onRetry: () =>
-              ref.read(recordingListControllerProvider.notifier).loadMore(),
-        ),
-      );
-    }
-
-    return TextButton.icon(
-      onPressed: () =>
-          ref.read(recordingListControllerProvider.notifier).loadMore(),
-      icon: const Icon(Icons.expand_more_rounded),
-      label: Text(l10n.loadMoreAction),
     );
   }
 }
@@ -344,23 +200,14 @@ class _RecordingsSkeleton extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(SsSpacing.lg),
       children: const <Widget>[
-        SsSkeleton(width: 260, height: 36, radius: SsRadii.md),
+        SsSkeleton(height: 56, radius: SsRadii.md),
+        SizedBox(height: SsSpacing.md),
+        SsSkeleton(height: 40, radius: SsRadii.md),
         SizedBox(height: SsSpacing.lg),
-        SsSkeleton(height: 220, radius: SsRadii.lg),
+        SsSkeleton(height: 180, radius: SsRadii.lg),
         SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 220, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 220, radius: SsRadii.lg),
+        SsSkeleton(height: 180, radius: SsRadii.lg),
       ],
     );
   }
-}
-
-String _emptyMessage(AppLocalizations l10n, RecordingFilter filter) {
-  return switch (filter) {
-    RecordingFilter.all => l10n.emptyRecordingsBody,
-    RecordingFilter.active => l10n.emptyActiveRecordingsBody,
-    RecordingFilter.completed => l10n.emptyCompletedRecordingsBody,
-    RecordingFilter.failed => l10n.emptyFailedRecordingsBody,
-  };
 }

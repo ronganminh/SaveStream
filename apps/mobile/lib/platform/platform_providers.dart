@@ -8,6 +8,7 @@ import 'contracts/local_recovery_service.dart';
 import 'contracts/purchase_service.dart';
 import 'contracts/push_service.dart';
 import 'contracts/recording_platform_service.dart';
+import 'contracts/share_service.dart';
 import 'fakes/fake_ads_service.dart';
 import 'fakes/fake_connectivity_service.dart';
 import 'fakes/fake_device_info_service.dart';
@@ -48,3 +49,7 @@ final Provider<ConnectivityService> connectivityServiceProvider =
 
 final Provider<DeviceInfoService> deviceInfoServiceProvider =
     Provider<DeviceInfoService>((Ref ref) => const FakeDeviceInfoService());
+
+final Provider<ShareService> shareServiceProvider = Provider<ShareService>(
+  (Ref ref) => FakeShareService(),
+);

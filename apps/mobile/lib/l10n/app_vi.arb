@@ -1450,5 +1450,22 @@
   "settingsAndroidRecordingSubtitle": "Hướng dẫn pin và thiết bị",
   "settingsIosRecordingTitle": "Record trên iPhone",
   "settingsIosRecordingSubtitle": "Giữ app mở và khôi phục",
-  "settingsRecordingSectionTitle": "RECORDING"
+  "settingsRecordingSectionTitle": "RECORDING",
+  "recordingSearchHint": "Tìm theo creator",
+  "recordingCrossDeviceValue": "Đã ghi trên {device}",
+  "@recordingCrossDeviceValue": {"placeholders": {"device": {"type": "String"}}},
+  "recordingCrossDeviceUnavailable": "Không có trên máy này. Không thể phát, chia sẻ hoặc xoá tại đây.",
+  "recordingLocalFileMissing": "File trên máy đã bị di chuyển hoặc xoá. SaveStream không thể phát hoặc chia sẻ file này.",
+  "shareRecordingAction": "Chia sẻ bản ghi",
+  "deleteLocalRecordingAction": "Xoá khỏi thiết bị này",
+  "cloudRecordingExpiresValue": "Lưu đến {date}",
+  "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
+  "cloudRecordingExpiringSoon": "Bản ghi cloud này sẽ hết hạn trong vòng 3 ngày. Hãy tải về nếu bạn muốn giữ bản trên máy.",
+  "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống.",
+  "recordingDownloadedLabel": "Đã tải về",
+  "recordingDownloadedBody": "Đã lưu trên thiết bị này. Bạn có thể phát hoặc chia sẻ bản trên máy.",
+  "recordingDownloadingBytes": "Đang tải {done} / {total}",
+  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "deleteCloudRecordingAction": "Xoá bản ghi cloud",
+  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải"
 }

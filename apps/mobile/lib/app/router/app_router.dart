@@ -32,7 +32,9 @@ import '../../features/onboarding/presentation/intro_watch_detect_screen.dart';
 import '../../features/onboarding/presentation/ios_recording_info_screen.dart';
 import '../../features/onboarding/presentation/notification_rationale_screen.dart';
 import '../../features/onboarding/presentation/welcome_screen.dart';
+import '../../features/recordings/presentation/local_recording_detail_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
+import '../../features/recordings/presentation/recording_player_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
 import '../../features/settings/presentation/android_recording_background_screen.dart';
@@ -315,6 +317,26 @@ GoRouter createAppRouter({
             state: liveNotificationStateFromValue(
               state.uri.queryParameters['state'],
             ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recordings/player/:id',
+        builder: (BuildContext context, GoRouterState state) {
+          return RecordingPlayerScreen(
+            title:
+                state.uri.queryParameters['title'] ??
+                context.l10n.recordingDetailTitle,
+            durationSeconds:
+                int.tryParse(state.uri.queryParameters['duration'] ?? '') ?? 0,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/recordings/local-file/:id',
+        builder: (BuildContext context, GoRouterState state) {
+          return LocalRecordingDetailScreen(
+            recordingId: state.pathParameters['id']!,
           );
         },
       ),
