@@ -8,7 +8,7 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.admin.settings_d4 import RuntimeSettingsService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
 from app.infrastructure.db.local_recording_models import (
