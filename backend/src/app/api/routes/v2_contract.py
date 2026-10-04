@@ -15,6 +15,7 @@ from app.api.schemas.entitlements import (
     LocalEntitlementResponse,
 )
 from app.application.entitlements.service import EntitlementService
+from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 
@@ -77,15 +78,18 @@ async def get_entitlement(
     response_model=AppStatusResponse,
     operation_id="getAppStatus",
 )
-async def get_app_status(request: Request) -> AppStatusResponse:
-    settings = request.app.state.settings
+async def get_app_status(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> AppStatusResponse:
+    runtime = RuntimeSettingsService(session, request.app.state.settings)
     return AppStatusResponse(
         min_supported_version=MinimumSupportedVersions(
-            android=settings.app_min_supported_android,
-            ios=settings.app_min_supported_ios,
+            android=await runtime.string("app_min_supported_android"),
+            ios=await runtime.string("app_min_supported_ios"),
         ),
         maintenance=MaintenanceStatus(
-            active=settings.maintenance_active,
-            eta=settings.maintenance_eta,
+            active=await runtime.boolean("maintenance_active"),
+            eta=await runtime.optional_datetime("maintenance_eta"),
         ),
     )
