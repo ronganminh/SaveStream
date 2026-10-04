@@ -32,11 +32,16 @@ class LocalRecordingScreen extends ConsumerWidget {
       watchDetailProvider(watchId),
     );
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
-    final AsyncValue<LocalRecorderState> recorder = ref.watch(
-      localRecorderStateProvider,
-    );
     final LocalRecordingController controller = ref.watch(
       localRecordingControllerProvider,
+    );
+    final bool isSecondary =
+        controller.secondarySession?.watchId == watchId;
+    final bool isPrimary = controller.activeSession?.watchId == watchId;
+    final AsyncValue<LocalRecorderState> recorder = ref.watch(
+      isSecondary
+          ? secondaryLocalRecorderStateProvider
+          : localRecorderStateProvider,
     );
     final RewardedMinutesState rewarded = ref.watch(
       rewardedMinutesControllerProvider,
@@ -61,7 +66,11 @@ class LocalRecordingScreen extends ConsumerWidget {
     }
 
     final LocalRecorderState state = _stateOrStarting(recorder);
-    final LocalRecordingSession? session = controller.activeSession;
+    final LocalRecordingSession? session = isSecondary
+        ? controller.secondarySession
+        : isPrimary
+        ? controller.activeSession
+        : null;
     final int remainingSeconds = _remainingSeconds(
       session,
       state.recordedSeconds,
@@ -142,7 +151,8 @@ class LocalRecordingScreen extends ConsumerWidget {
                       extensionsCap: localEntitlement.extensionsCapPerRecording,
                       rewardState: rewarded,
                       onRewardRequested:
-                          _canRequestReward(rewarded, localEntitlement)
+                          !isSecondary &&
+                              _canRequestReward(rewarded, localEntitlement)
                           ? () {
                               showRewardedMinutesSheet(
                                 context: context,
@@ -175,9 +185,15 @@ class LocalRecordingScreen extends ConsumerWidget {
                       onPressed: !canStop
                           ? null
                           : () async {
-                              await controller.stop(
-                                status: RecordingStatus.completed,
-                              );
+                              if (isSecondary) {
+                                await controller.stopSecond(
+                                  status: RecordingStatus.completed,
+                                );
+                              } else {
+                                await controller.stop(
+                                  status: RecordingStatus.completed,
+                                );
+                              }
                               if (context.mounted) {
                                 context.pop();
                               }
