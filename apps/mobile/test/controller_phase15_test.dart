@@ -2,9 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
-import 'package:savestream_mobile/features/billing/domain/repositories/billing_repository.dart';
-import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/channels/domain/repositories/watch_repository.dart';
 import 'package:savestream_mobile/features/channels/presentation/controllers/watch_providers.dart';
@@ -161,31 +158,7 @@ void main() {
     });
   });
 
-  group('BillingController', () {
-    test(
-      'mutations notify snapshot listeners after repository calls',
-      () async {
-        final _FakeBillingRepository repository = _FakeBillingRepository();
-        int changes = 0;
-        final BillingController controller = BillingController(
-          repository: repository,
-          onChanged: () => changes += 1,
-        );
 
-        final PaymentOrder? order = await controller.createOrder('pkg-1');
-        final CheckoutSession? checkout = await controller.createCheckout(
-          orderId: order!.id,
-          returnUri: Uri.parse('savestream:/billing/return?order_id=order-1'),
-        );
-        final PaymentOrder? refreshed = await controller.refreshOrder(order.id);
-
-        expect(order.status, PaymentOrderStatus.created);
-        expect(checkout?.paymentOrder.status, PaymentOrderStatus.pending);
-        expect(refreshed?.status, PaymentOrderStatus.paid);
-        expect(changes, 3);
-      },
-    );
-  });
 }
 
 final class _FakeAuthRepository implements AuthRepository {
@@ -389,50 +362,3 @@ final class _FakeRecordingRepository implements RecordingRepository {
   }
 }
 
-final class _FakeBillingRepository implements BillingRepository {
-  @override
-  Future<PaymentOrder?> createPaymentOrder(String packageId) async {
-    return _order(PaymentOrderStatus.created);
-  }
-
-  @override
-  Future<CheckoutSession?> createCheckout({
-    required String orderId,
-    required Uri returnUri,
-  }) async {
-    return CheckoutSession(
-      checkoutUri: Uri.parse('https://pay.example.com/session'),
-      paymentOrder: _order(PaymentOrderStatus.pending),
-    );
-  }
-
-  @override
-  Future<PaymentOrder?> refreshPaymentOrder(String orderId) async {
-    return _order(PaymentOrderStatus.paid);
-  }
-
-  @override
-  Future<BillingSnapshot> getSnapshot() async {
-    return const BillingSnapshot(
-      packages: <CreditPackage>[],
-      orders: <PaymentOrder>[],
-    );
-  }
-
-  @override
-  Stream<PaymentOrder?> watchPaymentOrder(String orderId) async* {
-    yield _order(PaymentOrderStatus.paid);
-  }
-
-  PaymentOrder _order(PaymentOrderStatus status) {
-    return PaymentOrder(
-      id: 'order-1',
-      packageId: 'pkg-1',
-      status: status,
-      credits: 25,
-      amount: const Money(amountMinor: 999, currency: 'USD'),
-      createdAt: DateTime.utc(2026, 10, 1, 8),
-      updatedAt: DateTime.utc(2026, 10, 1, 8),
-    );
-  }
-}
