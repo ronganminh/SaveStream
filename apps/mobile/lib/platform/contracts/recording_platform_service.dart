@@ -13,6 +13,12 @@ enum RecordingNotificationKind {
   interrupted,
 }
 
+enum RecordingPlatformAction {
+  stopRecording,
+  openRecording,
+  recoverInterrupted,
+}
+
 class AndroidRecordingPlatformState {
   const AndroidRecordingPlatformState({
     required this.batteryMode,
@@ -55,6 +61,8 @@ abstract interface class RecordingPlatformService {
   Future<void> openBatterySettings();
 
   Future<void> openAppSettings();
+
+  Stream<RecordingPlatformAction> get actionStream;
 
   Future<void> updateRecordingNotification(RecordingNotificationSpec spec);
 
