@@ -30,7 +30,7 @@
 - [x] D5 — Gói, giá, khuyến mãi, tặng giờ — **đã merge PR #101 vào main**
 - [x] D6 — Vận hành V2: giao dịch store, ghi trên máy, phần thưởng, thiết bị — **đã merge PR #119 vào main**
 - [x] D7 — Lưu trữ, email, thông báo hàng loạt — **đã merge PR #90 vào main**
-- [ ] D8 — Khiếu nại và an toàn
+- [x] D8 — Khiếu nại và an toàn — **đã merge PR #121 vào main**
 - [ ] D9 — Tổng quan, báo cáo, báo lỗi từ app
 
 ### Trạng thái hiện tại
@@ -64,12 +64,16 @@
 - **CI cuối D5 trên head `4281ddba8d8e2b88d8052a3f312001e633c9023e`:** `Backend CI`, `Web CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh.
 - **Rebase/main gate D5:** trước merge, nhánh `v2/d5-admin-packages-promotions` ở trạng thái `behind 0`; migration D5 đã đổi thành `0015_v2_d5_packages_promotions` nối sau B4 `0014_v2_b4_local_recordings`.
 - **D7 hoàn tất.** PR #90 — `V2 D7 — Admin storage, email and broadcasts` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D8 hoàn tất.** PR #121 — `V2 D8 — Complaints and creator safety controls` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D8 merge commit:** `4c4648bc8ebd9df9c21b6e210a0263a32cc396ff`.
+- **CI cuối D8 trên head `3dcff5b35e7d00b9c359fc759c09833a747bdc95`:** `Backend CI`, `Web CI`, `Backend E2E`, `Mobile Backend E2E` đều xanh.
+- **Phạm vi D8 đã chốt:** complaint cases/timeline; global creator block/unblock + playback/download/watch enforcement; neutral notification; suspicious accounts; delete-vs-unblock review; English-only Safety UI; bounded/audited CSV; role tests.
 - **D7 merge commit:** `cc3160f93ed31cfee84d94e2cc22e1f36014b8b7`.
 - **CI cuối D7 trên head `fc4bb6f006fcd1cd4641e8c9177548f37774dfe9`:** `Backend CI` #482 xanh trên Python 3.11 và 3.12, `Web CI` #164 xanh, `Backend E2E` #88 xanh, `Mobile Backend E2E` #188 xanh.
 - **Rebase/main gate D7:** trước merge, nhánh `v2/d7-admin-storage-email-broadcasts` ở trạng thái `ahead`, `behind 0` so với `main`; không cần rebase bổ sung ở gate cuối.
 - **Phạm vi D7 đã chốt:** storage summary + bounded orphan scan/delete, email logs giữ 90 ngày + resend, template override/preview/test/reset, broadcast system/marketing theo opt-in qua in-app/push/email; thao tác nguy hiểm dùng step-up + reason, mutation/sensitive read được audit.
-- **Các blocker Track D còn lại:** D8 đã mở khóa từ D3; D9 đã mở khóa sau khi D6 merge.
-- **Bước Track D tiếp theo:** D8, sau đó D9.
+- **Các blocker Track D còn lại:** D9 đã mở khóa và là phase cuối của Track D.
+- **Bước Track D tiếp theo:** D9.
 
 ## Kiểm tra
 
