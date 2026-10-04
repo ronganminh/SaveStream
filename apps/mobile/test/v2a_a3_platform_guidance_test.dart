@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:riverpod/riverpod.dart' show Override;
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/local_recordings/presentation/controllers/recording_platform_controller.dart';
 import 'package:savestream_mobile/features/local_recordings/presentation/local_recovery_screen.dart';
