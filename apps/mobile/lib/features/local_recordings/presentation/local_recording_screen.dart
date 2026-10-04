@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
@@ -21,22 +22,33 @@ import 'controllers/rewarded_minutes_controller.dart';
 import 'local_recording_alerts.dart';
 import 'local_recording_reward_sheet.dart';
 
-class LocalRecordingScreen extends ConsumerWidget {
+class LocalRecordingScreen extends ConsumerStatefulWidget {
   const LocalRecordingScreen({required this.watchId, super.key});
 
   final String watchId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LocalRecordingScreen> createState() =>
+      _LocalRecordingScreenState();
+}
+
+class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
+  LocalRecordingSummary? _completed;
+  bool _finishing = false;
+  bool _autoStorageStopStarted = false;
+  String? _finishError;
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<WatchSummary?> watch = ref.watch(
-      watchDetailProvider(watchId),
+      watchDetailProvider(widget.watchId),
     );
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
     final LocalRecordingController controller = ref.watch(
       localRecordingControllerProvider,
     );
-    final bool isSecondary = controller.secondarySession?.watchId == watchId;
-    final bool isPrimary = controller.activeSession?.watchId == watchId;
+    final bool isSecondary = controller.secondarySession?.watchId == widget.watchId;
+    final bool isPrimary = controller.activeSession?.watchId == widget.watchId;
     final AsyncValue<LocalRecorderState> recorder = ref.watch(
       isSecondary
           ? secondaryLocalRecorderStateProvider
@@ -78,6 +90,45 @@ class LocalRecordingScreen extends ConsumerWidget {
         session != null && state.phase != LocalRecorderPhase.finalizing;
     final LocalEntitlement localEntitlement = entitlement.requireValue.local;
     final TextTheme textTheme = Theme.of(context).textTheme;
+
+    if (state.storageState == LocalStorageState.critical &&
+        session != null &&
+        !_finishing &&
+        _completed == null &&
+        !_autoStorageStopStarted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _autoStorageStopStarted) return;
+        _autoStorageStopStarted = true;
+        _finishRecording(
+          controller: controller,
+          isSecondary: isSecondary,
+          endReason: RecordingEndReason.storageLow,
+        );
+      });
+    }
+
+    final LocalRecordingSummary? completed = _completed;
+    if (completed != null) {
+      return Scaffold(
+        body: SafeArea(
+          child: LocalRecordingCompletedBody(
+            creatorName: creator.creatorDisplayName,
+            summary: completed,
+          ),
+        ),
+      );
+    }
+
+    if (_finishing || state.phase == LocalRecorderPhase.finalizing) {
+      return Scaffold(
+        body: SafeArea(
+          child: LocalRecordingFinalizingBody(
+            step: state.finalizationStep,
+            errorMessage: _finishError,
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -140,6 +191,10 @@ class LocalRecordingScreen extends ConsumerWidget {
                         formatFileSize(state.sizeBytes),
                       ),
                     ),
+                    if (state.storageState != LocalStorageState.ok) ...<Widget>[
+                      const SizedBox(height: SsSpacing.lg),
+                      LocalRecordingStorageAlert(state: state),
+                    ],
                     const SizedBox(height: SsSpacing.lg),
                     LocalRecordingAlerts(
                       state: state,
@@ -183,20 +238,11 @@ class LocalRecordingScreen extends ConsumerWidget {
                       icon: Icons.stop_circle_outlined,
                       onPressed: !canStop
                           ? null
-                          : () async {
-                              if (isSecondary) {
-                                await controller.stopSecond(
-                                  status: RecordingStatus.completed,
-                                );
-                              } else {
-                                await controller.stop(
-                                  status: RecordingStatus.completed,
-                                );
-                              }
-                              if (context.mounted) {
-                                context.pop();
-                              }
-                            },
+                          : () => _confirmStop(
+                              controller: controller,
+                              isSecondary: isSecondary,
+                              recordedSeconds: state.recordedSeconds,
+                            ),
                     ),
                   ],
                 ),
@@ -206,6 +252,76 @@ class LocalRecordingScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmStop({
+    required LocalRecordingController controller,
+    required bool isSecondary,
+    required int recordedSeconds,
+  }) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(context.l10n.localRecordingStopConfirmTitle),
+          content: Text(
+            context.l10n.localRecordingStopConfirmBody(
+              formatDurationHms(Duration(seconds: recordedSeconds)),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.l10n.localRecordingContinueAction),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(context.l10n.localRecordingStopAction),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    await _finishRecording(
+      controller: controller,
+      isSecondary: isSecondary,
+      endReason: RecordingEndReason.userStopped,
+    );
+  }
+
+  Future<void> _finishRecording({
+    required LocalRecordingController controller,
+    required bool isSecondary,
+    required RecordingEndReason endReason,
+  }) async {
+    if (_finishing) return;
+    setState(() {
+      _finishing = true;
+      _finishError = null;
+    });
+    try {
+      final LocalRecordingSummary summary = isSecondary
+          ? await controller.stopSecond(
+              endReason: endReason,
+              status: RecordingStatus.completed,
+            )
+          : await controller.stop(
+              endReason: endReason,
+              status: RecordingStatus.completed,
+            );
+      if (!mounted) return;
+      setState(() {
+        _completed = summary;
+        _finishing = false;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _finishing = false;
+        _finishError = error.toString();
+      });
+    }
   }
 
   bool _canRequestReward(
@@ -241,6 +357,173 @@ class LocalRecordingScreen extends ConsumerWidget {
     final int rest = seconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:'
         '${rest.toString().padLeft(2, '0')}';
+  }
+}
+
+class LocalRecordingStorageAlert extends StatelessWidget {
+  const LocalRecordingStorageAlert({required this.state, super.key});
+
+  final LocalRecorderState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final int freeStorageBytes = state.freeStorageBytes ?? 0;
+    final int estimatedMinutes = state.estimatedStorageMinutes ?? 0;
+    final bool critical = state.storageState == LocalStorageState.critical;
+
+    return SsInlineAlert(
+      title: critical
+          ? context.l10n.localRecordingStorageCriticalTitle
+          : context.l10n.localRecordingStorageLowTitle,
+      message: critical
+          ? context.l10n.localRecordingStorageCriticalBody
+          : context.l10n.localRecordingStorageLowBody(
+              formatFileSize(freeStorageBytes),
+              estimatedMinutes,
+            ),
+      tone: SsInlineAlertTone.warning,
+    );
+  }
+}
+
+class LocalRecordingFinalizingBody extends StatelessWidget {
+  const LocalRecordingFinalizingBody({
+    required this.step,
+    this.errorMessage,
+    super.key,
+  });
+
+  final LocalFinalizationStep? step;
+  final String? errorMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final LocalFinalizationStep current =
+        step ?? LocalFinalizationStep.stopCapture;
+    final List<String> labels = <String>[
+      context.l10n.localRecordingFinalizeStopStep,
+      context.l10n.localRecordingFinalizeFlushStep,
+      context.l10n.localRecordingFinalizeVerifyStep,
+      context.l10n.localRecordingFinalizeRegisterStep,
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      children: <Widget>[
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  context.l10n.localRecordingFinalizingTitle,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: SsSpacing.lg),
+                SsChecklist(
+                  items: <SsChecklistItem>[
+                    for (int index = 0; index < labels.length; index += 1)
+                      SsChecklistItem(
+                        label: labels[index],
+                        done: index < current.index,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: SsSpacing.lg),
+                SsInlineAlert(
+                  title: context.l10n.localLabel,
+                  message: context.l10n.localRecordingFinalizingBody,
+                ),
+                if (errorMessage != null) ...<Widget>[
+                  const SizedBox(height: SsSpacing.md),
+                  SsInlineAlert(
+                    title: context.l10n.localRecordingErrorTitle,
+                    message: errorMessage,
+                    tone: SsInlineAlertTone.error,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class LocalRecordingCompletedBody extends StatelessWidget {
+  const LocalRecordingCompletedBody({
+    required this.creatorName,
+    required this.summary,
+    super.key,
+  });
+
+  final String creatorName;
+  final LocalRecordingSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(SsSpacing.lg),
+      children: <Widget>[
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const Icon(Icons.check_circle_rounded, size: 56),
+                const SizedBox(height: SsSpacing.md),
+                Text(
+                  context.l10n.localRecordingCompletedTitle,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: SsSpacing.lg),
+                SsCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        creatorName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: SsSpacing.sm),
+                      SsLocationChip(
+                        engine: Engine.local,
+                        label: context.l10n.localLabel,
+                      ),
+                      const SizedBox(height: SsSpacing.sm),
+                      Text(
+                        context.l10n.localRecordingCompletedMeta(
+                          formatDurationHms(
+                            Duration(seconds: summary.recordedSeconds),
+                          ),
+                          formatFileSize(summary.sizeBytes),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: SsSpacing.lg),
+                SsPrimaryButton(
+                  label: context.l10n.localRecordingOpenAction,
+                  icon: Icons.play_circle_outline_rounded,
+                  onPressed: () =>
+                      context.push(AppRoutes.recordingDetail(summary.id)),
+                ),
+                const SizedBox(height: SsSpacing.sm),
+                SsSecondaryButton(
+                  label: context.l10n.localRecordingHomeAction,
+                  onPressed: () => context.go(AppRoutes.home),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
