@@ -38,6 +38,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSystemRouteImport } from './routes/admin/system'
+import { Route as AdminSafetyRouteImport } from './routes/admin/safety'
 import { Route as AdminWorkersRouteImport } from './routes/admin/workers'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as BillingIndexRouteImport } from './routes/billing.index'
@@ -206,6 +207,11 @@ const AdminSystemRoute = AdminSystemRouteImport.update({
   path: '/admin/system',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSafetyRoute = AdminSafetyRouteImport.update({
+  id: '/admin/safety',
+  path: '/admin/safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWorkersRoute = AdminWorkersRouteImport.update({
   id: '/admin/workers',
   path: '/admin/workers',
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
+  '/admin/safety': typeof AdminSafetyRoute
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -395,6 +402,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/admin/users': typeof AdminUsersIndexRoute
   '/admin/system': typeof AdminSystemRoute
+  '/admin/safety': typeof AdminSafetyRoute
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -447,6 +455,7 @@ export interface FileRoutesById {
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/system': typeof AdminSystemRoute
+  '/admin/safety': typeof AdminSafetyRoute
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -502,6 +511,7 @@ export interface FileRouteTypes {
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
+    | '/admin/safety'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -548,6 +558,7 @@ export interface FileRouteTypes {
     | '/admin/catalog'
     | '/admin/payments'
     | '/admin/system'
+    | '/admin/safety'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -601,6 +612,7 @@ export interface FileRouteTypes {
     | '/admin/jobs'
     | '/admin/users'
     | '/admin/system'
+    | '/admin/safety'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -655,6 +667,7 @@ export interface RootRouteChildren {
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminSystemRoute: typeof AdminSystemRoute
+  AdminSafetyRoute: typeof AdminSafetyRoute
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
 }
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/system'
       fullPath: '/admin/system'
       preLoaderRoute: typeof AdminSystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/safety': {
+      id: '/admin/safety'
+      path: '/admin/safety'
+      fullPath: '/admin/safety'
+      preLoaderRoute: typeof AdminSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/workers': {
@@ -1160,6 +1180,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminJobsRoute: AdminJobsRouteWithChildren,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminSystemRoute: AdminSystemRoute,
+  AdminSafetyRoute: AdminSafetyRoute,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
 }
