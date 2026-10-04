@@ -52,6 +52,7 @@ class LocalRecordingService : Service() {
                 START_NOT_STICKY
             }
             ACTION_STOP -> {
+                RecordingPlatformActionEventBus.emit("stop_recording")
                 stopRequested.set(true)
                 emitState("finalizing", finalizationStep = "stopCapture")
                 START_NOT_STICKY
