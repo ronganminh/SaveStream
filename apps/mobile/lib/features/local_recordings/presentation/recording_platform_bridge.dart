@@ -16,10 +16,7 @@ import 'controllers/local_recovery_providers.dart';
 import 'controllers/recording_platform_controller.dart';
 
 class RecordingPlatformBridge extends ConsumerStatefulWidget {
-  const RecordingPlatformBridge({
-    required this.child,
-    super.key,
-  });
+  const RecordingPlatformBridge({required this.child, super.key});
 
   final Widget child;
 
@@ -99,8 +96,7 @@ class _RecordingPlatformBridgeState
     _activeCreatorName = creatorName;
     _activeRecording = active;
 
-    final String lifecycleSignature =
-        '${creatorName ?? ''}:$active';
+    final String lifecycleSignature = '${creatorName ?? ''}:$active';
     if (_lastLifecycleSignature != lifecycleSignature) {
       _lastLifecycleSignature = lifecycleSignature;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -123,8 +119,7 @@ class _RecordingPlatformBridgeState
         state != null &&
         creatorName != null &&
         entitlement != null) {
-      final int rawRemaining =
-          session.grantedSeconds - state.recordedSeconds;
+      final int rawRemaining = session.grantedSeconds - state.recordedSeconds;
       final int remaining = rawRemaining > 0 ? rawRemaining : 0;
       final String signature =
           '${session.sessionId}:${state.phase.name}:'
@@ -149,8 +144,7 @@ class _RecordingPlatformBridgeState
       }
     }
 
-    if (interrupted != null &&
-        interrupted.tempId != _lastInterruptedTempId) {
+    if (interrupted != null && interrupted.tempId != _lastInterruptedTempId) {
       _lastInterruptedTempId = interrupted.tempId;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -223,12 +217,8 @@ class _RecordingPlatformBridgeState
     required bool usingSecondary,
   }) async {
     final LocalRecordingSummary summary = usingSecondary
-        ? await controller.stopSecond(
-            status: RecordingStatus.completed,
-          )
-        : await controller.stop(
-            status: RecordingStatus.completed,
-          );
+        ? await controller.stopSecond(status: RecordingStatus.completed)
+        : await controller.stop(status: RecordingStatus.completed);
     if (!mounted) return;
     await ref
         .read(recordingPlatformControllerProvider)

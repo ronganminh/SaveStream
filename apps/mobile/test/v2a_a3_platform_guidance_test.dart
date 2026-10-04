@@ -34,8 +34,7 @@ void main() {
   testWidgets('AN01 maps the 60-second state to an Android notification', (
     WidgetTester tester,
   ) async {
-    final FakeRecordingPlatformService service =
-        FakeRecordingPlatformService();
+    final FakeRecordingPlatformService service = FakeRecordingPlatformService();
 
     await tester.pumpWidget(
       localized(
@@ -65,24 +64,17 @@ void main() {
       service.lastNotification?.kind,
       RecordingNotificationKind.minuteWarning,
     );
-    expect(
-      service.lastNotification?.title,
-      contains('Lina Studio'),
-    );
-    expect(
-      service.lastNotification?.body,
-      contains('10 minutes'),
-    );
+    expect(service.lastNotification?.title, contains('Lina Studio'));
+    expect(service.lastNotification?.body, contains('10 minutes'));
   });
 
   testWidgets('IO01 schedules return reminder only while iOS Local is active', (
     WidgetTester tester,
   ) async {
-    final FakeRecordingPlatformService service =
-        FakeRecordingPlatformService(
-          platform: DevicePlatform.ios,
-          returnReminderEnabled: true,
-        );
+    final FakeRecordingPlatformService service = FakeRecordingPlatformService(
+      platform: DevicePlatform.ios,
+      returnReminderEnabled: true,
+    );
 
     await tester.pumpWidget(
       localized(
@@ -119,14 +111,13 @@ void main() {
   testWidgets('AN02 shows battery optimization guidance', (
     WidgetTester tester,
   ) async {
-    final FakeRecordingPlatformService service =
-        FakeRecordingPlatformService(
-          androidState: const AndroidRecordingPlatformState(
-            batteryMode: AndroidBatteryMode.optimized,
-            oemFamily: AndroidOemFamily.generic,
-            deviceName: 'Pixel 9',
-          ),
-        );
+    final FakeRecordingPlatformService service = FakeRecordingPlatformService(
+      androidState: const AndroidRecordingPlatformState(
+        batteryMode: AndroidBatteryMode.optimized,
+        oemFamily: AndroidOemFamily.generic,
+        deviceName: 'Pixel 9',
+      ),
+    );
 
     await tester.pumpWidget(
       localized(
@@ -146,15 +137,14 @@ void main() {
   testWidgets('AN03 renders Xiaomi HyperOS guidance', (
     WidgetTester tester,
   ) async {
-    final FakeRecordingPlatformService service =
-        FakeRecordingPlatformService(
-          androidState: const AndroidRecordingPlatformState(
-            batteryMode: AndroidBatteryMode.optimized,
-            oemFamily: AndroidOemFamily.xiaomi,
-            deviceName: 'Xiaomi 14',
-            osName: 'HyperOS',
-          ),
-        );
+    final FakeRecordingPlatformService service = FakeRecordingPlatformService(
+      androidState: const AndroidRecordingPlatformState(
+        batteryMode: AndroidBatteryMode.optimized,
+        oemFamily: AndroidOemFamily.xiaomi,
+        deviceName: 'Xiaomi 14',
+        osName: 'HyperOS',
+      ),
+    );
 
     await tester.pumpWidget(
       localized(
@@ -202,10 +192,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Recording was interrupted'), findsOneWidget);
-    expect(
-      find.textContaining('iOS stopped SaveStream'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('iOS stopped SaveStream'), findsOneWidget);
     expect(find.text('Recover'), findsOneWidget);
     expect(find.text('Advertisement'), findsNothing);
   });
@@ -213,11 +200,10 @@ void main() {
   testWidgets('IO03 exposes the return-reminder toggle', (
     WidgetTester tester,
   ) async {
-    final FakeRecordingPlatformService service =
-        FakeRecordingPlatformService(
-          platform: DevicePlatform.ios,
-          returnReminderEnabled: true,
-        );
+    final FakeRecordingPlatformService service = FakeRecordingPlatformService(
+      platform: DevicePlatform.ios,
+      returnReminderEnabled: true,
+    );
 
     await tester.pumpWidget(
       localized(

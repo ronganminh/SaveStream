@@ -74,9 +74,7 @@ final class FakeRecordingPlatformService implements RecordingPlatformService {
   }
 
   @override
-  Future<void> scheduleIosReturnReminder({
-    required String creatorName,
-  }) async {
+  Future<void> scheduleIosReturnReminder({required String creatorName}) async {
     if (returnReminderEnabled) {
       iosReminderScheduled = true;
     }

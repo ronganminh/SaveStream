@@ -25,9 +25,7 @@ class AndroidOemRecordingGuidanceScreen extends ConsumerWidget {
                   : context.l10n.androidOemGuideTitle(state.deviceName),
             ),
           ),
-          body: state == null
-              ? const _OemSkeleton()
-              : _OemBody(state: state),
+          body: state == null ? const _OemSkeleton() : _OemBody(state: state),
         );
       },
     );
@@ -51,8 +49,7 @@ class _OemBody extends ConsumerWidget {
         context.l10n.androidOemSamsungSleepStep,
         context.l10n.androidOemBatteryStep,
       ],
-      AndroidOemFamily.oppoRealmeVivo ||
-      AndroidOemFamily.huawei => <String>[
+      AndroidOemFamily.oppoRealmeVivo || AndroidOemFamily.huawei => <String>[
         context.l10n.androidOemAppLaunchStep,
         context.l10n.androidOemBatteryStep,
         context.l10n.androidOemRecentAppsStep,

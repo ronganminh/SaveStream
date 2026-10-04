@@ -72,9 +72,7 @@ abstract interface class RecordingPlatformService {
 
   Future<void> setIosReturnReminderEnabled(bool enabled);
 
-  Future<void> scheduleIosReturnReminder({
-    required String creatorName,
-  });
+  Future<void> scheduleIosReturnReminder({required String creatorName});
 
   Future<void> cancelIosReturnReminder();
 
