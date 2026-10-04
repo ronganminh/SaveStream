@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/local_recording_models.dart';
+import '../../../recordings/domain/models/recording_summary.dart';
 import '../../domain/repositories/local_recording_repository.dart';
 import '../local_file_index.dart';
 
