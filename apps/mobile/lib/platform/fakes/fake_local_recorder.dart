@@ -11,6 +11,7 @@ final class FakeLocalRecorder implements LocalRecorder {
   Timer? _ticker;
   int _recordedSeconds = 0;
   int _sizeBytes = 0;
+  int _freeStorageBytes = 18 * 1024 * 1024 * 1024;
 
   @override
   Stream<LocalRecorderState> watch() => _states.stream;
@@ -21,6 +22,7 @@ final class FakeLocalRecorder implements LocalRecorder {
     _session = session;
     _recordedSeconds = 0;
     _sizeBytes = 0;
+    _freeStorageBytes = 18 * 1024 * 1024 * 1024;
 
     _states.add(const LocalRecorderState(phase: LocalRecorderPhase.starting));
     await Future<void>.delayed(Duration.zero);
@@ -30,7 +32,9 @@ final class FakeLocalRecorder implements LocalRecorder {
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (_session == null) return;
       _recordedSeconds += 1;
-      _sizeBytes += 640 * 1024;
+      const int bytesPerSecond = 640 * 1024;
+      _sizeBytes += bytesPerSecond;
+      _freeStorageBytes -= bytesPerSecond;
       _emit(LocalRecorderPhase.recording);
     });
   }
@@ -40,7 +44,25 @@ final class FakeLocalRecorder implements LocalRecorder {
     if (_session == null) return;
     _ticker?.cancel();
     _ticker = null;
-    _emit(LocalRecorderPhase.finalizing);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.stopCapture,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.flushFile,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.verifyFile,
+    );
+    await Future<void>.delayed(Duration.zero);
+    _emit(
+      LocalRecorderPhase.finalizing,
+      finalizationStep: LocalFinalizationStep.registerRecording,
+    );
     _session = null;
     _emit(LocalRecorderPhase.stopped);
   }
@@ -63,12 +85,27 @@ final class FakeLocalRecorder implements LocalRecorder {
     });
   }
 
-  void _emit(LocalRecorderPhase phase) {
+  void _emit(
+    LocalRecorderPhase phase, {
+    LocalFinalizationStep? finalizationStep,
+  }) {
+    final int estimatedMinutes = _freeStorageBytes <= 0
+        ? 0
+        : _freeStorageBytes ~/ (640 * 1024 * 60);
+    final LocalStorageState storageState = _freeStorageBytes < 250 * 1024 * 1024
+        ? LocalStorageState.critical
+        : estimatedMinutes <= 15
+        ? LocalStorageState.low
+        : LocalStorageState.ok;
     _states.add(
       LocalRecorderState(
         phase: phase,
         recordedSeconds: _recordedSeconds,
         sizeBytes: _sizeBytes,
+        storageState: storageState,
+        freeStorageBytes: _freeStorageBytes,
+        estimatedStorageMinutes: estimatedMinutes,
+        finalizationStep: finalizationStep,
       ),
     );
   }
