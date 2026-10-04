@@ -33,7 +33,10 @@ void main() {
 
     await tester.pump(const Duration(seconds: 8));
 
-    expect(find.text('Connecting is taking longer than usual…'), findsOneWidget);
+    expect(
+      find.text('Connecting is taking longer than usual…'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('R05 warns and haptics once inside sixty seconds', (
