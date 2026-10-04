@@ -879,5 +879,81 @@
         "type": "String"
       }
     }
-  }
+  },
+  "localRecordingStartTitle": "Record {name}",
+  "@localRecordingStartTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeStorage": "Còn trống {value}",
+  "@localRecordingFreeStorage": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSlot": "Slot Local {used}/{limit}",
+  "@localRecordingSlot": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingAndroidStartTitle": "Có thể chuyển app",
+  "localRecordingAndroidStartBody": "Android hiện thông báo đang record cho tới khi bạn dừng.",
+  "localRecordingStartAction": "Bắt đầu record",
+  "localRecordingActiveTitle": "Đang record",
+  "localRecordingElapsedSemantics": "Thời gian recording {duration}",
+  "@localRecordingElapsedSemantics": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingSavedHere": "Lưu trên thiết bị này · {size}",
+  "@localRecordingSavedHere": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingFreeRemainingTitle": "Phút Free còn lại",
+  "localRecordingRewardCaps": "Gia hạn 0/{extensionsCap} · Quảng cáo hôm nay {rewardsUsed}/{rewardsCap}",
+  "@localRecordingRewardCaps": {
+    "placeholders": {
+      "extensionsCap": {
+        "type": "int"
+      },
+      "rewardsUsed": {
+        "type": "int"
+      },
+      "rewardsCap": {
+        "type": "int"
+      }
+    }
+  },
+  "localRecordingStopAction": "Dừng recording",
+  "localRecordingConnectingBody": "Đang kết nối tới LIVE của {name}…",
+  "@localRecordingConnectingBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecordingErrorTitle": "Recording thất bại",
+  "localRecordingStatusActive": "Đang record",
+  "localRecordingAndroidActiveTitle": "Đang record trong nền",
+  "localRecordingAndroidActiveBody": "Có thể chuyển app. Android giữ thông báo đang record cho tới khi bạn dừng.",
+  "localRecordingIosActiveBody": "Giữ SaveStream ở phía trước và đừng khoá màn hình trong lúc record."
 }
