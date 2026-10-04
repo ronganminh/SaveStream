@@ -688,9 +688,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   Future<void> _loadExistingDownload(
     RecordingArtifactSummary artifact,
   ) async {
-    final CloudRecordingFileService service = ref.read(
-      cloudRecordingFileServiceProvider,
-    );
+    final service = ref.read(cloudRecordingFileServiceProvider);
     final File? file = await service.existingFile(
       widget.recording.id,
       expectedSizeBytes: artifact.sizeBytes,
