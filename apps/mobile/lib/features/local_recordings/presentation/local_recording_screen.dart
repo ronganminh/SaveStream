@@ -38,9 +38,7 @@ class LocalRecordingScreen extends ConsumerWidget {
     );
 
     if (!watch.hasValue || !entitlement.hasValue) {
-      return const Scaffold(
-        body: SafeArea(child: _LocalRecordingSkeleton()),
-      );
+      return const Scaffold(body: SafeArea(child: _LocalRecordingSkeleton()));
     }
     final WatchSummary? creator = watch.value;
     if (creator == null) {
@@ -179,17 +177,12 @@ class LocalRecordingScreen extends ConsumerWidget {
     );
   }
 
-  LocalRecorderState _stateOrStarting(
-    AsyncValue<LocalRecorderState> recorder,
-  ) {
+  LocalRecorderState _stateOrStarting(AsyncValue<LocalRecorderState> recorder) {
     return recorder.value ??
         const LocalRecorderState(phase: LocalRecorderPhase.starting);
   }
 
-  int _remainingSeconds(
-    LocalRecordingSession? session,
-    int recordedSeconds,
-  ) {
+  int _remainingSeconds(LocalRecordingSession? session, int recordedSeconds) {
     if (session == null) return 0;
     final int remaining = session.grantedSeconds - recordedSeconds;
     if (remaining <= 0) return 0;
