@@ -31,12 +31,8 @@ void main() {
           MockRewardRepository(success),
         ),
         adsServiceProvider.overrideWithValue(const FakeAdsService()),
-        entitlementRepositoryProvider.overrideWithValue(
-          entitlementRepository,
-        ),
-        rewardVerificationPollIntervalProvider.overrideWithValue(
-          Duration.zero,
-        ),
+        entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
+        rewardVerificationPollIntervalProvider.overrideWithValue(Duration.zero),
       ],
     );
     addTearDown(container.dispose);
@@ -90,30 +86,33 @@ void main() {
     expect(state.expiresAt, expiredAt);
   });
 
-  test('Local recording controller runs primary and secondary recorders', () async {
-    final FakeLocalRecorder primary = FakeLocalRecorder();
-    final FakeLocalRecorder secondary = FakeLocalRecorder();
-    final LocalRecordingController controller = LocalRecordingController(
-      repository: MockLocalRecordingRepository(success),
-      recorder: primary,
-      secondaryRecorder: secondary,
-      deviceInfo: const FakeDeviceInfoService(id: 'device_slot_test'),
-    );
-    addTearDown(controller.dispose);
+  test(
+    'Local recording controller runs primary and secondary recorders',
+    () async {
+      final FakeLocalRecorder primary = FakeLocalRecorder();
+      final FakeLocalRecorder secondary = FakeLocalRecorder();
+      final LocalRecordingController controller = LocalRecordingController(
+        repository: MockLocalRecordingRepository(success),
+        recorder: primary,
+        secondaryRecorder: secondary,
+        deviceInfo: const FakeDeviceInfoService(id: 'device_slot_test'),
+      );
+      addTearDown(controller.dispose);
 
-    await controller.start(watchId: 'watch_primary');
-    await controller.startSecond(watchId: 'watch_secondary');
+      await controller.start(watchId: 'watch_primary');
+      await controller.startSecond(watchId: 'watch_secondary');
 
-    expect(controller.activeSessionCount, 2);
-    expect(controller.activeSession?.watchId, 'watch_primary');
-    expect(controller.secondarySession?.watchId, 'watch_secondary');
+      expect(controller.activeSessionCount, 2);
+      expect(controller.activeSession?.watchId, 'watch_primary');
+      expect(controller.secondarySession?.watchId, 'watch_secondary');
 
-    await controller.stopSecond();
-    expect(controller.activeSessionCount, 1);
+      await controller.stopSecond();
+      expect(controller.activeSessionCount, 1);
 
-    await controller.stop();
-    expect(controller.activeSessionCount, 0);
-  });
+      await controller.stop();
+      expect(controller.activeSessionCount, 0);
+    },
+  );
 }
 
 LocalEntitlement _localEntitlement({
