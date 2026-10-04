@@ -1285,5 +1285,7 @@
   "cloudRecordingFailedRefundBody": "Giờ cloud của recording bị lỗi được server hoàn lại. Nếu có phần đã lưu, bạn vẫn có thể mở phần đó.",
   "cloudRecordingStopConfirmTitle": "Dừng cloud recording?",
   "cloudRecordingStopConfirmBody": "SaveStream sẽ dừng recording trên server rồi xử lý phần đã lưu.",
-  "cloudRecordingStartError": "Không thể bắt đầu cloud recording."
+  "cloudRecordingStartError": "Không thể bắt đầu cloud recording.",
+  "recordingPlaybackNotReadyTitle": "Chưa xem được khi đang ghi",
+  "recordingPlaybackNotReadyBody": "Bản ghi phát được sau khi LIVE kết thúc và server xử lý xong."
 }
