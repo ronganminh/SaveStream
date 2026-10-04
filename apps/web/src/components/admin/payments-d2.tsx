@@ -323,7 +323,7 @@ export function AdminFinancePage() {
                 onChange={(event) =>
                   setPaymentFilters((current) => ({
                     ...current,
-                    channel: event.target.value as AdminPaymentFilters["channel"],
+                    channel: event.target.value as "" | "web" | "app_store" | "google_play",
                   }))
                 }
               >

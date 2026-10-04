@@ -346,13 +346,15 @@ if (!d7Privacy.includes("timedelta(days=90)")) {
   "Payments & cloud minutes",
   "Support access is read-only.",
   "Refund managed by Apple or Google",
-  "Admin cannot initiate a store refund.",
-  "actual clawback so the user balance never becomes negative",
   "Counts as purchase",
   "No stuck credit holds.",
   "Estimated store fee",
-  "Re-enter your password, current authenticator code, and the reason for this action.",
 ].forEach((text) => must("src/components/admin/payments-d2.tsx", text));
+[
+  "Admin cannot initiate a store refund.",
+  "actual clawback so the user balance never becomes negative",
+  "Re-enter your password, current authenticator code, and the reason for this action.",
+].forEach((text) => mustNormalized("src/components/admin/payments-d2.tsx", text));
 
 must("src/routes/admin/payments.tsx", "@/components/admin/payments-d2");
 must(

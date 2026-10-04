@@ -766,7 +766,7 @@ async def export_admin_payments(
             item["id"], item["user_email"], item["purchase_channel"],
             item["provider_transaction_id"] or "", item["package_code"],
             item["status"], item["credits"], item["gross_usd_minor"] or "",
-            item["estimated_store_fee_minor"] or "", item["created_at"].isoformat(),
+            item["estimated_store_fee_minor"] or "", str(item["created_at"]),
         ])
     await AuditService(session).record(
         actor_user_id=principal.user_id,
@@ -943,7 +943,7 @@ async def export_admin_credit_ledger(
             item["id"], item["user_email"], item["category"], item["type"],
             item["amount"], item["balance_after"], item["reference_type"],
             item["reference_id"] or "", item["counts_as_purchase"],
-            item["created_at"].isoformat(),
+            str(item["created_at"]),
         ])
     await AuditService(session).record(
         actor_user_id=principal.user_id,

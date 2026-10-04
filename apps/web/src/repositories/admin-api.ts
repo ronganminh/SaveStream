@@ -173,8 +173,8 @@ export const adminFoundationApi = {
     if (filters.plan) query.set("plan", filters.plan);
     if (filters.accountStatus) query.set("account_status", filters.accountStatus);
     if (filters.emailVerified) query.set("email_verified", filters.emailVerified);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     if (filters.purchaseProvider) query.set("purchase_provider", filters.purchaseProvider);
     query.set("sort_by", filters.sortBy ?? "created_at");
     query.set("sort_order", filters.sortOrder ?? "desc");
@@ -187,8 +187,8 @@ export const adminFoundationApi = {
     if (filters.plan) query.set("plan", filters.plan);
     if (filters.accountStatus) query.set("account_status", filters.accountStatus);
     if (filters.emailVerified) query.set("email_verified", filters.emailVerified);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     if (filters.purchaseProvider) query.set("purchase_provider", filters.purchaseProvider);
     query.set("sort_by", filters.sortBy ?? "created_at");
     query.set("sort_order", filters.sortOrder ?? "desc");
@@ -538,8 +538,8 @@ export const adminFinanceApi = {
     if (filters.status) query.set("status", filters.status);
     if (filters.channel) query.set("channel", filters.channel);
     if (filters.packageId) query.set("package_id", filters.packageId);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     return apiClient.get<{ items: AdminPaymentOrder[]; pagination: Pagination }>(
       `/v1/admin/payments?${query.toString()}`,
     );
@@ -555,8 +555,8 @@ export const adminFinanceApi = {
     if (filters.status) query.set("status", filters.status);
     if (filters.channel) query.set("channel", filters.channel);
     if (filters.packageId) query.set("package_id", filters.packageId);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     return apiClient.get<string>(`/v1/admin/payments/export.csv?${query.toString()}`, {
       responseMode: "text",
     });
@@ -610,8 +610,8 @@ export const adminFinanceApi = {
     if (filters.cursor) query.set("cursor", filters.cursor);
     if (filters.userId) query.set("user_id", filters.userId);
     if (filters.category) query.set("category", filters.category);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     return apiClient.get<{ items: AdminLedgerEntry[]; pagination: Pagination }>(
       `/v1/admin/credits/ledger?${query.toString()}`,
     );
@@ -621,8 +621,8 @@ export const adminFinanceApi = {
     const query = new URLSearchParams({ sort_order: filters.sortOrder ?? "desc" });
     if (filters.userId) query.set("user_id", filters.userId);
     if (filters.category) query.set("category", filters.category);
-    if (filters.createdFrom) query.set("created_from", filters.createdFrom);
-    if (filters.createdTo) query.set("created_to", filters.createdTo);
+    if (filters.createdFrom) query.set("created_from", new Date(filters.createdFrom).toISOString());
+    if (filters.createdTo) query.set("created_to", new Date(filters.createdTo).toISOString());
     return apiClient.get<string>(`/v1/admin/credits/ledger/export.csv?${query.toString()}`, {
       responseMode: "text",
     });
@@ -645,7 +645,7 @@ export const adminFinanceApi = {
           counts_as_purchase: countsAsPurchase,
         },
         headers: {
-          ...stepUpHeaders(stepUpToken),
+          "X-Admin-Step-Up": stepUpToken,
           "Idempotency-Key": crypto.randomUUID(),
         },
       },
