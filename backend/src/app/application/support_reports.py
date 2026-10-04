@@ -110,7 +110,10 @@ class SupportReportService:
             await self.session.execute(
                 select(AdminSupportReport, User.email)
                 .join(User, User.id == AdminSupportReport.user_id)
-                .where(AdminSupportReport.id == parsed)
+                .where(
+                    AdminSupportReport.id == parsed,
+                    AdminSupportReport.expires_at > utcnow(),
+                )
             )
         ).one_or_none()
         if row is None:
