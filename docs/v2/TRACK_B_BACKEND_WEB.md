@@ -16,7 +16,7 @@
 - [x] B5 — Mua trong app (App Store, Google Play) — **đã merge PR #91 vào `main`**, merge commit `63278793`
 - [x] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn — **đã merge PR #98 vào `main`**, merge commit `fc781169`
 - [x] B7 — Web theo V2 — **đã merge PR #106 vào `main`**, merge commit `7f15388b`
-- [ ] B8 — Năng lực máy chủ và tài liệu vận hành
+- [x] B8 — Năng lực máy chủ và tài liệu vận hành — **đã merge PR #111 vào `main`**, merge commit `a3e248d`
 
 ## Kiểm tra (chạy trong `backend` trước khi mở PR)
 
