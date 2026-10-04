@@ -123,10 +123,12 @@ class _LocalDetailBody extends ConsumerWidget {
                 icon: Icons.ios_share_rounded,
                 onPressed: recording.filePath == null
                     ? null
-                    : () => ref.read(shareServiceProvider).shareFile(
-                          filePath: recording.filePath!,
-                          displayName: recording.creatorDisplayName,
-                        ),
+                    : () => ref
+                          .read(shareServiceProvider)
+                          .shareFile(
+                            filePath: recording.filePath!,
+                            displayName: recording.creatorDisplayName,
+                          ),
               ),
               const SizedBox(height: SsSpacing.sm),
               TextButton.icon(
@@ -134,7 +136,9 @@ class _LocalDetailBody extends ConsumerWidget {
                   await ref
                       .read(localRecordingRepositoryProvider)
                       .delete(recording.id, deviceId: recording.deviceId);
-                  ref.invalidate(localRecordingLibraryDetailProvider(recording.id));
+                  ref.invalidate(
+                    localRecordingLibraryDetailProvider(recording.id),
+                  );
                   ref.invalidate(recordingLibraryProvider);
                 },
                 icon: const Icon(Icons.delete_outline_rounded),

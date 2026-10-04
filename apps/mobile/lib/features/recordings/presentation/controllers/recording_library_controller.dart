@@ -37,12 +37,15 @@ final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
       return List<RecordingLibraryItem>.unmodifiable(items);
     });
 
-
 final FutureProviderFamily<LocalRecordingSummary?, String>
 localRecordingLibraryDetailProvider =
-    FutureProvider.family<LocalRecordingSummary?, String>((Ref ref, String id) async {
-      final List<LocalRecordingSummary> items =
-          await ref.watch(localRecordingRepositoryProvider).list();
+    FutureProvider.family<LocalRecordingSummary?, String>((
+      Ref ref,
+      String id,
+    ) async {
+      final List<LocalRecordingSummary> items = await ref
+          .watch(localRecordingRepositoryProvider)
+          .list();
       for (final LocalRecordingSummary item in items) {
         if (item.id == id) return item;
       }
