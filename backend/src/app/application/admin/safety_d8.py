@@ -134,6 +134,7 @@ class AdminSafetyService:
                 action="created",
                 note="Complaint case created from an external report.",
                 metadata_json={"kind": kind},
+                created_at=utcnow(),
             )
         )
         await self.session.flush()
@@ -480,6 +481,7 @@ class AdminSafetyService:
                         "stopped_recordings": stopped_recording_ids,
                         "paused_watches": paused_watch_ids,
                     },
+                    created_at=utcnow(),
                 )
             )
         await self.session.flush()
@@ -690,6 +692,7 @@ class AdminSafetyService:
                         "deleted_recording_ids": deleted,
                         "pending_stop_recording_ids": pending,
                     },
+                    created_at=utcnow(),
                 )
             )
         await self.session.flush()
@@ -739,6 +742,7 @@ class AdminSafetyService:
                         "source_type": block.source_type,
                         "source_value": block.source_value,
                     },
+                    created_at=utcnow(),
                 )
             )
         await self.session.flush()
