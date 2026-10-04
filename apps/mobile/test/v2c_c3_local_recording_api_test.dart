@@ -8,11 +8,30 @@ import 'package:savestream_mobile/core/api/api_client.dart';
 import 'package:savestream_mobile/core/api/idempotency.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/features/auth/data/current_user_id_source.dart';
 import 'package:savestream_mobile/features/local_recordings/data/repositories/api_local_recording_repository.dart';
 import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 
 void main() {
+  test('current user id source reads the API id without changing domain', () async {
+    final ApiClient client = _clientFor(
+      _FakeAdapter((RequestOptions options, int call) {
+        expect(options.method, 'GET');
+        expect(options.path, '/v1/me');
+        return _jsonResponse(200, <String, Object?>{
+          'id': 'user-123',
+          'email': 'user@example.com',
+          'email_verified': true,
+        });
+      }),
+    );
+
+    final String userId = await CurrentUserIdSource(apiClient: client).get();
+
+    expect(userId, 'user-123');
+  });
+
   test('start sends idempotency key and decodes server lease', () async {
     final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,
