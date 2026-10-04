@@ -41,8 +41,7 @@ class RecordingPlayerScreen extends ConsumerStatefulWidget {
       _RecordingPlayerScreenState();
 }
 
-class _RecordingPlayerScreenState
-    extends ConsumerState<RecordingPlayerScreen> {
+class _RecordingPlayerScreenState extends ConsumerState<RecordingPlayerScreen> {
   VideoPlayerSsController? _controller;
   Object? _error;
   bool _loading = true;
