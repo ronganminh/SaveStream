@@ -1461,5 +1461,11 @@
   "cloudRecordingExpiresValue": "Lưu đến {date}",
   "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
   "cloudRecordingExpiringSoon": "Bản ghi cloud này sẽ hết hạn trong vòng 3 ngày. Hãy tải về nếu bạn muốn giữ bản trên máy.",
-  "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống."
+  "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống.",
+  "recordingDownloadedLabel": "Đã tải về",
+  "recordingDownloadedBody": "Đã lưu trên thiết bị này. Bạn có thể phát hoặc chia sẻ bản trên máy.",
+  "recordingDownloadingBytes": "Đang tải {done} / {total}",
+  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "deleteCloudRecordingAction": "Xoá bản ghi cloud",
+  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải"
 }
