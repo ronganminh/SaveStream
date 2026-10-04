@@ -3264,6 +3264,7 @@ async def list_admin_complaints(
     status_filter: str | None = Query(default=None, alias="status"),
     kind: str | None = Query(default=None),
     query: str | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminComplaintListResponse:
@@ -3724,6 +3725,7 @@ async def list_admin_support_reports(
         status=status_filter,
         assigned_to_user_id=assigned_to_user_id,
         query=query,
+        sort_order=sort_order,
     )
     return AdminSupportReportListResponse(
         items=[
@@ -3732,6 +3734,73 @@ async def list_admin_support_reports(
         ],
         next_cursor=next_cursor,
         has_more=has_more,
+    )
+
+
+@router.get("/support-reports/export.csv")
+async def export_admin_support_reports(
+    request: Request,
+    status_filter: str | None = Query(default=None, alias="status"),
+    assigned_to_user_id: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:support_reports:read")
+    _require_scope(principal, "admin:csv:export")
+    rows, _, has_more = await SupportReportService(session).list_admin_reports(
+        limit=500,
+        cursor=None,
+        status=status_filter,
+        assigned_to_user_id=assigned_to_user_id,
+        query=query,
+        sort_order=sort_order,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id", "user_id", "user_email", "recording_id", "status",
+        "assigned_to_user_id", "platform", "app_version", "description",
+        "created_at", "expires_at",
+    ])
+    for report, email in rows:
+        writer.writerow([
+            str(report.id),
+            str(report.user_id),
+            email,
+            str(report.recording_id) if report.recording_id else "",
+            report.status,
+            str(report.assigned_to_user_id) if report.assigned_to_user_id else "",
+            report.platform or "",
+            report.app_version or "",
+            report.description,
+            report.created_at.isoformat(),
+            report.expires_at.isoformat(),
+        ])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.support_reports.exported",
+        resource_type="support_report",
+        resource_id=None,
+        context=_context(request),
+        details={
+            "rows": len(rows),
+            "truncated": has_more,
+            "status": status_filter,
+            "assigned_to_user_id": assigned_to_user_id,
+            "query": query,
+        },
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-app-reports.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
     )
 
 
