@@ -18,7 +18,12 @@ class MainShell extends ConsumerWidget {
     final double width = MediaQuery.sizeOf(context).width;
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
     final bool compactFab = width < 360 || textScale >= 1.4;
-    final bool compactNavigation = width < 440 || textScale >= 1.4;
+    final NavigationDestinationLabelBehavior navigationLabelBehavior =
+        textScale >= 1.4
+        ? NavigationDestinationLabelBehavior.alwaysHide
+        : width < 440
+        ? NavigationDestinationLabelBehavior.onlyShowSelected
+        : NavigationDestinationLabelBehavior.alwaysShow;
     final String location = GoRouterState.of(context).matchedLocation;
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
@@ -47,9 +52,7 @@ class MainShell extends ConsumerWidget {
           if (!hideRecordingBar && activeRecordings.isNotEmpty)
             ActiveRecordingBar(items: activeRecordings),
           NavigationBar(
-            labelBehavior: compactNavigation
-                ? NavigationDestinationLabelBehavior.onlyShowSelected
-                : NavigationDestinationLabelBehavior.alwaysShow,
+            labelBehavior: navigationLabelBehavior,
             selectedIndex: navigationShell.currentIndex,
             onDestinationSelected: (int index) {
               navigationShell.goBranch(
