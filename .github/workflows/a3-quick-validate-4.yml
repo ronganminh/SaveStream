@@ -1,0 +1,37 @@
+name: A3 Quick Validate 4
+
+on:
+  push:
+    branches:
+      - tmp/a3-quick-validate-4-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter gen-l10n
+      - name: Check formatting
+        run: >-
+          dart format --output=none --set-exit-if-changed
+          lib/app lib/core lib/features lib/l10n/l10n.dart test
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: A3 tests
+        run: flutter test test/v2a_a3_*.dart
+      - name: Delete temporary validation branch
+        working-directory: .
+        if: success()
+        run: git push origin --delete "$GITHUB_REF_NAME"
