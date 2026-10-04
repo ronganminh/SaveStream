@@ -7,12 +7,14 @@ import '../../../../platform/contracts/recording_platform_service.dart';
 import '../../../../platform/platform_providers.dart';
 import '../../../devices/domain/models/device_registration.dart';
 
-final Provider<RecordingPlatformController> recordingPlatformControllerProvider =
-    Provider<RecordingPlatformController>((Ref ref) {
-      return RecordingPlatformController(
-        service: ref.watch(recordingPlatformServiceProvider),
-      );
-    });
+final Provider<RecordingPlatformController>
+recordingPlatformControllerProvider = Provider<RecordingPlatformController>((
+  Ref ref,
+) {
+  return RecordingPlatformController(
+    service: ref.watch(recordingPlatformServiceProvider),
+  );
+});
 
 final StreamProvider<RecordingPlatformAction> recordingPlatformActionProvider =
     StreamProvider<RecordingPlatformAction>(
@@ -20,9 +22,8 @@ final StreamProvider<RecordingPlatformAction> recordingPlatformActionProvider =
     );
 
 class RecordingPlatformController {
-  const RecordingPlatformController({
-    required RecordingPlatformService service,
-  }) : _service = service;
+  const RecordingPlatformController({required RecordingPlatformService service})
+    : _service = service;
 
   final RecordingPlatformService _service;
 
