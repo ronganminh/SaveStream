@@ -114,6 +114,18 @@ class LocalRecordingController {
     return summary;
   }
 
+  Future<LocalRecordingSession> extendWithReward(String rewardId) async {
+    final LocalRecordingSession session =
+        _activeSession ??
+        (throw StateError('There is no active local recording session.'));
+    final LocalRecordingSession extended = await _repository.extend(
+      session.sessionId,
+      rewardId: rewardId,
+    );
+    _activeSession = extended;
+    return extended;
+  }
+
   Future<void> recover() {
     if (_activeSession == null) {
       throw StateError('There is no active local recording session.');
