@@ -1287,5 +1287,21 @@
   "cloudRecordingStopConfirmBody": "SaveStream sẽ dừng recording trên server rồi xử lý phần đã lưu.",
   "cloudRecordingStartError": "Không thể bắt đầu cloud recording.",
   "recordingPlaybackNotReadyTitle": "Chưa xem được khi đang ghi",
-  "recordingPlaybackNotReadyBody": "Bản ghi phát được sau khi LIVE kết thúc và server xử lý xong."
+  "recordingPlaybackNotReadyBody": "Bản ghi phát được sau khi LIVE kết thúc và server xử lý xong.",
+  "recordingBarSingle": "{name} đang record",
+  "@recordingBarSingle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingBarMultiple": "{count} recording đang chạy",
+  "@recordingBarMultiple": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
