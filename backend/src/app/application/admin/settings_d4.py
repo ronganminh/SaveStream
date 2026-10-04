@@ -193,7 +193,7 @@ def _normalize(definition: RuntimeSettingDefinition, value: object) -> SettingVa
         )
 
     if definition.kind == "bool":
-        if type(value) is not bool:
+        if not isinstance(value, bool):
             raise ApplicationError(
                 "VALIDATION_ERROR",
                 f"{definition.key} must be a boolean",
@@ -202,7 +202,7 @@ def _normalize(definition: RuntimeSettingDefinition, value: object) -> SettingVa
         return value
 
     if definition.kind == "int":
-        if type(value) is not int:
+        if not isinstance(value, int) or isinstance(value, bool):
             raise ApplicationError(
                 "VALIDATION_ERROR",
                 f"{definition.key} must be an integer",
