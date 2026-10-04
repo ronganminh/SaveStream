@@ -1359,5 +1359,95 @@
         "type": "String"
       }
     }
-  }
+  },
+  "doneAction": "Đã xong",
+  "nativeRecordingActiveBody": "{name} · {elapsed} · Local · còn {remaining} phút Free",
+  "@nativeRecordingActiveBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"},
+      "remaining": {"type": "String"}
+    }
+  },
+  "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
+  "@nativeRecordingActiveUnlimitedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "elapsed": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectTitle": "Đang kết nối lại · {name}",
+  "@nativeRecordingReconnectTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingReconnectBody": "Mất kết nối tới nguồn LIVE. Phần đã ghi vẫn an toàn.",
+  "nativeRecordingMinuteWarningTitle": "Còn chưa tới 1 phút Free · {name}",
+  "@nativeRecordingMinuteWarningTitle": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingMinuteWarningBody": "Mở SaveStream để thêm 10 phút. Quảng cáo nhận thưởng chỉ chạy trong app.",
+  "nativeRecordingFinalizingTitle": "Đang hoàn tất bản ghi",
+  "nativeRecordingFinalizingBody": "{name} · đang lưu trên thiết bị này",
+  "@nativeRecordingFinalizingBody": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "nativeRecordingSavedTitle": "Đã lưu bản ghi",
+  "nativeRecordingSavedBody": "{name} · {duration} · {size} · lưu trên thiết bị này",
+  "@nativeRecordingSavedBody": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "duration": {"type": "String"},
+      "size": {"type": "String"}
+    }
+  },
+  "nativeRecordingInterruptedTitle": "Recording bị gián đoạn",
+  "nativeRecordingInterruptedBody": "Mở SaveStream để khôi phục phần đã ghi.",
+  "androidBackgroundGuideTitle": "Record nền ổn định hơn",
+  "androidBatteryOptimizationTitle": "Tối ưu pin",
+  "androidBatteryOptimizationOn": "Đang bật",
+  "androidBatteryOptimizationOff": "Không hạn chế",
+  "androidBatteryOptimizationBody": "Android có thể dừng SaveStream khi tiết kiệm pin. Cho phép SaveStream chạy không hạn chế để giảm gián đoạn.",
+  "androidBatteryStepOpen": "Mở cài đặt pin của SaveStream",
+  "androidBatteryStepUnrestricted": "Chọn “Không hạn chế”",
+  "androidBatteryStepReturn": "Quay lại SaveStream",
+  "androidOpenBatterySettingsAction": "Mở cài đặt pin",
+  "androidOemGuideAction": "Xem hướng dẫn theo thiết bị",
+  "androidOemGuideTitle": "Giữ SaveStream chạy trên {device}",
+  "@androidOemGuideTitle": {
+    "placeholders": {
+      "device": {"type": "String"}
+    }
+  },
+  "androidOemGenericBody": "Phiên bản Android của bạn có thể có thêm giới hạn chạy nền. Hãy kiểm tra cài đặt ứng dụng và pin cho SaveStream.",
+  "androidOemXiaomiBody": "HyperOS có thể đóng SaveStream khi chạy nền kể cả khi đang hiện thông báo recording.",
+  "androidOemSamsungBody": "Samsung có thể đưa ứng dụng vào danh sách ngủ hoặc ngủ sâu và làm gián đoạn Local recording.",
+  "androidOemOppoBody": "Oppo, Realme và Vivo có thể áp dụng thêm giới hạn chạy nền và tự khởi động.",
+  "androidOemHuaweiBody": "Huawei có thể quản lý khởi chạy ứng dụng và hoạt động nền khá chặt.",
+  "androidOemAutostartStep": "Cho phép SaveStream tự khởi động",
+  "androidOemBatteryStep": "Đặt mức dùng pin thành “Không hạn chế”",
+  "androidOemRecentAppsStep": "Giữ SaveStream trong màn đa nhiệm",
+  "androidOemSamsungSleepStep": "Gỡ SaveStream khỏi danh sách Ứng dụng ngủ",
+  "androidOemAppLaunchStep": "Cho phép tự khởi chạy và hoạt động nền",
+  "androidOpenAppSettingsAction": "Mở cài đặt ứng dụng",
+  "iosRecordingGuideTitle": "Record trên iPhone",
+  "iosKeepOpenTitle": "Giữ SaveStream mở khi record",
+  "iosKeepOpenBody": "iOS có thể dừng Local recording khi SaveStream chạy nền.",
+  "iosScreenAwakeTitle": "Giữ màn hình sáng khi đang ghi",
+  "iosScreenAwakeBody": "SaveStream giữ màn hình sáng khi có Local recording. Nếu bạn tự khoá máy, recording vẫn có thể bị gián đoạn.",
+  "iosRecoveryGuideTitle": "Khôi phục sau gián đoạn",
+  "iosRecoveryGuideBody": "Khi mở lại SaveStream, app tự kiểm tra recording Local bị gián đoạn.",
+  "iosReturnReminderTitle": "Nhắc quay lại SaveStream",
+  "iosReturnReminderBody": "Lên lịch nhắc cục bộ khi SaveStream chạy nền trong lúc Local recording.",
+  "iosCloudIndependentTitle": "Không cần giữ iPhone mở",
+  "iosCloudIndependentBody": "Cloud recording chạy trên server SaveStream và không phụ thuộc điện thoại luôn online.",
+  "settingsAndroidRecordingTitle": "Record nền",
+  "settingsAndroidRecordingSubtitle": "Hướng dẫn pin và thiết bị",
+  "settingsIosRecordingTitle": "Record trên iPhone",
+  "settingsIosRecordingSubtitle": "Giữ app mở và khôi phục"
 }
