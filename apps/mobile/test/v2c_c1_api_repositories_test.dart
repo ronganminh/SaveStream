@@ -82,16 +82,13 @@ void main() {
     ) {
       expect(options.method, 'PUT');
       expect(options.path, '/v1/me/devices/dev%2F1');
-      expect(
-        options.data,
-        <String, Object?>{
-          'platform': 'android',
-          'push_token': 'push-token',
-          'device_name': 'Pixel',
-          'app_version': '2.0.0',
-          'locale': 'vi',
-        },
-      );
+      expect(options.data, <String, Object?>{
+        'platform': 'android',
+        'push_token': 'push-token',
+        'device_name': 'Pixel',
+        'app_version': '2.0.0',
+        'locale': 'vi',
+      });
       return ResponseBody.fromString('', 204);
     });
     const DeviceRegistration device = DeviceRegistration(
@@ -155,10 +152,7 @@ void main() {
       expect(options.queryParameters['cursor'], 'next-1');
       return _jsonResponse(200, <String, Object?>{
         'items': <Object?>[_watchJson(id: 'watch-2')],
-        'pagination': <String, Object?>{
-          'next_cursor': null,
-          'has_more': false,
-        },
+        'pagination': <String, Object?>{'next_cursor': null, 'has_more': false},
       });
     });
 
@@ -166,10 +160,10 @@ void main() {
       apiClient: _clientFor(listAdapter),
     ).listWatches();
 
-    expect(
-      watches.map((WatchSummary item) => item.id),
-      <String>['watch-1', 'watch-2'],
-    );
+    expect(watches.map((WatchSummary item) => item.id), <String>[
+      'watch-1',
+      'watch-2',
+    ]);
     expect(listAdapter.calls, 2);
   });
 
@@ -189,63 +183,60 @@ void main() {
     expect(planError.message, isNotEmpty);
   });
 
-  test(
-    'notification preferences map V2 fields in both directions',
-    () async {
-      final _FakeAdapter adapter = _FakeAdapter((
-        RequestOptions options,
-        int call,
-      ) {
-        if (call == 1) {
-          expect(options.method, 'GET');
-          return _jsonResponse(200, _notificationPreferencesJson(
+  test('notification preferences map V2 fields in both directions', () async {
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      if (call == 1) {
+        expect(options.method, 'GET');
+        return _jsonResponse(
+          200,
+          _notificationPreferencesJson(
             creatorLive: false,
             recordingExpiring: true,
             freeMinutesLow: false,
-          ));
-        }
-
-        expect(options.method, 'PATCH');
-        expect(
-          options.data,
-          <String, Object?>{
-            'recording_started': true,
-            'recording_ready': true,
-            'recording_failed': true,
-            'creator_live': true,
-            'recording_expiring': false,
-            'free_minutes_low': true,
-          },
+          ),
         );
-        return _jsonResponse(200, _notificationPreferencesJson(
+      }
+
+      expect(options.method, 'PATCH');
+      expect(options.data, <String, Object?>{
+        'recording_started': true,
+        'recording_ready': true,
+        'recording_failed': true,
+        'creator_live': true,
+        'recording_expiring': false,
+        'free_minutes_low': true,
+      });
+      return _jsonResponse(
+        200,
+        _notificationPreferencesJson(
           creatorLive: true,
           recordingExpiring: false,
           freeMinutesLow: true,
-        ));
-      });
-      final ApiNotificationPreferencesRepository repository =
-          ApiNotificationPreferencesRepository(
-            apiClient: _clientFor(adapter),
-          );
+        ),
+      );
+    });
+    final ApiNotificationPreferencesRepository repository =
+        ApiNotificationPreferencesRepository(apiClient: _clientFor(adapter));
 
-      final NotificationPreferences initial = await repository.getPreferences();
-      expect(initial.creatorLive, isFalse);
-      expect(initial.recordingExpiring, isTrue);
-      expect(initial.freeMinutesLow, isFalse);
+    final NotificationPreferences initial = await repository.getPreferences();
+    expect(initial.creatorLive, isFalse);
+    expect(initial.recordingExpiring, isTrue);
+    expect(initial.freeMinutesLow, isFalse);
 
-      final NotificationPreferences updated = await repository
-          .updatePreferences(
-            initial.copyWith(
-              creatorLive: true,
-              recordingExpiring: false,
-              freeMinutesLow: true,
-            ),
-          );
-      expect(updated.creatorLive, isTrue);
-      expect(updated.recordingExpiring, isFalse);
-      expect(updated.freeMinutesLow, isTrue);
-    },
-  );
+    final NotificationPreferences updated = await repository.updatePreferences(
+      initial.copyWith(
+        creatorLive: true,
+        recordingExpiring: false,
+        freeMinutesLow: true,
+      ),
+    );
+    expect(updated.creatorLive, isTrue);
+    expect(updated.recordingExpiring, isFalse);
+    expect(updated.freeMinutesLow, isTrue);
+  });
 
   test(
     'notification feed maps exposed V2 types and tolerates others',
@@ -295,14 +286,8 @@ void main() {
                 minutesCharged: 7,
                 queuePosition: 2,
               ),
-              _recordingJson(
-                id: 'rec-future',
-                status: 'future_backend_state',
-              ),
-              _recordingJson(
-                id: 'rec-missed',
-                status: 'missed_no_cloud_slot',
-              ),
+              _recordingJson(id: 'rec-future', status: 'future_backend_state'),
+              _recordingJson(id: 'rec-missed', status: 'missed_no_cloud_slot'),
             ],
             'pagination': <String, Object?>{
               'next_cursor': null,
@@ -342,10 +327,7 @@ ApiClient _clientFor(_FakeAdapter adapter) {
   return ApiClient(config: _testConfig(), dio: dio);
 }
 
-Future<ApiException> _watchError({
-  required int status,
-  required String code,
-}) {
+Future<ApiException> _watchError({required int status, required String code}) {
   final ApiClient client = _clientFor(
     _FakeAdapter(
       (RequestOptions options, int call) => _errorResponse(
@@ -509,8 +491,10 @@ ResponseBody _errorResponse(
   });
 }
 
-typedef _FakeHandler =
-    FutureOr<ResponseBody> Function(RequestOptions options, int call);
+typedef _FakeHandler = FutureOr<ResponseBody> Function(
+  RequestOptions options,
+  int call,
+);
 
 final class _FakeAdapter implements HttpClientAdapter {
   _FakeAdapter(this._handler);
