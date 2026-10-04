@@ -28,10 +28,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      app(
-        entitlement: _entitlement(),
-        extensionsUsed: 1,
-      ),
+      app(entitlement: _entitlement(), extensionsUsed: 1),
     );
 
     expect(find.text('+10 minutes for this recording'), findsOneWidget);
@@ -41,14 +38,9 @@ void main() {
     expect(find.text('Advertisement'), findsNothing);
   });
 
-  testWidgets('R11 blocks after four extensions', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('R11 blocks after four extensions', (WidgetTester tester) async {
     await tester.pumpWidget(
-      app(
-        entitlement: _entitlement(),
-        extensionsUsed: 4,
-      ),
+      app(entitlement: _entitlement(), extensionsUsed: 4),
     );
 
     expect(find.text('Maximum extensions reached'), findsOneWidget);
@@ -60,10 +52,7 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      app(
-        entitlement: _entitlement(rewardsUsedToday: 8),
-        extensionsUsed: 2,
-      ),
+      app(entitlement: _entitlement(rewardsUsedToday: 8), extensionsUsed: 2),
     );
 
     expect(find.text('Daily rewarded-ad limit reached'), findsOneWidget);
