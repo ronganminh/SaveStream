@@ -240,7 +240,7 @@ class AdminSafetyService:
                 "VALIDATION_ERROR", "Invalid complaint status", status_code=400
             )
         case = await self.get_complaint(complaint_id)
-        before = {
+        before: dict[str, object] = {
             "status": case.status,
             "assigned_to_user_id": (
                 str(case.assigned_to_user_id) if case.assigned_to_user_id else None
