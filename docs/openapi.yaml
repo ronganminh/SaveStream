@@ -7391,6 +7391,51 @@
             }
           }
         }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List creator blocks",
+        "operationId": "listAdminCreatorBlocks",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Creator blocks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCreatorBlockList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint read permission required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/admin/creator-blocks/{block_id}/unblock": {
@@ -7447,6 +7492,191 @@
           },
           "403": {
             "description": "Complaint permission or step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/complaints/export.csv": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export complaint cases as CSV",
+        "operationId": "exportAdminComplaints",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded complaint CSV export",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint read and CSV export permissions required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/creator-blocks/{block_id}/delete-recordings": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete recordings locked by an active creator block",
+        "operationId": "deleteAdminBlockedRecordings",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "block_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDeleteBlockedRecordingsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deletion action applied to finished recordings; active recordings are stopped first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDeleteBlockedRecordingsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint write permission and step-up required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/safety/suspicious-accounts": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List suspicious accounts from rate-limit, shared-IP and reward signals",
+        "operationId": "listAdminSuspiciousAccounts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suspicious accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminSuspiciousAccountList"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Complaint read permission required",
             "content": {
               "application/json": {
                 "schema": {
@@ -13213,6 +13443,146 @@
             }
           },
           "paused_watch_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminCreatorBlockList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminCreatorBlock"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSuspiciousAccount": {
+        "type": "object",
+        "required": [
+          "user_id",
+          "email",
+          "created_at",
+          "rate_limit_hits_24h",
+          "shared_signup_ip_accounts_7d",
+          "reward_valid_7d",
+          "reward_invalid_7d",
+          "reward_invalid_ratio_7d",
+          "reward_invalid_streak",
+          "reward_locked_until",
+          "reasons"
+        ],
+        "properties": {
+          "user_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "created_at": {
+            "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "rate_limit_hits_24h": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "shared_signup_ip_accounts_7d": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reward_valid_7d": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reward_invalid_7d": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reward_invalid_ratio_7d": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "reward_invalid_streak": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reward_locked_until": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UtcDateTime"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminSuspiciousAccountList": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminSuspiciousAccount"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDeleteBlockedRecordingsRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDeleteBlockedRecordingsResponse": {
+        "type": "object",
+        "required": [
+          "block_id",
+          "deleted_recording_ids",
+          "pending_stop_recording_ids"
+        ],
+        "properties": {
+          "block_id": {
+            "type": "string"
+          },
+          "deleted_recording_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pending_stop_recording_ids": {
             "type": "array",
             "items": {
               "type": "string"
