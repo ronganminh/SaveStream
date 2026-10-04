@@ -1364,29 +1364,43 @@
   "nativeRecordingActiveBody": "{name} · {elapsed} · Local · {remaining} Free remaining",
   "@nativeRecordingActiveBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"},
-      "remaining": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
   "@nativeRecordingActiveUnlimitedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectTitle": "Reconnecting · {name}",
   "@nativeRecordingReconnectTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectBody": "Connection to the LIVE source was lost. The recorded part is still safe.",
   "nativeRecordingMinuteWarningTitle": "Less than 1 minute Free · {name}",
   "@nativeRecordingMinuteWarningTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingMinuteWarningBody": "Open SaveStream to add 10 minutes. Rewarded ads only run inside the app.",
@@ -1394,16 +1408,24 @@
   "nativeRecordingFinalizingBody": "{name} · saving on this device",
   "@nativeRecordingFinalizingBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingSavedTitle": "Recording saved",
   "nativeRecordingSavedBody": "{name} · {duration} · {size} · stored on this device",
   "@nativeRecordingSavedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "duration": {"type": "String"},
-      "size": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingInterruptedTitle": "Recording was interrupted",
@@ -1421,7 +1443,9 @@
   "androidOemGuideTitle": "Keep SaveStream running on {device}",
   "@androidOemGuideTitle": {
     "placeholders": {
-      "device": {"type": "String"}
+      "device": {
+        "type": "String"
+      }
     }
   },
   "androidOemGenericBody": "Your Android version may have extra background restrictions. Review the app and battery settings for SaveStream.",
@@ -1453,19 +1477,43 @@
   "settingsRecordingSectionTitle": "Recording",
   "recordingSearchHint": "Search by creator",
   "recordingCrossDeviceValue": "Recorded on {device}",
-  "@recordingCrossDeviceValue": {"placeholders": {"device": {"type": "String"}}},
+  "@recordingCrossDeviceValue": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
   "recordingCrossDeviceUnavailable": "Not available on this device. Playback, sharing, and deletion are disabled.",
   "recordingLocalFileMissing": "The local file was moved or deleted. SaveStream cannot play or share it.",
   "shareRecordingAction": "Share recording",
   "deleteLocalRecordingAction": "Delete from this device",
   "cloudRecordingExpiresValue": "Kept until {date}",
-  "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
+  "@cloudRecordingExpiresValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "cloudRecordingExpiringSoon": "This cloud recording expires within 3 days. Download it if you want to keep a local copy.",
   "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download.",
   "recordingDownloadedLabel": "Downloaded",
   "recordingDownloadedBody": "Saved on this device. You can play or share the local copy.",
   "recordingDownloadingBytes": "Downloading {done} of {total}",
-  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "@recordingDownloadingBytes": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "deleteCloudRecordingAction": "Delete cloud recording",
-  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy"
+  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy",
+  "notificationCreatorLiveTitle": "Creator goes LIVE",
+  "notificationRecordingExpiringTitle": "Cloud recording expiring soon",
+  "notificationFreeMinutesLowTitle": "Free recording minutes running low"
 }
