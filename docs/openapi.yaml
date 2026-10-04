@@ -5545,6 +5545,401 @@
           }
         }
       }
+    },
+    "/admin/packages": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List admin packages",
+        "operationId": "listAdminPackages",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create package",
+        "operationId": "createAdminPackage",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPackageCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/packages/{package_id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update package",
+        "operationId": "updateAdminPackage",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "package_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPackageUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/promotions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List promotion codes",
+        "operationId": "listAdminPromotions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create promotion code",
+        "operationId": "createAdminPromotion",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPromotionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/promotions/{promotion_id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update promotion code",
+        "operationId": "updateAdminPromotion",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "promotion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPromotionUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/promotions/{promotion_id}/redemptions": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List promotion redemptions",
+        "operationId": "listAdminPromotionRedemptions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "promotion_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/bulk-grants/preview": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Preview bulk cloud-minute grant",
+        "operationId": "previewAdminBulkGrant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminBulkGrantPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/bulk-grants": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Queue bulk cloud-minute grant",
+        "operationId": "createAdminBulkGrant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Admin-Step-Up",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminBulkGrantCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/bulk-grants/{grant_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get bulk grant report",
+        "operationId": "getAdminBulkGrant",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/admin/bulk-grants/{grant_id}/deliveries": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List bulk grant deliveries",
+        "operationId": "listAdminBulkGrantDeliveries",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "grant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/credits/redeem": {
+      "post": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Redeem promotion code",
+        "operationId": "redeemPromotion",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemPromotionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -9367,6 +9762,592 @@
           "created_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AdminPackage": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "name",
+          "credits",
+          "amount_minor",
+          "currency",
+          "active",
+          "display_order",
+          "order_count",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "USD"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "display_order": {
+            "type": "integer"
+          },
+          "app_store_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "google_play_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "web_variant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "order_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminPackageCreateRequest": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "credits",
+          "amount_minor",
+          "reason"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "amount_minor": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "display_order": {
+            "type": "integer",
+            "default": 0
+          },
+          "app_store_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "google_play_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "web_variant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminPackageUpdateRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credits": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "amount_minor": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "display_order": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "app_store_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "google_play_product_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "web_variant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "clear_app_store_product_id": {
+            "type": "boolean",
+            "default": false
+          },
+          "clear_google_play_product_id": {
+            "type": "boolean",
+            "default": false
+          },
+          "clear_web_variant_id": {
+            "type": "boolean",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminPromotion": {
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "credits",
+          "redemption_count",
+          "active",
+          "counts_as_purchase",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "max_redemptions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "redemption_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "counts_as_purchase": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminPromotionCreateRequest": {
+        "type": "object",
+        "required": [
+          "code",
+          "credits",
+          "reason"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "max_redemptions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts_as_purchase": {
+            "type": "boolean",
+            "default": false
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminPromotionUpdateRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "credits": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "clear_expires_at": {
+            "type": "boolean",
+            "default": false
+          },
+          "max_redemptions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "clear_max_redemptions": {
+            "type": "boolean",
+            "default": false
+          },
+          "active": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "counts_as_purchase": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        }
+      },
+      "AdminBulkGrantFilters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "plan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "free",
+              "pro",
+              null
+            ]
+          },
+          "account_status": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "active",
+              "locked",
+              "pending_deletion",
+              "deleted",
+              null
+            ]
+          },
+          "email_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "created_from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "created_to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "purchase_provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "AdminBulkGrantPreviewRequest": {
+        "type": "object",
+        "required": [
+          "credits"
+        ],
+        "properties": {
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "filters": {
+            "$ref": "#/components/schemas/AdminBulkGrantFilters"
+          }
+        }
+      },
+      "AdminBulkGrantCreateRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AdminBulkGrantPreviewRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "reason"
+            ],
+            "properties": {
+              "counts_as_purchase": {
+                "type": "boolean",
+                "default": false
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 500
+              }
+            }
+          }
+        ]
+      },
+      "AdminBulkGrant": {
+        "type": "object",
+        "required": [
+          "id",
+          "credits",
+          "counts_as_purchase",
+          "reason",
+          "filters",
+          "status",
+          "audience_count",
+          "total_credits",
+          "delivered_count",
+          "failed_count",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "credits": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "counts_as_purchase": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "filters": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed"
+            ]
+          },
+          "audience_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total_credits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "delivered_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "started_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "RedeemPromotionRequest": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 64
+          }
+        }
+      },
+      "RedeemPromotionResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "cloud_minutes_added",
+          "cloud_minutes_available",
+          "counts_as_purchase"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "cloud_minutes_added": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cloud_minutes_available": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "counts_as_purchase": {
+            "type": "boolean"
           }
         }
       }
