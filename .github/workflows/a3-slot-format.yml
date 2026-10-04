@@ -1,0 +1,49 @@
+name: A3 Slot Format
+
+on:
+  push:
+    branches:
+      - tmp/a3-format-slot-20261004
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - name: Resolve locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Format A3 slot files
+        run: |
+          dart format \
+            lib/features/local_recordings/presentation/controllers/local_recording_confirmation_controller.dart \
+            lib/features/entitlement/domain/models/entitlement.dart \
+            lib/platform/platform_providers.dart \
+            lib/features/local_recordings/presentation/controllers/local_recording_controller.dart \
+            lib/features/local_recordings/presentation/controllers/second_local_slot_controller.dart \
+            lib/features/local_recordings/presentation/second_local_slot_sheet.dart \
+            lib/features/channels/presentation/channel_detail_screen.dart \
+            lib/features/local_recordings/presentation/local_recording_screen.dart \
+            lib/features/home/presentation/home_screen.dart \
+            test/v2a_a3_second_local_slot_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "style(mobile): apply Dart 3.47.0 slot formatter [formatted]"
+          git push
