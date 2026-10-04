@@ -1,14 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
-import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
