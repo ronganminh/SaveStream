@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import random
+import time
 import uuid
 from collections.abc import Callable
 from typing import Protocol
@@ -18,6 +19,7 @@ from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
 from app.domain.watches.state import WatchStatus
+from app.infrastructure.db.admin_models import AdminWatchCheckMetric
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
@@ -114,13 +116,19 @@ class WatchScheduler:
             return
 
         now = utcnow()
+        check_started = time.perf_counter()
         source = Source.model_validate(
             {"type": watch.source_type, "value": watch.source_value}
         )
         try:
             result = await checker.check(source)
         except Exception as exc:
-            await self._record_failure(watch, now, exc)
+            await self._record_failure(
+                watch,
+                now,
+                exc,
+                latency_ms=max(0, int((time.perf_counter() - check_started) * 1000)),
+            )
             return
 
         previous_room_id = watch.resolved_room_id
@@ -160,6 +168,15 @@ class WatchScheduler:
                 watch,
                 live_session_id=watch.live_session_id,
             )
+        self.session.add(
+            AdminWatchCheckMetric(
+                watch_id=watch.id,
+                success=True,
+                latency_ms=max(0, int((time.perf_counter() - check_started) * 1000)),
+                error=None,
+                checked_at=utcnow(),
+            )
+        )
         await self.session.commit()
 
         if watch.auto_record:
@@ -183,6 +200,8 @@ class WatchScheduler:
         watch: Watch,
         now: datetime,
         exc: Exception,
+        *,
+        latency_ms: int,
     ) -> None:
         watch.last_checked_at = now
         watch.live_status = "unknown"
@@ -195,6 +214,15 @@ class WatchScheduler:
             watch.next_check_at = None
         else:
             watch.next_check_at = now + self._error_delay(watch.failure_count)
+        self.session.add(
+            AdminWatchCheckMetric(
+                watch_id=watch.id,
+                success=False,
+                latency_ms=latency_ms,
+                error=watch.last_error,
+                checked_at=utcnow(),
+            )
+        )
         await self.session.commit()
 
     async def _auto_record(self, watch: Watch, room_id: str) -> None:
