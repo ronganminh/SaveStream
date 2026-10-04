@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../l10n/l10n.dart';
+import '../../../devices/domain/models/device_registration.dart';
 import '../../../../platform/contracts/local_recorder.dart';
 import '../../../../platform/contracts/recording_platform_service.dart';
 import '../../../../platform/platform_providers.dart';
@@ -32,7 +33,7 @@ class RecordingPlatformController {
     required bool unlimited,
     required int remainingSeconds,
   }) async {
-    if (_service.platform.name != 'android') return;
+    if (_service.platform != DevicePlatform.android) return;
 
     final RecordingNotificationSpec spec;
     if (state.phase == LocalRecorderPhase.finalizing) {
@@ -127,7 +128,7 @@ class RecordingPlatformController {
     required String creatorName,
     required bool activeRecording,
   }) async {
-    if (_service.platform.name != 'ios') return;
+    if (_service.platform != DevicePlatform.ios) return;
 
     if (!activeRecording) {
       await _service.cancelIosReturnReminder();
