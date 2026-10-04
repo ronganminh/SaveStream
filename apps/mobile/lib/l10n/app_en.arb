@@ -1303,5 +1303,61 @@
         "type": "int"
       }
     }
+  },
+  "homeRecordingRemaining": "{remaining} remaining",
+  "@homeRecordingRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingTitle": "Finishing {name}",
+  "@homeFinalizingTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFinalizingStep": "Step {current}/{total} · {label}",
+  "@homeFinalizingStep": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSecondSlotOpenBody": "Local slot #2 is open until {time}.",
+  "@homeSecondSlotOpenBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDailyRecordingExhaustedTitle": "Free recording and rewarded ads are used up today",
+  "homeDailyRecordingExhaustedBody": "0 / {daily} Free minutes · {used}/{cap} rewarded ads. Resets in {reset}.",
+  "@homeDailyRecordingExhaustedBody": {
+    "placeholders": {
+      "daily": {
+        "type": "int"
+      },
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      },
+      "reset": {
+        "type": "String"
+      }
+    }
   }
 }
