@@ -19,11 +19,11 @@ class MainShell extends ConsumerWidget {
     final bool compactFab = width < 360 || textScale >= 1.4;
     final bool compactNavigation = width < 440 || textScale >= 1.4;
     final String location = GoRouterState.of(context).matchedLocation;
-    final bool hideRecordingBar =
-        location.startsWith('${AppRoutes.recordings}/') &&
-        location != AppRoutes.recordings;
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
+    );
+    final bool hideRecordingBar = activeRecordings.any(
+      (ActiveRecordingBarItem item) => item.route == location,
     );
 
     return Scaffold(
