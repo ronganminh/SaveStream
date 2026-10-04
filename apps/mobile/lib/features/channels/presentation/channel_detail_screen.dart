@@ -62,7 +62,10 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     if (!confirmed || !mounted) return;
 
     try {
-      await ref.read(localRecordingControllerProvider).start(watchId: watch.id);
+      final LocalRecordingController recordingController = ref.read(
+        localRecordingControllerProvider,
+      );
+      await recordingController.start(watchId: watch.id);
       if (mounted) {
         context.push(AppRoutes.localRecording(watch.id));
       }
