@@ -17,6 +17,9 @@ final Provider<LocalRecorder> localRecorderProvider = Provider<LocalRecorder>(
   (Ref ref) => FakeLocalRecorder(),
 );
 
+final Provider<LocalRecorder> secondaryLocalRecorderProvider =
+    Provider<LocalRecorder>((Ref ref) => FakeLocalRecorder());
+
 final Provider<PurchaseService> purchaseServiceProvider =
     Provider<PurchaseService>((Ref ref) => FakePurchaseService());
 
