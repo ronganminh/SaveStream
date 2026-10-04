@@ -1284,5 +1284,6 @@
   "cloudRecordingFailedTitle": "Cloud recording failed",
   "cloudRecordingFailedRefundBody": "Cloud hours for the failed recording are refunded by the server. If a saved artifact exists, you can still open it.",
   "cloudRecordingStopConfirmTitle": "Stop cloud recording?",
-  "cloudRecordingStopConfirmBody": "SaveStream will stop recording on the server and then process the saved part."
+  "cloudRecordingStopConfirmBody": "SaveStream will stop recording on the server and then process the saved part.",
+  "cloudRecordingStartError": "Could not start cloud recording."
 }
