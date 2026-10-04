@@ -81,6 +81,8 @@ Track A có thể đã sửa tối thiểu vài file ánh xạ trong `data/remot
 
 ## C2 — Thử nghiệm kỹ thuật ghi trên máy (dừng chờ duyệt)
 
+**Trạng thái:** code spike đã hoàn tất. Theo quyết định của chủ repo ngày 2026-10-04, phần kiểm thử thiết bị thật của C2 được hoãn; sẽ chạy gộp bằng APK cuối khi toàn bộ app hoàn tất. Việc hoãn này không được hiểu là đã có bằng chứng thiết bị thật.
+
 **Phụ thuộc:** C0. **Đây là phần rủi ro kỹ thuật lớn nhất của V2. Phase này không tạo tính năng; nó tạo bằng chứng và một đề xuất. Xong thì dừng, báo chủ repo, không làm C3.**
 
 Câu hỏi phải trả lời bằng thử nghiệm thật trên thiết bị:
