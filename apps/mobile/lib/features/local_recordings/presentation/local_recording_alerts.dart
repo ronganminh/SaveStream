@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -109,7 +110,7 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
       children: <Widget>[
         _buildPhaseAlert(context),
         if (_showMinuteWarning) ...<Widget>[
-          const SizedBox(height: 12),
+          const SizedBox(height: SsSpacing.md),
           SsInlineAlert(
             title: context.l10n.localRecordingMinuteWarningTitle,
             message: context.l10n.localRecordingMinuteWarningBody,
