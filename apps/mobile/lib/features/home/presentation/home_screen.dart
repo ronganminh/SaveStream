@@ -156,6 +156,13 @@ class _HomeDashboard extends StatelessWidget {
     final WatchSummary? live = data.liveWatches.isEmpty
         ? null
         : data.liveWatches.first;
+    final WatchSummary? secondLive = data.liveWatches.length > 1
+        ? data.liveWatches[1]
+        : null;
+    final DateTime? secondSlotExpiresAt = local.secondSlotExpiresAt;
+    final bool secondSlotExpired =
+        secondSlotExpiresAt != null &&
+        !secondSlotExpiresAt.isAfter(DateTime.now());
     final int limit = entitlement.limits.maxWatches;
     final int remainingSlots = (limit - data.watches.length)
         .clamp(0, limit)
@@ -168,6 +175,26 @@ class _HomeDashboard extends StatelessWidget {
     );
 
     return <Widget>[
+      if (secondSlotExpired) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsInlineAlert(
+          title: l10n.secondLocalSlotExpiredTitle,
+          message: l10n.secondLocalSlotExpiredBody(
+            MaterialLocalizations.of(context).formatTimeOfDay(
+              TimeOfDay.fromDateTime(secondSlotExpiresAt.toLocal()),
+            ),
+          ),
+          tone: SsInlineAlertTone.warning,
+        ),
+        const SizedBox(height: SsSpacing.sm),
+        SsSecondaryButton(
+          label: l10n.secondLocalSlotReopenAction,
+          icon: Icons.layers_outlined,
+          onPressed: secondLive == null
+              ? null
+              : () => context.push(AppRoutes.channelDetail(secondLive.id)),
+        ),
+      ],
       if (live != null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsCard(
