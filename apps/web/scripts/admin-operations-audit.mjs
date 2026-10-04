@@ -329,6 +329,68 @@ if (!d7Privacy.includes("timedelta(days=90)")) {
   failures.push("D7 email log retention: missing 90 day pruning");
 }
 
+
+[
+  "/v1/admin/payments?",
+  "/v1/admin/payments/export.csv",
+  "/refund-preview",
+  "/refunds",
+  "/reconcile",
+  "/v1/admin/credits/ledger?",
+  "/v1/admin/credits/ledger/export.csv",
+  "/v1/admin/credits/adjustments",
+  "/v1/admin/credits/stuck-reservations",
+].forEach((text) => must("src/repositories/admin-api.ts", text));
+
+[
+  "Payments & cloud minutes",
+  "Support access is read-only.",
+  "Refund managed by Apple or Google",
+  "Admin cannot initiate a store refund.",
+  "actual clawback so the user balance never becomes negative",
+  "Counts as purchase",
+  "No stuck credit holds.",
+  "Estimated store fee",
+  "Re-enter your password, current authenticator code, and the reason for this action.",
+].forEach((text) => must("src/components/admin/payments-d2.tsx", text));
+
+must("src/routes/admin/payments.tsx", "@/components/admin/payments-d2");
+must(
+  "src/components/app-components.tsx",
+  '{ to: "/admin/payments", label: "Payments", icon: CreditCard }',
+);
+
+const d2Backend = read("../../backend/src/app/application/admin/payments_d2.py");
+[
+  'STORE_PROVIDERS = frozenset({"app_store", "google_play"})',
+  "STORE_FEE_ESTIMATE_BPS = 3000",
+  '"STORE_RECONCILE_MANAGED"',
+  '"paid_missing_credit"',
+  '"pending_too_long"',
+  "release_stuck_reservation",
+].forEach((text) => {
+  if (!d2Backend.includes(text)) failures.push("D2 finance invariant: missing " + JSON.stringify(text));
+});
+
+const d2Billing = read("../../backend/src/app/application/billing/service.py");
+if (!d2Billing.includes('"STORE_REFUND_MANAGED"')) {
+  failures.push("D2 store refund policy: admin store refunds are not blocked");
+}
+
+const d2Credits = read("../../backend/src/app/application/billing/credits.py");
+[
+  "removable = max(account.posted_balance - reserved, 0)",
+  "deducted = min(max(credits, 0), removable)",
+  '"requested_credits": credits',
+].forEach((text) => {
+  if (!d2Credits.includes(text)) failures.push("D2 refund clawback: missing " + JSON.stringify(text));
+});
+
+const d2Entitlement = read("../../backend/src/app/application/recordings/retention.py");
+if (!d2Entitlement.includes('entry.details.get("counts_as_purchase", False)')) {
+  failures.push("D2 purchase flag: entitlement does not honor counts_as_purchase");
+}
+
 const backend = read("../../backend/src/app/api/routes/admin.py");
 ["_require_admin(principal)", '"FORBIDDEN"', '"Admin permission is required"'].forEach(
   (text) => {

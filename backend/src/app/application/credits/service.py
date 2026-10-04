@@ -532,6 +532,13 @@ class CreditAdminService:
                 status_code=400,
             ) from exc
 
+        if counts_as_purchase and amount <= 0:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "Only positive manual grants can count as a purchase",
+                status_code=400,
+            )
+
         reference_key = f"admin-adjustment:{idempotency_key}"
         existing = await self.session.scalar(
             select(CreditLedgerEntry).where(

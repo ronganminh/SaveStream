@@ -52,6 +52,17 @@ def test_d2_refund_clawback_and_purchase_flag(tmp_path) -> None:
                 await session.flush()
 
                 gift_service = CreditAdminService(session)
+                with pytest.raises(ApplicationError) as purchase_flag_error:
+                    await gift_service.adjust(
+                        user_id=gift_user.id,
+                        amount=-1,
+                        idempotency_key=str(uuid.uuid4()),
+                        reason="Invalid purchase flag on debit",
+                        counts_as_purchase=True,
+                        commit=False,
+                    )
+                assert purchase_flag_error.value.code == "VALIDATION_ERROR"
+
                 await gift_service.adjust(
                     user_id=gift_user.id,
                     amount=100,
