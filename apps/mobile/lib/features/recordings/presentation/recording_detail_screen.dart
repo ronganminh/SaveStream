@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -682,22 +683,25 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   int? _downloadTotalBytes;
   bool _isDownloading = false;
   bool _isSharing = false;
+  bool _checkedExistingDownload = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadExistingDownload();
-  }
-
-  Future<void> _loadExistingDownload() async {
-    final File? file = await ref
-        .read(cloudRecordingFileServiceProvider)
-        .existingFile(widget.recording.id);
+  Future<void> _loadExistingDownload(
+    RecordingArtifactSummary artifact,
+  ) async {
+    final CloudRecordingFileService service = ref.read(
+      cloudRecordingFileServiceProvider,
+    );
+    final File? file = await service.existingFile(
+      widget.recording.id,
+      expectedSizeBytes: artifact.sizeBytes,
+    );
+    final int existingBytes = file?.lengthSync() ??
+        await service.existingBytes(widget.recording.id);
     if (!mounted) return;
     setState(() {
       _downloadedFile = file;
-      _downloadedBytes = file?.lengthSync() ?? 0;
-      _downloadTotalBytes = file == null ? null : _downloadedBytes;
+      _downloadedBytes = existingBytes;
+      _downloadTotalBytes = artifact.sizeBytes;
     });
   }
 
@@ -805,6 +809,10 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
           final RecordingArtifactSummary? artifact = items.isEmpty
               ? null
               : items.first;
+          if (artifact != null && !_checkedExistingDownload) {
+            _checkedExistingDownload = true;
+            unawaited(_loadExistingDownload(artifact));
+          }
           final int totalBytes =
               _downloadTotalBytes ?? artifact?.sizeBytes ?? 0;
           final double? progress = totalBytes <= 0
@@ -883,7 +891,9 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                     ),
                   ],
                 ),
-                if (_isDownloading || _downloadedFile != null) ...<Widget>[
+                if (_isDownloading ||
+                    _downloadedFile != null ||
+                    _downloadedBytes > 0) ...<Widget>[
                   const SizedBox(height: SsSpacing.sm),
                   LinearProgressIndicator(
                     value: _downloadedFile != null ? 1 : progress,
