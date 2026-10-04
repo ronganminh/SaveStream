@@ -17,7 +17,7 @@ import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
 import 'package:savestream_mobile/platform/platform_providers.dart';
 
 void main() {
-  const LocalEntitlement entitlement = LocalEntitlement(
+  final LocalEntitlement entitlement = LocalEntitlement(
     enabled: true,
     unlimited: false,
     dailyMinutes: 10,
@@ -43,7 +43,7 @@ void main() {
       statuses: <RewardStatus>[RewardStatus.valid],
     );
     final ProviderContainer container = ProviderContainer(
-      overrides: <Override>[
+      overrides: [
         localRecordingControllerProvider.overrideWithValue(localController),
         rewardRepositoryProvider.overrideWithValue(rewards),
         adsServiceProvider.overrideWithValue(const _AdsSpy(result: true)),
@@ -128,7 +128,7 @@ void main() {
     );
     addTearDown(dailyCap.dispose);
 
-    const LocalEntitlement capped = LocalEntitlement(
+    final LocalEntitlement capped = LocalEntitlement(
       enabled: true,
       unlimited: false,
       dailyMinutes: 10,
@@ -145,7 +145,7 @@ void main() {
   });
 }
 
-const DateTime _resetAt = DateTime.utc(2026, 10, 5);
+final DateTime _resetAt = DateTime.utc(2026, 10, 5);
 
 final class _Harness {
   _Harness({
@@ -183,7 +183,7 @@ final class _Harness {
       statuses: statuses,
     );
     final ProviderContainer container = ProviderContainer(
-      overrides: <Override>[
+      overrides: [
         localRecordingControllerProvider.overrideWithValue(localController),
         rewardRepositoryProvider.overrideWithValue(rewards),
         adsServiceProvider.overrideWithValue(_AdsSpy(result: adResult)),
