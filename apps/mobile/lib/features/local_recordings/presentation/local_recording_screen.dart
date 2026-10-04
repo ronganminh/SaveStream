@@ -123,7 +123,9 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
       return Scaffold(
         body: SafeArea(
           child: LocalRecordingFinalizingBody(
-            step: state.finalizationStep,
+            step: state.phase == LocalRecorderPhase.stopped
+                ? LocalFinalizationStep.registerRecording
+                : state.finalizationStep,
             errorMessage: _finishError,
           ),
         ),
@@ -371,17 +373,31 @@ class LocalRecordingStorageAlert extends StatelessWidget {
     final int estimatedMinutes = state.estimatedStorageMinutes ?? 0;
     final bool critical = state.storageState == LocalStorageState.critical;
 
-    return SsInlineAlert(
-      title: critical
-          ? context.l10n.localRecordingStorageCriticalTitle
-          : context.l10n.localRecordingStorageLowTitle,
-      message: critical
-          ? context.l10n.localRecordingStorageCriticalBody
-          : context.l10n.localRecordingStorageLowBody(
-              formatFileSize(freeStorageBytes),
-              estimatedMinutes,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SsInlineAlert(
+          title: critical
+              ? context.l10n.localRecordingStorageCriticalTitle
+              : context.l10n.localRecordingStorageLowTitle,
+          message: critical
+              ? context.l10n.localRecordingStorageCriticalBody
+              : context.l10n.localRecordingStorageLowBody(
+                  formatFileSize(freeStorageBytes),
+                  estimatedMinutes,
+                ),
+          tone: SsInlineAlertTone.warning,
+        ),
+        if (!critical)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SsTextAction(
+              label: context.l10n.localRecordingCleanStorageAction,
+              icon: Icons.cleaning_services_outlined,
+              onPressed: () => context.push(AppRoutes.recordings),
             ),
-      tone: SsInlineAlertTone.warning,
+          ),
+      ],
     );
   }
 }
