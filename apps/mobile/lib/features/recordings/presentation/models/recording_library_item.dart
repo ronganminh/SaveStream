@@ -49,7 +49,9 @@ class RecordingLibraryItem {
   final RecordingLibraryIssue issue;
 
   bool get isCrossDevice =>
-      storage == RecordingLibraryStorage.local && !canPlay && deviceName != null;
+      storage == RecordingLibraryStorage.local &&
+      !canPlay &&
+      deviceName != null;
 
   bool isExpiringSoon(DateTime now) {
     final DateTime? expiry = expiresAt;
