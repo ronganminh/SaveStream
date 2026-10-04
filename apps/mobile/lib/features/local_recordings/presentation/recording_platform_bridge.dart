@@ -9,6 +9,7 @@ import '../../../l10n/l10n.dart';
 import '../../../platform/contracts/local_recorder.dart';
 import '../../../platform/contracts/recording_platform_service.dart';
 import '../../home/presentation/controllers/home_dashboard_controller.dart';
+import '../../recordings/domain/models/recording_summary.dart';
 import '../domain/models/local_recording_models.dart';
 import 'controllers/local_recording_controller.dart';
 import 'controllers/local_recovery_providers.dart';
@@ -34,6 +35,7 @@ class _RecordingPlatformBridgeState
   bool _activeRecording = false;
   String? _lastNotificationSignature;
   String? _lastInterruptedTempId;
+  String? _lastLifecycleSignature;
 
   @override
   void initState() {
@@ -97,6 +99,26 @@ class _RecordingPlatformBridgeState
     _activeCreatorName = creatorName;
     _activeRecording = active;
 
+    final String lifecycleSignature =
+        '${creatorName ?? ''}:$active';
+    if (_lastLifecycleSignature != lifecycleSignature) {
+      _lastLifecycleSignature = lifecycleSignature;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(recordingPlatformControllerProvider)
+              .handleIosLifecycle(
+                state:
+                    WidgetsBinding.instance.lifecycleState ??
+                    AppLifecycleState.resumed,
+                creatorName: creatorName ?? '',
+                activeRecording: active,
+              ),
+        );
+      });
+    }
+
     if (session != null &&
         state != null &&
         creatorName != null &&
@@ -109,6 +131,7 @@ class _RecordingPlatformBridgeState
           '${state.recordedSeconds}:$remaining:${entitlement.unlimited}';
       if (_lastNotificationSignature != signature) {
         _lastNotificationSignature = signature;
+        final String activeCreator = creatorName;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           unawaited(
@@ -116,7 +139,7 @@ class _RecordingPlatformBridgeState
                 .read(recordingPlatformControllerProvider)
                 .syncAndroidNotification(
                   l10n: context.l10n,
-                  creatorName: creatorName!,
+                  creatorName: activeCreator,
                   state: state,
                   unlimited: entitlement.unlimited,
                   remainingSeconds: remaining,
@@ -178,16 +201,19 @@ class _RecordingPlatformBridgeState
             usingSecondary: usingSecondary,
           ),
         );
+        return;
       case RecordingPlatformAction.openRecording:
         final LocalRecordingSession? session =
             controller.activeSession ?? controller.secondarySession;
         if (session != null && mounted) {
           context.push(AppRoutes.localRecording(session.watchId));
         }
+        return;
       case RecordingPlatformAction.recoverInterrupted:
         if (mounted) {
           context.push(AppRoutes.localRecovery);
         }
+        return;
     }
   }
 
