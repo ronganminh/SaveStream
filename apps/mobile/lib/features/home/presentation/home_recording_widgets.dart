@@ -49,18 +49,13 @@ class HomeLocalRecordingCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  formatDurationHms(
-                    Duration(seconds: state.recordedSeconds),
-                  ),
+                  formatDurationHms(Duration(seconds: state.recordedSeconds)),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ],
             ),
             const SizedBox(height: SsSpacing.md),
-            Text(
-              creatorName,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text(creatorName, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: SsSpacing.xs),
             Text('${context.l10n.homeLocalSaveHint} · $quota'),
           ],
@@ -123,18 +118,15 @@ class HomeFinalizingRecordingCard extends StatelessWidget {
 }
 
 class HomeSecondSlotOpenCard extends StatelessWidget {
-  const HomeSecondSlotOpenCard({
-    required this.expiresAt,
-    super.key,
-  });
+  const HomeSecondSlotOpenCard({required this.expiresAt, super.key});
 
   final DateTime expiresAt;
 
   @override
   Widget build(BuildContext context) {
-    final String time = MaterialLocalizations.of(context).formatTimeOfDay(
-      TimeOfDay.fromDateTime(expiresAt.toLocal()),
-    );
+    final String time = MaterialLocalizations.of(
+      context,
+    ).formatTimeOfDay(TimeOfDay.fromDateTime(expiresAt.toLocal()));
     return SsInlineAlert(
       title: context.l10n.secondLocalSlotUnlockedTitle,
       message: context.l10n.homeSecondSlotOpenBody(time),

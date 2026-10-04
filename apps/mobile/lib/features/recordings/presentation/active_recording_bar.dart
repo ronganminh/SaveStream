@@ -124,9 +124,8 @@ class ActiveRecordingBar extends StatelessWidget {
         : items
               .take(2)
               .map(
-                (ActiveRecordingBarItem item) => formatDurationHms(
-                  Duration(seconds: item.elapsedSeconds),
-                ),
+                (ActiveRecordingBarItem item) =>
+                    formatDurationHms(Duration(seconds: item.elapsedSeconds)),
               )
               .join(' · ');
 
