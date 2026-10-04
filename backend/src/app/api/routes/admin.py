@@ -3713,6 +3713,7 @@ async def list_admin_support_reports(
     status_filter: str | None = Query(default=None, alias="status"),
     assigned_to_user_id: str | None = Query(default=None),
     query: str | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminSupportReportListResponse:
