@@ -126,7 +126,7 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
             message: context.l10n.localRecordingMinuteWarningBody,
             tone: SsInlineAlertTone.warning,
           ),
-          if (widget.onRewardRequested != null)
+          if (widget.onRewardRequested != null && _canRequestReward)
             Align(
               alignment: Alignment.centerLeft,
               child: SsTextAction(
@@ -140,6 +140,22 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
         ],
       ],
     );
+  }
+
+  bool get _canRequestReward {
+    return switch (widget.rewardState.phase) {
+      RewardedMinutesPhase.idle ||
+      RewardedMinutesPhase.success ||
+      RewardedMinutesPhase.noFill ||
+      RewardedMinutesPhase.invalid ||
+      RewardedMinutesPhase.error => true,
+      RewardedMinutesPhase.loadingAd ||
+      RewardedMinutesPhase.verifying ||
+      RewardedMinutesPhase.pending ||
+      RewardedMinutesPhase.locked ||
+      RewardedMinutesPhase.maxExtensions ||
+      RewardedMinutesPhase.dailyCap => false,
+    };
   }
 
   Widget? _buildRewardAlert(BuildContext context) {
@@ -160,6 +176,11 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
         title: context.l10n.rewardMinutesInvalidTitle,
         message: context.l10n.rewardMinutesInvalidBody,
         tone: SsInlineAlertTone.error,
+      ),
+      RewardedMinutesPhase.locked => SsInlineAlert(
+        title: context.l10n.rewardMinutesLockedTitle,
+        message: context.l10n.rewardMinutesLockedBody,
+        tone: SsInlineAlertTone.warning,
       ),
       RewardedMinutesPhase.idle ||
       RewardedMinutesPhase.loadingAd ||
