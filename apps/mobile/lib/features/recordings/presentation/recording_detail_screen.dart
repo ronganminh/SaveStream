@@ -685,16 +685,14 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   bool _isSharing = false;
   bool _checkedExistingDownload = false;
 
-  Future<void> _loadExistingDownload(
-    RecordingArtifactSummary artifact,
-  ) async {
+  Future<void> _loadExistingDownload(RecordingArtifactSummary artifact) async {
     final service = ref.read(cloudRecordingFileServiceProvider);
     final File? file = await service.existingFile(
       widget.recording.id,
       expectedSizeBytes: artifact.sizeBytes,
     );
-    final int existingBytes = file?.lengthSync() ??
-        await service.existingBytes(widget.recording.id);
+    final int existingBytes =
+        file?.lengthSync() ?? await service.existingBytes(widget.recording.id);
     if (!mounted) return;
     setState(() {
       _downloadedFile = file;
@@ -715,10 +713,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
             recordingId: widget.recording.id,
             artifactId: artifact.id,
             onProgress:
-                ({
-                  required int receivedBytes,
-                  required int? totalBytes,
-                }) {
+                ({required int receivedBytes, required int? totalBytes}) {
                   if (!mounted) return;
                   setState(() {
                     _downloadedBytes = receivedBytes;
@@ -861,11 +856,8 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                               ).replace(
                                 queryParameters: <String, String>{
                                   'source': 'cloud',
-                                  'title':
-                                      widget.recording.creatorDisplayName,
-                                  'duration': widget
-                                      .recording
-                                      .durationSeconds
+                                  'title': widget.recording.creatorDisplayName,
+                                  'duration': widget.recording.durationSeconds
                                       .toString(),
                                 },
                               );
@@ -910,9 +902,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                 SsSecondaryButton(
                   label: l10n.shareRecordingAction,
                   icon: Icons.ios_share_rounded,
-                  onPressed: _isSharing
-                      ? null
-                      : () => _shareArtifact(artifact),
+                  onPressed: _isSharing ? null : () => _shareArtifact(artifact),
                 ),
                 if (_downloadedFile != null) ...<Widget>[
                   const SizedBox(height: SsSpacing.sm),
