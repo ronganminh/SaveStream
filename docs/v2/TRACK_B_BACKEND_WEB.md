@@ -12,7 +12,7 @@
 - [x] B1 — Gói Free/Pro và giới hạn theo gói
 - [x] B2 — Hàng chờ slot cloud và tự bật lại sau khi mua — **đã merge PR #86 vào `main`**, merge commit `01d2f44d`
 - [x] B3 — Thiết bị, push và loại thông báo mới — **đã merge PR #89 vào `main`**, merge commit `6422c072`
-- [ ] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
+- [x] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata — **đã merge PR #103 vào `main`**, merge commit `d2450e48`
 - [x] B5 — Mua trong app (App Store, Google Play) — **đã merge PR #91 vào `main`**, merge commit `63278793`
 - [x] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn — **đã merge PR #98 vào `main`**, merge commit `fc781169`
 - [ ] B7 — Web theo V2
@@ -114,6 +114,8 @@ Không cần tài khoản Firebase để hoàn thành phase này; bản thật c
 ---
 
 ## B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
+
+**Trạng thái:** ✅ Hoàn tất, đã merge PR #103 vào `main` (2026-10-04), merge commit `d2450e48`. Gate cuối trên head `fe67c01`: Backend CI #643 ✅, Backend E2E #111 ✅, Mobile Backend E2E #256 ✅. Migration B4 là `0014_v2_b4_local_recordings` nối tiếp `0013_v2_b5_store_purchases`.
 
 **Phụ thuộc:** B1.
 
