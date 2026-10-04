@@ -1177,5 +1177,6 @@
     }
   },
   "localRecordingOpenAction": "Open recording",
-  "localRecordingHomeAction": "Back to Home"
+  "localRecordingHomeAction": "Back to Home",
+  "localRecordingCleanStorageAction": "Clean up old recordings"
 }
