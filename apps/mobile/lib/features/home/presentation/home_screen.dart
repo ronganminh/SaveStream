@@ -128,7 +128,8 @@ class _HomeDashboard extends StatelessWidget {
                     tone: SsInlineAlertTone.warning,
                   ),
                 ],
-                if (interrupted case final LocalRecoveryCandidate item) ...<Widget>[
+                if (interrupted
+                    case final LocalRecoveryCandidate item) ...<Widget>[
                   const SizedBox(height: SsSpacing.md),
                   SsInlineAlert(
                     title: context.l10n.localRecoveryInterruptedTitle,
