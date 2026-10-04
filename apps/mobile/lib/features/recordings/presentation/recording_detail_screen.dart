@@ -165,6 +165,12 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                 );
               }
 
+              final DateTime now = DateTime.now();
+              final bool cloudExpired =
+                  value.engine == Engine.cloud &&
+                  value.expiresAt != null &&
+                  !value.expiresAt!.isAfter(now);
+
               return RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(recordingDetailProvider(widget.recordingId));
@@ -183,6 +189,14 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                   ),
                   children: <Widget>[
                     _CreatorHeader(recording: value),
+                    if (value.engine == Engine.cloud &&
+                        value.expiresAt != null) ...<Widget>[
+                      const SizedBox(height: SsSpacing.md),
+                      _CloudRetentionNotice(
+                        expiresAt: value.expiresAt!,
+                        now: now,
+                      ),
+                    ],
                     const SizedBox(height: SsSpacing.lg),
                     value.engine == Engine.cloud
                         ? CloudRecordingLifecycleCard(
@@ -208,7 +222,14 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     const SizedBox(height: SsSpacing.lg),
                     _MetadataCard(recording: value),
                     const SizedBox(height: SsSpacing.lg),
-                    _ArtifactCard(recording: value),
+                    if (!cloudExpired)
+                      _ArtifactCard(recording: value)
+                    else
+                      SsInlineAlert(
+                        title: l10n.recordingNotFoundTitle,
+                        message: l10n.cloudRecordingExpiredBody,
+                        tone: SsInlineAlertTone.warning,
+                      ),
                     const SizedBox(height: SsSpacing.lg),
                     _ActionsCard(
                       recording: value,
@@ -224,6 +245,38 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _CloudRetentionNotice extends StatelessWidget {
+  const _CloudRetentionNotice({
+    required this.expiresAt,
+    required this.now,
+  });
+
+  final DateTime expiresAt;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool expired = !expiresAt.isAfter(now);
+    final bool expiringSoon =
+        !expired && expiresAt.difference(now) <= const Duration(days: 3);
+    final String date = MaterialLocalizations.of(
+      context,
+    ).formatShortDate(expiresAt.toLocal());
+
+    return SsInlineAlert(
+      title: context.l10n.cloudRecordingExpiresValue(date),
+      message: expired
+          ? context.l10n.cloudRecordingExpiredBody
+          : expiringSoon
+          ? context.l10n.cloudRecordingExpiringSoon
+          : null,
+      tone: expired || expiringSoon
+          ? SsInlineAlertTone.warning
+          : SsInlineAlertTone.info,
     );
   }
 }
