@@ -13,6 +13,7 @@ import '../features/channels/data/repositories/api_watch_repository.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
 import '../features/entitlement/data/repositories/api_entitlement_repository.dart';
 import '../features/local_recordings/data/repositories/api_local_recording_repository.dart';
+import '../features/local_recordings/data/repositories/indexed_local_recording_repository.dart';
 import '../features/local_recordings/presentation/controllers/local_recording_controller.dart'
     as local_recording;
 import '../features/recordings/data/repositories/api_recording_repository.dart';
@@ -26,6 +27,7 @@ import '../platform/android_recording_platform_service.dart';
 import '../platform/connectivity_plus_service.dart';
 import '../platform/device_info_plus_service.dart';
 import '../platform/platform_providers.dart';
+import '../platform/share_plus_service.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
 import 'session/app_session_controller.dart';
@@ -64,18 +66,27 @@ Future<void> bootstrap() async {
   final deviceRepository = ApiDeviceRepository(
     apiClient: authenticatedApiClient,
   );
+  final DeviceInfoPlusService deviceInfoService = DeviceInfoPlusService();
   final CurrentUserIdSource currentUserIdSource = CurrentUserIdSource(
     apiClient: authenticatedApiClient,
   );
   final AndroidLocalRecorder? androidLocalRecorder = Platform.isAndroid
       ? AndroidLocalRecorder(currentUserId: currentUserIdSource.get)
       : null;
-  final ApiLocalRecordingRepository? localRecordingRepository =
+  final ApiLocalRecordingRepository? apiLocalRecordingRepository =
       androidLocalRecorder == null
       ? null
       : ApiLocalRecordingRepository(
           apiClient: authenticatedApiClient,
           onRegistered: androidLocalRecorder.markRegistered,
+        );
+  final IndexedLocalRecordingRepository? localRecordingRepository =
+      apiLocalRecordingRepository == null
+      ? null
+      : IndexedLocalRecordingRepository(
+          delegate: apiLocalRecordingRepository,
+          currentUserId: currentUserIdSource.get,
+          currentDeviceId: () => deviceInfoService.deviceId,
         );
   final AndroidLocalRecoveryService? androidLocalRecoveryService =
       localRecordingRepository == null
@@ -111,7 +122,7 @@ Future<void> bootstrap() async {
         connectivityServiceProvider.overrideWithValue(
           ConnectivityPlusService(),
         ),
-        deviceInfoServiceProvider.overrideWithValue(DeviceInfoPlusService()),
+        deviceInfoServiceProvider.overrideWithValue(deviceInfoService),
         entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
         appStatusRepositoryProvider.overrideWithValue(appStatusRepository),
         deviceRepositoryProvider.overrideWithValue(deviceRepository),
@@ -133,6 +144,7 @@ Future<void> bootstrap() async {
           recordingPlatformServiceProvider.overrideWithValue(
             androidRecordingPlatformService,
           ),
+        shareServiceProvider.overrideWithValue(const SharePlusService()),
       ],
     ),
   );
