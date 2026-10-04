@@ -14,7 +14,10 @@ from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.credits.service import CreditBalance, CreditService
 from app.application.entitlements.service import EntitlementService, EntitlementSnapshot
 from app.application.identity.service import utcnow
-from app.application.recordings.retention import PAID_ORDER_STATUSES
+from app.application.recordings.retention import (
+    PAID_ORDER_STATUSES,
+    purchase_credit_clause,
+)
 from app.application.recordings.service import RecordingService
 from app.domain.billing.state import PaymentStatus
 from app.domain.common.errors import ApplicationError
@@ -150,10 +153,11 @@ class AdminService:
         if created_to is not None:
             statement = statement.where(User.created_at <= created_to)
 
-        paid_exists = exists().where(
+        paid_order_exists = exists().where(
             PaymentOrder.user_id == User.id,
             PaymentOrder.status.in_(PAID_ORDER_STATUSES),
         )
+        paid_exists = or_(paid_order_exists, purchase_credit_clause(User.id))
         posted_balance = (
             select(CreditAccount.posted_balance)
             .where(CreditAccount.user_id == User.id)
