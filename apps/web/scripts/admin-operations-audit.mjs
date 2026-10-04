@@ -393,6 +393,66 @@ if (!d2Entitlement.includes('entry.details.get("counts_as_purchase", False)')) {
   failures.push("D2 purchase flag: entitlement does not honor counts_as_purchase");
 }
 
+
+[
+  "/v1/admin/packages",
+  "/v1/admin/promotions",
+  "/v1/admin/bulk-grants/preview",
+  "/v1/admin/bulk-grants",
+  "/redemptions",
+].forEach((text) => must("src/repositories/admin-api.ts", text));
+
+[
+  "Catalog & promotions",
+  "Finance access required",
+  "Support cannot change packages, promotions, prices, or cloud-minute grants.",
+  "Packages with orders are never deleted; turn off sale to hide them.",
+  "Update the price in App Store Connect and Google Play Console as well",
+  "App prices are not edited here.",
+  "Every code is one redemption per account.",
+  "Counts as purchase",
+  "Preview audience",
+  "Queue bulk grant",
+  "Bulk grant report",
+].forEach((text) => mustNormalized("src/components/admin/catalog-d5.tsx", text));
+
+must("src/routes/admin/catalog.tsx", "@/components/admin/catalog-d5");
+must(
+  "src/components/app-components.tsx",
+  '{ to: "/admin/catalog", label: "Catalog", icon: Sparkles }',
+);
+
+const d5Backend = read("../../backend/src/app/api/routes/admin.py");
+[
+  '"admin:packages:read"',
+  '"admin:packages:write"',
+  '"admin:promotions:read"',
+  '"admin:promotions:write"',
+  '"admin.bulk_grant.queued"',
+  'alias="X-Admin-Step-Up"',
+].forEach((text) => {
+  if (!d5Backend.includes(text)) failures.push("D5 admin invariant: missing " + JSON.stringify(text));
+});
+
+const d5Redeem = read("../../backend/src/app/api/routes/credits.py");
+[
+  '"/redeem"',
+  'scope="promotion:redeem"',
+  "limit=10",
+  "window_seconds=3600",
+].forEach((text) => {
+  if (!d5Redeem.includes(text)) failures.push("D5 redeem invariant: missing " + JSON.stringify(text));
+});
+
+const d5Worker = read("../../backend/src/app/infrastructure/admin/d5_worker.py");
+[
+  'reference_key=f"bulk-grant:{grant_id}:{user_id}"',
+  '"counts_as_purchase": counts_as_purchase',
+  'AdminBulkGrantDelivery.status == "delivered"',
+].forEach((text) => {
+  if (!d5Worker.includes(text)) failures.push("D5 bulk grant invariant: missing " + JSON.stringify(text));
+});
+
 const backend = read("../../backend/src/app/api/routes/admin.py");
 ["_require_admin(principal)", '"FORBIDDEN"', '"Admin permission is required"'].forEach(
   (text) => {
