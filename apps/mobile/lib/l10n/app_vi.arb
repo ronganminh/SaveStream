@@ -955,5 +955,16 @@
   "localRecordingStatusActive": "Đang record",
   "localRecordingAndroidActiveTitle": "Đang record trong nền",
   "localRecordingAndroidActiveBody": "Có thể chuyển app. Android giữ thông báo đang record cho tới khi bạn dừng.",
-  "localRecordingIosActiveBody": "Giữ SaveStream ở phía trước và đừng khoá màn hình trong lúc record."
+  "localRecordingIosActiveBody": "Giữ SaveStream ở phía trước và đừng khoá màn hình trong lúc record.",
+  "localRecordingConnectingSlowBody": "Đang kết nối, lâu hơn bình thường…",
+  "localRecordingMinuteWarningTitle": "Còn chưa tới 1 phút Free",
+  "localRecordingMinuteWarningBody": "Recording sẽ dừng và lưu khi hết phút.",
+  "localRecordingRewardMinutesAction": "+{minutes} phút (xem quảng cáo)",
+  "@localRecordingRewardMinutesAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }
