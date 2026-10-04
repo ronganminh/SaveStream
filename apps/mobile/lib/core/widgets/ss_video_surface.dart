@@ -16,11 +16,13 @@ class SsVideoSurface extends StatefulWidget {
   const SsVideoSurface({
     required this.controller,
     this.aspectRatio = 16 / 9,
+    this.media,
     super.key,
   });
 
   final SsVideoController controller;
   final double aspectRatio;
+  final Widget? media;
 
   @override
   State<SsVideoSurface> createState() => _SsVideoSurfaceState();
@@ -49,10 +51,12 @@ class _SsVideoSurfaceState extends State<SsVideoSurface> {
           color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: Column(
             children: <Widget>[
-              const Expanded(
-                child: Center(
-                  child: Icon(Icons.play_circle_outline_rounded, size: 56),
-                ),
+              Expanded(
+                child:
+                    widget.media ??
+                    const Center(
+                      child: Icon(Icons.play_circle_outline_rounded, size: 56),
+                    ),
               ),
               Slider(
                 value: progress,
