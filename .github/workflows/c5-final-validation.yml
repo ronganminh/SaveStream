@@ -1,0 +1,56 @@
+name: C5 Final Validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Format C5 Dart
+        run: >-
+          dart format
+          lib/app/bootstrap.dart
+          lib/app/router/app_router.dart
+          lib/core/widgets/ss_video_surface.dart
+          lib/features/local_recordings/data/api_local_recording_delete_service.dart
+          lib/features/local_recordings/data/cloud_recording_share_coordinator.dart
+          lib/features/local_recordings/data/local_file_index.dart
+          lib/features/local_recordings/data/repositories/indexed_local_recording_repository.dart
+          lib/features/recordings/data/cloud_artifact_downloader.dart
+          lib/features/recordings/data/cloud_recording_file_service.dart
+          lib/features/recordings/presentation/controllers/recording_file_providers.dart
+          lib/features/recordings/presentation/local_recording_detail_screen.dart
+          lib/features/recordings/presentation/recording_detail_screen.dart
+          lib/features/recordings/presentation/recording_player_screen.dart
+          lib/platform/share_plus_service.dart
+          lib/platform/video_player_ss_controller.dart
+          test/v2c_c5_local_storage_test.dart
+          test/v2c_c5_cloud_file_integration_test.dart
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Test C5
+        run: >-
+          flutter test
+          test/v2c_c5_local_storage_test.dart
+          test/v2c_c5_cloud_file_integration_test.dart
+      - name: Print formatted files
+        if: always()
+        run: |
+          for file in             lib/app/bootstrap.dart             lib/app/router/app_router.dart             lib/core/widgets/ss_video_surface.dart             lib/features/local_recordings/data/api_local_recording_delete_service.dart             lib/features/local_recordings/data/cloud_recording_share_coordinator.dart             lib/features/local_recordings/data/local_file_index.dart             lib/features/local_recordings/data/repositories/indexed_local_recording_repository.dart             lib/features/recordings/data/cloud_artifact_downloader.dart             lib/features/recordings/data/cloud_recording_file_service.dart             lib/features/recordings/presentation/controllers/recording_file_providers.dart             lib/features/recordings/presentation/local_recording_detail_screen.dart             lib/features/recordings/presentation/recording_detail_screen.dart             lib/features/recordings/presentation/recording_player_screen.dart             lib/platform/share_plus_service.dart             lib/platform/video_player_ss_controller.dart             test/v2c_c5_local_storage_test.dart             test/v2c_c5_cloud_file_integration_test.dart; do
+            echo "--- BEGIN $file ---"
+            cat "$file"
+            echo "--- END $file ---"
+          done
