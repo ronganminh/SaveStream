@@ -28,8 +28,9 @@ class FakePaymentProvider:
         amount_minor: int,
         currency: str,
         return_url: str,
+        variant_id: str | None = None,
     ) -> CheckoutSession:
-        del amount_minor, currency
+        del amount_minor, currency, variant_id
         reference = f"fake_pay_{order_id}"
         query = urlencode(
             {
