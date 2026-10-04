@@ -122,6 +122,8 @@ Chủ repo đọc và duyệt phương án rồi mới làm C3.
 
 ## C4 — Ghi trên máy cho iOS
 
+**Trạng thái:** hoãn theo quyết định chủ repo ngày 2026-10-04; chờ môi trường Mac/Xcode và thiết bị iOS thật. Không chốt/merge C4 bằng compile-only.
+
 **Phụ thuộc:** C3. Cần máy Mac có Xcode và thiết bị iOS thật.
 
 1. Bản thật của `LocalRecorder` cho iOS. Giữ màn hình sáng (`wakelock_plus`) chỉ khi đang ghi ở tiền cảnh.
