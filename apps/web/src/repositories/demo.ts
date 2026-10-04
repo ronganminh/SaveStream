@@ -396,17 +396,33 @@ export const demoRepositories: SaveStreamRepositories = {
       return {
         packages: [
           {
-            id: "demo-100",
-            code: "demo",
-            name: "100 credits",
-            credits: 100,
+            id: "demo-starter",
+            code: "starter",
+            name: "Starter",
+            credits: 3_000,
             price: { amount_minor: 999, currency: "USD" },
-            recording_minutes: 100,
+            recording_minutes: 3_000,
+          },
+          {
+            id: "demo-standard",
+            code: "standard",
+            name: "Standard",
+            credits: 9_000,
+            price: { amount_minor: 2_499, currency: "USD" },
+            recording_minutes: 9_000,
+          },
+          {
+            id: "demo-premium",
+            code: "premium",
+            name: "Premium",
+            credits: 24_000,
+            price: { amount_minor: 5_999, currency: "USD" },
+            recording_minutes: 24_000,
           },
         ],
         recording_rate: { unit_seconds: 60, credits_per_unit: 1, minimum_credits: 1 },
         signup_credits: 10,
-        max_channels_per_user: 20,
+        max_channels_per_user: 3,
         max_concurrent_recordings_per_user: 2,
         recording_retention_days: 30,
         trial_recording_retention_days: 7,
@@ -431,11 +447,40 @@ export const demoRepositories: SaveStreamRepositories = {
       return {
         items: [
           {
-            id: "demo-100",
-            name: "100 credits",
-            credits: 100,
+            id: "demo-starter",
+            name: "Starter",
+            credits: 3_000,
             price: { amount_minor: 999, currency: "USD" },
             active: true,
+            store_product_ids: {
+              app_store: "savestream.hours.50",
+              google_play: "savestream.hours.50",
+            },
+            cloud_minutes: 3_000,
+          },
+          {
+            id: "demo-standard",
+            name: "Standard",
+            credits: 9_000,
+            price: { amount_minor: 2_499, currency: "USD" },
+            active: true,
+            store_product_ids: {
+              app_store: "savestream.hours.150",
+              google_play: "savestream.hours.150",
+            },
+            cloud_minutes: 9_000,
+          },
+          {
+            id: "demo-premium",
+            name: "Premium",
+            credits: 24_000,
+            price: { amount_minor: 5_999, currency: "USD" },
+            active: true,
+            store_product_ids: {
+              app_store: "savestream.hours.400",
+              google_play: "savestream.hours.400",
+            },
+            cloud_minutes: 24_000,
           },
         ],
       };
@@ -470,6 +515,33 @@ export const demoRepositories: SaveStreamRepositories = {
         display_name: user.name,
         locale: "en",
         created_at: new Date(0).toISOString(),
+      };
+    },
+    async getEntitlement() {
+      return {
+        plan: "free" as const,
+        has_purchased: false,
+        cloud_minutes_available: 10,
+        limits: {
+          max_watches: 3,
+          max_concurrent_cloud_recordings: 0,
+          cloud_retention_days: 7,
+        },
+        watch_count: demoChannelState.length,
+        local: {
+          enabled: true,
+          unlimited: false,
+          daily_minutes: 10,
+          minutes_remaining: 10,
+          resets_at: new Date(Date.now() + 86_400_000).toISOString(),
+          rewards_used_today: 0,
+          rewards_cap_per_day: 8,
+          minutes_per_reward: 10,
+          extensions_cap_per_recording: 4,
+          max_concurrent_sessions: 1,
+          second_slot_expires_at: null,
+        },
+        updated_at: new Date().toISOString(),
       };
     },
     async updateCurrent(input) {

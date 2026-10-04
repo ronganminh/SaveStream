@@ -19,6 +19,7 @@ import type {
   CreditReservationListResponse,
   CreditTransactionListResponse,
   DownloadUrlResponse,
+  EntitlementResponse,
   LiveStatusResponse,
   UpdateNotificationPreferencesRequest,
   NotificationResponse,
@@ -371,6 +372,10 @@ export const apiRepositories: SaveStreamRepositories = {
   users: {
     getCurrent() {
       return apiClient.get<UserResponse>("/v1/me");
+    },
+
+    getEntitlement() {
+      return apiClient.get<EntitlementResponse>("/v1/me/entitlement");
     },
 
     updateCurrent(input) {

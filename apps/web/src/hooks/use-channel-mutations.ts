@@ -89,8 +89,12 @@ export function existingWatchId(error: unknown): string | null {
 }
 
 export function watchQuotaLimit(error: unknown): number | null {
-  if (!(error instanceof ApiError) || error.code !== "RATE_LIMITED") return null;
+  if (!(error instanceof ApiError)) return null;
   const details = detailsRecord(error);
+  if (error.code === "WATCH_LIMIT_REACHED") {
+    return typeof details?.["limit"] === "number" ? details["limit"] : null;
+  }
+  if (error.code !== "RATE_LIMITED") return null;
   if (details?.["quota"] !== "max_watches_per_user") return null;
   return typeof details["limit"] === "number" ? details["limit"] : null;
 }
@@ -101,8 +105,11 @@ export function channelActionErrorMessage(error: unknown): string {
   if (error.code === "INSUFFICIENT_CREDITS") {
     return "There are not enough available credits to resume automatic recording.";
   }
-  if (error.code === "RATE_LIMITED") {
-    return "Your account has reached the monitored-channel limit.";
+  if (error.code === "PLAN_REQUIRED") {
+    return "Automatic cloud recording requires a one-time hour purchase. Monitoring remains available on Free.";
+  }
+  if (error.code === "WATCH_LIMIT_REACHED" || error.code === "RATE_LIMITED") {
+    return "Your account has reached the monitored-channel limit. Buy hours to unlock the Pro limit.";
   }
   if (error.status >= 500 || error.retryable) {
     return "SaveStream is temporarily unavailable. Please try again.";

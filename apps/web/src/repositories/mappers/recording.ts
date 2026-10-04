@@ -11,6 +11,8 @@ const GB = 1024 ** 3;
 
 function uiStatus(status: RecordingStatusValue): RecordingStatus {
   if (status === "recording" || status === "stop_requested") return "Recording";
+  if (status === "waiting_for_cloud_slot") return "Waiting";
+  if (status === "missed_no_cloud_slot") return "Missed";
   if (status === "completed") return "Ready";
   if (status === "failed") return "Error";
   return "Processing";

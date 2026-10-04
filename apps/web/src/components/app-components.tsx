@@ -114,6 +114,7 @@ import type { ChannelModel, RecordingModel } from "@/repositories";
 import {
   useActiveRecordingData,
   useChannelsData,
+  useEntitlementData,
   useRecordingsData,
 } from "@/hooks/use-domain-data";
 import {
@@ -230,6 +231,7 @@ const statusStyles: Record<Status, string> = {
   Processing: "border-info/20 bg-info-subtle text-info",
   Ready: "border-success/20 bg-success-subtle text-success",
   Waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
+  Missed: "border-border bg-muted text-muted-foreground",
   Offline: "border-border bg-muted text-muted-foreground",
   Paused: "border-border bg-muted text-muted-foreground",
   Error: "border-recording/20 bg-recording-subtle text-recording",
@@ -243,7 +245,7 @@ export function StatusBadge({ status, pulse = false }: { status: Status; pulse?:
       <span className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
     ) : status === "Paused" ? (
       <Pause className="size-3" />
-    ) : status === "Error" ? (
+    ) : status === "Error" || status === "Missed" ? (
       <AlertTriangle className="size-3" />
     ) : (
       <span
@@ -1233,6 +1235,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const navigate = useNavigate();
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const createChannel = useCreateChannelMutation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -1246,6 +1249,8 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const handle = parsed?.handle ?? null;
   const name = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
   const channelItems = channelsQuery.data ?? [];
+  const entitlement = entitlementQuery.data;
+  const isFree = isDemoMode || entitlement?.plan === "free";
 
   useEffect(() => {
     setErrorText(null);
@@ -1287,12 +1292,14 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     try {
       const watch = await createChannel.mutateAsync({
         source: parsed.source,
-        auto_record: true,
+        auto_record: !isFree,
       });
       setCreatedWatchId(watch.id);
       setPhase("success");
       toast.success(`Monitoring ${parsed.handle}`, {
-        description: "We’ll record automatically when this channel goes live.",
+        description: isFree
+          ? "Free accounts monitor up to 3 channels. Buy hours to enable automatic cloud recording."
+          : "We’ll record automatically when this channel goes live.",
       });
     } catch (error) {
       setPhase("form");
@@ -1363,8 +1370,10 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             </span>
             <DialogTitle className="mt-5">{t("Monitoring started")}</DialogTitle>
             <DialogDescription className="mt-2">
-              {handle} is now monitored. Recording starts automatically on our servers when the
-              channel goes live.
+              {handle} is now monitored.{" "}
+              {isFree
+                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Buy hours to enable automatic cloud recording."
+                : "Recording starts automatically on our servers when the channel goes live."}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
               <Button variant="outline" onClick={reset}>
@@ -1389,8 +1398,10 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogHeader>
               <DialogTitle>{t("Add TikTok channel")}</DialogTitle>
               <DialogDescription>
-                Add a TikTok creator to your account. SaveStream will monitor it automatically and
-                start recording when configured to do so.
+                Add a TikTok creator to your account. SaveStream will monitor it automatically.
+                {isFree
+                  ? " Free web accounts can monitor up to 3 channels; automatic cloud recording starts after a one-time hour purchase."
+                  : " Automatic cloud recording starts when configured to do so."}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-2">

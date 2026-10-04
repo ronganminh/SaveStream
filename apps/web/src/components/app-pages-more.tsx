@@ -778,7 +778,7 @@ function DemoAccountSettings() {
           if (!o) setConfirmText("");
         }}
         title="Delete your account?"
-        body="All channels, recordings, and billing history will be permanently removed. Any active subscription will be canceled."
+        body="All channels, recordings, and account data will be removed. Purchased credits are forfeited when the account is deleted; billing records may be retained where required."
         confirmLabel="Delete account"
         confirmDisabled={confirmText !== "DELETE"}
         onConfirm={() => {
@@ -807,7 +807,7 @@ const notifPrefs = [
   ["started", "Recording started", "When a monitored channel goes live and recording begins."],
   ["completed", "Recording completed", "When a recording is processed and ready to watch."],
   ["failed", "Recording failed", "When a recording stops unexpectedly or can’t be processed."],
-  ["quota", "Quota warning", "At 80% and 100% of your monthly recording hours or downloads."],
+  ["quota", "Credit warning", "When your cloud credits are running low or reach zero."],
   [
     "expiry",
     "Retention / expiration warning",
@@ -3377,14 +3377,15 @@ export function LegalPage({
 const authorized =
   "You may only add and record livestreams from TikTok channels that you own, manage, or have explicit permission from the rights holder to record and archive.";
 export function TermsPage() {
+  const { t } = usePreferences();
   return (
     <LegalPage
       title="Terms of Service"
       intro={
         <p>
-          These terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a cloud service that
-          monitors TikTok channels you add and records their livestreams. By creating an account or
-          using the service, you agree to these terms.
+          These terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a service that
+          monitors TikTok channels you add and supports cloud or on-device livestream recording.
+          By creating an account or using the service, you agree to these terms.
         </p>
       }
       sections={[
@@ -3439,12 +3440,17 @@ export function TermsPage() {
                 taxes are calculated at checkout.
               </p>
               <p>
-                Payments are processed by Lemon Squeezy, which acts as our reseller and Merchant of
-                Record. Your purchase is also subject to the{" "}
+                Payments on the web are processed by Lemon Squeezy, which acts as our reseller and
+                Merchant of Record. Your web purchase is also subject to the{" "}
                 <ExternalLink href="https://www.lemonsqueezy.com/buyer-terms">
                   Lemon Squeezy buyer terms
                 </ExternalLink>
                 .
+              </p>
+              <p>
+                {t(
+                  "Mobile purchases are one-time purchases processed by the App Store or Google Play; web purchases are processed by Lemon Squeezy.",
+                )}
               </p>
               <p>
                 Credits are used only while a livestream is being recorded, based on the recording
@@ -3454,6 +3460,16 @@ export function TermsPage() {
                 you delete your account.
               </p>
             </>
+          ),
+        },
+        {
+          h: t("Free mobile advertising"),
+          p: (
+            <p>
+              {t(
+                "The Free mobile app may show banner and rewarded ads. Rewarded ads can grant additional local-recording time after server-side verification.",
+              )}
+            </p>
           ),
         },
         {
@@ -3532,6 +3548,7 @@ export function TermsPage() {
   );
 }
 export function PrivacyPage() {
+  const { t } = usePreferences();
   return (
     <LegalPage
       title="Privacy Policy"
@@ -3554,10 +3571,16 @@ export function PrivacyPage() {
               </li>
               <li>
                 Billing records: credit balance and history, purchased packages, amounts, and order
-                references. Card and payment details are collected by Lemon Squeezy; we never
-                receive your full card number.
+                references. Web card and payment details are collected by Lemon Squeezy; mobile
+                purchase processing is handled by the App Store or Google Play. We do not receive
+                your full card number.
               </li>
               <li>Notification preferences and the notifications we send you.</li>
+              <li>
+                {t(
+                  "Mobile devices may register a device identifier, push token, platform, and locale so SaveStream can deliver notifications and open the correct screen.",
+                )}
+              </li>
               <li>
                 Security and operational data: IP address, browser user agent, sign-in sessions,
                 request identifiers, and audit events.
@@ -3571,8 +3594,8 @@ export function PrivacyPage() {
             <p>
               To provide monitoring and recording, keep your account secure, process purchases and
               credit usage, send the emails you need (such as verification, password reset, and
-              notifications you have enabled), prevent abuse, and respond to support requests. We do
-              not sell your personal information and do not use it for advertising.
+              notifications you have enabled), verify rewarded-ad grants, prevent abuse, and respond
+              to support requests. We do not sell your personal information.
             </p>
           ),
         },
@@ -3581,8 +3604,18 @@ export function PrivacyPage() {
           p: (
             <p>
               We use one essential, secure cookie to keep you signed in. Your browser also stores
-              your theme and language preferences locally. We do not use advertising or analytics
+              your theme and language preferences locally. The web product does not use advertising
               cookies.
+            </p>
+          ),
+        },
+        {
+          h: t("Advertising in the Free mobile app"),
+          p: (
+            <p>
+              {t(
+                "The Free mobile app uses advertising services for banner and rewarded ads. Those services may receive device or advertising identifiers needed to deliver and verify ads.",
+              )}
             </p>
           ),
         },
@@ -3607,6 +3640,16 @@ export function PrivacyPage() {
                 </li>
                 <li>VNPT — server hosting for the SaveStream API and recording workers.</li>
                 <li>Brevo — delivery of account and notification emails.</li>
+                <li>
+                  {t(
+                    "Apple App Store and Google Play — processing one-time mobile purchases and store-managed refunds.",
+                  )}
+                </li>
+                <li>
+                  {t(
+                    "Google services — rewarded-ad verification in the Free mobile app and push notification delivery.",
+                  )}
+                </li>
                 <li>
                   Lemon Squeezy — payment processing as Merchant of Record (
                   <ExternalLink href="https://www.lemonsqueezy.com/privacy">

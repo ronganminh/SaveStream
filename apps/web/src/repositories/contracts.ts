@@ -16,6 +16,7 @@ import type {
   CreditReservationListResponse,
   CreditTransactionListResponse,
   DownloadUrlResponse,
+  EntitlementResponse,
   LiveStatusResponse,
   OperationalSnapshotResponse,
   PaymentOrderListResponse,
@@ -38,7 +39,13 @@ import type {
 } from "@/api/types";
 
 export type ChannelStatus = "Recording" | "Waiting" | "Offline" | "Paused" | "Error";
-export type RecordingStatus = "Recording" | "Processing" | "Ready" | "Error";
+export type RecordingStatus =
+  | "Recording"
+  | "Processing"
+  | "Waiting"
+  | "Missed"
+  | "Ready"
+  | "Error";
 export type Status = ChannelStatus | RecordingStatus;
 
 export type ChannelModel = {
@@ -198,6 +205,7 @@ export interface BillingRepository {
 
 export interface UsersRepository {
   getCurrent(): Promise<UserResponse>;
+  getEntitlement(): Promise<EntitlementResponse>;
   updateCurrent(input: {
     display_name?: string | null;
     locale?: string | null;

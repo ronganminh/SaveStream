@@ -92,8 +92,6 @@ import {
 } from "@/components/ui/sheet";
 import {
   dailyRecordingHours,
-  invoices,
-  subscription,
   usage,
   user,
 } from "@/mocks/fixtures";
@@ -157,6 +155,7 @@ import {
   useCreditPackagesData,
   useCreditReservationsData,
   useCreditTransactionsData,
+  useEntitlementData,
   usePaymentOrdersData,
   usePricingData,
   usePublicPricingData,
@@ -1506,7 +1505,11 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
 export function ChannelsPage() {
   const { t } = usePreferences();
   const { query: channelsQuery, state: channelsState } = useChannelsData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const channelItems = channelsQuery.data ?? [];
+  const entitlement = entitlementQuery.data;
+  const channelLimit = entitlement?.limits.max_watches ?? (isDemoMode ? 3 : null);
+  const channelCount = entitlement?.watch_count ?? channelItems.length;
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
   const filtered = channelItems.filter(
@@ -1518,8 +1521,21 @@ export function ChannelsPage() {
     <AppShell>
       <PageHeader
         title="Channels"
-        subtitle="Channels are monitored automatically. Recording begins when an enabled channel goes live."
-        action={<AddChannelDialog />}
+        subtitle={
+          entitlement?.plan === "free"
+            ? "Free web includes 10 trial credits and up to 3 monitored channels. Buy hours once to enable automatic cloud recording."
+            : "Channels are monitored automatically. Recording begins when an enabled channel goes live."
+        }
+        action={
+          <div className="flex items-center gap-3">
+            {channelLimit !== null && (
+              <span className="text-sm text-muted-foreground">
+                {channelCount}/{channelLimit} channels
+              </span>
+            )}
+            <AddChannelDialog />
+          </div>
+        }
       />
       <FilterBar>
         <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
@@ -1866,6 +1882,7 @@ const processingBackendStatuses = new Set([
   "queued",
   "resolving",
   "waiting_live",
+  "waiting_for_cloud_slot",
   "processing",
   "uploading",
 ]);
@@ -1923,6 +1940,7 @@ export function RecordingDetailPage({
 }) {
   const { id } = useParams({ strict: false }) as { id?: string };
   const navigate = useNavigate();
+  const { t } = usePreferences();
   const { query: recordingQuery, state: recordingState } = useRecordingData(id);
   const { query: recordingsQuery, state: recordingsState } = useRecordingsData();
   const { query: channelsQuery } = useChannelsData();
@@ -2249,12 +2267,26 @@ export function RecordingDetailPage({
       {state === "failed" && (
         <div className="mt-4 space-y-3">
           <StateBanner
-            tone={rec.backendStatus === "stopped" ? "info" : "error"}
-            title={rec.backendStatus === "stopped" ? "Recording stopped" : "Recording couldn’t be completed"}
+            tone={
+              rec.backendStatus === "stopped" || rec.backendStatus === "missed_no_cloud_slot"
+                ? "info"
+                : "error"
+            }
+            title={
+              rec.backendStatus === "stopped"
+                ? "Recording stopped"
+                : rec.backendStatus === "missed_no_cloud_slot"
+                  ? t("Recording missed")
+                  : "Recording couldn’t be completed"
+            }
             body={
               rec.backendStatus === "stopped"
                 ? "The recording was stopped before it completed."
-                : rec.error || "Something went wrong while recording this livestream."
+                : rec.backendStatus === "missed_no_cloud_slot"
+                  ? t(
+                      "The livestream ended before a cloud recording slot became available. No credits were charged.",
+                    )
+                  : rec.error || "Something went wrong while recording this livestream."
             }
             action={
               isDemoMode ? (
@@ -2352,13 +2384,26 @@ export function RecordingDetailPage({
 }
 
 function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"] }) {
-  const resolving = status === "queued" || status === "resolving" || status === "waiting_live";
+  const { t } = usePreferences();
+  const waitingForSlot = status === "waiting_for_cloud_slot";
+  const resolving =
+    status === "queued" ||
+    status === "resolving" ||
+    status === "waiting_live" ||
+    waitingForSlot;
   const processing = status === "processing";
   const uploading = status === "uploading";
 
   const stage = resolving ? 0 : processing ? 1 : uploading ? 2 : 3;
   const steps = [
-    [Activity, resolving ? "Preparing recorder" : "Recording completed"],
+    [
+      Activity,
+      waitingForSlot
+        ? "Waiting for a cloud recording slot"
+        : resolving
+          ? "Preparing recorder"
+          : "Recording completed",
+    ],
     [Activity, "Processing video"],
     [Upload, "Uploading"],
     [CheckCircle2, "Ready"],
@@ -2366,9 +2411,9 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
 
   return (
     <div className="mt-5 rounded-lg border p-5">
-      <h2 className="font-medium">Finalizing your recording</h2>
+      <h2 className="font-medium">{t("Finalizing your recording")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        This page updates automatically as your recording is processed.
+        {t("This page updates automatically as your recording is processed.")}
       </p>
       <div className="mt-5 grid gap-3 sm:grid-cols-4">
         {steps.map(([Icon, label], index) => {
@@ -2386,7 +2431,7 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
                 )}
               />
               <span className={cn("text-sm", statusLabel === "next" && "text-muted-foreground")}>
-                {label}
+                {t(label)}
               </span>
             </div>
           );
@@ -2418,6 +2463,23 @@ function formatCreditMoney(
   language: string,
 ) {
   return formatMoneyValue(packageItem.price, language);
+}
+
+function formatApproxHours(
+  minutes: number | null | undefined,
+  language: string,
+) {
+  if (minutes === null || minutes === undefined || minutes <= 0) return null;
+  const hours = minutes / 60;
+  const value = new Intl.NumberFormat(language, {
+    maximumFractionDigits: hours < 10 ? 1 : 0,
+  }).format(hours);
+  const unit = language.toLowerCase().startsWith("vi")
+    ? "giờ"
+    : hours === 1
+      ? "hour"
+      : "hours";
+  return `≈ ${value} ${unit}`;
 }
 
 function pricingRuleTitle(rule: PricingResponse["rules"][number], index: number) {
@@ -2674,6 +2736,9 @@ function CreditsUsagePage() {
                     <p className="text-sm font-medium">{item.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {pluralize(item.credits, "credit")}
+                      {formatApproxHours(item.cloud_minutes, language)
+                        ? ` · ${formatApproxHours(item.cloud_minutes, language)}`
+                        : ""}
                     </p>
                   </div>
                   <p className="font-mono font-semibold">
@@ -2817,8 +2882,8 @@ function DemoUsagePage() {
         {mock === "warning" && (
           <StateBanner
             tone="warning"
-            title="You’ve used 80% of your monthly recording hours."
-            body={`${hours} of ${usage.recordingHours.limit} hours used. Recording continues normally until the limit, then pauses until ${usage.resetsOn}.`}
+            title="Your cloud recording allowance is running low."
+            body={`${hours} of ${usage.recordingHours.limit} demo hours used. Buy more cloud hours when you need them.`}
             action={upgradeBtn}
           />
         )}
@@ -3172,6 +3237,9 @@ function CreditBillingPage() {
                   </p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {pluralize(item.credits, "credit")}
+                    {formatApproxHours(item.cloud_minutes, language)
+                      ? ` · ${formatApproxHours(item.cloud_minutes, language)}`
+                      : ""}
                   </p>
                   <Button
                     className="mt-6 w-full"
@@ -3268,239 +3336,92 @@ function CreditBillingPage() {
 
 function DemoBillingPage() {
   const { t, language } = usePreferences();
-  const navigate = useNavigate();
-  const [mock, setMock] = useState<(typeof billingStates)[number]["value"]>("active");
-  const [upgrade, setUpgrade] = useState(false);
-  const [cancel, setCancel] = useState(false);
-  const isPro = mock !== "free";
-  const pro = planCatalog.pro;
-  const free = planCatalog.free;
-  const pm = subscription.paymentMethod;
-  const manage = () =>
-    toast(t("Demo function"), {
-      description: t("Payment provider isn’t connected in this prototype."),
-    });
-  const invoiceRows =
-    mock === "payment_failed" || mock === "past_due"
-      ? [
-          {
-            id: "INV-2026-0010",
-            date: "Sep 27, 2026",
-            description: "Pro · Monthly",
-            amount: formatCurrencyUsd(pro.priceMonthlyUsd, language),
-            status: "Failed" as const,
-          },
-          ...invoices,
-        ]
-      : mock === "free"
-        ? []
-        : invoices;
+  const packages = [
+    {
+      id: "starter",
+      name: "Starter",
+      credits: 3_000,
+      cloudMinutes: 3_000,
+      price: { amount_minor: 999, currency: "USD" } satisfies Money,
+    },
+    {
+      id: "standard",
+      name: "Standard",
+      credits: 9_000,
+      cloudMinutes: 9_000,
+      price: { amount_minor: 2_499, currency: "USD" } satisfies Money,
+    },
+    {
+      id: "premium",
+      name: "Premium",
+      credits: 24_000,
+      cloudMinutes: 24_000,
+      price: { amount_minor: 5_999, currency: "USD" } satisfies Money,
+    },
+  ] as const;
 
   return (
     <AppShell>
-      <PageHeader title="Billing" subtitle="Manage your plan, payment method, and invoices." />
-      <PrototypeStateBar value={mock} options={billingStates} onChange={setMock} />
-      <div className="mb-6 space-y-3">
-        {mock === "payment_failed" && (
-          <StateBanner
-            tone="error"
-            title="Payment failed"
-            body="This is an illustrative payment-failure state. No real charge was attempted."
-            action={<Button size="sm" onClick={manage}>{t("Update payment method")}</Button>}
-          />
-        )}
-        {mock === "past_due" && (
-          <StateBanner
-            tone="error"
-            title="Past due"
-            body="This is an illustrative past-due state for the frontend demo."
-            action={<Button size="sm" onClick={manage}>{t("Pay now")}</Button>}
-          />
-        )}
-        {mock === "canceling" && (
-          <StateBanner
-            tone="info"
-            title="Cancellation scheduled"
-            body={`${t("Demo function")}: ${formatDate(subscription.currentPeriodEnd, language)}`}
-            action={
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setMock("active");
-                  toast.success(t("Subscription resumed"));
-                }}
-              >
-                {t("Resume subscription")}
-              </Button>
-            }
-          />
-        )}
+      <PageHeader
+        title="Billing"
+        subtitle={t("One-time cloud-hour purchases. No subscription and nothing renews automatically.")}
+      />
+
+      <div className="mb-6">
+        <StateBanner
+          tone="info"
+          title={t("Free web trial")}
+          body={t(
+            "Free web accounts get 10 trial credits after email verification and can monitor up to 3 channels.",
+          )}
+        />
       </div>
 
-      <section className="mb-8 rounded-lg border bg-surface">
-        <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">{t("Current subscription")}</p>
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold">{isPro ? "Pro" : "Free"}</h2>
-              <span className="rounded-md border bg-muted px-2 py-0.5 text-xs font-medium">
-                {t(mock === "active" ? "Active" : mock === "free" ? "Free" : mock === "past_due" ? "Past due" : mock === "payment_failed" ? "Payment failed" : "Demo")}
-              </span>
+      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
+        <StatCard label="Plan" value={t("Free")} detail={t("No recurring fee")} icon={Sparkles} />
+        <StatCard label="Trial credits" value="10" detail={t("10 minutes of cloud recording")} icon={Zap} />
+        <StatCard label="Monitored channels" value="0 / 3" detail={t("Free web limit")} icon={Radio} />
+      </div>
+
+      <section className="mt-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">{t("One-time hour packs")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("Credits never expire. Buy more whenever you need additional cloud recording time.")}
+          </p>
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          {packages.map((item) => (
+            <div key={item.id} className="rounded-lg border bg-surface p-6">
+              <p className="text-lg font-semibold">{item.name}</p>
+              <p className="mt-3 font-mono text-3xl font-semibold">
+                {formatMoneyValue(item.price, language)}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {item.credits.toLocaleString(language)} credits ·{" "}
+                {formatApproxHours(item.cloudMinutes, language)}
+              </p>
+              <Button className="mt-6 w-full" asChild>
+                <Link to="/billing/success" search={{ order_id: "demo-paid" }}>
+                  <CreditCard />
+                  {t("Buy once")}
+                </Link>
+              </Button>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {isPro
-                ? `${formatCurrencyUsd(pro.priceMonthlyUsd, language)} · ${t("Monthly")}`
-                : t("Free")}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {isPro ? (
-              <>
-                <Button variant="outline" onClick={manage}>{t("Manage subscription")}</Button>
-                {mock !== "canceling" && (
-                  <Button variant="ghost" onClick={() => setCancel(true)}>{t("Cancel subscription")}</Button>
-                )}
-              </>
-            ) : (
-              <Button onClick={() => setUpgrade(true)}><Sparkles />{t("Upgrade to Pro")}</Button>
-            )}
-          </div>
+          ))}
         </div>
       </section>
 
-      <div className="mb-4">
-        <h2 className="text-sm font-semibold">{t("Plans")}</h2>
-        <p className="mt-1 text-xs text-muted-foreground">{t("Simple plans with one monthly source of truth.")}</p>
-      </div>
-      <div className="grid gap-5 lg:grid-cols-2">
-        <PlanCard
-          name={free.name}
-          price="Free"
-          current={!isPro}
-          features={[...free.features]}
-          action={
-            isPro ? (
-              <Button variant="outline" className="mt-6 w-full" onClick={() => setCancel(true)} disabled={mock === "canceling"}>
-                {t(mock === "canceling" ? "Switching Oct 1" : "Downgrade to Free")}
-              </Button>
-            ) : (
-              <Button variant="outline" className="mt-6 w-full" disabled>{t("Current plan")}</Button>
-            )
-          }
-        />
-        <PlanCard
-          name={pro.name}
-          price={formatCurrencyUsd(pro.priceMonthlyUsd, language)}
-          current={isPro}
-          features={[...pro.features]}
-          action={
-            isPro ? (
-              <Button variant="outline" className="mt-6 w-full" onClick={manage}>{t("Manage plan")}</Button>
-            ) : (
-              <Button className="mt-6 w-full" onClick={() => setUpgrade(true)}>{t("Upgrade to Pro")}</Button>
-            )
-          }
+      <div className="mt-8">
+        <StateBanner
+          tone="info"
+          title={t("Mobile purchases")}
+          body={t(
+            "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.",
+          )}
         />
       </div>
-      <div className="mt-4 rounded-md border bg-surface-subtle p-4 text-xs text-muted-foreground">
-        <p className="font-medium text-foreground">{t("Plan limits")}</p>
-        <dl className="mt-2 grid gap-2 sm:grid-cols-3">
-          {planLimitDefinitions.map((item) => (
-            <div key={item.key}>
-              <dt className="font-medium">{t(item.label)}</dt>
-              <dd>{t(item.description)}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="mt-3">{t(planMediaFootnote)}</p>
-      </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
-        <section className="rounded-lg border bg-surface">
-          <div className="border-b p-5">
-            <h2 className="font-medium">{t("Payment method")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t("Used for your Pro subscription.")}</p>
-          </div>
-          {isPro && pm ? (
-            <div className="flex items-center gap-3 p-5">
-              <span className="grid size-10 place-items-center rounded-md border"><CreditCard className="size-4" /></span>
-              <div>
-                <p className="text-sm font-medium">{pm.brand} •••• {pm.last4}</p>
-                <p className="text-xs text-muted-foreground">{pm.exp}</p>
-              </div>
-              <Button className="ml-auto" variant="outline" onClick={manage}>{t("Update")}</Button>
-            </div>
-          ) : (
-            <p className="p-5 text-sm text-muted-foreground">{t("No payment method on file.")}</p>
-          )}
-        </section>
-        <section className="rounded-lg border bg-surface">
-          <div className="border-b p-5"><h2 className="font-medium">{t("Billing history")}</h2></div>
-          {invoiceRows.length ? (
-            <ul className="divide-y">
-              {invoiceRows.map((inv) => (
-                <li key={inv.id} className="grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 text-sm sm:grid-cols-[1fr_1fr_auto_auto_auto]">
-                  <div>
-                    <p className="font-medium">{formatDate(inv.date, language)}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{inv.id}</p>
-                  </div>
-                  <span className="hidden text-muted-foreground sm:block">{inv.description}</span>
-                  <span className="font-mono">{inv.amount}</span>
-                  <span className="hidden rounded-md bg-muted px-2 py-0.5 text-xs font-medium sm:inline">{t(inv.status)}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`${t("Download invoice")} ${inv.id}`}
-                    className="hidden sm:inline-flex"
-                    onClick={() => toast(t("Invoice download is mocked"))}
-                  >
-                    <Download />
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="p-5 text-sm text-muted-foreground">{t("No invoices yet.")}</p>
-          )}
-        </section>
-      </div>
-
-      <Dialog open={upgrade} onOpenChange={setUpgrade}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Upgrade to Pro?")}</DialogTitle>
-            <DialogDescription>
-              {formatCurrencyUsd(pro.priceMonthlyUsd, language)} {t("/ month")}. {t("Secure checkout is not connected in this frontend demo.")}
-            </DialogDescription>
-          </DialogHeader>
-          <ul className="space-y-2 rounded-md border bg-surface-subtle p-4 text-sm">
-            {pro.features.map((feature) => (
-              <li key={feature} className="flex gap-2"><CheckCircle2 className="size-4 text-success" />{t(feature)}</li>
-            ))}
-          </ul>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setUpgrade(false)}>{t("Cancel")}</Button>
-            <Button onClick={() => { setUpgrade(false); navigate({ to: "/billing/success", search: { order_id: "demo-paid" } }); }}>
-              {t("Continue to checkout")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
-        destructive
-        open={cancel}
-        onOpenChange={setCancel}
-        title="Cancel Pro subscription?"
-        body="This demo only changes local UI state. No subscription or payment service is connected."
-        confirmLabel="Cancel subscription"
-        onConfirm={() => {
-          setCancel(false);
-          setMock("canceling");
-          toast(t("Subscription canceled"));
-        }}
-      />
     </AppShell>
   );
 }
@@ -3728,7 +3649,7 @@ const includedInEveryPackage = [
 ];
 
 function CreditPricingPage() {
-  const { language } = usePreferences();
+  const { language, t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
   const { query, state } = usePublicPricingData();
@@ -3744,8 +3665,9 @@ function CreditPricingPage() {
         <div className="text-center">
           <h1 className="text-4xl font-semibold">Simple, pay-as-you-go pricing</h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            Buy credits once and use them whenever your channels go live. No subscription and no
-            monthly fee.
+            {t(
+              "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.",
+            )}
           </p>
           {rateLine && <p className="mt-3 text-sm font-medium">{rateLine}</p>}
         </div>
@@ -3789,7 +3711,12 @@ function CreditPricingPage() {
                 <dl className="mt-6 space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-3 border-t pt-3">
                     <dt className="text-muted-foreground">Credits</dt>
-                    <dd className="font-medium">{item.credits.toLocaleString(language)}</dd>
+                    <dd className="font-medium">
+                      {item.credits.toLocaleString(language)}
+                      {formatApproxHours(item.recording_minutes, language)
+                        ? ` · ${formatApproxHours(item.recording_minutes, language)}`
+                        : ""}
+                    </dd>
                   </div>
                   {item.recording_minutes !== null && (
                     <div className="flex items-center justify-between gap-3 border-t pt-3">
@@ -3805,6 +3732,12 @@ function CreditPricingPage() {
             ))}
           </div>
         )}
+
+        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+          {t(
+            "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.",
+          )}
+        </p>
 
         {pricing && pricing.signup_credits > 0 && (
           <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -4361,11 +4294,4 @@ const usageStates = [
   { value: "reached", label: "Quota reached" },
   { value: "download", label: "Downloads exhausted" },
   { value: "channels", label: "Channel limit" },
-] as const;
-const billingStates = [
-  { value: "active", label: "Pro active" },
-  { value: "free", label: "Free plan" },
-  { value: "payment_failed", label: "Payment failed" },
-  { value: "past_due", label: "Past due" },
-  { value: "canceling", label: "Canceled, active until" },
 ] as const;
