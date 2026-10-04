@@ -11,7 +11,7 @@
 - [x] A0 — Nền móng: model, interface, mock, widget dùng chung — **đã merge PR #77 vào `main`**
 - [x] A1 — Auth và Onboarding — **đã merge PR #81 vào `main`**
 - [x] A2 — Home và Theo dõi — **đã merge PR #87 vào `main`**
-- [ ] A3 — Luồng ghi (Recording)
+- [x] A3 — Luồng ghi (Recording) — **đã merge PR #94 vào `main`**
 - [ ] A4 — Bản ghi và Trình phát
 - [ ] A5 — Gói, sử dụng và mua giờ
 - [ ] A6 — Cài đặt, Thông báo, trạng thái toàn cục
@@ -24,6 +24,7 @@
 | A0 | `track-a/a0-foundation` / #77 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 | A1 | `track-a/a1-auth-onboarding` / #81 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 | A2 | `track-a/a2-home-watching` / #87 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `android-emulator-smoke` ✅ · `mobile-backend-e2e` ✅ |
+| A3 | `track-a/a3-recording-flow` / #94 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 
 **Quy tắc cập nhật tracking:** chỉ đánh dấu `[x]` khi phase đã merge vào `main`. Phase đang mở PR vẫn giữ `[ ]` và ghi trạng thái ở bảng trên.
 
