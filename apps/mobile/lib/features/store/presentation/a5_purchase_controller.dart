@@ -32,11 +32,13 @@ class CloudHoursPurchaseState {
     this.phase = CloudHoursPurchasePhase.idle,
     this.selectedProductId,
     this.errorMessage,
+    this.isRestore = false,
   });
 
   final CloudHoursPurchasePhase phase;
   final String? selectedProductId;
   final String? errorMessage;
+  final bool isRestore;
 }
 
 final NotifierProvider<CloudHoursPurchaseController, CloudHoursPurchaseState>
@@ -68,6 +70,7 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
   Future<void> restore() async {
     state = const CloudHoursPurchaseState(
       phase: CloudHoursPurchasePhase.restoring,
+      isRestore: true,
     );
     await ref.read(purchaseServiceProvider).restore();
   }
@@ -82,8 +85,9 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
     if (event.status == PurchaseEventStatus.failed) {
       state = CloudHoursPurchaseState(
         phase: CloudHoursPurchasePhase.failed,
-        selectedProductId: event.productId,
+        selectedProductId: event.productId == 'restore' ? null : event.productId,
         errorMessage: event.errorMessage,
+        isRestore: event.productId == 'restore',
       );
       return;
     }
@@ -97,6 +101,7 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
     if (event.status == PurchaseEventStatus.restored) {
       state = const CloudHoursPurchaseState(
         phase: CloudHoursPurchasePhase.restored,
+        isRestore: true,
       );
       return;
     }
