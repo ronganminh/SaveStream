@@ -375,6 +375,26 @@ class AdminSafetyService:
                 payload={"notification_id": str(notification.id)},
             )
 
+    async def list_creator_blocks(
+        self,
+        *,
+        active_only: bool,
+        limit: int = 200,
+    ) -> list[AdminCreatorBlock]:
+        statement = select(AdminCreatorBlock)
+        if active_only:
+            statement = statement.where(AdminCreatorBlock.unblocked_at.is_(None))
+        return list(
+            (
+                await self.session.scalars(
+                    statement.order_by(
+                        AdminCreatorBlock.created_at.desc(),
+                        AdminCreatorBlock.id.desc(),
+                    ).limit(limit)
+                )
+            ).all()
+        )
+
     async def block_creator(
         self,
         *,
@@ -601,14 +621,17 @@ class AdminSafetyService:
                 }
             )
 
-        items.sort(
-            key=lambda item: (
-                len(item["reasons"]),
-                int(item["rate_limit_hits_24h"]),
-                int(item["reward_invalid_7d"]),
-            ),
-            reverse=True,
-        )
+        def sort_key(item: dict[str, object]) -> tuple[int, int, int]:
+            reasons = item.get("reasons")
+            rate_hits = item.get("rate_limit_hits_24h")
+            reward_invalid = item.get("reward_invalid_7d")
+            return (
+                len(reasons) if isinstance(reasons, list) else 0,
+                rate_hits if isinstance(rate_hits, int) else 0,
+                reward_invalid if isinstance(reward_invalid, int) else 0,
+            )
+
+        items.sort(key=sort_key, reverse=True)
         return items[:limit]
 
     async def delete_blocked_recordings(
