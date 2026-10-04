@@ -1287,5 +1287,21 @@
   "cloudRecordingStopConfirmBody": "SaveStream will stop recording on the server and then process the saved part.",
   "cloudRecordingStartError": "Could not start cloud recording.",
   "recordingPlaybackNotReadyTitle": "Playback is not available while recording",
-  "recordingPlaybackNotReadyBody": "The recording can be played after the LIVE ends and server processing finishes."
+  "recordingPlaybackNotReadyBody": "The recording can be played after the LIVE ends and server processing finishes.",
+  "recordingBarSingle": "{name} is recording",
+  "@recordingBarSingle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingBarMultiple": "{count} recordings running",
+  "@recordingBarMultiple": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }
