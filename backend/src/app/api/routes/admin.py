@@ -21,7 +21,6 @@ from app.api.schemas.admin import (
     AdminMfaResetRequest,
     AdminMfaSetupResponse,
     AdminMfaStatusResponse,
-    AdminPaymentListResponse,
     AdminPrivacyRequestListResponse,
     AdminPrivacyRequestResponse,
     AdminRecordingListResponse,
@@ -45,6 +44,20 @@ from app.api.schemas.admin import (
     AdminUserUpdateRequest,
     AdminViewAsUserResponse,
     AuditLogListResponse,
+)
+from app.api.schemas.admin_d2 import (
+    AdminLedgerEntryResponse,
+    AdminLedgerListResponse,
+    AdminPaymentOrderDetailResponse,
+    AdminPaymentOrderListResponse,
+    AdminPaymentOrderResponse,
+    AdminReconcilePaymentResponse,
+    AdminRefundPreviewResponse,
+    AdminReservationReleaseResponse,
+    AdminStuckPaymentListResponse,
+    AdminStuckPaymentResponse,
+    AdminStuckReservationListResponse,
+    AdminStuckReservationResponse,
 )
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
@@ -71,6 +84,7 @@ from app.api.serializers.credits import transaction_response
 from app.api.serializers.recordings import recording_response
 from app.api.serializers.watches import watch_response
 from app.application.admin.operations_d7 import AdminOperationsService
+from app.application.admin.payments_d2 import AdminFinanceService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.audit.service import AuditContext, AuditService
@@ -673,26 +687,341 @@ async def retry_admin_recording(
     )
 
 
-@router.get("/payments", response_model=AdminPaymentListResponse)
+@router.get("/payments", response_model=AdminPaymentOrderListResponse)
 async def list_admin_payments(
     request: Request,
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
     user_id: uuid.UUID | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
+    channel: str | None = Query(default=None),
+    package_id: uuid.UUID | None = Query(default=None),
+    query: str | None = Query(default=None, max_length=160),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
     principal: AuthPrincipal = Depends(get_current_principal),
     session: AsyncSession = Depends(get_db_session),
-) -> AdminPaymentListResponse:
+) -> AdminPaymentOrderListResponse:
     _require_scope(principal, "admin:payments:read")
-    page = await AdminService(session, request.app.state.settings).list_payments(
+    items, next_cursor, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).list_payments(
         limit=limit,
         cursor=cursor,
         user_id=user_id,
         status=status_filter,
+        channel=channel,
+        package_id=package_id,
+        query=query,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
     )
-    return AdminPaymentListResponse(
-        items=[payment_order_response(item) for item in page.items],
-        pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
+    return AdminPaymentOrderListResponse(
+        items=[AdminPaymentOrderResponse.model_validate(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get("/payments/export.csv")
+async def export_admin_payments(
+    request: Request,
+    user_id: uuid.UUID | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    channel: str | None = Query(default=None),
+    package_id: uuid.UUID | None = Query(default=None),
+    query: str | None = Query(default=None, max_length=160),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:payments:read")
+    _require_scope(principal, "admin:reports:read")
+    items, _, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).list_payments(
+        limit=500,
+        cursor=None,
+        user_id=user_id,
+        status=status_filter,
+        channel=channel,
+        package_id=package_id,
+        query=query,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id", "user_email", "channel", "provider_transaction_id", "package",
+        "status", "credits", "gross_usd_minor", "estimated_store_fee_minor",
+        "created_at",
+    ])
+    for item in items:
+        writer.writerow([
+            item["id"], item["user_email"], item["purchase_channel"],
+            item["provider_transaction_id"] or "", item["package_code"],
+            item["status"], item["credits"], item["gross_usd_minor"] or "",
+            item["estimated_store_fee_minor"] or "", item["created_at"].isoformat(),
+        ])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.payments.exported",
+        resource_type="payment_order",
+        resource_id=None,
+        context=_context(request),
+        details={"rows": len(items), "truncated": has_more},
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-payments.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
+    )
+
+
+@router.get("/payments/stuck", response_model=AdminStuckPaymentListResponse)
+async def list_admin_stuck_payments(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStuckPaymentListResponse:
+    _require_scope(principal, "admin:payments:read")
+    items, next_cursor, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).stuck_payments(limit=limit, cursor=cursor)
+    return AdminStuckPaymentListResponse(
+        items=[AdminStuckPaymentResponse.model_validate(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get(
+    "/payments/{payment_order_id}",
+    response_model=AdminPaymentOrderDetailResponse,
+)
+async def get_admin_payment(
+    payment_order_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPaymentOrderDetailResponse:
+    _require_scope(principal, "admin:payments:read")
+    detail = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).payment_detail(payment_order_id)
+    return AdminPaymentOrderDetailResponse.model_validate(detail)
+
+
+@router.get(
+    "/payments/{payment_order_id}/refund-preview",
+    response_model=AdminRefundPreviewResponse,
+)
+async def preview_admin_refund(
+    payment_order_id: str,
+    request: Request,
+    amount_minor: int = Query(gt=0),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRefundPreviewResponse:
+    _require_scope(principal, "admin:payments:refund")
+    preview = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).refund_preview(payment_order_id, amount_minor)
+    return AdminRefundPreviewResponse.model_validate(preview)
+
+
+@router.post(
+    "/payments/{payment_order_id}/reconcile",
+    response_model=AdminReconcilePaymentResponse,
+)
+async def reconcile_admin_payment(
+    payment_order_id: str,
+    payload: AdminReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminReconcilePaymentResponse:
+    _require_scope(principal, "admin:payments:refund")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    result = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).reconcile_payment(payment_order_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.payment.reconciled",
+        resource_type="payment_order",
+        resource_id=payment_order_id,
+        context=_context(request),
+        reason=payload.reason,
+        after_state={"action": result["action"], "status": result["status"]},
+    )
+    await session.commit()
+    return AdminReconcilePaymentResponse.model_validate(result)
+
+
+@router.get("/credits/ledger", response_model=AdminLedgerListResponse)
+async def list_admin_credit_ledger(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    user_id: uuid.UUID | None = Query(default=None),
+    category: str | None = Query(default=None),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminLedgerListResponse:
+    _require_scope(principal, "admin:credits:read")
+    items, next_cursor, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).list_ledger(
+        limit=limit,
+        cursor=cursor,
+        user_id=user_id,
+        category=category,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
+    )
+    return AdminLedgerListResponse(
+        items=[AdminLedgerEntryResponse.model_validate(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.get("/credits/ledger/export.csv")
+async def export_admin_credit_ledger(
+    request: Request,
+    user_id: uuid.UUID | None = Query(default=None),
+    category: str | None = Query(default=None),
+    created_from: datetime | None = Query(default=None),
+    created_to: datetime | None = Query(default=None),
+    sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:credits:read")
+    _require_scope(principal, "admin:reports:read")
+    items, _, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).list_ledger(
+        limit=500,
+        cursor=None,
+        user_id=user_id,
+        category=category,
+        created_from=created_from,
+        created_to=created_to,
+        sort_order=sort_order,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id", "user_email", "category", "type", "amount", "balance_after",
+        "reference_type", "reference_id", "counts_as_purchase", "created_at",
+    ])
+    for item in items:
+        writer.writerow([
+            item["id"], item["user_email"], item["category"], item["type"],
+            item["amount"], item["balance_after"], item["reference_type"],
+            item["reference_id"] or "", item["counts_as_purchase"],
+            item["created_at"].isoformat(),
+        ])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.credits.ledger_exported",
+        resource_type="credit_ledger",
+        resource_id=None,
+        context=_context(request),
+        details={"rows": len(items), "truncated": has_more},
+    )
+    await session.commit()
+    return Response(
+        content=output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-admin-credit-ledger.csv"',
+            "X-Result-Truncated": "true" if has_more else "false",
+        },
+    )
+
+
+@router.get(
+    "/credits/stuck-reservations",
+    response_model=AdminStuckReservationListResponse,
+)
+async def list_admin_stuck_reservations(
+    request: Request,
+    limit: int = Query(default=20, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStuckReservationListResponse:
+    _require_scope(principal, "admin:credits:read")
+    items, next_cursor, has_more = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).stuck_reservations(limit=limit, cursor=cursor)
+    return AdminStuckReservationListResponse(
+        items=[AdminStuckReservationResponse.model_validate(item) for item in items],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+@router.post(
+    "/credits/stuck-reservations/{reservation_id}/release",
+    response_model=AdminReservationReleaseResponse,
+)
+async def release_admin_stuck_reservation(
+    reservation_id: str,
+    payload: AdminReasonRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminReservationReleaseResponse:
+    _require_scope(principal, "admin:credits:adjust")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    reservation, released = await AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    ).release_stuck_reservation(reservation_id, reason=payload.reason)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.credit.reservation_released",
+        resource_type="credit_reservation",
+        resource_id=reservation_id,
+        context=_context(request),
+        reason=payload.reason,
+        after_state={"released_credits": released},
+    )
+    await session.commit()
+    return AdminReservationReleaseResponse(
+        reservation=AdminStuckReservationResponse.model_validate(reservation),
+        released_credits=released,
     )
 
 
@@ -713,6 +1042,17 @@ async def refund_admin_payment(
         request=request,
         token=step_up_token,
     )
+    finance = AdminFinanceService(
+        session, selected_payment_provider(request.app.state.settings)
+    )
+    preview = await finance.refund_preview(payment_order_id, payload.amount_minor)
+    if payload.credits != preview["corresponding_credits"]:
+        raise ApplicationError(
+            "VALIDATION_ERROR",
+            "Refund credits must match the proportional refund preview",
+            status_code=409,
+            details={"expected_credits": preview["corresponding_credits"]},
+        )
     refund = await BillingAdminService(
         session,
         selected_payment_provider(request.app.state.settings),

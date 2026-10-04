@@ -186,7 +186,6 @@ class BillingCreditService:
         await self.session.flush()
         return entry
 
-
     async def revoke_store_purchase(
         self,
         *,
