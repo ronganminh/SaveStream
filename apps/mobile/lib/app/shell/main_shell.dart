@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
@@ -28,12 +29,41 @@ class MainShell extends ConsumerWidget {
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
     );
+    final bool isOnline = ref.watch(appOnlineProvider).value ?? true;
     final bool hideRecordingBar = activeRecordings.any(
       (ActiveRecordingBarItem item) => item.route == location,
     );
 
     return Scaffold(
-      body: RecordingPlatformBridge(child: navigationShell),
+      body: Column(
+        children: <Widget>[
+          if (!isOnline)
+            Material(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: SafeArea(
+                bottom: false,
+                child: Semantics(
+                  liveRegion: true,
+                  label: l10n.homeOfflineTitle,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(Icons.cloud_off_rounded),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(l10n.homeOfflineBody)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          Expanded(child: RecordingPlatformBridge(child: navigationShell)),
+        ],
+      ),
       floatingActionButton: compactFab
           ? FloatingActionButton(
               tooltip: l10n.addChannelAction,
