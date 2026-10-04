@@ -66,9 +66,7 @@ Future<void> bootstrap() async {
       session: session,
       authRepository: authRuntime.repository,
       apiClient: authenticatedApiClient,
-      watchRepository: ApiWatchRepository(
-        apiClient: authenticatedApiClient,
-      ),
+      watchRepository: ApiWatchRepository(apiClient: authenticatedApiClient),
       recordingRepository: ApiRecordingRepository(
         apiClient: authenticatedApiClient,
       ),
@@ -92,15 +90,9 @@ Future<void> bootstrap() async {
           ConnectivityPlusService(),
         ),
         deviceInfoServiceProvider.overrideWithValue(DeviceInfoPlusService()),
-        entitlementRepositoryProvider.overrideWithValue(
-          entitlementRepository,
-        ),
-        appStatusRepositoryProvider.overrideWithValue(
-          appStatusRepository,
-        ),
-        deviceRepositoryProvider.overrideWithValue(
-          deviceRepository,
-        ),
+        entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
+        appStatusRepositoryProvider.overrideWithValue(appStatusRepository),
+        deviceRepositoryProvider.overrideWithValue(deviceRepository),
       ],
     ),
   );
