@@ -24,9 +24,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: SsVideoSurface(controller: controller),
-        ),
+        home: Scaffold(body: SsVideoSurface(controller: controller)),
       ),
     );
 
