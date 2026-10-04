@@ -5,12 +5,14 @@ import 'android_local_recording_channels.dart';
 import 'contracts/local_recorder.dart';
 
 final class AndroidLocalRecorder implements LocalRecorder {
-  AndroidLocalRecorder() {
+  AndroidLocalRecorder({required Future<String> Function() currentUserId})
+    : _currentUserId = currentUserId {
     _states = androidLocalRecordingEvents
         .map<LocalRecorderState>(_decodeState)
         .asBroadcastStream();
   }
 
+  final Future<String> Function() _currentUserId;
   late final Stream<LocalRecorderState> _states;
   LocalRecordingSession? _session;
 
@@ -20,9 +22,11 @@ final class AndroidLocalRecorder implements LocalRecorder {
   @override
   Future<void> start(LocalRecordingSession session) async {
     _session = session;
+    final String userId = await _currentUserId();
     await androidLocalRecordingMethodChannel
         .invokeMethod<void>('start', <String, Object?>{
           'session_id': session.sessionId,
+          'user_id': userId,
           'watch_id': session.watchId,
           'device_id': session.deviceId,
           'stream_url': session.streamUrl.toString(),
