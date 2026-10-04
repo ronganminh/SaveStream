@@ -45,8 +45,7 @@ class RewardedMinutesSheet extends ConsumerStatefulWidget {
       _RewardedMinutesSheetState();
 }
 
-class _RewardedMinutesSheetState
-    extends ConsumerState<RewardedMinutesSheet> {
+class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
   Timer? _successTimer;
 
   @override
@@ -60,22 +59,22 @@ class _RewardedMinutesSheetState
     final RewardedMinutesState state = ref.watch(
       rewardedMinutesControllerProvider,
     );
-    ref.listen<RewardedMinutesState>(
-      rewardedMinutesControllerProvider,
-      (RewardedMinutesState? previous, RewardedMinutesState next) {
-        if (next.phase == RewardedMinutesPhase.pending) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) Navigator.of(context).pop();
-          });
-        }
-        if (next.phase == RewardedMinutesPhase.success) {
-          _successTimer?.cancel();
-          _successTimer = Timer(const Duration(seconds: 4), () {
-            if (mounted) Navigator.of(context).pop();
-          });
-        }
-      },
-    );
+    ref.listen<RewardedMinutesState>(rewardedMinutesControllerProvider, (
+      RewardedMinutesState? previous,
+      RewardedMinutesState next,
+    ) {
+      if (next.phase == RewardedMinutesPhase.pending) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) Navigator.of(context).pop();
+        });
+      }
+      if (next.phase == RewardedMinutesPhase.success) {
+        _successTimer?.cancel();
+        _successTimer = Timer(const Duration(seconds: 4), () {
+          if (mounted) Navigator.of(context).pop();
+        });
+      }
+    });
 
     final RewardedMinutesPhase phase = _effectivePhase(state);
     return SsBottomSheet(
@@ -96,8 +95,7 @@ class _RewardedMinutesSheetState
     if (state.phase != RewardedMinutesPhase.idle) {
       return state.phase;
     }
-    if (widget.extensionsUsed >=
-        widget.entitlement.extensionsCapPerRecording) {
+    if (widget.extensionsUsed >= widget.entitlement.extensionsCapPerRecording) {
       return RewardedMinutesPhase.maxExtensions;
     }
     if (widget.entitlement.rewardsUsedToday >=
@@ -112,23 +110,17 @@ class _RewardedMinutesSheetState
       RewardedMinutesPhase.idle => context.l10n.rewardMinutesOfferTitle(
         widget.entitlement.minutesPerReward,
       ),
-      RewardedMinutesPhase.loadingAd =>
-        context.l10n.rewardMinutesLoadingTitle,
+      RewardedMinutesPhase.loadingAd => context.l10n.rewardMinutesLoadingTitle,
       RewardedMinutesPhase.verifying =>
         context.l10n.rewardMinutesVerifyingTitle,
-      RewardedMinutesPhase.pending =>
-        context.l10n.rewardMinutesPendingTitle,
+      RewardedMinutesPhase.pending => context.l10n.rewardMinutesPendingTitle,
       RewardedMinutesPhase.success => context.l10n.rewardMinutesSuccessTitle(
         widget.entitlement.minutesPerReward,
       ),
-      RewardedMinutesPhase.noFill =>
-        context.l10n.rewardMinutesNoFillTitle,
-      RewardedMinutesPhase.invalid =>
-        context.l10n.rewardMinutesInvalidTitle,
-      RewardedMinutesPhase.maxExtensions =>
-        context.l10n.rewardMinutesMaxTitle,
-      RewardedMinutesPhase.dailyCap =>
-        context.l10n.rewardMinutesDailyCapTitle,
+      RewardedMinutesPhase.noFill => context.l10n.rewardMinutesNoFillTitle,
+      RewardedMinutesPhase.invalid => context.l10n.rewardMinutesInvalidTitle,
+      RewardedMinutesPhase.maxExtensions => context.l10n.rewardMinutesMaxTitle,
+      RewardedMinutesPhase.dailyCap => context.l10n.rewardMinutesDailyCapTitle,
       RewardedMinutesPhase.error => context.l10n.genericErrorTitle,
     };
   }
@@ -176,9 +168,7 @@ class _RewardedMinutesSheetState
             label: context.l10n.rewardMinutesAdCompleteStep,
             done: true,
           ),
-          SsChecklistItem(
-            label: context.l10n.rewardMinutesVerifyStep,
-          ),
+          SsChecklistItem(label: context.l10n.rewardMinutesVerifyStep),
           SsChecklistItem(
             label: context.l10n.rewardMinutesGrantStep(
               widget.entitlement.minutesPerReward,
@@ -248,7 +238,9 @@ class _RewardedMinutesSheetState
                 : context.l10n.retryAction,
             icon: Icons.ondemand_video_rounded,
             onPressed: () {
-              ref.read(rewardedMinutesControllerProvider.notifier).start(
+              ref
+                  .read(rewardedMinutesControllerProvider.notifier)
+                  .start(
                     entitlement: widget.entitlement,
                     extensionsUsed: widget.extensionsUsed,
                   );
