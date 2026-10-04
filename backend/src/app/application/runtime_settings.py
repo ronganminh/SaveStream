@@ -312,6 +312,14 @@ class RuntimeSettingsService:
             raise RuntimeError(f"{key} is not a string runtime setting")
         return value
 
+    async def optional_datetime(self, key: str) -> datetime | None:
+        value = await self.value(key)
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise RuntimeError(f"{key} is not a datetime runtime setting")
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
     async def list_settings(self) -> list[dict[str, object]]:
         rows = {
             row.key: row
