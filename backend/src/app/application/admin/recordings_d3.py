@@ -410,7 +410,6 @@ class AdminRecordingService:
                 await self.session.execute(
                     select(Recording.started_at, Recording.ended_at).where(
                         Recording.started_at.is_not(None),
-                        Recording.started_at < now,
                         or_(
                             Recording.ended_at.is_(None),
                             Recording.ended_at >= history_start,
@@ -419,14 +418,15 @@ class AdminRecordingService:
                 )
             ).all()
         )
-        intervals = [
-            (
-                _aware(started_at),
-                _aware(ended_at) if ended_at is not None else now,
-            )
-            for started_at, ended_at in rows
-            if started_at is not None
-        ]
+        intervals: list[tuple[datetime, datetime]] = []
+        for started_at, ended_at in rows:
+            if started_at is None:
+                continue
+            normalized_start = _aware(started_at)
+            normalized_end = _aware(ended_at) if ended_at is not None else now
+            if normalized_start >= now or normalized_end < history_start:
+                continue
+            intervals.append((normalized_start, normalized_end))
 
         hourly: list[dict[str, object]] = []
         for index in range(7 * 24):
