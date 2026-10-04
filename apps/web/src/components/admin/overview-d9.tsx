@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
@@ -35,6 +35,18 @@ function usd(minor: number) {
 
 function dateTime(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString("en-US") : "—";
+}
+
+function downloadCsv(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function PermissionPanel({ children }: { children: string }) {
@@ -89,13 +101,37 @@ function OverviewBody() {
     latest && latest.recording_capacity_limit
       ? latest.recording_running / latest.recording_capacity_limit
       : 0;
+  const previous = data?.series.at(-2);
+  const errorRate =
+    latest && latest.recording_total_24h > 0
+      ? latest.recording_errors_24h / latest.recording_total_24h
+      : 0;
+  const previousErrorRate =
+    previous && previous.recording_total_24h > 0
+      ? previous.recording_errors_24h / previous.recording_total_24h
+      : 0;
+
+  const exportReport = async (
+    kind: "revenue" | "new-users" | "cloud-usage" | "recordings",
+  ) => {
+    try {
+      const csv = await adminD9Api.exportReport(kind);
+      downloadCsv(`savestream-${kind}.csv`, csv);
+    } catch (error) {
+      toast.error("Could not export report", {
+        description: authErrorMessage(error),
+      });
+    }
+  };
 
   const alerts = [
     capacity >= 0.8
       ? `Recording capacity is at ${Math.round(capacity * 100)}%.`
       : null,
-    latest && latest.recording_errors_24h > 0
-      ? `${latest.recording_errors_24h} recording errors in the last 24 hours.`
+    latest &&
+    latest.recording_errors_24h > 0 &&
+    errorRate > previousErrorRate + 0.05
+      ? `Recording error rate increased to ${Math.round(errorRate * 100)}% in the last 24 hours.`
       : null,
     latest && latest.stuck_orders > 0
       ? `${latest.stuck_orders} payment orders are stuck.`
@@ -132,8 +168,8 @@ function OverviewBody() {
           value={latest ? `${latest.free_users} / ${latest.pro_users}` : "—"}
         />
         <AdminMetricCard
-          label="Free → Pro"
-          value={latest?.free_to_pro_users ?? "—"}
+          label="Free → Pro (7d)"
+          value={latest?.free_to_pro_weekly ?? "—"}
         />
         <AdminMetricCard
           label="Gross revenue"
@@ -177,10 +213,10 @@ function OverviewBody() {
         <div className="border-b p-5">
           <h2 className="font-medium">Revenue by channel</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gross USD before fees. Store fees are estimated separately in finance reports.
+            Gross USD before fees. Store fees are estimated at 30% and shown separately.
           </p>
         </div>
-        <div className="grid gap-3 p-5 md:grid-cols-3">
+        <div className="grid gap-3 p-5 md:grid-cols-4">
           <AdminMetricCard
             label="Web"
             value={latest ? usd(latest.revenue_web_usd_minor) : "—"}
@@ -193,6 +229,61 @@ function OverviewBody() {
             label="Google Play"
             value={latest ? usd(latest.revenue_google_play_usd_minor) : "—"}
           />
+          <AdminMetricCard
+            label="Estimated store fees today"
+            value={
+              latest
+                ? usd(
+                    latest.estimated_store_fee_app_store_usd_minor +
+                      latest.estimated_store_fee_google_play_usd_minor,
+                  )
+                : "—"
+            }
+          />
+        </div>
+        <div className="grid gap-3 border-t p-5 md:grid-cols-4">
+          <AdminMetricCard
+            label="Month · Web"
+            value={data ? usd(data.month_revenue_web_usd_minor) : "—"}
+          />
+          <AdminMetricCard
+            label="Month · App Store"
+            value={data ? usd(data.month_revenue_app_store_usd_minor) : "—"}
+          />
+          <AdminMetricCard
+            label="Month · Google Play"
+            value={data ? usd(data.month_revenue_google_play_usd_minor) : "—"}
+          />
+          <AdminMetricCard
+            label="Month · Est. store fees"
+            value={data ? usd(data.month_estimated_store_fee_usd_minor) : "—"}
+          />
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-lg border bg-background p-5">
+        <h2 className="font-medium">CSV reports</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Exports default to the latest 30 days and are bounded to 366 days.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {(
+            [
+              ["revenue", "Revenue"],
+              ["new-users", "New users"],
+              ["cloud-usage", "Cloud usage"],
+              ["recordings", "Recordings by status"],
+            ] as const
+          ).map(([kind, label]) => (
+            <Button
+              key={kind}
+              variant="outline"
+              onClick={() => void exportReport(kind)}
+            >
+              <Download className="mr-2 size-4" />
+              {label}
+            </Button>
+          ))}
         </div>
       </section>
 
@@ -305,8 +396,28 @@ function ReportDialog({
             <div className="rounded-md border p-4 text-sm">
               <p>{report.description}</p>
               <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-                <p>User: {report.user_id}</p>
-                <p>Recording: {report.recording_id ?? "—"}</p>
+                <p>
+                  User:{" "}
+                  <a
+                    className="underline underline-offset-2"
+                    href={`/admin/users/${report.user_id}`}
+                  >
+                    {report.user_id}
+                  </a>
+                </p>
+                <p>
+                  Recording:{" "}
+                  {report.recording_id ? (
+                    <a
+                      className="underline underline-offset-2"
+                      href={`/admin/jobs/${report.recording_id}`}
+                    >
+                      {report.recording_id}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </p>
                 <p>Platform: {report.platform ?? "—"}</p>
                 <p>App version: {report.app_version ?? "—"}</p>
                 <p>Retained until: {dateTime(report.expires_at)}</p>
