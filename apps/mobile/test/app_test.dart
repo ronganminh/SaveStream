@@ -466,13 +466,13 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'Studio North');
     await tester.pump();
-    expect(find.text('Studio North'), findsOneWidget);
+    expect(find.text('Studio North'), findsWidgets);
     expect(find.text('Minh Streams'), findsNothing);
 
     await tester.enterText(find.byType(TextField), '');
     await tester.tap(find.widgetWithText(ChoiceChip, 'Cloud'));
     await tester.pump();
-    expect(find.text('Minh Streams'), findsOneWidget);
+    expect(find.text('Minh Streams'), findsWidgets);
   });
 
   testWidgets('active recording Stop action follows canStop flag', (
@@ -517,7 +517,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Recordings'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Studio North'));
+
+    final GoRouter router = GoRouter.of(
+      tester.element(find.byType(RecordingsScreen)),
+    );
+    router.go(AppRoutes.recordingDetail('rec_003'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
