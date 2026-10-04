@@ -190,9 +190,7 @@ final class _Harness {
         rewardVerificationTimeoutProvider.overrideWithValue(
           verificationTimeout,
         ),
-        rewardVerificationPollIntervalProvider.overrideWithValue(
-          Duration.zero,
-        ),
+        rewardVerificationPollIntervalProvider.overrideWithValue(Duration.zero),
       ],
     );
     return _Harness(
@@ -204,10 +202,7 @@ final class _Harness {
     );
   }
 
-  Future<void> run(
-    LocalEntitlement entitlement, {
-    int extensionsUsed = 1,
-  }) {
+  Future<void> run(LocalEntitlement entitlement, {int extensionsUsed = 1}) {
     return container
         .read(rewardedMinutesControllerProvider.notifier)
         .start(entitlement: entitlement, extensionsUsed: extensionsUsed);
@@ -347,9 +342,7 @@ final class _RecorderSpy implements LocalRecorder {
 
   @override
   Future<void> start(LocalRecordingSession session) async {
-    _states.add(
-      const LocalRecorderState(phase: LocalRecorderPhase.recording),
-    );
+    _states.add(const LocalRecorderState(phase: LocalRecorderPhase.recording));
   }
 
   @override

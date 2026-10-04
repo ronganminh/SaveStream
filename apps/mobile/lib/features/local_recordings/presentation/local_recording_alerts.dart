@@ -114,7 +114,8 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _buildPhaseAlert(context),
-        if (_buildRewardAlert(context) case final Widget rewardAlert) ...<Widget>[
+        if (_buildRewardAlert(context)
+            case final Widget rewardAlert) ...<Widget>[
           const SizedBox(height: SsSpacing.md),
           rewardAlert,
         ],
