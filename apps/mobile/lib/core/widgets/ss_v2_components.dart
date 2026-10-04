@@ -335,9 +335,14 @@ abstract final class SsToast {
 }
 
 class SsChecklistItem {
-  const SsChecklistItem({required this.label, this.done = false});
+  const SsChecklistItem({
+    required this.label,
+    this.done = false,
+    this.active = false,
+  });
   final String label;
   final bool done;
+  final bool active;
 }
 
 class SsChecklist extends StatelessWidget {
@@ -353,6 +358,8 @@ class SsChecklist extends StatelessWidget {
             leading: Icon(
               item.done
                   ? Icons.check_circle_rounded
+                  : item.active
+                  ? Icons.progress_activity_rounded
                   : Icons.radio_button_unchecked_rounded,
             ),
             title: Text(item.label),
