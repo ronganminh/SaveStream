@@ -8,6 +8,7 @@ import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../../platform/contracts/local_recorder.dart';
+import 'controllers/rewarded_minutes_controller.dart';
 
 class LocalRecordingAlerts extends StatefulWidget {
   const LocalRecordingAlerts({
@@ -16,6 +17,7 @@ class LocalRecordingAlerts extends StatefulWidget {
     required this.remainingSeconds,
     required this.isUnlimited,
     required this.minutesPerReward,
+    required this.rewardState,
     this.onRewardRequested,
     this.onMinuteWarningEntered,
     super.key,
@@ -26,6 +28,7 @@ class LocalRecordingAlerts extends StatefulWidget {
   final int remainingSeconds;
   final bool isUnlimited;
   final int minutesPerReward;
+  final RewardedMinutesState rewardState;
   final VoidCallback? onRewardRequested;
   final VoidCallback? onMinuteWarningEntered;
 
@@ -109,6 +112,10 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _buildPhaseAlert(context),
+        if (_buildRewardAlert(context) case final Widget rewardAlert) ...<Widget>[
+          const SizedBox(height: SsSpacing.md),
+          rewardAlert,
+        ],
         if (_showMinuteWarning) ...<Widget>[
           const SizedBox(height: SsSpacing.md),
           SsInlineAlert(
@@ -130,6 +137,35 @@ class _LocalRecordingAlertsState extends State<LocalRecordingAlerts> {
         ],
       ],
     );
+  }
+
+  Widget? _buildRewardAlert(BuildContext context) {
+    return switch (widget.rewardState.phase) {
+      RewardedMinutesPhase.pending => SsInlineAlert(
+        title: context.l10n.rewardMinutesPendingTitle,
+        message: context.l10n.rewardMinutesPendingBody,
+      ),
+      RewardedMinutesPhase.success => SsInlineAlert(
+        title: context.l10n.rewardMinutesSuccessTitle(widget.minutesPerReward),
+        message: context.l10n.rewardMinutesSuccessBody(
+          widget.rewardState.extensionCount,
+          widget.rewardState.extensionCount,
+        ),
+        tone: SsInlineAlertTone.success,
+      ),
+      RewardedMinutesPhase.invalid => SsInlineAlert(
+        title: context.l10n.rewardMinutesInvalidTitle,
+        message: context.l10n.rewardMinutesInvalidBody,
+        tone: SsInlineAlertTone.error,
+      ),
+      RewardedMinutesPhase.idle ||
+      RewardedMinutesPhase.loadingAd ||
+      RewardedMinutesPhase.verifying ||
+      RewardedMinutesPhase.noFill ||
+      RewardedMinutesPhase.maxExtensions ||
+      RewardedMinutesPhase.dailyCap ||
+      RewardedMinutesPhase.error => null,
+    };
   }
 
   Widget _buildPhaseAlert(BuildContext context) {
