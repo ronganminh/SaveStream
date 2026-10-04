@@ -33,6 +33,9 @@ void main() {
           'recording_started': true,
           'recording_ready': false,
           'recording_failed': true,
+          'creator_live': false,
+          'recording_expiring': true,
+          'free_minutes_low': false,
           'email_supported': false,
           'updated_at': '2026-10-03T00:00:00Z',
         });
@@ -46,6 +49,9 @@ void main() {
     expect(preferences.recordingStarted, isTrue);
     expect(preferences.recordingReady, isFalse);
     expect(preferences.recordingFailed, isTrue);
+    expect(preferences.creatorLive, isFalse);
+    expect(preferences.recordingExpiring, isTrue);
+    expect(preferences.freeMinutesLow, isFalse);
   });
 
   test('notification preferences PATCH sends all persisted toggles', () async {
@@ -57,11 +63,17 @@ void main() {
           'recording_started': false,
           'recording_ready': true,
           'recording_failed': false,
+          'creator_live': true,
+          'recording_expiring': true,
+          'free_minutes_low': true,
         });
         return _jsonResponse(200, <String, Object?>{
           'recording_started': false,
           'recording_ready': true,
           'recording_failed': false,
+          'creator_live': true,
+          'recording_expiring': true,
+          'free_minutes_low': true,
           'email_supported': false,
           'updated_at': '2026-10-03T00:00:00Z',
         });
@@ -81,6 +93,9 @@ void main() {
     expect(saved.recordingStarted, isFalse);
     expect(saved.recordingReady, isTrue);
     expect(saved.recordingFailed, isFalse);
+    expect(saved.creatorLive, isTrue);
+    expect(saved.recordingExpiring, isTrue);
+    expect(saved.freeMinutesLow, isTrue);
   });
 
   test('release config keeps store-sensitive defaults explicit', () {

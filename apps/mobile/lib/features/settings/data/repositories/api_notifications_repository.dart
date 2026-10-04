@@ -47,14 +47,21 @@ final class ApiNotificationsRepository implements NotificationsRepository {
 
   static AppNotification _decodeItem(Object? json) {
     final map = json as Map<String, Object?>;
+    final String rawType = map['type'] as String;
     return AppNotification(
       id: map['id'] as String,
       // An unknown kind must not take the whole feed down with it.
-      type: switch (map['type']) {
+      type: switch (rawType) {
         'recording_started' => AppNotificationType.recordingStarted,
         'recording_ready' => AppNotificationType.recordingReady,
         'recording_failed' => AppNotificationType.recordingFailed,
         _ => AppNotificationType.other,
+      },
+      v2Type: switch (rawType) {
+        'creator_live' => AppNotificationV2Type.creatorLive,
+        'recording_expiring' => AppNotificationV2Type.recordingExpiring,
+        'free_minutes_low' => AppNotificationV2Type.freeMinutesLow,
+        _ => null,
       },
       title: map['title'] as String,
       body: map['body'] as String,

@@ -28,6 +28,9 @@ final class ApiNotificationPreferencesRepository
         'recording_started': preferences.recordingStarted,
         'recording_ready': preferences.recordingReady,
         'recording_failed': preferences.recordingFailed,
+        'creator_live': preferences.creatorLive,
+        'recording_expiring': preferences.recordingExpiring,
+        'free_minutes_low': preferences.freeMinutesLow,
       },
       decoder: _decode,
     );
@@ -40,6 +43,9 @@ final class ApiNotificationPreferencesRepository
       recordingStarted: map['recording_started'] as bool,
       recordingReady: map['recording_ready'] as bool,
       recordingFailed: map['recording_failed'] as bool,
+      creatorLive: map['creator_live'] as bool,
+      recordingExpiring: map['recording_expiring'] as bool,
+      freeMinutesLow: map['free_minutes_low'] as bool,
     );
   }
 }

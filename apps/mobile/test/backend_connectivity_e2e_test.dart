@@ -15,6 +15,8 @@ import 'package:savestream_mobile/features/billing/domain/models/billing_models.
 import 'package:savestream_mobile/features/channels/data/repositories/api_watch_repository.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/credits/data/repositories/api_credits_repository.dart';
+import 'package:savestream_mobile/features/entitlement/data/repositories/api_entitlement_repository.dart';
+import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/features/settings/data/repositories/api_profile_repository.dart';
@@ -77,6 +79,16 @@ void main() {
         expect(profile.email, email);
         expect(profile.emailVerified, isTrue);
 
+        final entitlementRepository = ApiEntitlementRepository(
+          apiClient: authenticatedClient,
+        );
+        final Entitlement initialEntitlement = await entitlementRepository
+            .getEntitlement();
+        expect(initialEntitlement.plan, Plan.free);
+        expect(initialEntitlement.limits.maxWatches, 3);
+        expect(initialEntitlement.limits.maxConcurrentCloudRecordings, 0);
+        expect(initialEntitlement.local.enabled, isTrue);
+
         watchRepository = ApiWatchRepository(apiClient: authenticatedClient);
         final watch = await watchRepository.createWatch(
           const CreateWatchCommand(
@@ -128,6 +140,13 @@ void main() {
 
         final fundedBalance = await creditsRepository.getBalance();
         expect(fundedBalance.posted, package.credits);
+
+        final Entitlement paidEntitlement = await entitlementRepository
+            .getEntitlement();
+        expect(paidEntitlement.plan, Plan.pro);
+        expect(paidEntitlement.hasPurchased, isTrue);
+        expect(paidEntitlement.limits.maxWatches, 20);
+        expect(paidEntitlement.limits.maxConcurrentCloudRecordings, 3);
 
         recordingRepository = ApiRecordingRepository(
           apiClient: authenticatedClient,
