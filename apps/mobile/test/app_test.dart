@@ -526,7 +526,10 @@ void main() {
     await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
     await tester.pumpAndSettle();
     expect(find.text('Stop requested'), findsWidgets);
-    expect(find.text('Stop recording'), findsNothing);
+    expect(
+      find.widgetWithText(FilledButton, 'Stop recording'),
+      findsNothing,
+    );
   });
 
   testWidgets('failed recording exposes Retry and Delete action flags', (
