@@ -54,6 +54,7 @@ class PaymentProvider(Protocol):
         amount_minor: int,
         currency: str,
         return_url: str,
+        variant_id: str | None = None,
     ) -> CheckoutSession: ...
 
     async def create_refund(

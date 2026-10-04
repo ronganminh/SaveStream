@@ -146,6 +146,7 @@ const mainNav = [
 const adminNav = [
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
+  { to: "/admin/catalog", label: "Catalog", icon: Sparkles },
   { to: "/admin/operations", label: "Operations", icon: HardDrive },
   { to: "/admin/system", label: "System", icon: Activity },
   { to: "/admin/workers", label: "Workers", icon: MonitorCog },

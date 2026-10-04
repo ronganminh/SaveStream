@@ -19,6 +19,15 @@ def paid_customer_clause():
     return select(PaymentOrder.user_id).where(PaymentOrder.status.in_(PAID_ORDER_STATUSES))
 
 
+def purchase_credit_clause(user_id_column):
+    """SQL predicate for an explicit non-order grant that counts as a purchase."""
+    return exists().where(
+        CreditLedgerEntry.user_id == user_id_column,
+        CreditLedgerEntry.amount > 0,
+        CreditLedgerEntry.details["counts_as_purchase"].as_boolean().is_(True),
+    )
+
+
 async def has_paid_purchase(session: AsyncSession, user_id: uuid.UUID) -> bool:
     paid_order = bool(
         await session.scalar(
@@ -33,12 +42,11 @@ async def has_paid_purchase(session: AsyncSession, user_id: uuid.UUID) -> bool:
     if paid_order:
         return True
 
-    purchase_adjustments = list(
+    purchase_grants = list(
         (
             await session.scalars(
                 select(CreditLedgerEntry).where(
                     CreditLedgerEntry.user_id == user_id,
-                    CreditLedgerEntry.reference_type == "admin_adjustment",
                     CreditLedgerEntry.amount > 0,
                 )
             )
@@ -46,7 +54,7 @@ async def has_paid_purchase(session: AsyncSession, user_id: uuid.UUID) -> bool:
     )
     return any(
         bool(entry.details.get("counts_as_purchase", False))
-        for entry in purchase_adjustments
+        for entry in purchase_grants
     )
 
 

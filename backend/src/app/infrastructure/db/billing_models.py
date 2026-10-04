@@ -55,6 +55,132 @@ class CreditPackage(Base):
         String(160),
         nullable=True,
     )
+    web_variant_id: Mapped[str | None] = mapped_column(
+        String(160),
+        nullable=True,
+        unique=True,
+    )
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PromotionCode(Base):
+    __tablename__ = "promotion_codes"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_promotion_codes_code"),
+        CheckConstraint("credits > 0", name="promotion_credits_positive"),
+        CheckConstraint(
+            "max_redemptions IS NULL OR max_redemptions > 0",
+            name="promotion_max_redemptions_positive",
+        ),
+        Index("ix_promotion_codes_active_expires", "active", "expires_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code: Mapped[str] = mapped_column(String(64), nullable=False)
+    credits: Mapped[int] = mapped_column(Integer, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    max_redemptions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    counts_as_purchase: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PromotionRedemption(Base):
+    __tablename__ = "promotion_redemptions"
+    __table_args__ = (
+        UniqueConstraint(
+            "promotion_code_id",
+            "user_id",
+            name="uq_promotion_redemptions_code_user",
+        ),
+        Index("ix_promotion_redemptions_code_created", "promotion_code_id", "created_at"),
+        Index("ix_promotion_redemptions_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    promotion_code_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("promotion_codes.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    ledger_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("credit_ledger_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AdminBulkGrant(Base):
+    __tablename__ = "admin_bulk_grants"
+    __table_args__ = (
+        CheckConstraint("credits > 0", name="bulk_grant_credits_positive"),
+        Index("ix_admin_bulk_grants_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    credits: Mapped[int] = mapped_column(Integer, nullable=False)
+    counts_as_purchase: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    filters: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued")
+    audience_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    total_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    delivered_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AdminBulkGrantDelivery(Base):
+    __tablename__ = "admin_bulk_grant_deliveries"
+    __table_args__ = (
+        UniqueConstraint(
+            "bulk_grant_id",
+            "user_id",
+            name="uq_admin_bulk_grant_deliveries_grant_user",
+        ),
+        Index("ix_admin_bulk_grant_deliveries_grant_status", "bulk_grant_id", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    bulk_grant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("admin_bulk_grants.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    ledger_entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("credit_ledger_entries.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="queued")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

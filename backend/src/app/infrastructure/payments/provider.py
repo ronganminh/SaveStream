@@ -44,12 +44,14 @@ class ConfiguredHttpPaymentProvider:
         amount_minor: int,
         currency: str,
         return_url: str,
+        variant_id: str | None = None,
     ) -> CheckoutSession:
         payload = {
             "order_id": order_id,
             "amount_minor": amount_minor,
             "currency": currency,
             "return_url": return_url,
+            "variant_id": variant_id,
         }
         try:
             async with httpx.AsyncClient(

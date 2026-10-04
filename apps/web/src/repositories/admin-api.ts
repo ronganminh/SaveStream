@@ -668,6 +668,246 @@ export const adminFinanceApi = {
   },
 };
 
+
+export type AdminCatalogPackage = {
+  id: string;
+  code: string;
+  name: string;
+  credits: number;
+  amount_minor: number;
+  currency: "USD";
+  active: boolean;
+  display_order: number;
+  app_store_product_id: string | null;
+  google_play_product_id: string | null;
+  web_variant_id: string | null;
+  order_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminPromotion = {
+  id: string;
+  code: string;
+  credits: number;
+  expires_at: string | null;
+  max_redemptions: number | null;
+  redemption_count: number;
+  active: boolean;
+  counts_as_purchase: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminPromotionRedemption = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  ledger_entry_id: string | null;
+  created_at: string;
+};
+
+export type AdminBulkGrantFilters = {
+  query?: string;
+  plan?: "" | "free" | "pro";
+  account_status?: "" | "active" | "locked" | "pending_deletion" | "deleted";
+  email_verified?: "" | "true" | "false";
+  created_from?: string;
+  created_to?: string;
+  purchase_provider?: string;
+};
+
+export type AdminBulkGrant = {
+  id: string;
+  credits: number;
+  counts_as_purchase: boolean;
+  reason: string;
+  filters: Record<string, unknown>;
+  status: "queued" | "running" | "completed" | "failed";
+  audience_count: number;
+  total_credits: number;
+  delivered_count: number;
+  failed_count: number;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
+export type AdminBulkGrantDelivery = {
+  id: string;
+  user_id: string;
+  user_email: string;
+  ledger_entry_id: string | null;
+  status: "queued" | "delivered" | "failed";
+  error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function bulkFiltersPayload(filters: AdminBulkGrantFilters) {
+  return {
+    ...(filters.query ? { query: filters.query } : {}),
+    ...(filters.plan ? { plan: filters.plan } : {}),
+    ...(filters.account_status ? { account_status: filters.account_status } : {}),
+    ...(filters.email_verified
+      ? { email_verified: filters.email_verified === "true" }
+      : {}),
+    ...(filters.created_from
+      ? { created_from: new Date(filters.created_from).toISOString() }
+      : {}),
+    ...(filters.created_to
+      ? { created_to: new Date(filters.created_to).toISOString() }
+      : {}),
+    ...(filters.purchase_provider
+      ? { purchase_provider: filters.purchase_provider }
+      : {}),
+  };
+}
+
+export const adminCatalogApi = {
+  listPackages() {
+    return apiClient.get<{ items: AdminCatalogPackage[] }>("/v1/admin/packages");
+  },
+
+  createPackage(
+    payload: {
+      code: string;
+      name: string;
+      credits: number;
+      amount_minor: number;
+      display_order: number;
+      app_store_product_id?: string | null;
+      google_play_product_id?: string | null;
+      web_variant_id?: string | null;
+    },
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminCatalogPackage>("/v1/admin/packages", {
+      json: { ...payload, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  updatePackage(
+    packageId: string,
+    payload: {
+      name?: string;
+      credits?: number;
+      amount_minor?: number;
+      display_order?: number;
+      active?: boolean;
+      app_store_product_id?: string | null;
+      google_play_product_id?: string | null;
+      web_variant_id?: string | null;
+      clear_app_store_product_id?: boolean;
+      clear_google_play_product_id?: boolean;
+      clear_web_variant_id?: boolean;
+    },
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.request<AdminCatalogPackage>(`/v1/admin/packages/${packageId}`, {
+      method: "PATCH",
+      json: { ...payload, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  listPromotions() {
+    return apiClient.get<{ items: AdminPromotion[] }>("/v1/admin/promotions");
+  },
+
+  createPromotion(
+    payload: {
+      code: string;
+      credits: number;
+      expires_at?: string | null;
+      max_redemptions?: number | null;
+      counts_as_purchase: boolean;
+    },
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminPromotion>("/v1/admin/promotions", {
+      json: { ...payload, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  updatePromotion(
+    promotionId: string,
+    payload: {
+      credits?: number;
+      expires_at?: string | null;
+      clear_expires_at?: boolean;
+      max_redemptions?: number | null;
+      clear_max_redemptions?: boolean;
+      active?: boolean;
+      counts_as_purchase?: boolean;
+    },
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.request<AdminPromotion>(`/v1/admin/promotions/${promotionId}`, {
+      method: "PATCH",
+      json: { ...payload, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  promotionRedemptions(promotionId: string, cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<{
+      items: AdminPromotionRedemption[];
+      pagination: Pagination;
+    }>(`/v1/admin/promotions/${promotionId}/redemptions?${query.toString()}`);
+  },
+
+  previewBulkGrant(credits: number, filters: AdminBulkGrantFilters) {
+    return apiClient.post<{
+      audience_count: number;
+      credits_per_user: number;
+      total_credits: number;
+    }>("/v1/admin/bulk-grants/preview", {
+      json: { credits, filters: bulkFiltersPayload(filters) },
+    });
+  },
+
+  createBulkGrant(
+    credits: number,
+    filters: AdminBulkGrantFilters,
+    countsAsPurchase: boolean,
+    reason: string,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminBulkGrant>("/v1/admin/bulk-grants", {
+      json: {
+        credits,
+        filters: bulkFiltersPayload(filters),
+        counts_as_purchase: countsAsPurchase,
+        reason,
+      },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  getBulkGrant(grantId: string) {
+    return apiClient.get<AdminBulkGrant>(`/v1/admin/bulk-grants/${grantId}`);
+  },
+
+  bulkGrantDeliveries(grantId: string, cursor?: string | null) {
+    const query = new URLSearchParams({ limit: "50" });
+    if (cursor) query.set("cursor", cursor);
+    return apiClient.get<{
+      items: AdminBulkGrantDelivery[];
+      pagination: Pagination;
+    }>(`/v1/admin/bulk-grants/${grantId}/deliveries?${query.toString()}`);
+  },
+};
+
 export const adminOperationsApi = {
   storageSummary() {
     return apiClient.get<AdminStorageSummary>("/v1/admin/storage/summary");

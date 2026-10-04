@@ -59,6 +59,24 @@ from app.api.schemas.admin_d2 import (
     AdminStuckReservationListResponse,
     AdminStuckReservationResponse,
 )
+from app.api.schemas.admin_d5 import (
+    AdminBulkGrantCreateRequest,
+    AdminBulkGrantDeliveryListResponse,
+    AdminBulkGrantDeliveryResponse,
+    AdminBulkGrantPreviewRequest,
+    AdminBulkGrantPreviewResponse,
+    AdminBulkGrantResponse,
+    AdminPackageCreateRequest,
+    AdminPackageListResponse,
+    AdminPackageResponse,
+    AdminPackageUpdateRequest,
+    AdminPromotionCreateRequest,
+    AdminPromotionListResponse,
+    AdminPromotionRedemptionListResponse,
+    AdminPromotionRedemptionResponse,
+    AdminPromotionResponse,
+    AdminPromotionUpdateRequest,
+)
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
     AdminBroadcastListResponse,
@@ -83,6 +101,8 @@ from app.api.serializers.billing import payment_order_response
 from app.api.serializers.credits import transaction_response
 from app.api.serializers.recordings import recording_response
 from app.api.serializers.watches import watch_response
+from app.application.admin.bulk_grants_d5 import AdminBulkGrantService
+from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.payments_d2 import AdminFinanceService
 from app.application.admin.security import AdminSecurityService
@@ -2169,3 +2189,306 @@ async def create_admin_broadcast(
     )
     await session.commit()
     return _d7_broadcast_response(row)
+
+
+@router.get("/packages", response_model=AdminPackageListResponse)
+async def list_admin_packages(
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPackageListResponse:
+    _require_scope(principal, "admin:packages:read")
+    items = await AdminCatalogService(session).packages()
+    return AdminPackageListResponse(
+        items=[AdminPackageResponse.model_validate(item) for item in items]
+    )
+
+
+@router.post("/packages", response_model=AdminPackageResponse)
+async def create_admin_package(
+    payload: AdminPackageCreateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPackageResponse:
+    _require_scope(principal, "admin:packages:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    item = await AdminCatalogService(session).create_package(
+        code=payload.code,
+        name=payload.name,
+        credits=payload.credits,
+        amount_minor=payload.amount_minor,
+        display_order=payload.display_order,
+        app_store_product_id=payload.app_store_product_id,
+        google_play_product_id=payload.google_play_product_id,
+        web_variant_id=payload.web_variant_id,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.package.created",
+        resource_type="credit_package",
+        resource_id=str(item["id"]),
+        context=_context(request),
+        reason=payload.reason,
+        after_state=item,
+    )
+    await session.commit()
+    return AdminPackageResponse.model_validate(item)
+
+
+@router.patch("/packages/{package_id}", response_model=AdminPackageResponse)
+async def update_admin_package(
+    package_id: str,
+    payload: AdminPackageUpdateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPackageResponse:
+    _require_scope(principal, "admin:packages:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    before, item = await AdminCatalogService(session).update_package(
+        package_id,
+        name=payload.name,
+        credits=payload.credits,
+        amount_minor=payload.amount_minor,
+        display_order=payload.display_order,
+        active=payload.active,
+        app_store_product_id=payload.app_store_product_id,
+        google_play_product_id=payload.google_play_product_id,
+        web_variant_id=payload.web_variant_id,
+        clear_app_store_product_id=payload.clear_app_store_product_id,
+        clear_google_play_product_id=payload.clear_google_play_product_id,
+        clear_web_variant_id=payload.clear_web_variant_id,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.package.updated",
+        resource_type="credit_package",
+        resource_id=package_id,
+        context=_context(request),
+        reason=payload.reason,
+        before_state=before,
+        after_state=item,
+    )
+    await session.commit()
+    return AdminPackageResponse.model_validate(item)
+
+
+@router.get("/promotions", response_model=AdminPromotionListResponse)
+async def list_admin_promotions(
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPromotionListResponse:
+    _require_scope(principal, "admin:promotions:read")
+    items = await AdminCatalogService(session).promotions()
+    return AdminPromotionListResponse(
+        items=[AdminPromotionResponse.model_validate(item) for item in items]
+    )
+
+
+@router.post("/promotions", response_model=AdminPromotionResponse)
+async def create_admin_promotion(
+    payload: AdminPromotionCreateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPromotionResponse:
+    _require_scope(principal, "admin:promotions:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    item = await AdminCatalogService(session).create_promotion(
+        actor_user_id=principal.user_id,
+        code=payload.code,
+        credits=payload.credits,
+        expires_at=payload.expires_at,
+        max_redemptions=payload.max_redemptions,
+        counts_as_purchase=payload.counts_as_purchase,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.promotion.created",
+        resource_type="promotion_code",
+        resource_id=str(item["id"]),
+        context=_context(request),
+        reason=payload.reason,
+        after_state=item,
+    )
+    await session.commit()
+    return AdminPromotionResponse.model_validate(item)
+
+
+@router.patch("/promotions/{promotion_id}", response_model=AdminPromotionResponse)
+async def update_admin_promotion(
+    promotion_id: str,
+    payload: AdminPromotionUpdateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPromotionResponse:
+    _require_scope(principal, "admin:promotions:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    before, item = await AdminCatalogService(session).update_promotion(
+        promotion_id,
+        credits=payload.credits,
+        expires_at=payload.expires_at,
+        clear_expires_at=payload.clear_expires_at,
+        max_redemptions=payload.max_redemptions,
+        clear_max_redemptions=payload.clear_max_redemptions,
+        active=payload.active,
+        counts_as_purchase=payload.counts_as_purchase,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.promotion.updated",
+        resource_type="promotion_code",
+        resource_id=promotion_id,
+        context=_context(request),
+        reason=payload.reason,
+        before_state=before,
+        after_state=item,
+    )
+    await session.commit()
+    return AdminPromotionResponse.model_validate(item)
+
+
+@router.get(
+    "/promotions/{promotion_id}/redemptions",
+    response_model=AdminPromotionRedemptionListResponse,
+)
+async def list_admin_promotion_redemptions(
+    promotion_id: str,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPromotionRedemptionListResponse:
+    _require_scope(principal, "admin:promotions:read")
+    items, next_cursor, has_more = await AdminCatalogService(
+        session
+    ).promotion_redemptions(promotion_id, limit=limit, cursor=cursor)
+    return AdminPromotionRedemptionListResponse(
+        items=[
+            AdminPromotionRedemptionResponse.model_validate(item)
+            for item in items
+        ],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
+
+
+
+@router.post(
+    "/bulk-grants/preview",
+    response_model=AdminBulkGrantPreviewResponse,
+)
+async def preview_admin_bulk_grant(
+    payload: AdminBulkGrantPreviewRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBulkGrantPreviewResponse:
+    _require_scope(principal, "admin:credits:adjust")
+    result = await AdminBulkGrantService(
+        session, request.app.state.settings
+    ).preview(
+        credits=payload.credits,
+        filters=payload.filters.model_dump(mode="json", exclude_none=True),
+    )
+    return AdminBulkGrantPreviewResponse.model_validate(result)
+
+
+@router.post("/bulk-grants", response_model=AdminBulkGrantResponse)
+async def create_admin_bulk_grant(
+    payload: AdminBulkGrantCreateRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBulkGrantResponse:
+    _require_scope(principal, "admin:credits:adjust")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    grant = await AdminBulkGrantService(
+        session, request.app.state.settings
+    ).create(
+        actor_user_id=principal.user_id,
+        credits=payload.credits,
+        counts_as_purchase=payload.counts_as_purchase,
+        reason=payload.reason,
+        filters=payload.filters.model_dump(mode="json", exclude_none=True),
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.bulk_grant.queued",
+        resource_type="admin_bulk_grant",
+        resource_id=str(grant.id),
+        context=_context(request),
+        reason=payload.reason,
+        after_state={
+            "credits": grant.credits,
+            "counts_as_purchase": grant.counts_as_purchase,
+            "audience_count": grant.audience_count,
+            "total_credits": grant.total_credits,
+            "filters": grant.filters,
+        },
+    )
+    await session.commit()
+    return AdminBulkGrantResponse.model_validate(
+        AdminBulkGrantService.payload(grant)
+    )
+
+
+@router.get("/bulk-grants/{grant_id}", response_model=AdminBulkGrantResponse)
+async def get_admin_bulk_grant(
+    grant_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBulkGrantResponse:
+    _require_scope(principal, "admin:credits:read")
+    grant = await AdminBulkGrantService(
+        session, request.app.state.settings
+    ).get(grant_id)
+    return AdminBulkGrantResponse.model_validate(
+        AdminBulkGrantService.payload(grant)
+    )
+
+
+@router.get(
+    "/bulk-grants/{grant_id}/deliveries",
+    response_model=AdminBulkGrantDeliveryListResponse,
+)
+async def list_admin_bulk_grant_deliveries(
+    grant_id: str,
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminBulkGrantDeliveryListResponse:
+    _require_scope(principal, "admin:credits:read")
+    items, next_cursor, has_more = await AdminBulkGrantService(
+        session, request.app.state.settings
+    ).deliveries(grant_id, limit=limit, cursor=cursor)
+    return AdminBulkGrantDeliveryListResponse(
+        items=[
+            AdminBulkGrantDeliveryResponse.model_validate(item)
+            for item in items
+        ],
+        pagination=Pagination(next_cursor=next_cursor, has_more=has_more),
+    )
