@@ -61,7 +61,7 @@ class LocalRecordingService : Service() {
                 stopRequested.set(false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 if (worker?.isDone != false) {
-                    worker = executor.submit { recoverAndResume(intent) }
+                    worker = executor.submit { recoverAndFinalize(intent) }
                 }
                 START_NOT_STICKY
             }
@@ -125,7 +125,7 @@ class LocalRecordingService : Service() {
         )
     }
 
-    private fun recoverAndResume(intent: Intent) {
+    private fun recoverAndFinalize(intent: Intent) {
         val tempId = intent.getStringExtra(EXTRA_SESSION_ID) ?: return stopWithError(
             "Missing interrupted recording id.",
         )
@@ -136,30 +136,7 @@ class LocalRecordingService : Service() {
             "Interrupted recording metadata is invalid.",
         )
         val tempFile = File(metadataFile.parentFile, "$tempId.part")
-        val grantedSeconds = metadata.optInt("granted_seconds", 0)
-        val recordedSeconds = metadata.optInt("recorded_seconds", 0)
-        val remainingSeconds = (grantedSeconds - recordedSeconds).coerceAtLeast(0)
-        if (remainingSeconds <= 0) {
-            finalizeRecoveredFile(tempFile, metadataFile, metadata)
-            return
-        }
-
-        val headers = jsonObjectToMap(metadata.optJSONObject("stream_headers"))
-        capture(
-            sessionId = tempId,
-            watchId = metadata.optString("watch_id"),
-            deviceId = metadata.optString("device_id"),
-            streamUrl = metadata.optString("stream_url"),
-            streamFormat = metadata.optString("stream_format", "flv"),
-            streamHeaders = headers,
-            grantedSeconds = grantedSeconds,
-            startedAtMs = metadata.optLong("started_at_ms", System.currentTimeMillis()),
-            leaseDeadlineElapsedMs =
-                SystemClock.elapsedRealtime() + remainingSeconds * 1000L,
-            tempFile = tempFile,
-            metadataFile = metadataFile,
-            initialRecordedMillis = recordedSeconds * 1000L,
-        )
+        finalizeRecoveredFile(tempFile, metadataFile, metadata)
     }
 
     private fun capture(
@@ -325,6 +302,7 @@ class LocalRecordingService : Service() {
             recordedSeconds = recordedSeconds,
             sizeBytes = finalFile?.length() ?: sizeBytes,
         )
+        markPendingRegistration(metadataFile, endReason)
 
         val phase = if (endReason == "interrupted" && failureMessage != null) "error" else "stopped"
         emitState(
@@ -354,6 +332,8 @@ class LocalRecordingService : Service() {
         val size = finalFile?.length() ?: tempFile.length()
         metadata.put("interrupted_at_ms", JSONObject.NULL)
         metadata.put("size_bytes", size)
+        metadata.put("needs_registration", true)
+        metadata.put("end_reason", "interrupted")
         metadataFile.writeText(metadata.toString())
         emitState(
             "stopped",
@@ -469,6 +449,13 @@ class LocalRecordingService : Service() {
         return root.walkTopDown().firstOrNull {
             it.isFile && it.name == "$tempId.json"
         }
+    }
+
+    private fun markPendingRegistration(metadataFile: File, endReason: String) {
+        val metadata = readMetadata(metadataFile) ?: return
+        metadata.put("needs_registration", true)
+        metadata.put("end_reason", endReason)
+        metadataFile.writeText(metadata.toString())
     }
 
     private fun readMetadata(file: File): JSONObject? {
@@ -616,6 +603,107 @@ class LocalRecordingService : Service() {
         private const val MAX_RECONNECT_ATTEMPTS = 5
         private const val MAX_CHUNK_GAP_MS = 2_000L
         private const val CRITICAL_STORAGE_BYTES = 250L * 1024L * 1024L
+
+        fun findInterrupted(context: Context): Map<String, Any?>? {
+            val root = File(context.filesDir, "local_recordings")
+            if (!root.exists()) {
+                return null
+            }
+            val candidates = root.walkTopDown()
+                .filter { it.isFile && it.extension == "json" }
+                .mapNotNull { metadataFile ->
+                    try {
+                        val metadata = JSONObject(metadataFile.readText())
+                        val sessionId = metadata.optString("session_id")
+                        val partFile = File(metadataFile.parentFile, "$sessionId.part")
+                        val pending = metadata.optBoolean("needs_registration", false)
+                        if (!partFile.exists() && !pending) {
+                            null
+                        } else {
+                            metadata to metadataFile
+                        }
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+                .maxByOrNull { (metadata, _) ->
+                    metadata.optLong("started_at_ms", 0L)
+                }
+                ?: return null
+            val metadata = candidates.first
+            val metadataFile = candidates.second
+            val sessionId = metadata.optString("session_id")
+            val partFile = File(metadataFile.parentFile, "$sessionId.part")
+            val interruptedAt = metadata.optLong(
+                "interrupted_at_ms",
+                if (partFile.exists()) partFile.lastModified() else System.currentTimeMillis(),
+            )
+            return mapOf(
+                "temp_id" to sessionId,
+                "watch_id" to metadata.optString("watch_id"),
+                "started_at_ms" to metadata.optLong("started_at_ms"),
+                "interrupted_at_ms" to interruptedAt,
+                "recorded_seconds" to metadata.optInt("recorded_seconds", 0),
+                "size_bytes" to metadata.optLong("size_bytes", partFile.length()),
+                "end_reason" to metadata.optString("end_reason", "interrupted"),
+            )
+        }
+
+        fun markRegistered(context: Context, sessionId: String) {
+            val root = File(context.filesDir, "local_recordings")
+            val metadataFile = root.walkTopDown().firstOrNull {
+                it.isFile && it.name == "$sessionId.json"
+            } ?: return
+            try {
+                val metadata = JSONObject(metadataFile.readText())
+                metadata.put("needs_registration", false)
+                metadataFile.writeText(metadata.toString())
+            } catch (_: Exception) {
+                return
+            }
+        }
+
+        fun deleteInterrupted(context: Context, sessionId: String) {
+            val root = File(context.filesDir, "local_recordings")
+            val metadataFile = root.walkTopDown().firstOrNull {
+                it.isFile && it.name == "$sessionId.json"
+            } ?: return
+            val parent = metadataFile.parentFile
+            File(parent, "$sessionId.part").delete()
+            metadataFile.delete()
+        }
+
+        fun updateNotification(
+            context: Context,
+            title: String,
+            body: String,
+            ongoing: Boolean,
+        ) {
+            val stopIntent = Intent(context, LocalRecordingService::class.java)
+                .setAction(ACTION_STOP)
+            val stopPendingIntent = PendingIntent.getService(
+                context,
+                STOP_REQUEST_CODE,
+                stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(context.applicationInfo.icon)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setOngoing(ongoing)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                .addAction(0, title, stopPendingIntent)
+                .build()
+            context.getSystemService(NotificationManager::class.java)
+                .notify(NOTIFICATION_ID, notification)
+        }
+
+        fun clearNotification(context: Context) {
+            context.getSystemService(NotificationManager::class.java)
+                .cancel(NOTIFICATION_ID)
+        }
 
         fun start(
             context: Context,
