@@ -38,6 +38,7 @@ import {
   Radio,
   Search,
   Settings,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Sun,
@@ -151,6 +152,7 @@ const adminNav = [
   { to: "/admin/system", label: "System", icon: Activity },
   { to: "/admin/workers", label: "Workers", icon: MonitorCog },
   { to: "/admin/jobs", label: "Recordings", icon: FileVideo },
+  { to: "/admin/safety", label: "Safety", icon: ShieldAlert },
   { to: "/admin/errors", label: isDemoMode ? "Errors" : "Audit", icon: AlertTriangle },
 ] as const;
 

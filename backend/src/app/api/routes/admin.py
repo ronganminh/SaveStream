@@ -5,7 +5,7 @@ import csv
 import io
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import cast
+from typing import Literal, cast
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
@@ -112,6 +112,21 @@ from app.api.schemas.admin_d6 import (
     AdminStoreTransactionListResponse,
     AdminStoreTransactionResponse,
 )
+from app.api.schemas.admin_d8 import (
+    AdminComplaintCreateRequest,
+    AdminComplaintEventResponse,
+    AdminComplaintListResponse,
+    AdminComplaintResponse,
+    AdminComplaintUpdateRequest,
+    AdminCreatorBlockListResponse,
+    AdminCreatorBlockRequest,
+    AdminCreatorBlockResponse,
+    AdminCreatorUnblockRequest,
+    AdminDeleteBlockedRecordingsRequest,
+    AdminDeleteBlockedRecordingsResponse,
+    AdminSuspiciousAccountListResponse,
+    AdminSuspiciousAccountResponse,
+)
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
     AdminBroadcastListResponse,
@@ -146,6 +161,8 @@ from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.admin.system_d4 import AdminSystemStatusService
+from app.application.admin.safety_d8 import AdminSafetyService
+from app.application.creator_safety import recording_creator_block
 from app.application.audit.service import AuditContext, AuditService
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.identity.service import ip_hint
@@ -154,6 +171,7 @@ from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
+from app.infrastructure.db.admin_models import AdminComplaintCase
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.payments.factory import selected_payment_provider
 
@@ -983,6 +1001,13 @@ async def request_admin_recording_playback_access(
     )
     service = AdminRecordingService(session, request.app.state.settings)
     recording = await service.get_recording(recording_id)
+    if await recording_creator_block(session, recording) is not None:
+        raise ApplicationError(
+            "CREATOR_BLOCKED",
+            "This recording is unavailable due to a safety restriction",
+            status_code=403,
+            retryable=False,
+        )
     artifact = await service.playback_artifact(recording_id)
     url = await asyncio.to_thread(
         request.app.state.minio.presigned_get_url,
@@ -3123,4 +3148,516 @@ async def get_admin_device_distribution(
     items = await AdminV2OperationsService(session).device_distribution()
     return AdminDeviceDistributionResponse(
         items=[AdminDeviceDistributionRow.model_validate(item) for item in items]
+    )
+
+
+
+async def _admin_complaint_response(
+    service: AdminSafetyService,
+    case: AdminComplaintCase,
+    *,
+    include_timeline: bool,
+) -> AdminComplaintResponse:
+    timeline = (
+        await service.complaint_timeline(case.id)
+        if include_timeline
+        else []
+    )
+    return AdminComplaintResponse(
+        id=str(case.id),
+        kind=cast(Literal["copyright", "abuse"], case.kind),
+        complainant_name=case.complainant_name,
+        complainant_email=case.complainant_email,
+        channel_source_type=case.channel_source_type,
+        channel_source_value=case.channel_source_value,
+        recording_id=str(case.recording_id) if case.recording_id else None,
+        summary=case.summary,
+        body=case.body,
+        status=cast(
+            Literal["new", "reviewing", "resolved", "rejected"],
+            case.status,
+        ),
+        assigned_to_user_id=(
+            str(case.assigned_to_user_id) if case.assigned_to_user_id else None
+        ),
+        created_by_user_id=(
+            str(case.created_by_user_id) if case.created_by_user_id else None
+        ),
+        resolved_at=case.resolved_at,
+        created_at=case.created_at,
+        updated_at=case.updated_at,
+        timeline=[
+            AdminComplaintEventResponse(
+                id=str(event.id),
+                action=event.action,
+                actor_user_id=(
+                    str(event.actor_user_id) if event.actor_user_id else None
+                ),
+                note=event.note,
+                metadata=event.metadata_json,
+                created_at=event.created_at,
+            )
+            for event in timeline
+        ],
+    )
+
+
+@router.post(
+    "/complaints",
+    response_model=AdminComplaintResponse,
+    status_code=201,
+)
+async def create_admin_complaint(
+    payload: AdminComplaintCreateRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminComplaintResponse:
+    _require_scope(principal, "admin:complaints:write")
+    service = AdminSafetyService(session, request.app.state.settings)
+    case = await service.create_complaint(
+        principal=principal,
+        kind=payload.kind,
+        complainant_name=payload.complainant_name,
+        complainant_email=payload.complainant_email,
+        channel_source_type=payload.channel_source_type,
+        channel_source_value=payload.channel_source_value,
+        recording_id=payload.recording_id,
+        summary=payload.summary,
+        body=payload.body,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.complaint.created",
+        resource_type="complaint",
+        resource_id=str(case.id),
+        context=_context(request),
+        after_state={
+            "kind": case.kind,
+            "status": case.status,
+            "recording_id": str(case.recording_id) if case.recording_id else None,
+            "channel_source_type": case.channel_source_type,
+            "channel_source_value": case.channel_source_value,
+        },
+    )
+    await session.commit()
+    return await _admin_complaint_response(
+        service, case, include_timeline=True
+    )
+
+
+@router.get("/complaints", response_model=AdminComplaintListResponse)
+async def list_admin_complaints(
+    request: Request,
+    limit: int = Query(default=50, ge=1, le=100),
+    cursor: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    kind: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminComplaintListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    service = AdminSafetyService(session, request.app.state.settings)
+    items, next_cursor, has_more = await service.list_complaints(
+        limit=limit,
+        cursor=cursor,
+        status=status_filter,
+        kind=kind,
+        query=query,
+    )
+    return AdminComplaintListResponse(
+        items=[
+            await _admin_complaint_response(
+                service, item, include_timeline=False
+            )
+            for item in items
+        ],
+        next_cursor=next_cursor,
+        has_more=has_more,
+    )
+
+
+@router.get("/complaints/export.csv")
+async def export_admin_complaints(
+    request: Request,
+    status_filter: str | None = Query(default=None, alias="status"),
+    kind: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:complaints:read")
+    _require_scope(principal, "admin:csv:export")
+    service = AdminSafetyService(session, request.app.state.settings)
+    items, _, _ = await service.list_complaints(
+        limit=500,
+        cursor=None,
+        status=status_filter,
+        kind=kind,
+        query=query,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "id",
+            "kind",
+            "status",
+            "complainant_name",
+            "complainant_email",
+            "channel_source_type",
+            "channel_source_value",
+            "recording_id",
+            "summary",
+            "assigned_to_user_id",
+            "created_at",
+            "updated_at",
+        ]
+    )
+    for case in items:
+        writer.writerow(
+            [
+                str(case.id),
+                case.kind,
+                case.status,
+                case.complainant_name,
+                case.complainant_email,
+                case.channel_source_type or "",
+                case.channel_source_value or "",
+                str(case.recording_id) if case.recording_id else "",
+                case.summary,
+                str(case.assigned_to_user_id) if case.assigned_to_user_id else "",
+                case.created_at.isoformat(),
+                case.updated_at.isoformat(),
+            ]
+        )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.complaints.exported",
+        resource_type="complaint",
+        resource_id=None,
+        context=_context(request),
+        details={
+            "rows": len(items),
+            "status": status_filter,
+            "kind": kind,
+            "query": query,
+        },
+    )
+    await session.commit()
+    return Response(
+        output.getvalue(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-complaints.csv"'
+        },
+    )
+
+
+@router.get(
+    "/complaints/{complaint_id}",
+    response_model=AdminComplaintResponse,
+)
+async def get_admin_complaint(
+    complaint_id: str,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminComplaintResponse:
+    _require_scope(principal, "admin:complaints:read")
+    service = AdminSafetyService(session, request.app.state.settings)
+    case = await service.get_complaint(complaint_id)
+    return await _admin_complaint_response(
+        service, case, include_timeline=True
+    )
+
+
+@router.patch(
+    "/complaints/{complaint_id}",
+    response_model=AdminComplaintResponse,
+)
+async def update_admin_complaint(
+    complaint_id: str,
+    payload: AdminComplaintUpdateRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminComplaintResponse:
+    _require_scope(principal, "admin:complaints:write")
+    service = AdminSafetyService(session, request.app.state.settings)
+    case, before = await service.update_complaint(
+        complaint_id=complaint_id,
+        principal=principal,
+        status=payload.status,
+        assigned_to_user_id=payload.assigned_to_user_id,
+        reason=payload.reason,
+    )
+    after = {
+        "status": case.status,
+        "assigned_to_user_id": (
+            str(case.assigned_to_user_id) if case.assigned_to_user_id else None
+        ),
+    }
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.complaint.updated",
+        resource_type="complaint",
+        resource_id=str(case.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state=before,
+        after_state=after,
+    )
+    await session.commit()
+    return await _admin_complaint_response(
+        service, case, include_timeline=True
+    )
+
+
+@router.post(
+    "/creator-blocks",
+    response_model=AdminCreatorBlockResponse,
+)
+async def block_admin_creator(
+    payload: AdminCreatorBlockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminCreatorBlockResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminSafetyService(session, request.app.state.settings)
+    block, stopped, paused = await service.block_creator(
+        principal=principal,
+        source_type=payload.source_type,
+        source_value=payload.source_value,
+        complaint_id=payload.complaint_id,
+        reason=payload.reason,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.creator.blocked",
+        resource_type="creator_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        after_state={
+            "source_type": block.source_type,
+            "source_value": block.source_value,
+            "complaint_id": (
+                str(block.complaint_id) if block.complaint_id else None
+            ),
+        },
+        details={
+            "stopped_recording_ids": stopped,
+            "paused_watch_ids": paused,
+        },
+    )
+    await session.commit()
+    for recording_id in stopped:
+        try:
+            await request.app.state.redis.client.set(
+                f"savestream:recording:stop:{recording_id}",
+                "1",
+                ex=86400,
+            )
+        except Exception:
+            pass
+    return AdminCreatorBlockResponse(
+        id=str(block.id),
+        source_type=block.source_type,
+        source_value=block.source_value,
+        complaint_id=str(block.complaint_id) if block.complaint_id else None,
+        reason=block.reason,
+        blocked_by_user_id=(
+            str(block.blocked_by_user_id) if block.blocked_by_user_id else None
+        ),
+        active=block.unblocked_at is None,
+        unblocked_at=block.unblocked_at,
+        unblock_reason=block.unblock_reason,
+        created_at=block.created_at,
+        stopped_recording_ids=stopped,
+        paused_watch_ids=paused,
+    )
+
+
+@router.post(
+    "/creator-blocks/{block_id}/unblock",
+    response_model=AdminCreatorBlockResponse,
+)
+async def unblock_admin_creator(
+    block_id: str,
+    payload: AdminCreatorUnblockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminCreatorBlockResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminSafetyService(session, request.app.state.settings)
+    block = await service.unblock_creator(
+        block_id=block_id,
+        principal=principal,
+        reason=payload.reason,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.creator.unblocked",
+        resource_type="creator_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"active": True},
+        after_state={"active": False},
+    )
+    await session.commit()
+    return AdminCreatorBlockResponse(
+        id=str(block.id),
+        source_type=block.source_type,
+        source_value=block.source_value,
+        complaint_id=str(block.complaint_id) if block.complaint_id else None,
+        reason=block.reason,
+        blocked_by_user_id=(
+            str(block.blocked_by_user_id) if block.blocked_by_user_id else None
+        ),
+        active=False,
+        unblocked_at=block.unblocked_at,
+        unblock_reason=block.unblock_reason,
+        created_at=block.created_at,
+    )
+
+
+
+@router.get(
+    "/safety/suspicious-accounts",
+    response_model=AdminSuspiciousAccountListResponse,
+)
+async def list_admin_suspicious_accounts(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=200),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSuspiciousAccountListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    items = await AdminSafetyService(
+        session, request.app.state.settings
+    ).suspicious_accounts(limit=limit)
+    return AdminSuspiciousAccountListResponse(
+        items=[
+            AdminSuspiciousAccountResponse.model_validate(item)
+            for item in items
+        ]
+    )
+
+
+@router.get(
+    "/creator-blocks",
+    response_model=AdminCreatorBlockListResponse,
+)
+async def list_admin_creator_blocks(
+    request: Request,
+    active_only: bool = Query(default=True),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminCreatorBlockListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    blocks = await AdminSafetyService(
+        session, request.app.state.settings
+    ).list_creator_blocks(active_only=active_only)
+    return AdminCreatorBlockListResponse(
+        items=[
+            AdminCreatorBlockResponse(
+                id=str(block.id),
+                source_type=block.source_type,
+                source_value=block.source_value,
+                complaint_id=(
+                    str(block.complaint_id) if block.complaint_id else None
+                ),
+                reason=block.reason,
+                blocked_by_user_id=(
+                    str(block.blocked_by_user_id)
+                    if block.blocked_by_user_id
+                    else None
+                ),
+                active=block.unblocked_at is None,
+                unblocked_at=block.unblocked_at,
+                unblock_reason=block.unblock_reason,
+                created_at=block.created_at,
+            )
+            for block in blocks
+        ]
+    )
+
+
+@router.post(
+    "/creator-blocks/{block_id}/delete-recordings",
+    response_model=AdminDeleteBlockedRecordingsResponse,
+)
+async def delete_admin_blocked_recordings(
+    block_id: str,
+    payload: AdminDeleteBlockedRecordingsRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminDeleteBlockedRecordingsResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminSafetyService(session, request.app.state.settings)
+    block, deleted, pending = await service.delete_blocked_recordings(
+        block_id=block_id,
+        principal=principal,
+        reason=payload.reason,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.creator.blocked_recordings_delete_requested",
+        resource_type="creator_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"active": True},
+        after_state={
+            "deleted_recording_ids": deleted,
+            "pending_stop_recording_ids": pending,
+        },
+    )
+    await session.commit()
+    for recording_id in pending:
+        try:
+            await request.app.state.redis.client.set(
+                f"savestream:recording:stop:{recording_id}",
+                "1",
+                ex=86400,
+            )
+        except Exception:
+            pass
+    return AdminDeleteBlockedRecordingsResponse(
+        block_id=str(block.id),
+        deleted_recording_ids=deleted,
+        pending_stop_recording_ids=pending,
     )

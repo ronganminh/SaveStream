@@ -13,10 +13,32 @@ from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
 from app.domain.common.errors import ApplicationError
+from app.infrastructure.db.admin_models import AdminSecuritySignal
 from app.settings import AppSettings
 
 _REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 logger = logging.getLogger("savestream.api.security")
+
+
+async def _record_rate_limit_signal(request: Request, identifier: str) -> None:
+    database = getattr(request.app.state, "database", None)
+    if database is None:
+        return
+    try:
+        async with database.session() as session:
+            session.add(
+                AdminSecuritySignal(
+                    event_type="rate_limited",
+                    ip_address=identifier,
+                    details={
+                        "path": request.url.path[:500],
+                        "method": request.method,
+                    },
+                )
+            )
+            await session.commit()
+    except Exception:
+        logger.exception("failed to persist rate-limit security signal")
 
 
 def _networks(values: Sequence[str]) -> tuple[ipaddress._BaseNetwork, ...]:
@@ -170,6 +192,8 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
                 window_seconds=self.settings.api_rate_window_seconds,
             )
         except ApplicationError as exc:
+            if exc.code == "RATE_LIMITED":
+                await _record_rate_limit_signal(request, identifier)
             return JSONResponse(
                 status_code=exc.status_code,
                 content={

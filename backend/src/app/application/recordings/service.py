@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.credits.service import CreditService
+from app.application.creator_safety import ensure_creator_not_blocked, recording_creator_block
 from app.application.recordings.retention import has_paid_purchase, retention_days
 from app.application.notifications.service import ensure_recording_notification
 from app.application.quotas.service import QuotaService
@@ -233,6 +234,11 @@ class RecordingService:
                         return replay
 
         source = Source(type=payload.source.type, value=normalize_source(payload.source))
+        await ensure_creator_not_blocked(
+            self.session,
+            source_type=source.type,
+            source_value=source.value,
+        )
         active_key = dedupe_key(user_id, source)
         active = await self.session.scalar(
             select(Recording).where(
@@ -467,6 +473,16 @@ class RecordingService:
         )
         if artifact is None:
             raise self._artifact_not_found()
+        recording = await self.session.get(Recording, artifact.recording_id)
+        if recording is not None and await recording_creator_block(
+            self.session, recording
+        ) is not None:
+            raise ApplicationError(
+                "CREATOR_BLOCKED",
+                "This recording is unavailable due to a safety restriction",
+                status_code=403,
+                retryable=False,
+            )
         return artifact
 
     @staticmethod

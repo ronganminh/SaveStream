@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.recordings import Source
 from app.api.schemas.watches import CreateWatchRequest, UpdateWatchRequest
 from app.application.credits.service import CreditService
+from app.application.creator_safety import ensure_creator_not_blocked
 from app.application.entitlements.service import EntitlementService, EntitlementSnapshot
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
@@ -99,6 +100,11 @@ class WatchService:
         source = Source(
             type=payload.source.type,
             value=normalize_source(payload.source),
+        )
+        await ensure_creator_not_blocked(
+            self.session,
+            source_type=source.type,
+            source_value=source.value,
         )
         key = watch_dedupe_key(principal.user_id, source)
         existing = await self.session.scalar(
@@ -242,6 +248,11 @@ class WatchService:
             watch.scheduler_lease_id = None
             watch.scheduler_lease_expires_at = None
             if status is WatchStatus.ACTIVE:
+                await ensure_creator_not_blocked(
+                    self.session,
+                    source_type=watch.source_type,
+                    source_value=watch.resolved_username or watch.source_value,
+                )
                 watch.failure_count = 0
                 watch.last_error = None
                 watch.next_check_at = utcnow()
@@ -270,6 +281,11 @@ class WatchService:
                 "Watch cannot be resumed in its current state",
                 status_code=409,
             )
+        await ensure_creator_not_blocked(
+            self.session,
+            source_type=watch.source_type,
+            source_value=watch.resolved_username or watch.source_value,
+        )
         entitlement = await self.entitlement_for(principal.user_id)
         if watch.auto_record and entitlement.is_pro:
             affordable, required, available = await CreditService(

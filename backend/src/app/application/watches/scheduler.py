@@ -12,6 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.recordings import CreateRecordingRequest, Source
+from app.application.creator_safety import watch_creator_block
 from app.application.entitlements.service import EntitlementService
 from app.application.notifications.service import ensure_creator_live_notification
 from app.application.recordings.cloud_slots import CloudSlotQueueService
@@ -113,6 +114,15 @@ class WatchScheduler:
             )
         )
         if watch is None or watch.status != WatchStatus.ACTIVE.value:
+            return
+
+        if await watch_creator_block(self.session, watch) is not None:
+            watch.status = WatchStatus.PAUSED.value
+            watch.next_check_at = None
+            watch.scheduler_lease_id = None
+            watch.scheduler_lease_expires_at = None
+            watch.last_error = "creator_blocked"
+            await self.session.commit()
             return
 
         now = utcnow()
