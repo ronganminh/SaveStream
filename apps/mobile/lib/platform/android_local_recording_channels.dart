@@ -14,4 +14,6 @@ const EventChannel androidRecordingPlatformActionEventChannel = EventChannel(
 );
 
 final Stream<dynamic> androidLocalRecordingEvents =
-    androidLocalRecordingEventChannel.receiveBroadcastStream().asBroadcastStream();
+    androidLocalRecordingEventChannel
+        .receiveBroadcastStream()
+        .asBroadcastStream();
