@@ -189,7 +189,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     : l10n.settingsIosRecordingSubtitle,
                 leading: Icon(
                   platform == DevicePlatform.android
-                      ? Icons.battery_saver_outlined
+                      ? Icons.battery_alert
                       : Icons.phone_iphone_rounded,
                 ),
                 trailing: const Icon(Icons.chevron_right_rounded),
