@@ -139,6 +139,13 @@ def admin_broadcast(broadcast_id: str) -> None:
     run_broadcast(broadcast_id)
 
 
+@celery_app.task(name="savestream.admin.bulk_grant")
+def admin_bulk_grant(bulk_grant_id: str) -> None:
+    from app.infrastructure.admin.d5_worker import run_bulk_grant
+
+    run_bulk_grant(bulk_grant_id)
+
+
 @celery_app.task(
     bind=True,
     name="savestream.outbox.event",
@@ -172,6 +179,9 @@ def handle_outbox_event(
         return
     if topic == "admin.broadcast":
         admin_broadcast.delay(str(payload["broadcast_id"]))
+        return
+    if topic == "admin.bulk_grant":
+        admin_bulk_grant.delay(str(payload["bulk_grant_id"]))
         return
     if topic == "recording.requested":
         recording_run.delay(str(payload["recording_id"]))
