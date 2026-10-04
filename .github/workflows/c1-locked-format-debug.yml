@@ -1,0 +1,27 @@
+name: C1 Locked Format Debug
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Format and print C1 test
+        run: |
+          dart format test/v2c_c1_api_repositories_test.dart
+          echo '--- BEGIN C1 TEST ---'
+          cat test/v2c_c1_api_repositories_test.dart
+          echo '--- END C1 TEST ---'
