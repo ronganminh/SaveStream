@@ -52,9 +52,10 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
 
   @override
   CloudHoursPurchaseState build() {
-    _subscription = ref.watch(purchaseServiceProvider).purchaseEvents.listen(
-      _handlePurchaseEvent,
-    );
+    _subscription = ref
+        .watch(purchaseServiceProvider)
+        .purchaseEvents
+        .listen(_handlePurchaseEvent);
     ref.onDispose(() => _subscription?.cancel());
     return const CloudHoursPurchaseState();
   }
@@ -85,7 +86,9 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
     if (event.status == PurchaseEventStatus.failed) {
       state = CloudHoursPurchaseState(
         phase: CloudHoursPurchasePhase.failed,
-        selectedProductId: event.productId == 'restore' ? null : event.productId,
+        selectedProductId: event.productId == 'restore'
+            ? null
+            : event.productId,
         errorMessage: event.errorMessage,
         isRestore: event.productId == 'restore',
       );
@@ -111,7 +114,9 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
       return;
     }
 
-    final DevicePlatform platform = ref.read(deviceInfoServiceProvider).platform;
+    final DevicePlatform platform = ref
+        .read(deviceInfoServiceProvider)
+        .platform;
     final StorePurchaseResult result = await ref
         .read(storeRepositoryProvider)
         .submitPurchase(

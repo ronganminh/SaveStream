@@ -28,10 +28,12 @@ final Provider<StoreRepository> storeRepositoryProvider =
 
 final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =
     FutureProvider<List<CloudHoursOffer>>((Ref ref) async {
-      final List<StorePackage> packages =
-          await ref.watch(storeRepositoryProvider).listPackages();
-      final DevicePlatform platform =
-          ref.watch(deviceInfoServiceProvider).platform;
+      final List<StorePackage> packages = await ref
+          .watch(storeRepositoryProvider)
+          .listPackages();
+      final DevicePlatform platform = ref
+          .watch(deviceInfoServiceProvider)
+          .platform;
       final List<String> ids = packages
           .map(
             (StorePackage package) => platform == DevicePlatform.ios
@@ -40,7 +42,9 @@ final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =
           )
           .toList(growable: false);
 
-      final products = await ref.watch(purchaseServiceProvider).loadProducts(ids);
+      final products = await ref
+          .watch(purchaseServiceProvider)
+          .loadProducts(ids);
       final Map<String, String> prices = <String, String>{
         for (final product in products) product.id: product.localizedPrice,
       };
