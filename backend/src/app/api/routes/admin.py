@@ -5,6 +5,7 @@ import csv
 import io
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import cast
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.encoders import jsonable_encoder
@@ -96,6 +97,21 @@ from app.api.schemas.admin_d5 import (
     AdminPromotionResponse,
     AdminPromotionUpdateRequest,
 )
+from app.api.schemas.admin_d6 import (
+    AdminDeviceDistributionResponse,
+    AdminDeviceDistributionRow,
+    AdminLocalRecordingDailyResponse,
+    AdminLocalRecordingMetricsResponse,
+    AdminLocalSessionListResponse,
+    AdminLocalSessionResponse,
+    AdminRewardDailyResponse,
+    AdminRewardMetricsResponse,
+    AdminRewardRiskUserResponse,
+    AdminRewardUnlockRequest,
+    AdminRewardUnlockResponse,
+    AdminStoreTransactionListResponse,
+    AdminStoreTransactionResponse,
+)
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
     AdminBroadcastListResponse,
@@ -124,6 +140,7 @@ from app.application.admin.bulk_grants_d5 import AdminBulkGrantService
 from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.payments_d2 import AdminFinanceService
+from app.application.admin.operations_d6 import AdminV2OperationsService
 from app.application.admin.recordings_d3 import AdminRecordingService
 from app.application.runtime_settings import RuntimeSettingsService
 from app.application.admin.security import AdminSecurityService
@@ -2970,3 +2987,140 @@ async def reset_admin_runtime_setting(
     items = await service.list_settings()
     item = next(item for item in items if item["key"] == setting_key)
     return AdminRuntimeSettingResponse.model_validate(item)
+
+
+
+@router.get(
+    "/operations/store-transactions",
+    response_model=AdminStoreTransactionListResponse,
+)
+async def list_admin_store_transactions(
+    limit: int = Query(default=100, ge=1, le=500),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminStoreTransactionListResponse:
+    _require_scope(principal, "admin:operations:read")
+    items = await AdminV2OperationsService(session).store_transactions(limit=limit)
+    return AdminStoreTransactionListResponse(
+        items=[AdminStoreTransactionResponse.model_validate(item) for item in items]
+    )
+
+
+@router.get(
+    "/operations/local-recordings/metrics",
+    response_model=AdminLocalRecordingMetricsResponse,
+)
+async def get_admin_local_recording_metrics(
+    days: int = Query(default=7, ge=1, le=31),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminLocalRecordingMetricsResponse:
+    _require_scope(principal, "admin:operations:read")
+    items = await AdminV2OperationsService(session).local_metrics(days=days)
+    return AdminLocalRecordingMetricsResponse(
+        days=[AdminLocalRecordingDailyResponse.model_validate(item) for item in items]
+    )
+
+
+@router.get(
+    "/operations/local-recordings/users/{user_id}",
+    response_model=AdminLocalSessionListResponse,
+)
+async def list_admin_user_local_sessions(
+    user_id: str,
+    limit: int = Query(default=100, ge=1, le=500),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminLocalSessionListResponse:
+    _require_scope(principal, "admin:operations:read")
+    items = await AdminV2OperationsService(session).local_sessions(
+        user_id,
+        limit=limit,
+    )
+    return AdminLocalSessionListResponse(
+        items=[AdminLocalSessionResponse.model_validate(item) for item in items]
+    )
+
+
+@router.get(
+    "/operations/rewards/metrics",
+    response_model=AdminRewardMetricsResponse,
+)
+async def get_admin_reward_metrics(
+    days: int = Query(default=7, ge=1, le=31),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRewardMetricsResponse:
+    _require_scope(principal, "admin:operations:read")
+    result = await AdminV2OperationsService(session).reward_metrics(days=days)
+    daily = cast(list[dict[str, object]], result["days"])
+    risky = cast(list[dict[str, object]], result["high_invalid_users"])
+    return AdminRewardMetricsResponse(
+        days=[AdminRewardDailyResponse.model_validate(item) for item in daily],
+        locked_accounts=cast(int, result["locked_accounts"]),
+        high_invalid_users=[
+            AdminRewardRiskUserResponse.model_validate(item) for item in risky
+        ],
+    )
+
+
+@router.post(
+    "/operations/rewards/users/{user_id}/unlock",
+    response_model=AdminRewardUnlockResponse,
+)
+async def unlock_admin_reward_user(
+    user_id: str,
+    payload: AdminRewardUnlockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminRewardUnlockResponse:
+    _require_owner(principal)
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    result = await AdminV2OperationsService(session).unlock_rewards_user(user_id)
+    previous_locked_until = cast(
+        datetime | None,
+        result["previous_locked_until"],
+    )
+    previous_invalid_streak = cast(int, result["previous_invalid_streak"])
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.reward_user.unlocked",
+        resource_type="reward_user_state",
+        resource_id=user_id,
+        context=_context(request),
+        reason=payload.reason,
+        before_state={
+            "locked_until": (
+                previous_locked_until.isoformat()
+                if previous_locked_until is not None
+                else None
+            ),
+            "invalid_streak": previous_invalid_streak,
+        },
+        after_state={"locked_until": None, "invalid_streak": 0},
+    )
+    await session.commit()
+    return AdminRewardUnlockResponse.model_validate(result)
+
+
+@router.get(
+    "/operations/devices/distribution",
+    response_model=AdminDeviceDistributionResponse,
+)
+async def get_admin_device_distribution(
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminDeviceDistributionResponse:
+    _require_scope(principal, "admin:operations:read")
+    items = await AdminV2OperationsService(session).device_distribution()
+    return AdminDeviceDistributionResponse(
+        items=[AdminDeviceDistributionRow.model_validate(item) for item in items]
+    )
