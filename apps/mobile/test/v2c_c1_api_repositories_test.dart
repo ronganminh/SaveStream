@@ -491,10 +491,8 @@ ResponseBody _errorResponse(
   });
 }
 
-typedef _FakeHandler = FutureOr<ResponseBody> Function(
-  RequestOptions options,
-  int call,
-);
+typedef _FakeHandler =
+    FutureOr<ResponseBody> Function(RequestOptions options, int call);
 
 final class _FakeAdapter implements HttpClientAdapter {
   _FakeAdapter(this._handler);
