@@ -118,9 +118,14 @@ from app.api.schemas.admin_d8 import (
     AdminComplaintListResponse,
     AdminComplaintResponse,
     AdminComplaintUpdateRequest,
+    AdminCreatorBlockListResponse,
     AdminCreatorBlockRequest,
     AdminCreatorBlockResponse,
     AdminCreatorUnblockRequest,
+    AdminDeleteBlockedRecordingsRequest,
+    AdminDeleteBlockedRecordingsResponse,
+    AdminSuspiciousAccountListResponse,
+    AdminSuspiciousAccountResponse,
 )
 from app.api.schemas.admin_d7 import (
     AdminBroadcastCreateRequest,
@@ -3271,6 +3276,84 @@ async def list_admin_complaints(
     )
 
 
+@router.get("/complaints/export.csv")
+async def export_admin_complaints(
+    request: Request,
+    status_filter: str | None = Query(default=None, alias="status"),
+    kind: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    _require_scope(principal, "admin:complaints:read")
+    _require_scope(principal, "admin:csv:export")
+    service = AdminSafetyService(session, request.app.state.settings)
+    items, _, _ = await service.list_complaints(
+        limit=500,
+        cursor=None,
+        status=status_filter,
+        kind=kind,
+        query=query,
+    )
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(
+        [
+            "id",
+            "kind",
+            "status",
+            "complainant_name",
+            "complainant_email",
+            "channel_source_type",
+            "channel_source_value",
+            "recording_id",
+            "summary",
+            "assigned_to_user_id",
+            "created_at",
+            "updated_at",
+        ]
+    )
+    for case in items:
+        writer.writerow(
+            [
+                str(case.id),
+                case.kind,
+                case.status,
+                case.complainant_name,
+                case.complainant_email,
+                case.channel_source_type or "",
+                case.channel_source_value or "",
+                str(case.recording_id) if case.recording_id else "",
+                case.summary,
+                str(case.assigned_to_user_id) if case.assigned_to_user_id else "",
+                case.created_at.isoformat(),
+                case.updated_at.isoformat(),
+            ]
+        )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.complaints.exported",
+        resource_type="complaint",
+        resource_id=None,
+        context=_context(request),
+        details={
+            "rows": len(items),
+            "status": status_filter,
+            "kind": kind,
+            "query": query,
+        },
+    )
+    await session.commit()
+    return Response(
+        output.getvalue(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="savestream-complaints.csv"'
+        },
+    )
+
+
 @router.get(
     "/complaints/{complaint_id}",
     response_model=AdminComplaintResponse,
@@ -3456,4 +3539,122 @@ async def unblock_admin_creator(
         unblocked_at=block.unblocked_at,
         unblock_reason=block.unblock_reason,
         created_at=block.created_at,
+    )
+
+
+
+@router.get(
+    "/safety/suspicious-accounts",
+    response_model=AdminSuspiciousAccountListResponse,
+)
+async def list_admin_suspicious_accounts(
+    request: Request,
+    limit: int = Query(default=100, ge=1, le=200),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminSuspiciousAccountListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    items = await AdminSafetyService(
+        session, request.app.state.settings
+    ).suspicious_accounts(limit=limit)
+    return AdminSuspiciousAccountListResponse(
+        items=[
+            AdminSuspiciousAccountResponse.model_validate(item)
+            for item in items
+        ]
+    )
+
+
+@router.get(
+    "/creator-blocks",
+    response_model=AdminCreatorBlockListResponse,
+)
+async def list_admin_creator_blocks(
+    request: Request,
+    active_only: bool = Query(default=True),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminCreatorBlockListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    blocks = await AdminSafetyService(
+        session, request.app.state.settings
+    ).list_creator_blocks(active_only=active_only)
+    return AdminCreatorBlockListResponse(
+        items=[
+            AdminCreatorBlockResponse(
+                id=str(block.id),
+                source_type=block.source_type,
+                source_value=block.source_value,
+                complaint_id=(
+                    str(block.complaint_id) if block.complaint_id else None
+                ),
+                reason=block.reason,
+                blocked_by_user_id=(
+                    str(block.blocked_by_user_id)
+                    if block.blocked_by_user_id
+                    else None
+                ),
+                active=block.unblocked_at is None,
+                unblocked_at=block.unblocked_at,
+                unblock_reason=block.unblock_reason,
+                created_at=block.created_at,
+            )
+            for block in blocks
+        ]
+    )
+
+
+@router.post(
+    "/creator-blocks/{block_id}/delete-recordings",
+    response_model=AdminDeleteBlockedRecordingsResponse,
+)
+async def delete_admin_blocked_recordings(
+    block_id: str,
+    payload: AdminDeleteBlockedRecordingsRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminDeleteBlockedRecordingsResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal,
+        session=session,
+        request=request,
+        token=step_up_token,
+    )
+    service = AdminSafetyService(session, request.app.state.settings)
+    block, deleted, pending = await service.delete_blocked_recordings(
+        block_id=block_id,
+        principal=principal,
+        reason=payload.reason,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.creator.blocked_recordings_delete_requested",
+        resource_type="creator_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"active": True},
+        after_state={
+            "deleted_recording_ids": deleted,
+            "pending_stop_recording_ids": pending,
+        },
+    )
+    await session.commit()
+    for recording_id in pending:
+        try:
+            await request.app.state.redis.client.set(
+                f"savestream:recording:stop:{recording_id}",
+                "1",
+                ex=86400,
+            )
+        except Exception:
+            pass
+    return AdminDeleteBlockedRecordingsResponse(
+        block_id=str(block.id),
+        deleted_recording_ids=deleted,
+        pending_stop_recording_ids=pending,
     )
