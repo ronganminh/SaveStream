@@ -135,7 +135,7 @@ Map<String, Object?> _sessionJson() {
   return <String, Object?>{
     'session_id': 'session-1',
     'granted_seconds': 600,
-    'lease_expires_at': '2026-10-04T11:00:00Z',
+    'lease_expires_at': '2099-10-04T11:00:00Z',
     'stream': <String, Object?>{
       'url': 'https://example.test/live.flv',
       'format': 'flv',
