@@ -151,10 +151,8 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
                     ? ref.read(watchControllerProvider).resume(value.watch.id)
                     : ref.read(watchControllerProvider).pause(value.watch.id),
               ),
-              onRecord: () => _startLocalRecording(
-                value.watch,
-                entitlement.requireValue,
-              ),
+              onRecord: () =>
+                  _startLocalRecording(value.watch, entitlement.requireValue),
               onDelete: () => _delete(value.watch),
             );
           },
