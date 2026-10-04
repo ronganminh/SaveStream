@@ -87,9 +87,9 @@ class MetricsRegistry:
             "savestream_reward_validity_ratio": snapshot.reward_validity_ratio,
             "savestream_store_transactions": snapshot.store_transactions,
         }
-        for name, value in gauges.items():
+        for name, metric_value in gauges.items():
             lines.append(f"# TYPE {name} gauge")
-            lines.append(f"{name} {value}")
+            lines.append(f"{name} {metric_value}")
         return "\n".join(lines) + "\n"
 
 
