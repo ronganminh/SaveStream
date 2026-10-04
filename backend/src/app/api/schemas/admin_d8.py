@@ -81,10 +81,6 @@ class AdminCreatorUnblockRequest(StrictModel):
     reason: str = Field(min_length=3, max_length=500)
 
 
-class AdminCreatorBlockListResponse(StrictModel):
-    items: list["AdminCreatorBlockResponse"]
-
-
 class AdminCreatorBlockResponse(StrictModel):
     id: str
     source_type: str
@@ -98,6 +94,10 @@ class AdminCreatorBlockResponse(StrictModel):
     created_at: datetime
     stopped_recording_ids: list[str] = Field(default_factory=list)
     paused_watch_ids: list[str] = Field(default_factory=list)
+
+
+class AdminCreatorBlockListResponse(StrictModel):
+    items: list[AdminCreatorBlockResponse]
 
 
 class AdminSuspiciousAccountResponse(StrictModel):
