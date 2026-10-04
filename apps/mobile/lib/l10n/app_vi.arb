@@ -1449,5 +1449,6 @@
   "settingsAndroidRecordingTitle": "Record nền",
   "settingsAndroidRecordingSubtitle": "Hướng dẫn pin và thiết bị",
   "settingsIosRecordingTitle": "Record trên iPhone",
-  "settingsIosRecordingSubtitle": "Giữ app mở và khôi phục"
+  "settingsIosRecordingSubtitle": "Giữ app mở và khôi phục",
+  "settingsRecordingSectionTitle": "RECORDING"
 }
