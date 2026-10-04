@@ -92,7 +92,8 @@ class _IosRecordingGuidanceScreenState
           SsTextAction(
             label: context.l10n.buyCloudHoursAction,
             icon: Icons.cloud_outlined,
-            onPressed: () => context.push(AppRoutes.cloudHoursLocation('iosBackground')),
+            onPressed: () =>
+                context.push(AppRoutes.cloudHoursLocation('iosBackground')),
           ),
         ],
       ),
