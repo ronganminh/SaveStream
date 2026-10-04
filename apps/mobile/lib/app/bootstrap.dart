@@ -14,7 +14,8 @@ import '../features/credits/data/repositories/api_credits_repository.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
 import '../features/entitlement/data/repositories/api_entitlement_repository.dart';
 import '../features/local_recordings/data/repositories/api_local_recording_repository.dart';
-import '../features/local_recordings/presentation/controllers/local_recording_controller.dart' as local_recording;
+import '../features/local_recordings/presentation/controllers/local_recording_controller.dart'
+    as local_recording;
 import '../features/recordings/data/repositories/api_recording_repository.dart';
 import '../features/settings/data/repositories/api_notification_preferences_repository.dart';
 import '../features/settings/data/repositories/api_notifications_repository.dart';
