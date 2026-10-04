@@ -13,7 +13,7 @@
 - [x] B2 — Hàng chờ slot cloud và tự bật lại sau khi mua — **đã merge PR #86 vào `main`**, merge commit `01d2f44d`
 - [x] B3 — Thiết bị, push và loại thông báo mới — **đã merge PR #89 vào `main`**, merge commit `6422c072`
 - [ ] B4 — Ghi trên máy: phút Free, phần thưởng quảng cáo, đồng bộ metadata
-- [ ] B5 — Mua trong app (App Store, Google Play)
+- [x] B5 — Mua trong app (App Store, Google Play) — **đã merge PR #91 vào `main`**, merge commit `63278793`
 - [ ] B6 — Trạng thái ứng dụng, hạn lưu, thông báo sắp hết hạn
 - [ ] B7 — Web theo V2
 - [ ] B8 — Năng lực máy chủ và tài liệu vận hành
@@ -131,6 +131,8 @@ Không cần tài khoản Firebase để hoàn thành phase này; bản thật c
 ---
 
 ## B5 — Mua trong app
+
+**Trạng thái:** ✅ Hoàn tất, đã merge PR #91 vào `main` (2026-10-04), merge commit `63278793`. Gate cuối: Backend CI #545 ✅, Backend E2E #98 ✅, Mobile Backend E2E #213 ✅. Migration B5 là `0013_v2_b5_store_purchases` nối tiếp `0012_v2_d7_admin_operations`.
 
 **Phụ thuộc:** B1, B2 (để tự bật lại sau khi mua).
 
