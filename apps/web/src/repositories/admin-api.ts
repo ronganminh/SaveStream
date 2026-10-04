@@ -1212,3 +1212,62 @@ export const adminRecordingOpsApi = {
     return apiClient.get<AdminCapacity>("/v1/admin/capacity");
   },
 };
+
+
+export type AdminRuntimeSettingKind = "bool" | "int" | "version" | "enum" | "datetime";
+
+export type AdminRuntimeSetting = {
+  key: string;
+  kind: AdminRuntimeSettingKind;
+  description: string;
+  value: unknown;
+  default_value: unknown;
+  source: "database" | "environment";
+  minimum: number | null;
+  maximum: number | null;
+  choices: string[];
+  nullable: boolean;
+  updated_by_user_id: string | null;
+  updated_at: string | null;
+};
+
+export type AdminSystemHealth = {
+  status: "ok" | "error";
+  detail: string | null;
+};
+
+export type AdminSystemStatus = {
+  backend_version: string;
+  started_at: string;
+  components: Record<string, AdminSystemHealth>;
+};
+
+export const adminRuntimeSettingsApi = {
+  list() {
+    return apiClient.get<{ items: AdminRuntimeSetting[] }>("/v1/admin/settings");
+  },
+
+  update(key: string, value: unknown, reason: string, stepUpToken: string) {
+    return apiClient.put<AdminRuntimeSetting>(
+      `/v1/admin/settings/${encodeURIComponent(key)}`,
+      {
+        json: { value, reason },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
+  },
+
+  reset(key: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminRuntimeSetting>(
+      `/v1/admin/settings/${encodeURIComponent(key)}/reset`,
+      {
+        json: { reason },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
+  },
+
+  systemStatus() {
+    return apiClient.get<AdminSystemStatus>("/v1/admin/system/status");
+  },
+};
