@@ -7,9 +7,8 @@ import 'android_local_recording_channels.dart';
 import 'contracts/local_recovery_service.dart';
 
 final class AndroidLocalRecoveryService implements LocalRecoveryService {
-  AndroidLocalRecoveryService({
-    required LocalRecordingRepository repository,
-  }) : _repository = repository;
+  AndroidLocalRecoveryService({required LocalRecordingRepository repository})
+    : _repository = repository;
 
   final LocalRecordingRepository _repository;
   final StreamController<LocalRecoveryProgress> _progress =
@@ -17,9 +16,8 @@ final class AndroidLocalRecoveryService implements LocalRecoveryService {
 
   @override
   Future<LocalRecoveryCandidate?> findInterrupted() async {
-    final Map<dynamic, dynamic>? raw =
-        await androidLocalRecordingMethodChannel
-            .invokeMapMethod<dynamic, dynamic>('findInterrupted');
+    final Map<dynamic, dynamic>? raw = await androidLocalRecordingMethodChannel
+        .invokeMapMethod<dynamic, dynamic>('findInterrupted');
     if (raw == null) {
       return null;
     }
