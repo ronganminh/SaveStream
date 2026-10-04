@@ -1178,5 +1178,65 @@
   },
   "localRecordingOpenAction": "Open recording",
   "localRecordingHomeAction": "Back to Home",
-  "localRecordingCleanStorageAction": "Clean up old recordings"
+  "localRecordingCleanStorageAction": "Clean up old recordings",
+  "localRecoveryTitle": "Recover recording",
+  "localRecoveryInterruptedTitle": "Recording was interrupted",
+  "localRecoveryInterruptedAndroidBody": "Android stopped SaveStream at {time}, possibly because of battery saving. The recorded part can still be recovered.",
+  "@localRecoveryInterruptedAndroidBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryInterruptedIosBody": "iOS stopped SaveStream at {time} after the app left the foreground. The recorded part can still be recovered.",
+  "@localRecoveryInterruptedIosBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryOfflineTitle": "Recovery stays on this device",
+  "localRecoveryOfflineBody": "Recovery does not need the internet and does not use Free recording minutes.",
+  "localRecoveryRecoveringBody": "Keep SaveStream open while it repairs and verifies the local file. No percentage is estimated.",
+  "localRecoveryRecoverAction": "Recover",
+  "localRecoveryCandidateMeta": "Started {time} · {duration} recorded · Local",
+  "@localRecoveryCandidateMeta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryRecoveringTitle": "Recovering recording",
+  "localRecoveryFindStep": "Find temporary file",
+  "localRecoveryRepairStep": "Repair file tail",
+  "localRecoveryVerifyStep": "Verify duration",
+  "localRecoveryRegisterStep": "Add to Recordings",
+  "localRecoveryPartialTitle": "Partially recovered",
+  "localRecoveryRecoveredTitle": "Recording recovered",
+  "localRecoveryKeptDuration": "Kept {duration} of recorded media.",
+  "@localRecoveryKeptDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "localRecoveryAndroidAdviceTitle": "Reduce interruptions on Android",
+  "localRecoveryAndroidAdviceBody": "Battery optimization can stop Local recording. Allow SaveStream to run without restriction to reduce interruptions.",
+  "localRecoveryAndroidGuideAction": "View Android recording guide",
+  "localRecoveryIosAdviceTitle": "Next time, keep SaveStream open",
+  "localRecoveryIosAdviceBody": "iOS can stop Local recording when SaveStream leaves the foreground. Cloud recording does not depend on the phone staying open.",
+  "localRecoveryViewProAction": "View cloud options",
+  "localRecoveryFailedTitle": "Could not recover recording",
+  "localRecoveryFailedAndroidBody": "The temporary file is damaged or no longer available after Android stopped SaveStream.",
+  "localRecoveryFailedIosBody": "The temporary file does not contain enough readable data after iOS stopped SaveStream.",
+  "localRecoveryDeleteTempAction": "Delete temporary file",
+  "localRecoveryNoneTitle": "No interrupted recording found",
+  "localRecoveryNoneBody": "There is no temporary Local recording waiting for recovery."
 }
