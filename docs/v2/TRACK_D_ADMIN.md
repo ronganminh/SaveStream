@@ -24,7 +24,7 @@
 
 - [x] D0 — Nền móng: vai trò, xác thực hai lớp, nhật ký, khung giao diện — **đã merge PR #85 vào main**
 - [x] D1 — Người dùng và hỗ trợ khách hàng — **đã merge PR #88 vào main**
-- [ ] D2 — Thanh toán, hoàn tiền, giờ cloud
+- [x] D2 — Thanh toán, hoàn tiền, giờ cloud — **đã merge PR #99 vào main**
 - [ ] D3 — Bản ghi, kênh theo dõi, hàng chờ slot
 - [ ] D4 — Cấu hình hệ thống sửa từ giao diện
 - [ ] D5 — Gói, giá, khuyến mãi, tặng giờ
@@ -41,13 +41,18 @@
 - **CI cuối D1 trên head `f14897f86aad99f7c341f375fd8bbd0bb6c1f775`:** `Backend CI` xanh trên Python 3.11 và 3.12 (ruff, mypy, pytest, Alembic migration smoke), `Web CI` xanh (format, lint, typecheck, toàn bộ audit scripts, development/production build), `Backend E2E` xanh, `Mobile Backend E2E` xanh.
 - **Rebase/main gate D1:** trước merge, nhánh `v2/d1-admin-users-support` ở trạng thái `ahead`, `behind 0` so với `main` tại `bcf30e35865fab4e40f4490ea8860b3767db46d6`; D1 đã được rebase thủ công qua GitHub lên main mới có B2 trước khi mở PR. Sau merge, `main` trỏ đúng merge commit PR #88.
 - **Phạm vi D1 đã chốt:** Support có thao tác hỗ trợ người dùng nhưng không có scope tiền/hoàn tiền; Finance chỉ đọc dữ liệu người dùng; thao tác khoá/mở khoá và xoá tài khoản cần step-up + reason; “View as user” chỉ đọc, không cấp token/session của user và luôn audit; recording trong D1 chỉ hiện metadata, không phát/tải.
+- **D2 hoàn tất.** PR #99 — `V2 D2 — Admin payments, refunds and cloud minutes` đã merge vào `main` ngày 2026-10-04 (UTC+7).
+- **D2 merge commit:** `471268751d0f789be7e0e6b19ff66b1aa059fed2`.
+- **CI cuối D2 trên head `8af64b127d75bca7f9a7d1ec915dedd5389581c8`:** `Backend CI` #574 xanh trên Python 3.11 và 3.12, `Web CI` #167 xanh, `Backend E2E` #102 xanh, `Mobile Backend E2E` #228 xanh.
+- **Rebase/main gate D2:** trước merge, nhánh `v2/d2-admin-payments-credits` ở trạng thái `ahead`, `behind 0` so với `main` tại `2d327aa31eb4a43ea13429503bb5e19fc3e8f0bc`; không cần rebase bổ sung ở gate cuối.
+- **Phạm vi D2 đã chốt:** web refund từ admin với preview + step-up + reason; store refund chỉ theo Apple/Google; clawback credit không âm; stuck-order reconcile idempotent; global ledger + CSV; manual minutes với `counts_as_purchase` mặc định false; stuck reservation chỉ release khi recording terminal; Support chỉ đọc order, Finance/Owner mới thao tác tiền. Revenue admin hiển thị gross USD trước phí store và phí store ước tính riêng.
 - **D7 hoàn tất.** PR #90 — `V2 D7 — Admin storage, email and broadcasts` đã merge vào `main` ngày 2026-10-04 (UTC+7).
 - **D7 merge commit:** `cc3160f93ed31cfee84d94e2cc22e1f36014b8b7`.
 - **CI cuối D7 trên head `fc4bb6f006fcd1cd4641e8c9177548f37774dfe9`:** `Backend CI` #482 xanh trên Python 3.11 và 3.12, `Web CI` #164 xanh, `Backend E2E` #88 xanh, `Mobile Backend E2E` #188 xanh.
 - **Rebase/main gate D7:** trước merge, nhánh `v2/d7-admin-storage-email-broadcasts` ở trạng thái `ahead`, `behind 0` so với `main`; không cần rebase bổ sung ở gate cuối.
 - **Phạm vi D7 đã chốt:** storage summary + bounded orphan scan/delete, email logs giữ 90 ngày + resend, template override/preview/test/reset, broadcast system/marketing theo opt-in qua in-app/push/email; thao tác nguy hiểm dùng step-up + reason, mutation/sensitive read được audit.
-- **Các blocker Track D còn lại:** D2 chờ B5; D3 chờ B6 cho `expires_at`; D4 chờ B4+B6 (B1 đã có); D5 chờ D2; D6 chờ D2+B4+B5 (B3 đã có).
-- **Bước Track D tiếp theo:** ưu tiên phase được mở khoá khi Track B merge dependency tương ứng; không tự triển khai thay Track B.
+- **Các blocker Track D còn lại:** D3 chờ B6 cho `expires_at`; D4 chờ B4+B6 (B1 đã có); D5 đã mở khóa sau D2; D6 còn chờ B4 (D2, B3, B5 đã có).
+- **Bước Track D tiếp theo:** D5 đã đủ dependency; D3/D4/D6 tiếp tục chờ Track B như trên.
 
 ## Kiểm tra
 
