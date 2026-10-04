@@ -25,9 +25,8 @@ abstract final class AppRoutes {
   static const String addChannel = '/channels/add';
   static const String recordings = '/recordings';
   static const String localRecovery = '/recordings/recovery';
-  static const String credits = '/credits';
-  static const String billing = '/billing';
-  static const String billingReturn = '/billing/return';
+  static const String usage = '/usage';
+  static const String cloudHours = '/usage/cloud-hours';
 
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
@@ -50,6 +49,10 @@ abstract final class AppRoutes {
   static String localRecordingDetail(String id) =>
       '/recordings/local-file/' + id;
   static String recordingPlayer(String id) => '/recordings/player/' + id;
+  static String cloudHoursLocation(String context) => Uri(
+    path: cloudHours,
+    queryParameters: <String, String>{'context': context},
+  ).toString();
   static String localRecording(String watchId) =>
       '/recordings/local/' + watchId;
 
