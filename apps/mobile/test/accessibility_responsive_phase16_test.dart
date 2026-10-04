@@ -101,8 +101,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byIcon(Icons.video_library_outlined));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });
   }
