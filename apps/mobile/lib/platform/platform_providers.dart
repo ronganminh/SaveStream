@@ -6,16 +6,16 @@ import 'contracts/device_info_service.dart';
 import 'contracts/local_recorder.dart';
 import 'contracts/local_recovery_service.dart';
 import 'contracts/purchase_service.dart';
-import 'contracts/recording_platform_service.dart';
 import 'contracts/push_service.dart';
+import 'contracts/recording_platform_service.dart';
 import 'fakes/fake_ads_service.dart';
 import 'fakes/fake_connectivity_service.dart';
 import 'fakes/fake_device_info_service.dart';
 import 'fakes/fake_local_recorder.dart';
 import 'fakes/fake_local_recovery_service.dart';
 import 'fakes/fake_purchase_service.dart';
-import 'fakes/fake_recording_platform_service.dart';
 import 'fakes/fake_push_service.dart';
+import 'fakes/fake_recording_platform_service.dart';
 
 final Provider<LocalRecorder> localRecorderProvider = Provider<LocalRecorder>(
   (Ref ref) => FakeLocalRecorder(),
