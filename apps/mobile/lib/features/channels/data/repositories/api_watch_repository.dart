@@ -71,6 +71,7 @@ final class ApiWatchRepository implements WatchRepository {
           'value': command.sourceValue,
         },
         'auto_record': command.autoRecord,
+        'notify_on_live': command.notifyOnLive,
       },
       decoder: WatchApiModel.fromJson,
     );

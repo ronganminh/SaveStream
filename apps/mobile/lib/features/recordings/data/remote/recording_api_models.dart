@@ -20,6 +20,9 @@ final class RecordingApiModel {
     this.creditReservationId,
     this.errorCode,
     this.errorMessage,
+    this.expiresAt,
+    this.minutesCharged = 0,
+    this.queuePosition,
   });
 
   final String id;
@@ -38,6 +41,9 @@ final class RecordingApiModel {
   final String? creditReservationId;
   final String? errorCode;
   final String? errorMessage;
+  final DateTime? expiresAt;
+  final int minutesCharged;
+  final int? queuePosition;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -121,6 +127,13 @@ final class RecordingApiModel {
       ),
       errorCode: errorCode,
       errorMessage: errorMessage,
+      expiresAt: _optionalDateTime(map['expires_at'], 'expires_at'),
+      minutesCharged:
+          _optionalInt(map['minutes_charged'], 'minutes_charged') ?? 0,
+      queuePosition: _optionalPositiveInt(
+        map['queue_position'],
+        'queue_position',
+      ),
       createdAt: _requiredDateTime(map['created_at'], 'created_at'),
       updatedAt: _requiredDateTime(map['updated_at'], 'updated_at'),
     );
@@ -142,6 +155,9 @@ final class RecordingApiModel {
       costCredits: actualCost?.toDouble(),
       errorCode: errorCode,
       errorMessage: errorMessage,
+      expiresAt: expiresAt,
+      minutesCharged: minutesCharged,
+      queuePosition: queuePosition,
     );
   }
 }
@@ -270,7 +286,10 @@ RecordingStatus recordingStatusFromApi(String value) {
     'stop_requested' => RecordingStatus.stopRequested,
     'stopped' => RecordingStatus.stopped,
     'missed_no_cloud_slot' => RecordingStatus.missedNoCloudSlot,
-    _ => throw FormatException('Unsupported Recording status: $value'),
+    // Forward-compatible fallback: an unknown backend lifecycle must not make
+    // the whole recording list undecodable. Treat it as terminal until the
+    // app learns the new state instead of spinning indefinitely.
+    _ => RecordingStatus.failed,
   };
 }
 
@@ -322,6 +341,14 @@ int _requiredInt(Object? value, String name) {
 int? _optionalInt(Object? value, String name) {
   if (value == null) return null;
   return _requiredInt(value, name);
+}
+
+int? _optionalPositiveInt(Object? value, String name) {
+  final int? parsed = _optionalInt(value, name);
+  if (parsed != null && parsed < 1) {
+    throw FormatException('Expected positive $name integer.');
+  }
+  return parsed;
 }
 
 DateTime _requiredDateTime(Object? value, String name) {

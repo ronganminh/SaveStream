@@ -9,7 +9,7 @@
 ## Tiến độ
 
 - [x] C0 — Plugin và khung native
-- [ ] C1 — Repository gọi API V2
+- [x] C1 — Repository gọi API V2
 - [ ] C2 — Thử nghiệm kỹ thuật ghi trên máy (**dừng chờ duyệt**)
 - [ ] C3 — Ghi trên máy cho Android
 - [ ] C4 — Ghi trên máy cho iOS
