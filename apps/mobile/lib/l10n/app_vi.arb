@@ -1364,29 +1364,43 @@
   "nativeRecordingActiveBody": "{name} · {elapsed} · Local · còn {remaining} phút Free",
   "@nativeRecordingActiveBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"},
-      "remaining": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
   "@nativeRecordingActiveUnlimitedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectTitle": "Đang kết nối lại · {name}",
   "@nativeRecordingReconnectTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectBody": "Mất kết nối tới nguồn LIVE. Phần đã ghi vẫn an toàn.",
   "nativeRecordingMinuteWarningTitle": "Còn chưa tới 1 phút Free · {name}",
   "@nativeRecordingMinuteWarningTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingMinuteWarningBody": "Mở SaveStream để thêm 10 phút. Quảng cáo nhận thưởng chỉ chạy trong app.",
@@ -1394,16 +1408,24 @@
   "nativeRecordingFinalizingBody": "{name} · đang lưu trên thiết bị này",
   "@nativeRecordingFinalizingBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingSavedTitle": "Đã lưu bản ghi",
   "nativeRecordingSavedBody": "{name} · {duration} · {size} · lưu trên thiết bị này",
   "@nativeRecordingSavedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "duration": {"type": "String"},
-      "size": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingInterruptedTitle": "Recording bị gián đoạn",
@@ -1421,7 +1443,9 @@
   "androidOemGuideTitle": "Giữ SaveStream chạy trên {device}",
   "@androidOemGuideTitle": {
     "placeholders": {
-      "device": {"type": "String"}
+      "device": {
+        "type": "String"
+      }
     }
   },
   "androidOemGenericBody": "Phiên bản Android của bạn có thể có thêm giới hạn chạy nền. Hãy kiểm tra cài đặt ứng dụng và pin cho SaveStream.",
@@ -1453,19 +1477,115 @@
   "settingsRecordingSectionTitle": "RECORDING",
   "recordingSearchHint": "Tìm theo creator",
   "recordingCrossDeviceValue": "Đã ghi trên {device}",
-  "@recordingCrossDeviceValue": {"placeholders": {"device": {"type": "String"}}},
+  "@recordingCrossDeviceValue": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
   "recordingCrossDeviceUnavailable": "Không có trên máy này. Không thể phát, chia sẻ hoặc xoá tại đây.",
   "recordingLocalFileMissing": "File trên máy đã bị di chuyển hoặc xoá. SaveStream không thể phát hoặc chia sẻ file này.",
   "shareRecordingAction": "Chia sẻ bản ghi",
   "deleteLocalRecordingAction": "Xoá khỏi thiết bị này",
   "cloudRecordingExpiresValue": "Lưu đến {date}",
-  "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
+  "@cloudRecordingExpiresValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "cloudRecordingExpiringSoon": "Bản ghi cloud này sẽ hết hạn trong vòng 3 ngày. Hãy tải về nếu bạn muốn giữ bản trên máy.",
   "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống.",
   "recordingDownloadedLabel": "Đã tải về",
   "recordingDownloadedBody": "Đã lưu trên thiết bị này. Bạn có thể phát hoặc chia sẻ bản trên máy.",
   "recordingDownloadingBytes": "Đang tải {done} / {total}",
-  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "@recordingDownloadingBytes": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "deleteCloudRecordingAction": "Xoá bản ghi cloud",
-  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải"
+  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải",
+  "usageTitle": "Gói và sử dụng",
+  "cloudHoursAvailableTitle": "Giờ cloud còn lại",
+  "freeUsageTitle": "Mức dùng Free hôm nay",
+  "freeMinutesToday": "Còn {remaining}/{daily} phút Free",
+  "@freeMinutesToday": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardUsageToday": "Quảng cáo thưởng {used}/{cap}",
+  "@rewardUsageToday": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "watchUsage": "Creator {used}/{limit}",
+  "@watchUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudSlotsUsage": "Slot cloud {used}/{limit}",
+  "@cloudSlotsUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursPackValue": "{hours} giờ cloud",
+  "@cloudHoursPackValue": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursOneTimeTitle": "Mua một lần",
+  "cloudHoursOneTimeBody": "Giờ cloud không hết hạn. Mua giờ sẽ mở auto-record cloud, theo dõi tối đa 20 creator và bỏ quảng cáo.",
+  "restorePurchasesAction": "Khôi phục giao dịch",
+  "purchaseProcessingBody": "Đang chờ cửa hàng xác nhận giao dịch.",
+  "purchasePendingBody": "Giao dịch đang chờ. Chưa cấp quyền cloud cho tới khi server xác nhận cộng giờ.",
+  "purchaseSuccessBody": "Giao dịch đã xác nhận và giờ cloud đã được cộng.",
+  "purchaseCancelledBody": "Bạn đã huỷ giao dịch. Không có thay đổi.",
+  "purchaseFailedBody": "Giao dịch thất bại. Bạn có thể thử lại.",
+  "restoreProcessingBody": "Đang kiểm tra các giao dịch trước…",
+  "restoreSuccessBody": "Đã hoàn tất khôi phục.",
+  "purchaseContextAutoRecordTitle": "Mở auto-record trên cloud",
+  "purchaseContextAutoRecordBody": "Mua giờ cloud để SaveStream tự ghi khi creator bắt đầu LIVE.",
+  "purchaseContextWatchLimitTitle": "Theo dõi tối đa 20 creator",
+  "purchaseContextWatchLimitBody": "Mua giờ cloud để tăng giới hạn creator từ 3 lên 20.",
+  "purchaseContextIosBackgroundTitle": "Record mà không cần giữ iPhone mở",
+  "purchaseContextIosBackgroundBody": "Cloud recording chạy trên server nên iPhone không cần giữ app ở foreground.",
+  "purchaseContextFreeMinutesTitle": "Tiếp tục record khi hết phút Free",
+  "purchaseContextFreeMinutesBody": "Mua giờ cloud để record trên server thay vì chờ phút Free reset.",
+  "purchaseContextRemoveAdsTitle": "Bỏ quảng cáo",
+  "purchaseContextRemoveAdsBody": "Mua giờ cloud để bỏ quảng cáo SaveStream."
 }
