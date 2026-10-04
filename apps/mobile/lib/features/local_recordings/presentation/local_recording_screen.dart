@@ -331,6 +331,9 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
     RewardedMinutesState rewarded,
     LocalEntitlement entitlement,
   ) {
+    if (entitlement.unlimited) {
+      return false;
+    }
     if (rewarded.extensionCount >= entitlement.extensionsCapPerRecording) {
       return false;
     }
