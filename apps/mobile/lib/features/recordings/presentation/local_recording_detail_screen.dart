@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
@@ -115,7 +117,17 @@ class _LocalDetailBody extends ConsumerWidget {
               SsPrimaryButton(
                 label: context.l10n.playRecordingAction,
                 icon: Icons.play_arrow_rounded,
-                onPressed: () {},
+                onPressed: () {
+                  final Uri uri = Uri.parse(
+                    AppRoutes.recordingPlayer(recording.id),
+                  ).replace(
+                    queryParameters: <String, String>{
+                      'title': recording.creatorDisplayName,
+                      'duration': recording.recordedSeconds.toString(),
+                    },
+                  );
+                  context.push(uri.toString());
+                },
               ),
               const SizedBox(height: SsSpacing.sm),
               SsSecondaryButton(
