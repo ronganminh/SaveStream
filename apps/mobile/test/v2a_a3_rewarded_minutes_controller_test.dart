@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:savestream_mobile/core/api/api_error.dart';
+import 'package:savestream_mobile/core/api/api_exception.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
 import 'package:savestream_mobile/features/local_recordings/domain/repositories/local_recording_repository.dart';
@@ -111,6 +113,58 @@ void main() {
     expect(harness.localRepository.extendCalls, 0);
   });
 
+  test('polls pending reward until valid before extending', () async {
+    final _Harness harness = await _Harness.create(
+      adResult: true,
+      statuses: <RewardStatus>[
+        RewardStatus.pending,
+        RewardStatus.valid,
+      ],
+    );
+    addTearDown(harness.dispose);
+
+    await harness.run(entitlement);
+
+    expect(harness.rewards.statusCalls, 2);
+    expect(harness.state.phase, RewardedMinutesPhase.success);
+    expect(harness.localRepository.extendCalls, 1);
+  });
+
+  test('default reward polling cadence is two seconds', () {
+    final ProviderContainer container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(
+      container.read(rewardVerificationPollIntervalProvider),
+      const Duration(seconds: 2),
+    );
+  });
+
+  test('REWARD_LOCKED maps to locked without showing an ad', () async {
+    final _Harness harness = await _Harness.create(
+      adResult: true,
+      statuses: <RewardStatus>[RewardStatus.valid],
+      createError: const ApiException(
+        kind: ApiExceptionKind.rateLimited,
+        retryable: false,
+        statusCode: 429,
+        apiError: ApiError(
+          code: 'REWARD_LOCKED',
+          message: 'Rewarded ads are temporarily locked.',
+          retryable: false,
+          details: <String, Object?>{},
+        ),
+      ),
+    );
+    addTearDown(harness.dispose);
+
+    await harness.run(entitlement);
+
+    expect(harness.state.phase, RewardedMinutesPhase.locked);
+    expect(harness.rewards.statusCalls, 0);
+    expect(harness.localRepository.extendCalls, 0);
+  });
+
   test('extension and daily caps block before creating a reward', () async {
     final _Harness extensionCap = await _Harness.create(
       adResult: true,
@@ -169,6 +223,7 @@ final class _Harness {
     required bool adResult,
     required List<RewardStatus> statuses,
     Duration verificationTimeout = const Duration(seconds: 15),
+    ApiException? createError,
   }) async {
     final _LocalRepositorySpy localRepository = _LocalRepositorySpy();
     final _RecorderSpy recorder = _RecorderSpy();
@@ -181,6 +236,7 @@ final class _Harness {
 
     final _RewardRepositorySpy rewards = _RewardRepositorySpy(
       statuses: statuses,
+      createError: createError,
     );
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -231,10 +287,13 @@ final class _AdsSpy implements AdsService {
 }
 
 final class _RewardRepositorySpy implements RewardRepository {
-  _RewardRepositorySpy({required List<RewardStatus> statuses})
-    : _statuses = List<RewardStatus>.from(statuses);
+  _RewardRepositorySpy({
+    required List<RewardStatus> statuses,
+    this.createError,
+  }) : _statuses = List<RewardStatus>.from(statuses);
 
   final List<RewardStatus> _statuses;
+  final ApiException? createError;
   int createCalls = 0;
   int statusCalls = 0;
   String? createdSessionId;
@@ -246,6 +305,8 @@ final class _RewardRepositorySpy implements RewardRepository {
   }) async {
     createCalls += 1;
     createdSessionId = sessionId;
+    final ApiException? error = createError;
+    if (error != null) throw error;
     return Reward(
       rewardId: 'reward_1',
       purpose: purpose,
