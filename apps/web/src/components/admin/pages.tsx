@@ -8,6 +8,8 @@ import {
 } from "@/components/app-pages-more";
 import { AdminMfaGate } from "@/components/admin/foundation";
 import { AdminRecordingOperationsPage } from "@/components/admin/recordings-d3";
+import { AdminSystemD4Page } from "@/components/admin/system-d4";
+import { isDemoMode } from "@/lib/app-config";
 
 function ProtectedAdminPage({ children }: { children: ReactNode }) {
   return <AdminMfaGate>{children}</AdminMfaGate>;
@@ -16,7 +18,7 @@ function ProtectedAdminPage({ children }: { children: ReactNode }) {
 export function AdminSystemPage() {
   return (
     <ProtectedAdminPage>
-      <LegacyAdminSystemPage />
+      {isDemoMode ? <LegacyAdminSystemPage /> : <AdminSystemD4Page />}
     </ProtectedAdminPage>
   );
 }
