@@ -498,7 +498,10 @@ class AdminSafetyService:
             (
                 await self.session.scalars(
                     select(User)
-                    .where(User.created_at >= week_start)
+                    .where(
+                        User.role == "user",
+                        User.created_at >= week_start,
+                    )
                     .order_by(User.created_at.desc())
                     .limit(5000)
                 )
