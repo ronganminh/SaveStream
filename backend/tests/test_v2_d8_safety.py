@@ -4,6 +4,7 @@ import asyncio
 import uuid
 
 import pytest
+from sqlalchemy import select
 
 from app.application.admin.safety_d8 import AdminSafetyService
 from app.application.creator_safety import ensure_creator_not_blocked
@@ -122,7 +123,7 @@ def test_d8_block_creator_pauses_stops_notifies_and_unblocks(tmp_path) -> None:
                 notifications = list(
                     (
                         await session.scalars(
-                            UserNotification.__table__.select().where(
+                            select(UserNotification).where(
                                 UserNotification.user_id == user.id
                             )
                         )
@@ -149,7 +150,7 @@ def test_d8_block_creator_pauses_stops_notifies_and_unblocks(tmp_path) -> None:
                 assert watch.last_error is None
 
                 active_block = await session.scalar(
-                    AdminCreatorBlock.__table__.select().where(
+                    select(AdminCreatorBlock).where(
                         AdminCreatorBlock.id == block.id
                     )
                 )
