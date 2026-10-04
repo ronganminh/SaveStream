@@ -129,6 +129,7 @@ class SupportReportService:
         status: str | None,
         assigned_to_user_id: str | None,
         query: str | None,
+        sort_order: str = "desc",
     ) -> tuple[list[tuple[AdminSupportReport, str]], str | None, bool]:
         statement = (
             select(AdminSupportReport, User.email)
@@ -163,24 +164,43 @@ class SupportReportService:
                     AdminSupportReport.description.ilike(needle),
                 )
             )
+        if sort_order not in {"asc", "desc"}:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "Invalid sort order",
+                status_code=400,
+            )
         if cursor:
             created_at, report_id = _decode_cursor(cursor)
-            statement = statement.where(
-                or_(
-                    AdminSupportReport.created_at < created_at,
-                    and_(
-                        AdminSupportReport.created_at == created_at,
-                        AdminSupportReport.id < report_id,
-                    ),
+            if sort_order == "desc":
+                statement = statement.where(
+                    or_(
+                        AdminSupportReport.created_at < created_at,
+                        and_(
+                            AdminSupportReport.created_at == created_at,
+                            AdminSupportReport.id < report_id,
+                        ),
+                    )
                 )
-            )
+            else:
+                statement = statement.where(
+                    or_(
+                        AdminSupportReport.created_at > created_at,
+                        and_(
+                            AdminSupportReport.created_at == created_at,
+                            AdminSupportReport.id > report_id,
+                        ),
+                    )
+                )
+        ordering = (
+            (AdminSupportReport.created_at.asc(), AdminSupportReport.id.asc())
+            if sort_order == "asc"
+            else (AdminSupportReport.created_at.desc(), AdminSupportReport.id.desc())
+        )
         raw_rows = list(
             (
                 await self.session.execute(
-                    statement.order_by(
-                        AdminSupportReport.created_at.desc(),
-                        AdminSupportReport.id.desc(),
-                    ).limit(limit + 1)
+                    statement.order_by(*ordering).limit(limit + 1)
                 )
             ).all()
         )
