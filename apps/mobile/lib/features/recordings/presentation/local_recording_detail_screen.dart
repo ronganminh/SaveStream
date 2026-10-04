@@ -124,6 +124,7 @@ class _LocalDetailBody extends ConsumerWidget {
                         AppRoutes.recordingPlayer(recording.id),
                       ).replace(
                         queryParameters: <String, String>{
+                          'source': 'local',
                           'title': recording.creatorDisplayName,
                           'duration': recording.recordedSeconds.toString(),
                         },
