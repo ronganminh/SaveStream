@@ -13,6 +13,7 @@ from app.infrastructure.db import admin_models as _admin_models
 from app.infrastructure.db import billing_models as _billing_models
 from app.infrastructure.db import credit_models as _credit_models
 from app.infrastructure.db import recording_models as _recording_models
+from app.infrastructure.db import local_recording_models as _local_recording_models
 from app.infrastructure.db import watch_models as _watch_models
 from app.settings import get_app_settings
 

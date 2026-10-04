@@ -65,86 +65,11 @@ async def get_entitlement(
             rewards_cap_per_day=snapshot.local.rewards_cap_per_day,
             minutes_per_reward=snapshot.local.minutes_per_reward,
             extensions_cap_per_recording=snapshot.local.extensions_cap_per_recording,
+            max_concurrent_sessions=snapshot.local.max_concurrent_sessions,
+            second_slot_expires_at=snapshot.local.second_slot_expires_at,
         ),
         updated_at=snapshot.updated_at,
     )
-
-
-@router.post("/local-recordings/sessions", operation_id="createLocalRecordingSession")
-async def create_local_recording_session(
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del request, principal
-    _not_implemented("B4")
-
-
-@router.post(
-    "/local-recordings/sessions/{session_id}/extend",
-    operation_id="extendLocalRecordingSession",
-)
-async def extend_local_recording_session(
-    session_id: str,
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del session_id, request, principal
-    _not_implemented("B4")
-
-
-@router.post(
-    "/local-recordings/sessions/{session_id}/finish",
-    operation_id="finishLocalRecordingSession",
-)
-async def finish_local_recording_session(
-    session_id: str,
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del session_id, request, principal
-    _not_implemented("B4")
-
-
-@router.get("/local-recordings", operation_id="listLocalRecordings")
-async def list_local_recordings(
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del principal
-    _not_implemented("B4")
-
-
-@router.delete("/local-recordings/{id}", operation_id="deleteLocalRecording")
-async def delete_local_recording(
-    id: str,
-    device_id: str,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del id, device_id, principal
-    _not_implemented("B4")
-
-
-@router.post("/rewards", operation_id="createReward")
-async def create_reward(
-    request: Request,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del request, principal
-    _not_implemented("B4")
-
-
-@router.get("/rewards/{reward_id}", operation_id="getReward")
-async def get_reward(
-    reward_id: str,
-    principal: AuthPrincipal = Depends(get_current_principal),
-) -> None:
-    del reward_id, principal
-    _not_implemented("B4")
-
-
-@router.get("/webhooks/admob-ssv", operation_id="admobSsvWebhook")
-async def admob_ssv_webhook(request: Request) -> None:
-    del request
-    _not_implemented("B4")
 
 
 @router.get(

@@ -10,6 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
+from app.infrastructure.db.local_recording_models import (
+    LocalDailyUsage,
+    LocalSlotGrant,
+    RewardIntent,
+)
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
 
@@ -27,6 +32,8 @@ class LocalEntitlementSnapshot:
     rewards_cap_per_day: int
     minutes_per_reward: int
     extensions_cap_per_recording: int
+    max_concurrent_sessions: int
+    second_slot_expires_at: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,19 +91,64 @@ class EntitlementService:
         tomorrow = now.date() + timedelta(days=1)
         resets_at = datetime.combine(tomorrow, time.min, tzinfo=timezone.utc)
 
-        # B1 freezes a safe/default local block. B4 replaces these counters with
-        # the real daily-minute and rewarded-ad ledger. The Pro unlimited flag
-        # already reflects the locked V2 product decision.
+        usage = await self.session.scalar(
+            select(LocalDailyUsage).where(
+                LocalDailyUsage.user_id == user_id,
+                LocalDailyUsage.usage_day == now.date(),
+            )
+        )
+        used_minutes = usage.used_minutes if usage is not None else 0
+        rewards_used_today = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(
+                    RewardIntent.user_id == user_id,
+                    RewardIntent.status == "valid",
+                    RewardIntent.verified_at >= datetime.combine(
+                        now.date(),
+                        time.min,
+                        tzinfo=timezone.utc,
+                    ),
+                    RewardIntent.verified_at < resets_at,
+                )
+            )
+            or 0
+        )
+        slot_grant = await self.session.scalar(
+            select(LocalSlotGrant)
+            .where(
+                LocalSlotGrant.user_id == user_id,
+                LocalSlotGrant.expires_at > now,
+            )
+            .order_by(LocalSlotGrant.expires_at.desc())
+            .limit(1)
+        )
+
+        pro_local_enabled = (
+            not is_pro
+            or self.settings.pro_local_recording == "unlimited"
+        )
         local = LocalEntitlementSnapshot(
-            enabled=True,
-            unlimited=is_pro,
-            daily_minutes=10,
-            minutes_remaining=10,
+            enabled=pro_local_enabled,
+            unlimited=(
+                is_pro
+                and self.settings.pro_local_recording == "unlimited"
+            ),
+            daily_minutes=self.settings.free_local_daily_minutes,
+            minutes_remaining=max(
+                self.settings.free_local_daily_minutes - used_minutes,
+                0,
+            ),
             resets_at=resets_at,
-            rewards_used_today=0,
-            rewards_cap_per_day=8,
-            minutes_per_reward=10,
-            extensions_cap_per_recording=4,
+            rewards_used_today=rewards_used_today,
+            rewards_cap_per_day=self.settings.reward_daily_cap,
+            minutes_per_reward=self.settings.reward_minutes,
+            extensions_cap_per_recording=self.settings.reward_extensions_cap,
+            max_concurrent_sessions=2 if slot_grant is not None else 1,
+            second_slot_expires_at=(
+                slot_grant.expires_at if slot_grant is not None else None
+            ),
         )
 
         return EntitlementSnapshot(
