@@ -82,14 +82,27 @@ async def get_app_status(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> AppStatusResponse:
-    runtime = RuntimeSettingsService(session, request.app.state.settings)
+    settings = request.app.state.settings
+    if isinstance(session, AsyncSession):
+        runtime = RuntimeSettingsService(session, settings)
+        android = await runtime.string("app_min_supported_android")
+        ios = await runtime.string("app_min_supported_ios")
+        maintenance_active = await runtime.boolean("maintenance_active")
+        maintenance_eta = await runtime.optional_datetime("maintenance_eta")
+    else:
+        # Keep direct service-level callers compatible; real HTTP requests always
+        # receive the DB session dependency above.
+        android = settings.app_min_supported_android
+        ios = settings.app_min_supported_ios
+        maintenance_active = settings.maintenance_active
+        maintenance_eta = settings.maintenance_eta
     return AppStatusResponse(
         min_supported_version=MinimumSupportedVersions(
-            android=await runtime.string("app_min_supported_android"),
-            ios=await runtime.string("app_min_supported_ios"),
+            android=android,
+            ios=ios,
         ),
         maintenance=MaintenanceStatus(
-            active=await runtime.boolean("maintenance_active"),
-            eta=await runtime.optional_datetime("maintenance_eta"),
+            active=maintenance_active,
+            eta=maintenance_eta,
         ),
     )
