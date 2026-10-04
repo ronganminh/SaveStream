@@ -1249,5 +1249,40 @@
         "type": "String"
       }
     }
-  }
+  },
+  "proManualRecordTitle": "Record {name}",
+  "@proManualRecordTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordLocalTitle": "Local · trên thiết bị này",
+  "proManualRecordLocalUnlimitedBody": "Không dùng giờ cloud. Tài khoản này được record Local không giới hạn.",
+  "proManualRecordLocalMeteredBody": "Không dùng giờ cloud. Giới hạn Local lấy từ cấu hình tài khoản trên server.",
+  "proManualRecordLocalDisabledBody": "Record Local hiện đang bị tắt cho tài khoản này.",
+  "proManualRecordCloudTitle": "Cloud · trên server SaveStream",
+  "proManualRecordCloudBody": "Dùng giờ cloud. Còn {remaining}. Điện thoại không cần luôn online.",
+  "@proManualRecordCloudBody": {
+    "placeholders": {
+      "remaining": {
+        "type": "String"
+      }
+    }
+  },
+  "proManualRecordCloudEmptyBody": "Không còn giờ cloud.",
+  "proManualRecordLocalAction": "Record Local",
+  "proManualRecordCloudAction": "Record Cloud · trừ giờ cloud",
+  "cloudRecordingServerBody": "SaveStream đang record trên server. Điện thoại không cần luôn online.",
+  "cloudRecordingProcessingTitle": "Đang xử lý trên server",
+  "cloudRecordingProcessStopStep": "Dừng ghi",
+  "cloudRecordingProcessMergeStep": "Ghép và kiểm tra file",
+  "cloudRecordingProcessPreviewStep": "Tạo ảnh xem trước",
+  "cloudRecordingProcessReadyStep": "Sẵn sàng phát",
+  "cloudRecordingProcessingBody": "Bạn có thể đóng app. SaveStream sẽ cập nhật recording khi server xử lý xong.",
+  "cloudRecordingFailedTitle": "Cloud recording bị lỗi",
+  "cloudRecordingFailedRefundBody": "Giờ cloud của recording bị lỗi được server hoàn lại. Nếu có phần đã lưu, bạn vẫn có thể mở phần đó.",
+  "cloudRecordingStopConfirmTitle": "Dừng cloud recording?",
+  "cloudRecordingStopConfirmBody": "SaveStream sẽ dừng recording trên server rồi xử lý phần đã lưu."
 }
