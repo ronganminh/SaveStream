@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import 'a5_purchase_controller.dart';
 
 /// M01 / M02 — Usage summary for Free and purchased cloud-hours accounts.
 class A5UsageScreen extends ConsumerWidget {
@@ -84,6 +87,30 @@ class A5UsageScreen extends ConsumerWidget {
                         context.l10n.watchUsage(
                           data.watchCount,
                           data.limits.maxWatches,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: SsSpacing.lg),
+                    SsPrimaryButton(
+                      label: data.hasPurchased
+                          ? context.l10n.buyMoreCloudHoursAction
+                          : context.l10n.buyCloudHoursAction,
+                      icon: Icons.add_card_rounded,
+                      onPressed: () => context.push(
+                        AppRoutes.cloudHoursLocation(
+                          CloudHoursPurchaseContext.autoRecord.name,
+                        ),
+                      ),
+                    ),
+                    if (data.hasPurchased) ...<Widget>[
+                      const SizedBox(height: SsSpacing.sm),
+                      SsSecondaryButton(
+                        label: context.l10n.restorePurchasesAction,
+                        icon: Icons.restore_rounded,
+                        onPressed: () => context.push(
+                          AppRoutes.cloudHoursLocation(
+                            CloudHoursPurchaseContext.autoRecord.name,
+                          ),
                         ),
                       ),
                     ],
