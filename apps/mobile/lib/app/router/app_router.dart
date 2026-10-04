@@ -33,6 +33,9 @@ import '../../features/local_recordings/presentation/local_recording_screen.dart
 import '../../features/local_recordings/presentation/local_recovery_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
+import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
+import '../../features/settings/presentation/android_recording_background_screen.dart';
+import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
@@ -331,7 +334,19 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.androidRecordingGuide,
         builder: (BuildContext context, GoRouterState state) {
-          return const AndroidRecordingInfoScreen();
+          return const AndroidRecordingBackgroundScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.androidOemRecordingGuide,
+        builder: (BuildContext context, GoRouterState state) {
+          return const AndroidOemRecordingGuidanceScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.iosRecordingGuide,
+        builder: (BuildContext context, GoRouterState state) {
+          return const IosRecordingGuidanceScreen();
         },
       ),
       GoRoute(
