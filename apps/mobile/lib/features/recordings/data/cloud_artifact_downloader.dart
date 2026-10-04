@@ -90,8 +90,7 @@ final class CloudArtifactDownloader {
         ? response.contentLength
         : null;
     final int freeBytes = await _deviceInfo.freeStorageBytes;
-    final int requiredBytes =
-        storageReserveBytes + (remainingBytes ?? 0);
+    final int requiredBytes = storageReserveBytes + (remainingBytes ?? 0);
     if (freeBytes < requiredBytes) {
       await response.drain<void>();
       throw CloudDownloadStorageException(
