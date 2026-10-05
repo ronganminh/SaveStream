@@ -1525,5 +1525,12 @@
   "globalUpdateRequiredTitle": "Cần cập nhật",
   "globalUpdateRequiredBody": "Hãy cập nhật SaveStream để tiếp tục sử dụng ứng dụng.",
   "globalMaintenanceTitle": "SaveStream đang bảo trì",
-  "globalMaintenanceBody": "Dữ liệu bản ghi vẫn an toàn. Hãy thử lại sau khi bảo trì hoàn tất."
+  "globalMaintenanceBody": "Dữ liệu bản ghi vẫn an toàn. Hãy thử lại sau khi bảo trì hoàn tất.",
+  "notificationPermissionTitle": "Quyền thông báo",
+  "notificationPermissionGrantedTitle": "Thông báo đã bật",
+  "notificationPermissionGrantedBody": "SaveStream có thể báo khi creator LIVE và khi trạng thái bản ghi thay đổi.",
+  "notificationPermissionDeniedTitle": "Thông báo đang bị tắt",
+  "notificationPermissionDeniedBody": "Hãy bật thông báo trong cài đặt hệ thống để nhận cảnh báo.",
+  "notificationPermissionPromptBody": "Cho phép SaveStream gửi thông báo về creator bạn theo dõi và các sự kiện bản ghi.",
+  "notificationPermissionEnableAction": "Bật thông báo"
 }
