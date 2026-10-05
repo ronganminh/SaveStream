@@ -1656,5 +1656,7 @@
   },
   "deviceStorageCleanupLockedBody": "Không thể dọn khi đang có bản ghi Local chạy",
   "deviceStorageNothingToCleanToast": "Không có bản ghi Local cũ để xoá",
-  "deviceStorageCleanedToast": "Đã xoá bản ghi Local cũ"
+  "deviceStorageCleanedToast": "Đã xoá bản ghi Local cũ",
+  "globalOpenLocalRecordingsAction": "Mở bản ghi Local",
+  "globalOpenStoreAction": "Mở cửa hàng ứng dụng"
 }
