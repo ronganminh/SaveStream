@@ -37,6 +37,8 @@
 	<string>$(ADMOB_APP_ID)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier helps SaveStream deliver and measure ads on the Free plan.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

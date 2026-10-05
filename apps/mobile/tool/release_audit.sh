@@ -76,5 +76,27 @@ grep -q "ADMOB_APP_ID" ios/Runner/Info.plist ||
   fail "iOS AdMob build variable is missing"
 grep -q "ca-app-pub-3940256099942544~1458002511" ios/Flutter/Debug.xcconfig ||
   fail "iOS AdMob test app ID fallback is missing"
+grep -q "ADMOB_BANNER_HOME_ANDROID" lib/platform/google_mobile_ads_service.dart ||
+  fail "Android banner dart-define is missing"
+grep -q "ADMOB_REWARDED_ANDROID" lib/platform/google_mobile_ads_service.dart ||
+  fail "Android rewarded dart-define is missing"
+grep -q "ADMOB_BANNER_HOME_IOS" lib/platform/google_mobile_ads_service.dart ||
+  fail "iOS banner dart-define is missing"
+grep -q "ADMOB_REWARDED_IOS" lib/platform/google_mobile_ads_service.dart ||
+  fail "iOS rewarded dart-define is missing"
+grep -q "ServerSideVerificationOptions" lib/platform/google_mobile_ads_service.dart ||
+  fail "rewarded-ad SSV wiring is missing"
+grep -q "requestConsentInfoUpdate" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP consent refresh is missing"
+grep -q "canRequestAds" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP canRequestAds gate is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/Info.plist ||
+  fail "iOS ATT usage description is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/en.lproj/InfoPlist.strings ||
+  fail "English ATT localization is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/vi.lproj/InfoPlist.strings ||
+  fail "Vietnamese ATT localization is missing"
+grep -q "AppTrackingTransparency.framework" ios/Runner.xcodeproj/project.pbxproj ||
+  fail "iOS AppTrackingTransparency framework is missing"
 
 echo "Phase 17 mobile release audit passed."
