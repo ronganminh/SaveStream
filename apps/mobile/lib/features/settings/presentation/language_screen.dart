@@ -36,13 +36,17 @@ class LanguageScreen extends StatelessWidget {
                   const Divider(),
                   _LanguageOption(
                     label: l10n.languageEnglish,
-                    selected: !settings.useSystemLocale && settings.locale.languageCode == 'en',
+                    selected:
+                        !settings.useSystemLocale &&
+                        settings.locale.languageCode == 'en',
                     onTap: () => settings.setLocale(const Locale('en')),
                   ),
                   const Divider(),
                   _LanguageOption(
                     label: l10n.languageVietnamese,
-                    selected: !settings.useSystemLocale && settings.locale.languageCode == 'vi',
+                    selected:
+                        !settings.useSystemLocale &&
+                        settings.locale.languageCode == 'vi',
                     onTap: () => settings.setLocale(const Locale('vi')),
                   ),
                 ],

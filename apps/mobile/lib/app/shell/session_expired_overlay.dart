@@ -47,7 +47,9 @@ class _SessionExpiredOverlayState extends ConsumerState<SessionExpiredOverlay> {
       _failed = false;
     });
     try {
-      await ref.read(authRepositoryProvider).signIn(
+      await ref
+          .read(authRepositoryProvider)
+          .signIn(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
