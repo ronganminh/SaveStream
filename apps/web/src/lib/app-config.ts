@@ -96,6 +96,7 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/terms",
   "/privacy",
   "/acceptable-use",
+  "/copyright",
   "/refund",
 ];
 
