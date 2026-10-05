@@ -213,6 +213,18 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       ),
                       const Divider(),
                       _PreferenceSwitch(
+                        title: l10n.notificationMarketingTitle,
+                        value: value.marketing,
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(marketing: enabled),
+                              ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
                         title: l10n.notificationRecordingFailedTitle,
                         value: value.recordingFailed,
                         onChanged: permissionDenied
