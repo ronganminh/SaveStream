@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../devices/domain/models/device_registration.dart';
+import '../../devices/domain/models/device_registration.dart';
 import '../../../../platform/platform_providers.dart';
-import '../../../v2_foundation/v2_foundation_providers.dart';
+import '../../v2_foundation/v2_foundation_providers.dart';
 import '../domain/models/app_status.dart';
 
 enum A6GlobalGate { none, updateRequired, maintenance }
