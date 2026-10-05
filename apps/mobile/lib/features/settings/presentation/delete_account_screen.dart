@@ -22,29 +22,10 @@ class DeleteAccountScreen extends ConsumerStatefulWidget {
 }
 
 class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
-  final TextEditingController _passwordController = TextEditingController();
   int _step = 1;
   bool _understood = false;
   bool _busy = false;
   String? _error;
-
-  @override
-  void dispose() {
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _continueToConfirmation() {
-    final controller = ref.read(localRecordingControllerProvider);
-    if (controller.hasActiveSession || controller.hasSecondarySession) {
-      setState(() => _error = context.l10n.deleteAccountRecordingBlocked);
-      return;
-    }
-    setState(() {
-      _error = null;
-      _step = 2;
-    });
-  }
 
   Future<void> _delete() async {
     final controller = ref.read(localRecordingControllerProvider);
@@ -107,7 +88,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             const SizedBox(height: SsSpacing.lg),
             SsPrimaryButton(
               label: context.l10n.continueAction,
-              onPressed: _continueToConfirmation,
+              onPressed: () => setState(() => _step = 2),
             ),
           ] else ...<Widget>[
             Text(
@@ -116,17 +97,6 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
             ),
             const SizedBox(height: SsSpacing.sm),
             Text(context.l10n.deleteAccountPermanentBody),
-            const SizedBox(height: SsSpacing.md),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              autofillHints: const <String>[AutofillHints.password],
-              decoration: InputDecoration(
-                labelText: context.l10n.deleteAccountPasswordLabel,
-                border: const OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
             const SizedBox(height: SsSpacing.md),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
@@ -140,10 +110,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
               label: _busy
                   ? context.l10n.processingLabel
                   : context.l10n.deleteAccountPermanentAction,
-              onPressed:
-                  !_understood || _passwordController.text.isEmpty || _busy
-                  ? null
-                  : _delete,
+              onPressed: !_understood || _busy ? null : _delete,
             ),
           ],
         ],
