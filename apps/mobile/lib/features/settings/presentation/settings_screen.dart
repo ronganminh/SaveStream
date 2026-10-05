@@ -13,7 +13,6 @@ import '../../../platform/platform_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import 'controllers/settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -46,10 +45,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(SsSpacing.lg),
           children: <Widget>[
-                ),
-              ),
-              const SizedBox(height: SsSpacing.lg),
-            ],
             _SectionLabel(label: l10n.settingsPlanSectionTitle),
             const SizedBox(height: SsSpacing.sm),
             SsCard(
