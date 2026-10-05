@@ -1639,5 +1639,22 @@
   "sessionExpiredBody": "Sign in again to continue using account features.",
   "sessionExpiredRecordingBody": "Your Local recording is still running and will continue saving on this device. Sign in again to renew quota and sync.",
   "sessionExpiredRecordingSafeBody": "SaveStream will not discard recorded segments while you sign in again.",
-  "signInAgainAction": "Sign in again"
+  "signInAgainAction": "Sign in again",
+  "deviceStorageCleanupTitle": "Cleanup",
+  "deviceStorageDeleteOldTitle": "Delete Local recordings older than 30 days",
+  "deviceStorageDeleteOldSubtitle": "Only removes Local files from this device",
+  "deviceStorageDeleteOldBody": "Delete {count} Local recordings and free {size}?",
+  "@deviceStorageDeleteOldBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageCleanupLockedBody": "Unavailable while a Local recording is running",
+  "deviceStorageNothingToCleanToast": "No old Local recordings to delete",
+  "deviceStorageCleanedToast": "Old Local recordings deleted"
 }
