@@ -3861,12 +3861,9 @@ export function RefundPage() {
           h: "Who processes payments",
           p: (
             <p>
-              Credit purchases are processed by Lemon Squeezy, which acts as our reseller and
-              Merchant of Record. Your order receipt comes from Lemon Squeezy, and the{" "}
-              <ExternalLink href="https://www.lemonsqueezy.com/buyer-terms">
-                Lemon Squeezy buyer terms
-              </ExternalLink>{" "}
-              also apply to your purchase.
+              Credit purchases are processed by our authorized Merchant of Record (MoR). Your order
+              receipt is issued by the applicable authorized MoR, and the provider terms presented at
+              checkout also apply to your purchase.
             </p>
           ),
         },
@@ -3879,7 +3876,7 @@ export function RefundPage() {
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>the email address of your SaveStream account;</li>
-                <li>the order number from your Lemon Squeezy receipt;</li>
+                <li>the order number from your authorized Merchant of Record (MoR) receipt;</li>
                 <li>the reason for your request.</li>
               </ul>
             </>
@@ -3890,10 +3887,10 @@ export function RefundPage() {
           p: (
             <p>
               We review every request individually and reply by email. Refunds are not issued
-              automatically. When a refund is approved, it is issued through Lemon Squeezy to your
-              original payment method, and the credits from that purchase are removed from your
-              balance. Credits that have already been used for recordings may reduce or rule out a
-              refund.
+              automatically. When a refund is approved, it is issued through our authorized
+              Merchant of Record (MoR) to your original payment method, and the credits from that
+              purchase are removed from your balance. Credits that have already been used for
+              recordings may reduce or rule out a refund.
             </p>
           ),
         },
