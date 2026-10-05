@@ -1663,5 +1663,6 @@
   "signedDeviceWebTitle": "Chrome trên macOS",
   "signedDeviceWebDetail": "Web · 2 giờ trước",
   "signedDeviceAndroidTitle": "Pixel 8",
-  "signedDeviceAndroidDetail": "Android · 5 ngày trước"
+  "signedDeviceAndroidDetail": "Android · 5 ngày trước",
+  "deleteAction": "Xoá"
 }
