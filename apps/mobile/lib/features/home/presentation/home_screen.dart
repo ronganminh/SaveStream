@@ -481,8 +481,27 @@ class _HomeDashboard extends StatelessWidget {
     final RecordingSummary? active = data.activeRecordings.isEmpty
         ? null
         : data.activeRecordings.first;
+    final bool cloudExhausted = entitlement.cloudMinutesAvailable <= 0;
 
     return <Widget>[
+      if (cloudExhausted) ...<Widget>[
+        const SizedBox(height: SsSpacing.lg),
+        SsInlineAlert(
+          title: l10n.cloudHoursExhaustedTitle,
+          message: active == null
+              ? l10n.cloudHoursExhaustedBody
+              : l10n.cloudHoursExhaustedRecordingBody,
+          tone: SsInlineAlertTone.warning,
+        ),
+        const SizedBox(height: SsSpacing.sm),
+        SsPrimaryButton(
+          label: l10n.buyMoreCloudHoursAction,
+          icon: Icons.add_card_rounded,
+          onPressed: () => context.push(
+            AppRoutes.cloudHoursLocation('auto_record'),
+          ),
+        ),
+      ],
       if (active != null) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsActiveRecordingCard(
