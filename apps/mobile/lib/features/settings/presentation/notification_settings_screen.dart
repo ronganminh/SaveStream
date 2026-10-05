@@ -21,9 +21,16 @@ class NotificationSettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     AppNotification notification,
   ) async {
-    final String? recordingId = notification.recordingId;
-    if (recordingId != null) {
-      context.push(AppRoutes.recordingDetail(recordingId));
+    final String? resourceId = notification.resourceId;
+    if (resourceId != null) {
+      switch (notification.resourceType) {
+        case 'recording':
+          context.push(AppRoutes.recordingDetail(resourceId));
+        case 'watch':
+        case 'creator':
+        case 'channel':
+          context.push(AppRoutes.channelDetail(resourceId));
+      }
     }
     if (notification.read) return;
     try {
@@ -60,6 +67,8 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final AsyncValue<PushPermissionStatus> pushPermission = ref.watch(
       pushPermissionProvider,
     );
+    final bool permissionDenied =
+        pushPermission.value == PushPermissionStatus.denied;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.notificationsTitle)),
@@ -146,7 +155,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationCreatorLiveTitle,
                         value: value.creatorLive,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(creatorLive: enabled),
@@ -156,7 +167,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingExpiringTitle,
                         value: value.recordingExpiring,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(recordingExpiring: enabled),
@@ -166,7 +179,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationFreeMinutesLowTitle,
                         value: value.freeMinutesLow,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(freeMinutesLow: enabled),
@@ -176,7 +191,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingStartedTitle,
                         value: value.recordingStarted,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(recordingStarted: enabled),
@@ -186,7 +203,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingReadyTitle,
                         value: value.recordingReady,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(recordingReady: enabled),
@@ -196,7 +215,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingFailedTitle,
                         value: value.recordingFailed,
-                        onChanged: (bool enabled) => _save(
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
                           context,
                           ref,
                           value.copyWith(recordingFailed: enabled),
@@ -286,7 +307,7 @@ class _PreferenceSwitch extends StatelessWidget {
 
   final String title;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
