@@ -182,9 +182,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: <Widget>[
                   SsListTile(
                     title: l10n.languageTitle,
-                    subtitle: widget.settings.useSystemLocale
-                        ? l10n.languageSystem
-                        : widget.settings.locale.languageCode == 'vi'
+                    subtitle: widget.settings.locale.languageCode == 'vi'
                         ? l10n.languageVietnamese
                         : l10n.languageEnglish,
                     leading: const Icon(Icons.language_rounded),
