@@ -11,14 +11,11 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
-import '../../features/billing/presentation/billing_return_screen.dart';
-import '../../features/billing/presentation/billing_screen.dart';
 import '../../features/channels/presentation/add_channel_screen.dart';
 import '../../features/channels/presentation/auto_record_settings_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/channels/presentation/live_notification_screen.dart';
-import '../../features/credits/presentation/credits_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/local_recordings/presentation/local_recording_screen.dart';
@@ -45,6 +42,9 @@ import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
+import '../../features/store/presentation/a5_purchase_controller.dart';
+import '../../features/store/presentation/a5_usage_screen.dart';
+import '../../features/store/presentation/cloud_hours_purchase_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
 import '../session/app_session_controller.dart';
@@ -265,30 +265,20 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
-        path: AppRoutes.credits,
+        path: AppRoutes.usage,
         builder: (BuildContext context, GoRouterState state) {
-          return const CreditsScreen();
+          return const A5UsageScreen();
         },
       ),
       GoRoute(
-        path: AppRoutes.billing,
+        path: AppRoutes.cloudHours,
         builder: (BuildContext context, GoRouterState state) {
-          return BillingScreen(
-            externalCheckoutEnabled: config.externalCheckoutEnabled,
+          return CloudHoursPurchaseScreen(
+            contextType: cloudHoursPurchaseContextFromValue(
+              state.uri.queryParameters['context'],
+            ),
           );
         },
-        routes: <RouteBase>[
-          GoRoute(
-            path: 'return',
-            builder: (BuildContext context, GoRouterState state) {
-              final String? orderId = state.uri.queryParameters['order_id'];
-              if (orderId == null || orderId.trim().isEmpty) {
-                return const _RouteErrorScreen();
-              }
-              return BillingReturnScreen(orderId: orderId);
-            },
-          ),
-        ],
       ),
       GoRoute(path: '/auth/register', redirect: (_, _) => AppRoutes.register),
       GoRoute(

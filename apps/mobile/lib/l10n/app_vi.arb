@@ -60,8 +60,6 @@
   "settingsTitle": "Cài đặt",
   "profileTitle": "Hồ sơ",
   "languageTitle": "Ngôn ngữ",
-  "creditsTitle": "Credit",
-  "billingTitle": "Thanh toán",
   "phaseRoutePlaceholderBody": "Route này đã được nối và sẵn sàng cho phase feature tương ứng.",
   "onboardingPreviewTitle": "Giới thiệu",
   "onboardingPreviewBody": "Onboarding guard đã hoạt động. UI onboarding đầy đủ sẽ được làm ở Phase 3.",
@@ -306,36 +304,7 @@
   },
   "settingsCreditsSubtitle": "Số dư, reservation, pricing và giao dịch",
   "settingsBillingSubtitle": "Mua credit và xem trạng thái thanh toán",
-  "creditsLowBalanceTitle": "Credit khả dụng đang thấp",
-  "creditsLowBalanceBody": "Một phần credit đang được giữ cho công việc đang chạy. Hãy nạp thêm để giảm nguy cơ Watch hoặc recording bị tạm dừng.",
   "buyCreditsAction": "Mua credit",
-  "creditsRecentTransactionsTitle": "Giao dịch gần đây",
-  "creditsNoTransactionsTitle": "Chưa có giao dịch",
-  "creditsNoTransactionsBody": "Các lần mua credit và chi phí recording sẽ xuất hiện tại đây.",
-  "creditsAvailableBalanceLabel": "Khả dụng",
-  "creditsPostedBalanceLabel": "Đã ghi sổ",
-  "creditsReservedBalanceLabel": "Đang giữ",
-  "creditsReservedExplanation": "Credit đang giữ được tạm khóa cho recording đang xử lý. Credit khả dụng là số bạn có thể sử dụng ngay.",
-  "creditsUsageTitle": "Mức sử dụng recording",
-  "creditsRecordingHoursLabel": "Giờ recording",
-  "creditsRecordingCountLabel": "Số recording",
-  "creditsRecordingCostLabel": "Credit đã dùng",
-  "creditsRecordingChargeLabel": "Chi phí recording",
-  "creditsAddedLabel": "Đã cộng credit",
-  "creditsTransactionLabel": "Giao dịch credit",
-  "billingChoosePackageTitle": "Nạp credit",
-  "billingChoosePackageBody": "Chọn gói credit. Thanh toán chỉ được xem là hoàn tất sau khi backend xác nhận trạng thái order.",
-  "billingNoPackagesTitle": "Không có gói credit",
-  "billingNoPackagesBody": "Hiện chưa tải được gói credit. Kéo để làm mới hoặc thử lại sau.",
-  "billingRecentOrdersTitle": "Order thanh toán gần đây",
-  "billingNoOrdersTitle": "Chưa có order thanh toán",
-  "billingNoOrdersBody": "Các lần mua credit của bạn sẽ xuất hiện tại đây.",
-  "billingPackageCredits": "{credits} credit",
-  "billingRecommendedLabel": "Đề xuất",
-  "billingPackageDetailBody": "Credit chỉ được cộng sau khi SaveStream nhận xác nhận thanh toán từ backend.",
-  "billingBuyAction": "Mua gói",
-  "billingCheckoutStatusTitle": "Order thanh toán",
-  "billingCheckStatusAction": "Kiểm tra trạng thái",
   "paymentStatusPending": "Đang chờ",
   "paymentStatusPaid": "Đã thanh toán",
   "paymentStatusFailed": "Thất bại",
@@ -346,13 +315,6 @@
   "paymentFailedBody": "Thanh toán thất bại. Credit không được cộng.",
   "paymentCancelledBody": "Order thanh toán này đã bị hủy.",
   "paymentExpiredBody": "Order này đã hết hạn trước khi thanh toán được xác nhận.",
-  "@billingPackageCredits": {
-    "placeholders": {
-      "credits": {
-        "type": "String"
-      }
-    }
-  },
   "settingsAccountSectionTitle": "Tài khoản",
   "settingsPreferencesSectionTitle": "Tùy chọn",
   "settingsLegalSectionTitle": "Pháp lý",
@@ -405,43 +367,13 @@
   "recordNowAction": "Ghi ngay",
   "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này.",
   "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới.",
-  "creditsReservationsTitle": "Reservation credit",
-  "creditsActiveReservationsLabel": "Reservation đang hoạt động",
-  "creditsLatestReservation": "Gần nhất: recording {recordingId} · {status}",
-  "creditsPricingTitle": "Pricing",
-  "creditsPricingUnavailableBody": "Backend chưa cấu hình pricing.",
-  "creditsPricingVersionLabel": "Phiên bản",
-  "creditsPricingRulesLabel": "Rule công khai",
-  "creditsBalanceAfter": "Số dư sau giao dịch: {balance}",
-  "billingContinueCheckoutAction": "Tiếp tục checkout",
   "paymentStatusCreated": "Đã tạo",
   "paymentStatusPartiallyRefunded": "Đã hoàn một phần",
   "paymentStatusRefunded": "Đã hoàn tiền",
   "paymentCreatedBody": "Order thanh toán đã được tạo nhưng checkout chưa bắt đầu.",
   "paymentPartiallyRefundedBody": "Một phần khoản thanh toán này đã được hoàn lại.",
   "paymentRefundedBody": "Khoản thanh toán này đã được hoàn lại.",
-  "billingReturnTitle": "Xác nhận thanh toán",
-  "billingOrderNotFoundTitle": "Không tìm thấy order thanh toán",
-  "billingOrderNotFoundBody": "SaveStream không tìm thấy order này. Mở Thanh toán để xem các order gần đây.",
   "backToBillingAction": "Quay lại thanh toán",
-  "billingPollingStatusBody": "SaveStream đang kiểm tra backend để xác nhận thanh toán. Quay lại từ checkout không đồng nghĩa đã thanh toán.",
-  "@creditsLatestReservation": {
-    "placeholders": {
-      "recordingId": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
-  "@creditsBalanceAfter": {
-    "placeholders": {
-      "balance": {
-        "type": "int"
-      }
-    }
-  },
   "nonRetryableErrorTitle": "Không thể hoàn tất",
   "nonRetryableErrorBody": "SaveStream không thể tự động thử lại yêu cầu này. Hãy thử lại sau hoặc liên hệ hỗ trợ nếu lỗi tiếp diễn.",
   "requestIdLabel": "Request ID: {requestId}",
@@ -460,10 +392,7 @@
   "notificationRecordingReadyTitle": "Recording đã sẵn sàng",
   "notificationRecordingFailedTitle": "Recording thất bại",
   "openLegalDocumentAction": "Mở tài liệu đã công bố",
-  "billingExternalCheckoutDisabledTitle": "Mua credit đang tắt trong bản mobile này",
-  "billingExternalCheckoutDisabledBody": "Bản native này mặc định không mở hosted checkout bên ngoài. Số dư credit và lịch sử thanh toán hiện có vẫn xem được.",
   "billingPurchasesUnavailableTitle": "Tạm thời không thể mua credit",
-  "billingPurchasesUnavailableBody": "Backend hiện đang tắt checkout. Credit hiện có và quyền truy cập recording của bạn không bị ảnh hưởng.",
   "notificationPreferencesTitle": "Tùy chọn thông báo",
   "notificationHistoryTitle": "Lịch sử thông báo",
   "notificationHistoryEmptyTitle": "Chưa có thông báo",
@@ -1364,29 +1293,43 @@
   "nativeRecordingActiveBody": "{name} · {elapsed} · Local · còn {remaining} phút Free",
   "@nativeRecordingActiveBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"},
-      "remaining": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
   "@nativeRecordingActiveUnlimitedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectTitle": "Đang kết nối lại · {name}",
   "@nativeRecordingReconnectTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectBody": "Mất kết nối tới nguồn LIVE. Phần đã ghi vẫn an toàn.",
   "nativeRecordingMinuteWarningTitle": "Còn chưa tới 1 phút Free · {name}",
   "@nativeRecordingMinuteWarningTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingMinuteWarningBody": "Mở SaveStream để thêm 10 phút. Quảng cáo nhận thưởng chỉ chạy trong app.",
@@ -1394,16 +1337,24 @@
   "nativeRecordingFinalizingBody": "{name} · đang lưu trên thiết bị này",
   "@nativeRecordingFinalizingBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingSavedTitle": "Đã lưu bản ghi",
   "nativeRecordingSavedBody": "{name} · {duration} · {size} · lưu trên thiết bị này",
   "@nativeRecordingSavedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "duration": {"type": "String"},
-      "size": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingInterruptedTitle": "Recording bị gián đoạn",
@@ -1421,7 +1372,9 @@
   "androidOemGuideTitle": "Giữ SaveStream chạy trên {device}",
   "@androidOemGuideTitle": {
     "placeholders": {
-      "device": {"type": "String"}
+      "device": {
+        "type": "String"
+      }
     }
   },
   "androidOemGenericBody": "Phiên bản Android của bạn có thể có thêm giới hạn chạy nền. Hãy kiểm tra cài đặt ứng dụng và pin cho SaveStream.",
@@ -1453,19 +1406,117 @@
   "settingsRecordingSectionTitle": "RECORDING",
   "recordingSearchHint": "Tìm theo creator",
   "recordingCrossDeviceValue": "Đã ghi trên {device}",
-  "@recordingCrossDeviceValue": {"placeholders": {"device": {"type": "String"}}},
+  "@recordingCrossDeviceValue": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
   "recordingCrossDeviceUnavailable": "Không có trên máy này. Không thể phát, chia sẻ hoặc xoá tại đây.",
   "recordingLocalFileMissing": "File trên máy đã bị di chuyển hoặc xoá. SaveStream không thể phát hoặc chia sẻ file này.",
   "shareRecordingAction": "Chia sẻ bản ghi",
   "deleteLocalRecordingAction": "Xoá khỏi thiết bị này",
   "cloudRecordingExpiresValue": "Lưu đến {date}",
-  "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
+  "@cloudRecordingExpiresValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "cloudRecordingExpiringSoon": "Bản ghi cloud này sẽ hết hạn trong vòng 3 ngày. Hãy tải về nếu bạn muốn giữ bản trên máy.",
   "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống.",
   "recordingDownloadedLabel": "Đã tải về",
   "recordingDownloadedBody": "Đã lưu trên thiết bị này. Bạn có thể phát hoặc chia sẻ bản trên máy.",
   "recordingDownloadingBytes": "Đang tải {done} / {total}",
-  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "@recordingDownloadingBytes": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "deleteCloudRecordingAction": "Xoá bản ghi cloud",
-  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải"
+  "deleteCloudAndDownloadedAction": "Xoá cloud + bản đã tải",
+  "usageTitle": "Gói và sử dụng",
+  "cloudHoursAvailableTitle": "Giờ cloud còn lại",
+  "freeUsageTitle": "Mức dùng Free hôm nay",
+  "freeMinutesToday": "Còn {remaining}/{daily} phút Free",
+  "@freeMinutesToday": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardUsageToday": "Quảng cáo thưởng {used}/{cap}",
+  "@rewardUsageToday": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "watchUsage": "Creator {used}/{limit}",
+  "@watchUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudSlotsUsage": "Slot cloud {used}/{limit}",
+  "@cloudSlotsUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursPackValue": "{hours} giờ cloud",
+  "@cloudHoursPackValue": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursOneTimeTitle": "Mua một lần",
+  "cloudHoursOneTimeBody": "Giờ cloud không hết hạn. Mua giờ sẽ mở auto-record cloud, theo dõi tối đa 20 creator và bỏ quảng cáo.",
+  "restorePurchasesAction": "Khôi phục giao dịch",
+  "purchaseProcessingBody": "Đang chờ cửa hàng xác nhận giao dịch.",
+  "purchasePendingBody": "Giao dịch đang chờ. Chưa cấp quyền cloud cho tới khi server xác nhận cộng giờ.",
+  "purchaseSuccessBody": "Giao dịch đã xác nhận và giờ cloud đã được cộng.",
+  "purchaseCancelledBody": "Bạn đã huỷ giao dịch. Không có thay đổi.",
+  "purchaseFailedBody": "Giao dịch thất bại. Bạn có thể thử lại.",
+  "restoreProcessingBody": "Đang kiểm tra các giao dịch trước…",
+  "restoreSuccessBody": "Đã hoàn tất khôi phục.",
+  "purchaseContextAutoRecordTitle": "Mở auto-record trên cloud",
+  "purchaseContextAutoRecordBody": "Mua giờ cloud để SaveStream tự ghi khi creator bắt đầu LIVE.",
+  "purchaseContextWatchLimitTitle": "Theo dõi tối đa 20 creator",
+  "purchaseContextWatchLimitBody": "Mua giờ cloud để tăng giới hạn creator từ 3 lên 20.",
+  "purchaseContextIosBackgroundTitle": "Record mà không cần giữ iPhone mở",
+  "purchaseContextIosBackgroundBody": "Cloud recording chạy trên server nên iPhone không cần giữ app ở foreground.",
+  "purchaseContextFreeMinutesTitle": "Tiếp tục record khi hết phút Free",
+  "purchaseContextFreeMinutesBody": "Mua giờ cloud để record trên server thay vì chờ phút Free reset.",
+  "purchaseContextRemoveAdsTitle": "Bỏ quảng cáo",
+  "purchaseContextRemoveAdsBody": "Mua giờ cloud để bỏ quảng cáo SaveStream.",
+  "settingsUsageSubtitle": "Giờ cloud, giới hạn creator và khôi phục giao dịch",
+  "buyMoreCloudHoursAction": "Mua thêm giờ cloud"
 }

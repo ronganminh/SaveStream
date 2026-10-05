@@ -13,10 +13,6 @@ import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
-import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
-import 'package:savestream_mobile/features/billing/presentation/billing_screen.dart';
-import 'package:savestream_mobile/features/billing/presentation/controllers/billing_providers.dart';
-import 'package:savestream_mobile/features/credits/presentation/credits_screen.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
@@ -553,126 +549,6 @@ void main() {
     expect(updated?.actions.canRetry, isFalse);
   });
 
-  testWidgets('renders credit balances reservations pricing and transactions', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pump();
-    await tester.tap(find.text('Settings'));
-    await tester.pump();
-    await tester.tap(find.text('Credits'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(CreditsScreen), findsOneWidget);
-    expect(find.text('Available'), findsOneWidget);
-    expect(find.text('4'), findsOneWidget);
-    expect(find.text('Posted'), findsOneWidget);
-    expect(find.text('7'), findsOneWidget);
-    expect(find.text('Reserved'), findsWidgets);
-    expect(find.text('3'), findsWidgets);
-    expect(find.text('Available credit is low'), findsOneWidget);
-    expect(find.text('Credit reservations'), findsOneWidget);
-    expect(find.text('Active reservations'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Recent transactions'),
-      260,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('Recent transactions'), findsOneWidget);
-  });
-
-  testWidgets('renders Phase 7 empty credit transaction state', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      SaveStreamApp(config: testConfig(), mockScenario: MockScenario.empty),
-    );
-    await tester.pump();
-    await tester.tap(find.text('Settings'));
-    await tester.pump();
-    await tester.tap(find.text('Credits'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(CreditsScreen), findsOneWidget);
-    expect(find.text('0'), findsWidgets);
-    await tester.scrollUntilVisible(
-      find.text('No transactions yet'),
-      260,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('No transactions yet'), findsOneWidget);
-  });
-
-  testWidgets('billing waits for backend status before showing paid', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pump();
-    await tester.tap(find.text('Settings'));
-    await tester.pump();
-    await tester.tap(find.text('Billing'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.byType(BillingScreen), findsOneWidget);
-    expect(find.text('25 credits'), findsWidgets);
-
-    final ProviderContainer container = ProviderScope.containerOf(
-      tester.element(find.byType(BillingScreen)),
-    );
-    final Set<PaymentOrderStatus> statuses = container
-        .read(billingSnapshotProvider)
-        .requireValue
-        .orders
-        .map((PaymentOrder order) => order.status)
-        .toSet();
-    expect(
-      statuses,
-      containsAll(<PaymentOrderStatus>[
-        PaymentOrderStatus.paid,
-        PaymentOrderStatus.failed,
-        PaymentOrderStatus.cancelled,
-        PaymentOrderStatus.expired,
-      ]),
-    );
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Buy package').first);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.text('Check payment status'),
-      240,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.widgetWithText(SsStatusChip, 'Pending'), findsOneWidget);
-    expect(
-      find.textContaining('Returning from checkout does not mark it paid'),
-      findsOneWidget,
-    );
-
-    final Finder checkStatusButton = find.widgetWithText(
-      OutlinedButton,
-      'Check payment status',
-    );
-    await tester.ensureVisible(checkStatusButton);
-    await tester.pump();
-    await tester.tap(checkStatusButton);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    // The refresh and the snapshot refetch it triggers each take one mock
-    // latency window; settle past both before reading the provider.
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-
-    final BillingSnapshot refreshed = container
-        .read(billingSnapshotProvider)
-        .requireValue;
-    expect(refreshed.orders.first.status, PaymentOrderStatus.paid);
-  });
-
   test(
     'persists theme and locale across settings controller recreation',
     () async {
@@ -763,12 +639,15 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
+    final Finder logoutAction = find.text('Log out');
     await tester.scrollUntilVisible(
-      find.text('Log out'),
+      logoutAction,
       320,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('Log out'));
+    await tester.ensureVisible(logoutAction);
+    await tester.pumpAndSettle();
+    await tester.tap(logoutAction);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
@@ -783,12 +662,15 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
+    final Finder deleteAccountAction = find.text('Delete account');
     await tester.scrollUntilVisible(
-      find.text('Delete account'),
+      deleteAccountAction,
       320,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('Delete account'));
+    await tester.ensureVisible(deleteAccountAction);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteAccountAction);
     await tester.pumpAndSettle();
 
     expect(find.text('Delete your account?'), findsOneWidget);

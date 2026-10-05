@@ -9,9 +9,7 @@ import '../core/storage/shared_preferences_app_settings_store.dart';
 import '../features/app_status/data/repositories/api_app_status_repository.dart';
 import '../features/auth/data/auth_runtime.dart';
 import '../features/auth/data/current_user_id_source.dart';
-import '../features/billing/data/repositories/api_billing_repository.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
-import '../features/credits/data/repositories/api_credits_repository.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
 import '../features/entitlement/data/repositories/api_entitlement_repository.dart';
 import '../features/local_recordings/data/repositories/api_local_recording_repository.dart';
@@ -98,12 +96,6 @@ Future<void> bootstrap() async {
       apiClient: authenticatedApiClient,
       watchRepository: ApiWatchRepository(apiClient: authenticatedApiClient),
       recordingRepository: ApiRecordingRepository(
-        apiClient: authenticatedApiClient,
-      ),
-      creditsRepository: ApiCreditsRepository(
-        apiClient: authenticatedApiClient,
-      ),
-      billingRepository: ApiBillingRepository(
         apiClient: authenticatedApiClient,
       ),
       profileRepository: ApiProfileRepository(

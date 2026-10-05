@@ -60,8 +60,6 @@
   "settingsTitle": "Settings",
   "profileTitle": "Profile",
   "languageTitle": "Language",
-  "creditsTitle": "Credits",
-  "billingTitle": "Billing",
   "phaseRoutePlaceholderBody": "This route is wired and ready for its feature phase.",
   "onboardingPreviewTitle": "Onboarding",
   "onboardingPreviewBody": "The onboarding guard is active. Full onboarding UI arrives in Phase 3.",
@@ -306,36 +304,7 @@
   },
   "settingsCreditsSubtitle": "Balance, reservations, pricing, and transactions",
   "settingsBillingSubtitle": "Buy credits and review payment orders",
-  "creditsLowBalanceTitle": "Available credit is low",
-  "creditsLowBalanceBody": "Some credit is reserved for active work. Add more credit to reduce the risk of monitoring or recording pauses.",
   "buyCreditsAction": "Buy credits",
-  "creditsRecentTransactionsTitle": "Recent transactions",
-  "creditsNoTransactionsTitle": "No transactions yet",
-  "creditsNoTransactionsBody": "Credit purchases and recording charges will appear here.",
-  "creditsAvailableBalanceLabel": "Available",
-  "creditsPostedBalanceLabel": "Posted",
-  "creditsReservedBalanceLabel": "Reserved",
-  "creditsReservedExplanation": "Reserved credit is temporarily held for in-progress recording work. Available credit is the amount you can use now.",
-  "creditsUsageTitle": "Recording usage",
-  "creditsRecordingHoursLabel": "Recording hours",
-  "creditsRecordingCountLabel": "Recordings",
-  "creditsRecordingCostLabel": "Credits spent",
-  "creditsRecordingChargeLabel": "Recording charge",
-  "creditsAddedLabel": "Credit added",
-  "creditsTransactionLabel": "Credit transaction",
-  "billingChoosePackageTitle": "Add credit",
-  "billingChoosePackageBody": "Choose a credit package. Payment is only considered complete after the backend confirms the order status.",
-  "billingNoPackagesTitle": "No packages available",
-  "billingNoPackagesBody": "Credit packages are unavailable right now. Pull to refresh or try again later.",
-  "billingRecentOrdersTitle": "Recent payment orders",
-  "billingNoOrdersTitle": "No payment orders yet",
-  "billingNoOrdersBody": "Your credit purchase attempts will appear here.",
-  "billingPackageCredits": "{credits} credits",
-  "billingRecommendedLabel": "Recommended",
-  "billingPackageDetailBody": "Credits are added only after SaveStream receives backend payment confirmation.",
-  "billingBuyAction": "Buy package",
-  "billingCheckoutStatusTitle": "Payment order",
-  "billingCheckStatusAction": "Check payment status",
   "paymentStatusPending": "Pending",
   "paymentStatusPaid": "Paid",
   "paymentStatusFailed": "Failed",
@@ -346,13 +315,6 @@
   "paymentFailedBody": "The payment failed. No credit is added.",
   "paymentCancelledBody": "This payment order was cancelled.",
   "paymentExpiredBody": "This payment order expired before payment was confirmed.",
-  "@billingPackageCredits": {
-    "placeholders": {
-      "credits": {
-        "type": "String"
-      }
-    }
-  },
   "settingsAccountSectionTitle": "Account",
   "settingsPreferencesSectionTitle": "Preferences",
   "settingsLegalSectionTitle": "Legal",
@@ -405,43 +367,13 @@
   "recordNowAction": "Record now",
   "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
   "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link.",
-  "creditsReservationsTitle": "Credit reservations",
-  "creditsActiveReservationsLabel": "Active reservations",
-  "creditsLatestReservation": "Latest: recording {recordingId} · {status}",
-  "creditsPricingTitle": "Pricing",
-  "creditsPricingUnavailableBody": "Pricing is not configured on the backend yet.",
-  "creditsPricingVersionLabel": "Version",
-  "creditsPricingRulesLabel": "Public rules",
-  "creditsBalanceAfter": "Balance after: {balance}",
-  "billingContinueCheckoutAction": "Continue checkout",
   "paymentStatusCreated": "Created",
   "paymentStatusPartiallyRefunded": "Partially refunded",
   "paymentStatusRefunded": "Refunded",
   "paymentCreatedBody": "The payment order exists, but checkout has not started yet.",
   "paymentPartiallyRefundedBody": "Part of this payment has been refunded.",
   "paymentRefundedBody": "This payment has been refunded.",
-  "billingReturnTitle": "Payment confirmation",
-  "billingOrderNotFoundTitle": "Payment order not found",
-  "billingOrderNotFoundBody": "SaveStream could not find this payment order. Open Billing to review recent orders.",
   "backToBillingAction": "Back to billing",
-  "billingPollingStatusBody": "SaveStream is checking the backend for payment confirmation. Returning from checkout is not proof of payment.",
-  "@creditsLatestReservation": {
-    "placeholders": {
-      "recordingId": {
-        "type": "String"
-      },
-      "status": {
-        "type": "String"
-      }
-    }
-  },
-  "@creditsBalanceAfter": {
-    "placeholders": {
-      "balance": {
-        "type": "int"
-      }
-    }
-  },
   "nonRetryableErrorTitle": "This can’t be completed",
   "nonRetryableErrorBody": "SaveStream can’t retry this request automatically. Try again later or contact support if the issue continues.",
   "requestIdLabel": "Request ID: {requestId}",
@@ -460,10 +392,7 @@
   "notificationRecordingReadyTitle": "Recording ready",
   "notificationRecordingFailedTitle": "Recording failed",
   "openLegalDocumentAction": "Open published document",
-  "billingExternalCheckoutDisabledTitle": "Purchases are disabled in this mobile build",
-  "billingExternalCheckoutDisabledBody": "This native release does not open external hosted checkout by default. Existing credit balances and payment history remain available.",
   "billingPurchasesUnavailableTitle": "Purchases are temporarily unavailable",
-  "billingPurchasesUnavailableBody": "The backend has checkout disabled right now. Your existing credits and recording access are unaffected.",
   "notificationPreferencesTitle": "Notification preferences",
   "notificationHistoryTitle": "Notification history",
   "notificationHistoryEmptyTitle": "No notifications yet",
@@ -1364,29 +1293,43 @@
   "nativeRecordingActiveBody": "{name} · {elapsed} · Local · {remaining} Free remaining",
   "@nativeRecordingActiveBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"},
-      "remaining": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      },
+      "remaining": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
   "@nativeRecordingActiveUnlimitedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "elapsed": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "elapsed": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectTitle": "Reconnecting · {name}",
   "@nativeRecordingReconnectTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingReconnectBody": "Connection to the LIVE source was lost. The recorded part is still safe.",
   "nativeRecordingMinuteWarningTitle": "Less than 1 minute Free · {name}",
   "@nativeRecordingMinuteWarningTitle": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingMinuteWarningBody": "Open SaveStream to add 10 minutes. Rewarded ads only run inside the app.",
@@ -1394,16 +1337,24 @@
   "nativeRecordingFinalizingBody": "{name} · saving on this device",
   "@nativeRecordingFinalizingBody": {
     "placeholders": {
-      "name": {"type": "String"}
+      "name": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingSavedTitle": "Recording saved",
   "nativeRecordingSavedBody": "{name} · {duration} · {size} · stored on this device",
   "@nativeRecordingSavedBody": {
     "placeholders": {
-      "name": {"type": "String"},
-      "duration": {"type": "String"},
-      "size": {"type": "String"}
+      "name": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
     }
   },
   "nativeRecordingInterruptedTitle": "Recording was interrupted",
@@ -1421,7 +1372,9 @@
   "androidOemGuideTitle": "Keep SaveStream running on {device}",
   "@androidOemGuideTitle": {
     "placeholders": {
-      "device": {"type": "String"}
+      "device": {
+        "type": "String"
+      }
     }
   },
   "androidOemGenericBody": "Your Android version may have extra background restrictions. Review the app and battery settings for SaveStream.",
@@ -1453,19 +1406,117 @@
   "settingsRecordingSectionTitle": "Recording",
   "recordingSearchHint": "Search by creator",
   "recordingCrossDeviceValue": "Recorded on {device}",
-  "@recordingCrossDeviceValue": {"placeholders": {"device": {"type": "String"}}},
+  "@recordingCrossDeviceValue": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
   "recordingCrossDeviceUnavailable": "Not available on this device. Playback, sharing, and deletion are disabled.",
   "recordingLocalFileMissing": "The local file was moved or deleted. SaveStream cannot play or share it.",
   "shareRecordingAction": "Share recording",
   "deleteLocalRecordingAction": "Delete from this device",
   "cloudRecordingExpiresValue": "Kept until {date}",
-  "@cloudRecordingExpiresValue": {"placeholders": {"date": {"type": "String"}}},
+  "@cloudRecordingExpiresValue": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "cloudRecordingExpiringSoon": "This cloud recording expires within 3 days. Download it if you want to keep a local copy.",
   "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download.",
   "recordingDownloadedLabel": "Downloaded",
   "recordingDownloadedBody": "Saved on this device. You can play or share the local copy.",
   "recordingDownloadingBytes": "Downloading {done} of {total}",
-  "@recordingDownloadingBytes": {"placeholders": {"done": {"type": "String"}, "total": {"type": "String"}}},
+  "@recordingDownloadingBytes": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
   "deleteCloudRecordingAction": "Delete cloud recording",
-  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy"
+  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy",
+  "usageTitle": "Plan & usage",
+  "cloudHoursAvailableTitle": "Cloud hours available",
+  "freeUsageTitle": "Free usage today",
+  "freeMinutesToday": "{remaining} / {daily} Free minutes remaining",
+  "@freeMinutesToday": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      },
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardUsageToday": "Rewarded ads {used}/{cap}",
+  "@rewardUsageToday": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "watchUsage": "Creators {used}/{limit}",
+  "@watchUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudSlotsUsage": "Cloud slots {used}/{limit}",
+  "@cloudSlotsUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursPackValue": "{hours} cloud hours",
+  "@cloudHoursPackValue": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudHoursOneTimeTitle": "One-time purchase",
+  "cloudHoursOneTimeBody": "Cloud hours do not expire. Buying hours unlocks cloud auto-recording, up to 20 creators, and removes ads.",
+  "restorePurchasesAction": "Restore purchases",
+  "purchaseProcessingBody": "Waiting for the store to confirm your purchase.",
+  "purchasePendingBody": "Purchase is pending. Cloud access is not granted until the server confirms credit.",
+  "purchaseSuccessBody": "Purchase confirmed and cloud hours were added.",
+  "purchaseCancelledBody": "Purchase cancelled. No changes were made.",
+  "purchaseFailedBody": "Purchase failed. You can try again.",
+  "restoreProcessingBody": "Checking previous purchases…",
+  "restoreSuccessBody": "Restore finished.",
+  "purchaseContextAutoRecordTitle": "Unlock cloud auto-recording",
+  "purchaseContextAutoRecordBody": "Buy cloud hours so SaveStream can record automatically when a creator goes LIVE.",
+  "purchaseContextWatchLimitTitle": "Follow up to 20 creators",
+  "purchaseContextWatchLimitBody": "Buy cloud hours to raise the creator limit from 3 to 20.",
+  "purchaseContextIosBackgroundTitle": "Record without keeping iPhone open",
+  "purchaseContextIosBackgroundBody": "Cloud recording runs on the server, so your iPhone does not need to stay in the foreground.",
+  "purchaseContextFreeMinutesTitle": "Keep recording after Free minutes run out",
+  "purchaseContextFreeMinutesBody": "Buy cloud hours for server recording instead of waiting for Free minutes to reset.",
+  "purchaseContextRemoveAdsTitle": "Remove ads",
+  "purchaseContextRemoveAdsBody": "Buying cloud hours removes SaveStream ads.",
+  "settingsUsageSubtitle": "Cloud hours, creator limits, and restore purchases",
+  "buyMoreCloudHoursAction": "Buy more cloud hours"
 }

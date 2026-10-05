@@ -12,12 +12,8 @@ import '../core/mock/mock_scenario.dart';
 import '../features/auth/data/auth_providers.dart';
 import '../features/auth/data/repositories/mock_auth_repository.dart';
 import '../features/auth/domain/repositories/auth_repository.dart';
-import '../features/billing/domain/repositories/billing_repository.dart';
-import '../features/billing/presentation/controllers/billing_providers.dart';
 import '../features/channels/domain/repositories/watch_repository.dart';
 import '../features/channels/presentation/controllers/watch_providers.dart';
-import '../features/credits/domain/repositories/credits_repository.dart';
-import '../features/credits/presentation/controllers/credits_providers.dart';
 import '../features/recordings/domain/repositories/recording_repository.dart';
 import '../features/recordings/presentation/controllers/recording_providers.dart';
 import '../features/settings/domain/repositories/notifications_repository.dart';
@@ -41,8 +37,6 @@ class SaveStreamApp extends StatefulWidget {
     this.apiClient,
     this.watchRepository,
     this.recordingRepository,
-    this.creditsRepository,
-    this.billingRepository,
     this.profileRepository,
     this.notificationsRepository,
     this.notificationPreferencesRepository,
@@ -59,8 +53,6 @@ class SaveStreamApp extends StatefulWidget {
   final ApiClient? apiClient;
   final WatchRepository? watchRepository;
   final RecordingRepository? recordingRepository;
-  final CreditsRepository? creditsRepository;
-  final BillingRepository? billingRepository;
   final ProfileRepository? profileRepository;
   final NotificationsRepository? notificationsRepository;
   final NotificationPreferencesRepository? notificationPreferencesRepository;
@@ -121,14 +113,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
           recordingRepositoryProvider.overrideWithValue(
             widget.recordingRepository!,
           ),
-        if (widget.creditsRepository != null)
-          creditsRepositoryProvider.overrideWithValue(
-            widget.creditsRepository!,
-          ),
-        if (widget.billingRepository != null)
-          billingRepositoryProvider.overrideWithValue(
-            widget.billingRepository!,
-          ),
+
         if (widget.profileRepository != null)
           profileRepositoryProvider.overrideWithValue(
             widget.profileRepository!,
