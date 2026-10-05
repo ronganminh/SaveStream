@@ -1518,5 +1518,12 @@
   "purchaseContextRemoveAdsTitle": "Remove ads",
   "purchaseContextRemoveAdsBody": "Buying cloud hours removes SaveStream ads.",
   "settingsUsageSubtitle": "Cloud hours, creator limits, and restore purchases",
-  "buyMoreCloudHoursAction": "Buy more cloud hours"
+  "buyMoreCloudHoursAction": "Buy more cloud hours",
+  "notificationCreatorLiveTitle": "Creator goes LIVE",
+  "notificationRecordingExpiringTitle": "Cloud recording expiring soon",
+  "notificationFreeMinutesLowTitle": "Free recording minutes running low",
+  "globalUpdateRequiredTitle": "Update required",
+  "globalUpdateRequiredBody": "Update SaveStream to continue using the app.",
+  "globalMaintenanceTitle": "SaveStream is under maintenance",
+  "globalMaintenanceBody": "Recording data is safe. Try again after maintenance is complete."
 }
