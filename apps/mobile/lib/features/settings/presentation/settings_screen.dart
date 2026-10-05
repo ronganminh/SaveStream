@@ -11,6 +11,8 @@ import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../../platform/platform_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
+import '../../entitlement/domain/models/entitlement.dart';
+import '../../entitlement/presentation/entitlement_providers.dart';
 import 'controllers/settings_providers.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -90,6 +92,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final DevicePlatform platform = ref
         .watch(deviceInfoServiceProvider)
         .platform;
+    final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
+    final Entitlement? entitlementValue = entitlement.value;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -113,6 +117,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: SsSpacing.lg),
             ],
+            _SectionLabel(label: l10n.settingsPlanSectionTitle),
+            const SizedBox(height: SsSpacing.sm),
+            SsCard(
+              child: entitlement.when(
+                loading: () =>
+                    const SsSkeleton(height: 88, radius: SsRadii.lg),
+                error: (Object error, StackTrace stackTrace) => SsListTile(
+                  title: l10n.settingsPlanUnknownTitle,
+                  subtitle: l10n.settingsPlanUnknownBody,
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                ),
+                data: (Entitlement data) => SsListTile(
+                  title: data.plan == Plan.pro
+                      ? l10n.settingsPlanProTitle
+                      : l10n.settingsPlanFreeTitle,
+                  subtitle: data.plan == Plan.pro
+                      ? l10n.settingsPlanProBody(
+                          data.cloudMinutesAvailable ~/ 60,
+                          data.limits.maxWatches,
+                        )
+                      : l10n.settingsPlanFreeBody(
+                          data.local.minutesRemaining,
+                          data.watchCount,
+                          data.limits.maxWatches,
+                        ),
+                  leading: Icon(
+                    data.plan == Plan.pro
+                        ? Icons.workspace_premium_rounded
+                        : Icons.person_outline_rounded,
+                  ),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => context.push(AppRoutes.usage),
+                ),
+              ),
+            ),
+            const SizedBox(height: SsSpacing.xl),
             _SectionLabel(label: l10n.settingsAccountSectionTitle),
             const SizedBox(height: SsSpacing.sm),
             SsCard(
@@ -127,11 +167,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   const Divider(),
                   SsListTile(
-                    title: l10n.usageTitle,
-                    subtitle: l10n.settingsUsageSubtitle,
-                    leading: const Icon(Icons.cloud_outlined),
+                    title: l10n.securityAccountTitle,
+                    subtitle: l10n.securityAccountSubtitle,
+                    leading: const Icon(Icons.shield_outlined),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push(AppRoutes.usage),
+                    onTap: () => context.push(AppRoutes.securityAccount),
                   ),
                 ],
               ),
@@ -179,57 +219,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: SsSpacing.xl),
-            _SectionLabel(label: l10n.settingsLegalSectionTitle),
+            _SectionLabel(label: l10n.settingsSupportSectionTitle),
             const SizedBox(height: SsSpacing.sm),
             SsCard(
               child: Column(
                 children: <Widget>[
                   SsListTile(
-                    title: l10n.privacyPolicyTitle,
-                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: l10n.helpTitle,
+                    leading: const Icon(Icons.help_outline_rounded),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push(AppRoutes.privacy),
+                    onTap: () => context.push(AppRoutes.help),
                   ),
                   const Divider(),
                   SsListTile(
-                    title: l10n.termsOfUseTitle,
-                    leading: const Icon(Icons.description_outlined),
+                    title: l10n.legalHubTitle,
+                    leading: const Icon(Icons.gavel_outlined),
                     trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.push(AppRoutes.terms),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            _SectionLabel(label: l10n.settingsAccountActionsSectionTitle),
-            const SizedBox(height: SsSpacing.sm),
-            SsCard(
-              child: Column(
-                children: <Widget>[
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.logout_rounded),
-                    title: Text(l10n.logoutAction),
-                    subtitle: Text(l10n.logoutDescription),
-                    enabled: !_accountBusy,
-                    onTap: _accountBusy ? null : _logout,
-                  ),
-                  const Divider(),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Icons.delete_forever_outlined,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    title: Text(
-                      l10n.deleteAccountAction,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    subtitle: Text(l10n.deleteAccountDescription),
-                    enabled: !_accountBusy,
-                    onTap: _accountBusy ? null : _deleteAccount,
+                    onTap: () => context.push(AppRoutes.legalHub),
                   ),
                 ],
               ),
