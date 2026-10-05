@@ -1549,5 +1549,95 @@
     }
   },
   "deviceStorageScopeTitle": "Local files only",
-  "deviceStorageScopeBody": "Cloud recordings are not included in device storage usage."
+  "deviceStorageScopeBody": "Cloud recordings are not included in device storage usage.",
+  "settingsPlanSectionTitle": "Plan & usage",
+  "settingsPlanUnknownTitle": "Plan unavailable",
+  "settingsPlanUnknownBody": "Open Plan & Usage to try again.",
+  "settingsPlanProTitle": "SaveStream Pro",
+  "settingsPlanProBody": "{hours} cloud hours remaining · up to {watches} creators",
+  "@settingsPlanProBody": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "watches": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPlanFreeTitle": "Free",
+  "settingsPlanFreeBody": "{minutes} Free minutes remaining · {watchCount}/{watchLimit} creators",
+  "@settingsPlanFreeBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "watchCount": {
+        "type": "int"
+      },
+      "watchLimit": {
+        "type": "int"
+      }
+    }
+  },
+  "securityAccountTitle": "Security & account",
+  "securityAccountSubtitle": "Email, password, devices, logout and deletion",
+  "securityEmailSubtitle": "View your account email",
+  "securityResetPasswordTitle": "Reset password",
+  "securityResetPasswordSubtitle": "Send a reset link by email",
+  "signedInDevicesTitle": "Signed-in devices",
+  "currentDeviceLabel": "This device",
+  "logoutOtherDevicesAction": "Sign out all other devices",
+  "deviceSignedOutToast": "Device signed out",
+  "otherDevicesSignedOutToast": "Other devices signed out",
+  "logoutConfirmTitle": "Sign out of SaveStream?",
+  "logoutConfirmBody": "Local recordings stay on this device. Cloud recordings and purchased hours are not affected.",
+  "logoutLocalRecordingWarning": "A Local recording is running. SaveStream must stop and save it before signing out. Cloud recording continues on the server.",
+  "logoutStopSaveAction": "Stop, save and sign out",
+  "logoutFailedBody": "Could not safely finish sign out. Your Local recording was not discarded.",
+  "helpTitle": "Help",
+  "helpLocalCloudQuestion": "How are Local and Cloud recording different?",
+  "helpBackgroundQuestion": "Why can Local recording stop when the screen is locked?",
+  "helpFreeMinutesQuestion": "How are Free recording minutes counted?",
+  "helpCloudHoursQuestion": "Do purchased cloud hours expire?",
+  "reportIssueTitle": "Report a problem",
+  "reportIssuePrompt": "What happened?",
+  "reportDiagnosticsTitle": "Include diagnostic logs",
+  "reportDiagnosticsBody": "Includes app version, OS and recorder state. Video files are never attached.",
+  "reportIssueSentToast": "Report sent",
+  "reportIssueQueuedToast": "Saved offline. SaveStream will send it when you reconnect.",
+  "sendAction": "Send",
+  "processingLabel": "Processing…",
+  "legalHubTitle": "Terms & privacy",
+  "responsibleUseTitle": "Responsible use",
+  "responsibleUseLead": "Only record content you have permission to record",
+  "responsibleUseBody": "SaveStream is for lawful, authorized recording. Respect creator rights and platform rules.",
+  "responsibleUseOwnContent": "Record your own channels, channels you manage, or content you are authorized to record.",
+  "responsibleUseNoRedistribute": "Do not redistribute recordings without permission.",
+  "responsibleUseEnforcement": "Accounts may be restricted after a valid rights complaint.",
+  "settingsSupportSectionTitle": "Support",
+  "deleteAccountConsequencesTitle": "What will be deleted",
+  "deleteAccountConsequencesBody": "Review the consequences before continuing. Purchased cloud hours are not refundable.",
+  "deleteAccountCloudDataItem": "Cloud recordings, Watch List and account settings will be deleted.",
+  "deleteAccountCloudHoursItem": "Your remaining {hours} purchased cloud hours will be lost.",
+  "@deleteAccountCloudHoursItem": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountLocalFilesItem": "Local recordings stay on this device until you delete the app or the files.",
+  "deleteAccountRecordingBlocked": "Stop all active recordings before deleting your account.",
+  "deleteAccountPermanentTitle": "Confirm permanent deletion",
+  "deleteAccountPermanentBody": "This cannot be undone.",
+  "deleteAccountUnderstandCheck": "I understand that Cloud recordings, Watch List and purchased cloud hours will be permanently deleted.",
+  "deleteAccountPermanentAction": "Delete account permanently",
+  "deleteAccountFailed": "Account deletion failed. Nothing was removed.",
+  "globalReconnectedToast": "Back online",
+  "sessionExpiredTitle": "Session expired",
+  "sessionExpiredBody": "Sign in again to continue using account features.",
+  "sessionExpiredRecordingBody": "Your Local recording is still running and will continue saving on this device. Sign in again to renew quota and sync.",
+  "sessionExpiredRecordingSafeBody": "SaveStream will not discard recorded segments while you sign in again.",
+  "signInAgainAction": "Sign in again"
 }
