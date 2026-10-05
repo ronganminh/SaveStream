@@ -579,6 +579,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acceptable-use'
     | '/contact'
+    | '/copyright'
     | '/forgot-password'
     | '/help'
     | '/notifications'
