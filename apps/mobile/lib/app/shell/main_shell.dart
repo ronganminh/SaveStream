@@ -102,34 +102,34 @@ class MainShell extends ConsumerWidget {
     }
 
     final Widget shellBody = Column(
-        children: <Widget>[
-          if (!isOnline)
-            Material(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: SafeArea(
-                bottom: false,
-                child: Semantics(
-                  liveRegion: true,
-                  label: l10n.homeOfflineTitle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        const Icon(Icons.cloud_off_rounded),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text(l10n.homeOfflineBody)),
-                      ],
-                    ),
+      children: <Widget>[
+        if (!isOnline)
+          Material(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: SafeArea(
+              bottom: false,
+              child: Semantics(
+                liveRegion: true,
+                label: l10n.homeOfflineTitle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      const Icon(Icons.cloud_off_rounded),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(l10n.homeOfflineBody)),
+                    ],
                   ),
                 ),
               ),
             ),
-          Expanded(child: RecordingPlatformBridge(child: navigationShell)),
-        ],
-      );
+          ),
+        Expanded(child: RecordingPlatformBridge(child: navigationShell)),
+      ],
+    );
 
     return Scaffold(
       body: Stack(
@@ -138,7 +138,9 @@ class MainShell extends ConsumerWidget {
           if (sessionExpired)
             Positioned.fill(
               child: ColoredBox(
-                color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.72),
+                color: Theme.of(
+                  context,
+                ).colorScheme.scrim.withValues(alpha: 0.72),
                 child: SafeArea(
                   child: Center(
                     child: Padding(
