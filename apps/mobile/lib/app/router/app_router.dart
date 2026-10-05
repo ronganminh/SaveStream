@@ -35,6 +35,7 @@ import '../../features/recordings/presentation/recording_player_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
 import '../../features/settings/presentation/android_recording_background_screen.dart';
+import '../../features/settings/presentation/device_storage_screen.dart';
 import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
@@ -483,6 +484,12 @@ GoRouter createAppRouter({
                     path: 'notifications',
                     builder: (BuildContext context, GoRouterState state) {
                       return const NotificationSettingsScreen();
+                    },
+                  ),
+                  GoRoute(
+                    path: 'storage',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const DeviceStorageScreen();
                     },
                   ),
                   GoRoute(
