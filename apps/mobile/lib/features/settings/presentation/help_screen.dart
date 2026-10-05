@@ -26,7 +26,11 @@ class HelpScreen extends StatelessWidget {
           SsCard(
             child: Column(
               children: <Widget>[
-                for (int index = 0; index < questions.length; index += 1) ...<Widget>[
+                for (
+                  int index = 0;
+                  index < questions.length;
+                  index += 1
+                ) ...<Widget>[
                   SsListTile(
                     title: questions[index],
                     leading: const Icon(Icons.help_outline_rounded),
