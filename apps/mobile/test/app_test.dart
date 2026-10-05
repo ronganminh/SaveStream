@@ -619,10 +619,10 @@ void main() {
     GoRouter.of(languageContext).pop();
     await tester.pumpAndSettle();
 
-    final BuildContext settingsContext = tester.element(
+    final BuildContext localizedSettingsContext = tester.element(
       find.text('Cài đặt').first,
     );
-    GoRouter.of(settingsContext).push(AppRoutes.theme);
+    GoRouter.of(localizedSettingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tối'));
     await tester.pumpAndSettle();
