@@ -77,7 +77,6 @@ jobs:
         run: >-
           flutter build appbundle --release
           --dart-define=APP_ENV=production
-          --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
 
       - name: Report Android App Bundle size
         run: ls -lh build/app/outputs/bundle/release/app-release.aab
@@ -125,8 +124,7 @@ jobs:
           set -euo pipefail
           for attempt in 1 2 3; do
             if flutter build ios --simulator --debug \
-              --dart-define=APP_ENV=production \
-              --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false; then
+              --dart-define=APP_ENV=production; then
               exit 0
             fi
 

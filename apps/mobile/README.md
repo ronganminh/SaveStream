@@ -161,13 +161,11 @@ flutter run \
   --dart-define=APP_ENV=staging
 ```
 
-Production native builds keep external hosted checkout disabled unless the
-release channel has passed the applicable store-payment policy review:
+Production native builds use App Store / Google Play in-app purchases for cloud-hour packs; there is no external hosted checkout path in the mobile app.
 
 ```bash
 flutter build appbundle --release \
-  --dart-define=APP_ENV=production \
-  --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+  --dart-define=APP_ENV=production
 ```
 
 See `MOBILE_RELEASE.md` for signing and store submission requirements.
