@@ -602,7 +602,10 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
-    await tester.tap(find.text('Language'));
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
+    );
+    GoRouter.of(settingsContext).push(AppRoutes.language);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Vietnamese'));
     await tester.pumpAndSettle();
@@ -616,10 +619,10 @@ void main() {
     GoRouter.of(languageContext).pop();
     await tester.pumpAndSettle();
 
-    final BuildContext settingsContext = tester.element(
+    final BuildContext localizedSettingsContext = tester.element(
       find.text('Cài đặt').first,
     );
-    GoRouter.of(settingsContext).push(AppRoutes.theme);
+    GoRouter.of(localizedSettingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tối'));
     await tester.pumpAndSettle();
@@ -639,15 +642,15 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
-    final Finder logoutAction = find.text('Log out');
-    await tester.scrollUntilVisible(
-      logoutAction,
-      320,
-      scrollable: find.byType(Scrollable).last,
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
     );
-    await tester.ensureVisible(logoutAction);
+    GoRouter.of(settingsContext).push(AppRoutes.securityAccount);
     await tester.pumpAndSettle();
-    await tester.tap(logoutAction);
+
+    await tester.tap(find.text('Log out'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Log out'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
@@ -662,21 +665,22 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
-    final Finder deleteAccountAction = find.text('Delete account');
-    await tester.scrollUntilVisible(
-      deleteAccountAction,
-      320,
-      scrollable: find.byType(Scrollable).last,
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
     );
-    await tester.ensureVisible(deleteAccountAction);
-    await tester.pumpAndSettle();
-    await tester.tap(deleteAccountAction);
+    GoRouter.of(settingsContext).push(AppRoutes.deleteAccount);
     await tester.pumpAndSettle();
 
-    expect(find.text('Delete your account?'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Delete account'), findsOneWidget);
+    expect(find.text('What will be deleted'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Delete account'));
+    expect(find.text('Confirm permanent deletion'), findsOneWidget);
+    await tester.tap(find.byType(CheckboxListTile));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(FilledButton, 'Delete account permanently'),
+    );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 

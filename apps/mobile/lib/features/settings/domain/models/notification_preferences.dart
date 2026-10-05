@@ -6,6 +6,7 @@ class NotificationPreferences {
     this.creatorLive = true,
     this.recordingExpiring = true,
     this.freeMinutesLow = true,
+    this.marketing = true,
   });
 
   final bool recordingStarted;
@@ -24,6 +25,10 @@ class NotificationPreferences {
   /// Alerts when Free recording minutes are close to running out.
   final bool freeMinutesLow;
 
+  /// Optional product and promotional messages. Transactional messages are
+  /// always delivered and are intentionally not represented by a toggle.
+  final bool marketing;
+
   NotificationPreferences copyWith({
     bool? recordingStarted,
     bool? recordingReady,
@@ -31,6 +36,7 @@ class NotificationPreferences {
     bool? creatorLive,
     bool? recordingExpiring,
     bool? freeMinutesLow,
+    bool? marketing,
   }) {
     return NotificationPreferences(
       recordingStarted: recordingStarted ?? this.recordingStarted,
@@ -39,6 +45,7 @@ class NotificationPreferences {
       creatorLive: creatorLive ?? this.creatorLive,
       recordingExpiring: recordingExpiring ?? this.recordingExpiring,
       freeMinutesLow: freeMinutesLow ?? this.freeMinutesLow,
+      marketing: marketing ?? this.marketing,
     );
   }
 }

@@ -1518,5 +1518,157 @@
   "purchaseContextRemoveAdsTitle": "Bỏ quảng cáo",
   "purchaseContextRemoveAdsBody": "Mua giờ cloud để bỏ quảng cáo SaveStream.",
   "settingsUsageSubtitle": "Giờ cloud, giới hạn creator và khôi phục giao dịch",
-  "buyMoreCloudHoursAction": "Mua thêm giờ cloud"
+  "buyMoreCloudHoursAction": "Mua thêm giờ cloud",
+  "notificationCreatorLiveTitle": "Creator bắt đầu LIVE",
+  "notificationRecordingExpiringTitle": "Bản ghi cloud sắp hết hạn",
+  "notificationFreeMinutesLowTitle": "Phút ghi Free sắp hết",
+  "globalUpdateRequiredTitle": "Cần cập nhật",
+  "globalUpdateRequiredBody": "Hãy cập nhật SaveStream để tiếp tục sử dụng ứng dụng.",
+  "globalMaintenanceTitle": "SaveStream đang bảo trì",
+  "globalMaintenanceBody": "Dữ liệu bản ghi vẫn an toàn. Hãy thử lại sau khi bảo trì hoàn tất.",
+  "notificationPermissionTitle": "Quyền thông báo",
+  "notificationPermissionGrantedTitle": "Thông báo đã bật",
+  "notificationPermissionGrantedBody": "SaveStream có thể báo khi creator LIVE và khi trạng thái bản ghi thay đổi.",
+  "notificationPermissionDeniedTitle": "Thông báo đang bị tắt",
+  "notificationPermissionDeniedBody": "Hãy bật thông báo trong cài đặt hệ thống để nhận cảnh báo.",
+  "notificationPermissionPromptBody": "Cho phép SaveStream gửi thông báo về creator bạn theo dõi và các sự kiện bản ghi.",
+  "notificationPermissionEnableAction": "Bật thông báo",
+  "deviceStorageTitle": "Bộ nhớ thiết bị",
+  "deviceStorageSubtitle": "Dung lượng bản ghi Local trên thiết bị này",
+  "deviceStorageFreeLabel": "Dung lượng còn trống",
+  "deviceStorageLocalLabel": "Bản ghi Local",
+  "deviceStorageLocalValue": "{count} bản ghi · {size}",
+  "@deviceStorageLocalValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageScopeTitle": "Chỉ tính file Local",
+  "deviceStorageScopeBody": "Bản ghi cloud không được tính vào dung lượng sử dụng trên thiết bị.",
+  "settingsPlanSectionTitle": "Gói & sử dụng",
+  "settingsPlanUnknownTitle": "Chưa tải được gói",
+  "settingsPlanUnknownBody": "Mở Gói & sử dụng để thử lại.",
+  "settingsPlanProTitle": "SaveStream Pro",
+  "settingsPlanProBody": "Còn {hours} giờ cloud · tối đa {watches} creator",
+  "@settingsPlanProBody": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "watches": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPlanFreeTitle": "Free",
+  "settingsPlanFreeBody": "Còn {minutes} phút Free · {watchCount}/{watchLimit} creator",
+  "@settingsPlanFreeBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "watchCount": {
+        "type": "int"
+      },
+      "watchLimit": {
+        "type": "int"
+      }
+    }
+  },
+  "securityAccountTitle": "Bảo mật & tài khoản",
+  "securityAccountSubtitle": "Email, mật khẩu, thiết bị, đăng xuất và xoá tài khoản",
+  "securityEmailSubtitle": "Xem email tài khoản",
+  "securityResetPasswordTitle": "Đặt lại mật khẩu",
+  "securityResetPasswordSubtitle": "Gửi link đặt lại qua email",
+  "signedInDevicesTitle": "Thiết bị đã đăng nhập",
+  "currentDeviceLabel": "Thiết bị này",
+  "logoutOtherDevicesAction": "Đăng xuất mọi thiết bị khác",
+  "deviceSignedOutToast": "Đã đăng xuất thiết bị",
+  "otherDevicesSignedOutToast": "Đã đăng xuất các thiết bị khác",
+  "logoutConfirmTitle": "Đăng xuất khỏi SaveStream?",
+  "logoutConfirmBody": "Bản ghi Local vẫn nằm trên máy. Bản ghi Cloud và giờ cloud đã mua không bị ảnh hưởng.",
+  "logoutLocalRecordingWarning": "Đang có bản ghi Local. SaveStream phải dừng và lưu xong trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server.",
+  "logoutStopSaveAction": "Dừng, lưu và đăng xuất",
+  "logoutFailedBody": "Không thể hoàn tất đăng xuất an toàn. Bản ghi Local không bị xoá.",
+  "helpTitle": "Trợ giúp",
+  "helpLocalCloudQuestion": "Local và Cloud khác nhau thế nào?",
+  "helpBackgroundQuestion": "Vì sao bản ghi Local có thể dừng khi khoá màn hình?",
+  "helpFreeMinutesQuestion": "Phút Free được tính thế nào?",
+  "helpCloudHoursQuestion": "Giờ cloud đã mua có hết hạn không?",
+  "reportIssueTitle": "Báo lỗi",
+  "reportIssuePrompt": "Chuyện gì đã xảy ra?",
+  "reportDiagnosticsTitle": "Gửi kèm log chẩn đoán",
+  "reportDiagnosticsBody": "Gồm phiên bản app, OS và trạng thái recorder. Không bao giờ gửi file video.",
+  "reportIssueSentToast": "Đã gửi báo lỗi",
+  "reportIssueQueuedToast": "Đã lưu khi offline. SaveStream sẽ gửi khi có mạng lại.",
+  "sendAction": "Gửi",
+  "processingLabel": "Đang xử lý…",
+  "legalHubTitle": "Điều khoản & quyền riêng tư",
+  "responsibleUseTitle": "Sử dụng có trách nhiệm",
+  "responsibleUseLead": "Chỉ record nội dung bạn có quyền",
+  "responsibleUseBody": "SaveStream dành cho việc ghi hợp pháp và có uỷ quyền. Hãy tôn trọng quyền của creator và quy định nền tảng.",
+  "responsibleUseOwnContent": "Chỉ record kênh của bạn, kênh bạn quản lý hoặc nội dung bạn đã được cho phép.",
+  "responsibleUseNoRedistribute": "Không phát tán lại bản ghi khi chưa được phép.",
+  "responsibleUseEnforcement": "Tài khoản có thể bị hạn chế khi có khiếu nại quyền hợp lệ.",
+  "settingsSupportSectionTitle": "Hỗ trợ",
+  "deleteAccountConsequencesTitle": "Những gì sẽ bị xoá",
+  "deleteAccountConsequencesBody": "Hãy xem kỹ hậu quả trước khi tiếp tục. Giờ cloud đã mua không được hoàn tiền.",
+  "deleteAccountCloudDataItem": "Bản ghi Cloud, Watch List và cài đặt tài khoản sẽ bị xoá.",
+  "deleteAccountCloudHoursItem": "Bạn sẽ mất {hours} giờ cloud đã mua còn lại.",
+  "@deleteAccountCloudHoursItem": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountLocalFilesItem": "Bản ghi Local vẫn nằm trên máy cho tới khi bạn xoá app hoặc xoá file.",
+  "deleteAccountRecordingBlocked": "Hãy dừng mọi recording đang chạy trước khi xoá tài khoản.",
+  "deleteAccountPermanentTitle": "Xác nhận xoá vĩnh viễn",
+  "deleteAccountPermanentBody": "Không thể khôi phục thao tác này.",
+  "deleteAccountUnderstandCheck": "Tôi hiểu bản ghi Cloud, Watch List và giờ cloud đã mua sẽ bị xoá vĩnh viễn.",
+  "deleteAccountPermanentAction": "Xoá tài khoản vĩnh viễn",
+  "deleteAccountFailed": "Xoá tài khoản thất bại. Chưa có dữ liệu nào bị xoá.",
+  "globalReconnectedToast": "Đã kết nối lại",
+  "sessionExpiredTitle": "Phiên đăng nhập đã hết hạn",
+  "sessionExpiredBody": "Hãy đăng nhập lại để tiếp tục dùng các tính năng tài khoản.",
+  "sessionExpiredRecordingBody": "Bản ghi Local vẫn đang chạy và tiếp tục được lưu trên máy này. Hãy đăng nhập lại để gia hạn quota và đồng bộ.",
+  "sessionExpiredRecordingSafeBody": "SaveStream sẽ không xoá các đoạn đã ghi trong lúc bạn đăng nhập lại.",
+  "signInAgainAction": "Đăng nhập lại",
+  "deviceStorageCleanupTitle": "Dọn dẹp",
+  "deviceStorageDeleteOldTitle": "Xoá bản ghi Local cũ hơn 30 ngày",
+  "deviceStorageDeleteOldSubtitle": "Chỉ xoá file Local khỏi thiết bị này",
+  "deviceStorageDeleteOldBody": "Xoá {count} bản ghi Local và giải phóng {size}?",
+  "@deviceStorageDeleteOldBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageCleanupLockedBody": "Không thể dọn khi đang có bản ghi Local chạy",
+  "deviceStorageNothingToCleanToast": "Không có bản ghi Local cũ để xoá",
+  "deviceStorageCleanedToast": "Đã xoá bản ghi Local cũ",
+  "globalOpenLocalRecordingsAction": "Mở bản ghi Local",
+  "globalOpenStoreAction": "Mở cửa hàng ứng dụng",
+  "signedDeviceIphoneTitle": "iPhone 15",
+  "signedDeviceWebTitle": "Chrome trên macOS",
+  "signedDeviceWebDetail": "Web · 2 giờ trước",
+  "signedDeviceAndroidTitle": "Pixel 8",
+  "signedDeviceAndroidDetail": "Android · 5 ngày trước",
+  "deleteAction": "Xoá",
+  "notificationMarketingTitle": "Tin khuyến mãi và cập nhật sản phẩm",
+  "languageSystem": "Theo hệ thống",
+  "logoutCloudRecordingWarning": "Đang có bản ghi Cloud. Bản ghi này vẫn tiếp tục trên server sau khi bạn đăng xuất.",
+  "logoutLocalAndCloudRecordingWarning": "Bản ghi Local sẽ được dừng và lưu trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server.",
+  "deleteAccountPasswordLabel": "Mật khẩu",
+  "sessionExpiredReloginFailed": "Không thể đăng nhập. Hãy kiểm tra thông tin và thử lại."
 }

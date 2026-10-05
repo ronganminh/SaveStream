@@ -35,12 +35,20 @@ import '../../features/recordings/presentation/recording_player_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
 import '../../features/settings/presentation/android_recording_background_screen.dart';
+import '../../features/settings/presentation/delete_account_screen.dart';
+import '../../features/settings/presentation/device_storage_screen.dart';
+import '../../features/settings/presentation/help_screen.dart';
 import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
+import '../../features/settings/presentation/legal_privacy_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
+import '../../features/settings/presentation/report_issue_screen.dart';
+import '../../features/settings/presentation/responsible_use_screen.dart';
+import '../../features/settings/presentation/security_account_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/settings/presentation/signed_in_devices_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
 import '../../features/store/presentation/a5_purchase_controller.dart';
 import '../../features/store/presentation/a5_usage_screen.dart';
@@ -81,6 +89,11 @@ GoRouter createAppRouter({
       if (needsWelcome) {
         if (isWelcome || isAuth) return null;
         return AppRoutes.welcome;
+      }
+
+      if (session.authStatus == AppAuthStatus.expired) {
+        if (isAuth) return null;
+        return null;
       }
 
       if (!session.isAuthenticated) {
@@ -382,7 +395,10 @@ GoRouter createAppRouter({
               GoRouterState state,
               StatefulNavigationShell navigationShell,
             ) {
-              return MainShell(navigationShell: navigationShell);
+              return MainShell(
+                navigationShell: navigationShell,
+                session: session,
+              );
             },
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
@@ -487,6 +503,60 @@ GoRouter createAppRouter({
                     path: 'notifications',
                     builder: (BuildContext context, GoRouterState state) {
                       return const NotificationSettingsScreen();
+                    },
+                  ),
+                  GoRoute(
+                    path: 'security',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return SecurityAccountScreen(session: session);
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'devices',
+                        builder: (BuildContext context, GoRouterState state) {
+                          return const SignedInDevicesScreen();
+                        },
+                      ),
+                      GoRoute(
+                        path: 'delete',
+                        builder: (BuildContext context, GoRouterState state) {
+                          return DeleteAccountScreen(session: session);
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'help',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const HelpScreen();
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'report',
+                        builder: (BuildContext context, GoRouterState state) {
+                          return const ReportIssueScreen();
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'legal',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const LegalPrivacyScreen();
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'responsible-use',
+                        builder: (BuildContext context, GoRouterState state) {
+                          return const ResponsibleUseScreen();
+                        },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'storage',
+                    builder: (BuildContext context, GoRouterState state) {
+                      return const DeviceStorageScreen();
                     },
                   ),
                   GoRoute(

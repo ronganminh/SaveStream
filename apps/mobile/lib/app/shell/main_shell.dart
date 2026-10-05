@@ -2,15 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/savestream_widgets.dart';
+import '../../features/app_status/presentation/a6_app_status_providers.dart';
+import '../../features/entitlement/presentation/entitlement_providers.dart';
+import '../../features/local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
 import '../router/app_routes.dart';
+import '../session/app_session_controller.dart';
 
 class MainShell extends ConsumerWidget {
-  const MainShell({required this.navigationShell, super.key});
+  const MainShell({
+    required this.navigationShell,
+    required this.session,
+    super.key,
+  });
 
   final StatefulNavigationShell navigationShell;
+  final AppSessionController session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,9 +41,159 @@ class MainShell extends ConsumerWidget {
     final bool hideRecordingBar = activeRecordings.any(
       (ActiveRecordingBarItem item) => item.route == location,
     );
+    final bool isOnline = ref.watch(appOnlineProvider).value ?? true;
+    final A6GlobalGate gate =
+        ref.watch(a6GlobalGateProvider).value ?? A6GlobalGate.none;
+    ref.listen<AsyncValue<bool>>(appOnlineProvider, (
+      AsyncValue<bool>? previous,
+      AsyncValue<bool> next,
+    ) {
+      if (previous?.value == false && next.value == true) {
+        SsSnackbar.show(context, l10n.globalReconnectedToast);
+      }
+    });
+    final LocalRecordingController localController = ref.watch(
+      localRecordingControllerProvider,
+    );
+    final bool sessionExpired = session.authStatus == AppAuthStatus.expired;
+    final bool localRecordingActive =
+        localController.hasActiveSession || localController.hasSecondarySession;
+
+    if (gate != A6GlobalGate.none && !localRecordingActive) {
+      final bool maintenance = gate == A6GlobalGate.maintenance;
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      maintenance
+                          ? Icons.construction_rounded
+                          : Icons.system_update_rounded,
+                      size: 64,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      maintenance
+                          ? l10n.globalMaintenanceTitle
+                          : l10n.globalUpdateRequiredTitle,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      maintenance
+                          ? l10n.globalMaintenanceBody
+                          : l10n.globalUpdateRequiredBody,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final Widget shellBody = Column(
+      children: <Widget>[
+        if (!isOnline)
+          Material(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            child: SafeArea(
+              bottom: false,
+              child: Semantics(
+                liveRegion: true,
+                label: l10n.homeOfflineTitle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      const Icon(Icons.cloud_off_rounded),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(l10n.homeOfflineBody)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Expanded(child: RecordingPlatformBridge(child: navigationShell)),
+      ],
+    );
 
     return Scaffold(
-      body: RecordingPlatformBridge(child: navigationShell),
+      body: Stack(
+        children: <Widget>[
+          shellBody,
+          if (sessionExpired)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Theme.of(
+                  context,
+                ).colorScheme.scrim.withValues(alpha: 0.72),
+                child: SafeArea(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: SsCard(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Icon(
+                                Icons.lock_clock_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                l10n.sessionExpiredTitle,
+                                style: Theme.of(context).textTheme.titleLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                localRecordingActive
+                                    ? l10n.sessionExpiredRecordingBody
+                                    : l10n.sessionExpiredBody,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              SsPrimaryButton(
+                                label: l10n.signInAgainAction,
+                                onPressed: () => context.push(AppRoutes.signIn),
+                              ),
+                              if (localRecordingActive) ...<Widget>[
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.sessionExpiredRecordingSafeBody,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: compactFab
           ? FloatingActionButton(
               tooltip: l10n.addChannelAction,

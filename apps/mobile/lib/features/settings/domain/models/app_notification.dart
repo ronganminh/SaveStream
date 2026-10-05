@@ -11,7 +11,14 @@ enum AppNotificationType {
 ///
 /// Kept separate from [AppNotificationType] so Track C can map the new wire
 /// values without forcing presentation changes before A6.
-enum AppNotificationV2Type { creatorLive, recordingExpiring, freeMinutesLow }
+enum AppNotificationV2Type {
+  creatorLive,
+  recordingMissed,
+  recordingExpiring,
+  cloudMinutesExhausted,
+  freeMinutesLow,
+  purchaseCompleted,
+}
 
 class AppNotification {
   const AppNotification({

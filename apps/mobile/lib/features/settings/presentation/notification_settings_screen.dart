@@ -6,10 +6,12 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/push_service.dart';
 import '../domain/models/app_notification.dart';
 import '../domain/models/notification_preferences.dart';
 import 'controllers/notification_feed_providers.dart';
 import 'controllers/notification_preferences_providers.dart';
+import 'controllers/push_permission_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -19,9 +21,16 @@ class NotificationSettingsScreen extends ConsumerWidget {
     WidgetRef ref,
     AppNotification notification,
   ) async {
-    final String? recordingId = notification.recordingId;
-    if (recordingId != null) {
-      context.push(AppRoutes.recordingDetail(recordingId));
+    final String? resourceId = notification.resourceId;
+    if (resourceId != null) {
+      switch (notification.resourceType) {
+        case 'recording':
+          context.push(AppRoutes.recordingDetail(resourceId));
+        case 'watch':
+        case 'creator':
+        case 'channel':
+          context.push(AppRoutes.channelDetail(resourceId));
+      }
     }
     if (notification.read) return;
     try {
@@ -55,6 +64,11 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final AsyncValue<NotificationFeedState> feed = ref.watch(
       notificationFeedProvider,
     );
+    final AsyncValue<PushPermissionStatus> pushPermission = ref.watch(
+      pushPermissionProvider,
+    );
+    final bool permissionDenied =
+        pushPermission.value == PushPermissionStatus.denied;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.notificationsTitle)),
@@ -78,6 +92,50 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: SsSpacing.lg),
               Text(
+                l10n.notificationPermissionTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              pushPermission.when(
+                loading: () => const SsSkeleton(height: 88, radius: SsRadii.lg),
+                error: (Object error, StackTrace stackTrace) =>
+                    SsAsyncErrorState(
+                      error: error,
+                      onRetry: () => ref.invalidate(pushPermissionProvider),
+                    ),
+                data: (PushPermissionStatus status) {
+                  if (status == PushPermissionStatus.granted) {
+                    return SsInlineAlert(
+                      title: l10n.notificationPermissionGrantedTitle,
+                      message: l10n.notificationPermissionGrantedBody,
+                    );
+                  }
+                  if (status == PushPermissionStatus.denied) {
+                    return SsInlineAlert(
+                      title: l10n.notificationPermissionDeniedTitle,
+                      message: l10n.notificationPermissionDeniedBody,
+                      tone: SsInlineAlertTone.warning,
+                    );
+                  }
+                  return SsCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Text(l10n.notificationPermissionPromptBody),
+                        const SizedBox(height: SsSpacing.md),
+                        SsPrimaryButton(
+                          label: l10n.notificationPermissionEnableAction,
+                          onPressed: () => ref
+                              .read(pushPermissionProvider.notifier)
+                              .request(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              Text(
                 l10n.notificationPreferencesTitle,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
@@ -95,33 +153,75 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   child: Column(
                     children: <Widget>[
                       _PreferenceSwitch(
+                        title: l10n.notificationCreatorLiveTitle,
+                        value: value.creatorLive,
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(creatorLive: enabled),
+                              ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationRecordingExpiringTitle,
+                        value: value.recordingExpiring,
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(recordingExpiring: enabled),
+                              ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationFreeMinutesLowTitle,
+                        value: value.freeMinutesLow,
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(freeMinutesLow: enabled),
+                              ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
                         title: l10n.notificationRecordingStartedTitle,
                         value: value.recordingStarted,
-                        onChanged: (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingStarted: enabled),
-                        ),
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(recordingStarted: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingReadyTitle,
                         value: value.recordingReady,
-                        onChanged: (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingReady: enabled),
-                        ),
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(recordingReady: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
                         title: l10n.notificationRecordingFailedTitle,
                         value: value.recordingFailed,
-                        onChanged: (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingFailed: enabled),
-                        ),
+                        onChanged: permissionDenied
+                            ? null
+                            : (bool enabled) => _save(
+                                context,
+                                ref,
+                                value.copyWith(recordingFailed: enabled),
+                              ),
                       ),
                     ],
                   ),
@@ -207,7 +307,7 @@ class _PreferenceSwitch extends StatelessWidget {
 
   final String title;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   @override
   Widget build(BuildContext context) {
