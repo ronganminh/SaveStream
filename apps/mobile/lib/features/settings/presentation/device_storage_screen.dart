@@ -9,7 +9,6 @@ import '../../../l10n/l10n.dart';
 import '../../../platform/platform_providers.dart';
 import '../../local_recordings/domain/models/local_recording_models.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../v2_foundation/v2_foundation_providers.dart';
 
 class DeviceStorageSnapshot {
   const DeviceStorageSnapshot({
