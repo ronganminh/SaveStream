@@ -9,9 +9,11 @@ class AppSettingsController extends ChangeNotifier {
     ThemeMode themeMode = ThemeMode.system,
     Locale locale = const Locale('en'),
     bool hasCompletedIntro = true,
+    bool useSystemLocale = false,
     AppSettingsStore? store,
   }) : _themeMode = themeMode,
        _locale = locale,
+       _useSystemLocale = useSystemLocale,
        _hasCompletedIntro = hasCompletedIntro,
        _store = store ?? MemoryAppSettingsStore();
 
@@ -22,10 +24,12 @@ class AppSettingsController extends ChangeNotifier {
   final AppSettingsStore _store;
   ThemeMode _themeMode;
   Locale _locale;
+  bool _useSystemLocale;
   bool _hasCompletedIntro;
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
+  bool get useSystemLocale => _useSystemLocale;
   bool get hasCompletedIntro => _hasCompletedIntro;
 
   Future<void> initialize() async {
@@ -34,17 +38,22 @@ class AppSettingsController extends ChangeNotifier {
     final String? introValue = await _store.readString(_introKey);
 
     final ThemeMode restoredTheme = _parseTheme(themeValue) ?? _themeMode;
-    final Locale restoredLocale = _parseLocale(localeValue) ?? _locale;
+    final bool restoredUseSystemLocale = localeValue == 'system';
+    final Locale restoredLocale = restoredUseSystemLocale
+        ? _systemLocale()
+        : (_parseLocale(localeValue) ?? _locale);
     // A missing key means this install has not completed the V2 introduction.
     // Tests/previews that do not call initialize keep the constructor default.
     final bool restoredIntro = introValue == 'true';
     final bool changed =
         restoredTheme != _themeMode ||
         restoredLocale != _locale ||
+        restoredUseSystemLocale != _useSystemLocale ||
         restoredIntro != _hasCompletedIntro;
 
     _themeMode = restoredTheme;
     _locale = restoredLocale;
+    _useSystemLocale = restoredUseSystemLocale;
     _hasCompletedIntro = restoredIntro;
 
     if (changed) {
@@ -62,12 +71,24 @@ class AppSettingsController extends ChangeNotifier {
   }
 
   void setLocale(Locale value) {
-    if (_locale == value) {
+    if (_locale == value && !_useSystemLocale) {
       return;
     }
     _locale = value;
+    _useSystemLocale = false;
     notifyListeners();
     unawaited(_store.writeString(_localeKey, value.languageCode));
+  }
+
+  void setSystemLocale() {
+    final Locale value = _systemLocale();
+    if (_useSystemLocale && _locale == value) {
+      return;
+    }
+    _locale = value;
+    _useSystemLocale = true;
+    notifyListeners();
+    unawaited(_store.writeString(_localeKey, 'system'));
   }
 
   Future<void> markIntroCompleted() async {
@@ -93,5 +114,11 @@ class AppSettingsController extends ChangeNotifier {
       'vi' => const Locale('vi'),
       _ => null,
     };
+  }
+
+  Locale _systemLocale() {
+    final String languageCode =
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    return languageCode == 'vi' ? const Locale('vi') : const Locale('en');
   }
 }
