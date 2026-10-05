@@ -1525,5 +1525,12 @@
   "globalUpdateRequiredTitle": "Update required",
   "globalUpdateRequiredBody": "Update SaveStream to continue using the app.",
   "globalMaintenanceTitle": "SaveStream is under maintenance",
-  "globalMaintenanceBody": "Recording data is safe. Try again after maintenance is complete."
+  "globalMaintenanceBody": "Recording data is safe. Try again after maintenance is complete.",
+  "notificationPermissionTitle": "Notification permission",
+  "notificationPermissionGrantedTitle": "Notifications are enabled",
+  "notificationPermissionGrantedBody": "SaveStream can alert you about LIVE creators and recording events.",
+  "notificationPermissionDeniedTitle": "Notifications are turned off",
+  "notificationPermissionDeniedBody": "Enable notifications in system settings to receive alerts.",
+  "notificationPermissionPromptBody": "Allow SaveStream to send notifications for followed creators and recording events.",
+  "notificationPermissionEnableAction": "Enable notifications"
 }
