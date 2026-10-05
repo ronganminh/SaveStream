@@ -32,60 +32,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _accountBusy = false;
-  bool _accountError = false;
-
-  Future<void> _logout() async {
-    await _runAccountAction(
-      () =>
-          ref.read(settingsAccountControllerProvider(widget.session)).logout(),
-    );
-  }
-
-  Future<void> _deleteAccount() async {
-    final AppLocalizations l10n = context.l10n;
-    final bool? confirmed = await SsConfirmDialog.show(
-      context,
-      title: l10n.deleteAccountTitle,
-      message: l10n.deleteAccountMessage,
-      cancelLabel: l10n.cancelAction,
-      confirmLabel: l10n.deleteAccountAction,
-    );
-
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    await _runAccountAction(
-      () => ref
-          .read(settingsAccountControllerProvider(widget.session))
-          .deleteAccount(),
-    );
-  }
-
-  Future<void> _runAccountAction(Future<void> Function() action) async {
-    setState(() {
-      _accountBusy = true;
-      _accountError = false;
-    });
-
-    try {
-      await action();
-    } on Object {
-      if (mounted) {
-        setState(() {
-          _accountError = true;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _accountBusy = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -100,18 +46,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(SsSpacing.lg),
           children: <Widget>[
-            if (_accountError) ...<Widget>[
-              SsCard(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Icon(
-                      Icons.error_outline_rounded,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: SsSpacing.md),
-                    Expanded(child: Text(l10n.accountActionError)),
-                  ],
                 ),
               ),
               const SizedBox(height: SsSpacing.lg),
