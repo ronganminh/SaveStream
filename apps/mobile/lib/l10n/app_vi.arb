@@ -1549,5 +1549,95 @@
     }
   },
   "deviceStorageScopeTitle": "Chỉ tính file Local",
-  "deviceStorageScopeBody": "Bản ghi cloud không được tính vào dung lượng sử dụng trên thiết bị."
+  "deviceStorageScopeBody": "Bản ghi cloud không được tính vào dung lượng sử dụng trên thiết bị.",
+  "settingsPlanSectionTitle": "Gói & sử dụng",
+  "settingsPlanUnknownTitle": "Chưa tải được gói",
+  "settingsPlanUnknownBody": "Mở Gói & sử dụng để thử lại.",
+  "settingsPlanProTitle": "SaveStream Pro",
+  "settingsPlanProBody": "Còn {hours} giờ cloud · tối đa {watches} creator",
+  "@settingsPlanProBody": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "watches": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPlanFreeTitle": "Free",
+  "settingsPlanFreeBody": "Còn {minutes} phút Free · {watchCount}/{watchLimit} creator",
+  "@settingsPlanFreeBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "watchCount": {
+        "type": "int"
+      },
+      "watchLimit": {
+        "type": "int"
+      }
+    }
+  },
+  "securityAccountTitle": "Bảo mật & tài khoản",
+  "securityAccountSubtitle": "Email, mật khẩu, thiết bị, đăng xuất và xoá tài khoản",
+  "securityEmailSubtitle": "Xem email tài khoản",
+  "securityResetPasswordTitle": "Đặt lại mật khẩu",
+  "securityResetPasswordSubtitle": "Gửi link đặt lại qua email",
+  "signedInDevicesTitle": "Thiết bị đã đăng nhập",
+  "currentDeviceLabel": "Thiết bị này",
+  "logoutOtherDevicesAction": "Đăng xuất mọi thiết bị khác",
+  "deviceSignedOutToast": "Đã đăng xuất thiết bị",
+  "otherDevicesSignedOutToast": "Đã đăng xuất các thiết bị khác",
+  "logoutConfirmTitle": "Đăng xuất khỏi SaveStream?",
+  "logoutConfirmBody": "Bản ghi Local vẫn nằm trên máy. Bản ghi Cloud và giờ cloud đã mua không bị ảnh hưởng.",
+  "logoutLocalRecordingWarning": "Đang có bản ghi Local. SaveStream phải dừng và lưu xong trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server.",
+  "logoutStopSaveAction": "Dừng, lưu và đăng xuất",
+  "logoutFailedBody": "Không thể hoàn tất đăng xuất an toàn. Bản ghi Local không bị xoá.",
+  "helpTitle": "Trợ giúp",
+  "helpLocalCloudQuestion": "Local và Cloud khác nhau thế nào?",
+  "helpBackgroundQuestion": "Vì sao bản ghi Local có thể dừng khi khoá màn hình?",
+  "helpFreeMinutesQuestion": "Phút Free được tính thế nào?",
+  "helpCloudHoursQuestion": "Giờ cloud đã mua có hết hạn không?",
+  "reportIssueTitle": "Báo lỗi",
+  "reportIssuePrompt": "Chuyện gì đã xảy ra?",
+  "reportDiagnosticsTitle": "Gửi kèm log chẩn đoán",
+  "reportDiagnosticsBody": "Gồm phiên bản app, OS và trạng thái recorder. Không bao giờ gửi file video.",
+  "reportIssueSentToast": "Đã gửi báo lỗi",
+  "reportIssueQueuedToast": "Đã lưu khi offline. SaveStream sẽ gửi khi có mạng lại.",
+  "sendAction": "Gửi",
+  "processingLabel": "Đang xử lý…",
+  "legalHubTitle": "Điều khoản & quyền riêng tư",
+  "responsibleUseTitle": "Sử dụng có trách nhiệm",
+  "responsibleUseLead": "Chỉ record nội dung bạn có quyền",
+  "responsibleUseBody": "SaveStream dành cho việc ghi hợp pháp và có uỷ quyền. Hãy tôn trọng quyền của creator và quy định nền tảng.",
+  "responsibleUseOwnContent": "Chỉ record kênh của bạn, kênh bạn quản lý hoặc nội dung bạn đã được cho phép.",
+  "responsibleUseNoRedistribute": "Không phát tán lại bản ghi khi chưa được phép.",
+  "responsibleUseEnforcement": "Tài khoản có thể bị hạn chế khi có khiếu nại quyền hợp lệ.",
+  "settingsSupportSectionTitle": "Hỗ trợ",
+  "deleteAccountConsequencesTitle": "Những gì sẽ bị xoá",
+  "deleteAccountConsequencesBody": "Hãy xem kỹ hậu quả trước khi tiếp tục. Giờ cloud đã mua không được hoàn tiền.",
+  "deleteAccountCloudDataItem": "Bản ghi Cloud, Watch List và cài đặt tài khoản sẽ bị xoá.",
+  "deleteAccountCloudHoursItem": "Bạn sẽ mất {hours} giờ cloud đã mua còn lại.",
+  "@deleteAccountCloudHoursItem": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteAccountLocalFilesItem": "Bản ghi Local vẫn nằm trên máy cho tới khi bạn xoá app hoặc xoá file.",
+  "deleteAccountRecordingBlocked": "Hãy dừng mọi recording đang chạy trước khi xoá tài khoản.",
+  "deleteAccountPermanentTitle": "Xác nhận xoá vĩnh viễn",
+  "deleteAccountPermanentBody": "Không thể khôi phục thao tác này.",
+  "deleteAccountUnderstandCheck": "Tôi hiểu bản ghi Cloud, Watch List và giờ cloud đã mua sẽ bị xoá vĩnh viễn.",
+  "deleteAccountPermanentAction": "Xoá tài khoản vĩnh viễn",
+  "deleteAccountFailed": "Xoá tài khoản thất bại. Chưa có dữ liệu nào bị xoá.",
+  "globalReconnectedToast": "Đã kết nối lại",
+  "sessionExpiredTitle": "Phiên đăng nhập đã hết hạn",
+  "sessionExpiredBody": "Hãy đăng nhập lại để tiếp tục dùng các tính năng tài khoản.",
+  "sessionExpiredRecordingBody": "Bản ghi Local vẫn đang chạy và tiếp tục được lưu trên máy này. Hãy đăng nhập lại để gia hạn quota và đồng bộ.",
+  "sessionExpiredRecordingSafeBody": "SaveStream sẽ không xoá các đoạn đã ghi trong lúc bạn đăng nhập lại.",
+  "signInAgainAction": "Đăng nhập lại"
 }
