@@ -130,8 +130,9 @@ void main() {
       );
       final Directory foreign = Directory('${root.path}/user-other/device-b');
       await foreign.create(recursive: true);
-      await File('${foreign.path}/foreign-recording.mp4')
-          .writeAsBytes(<int>[1]);
+      await File(
+        '${foreign.path}/foreign-recording.mp4',
+      ).writeAsBytes(<int>[1]);
 
       final LocalFileIndex index = LocalFileIndex(root: root);
       expect(
