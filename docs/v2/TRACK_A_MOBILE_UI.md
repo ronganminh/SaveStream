@@ -14,7 +14,7 @@
 - [x] A3 — Luồng ghi (Recording) — **đã merge PR #94 vào `main`**
 - [x] A4 — Bản ghi và Trình phát — **đã merge PR #126 vào `main`**
 - [x] A5 — Gói, sử dụng và mua giờ — **đã merge PR #135 vào `main`**
-- [ ] A6 — Cài đặt, Thông báo, trạng thái toàn cục
+- [x] A6 — Cài đặt, Thông báo, trạng thái toàn cục — **đã merge PR #144 vào `main`**
 - [ ] A7 — Luồng biên, trợ năng, dọn code cũ
 
 ### Trạng thái triển khai hiện tại — 2026-10-04
@@ -27,6 +27,7 @@
 | A3 | `track-a/a3-recording-flow` / #94 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 | A4 | `track-a/a4-recordings-player` / #126 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `mobile-backend-e2e` ✅ |
 | A5 | `track-a/a5-plans-usage-hours` / #135 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `android-emulator-smoke` ✅ · `mobile-backend-e2e` ✅ |
+| A6 | `track-a/a6-settings-notifications-global` / #144 | ✅ Hoàn tất, đã merge vào `main` | `flutter-checks` ✅ · `ios-release-compile` ✅ · `android-emulator-smoke` ✅ · `mobile-backend-e2e` ✅ |
 
 **Quy tắc cập nhật tracking:** chỉ đánh dấu `[x]` khi phase đã merge vào `main`. Phase đang mở PR vẫn giữ `[ ]` và ghi trạng thái ở bảng trên.
 
