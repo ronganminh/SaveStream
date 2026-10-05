@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/widgets/savestream_widgets.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
@@ -12,7 +11,6 @@ import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
 import '../router/app_routes.dart';
 import '../session/app_session_controller.dart';
-import 'session_expired_overlay.dart';
 
 class MainShell extends ConsumerWidget {
   const MainShell({
@@ -61,12 +59,8 @@ class MainShell extends ConsumerWidget {
     final bool localRecordingActive =
         localController.hasActiveSession || localController.hasSecondarySession;
 
-    final bool maintenanceGate = gate == A6GlobalGate.maintenance;
-    final bool onRecordings = location.startsWith(AppRoutes.recordings);
-    if (gate != A6GlobalGate.none &&
-        !localRecordingActive &&
-        !(maintenanceGate && onRecordings)) {
-      final bool maintenance = maintenanceGate;
+    if (gate != A6GlobalGate.none && !localRecordingActive) {
+      final bool maintenance = gate == A6GlobalGate.maintenance;
       return Scaffold(
         body: SafeArea(
           child: Center(
@@ -98,25 +92,6 @@ class MainShell extends ConsumerWidget {
                           : l10n.globalUpdateRequiredBody,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
-                    if (maintenance) ...<Widget>[
-                      SsPrimaryButton(
-                        label: l10n.globalOpenLocalRecordingsAction,
-                        onPressed: () => context.go(AppRoutes.recordings),
-                      ),
-                      const SizedBox(height: 8),
-                      SsSecondaryButton(
-                        label: l10n.retryAction,
-                        onPressed: () => ref.invalidate(a6GlobalGateProvider),
-                      ),
-                    ] else
-                      SsPrimaryButton(
-                        label: l10n.globalOpenStoreAction,
-                        onPressed: () => launchUrl(
-                          Uri.parse('https://savestream.online/download'),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -161,9 +136,61 @@ class MainShell extends ConsumerWidget {
         children: <Widget>[
           shellBody,
           if (sessionExpired)
-            SessionExpiredOverlay(
-              session: session,
-              localRecordingActive: localRecordingActive,
+            Positioned.fill(
+              child: ColoredBox(
+                color: Theme.of(
+                  context,
+                ).colorScheme.scrim.withValues(alpha: 0.72),
+                child: SafeArea(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: SsCard(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Icon(
+                                Icons.lock_clock_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                l10n.sessionExpiredTitle,
+                                style: Theme.of(context).textTheme.titleLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                localRecordingActive
+                                    ? l10n.sessionExpiredRecordingBody
+                                    : l10n.sessionExpiredBody,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              SsPrimaryButton(
+                                label: l10n.signInAgainAction,
+                                onPressed: () => context.push(AppRoutes.signIn),
+                              ),
+                              if (localRecordingActive) ...<Widget>[
+                                const SizedBox(height: 8),
+                                Text(
+                                  l10n.sessionExpiredRecordingSafeBody,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
         ],
       ),
