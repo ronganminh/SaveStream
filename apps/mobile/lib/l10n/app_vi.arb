@@ -1639,5 +1639,22 @@
   "sessionExpiredBody": "Hãy đăng nhập lại để tiếp tục dùng các tính năng tài khoản.",
   "sessionExpiredRecordingBody": "Bản ghi Local vẫn đang chạy và tiếp tục được lưu trên máy này. Hãy đăng nhập lại để gia hạn quota và đồng bộ.",
   "sessionExpiredRecordingSafeBody": "SaveStream sẽ không xoá các đoạn đã ghi trong lúc bạn đăng nhập lại.",
-  "signInAgainAction": "Đăng nhập lại"
+  "signInAgainAction": "Đăng nhập lại",
+  "deviceStorageCleanupTitle": "Dọn dẹp",
+  "deviceStorageDeleteOldTitle": "Xoá bản ghi Local cũ hơn 30 ngày",
+  "deviceStorageDeleteOldSubtitle": "Chỉ xoá file Local khỏi thiết bị này",
+  "deviceStorageDeleteOldBody": "Xoá {count} bản ghi Local và giải phóng {size}?",
+  "@deviceStorageDeleteOldBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageCleanupLockedBody": "Không thể dọn khi đang có bản ghi Local chạy",
+  "deviceStorageNothingToCleanToast": "Không có bản ghi Local cũ để xoá",
+  "deviceStorageCleanedToast": "Đã xoá bản ghi Local cũ"
 }
