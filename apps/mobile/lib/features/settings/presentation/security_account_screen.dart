@@ -8,9 +8,7 @@ import '../../../app/session/app_session_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../entitlement/domain/models/entitlement.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../recordings/presentation/active_recording_bar.dart';
 import 'controllers/settings_providers.dart';
 
 class SecurityAccountScreen extends ConsumerStatefulWidget {
@@ -31,20 +29,12 @@ class _SecurityAccountScreenState extends ConsumerState<SecurityAccountScreen> {
     final controller = ref.read(localRecordingControllerProvider);
     final bool localActive =
         controller.hasActiveSession || controller.hasSecondarySession;
-    final bool cloudActive = ref
-        .read(activeRecordingBarItemsProvider)
-        .any((ActiveRecordingBarItem item) => item.engine == Engine.cloud);
-    final String message = localActive && cloudActive
-        ? context.l10n.logoutLocalAndCloudRecordingWarning
-        : localActive
-        ? context.l10n.logoutLocalRecordingWarning
-        : cloudActive
-        ? context.l10n.logoutCloudRecordingWarning
-        : context.l10n.logoutConfirmBody;
     final bool? confirmed = await SsConfirmDialog.show(
       context,
       title: context.l10n.logoutConfirmTitle,
-      message: message,
+      message: localActive
+          ? context.l10n.logoutLocalRecordingWarning
+          : context.l10n.logoutConfirmBody,
       cancelLabel: context.l10n.cancelAction,
       confirmLabel: localActive
           ? context.l10n.logoutStopSaveAction
