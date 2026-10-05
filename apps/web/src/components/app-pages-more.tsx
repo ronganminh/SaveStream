@@ -3300,10 +3300,11 @@ function DemoAdminErrorsPage() {
 }
 
 /* ---------------- Public: legal, refund, contact ---------------- */
-const LEGAL_LAST_UPDATED = "October 2, 2026";
+const LEGAL_LAST_UPDATED = "October 5, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
 const ABUSE_EMAIL = "abuse@savestream.online";
+const COPYRIGHT_EMAIL = "copyright@savestream.online";
 
 function MailLink({ email }: { email: string }) {
   return (
@@ -3330,7 +3331,7 @@ function InlineLink({
   to,
   children,
 }: {
-  to: "/acceptable-use" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
+  to: "/acceptable-use" | "/copyright" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
   children: ReactNode;
 }) {
   return (
@@ -3377,15 +3378,14 @@ export function LegalPage({
 const authorized =
   "You may only add and record livestreams from TikTok channels that you own, manage, or have explicit permission from the rights holder to record and archive.";
 export function TermsPage() {
-  const { t } = usePreferences();
   return (
     <LegalPage
-      title="Terms of Service"
+      title="Terms of Use"
       intro={
         <p>
-          These terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a service that
-          monitors TikTok channels you add and supports cloud or on-device livestream recording.
-          By creating an account or using the service, you agree to these terms.
+          These Terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a software and cloud
+          infrastructure service for authorized livestream recording, processing, private storage,
+          playback, and download. By creating an account or using SaveStream, you agree to these Terms.
         </p>
       }
       sections={[
@@ -3393,9 +3393,45 @@ export function TermsPage() {
           h: "The service",
           p: (
             <p>
-              SaveStream checks the live status of the channels you add and, when a channel goes
-              live, records the livestream on our servers. Finished recordings can be watched in the
-              browser or downloaded from your account.
+              SaveStream provides software functionality and cloud infrastructure that can monitor
+              sources selected by a user and process recordings requested by that user. SaveStream is
+              not a media catalog, content marketplace, publisher, or redistribution service, and it
+              does not sell, license, provide, or redistribute third-party livestreams or other
+              third-party content.
+            </p>
+          ),
+        },
+        {
+          h: "Authorized Recording and Content Rights",
+          p: (
+            <>
+              <p>
+                You may use SaveStream only to record, process, or store content that you own, are
+                authorized to access and record, or otherwise have the legal right and necessary
+                permissions to use.
+              </p>
+              <p>
+                You are solely responsible for ensuring that your use of SaveStream complies with
+                applicable copyright, privacy, publicity, and other laws and with the terms and
+                policies of the third-party platforms or sources from which content is accessed.
+              </p>
+              <p>
+                SaveStream does not grant you rights to third-party content. You must stop monitoring
+                or recording when your authorization ends. See our{" "}
+                <InlineLink to="/acceptable-use">Acceptable Use Policy</InlineLink> and{" "}
+                <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>.
+              </p>
+            </>
+          ),
+        },
+        {
+          h: "Technical access restrictions",
+          p: (
+            <p>
+              You may not use SaveStream to circumvent or bypass DRM, paywalls, authentication
+              requirements, encryption, subscriber-only restrictions, private-access mechanisms,
+              technological protection measures, access controls, geographic restrictions, rate
+              limits, or other security or platform restrictions.
             </p>
           ),
         },
@@ -3403,114 +3439,70 @@ export function TermsPage() {
           h: "Your account",
           p: (
             <p>
-              You need an account with a verified email address to use SaveStream. You must be old
-              enough to enter into a binding agreement in your country, keep your password secure,
-              and tell us at <MailLink email={SUPPORT_EMAIL} /> if you believe your account has been
-              compromised. You are responsible for activity under your account.
+              You are responsible for your account, credentials, activity, and the sources you add.
+              Keep your credentials secure and contact <MailLink email={SUPPORT_EMAIL} /> if you
+              believe your account has been compromised.
             </p>
           ),
         },
         {
-          h: "Authorized recording only",
-          p: (
-            <p>
-              {authorized} You must stop monitoring a channel as soon as your permission ends. See
-              the <InlineLink to="/acceptable-use">Acceptable Use Policy</InlineLink>.
-            </p>
-          ),
-        },
-        {
-          h: "Your responsibility for content",
-          p: (
-            <p>
-              You are solely responsible for confirming that you have the rights to record, store,
-              and use each livestream, and for how you use recordings afterward. SaveStream does not
-              claim ownership of your recordings and does not verify ownership of channels.
-            </p>
-          ),
-        },
-        {
-          h: "Credits and payments",
+          h: "Payments / Cloud Credits",
           p: (
             <>
               <p>
-                SaveStream is paid for with credits. Credits are bought in one-time packages listed
-                on the <InlineLink to="/pricing">pricing page</InlineLink>; there is no subscription
-                and nothing renews automatically. Prices are shown in US dollars and applicable
-                taxes are calculated at checkout.
+                Payments made to SaveStream are payments for software functionality, cloud processing
+                capacity, storage, and related service credits. Payments do not purchase, license, or
+                grant rights to any livestream, video, audio, or other third-party content.
               </p>
               <p>
-                Payments on the web are processed by Lemon Squeezy, which acts as our reseller and
-                Merchant of Record. Your web purchase is also subject to the{" "}
-                <ExternalLink href="https://www.lemonsqueezy.com/buyer-terms">
-                  Lemon Squeezy buyer terms
-                </ExternalLink>
-                .
-              </p>
-              <p>
-                {t(
-                  "Mobile purchases are one-time purchases processed by the App Store or Google Play; web purchases are processed by Lemon Squeezy.",
-                )}
-              </p>
-              <p>
-                Credits are used only while a livestream is being recorded, based on the recording
-                time captured as shown on the pricing page. Credits do not expire, have no cash
-                value, and cannot be transferred to another account. New accounts may receive free
-                trial credits once, on first email verification. Unused credits are forfeited when
-                you delete your account.
+                Purchasing credits does not grant intellectual-property rights in content processed
+                or stored through SaveStream. Web checkout may be processed by a third-party payment
+                provider or Merchant of Record identified at checkout. Mobile purchases are processed
+                by the applicable app store.
               </p>
             </>
           ),
         },
         {
-          h: t("Free mobile advertising"),
+          h: "Private storage and deletion",
           p: (
             <p>
-              {t(
-                "The Free mobile app may show banner and rewarded ads. Rewarded ads can grant additional local-recording time after server-side verification.",
-              )}
+              Cloud recordings are associated with the requesting user’s account and are not made
+              publicly available by SaveStream as part of a content catalog. Recordings are retained
+              according to the applicable product retention period or until deleted earlier by the
+              user, subject to limited security, dispute, or legal retention requirements.
             </p>
           ),
         },
         {
-          h: "Refunds",
+          h: "Prohibited infringement and redistribution",
           p: (
             <p>
-              Refund requests are handled as described in our{" "}
-              <InlineLink to="/refund">Refund Policy</InlineLink>.
+              You may not use SaveStream to infringe or facilitate infringement of copyright,
+              trademark, privacy, publicity, or other proprietary rights, or to unlawfully publish,
+              share, resell, or redistribute third-party content.
             </p>
           ),
         },
         {
-          h: "Storage and deletion",
+          h: "Suspension, removal, and termination",
           p: (
             <p>
-              Finished recordings are stored for 30 days if your account has purchased credits, or
-              7 days if it has only used free trial credits, and are then deleted automatically. You
-              can delete them sooner, and deleting your account deletes them too. We may remove
-              recordings that violate these terms or the Acceptable Use Policy. Deleted recordings
-              cannot be recovered, so download anything you want to keep.
+              We may restrict, suspend, or terminate access to SaveStream and may restrict or remove
+              hosted material when we reasonably believe the service is being used in violation of
+              these Terms, applicable law, platform rules, or third-party rights. Repeated or serious
+              infringement may result in account termination.
             </p>
           ),
         },
         {
-          h: "Availability",
+          h: "Availability and third-party services",
           p: (
             <p>
-              Recording depends on TikTok and other third-party services that we do not control. We
-              work to detect and record every livestream, but we cannot guarantee that every
-              livestream will be detected or fully recorded, or that the service will be
-              uninterrupted.
-            </p>
-          ),
-        },
-        {
-          h: "Suspension and termination",
-          p: (
-            <p>
-              We may suspend or close accounts that record content without authorization, abuse the
-              service, or violate these terms. You can delete your account at any time from
-              Settings.
+              SaveStream depends on networks, hosting providers, app stores, payment providers, and
+              third-party platforms we do not control. We do not guarantee that every source will
+              remain technically available or that every recording request will complete without
+              interruption.
             </p>
           ),
         },
@@ -3518,20 +3510,18 @@ export function TermsPage() {
           h: "Disclaimer and limitation of liability",
           p: (
             <p>
-              The service is provided “as is” and “as available”. To the extent permitted by law,
-              SaveStream is not liable for indirect, incidental, or consequential damages, or for
-              lost data or recordings, and our total liability for any claim is limited to the
-              amount you paid us in the 12 months before the claim.
+              SaveStream is provided “as is” and “as available”. To the extent permitted by law,
+              SaveStream is not liable for indirect, incidental, special, or consequential damages,
+              or for loss of data, content, revenue, or opportunity arising from use of the service.
             </p>
           ),
         },
         {
-          h: "Changes to these terms",
+          h: "Changes to these Terms",
           p: (
             <p>
-              We may update these terms. When we make material changes, we will update the date at
-              the top of this page and, where appropriate, notify you by email. Continuing to use
-              SaveStream after a change means you accept the updated terms.
+              We may update these Terms as the service or legal requirements change. We will update
+              the date above and provide additional notice where required for material changes.
             </p>
           ),
         },
@@ -3539,7 +3529,8 @@ export function TermsPage() {
           h: "Contact",
           p: (
             <p>
-              Questions about these terms: <MailLink email={SUPPORT_EMAIL} />.
+              Questions about these Terms: <MailLink email={SUPPORT_EMAIL} />. Copyright notices:
+              {" "}<MailLink email={COPYRIGHT_EMAIL} />.
             </p>
           ),
         },
@@ -3548,14 +3539,14 @@ export function TermsPage() {
   );
 }
 export function PrivacyPage() {
-  const { t } = usePreferences();
   return (
     <LegalPage
       title="Privacy Policy"
       intro={
         <p>
-          This policy explains what personal information SaveStream collects, how we use it, and the
-          choices you have. Contact <MailLink email={PRIVACY_EMAIL} /> with any privacy question.
+          This Privacy Policy explains how SaveStream processes personal information across our
+          website, mobile apps, API, recording workers, and cloud storage services. Contact{" "}
+          <MailLink email={PRIVACY_EMAIL} /> with privacy questions or requests.
         </p>
       }
       sections={[
@@ -3563,115 +3554,75 @@ export function PrivacyPage() {
           h: "Information we collect",
           p: (
             <ul className="list-disc space-y-1 pl-5">
-              <li>Account details: email address, display name, and a hashed password.</li>
-              <li>Channels you add: TikTok usernames or links, and your monitoring settings.</li>
-              <li>
-                Recordings: the video files we record for you and their metadata, such as channel,
-                start and end time, duration, and file size.
-              </li>
-              <li>
-                Billing records: credit balance and history, purchased packages, amounts, and order
-                references. Web card and payment details are collected by Lemon Squeezy; mobile
-                purchase processing is handled by the App Store or Google Play. We do not receive
-                your full card number.
-              </li>
-              <li>Notification preferences and the notifications we send you.</li>
-              <li>
-                {t(
-                  "Mobile devices may register a device identifier, push token, platform, and locale so SaveStream can deliver notifications and open the correct screen.",
-                )}
-              </li>
-              <li>
-                Security and operational data: IP address, browser user agent, sign-in sessions,
-                request identifiers, and audit events.
-              </li>
+              <li>Account data such as email address, display name, authentication and security data.</li>
+              <li>Livestream URLs, channel identifiers, source information, and monitoring settings you submit.</li>
+              <li>Recording metadata, recording status, timestamps, duration, storage metadata, and media files.</li>
+              <li>Billing records, purchased credits, order references, and app-store transaction references.</li>
+              <li>Device, browser, IP address, push token, locale, diagnostics, security logs, and audit events.</li>
+              <li>Support, abuse, privacy, and copyright communications you send to us.</li>
             </ul>
           ),
         },
         {
-          h: "How we use it",
-          p: (
-            <p>
-              To provide monitoring and recording, keep your account secure, process purchases and
-              credit usage, send the emails you need (such as verification, password reset, and
-              notifications you have enabled), verify rewarded-ad grants, prevent abuse, and respond
-              to support requests. We do not sell your personal information.
-            </p>
-          ),
-        },
-        {
-          h: "Cookies and browser storage",
-          p: (
-            <p>
-              We use one essential, secure cookie to keep you signed in. Your browser also stores
-              your theme and language preferences locally. The web product does not use advertising
-              cookies.
-            </p>
-          ),
-        },
-        {
-          h: t("Advertising in the Free mobile app"),
-          p: (
-            <p>
-              {t(
-                "The Free mobile app uses advertising services for banner and rewarded ads. Those services may receive device or advertising identifiers needed to deliver and verify ads.",
-              )}
-            </p>
-          ),
-        },
-        {
-          h: "Recordings",
-          p: (
-            <p>
-              Recordings are stored in cloud storage linked to your account. They are accessible to
-              you, and to SaveStream staff only when needed for support or abuse investigations.{" "}
-              {authorized}
-            </p>
-          ),
-        },
-        {
-          h: "Service providers",
+          h: "How We Handle Recording Data",
           p: (
             <>
-              <p>We share data only with providers that help us run SaveStream:</p>
-              <ul className="list-disc space-y-1 pl-5">
-                <li>
-                  Cloudflare — website hosting, DNS, and storage of recordings (Cloudflare R2).
-                </li>
-                <li>VNPT — server hosting for the SaveStream API and recording workers.</li>
-                <li>Brevo — delivery of account and notification emails.</li>
-                <li>
-                  {t(
-                    "Apple App Store and Google Play — processing one-time mobile purchases and store-managed refunds.",
-                  )}
-                </li>
-                <li>
-                  {t(
-                    "Google services — rewarded-ad verification in the Free mobile app and push notification delivery.",
-                  )}
-                </li>
-                <li>
-                  Lemon Squeezy — payment processing as Merchant of Record (
-                  <ExternalLink href="https://www.lemonsqueezy.com/privacy">
-                    privacy policy
-                  </ExternalLink>
-                  ).
-                </li>
-                <li>Google Fonts — delivery of the fonts used on our website.</li>
-              </ul>
-              <p>These providers may process data in countries other than your own.</p>
+              <p>
+                SaveStream may process livestream URLs, channel identifiers, recording metadata,
+                recording status, timestamps, and media files when necessary to provide recording,
+                processing, playback, download, and cloud storage functionality requested by the user.
+              </p>
+              <p>
+                SaveStream does not sell users’ recordings or make them publicly available as part of
+                the service. Cloud recordings are processed and stored only as necessary to provide
+                the requested service, subject to the applicable retention period or until deleted by
+                the user.
+              </p>
             </>
           ),
         },
         {
-          h: "Retention",
+          h: "How we use information",
           p: (
             <p>
-              Finished recordings are kept for 30 days for accounts that have purchased credits and
-              7 days for free trial accounts, then deleted automatically; you can delete them sooner.
-              When you delete your account, we delete your recordings and remove your personal information from our
-              systems, except billing records we must keep for accounting, tax, or fraud prevention.
-              Security logs are kept only as long as needed for security and operations.
+              We use information to provide and secure the service, execute user-requested processing
+              and storage, maintain account sessions, deliver notifications, process billing and
+              entitlements, prevent abuse and fraud, investigate reports, provide support, and comply
+              with legal obligations. We do not sell personal information or recordings.
+            </p>
+          ),
+        },
+        {
+          h: "Service providers and disclosures",
+          p: (
+            <p>
+              We may share the minimum necessary information with infrastructure, storage, email,
+              analytics, security, advertising, app-store, and payment providers that help operate
+              SaveStream. We may also disclose information when required by law, to protect rights or
+              safety, or to investigate abuse, fraud, or infringement. Payment-card details are
+              processed by the payment provider and are not stored by SaveStream in full.
+            </p>
+          ),
+        },
+        {
+          h: "Cookies, device data, and advertising",
+          p: (
+            <p>
+              The website uses essential session and preference storage. The Free mobile app may use
+              advertising and push-notification services, which may process device or advertising
+              identifiers as permitted by platform settings and applicable law.
+            </p>
+          ),
+        },
+        {
+          h: "Retention and deletion",
+          p: (
+            <p>
+              Recordings are kept only for the applicable retention period or until deleted sooner by
+              the user. Account and operational data are retained only as long as needed for the
+              service, security, fraud prevention, dispute resolution, accounting, tax, and legal
+              obligations. Users can delete recordings and request account and personal-data deletion,
+              subject to limited mandatory retention.
             </p>
           ),
         },
@@ -3679,37 +3630,38 @@ export function PrivacyPage() {
           h: "Your choices and rights",
           p: (
             <p>
-              You can update your profile, change notification settings, export your account data,
-              and delete your account from Settings. You can also email{" "}
-              <MailLink email={PRIVACY_EMAIL} /> to request access to, correction of, or deletion of
-              your personal information.
+              Depending on your location, you may have rights to access, correct, export, object to
+              certain processing of, or delete your personal information. You can use available
+              account controls or contact <MailLink email={PRIVACY_EMAIL} />.
+            </p>
+          ),
+        },
+        {
+          h: "Security",
+          p: (
+            <p>
+              We use technical and organizational safeguards designed to protect account information
+              and private recording data. No storage or transmission system can be guaranteed to be
+              completely secure.
             </p>
           ),
         },
         {
           h: "Children",
-          p: (
-            <p>
-              SaveStream is not intended for children and we do not knowingly collect their data.
-            </p>
-          ),
+          p: <p>SaveStream is not intended for children and we do not knowingly collect their data.</p>,
         },
         {
-          h: "Changes to this policy",
+          h: "Changes to this Policy",
           p: (
             <p>
-              We will update the date at the top of this page when this policy changes and notify
-              you by email about material changes.
+              We will update the date above when this Policy changes and provide additional notice
+              where required for material changes.
             </p>
           ),
         },
         {
           h: "Contact",
-          p: (
-            <p>
-              Privacy questions and requests: <MailLink email={PRIVACY_EMAIL} />.
-            </p>
-          ),
+          p: <p>Privacy questions and requests: <MailLink email={PRIVACY_EMAIL} />.</p>,
         },
       ]}
     />
@@ -3721,46 +3673,40 @@ export function AcceptableUsePage() {
       title="Acceptable Use Policy"
       intro={
         <p>
-          SaveStream is built for creators, brands, and teams archiving livestreams they are
-          authorized to record. This policy is part of our{" "}
-          <InlineLink to="/terms">Terms of Service</InlineLink>.
+          SaveStream provides cloud recording, processing, and private storage infrastructure for
+          lawful, authorized uses. This policy is part of our{" "}
+          <InlineLink to="/terms">Terms of Use</InlineLink>.
         </p>
       }
       sections={[
         {
-          h: "Allowed",
-          p: (
-            <ul className="list-disc space-y-1 pl-5">
-              <li>Recording your own TikTok channel’s livestreams.</li>
-              <li>Recording channels you manage on behalf of a creator or business.</li>
-              <li>
-                Recording channels whose owner has given you permission to record and archive.
-              </li>
-            </ul>
-          ),
-        },
-        {
-          h: "Not allowed",
-          p: (
-            <ul className="list-disc space-y-1 pl-5">
-              <li>Recording channels without the owner’s permission.</li>
-              <li>
-                Redistributing recordings in violation of the creator’s rights or platform terms.
-              </li>
-              <li>Using SaveStream to harass, surveil, or collect data about individuals.</li>
-              <li>
-                Attempting to bypass usage limits, share accounts to abuse free credits, or overload
-                the service.
-              </li>
-            </ul>
-          ),
-        },
-        {
-          h: "Your responsibility",
+          h: "Authorized uses",
           p: (
             <p>
-              You are responsible for ensuring you own, manage, or have permission to record each
-              channel’s livestreams, and for stopping monitoring when that permission ends.
+              You may use SaveStream for content you own, manage, are authorized to record, or
+              otherwise have the legal right and necessary permissions to process and privately store.
+            </p>
+          ),
+        },
+        {
+          h: "Prohibited Activities",
+          p: (
+            <ul className="list-disc space-y-2 pl-5">
+              <li>Using SaveStream to copy, record, download, store, share, or distribute content without sufficient rights or authorization.</li>
+              <li>Circumventing DRM, authentication, subscriber-only restrictions, paywalls, private-access mechanisms, rate limits, technical protection measures, or other restrictions imposed by a content owner or third-party service.</li>
+              <li>Using SaveStream primarily to facilitate copyright infringement or unauthorized redistribution of third-party content.</li>
+              <li>Using the service to harass, stalk, surveil, dox, or unlawfully collect personal information about another person.</li>
+              <li>Uploading malware, abusing credentials, interfering with service security, evading quotas or enforcement, or intentionally overloading infrastructure.</li>
+              <li>Using SaveStream in a way that violates applicable law or the applicable source platform’s terms and policies.</li>
+            </ul>
+          ),
+        },
+        {
+          h: "No public content catalog",
+          p: (
+            <p>
+              SaveStream is not intended to create or operate a public library of third-party media.
+              Users may not use SaveStream as a redistribution, syndication, piracy, or content-resale service.
             </p>
           ),
         },
@@ -3768,19 +3714,19 @@ export function AcceptableUsePage() {
           h: "Enforcement",
           p: (
             <p>
-              We may pause monitoring, remove recordings, or suspend accounts that violate this
-              policy. If you believe we made a mistake, reply to our notice or write to{" "}
-              <MailLink email={SUPPORT_EMAIL} /> and we will review your case.
+              We may pause processing, restrict access to stored material, remove material, suspend
+              accounts, or terminate accounts when we reasonably believe this policy has been
+              violated. Serious or repeated infringement may result in termination.
             </p>
           ),
         },
         {
-          h: "Reporting",
+          h: "Reporting abuse or infringement",
           p: (
             <p>
-              If you believe a channel is being recorded without authorization, email{" "}
-              <MailLink email={ABUSE_EMAIL} /> with the channel name and why you believe the
-              recording is unauthorized.
+              Report suspected abuse to <MailLink email={ABUSE_EMAIL} />. Copyright owners and their
+              authorized representatives should use <MailLink email={COPYRIGHT_EMAIL} /> and review
+              our <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>.
             </p>
           ),
         },
@@ -3788,6 +3734,89 @@ export function AcceptableUsePage() {
     />
   );
 }
+export function CopyrightPage() {
+  return (
+    <LegalPage
+      title="Copyright & Takedown Policy"
+      intro={
+        <p>
+          SaveStream respects intellectual-property rights and provides a process for rights holders
+          to report material they believe is being processed or stored without authorization.
+        </p>
+      }
+      sections={[
+        {
+          h: "Reporting Copyright Infringement",
+          p: (
+            <>
+              <p>
+                Rights holders or their authorized representatives may submit an infringement report
+                to <MailLink email={COPYRIGHT_EMAIL} />.
+              </p>
+              <p>
+                A valid report should identify the copyrighted work, the allegedly infringing
+                material, sufficient information for us to locate it, contact information for the
+                reporting party, and a good-faith statement regarding the claimed infringement.
+              </p>
+            </>
+          ),
+        },
+        {
+          h: "What to include",
+          p: (
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Your full legal name, email address, and relationship to the rights holder.</li>
+              <li>A description or representative list of the copyrighted work claimed to be infringed.</li>
+              <li>The SaveStream recording, account, channel, source URL, or other information sufficient for us to locate the material.</li>
+              <li>A good-faith statement that the disputed use is not authorized by the rights holder, its agent, or applicable law.</li>
+              <li>A statement that the information in the notice is accurate and that you are the rights holder or authorized to act for the rights holder.</li>
+              <li>Your physical or electronic signature.</li>
+            </ul>
+          ),
+        },
+        {
+          h: "Review and temporary restrictions",
+          p: (
+            <p>
+              SaveStream may temporarily restrict access to or remove content while a report is
+              reviewed and may preserve limited records where reasonably necessary for the review,
+              dispute handling, security, or legal compliance.
+            </p>
+          ),
+        },
+        {
+          h: "Account enforcement",
+          p: (
+            <p>
+              SaveStream may terminate accounts involved in repeated or serious infringement and may
+              take other proportionate action under our Terms of Use and Acceptable Use Policy.
+            </p>
+          ),
+        },
+        {
+          h: "Responses and disputes",
+          p: (
+            <p>
+              If affected users are eligible to dispute a restriction or removal, we may request
+              information needed to evaluate that response. We do not adjudicate ownership disputes
+              and may require parties to resolve complex claims through the appropriate legal process.
+            </p>
+          ),
+        },
+        {
+          h: "Other rights concerns",
+          p: (
+            <p>
+              For non-copyright abuse or unauthorized-recording concerns, contact{" "}
+              <MailLink email={ABUSE_EMAIL} />.
+            </p>
+          ),
+        },
+      ]}
+    />
+  );
+}
+
 export function RefundPage() {
   return (
     <LegalPage
