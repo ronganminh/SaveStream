@@ -62,7 +62,9 @@ void main() {
     final AppSettingsController settings = AppSettingsController();
 
     await openSettings(tester, settings: settings);
-    final BuildContext settingsContext = tester.element(find.text('Settings').first);
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
+    );
     GoRouter.of(settingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
 
@@ -97,7 +99,9 @@ void main() {
     final AppSettingsController settings = AppSettingsController();
 
     await openSettings(tester, settings: settings);
-    final BuildContext settingsContext = tester.element(find.text('Settings').first);
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
+    );
     GoRouter.of(settingsContext).push(AppRoutes.language);
     await tester.pumpAndSettle();
 
