@@ -88,8 +88,7 @@ class NotificationSettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: SsSpacing.sm),
               pushPermission.when(
-                loading: () =>
-                    const SsSkeleton(height: 88, radius: SsRadii.lg),
+                loading: () => const SsSkeleton(height: 88, radius: SsRadii.lg),
                 error: (Object error, StackTrace stackTrace) =>
                     SsAsyncErrorState(
                       error: error,
@@ -117,8 +116,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         const SizedBox(height: SsSpacing.md),
                         SsPrimaryButton(
                           label: l10n.notificationPermissionEnableAction,
-                          onPressed: () =>
-                              ref.read(pushPermissionProvider.notifier).request(),
+                          onPressed: () => ref
+                              .read(pushPermissionProvider.notifier)
+                              .request(),
                         ),
                       ],
                     ),
