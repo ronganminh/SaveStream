@@ -1532,5 +1532,22 @@
   "notificationPermissionDeniedTitle": "Thông báo đang bị tắt",
   "notificationPermissionDeniedBody": "Hãy bật thông báo trong cài đặt hệ thống để nhận cảnh báo.",
   "notificationPermissionPromptBody": "Cho phép SaveStream gửi thông báo về creator bạn theo dõi và các sự kiện bản ghi.",
-  "notificationPermissionEnableAction": "Bật thông báo"
+  "notificationPermissionEnableAction": "Bật thông báo",
+  "deviceStorageTitle": "Bộ nhớ thiết bị",
+  "deviceStorageSubtitle": "Dung lượng bản ghi Local trên thiết bị này",
+  "deviceStorageFreeLabel": "Dung lượng còn trống",
+  "deviceStorageLocalLabel": "Bản ghi Local",
+  "deviceStorageLocalValue": "{count} bản ghi · {size}",
+  "@deviceStorageLocalValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageScopeTitle": "Chỉ tính file Local",
+  "deviceStorageScopeBody": "Bản ghi cloud không được tính vào dung lượng sử dụng trên thiết bị."
 }
