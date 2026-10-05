@@ -27,9 +27,7 @@ class AdConsentGate extends ConsumerWidget {
 
     final bool pro = entitlement.value?.plan == Plan.pro;
     final bool shouldExplain =
-        !pro &&
-        consent == AdConsentState.required &&
-        !acknowledged;
+        !pro && consent == AdConsentState.required && !acknowledged;
 
     return Stack(
       children: <Widget>[
@@ -71,12 +69,14 @@ class AdConsentGate extends ConsumerWidget {
                             const SizedBox(height: SsSpacing.lg),
                             SsPrimaryButton(
                               label: context.l10n.adConsentContinueAction,
-                              onPressed: () => ref
-                                  .read(
-                                    adConsentExplanationAcknowledgedProvider
-                                        .notifier,
-                                  )
-                                  .state = true,
+                              onPressed: () =>
+                                  ref
+                                          .read(
+                                            adConsentExplanationAcknowledgedProvider
+                                                .notifier,
+                                          )
+                                          .state =
+                                      true,
                             ),
                           ],
                         ),

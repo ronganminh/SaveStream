@@ -405,15 +405,13 @@ class _WatchTile extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
-                  onPressed: () => context.push(
-                    AppRoutes.cloudHoursLocation('auto_record'),
-                  ),
+                  onPressed: () =>
+                      context.push(AppRoutes.cloudHoursLocation('auto_record')),
                   icon: const Icon(Icons.add_card_rounded),
                   label: Text(l10n.buyMoreCloudHoursAction),
                 ),
               ),
-          ]
-          else
+          ] else
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.lock_outline_rounded),
