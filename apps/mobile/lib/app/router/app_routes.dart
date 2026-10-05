@@ -33,6 +33,7 @@ abstract final class AppRoutes {
   static const String language = '/settings/language';
   static const String theme = '/settings/theme';
   static const String notifications = '/settings/notifications';
+  static const String deviceStorage = '/settings/storage';
   static const String androidRecordingGuide = '/settings/recording/android';
   static const String androidOemRecordingGuide =
       '/settings/recording/android/oem';
