@@ -1532,5 +1532,22 @@
   "notificationPermissionDeniedTitle": "Notifications are turned off",
   "notificationPermissionDeniedBody": "Enable notifications in system settings to receive alerts.",
   "notificationPermissionPromptBody": "Allow SaveStream to send notifications for followed creators and recording events.",
-  "notificationPermissionEnableAction": "Enable notifications"
+  "notificationPermissionEnableAction": "Enable notifications",
+  "deviceStorageTitle": "Device storage",
+  "deviceStorageSubtitle": "Local recording storage on this device",
+  "deviceStorageFreeLabel": "Free space",
+  "deviceStorageLocalLabel": "Local recordings",
+  "deviceStorageLocalValue": "{count} recordings · {size}",
+  "@deviceStorageLocalValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceStorageScopeTitle": "Local files only",
+  "deviceStorageScopeBody": "Cloud recordings are not included in device storage usage."
 }
