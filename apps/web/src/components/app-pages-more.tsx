@@ -3378,6 +3378,7 @@ export function LegalPage({
 const authorized =
   "You may only add and record livestreams from TikTok channels that you own, manage, or have explicit permission from the rights holder to record and archive.";
 export function TermsPage() {
+  const { t } = usePreferences();
   return (
     <LegalPage
       title="Terms of Use"
@@ -3458,9 +3459,18 @@ export function TermsPage() {
                 Purchasing credits does not grant intellectual-property rights in content processed
                 or stored through SaveStream. Web checkout may be processed by a third-party payment
                 provider or Merchant of Record identified at checkout. Mobile purchases are processed
-                by the applicable app store.
+                by the App Store or Google Play.
               </p>
             </>
+          ),
+        },
+        {
+          h: t("Free mobile advertising"),
+          p: (
+            <p>
+              The Free mobile app may show banner and rewarded ads. Advertising supports the local
+              app experience and does not grant rights to any third-party content.
+            </p>
           ),
         },
         {
@@ -3539,6 +3549,7 @@ export function TermsPage() {
   );
 }
 export function PrivacyPage() {
+  const { t } = usePreferences();
   return (
     <LegalPage
       title="Privacy Policy"
@@ -3608,9 +3619,29 @@ export function PrivacyPage() {
           h: "Cookies, device data, and advertising",
           p: (
             <p>
-              The website uses essential session and preference storage. The Free mobile app may use
-              advertising and push-notification services, which may process device or advertising
-              identifiers as permitted by platform settings and applicable law.
+              The website uses essential session and preference storage. Mobile devices may register
+              a push token, platform, and locale so SaveStream can deliver notifications and open the
+              correct screen.
+            </p>
+          ),
+        },
+        {
+          h: t("Advertising in the Free mobile app"),
+          p: (
+            <p>
+              The Free mobile app may use advertising services for banner and rewarded ads. Those
+              services may receive device or advertising identifiers needed to deliver and verify ads,
+              subject to device settings and applicable law.
+            </p>
+          ),
+        },
+        {
+          h: "App-store purchases",
+          p: (
+            <p>
+              Apple App Store or Google Play may process one-time mobile purchases, transaction
+              identifiers, and store-managed refunds. SaveStream does not receive your full payment
+              card number from those stores.
             </p>
           ),
         },
