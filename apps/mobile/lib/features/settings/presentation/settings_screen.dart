@@ -120,8 +120,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: SsSpacing.sm),
             SsCard(
               child: entitlement.when(
-                loading: () =>
-                    const SsSkeleton(height: 88, radius: SsRadii.lg),
+                loading: () => const SsSkeleton(height: 88, radius: SsRadii.lg),
                 error: (Object error, StackTrace stackTrace) => SsListTile(
                   title: l10n.settingsPlanUnknownTitle,
                   subtitle: l10n.settingsPlanUnknownBody,
