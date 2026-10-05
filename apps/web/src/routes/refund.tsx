@@ -7,7 +7,7 @@ export const Route = createFileRoute("/refund")({
     publicMeta(
       "/refund",
       "Refund Policy",
-      "How to request a refund for a SaveStream credit purchase processed by Lemon Squeezy.",
+      "How to request a refund for a SaveStream credit purchase processed by our authorized Merchant of Record (MoR).",
     ),
   component: () => <RefundPage />,
 });
