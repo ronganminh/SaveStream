@@ -30,6 +30,7 @@ const PUBLIC_PATHS = [
   "/terms",
   "/privacy",
   "/acceptable-use",
+  "/copyright",
   "/refund",
 ];
 
@@ -68,6 +69,7 @@ for (const route of [
   "terms",
   "privacy",
   "acceptable-use",
+  "copyright",
 ]) {
   if (!fs.existsSync(path.join(root, `src/routes/${route}.tsx`)))
     fail(`missing route src/routes/${route}.tsx`);
@@ -83,6 +85,7 @@ for (const link of [
   '"/terms"',
   '"/privacy"',
   '"/acceptable-use"',
+  '"/copyright"',
   '"/help"',
   '"/pricing"',
 ]) {
@@ -130,7 +133,7 @@ for (const email of [
 ]) {
   if (!legal.includes(email)) fail(`legal pages: missing ${email}`);
 }
-for (const provider of ["Cloudflare", "VNPT", "Brevo", "Lemon Squeezy"]) {
+for (const provider of ["Cloudflare", "VNPT", "Brevo", "Merchant of Record"]) {
   if (
     !between(legal, "export function PrivacyPage", "export function AcceptableUsePage").includes(
       provider,
