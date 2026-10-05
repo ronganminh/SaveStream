@@ -9,24 +9,28 @@ enum A6GlobalGate { none, updateRequired, maintenance }
 
 final FutureProvider<A6GlobalGate> a6GlobalGateProvider =
     FutureProvider<A6GlobalGate>((Ref ref) async {
-  final AppStatus status = await ref.watch(appStatusRepositoryProvider).getStatus();
-  if (status.maintenance.active) {
-    return A6GlobalGate.maintenance;
-  }
+      final AppStatus status = await ref
+          .watch(appStatusRepositoryProvider)
+          .getStatus();
+      if (status.maintenance.active) {
+        return A6GlobalGate.maintenance;
+      }
 
-  const String currentVersion = String.fromEnvironment(
-    'APP_VERSION',
-    defaultValue: '2.0.0',
-  );
-  final DevicePlatform platform = ref.watch(deviceInfoServiceProvider).platform;
-  final String minimumVersion = platform == DevicePlatform.android
-      ? status.minSupportedVersion.android
-      : status.minSupportedVersion.ios;
+      const String currentVersion = String.fromEnvironment(
+        'APP_VERSION',
+        defaultValue: '2.0.0',
+      );
+      final DevicePlatform platform = ref
+          .watch(deviceInfoServiceProvider)
+          .platform;
+      final String minimumVersion = platform == DevicePlatform.android
+          ? status.minSupportedVersion.android
+          : status.minSupportedVersion.ios;
 
-  return _isVersionLower(currentVersion, minimumVersion)
-      ? A6GlobalGate.updateRequired
-      : A6GlobalGate.none;
-});
+      return _isVersionLower(currentVersion, minimumVersion)
+          ? A6GlobalGate.updateRequired
+          : A6GlobalGate.none;
+    });
 
 bool _isVersionLower(String current, String minimum) {
   final List<int> currentParts = _versionParts(current);
@@ -45,6 +49,9 @@ List<int> _versionParts(String value) {
     raw.add('0');
   }
   return raw
-      .map((String part) => int.tryParse(part.replaceAll(RegExp(r'[^0-9].*'), '')) ?? 0)
+      .map(
+        (String part) =>
+            int.tryParse(part.replaceAll(RegExp(r'[^0-9].*'), '')) ?? 0,
+      )
       .toList(growable: false);
 }

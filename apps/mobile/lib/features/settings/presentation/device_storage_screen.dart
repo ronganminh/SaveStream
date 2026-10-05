@@ -24,21 +24,24 @@ class DeviceStorageSnapshot {
 
 final FutureProvider<DeviceStorageSnapshot> deviceStorageSnapshotProvider =
     FutureProvider<DeviceStorageSnapshot>((Ref ref) async {
-  final int freeBytes = await ref.watch(deviceInfoServiceProvider).freeStorageBytes;
-  final List<LocalRecordingSummary> recordings =
-      await ref.watch(localRecordingRepositoryProvider).list();
-  final Iterable<LocalRecordingSummary> available = recordings.where(
-    (LocalRecordingSummary item) => item.fileAvailable,
-  );
-  return DeviceStorageSnapshot(
-    freeBytes: freeBytes,
-    localBytes: available.fold<int>(
-      0,
-      (int total, LocalRecordingSummary item) => total + item.sizeBytes,
-    ),
-    localCount: available.length,
-  );
-});
+      final int freeBytes = await ref
+          .watch(deviceInfoServiceProvider)
+          .freeStorageBytes;
+      final List<LocalRecordingSummary> recordings = await ref
+          .watch(localRecordingRepositoryProvider)
+          .list();
+      final Iterable<LocalRecordingSummary> available = recordings.where(
+        (LocalRecordingSummary item) => item.fileAvailable,
+      );
+      return DeviceStorageSnapshot(
+        freeBytes: freeBytes,
+        localBytes: available.fold<int>(
+          0,
+          (int total, LocalRecordingSummary item) => total + item.sizeBytes,
+        ),
+        localCount: available.length,
+      );
+    });
 
 class DeviceStorageScreen extends ConsumerWidget {
   const DeviceStorageScreen({super.key});
