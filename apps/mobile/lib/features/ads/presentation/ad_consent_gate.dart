@@ -69,7 +69,8 @@ class _AdConsentGateState extends ConsumerState<AdConsentGate> {
                             const SizedBox(height: SsSpacing.lg),
                             SsPrimaryButton(
                               label: context.l10n.adConsentContinueAction,
-                              onPressed: () => setState(() => _acknowledged = true),
+                              onPressed: () =>
+                                  setState(() => _acknowledged = true),
                             ),
                           ],
                         ),
