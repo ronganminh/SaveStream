@@ -3607,11 +3607,14 @@ export function PrivacyPage() {
           h: "Service providers and disclosures",
           p: (
             <p>
-              We may share the minimum necessary information with infrastructure, storage, email,
-              analytics, security, advertising, app-store, and payment providers that help operate
-              SaveStream. We may also disclose information when required by law, to protect rights or
-              safety, or to investigate abuse, fraud, or infringement. Payment-card details are
-              processed by the payment provider and are not stored by SaveStream in full.
+              We may share the minimum necessary information with providers that help operate
+              SaveStream, including Cloudflare for website infrastructure and object storage, VNPT
+              for server infrastructure, Brevo for transactional email, Apple App Store or Google
+              Play for mobile purchases, and the web payment provider or Merchant of Record
+              identified at checkout. We may also disclose information when required by law, to
+              protect rights or safety, or to investigate abuse, fraud, or infringement. Payment-card
+              details are processed by the applicable payment provider and are not stored by
+              SaveStream in full.
             </p>
           ),
         },
