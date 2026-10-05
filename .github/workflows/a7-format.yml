@@ -1,0 +1,34 @@
+name: A7 Formatter
+
+on:
+  push:
+    branches:
+      - tmp/a7-format-20261005
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/app/shell/main_shell.dart lib/features/ads/presentation/ad_consent_gate.dart lib/features/channels/presentation/channels_screen.dart lib/features/home/presentation/home_screen.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/lib/app/shell/main_shell.dart apps/mobile/lib/features/ads/presentation/ad_consent_gate.dart apps/mobile/lib/features/channels/presentation/channels_screen.dart apps/mobile/lib/features/home/presentation/home_screen.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(mobile): format A7 slice [formatted]"
+          git push
