@@ -21,8 +21,7 @@ class SecurityAccountScreen extends ConsumerStatefulWidget {
       _SecurityAccountScreenState();
 }
 
-class _SecurityAccountScreenState
-    extends ConsumerState<SecurityAccountScreen> {
+class _SecurityAccountScreenState extends ConsumerState<SecurityAccountScreen> {
   bool _busy = false;
   String? _error;
 
@@ -111,7 +110,9 @@ class _SecurityAccountScreenState
           ),
           const SizedBox(height: SsSpacing.lg),
           SsSecondaryButton(
-            label: _busy ? context.l10n.processingLabel : context.l10n.logoutAction,
+            label: _busy
+                ? context.l10n.processingLabel
+                : context.l10n.logoutAction,
             icon: Icons.logout_rounded,
             onPressed: _busy ? null : _logout,
           ),
@@ -119,7 +120,9 @@ class _SecurityAccountScreenState
           SsTextAction(
             label: context.l10n.deleteAccountAction,
             icon: Icons.delete_forever_outlined,
-            onPressed: _busy ? null : () => context.push(AppRoutes.deleteAccount),
+            onPressed: _busy
+                ? null
+                : () => context.push(AppRoutes.deleteAccount),
           ),
         ],
       ),
