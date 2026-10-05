@@ -244,23 +244,32 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
                     _PlatformAlert(
                       platform: ref.watch(deviceInfoServiceProvider).platform,
                     ),
-                    const SizedBox(height: SsSpacing.lg),
-                    SsPrimaryButton(
-                      label: context.l10n.localRecordingStopAction,
-                      icon: Icons.stop_circle_outlined,
-                      onPressed: !canStop
-                          ? null
-                          : () => _confirmStop(
-                              controller: controller,
-                              isSecondary: isSecondary,
-                              recordedSeconds: state.recordedSeconds,
-                            ),
-                    ),
+                    const SizedBox(height: SsSpacing.xl),
                   ],
                 ),
               ),
             ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(
+          SsSpacing.lg,
+          SsSpacing.sm,
+          SsSpacing.lg,
+          SsSpacing.lg,
+        ),
+        child: SsPrimaryButton(
+          label: context.l10n.localRecordingStopAction,
+          icon: Icons.stop_circle_outlined,
+          onPressed: !canStop
+              ? null
+              : () => _confirmStop(
+                  controller: controller,
+                  isSecondary: isSecondary,
+                  recordedSeconds: state.recordedSeconds,
+                ),
         ),
       ),
     );

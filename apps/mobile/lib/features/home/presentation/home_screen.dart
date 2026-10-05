@@ -459,8 +459,10 @@ class _HomeDashboard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: SsSpacing.lg),
-        SsBannerAdSlot(label: l10n.advertisementLabel),
+        if (MediaQuery.textScalerOf(context).scale(1) < 1.8) ...<Widget>[
+          const SizedBox(height: SsSpacing.lg),
+          SsBannerAdSlot(label: l10n.advertisementLabel),
+        ],
       ],
     ];
   }
