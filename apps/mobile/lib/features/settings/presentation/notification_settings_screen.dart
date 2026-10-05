@@ -6,10 +6,12 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/push_service.dart';
 import '../domain/models/app_notification.dart';
 import '../domain/models/notification_preferences.dart';
 import 'controllers/notification_feed_providers.dart';
 import 'controllers/notification_preferences_providers.dart';
+import 'controllers/push_permission_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerWidget {
   const NotificationSettingsScreen({super.key});
@@ -55,6 +57,9 @@ class NotificationSettingsScreen extends ConsumerWidget {
     final AsyncValue<NotificationFeedState> feed = ref.watch(
       notificationFeedProvider,
     );
+    final AsyncValue<PushPermissionStatus> pushPermission = ref.watch(
+      pushPermissionProvider,
+    );
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.notificationsTitle)),
@@ -75,6 +80,50 @@ class NotificationSettingsScreen extends ConsumerWidget {
               Text(
                 l10n.notificationsReleaseBody,
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: SsSpacing.lg),
+              Text(
+                l10n.notificationPermissionTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              pushPermission.when(
+                loading: () =>
+                    const SsSkeleton(height: 88, radius: SsRadii.lg),
+                error: (Object error, StackTrace stackTrace) =>
+                    SsAsyncErrorState(
+                      error: error,
+                      onRetry: () => ref.invalidate(pushPermissionProvider),
+                    ),
+                data: (PushPermissionStatus status) {
+                  if (status == PushPermissionStatus.granted) {
+                    return SsInlineAlert(
+                      title: l10n.notificationPermissionGrantedTitle,
+                      message: l10n.notificationPermissionGrantedBody,
+                    );
+                  }
+                  if (status == PushPermissionStatus.denied) {
+                    return SsInlineAlert(
+                      title: l10n.notificationPermissionDeniedTitle,
+                      message: l10n.notificationPermissionDeniedBody,
+                      tone: SsInlineAlertTone.warning,
+                    );
+                  }
+                  return SsCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        Text(l10n.notificationPermissionPromptBody),
+                        const SizedBox(height: SsSpacing.md),
+                        SsPrimaryButton(
+                          label: l10n.notificationPermissionEnableAction,
+                          onPressed: () =>
+                              ref.read(pushPermissionProvider.notifier).request(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: SsSpacing.lg),
               Text(
