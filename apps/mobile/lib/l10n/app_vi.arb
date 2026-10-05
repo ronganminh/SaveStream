@@ -1658,5 +1658,10 @@
   "deviceStorageNothingToCleanToast": "Không có bản ghi Local cũ để xoá",
   "deviceStorageCleanedToast": "Đã xoá bản ghi Local cũ",
   "globalOpenLocalRecordingsAction": "Mở bản ghi Local",
-  "globalOpenStoreAction": "Mở cửa hàng ứng dụng"
+  "globalOpenStoreAction": "Mở cửa hàng ứng dụng",
+  "signedDeviceIphoneTitle": "iPhone 15",
+  "signedDeviceWebTitle": "Chrome trên macOS",
+  "signedDeviceWebDetail": "Web · 2 giờ trước",
+  "signedDeviceAndroidTitle": "Pixel 8",
+  "signedDeviceAndroidDetail": "Android · 5 ngày trước"
 }
