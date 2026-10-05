@@ -314,6 +314,10 @@ GoRouter createAppRouter({
         path: '/recordings/player/:id',
         builder: (BuildContext context, GoRouterState state) {
           return RecordingPlayerScreen(
+            recordingId: state.pathParameters['id']!,
+            source: RecordingPlaybackSource.fromValue(
+              state.uri.queryParameters['source'],
+            ),
             title:
                 state.uri.queryParameters['title'] ??
                 context.l10n.recordingDetailTitle,

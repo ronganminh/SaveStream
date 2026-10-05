@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,10 +11,10 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
+import 'controllers/recording_file_providers.dart';
 import 'controllers/recording_providers.dart';
 import 'recording_ui_helpers.dart';
 
@@ -675,36 +678,98 @@ class _ArtifactCard extends ConsumerStatefulWidget {
 }
 
 class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
-  bool _isOpening = false;
-  double? _downloadProgress;
-  bool _downloaded = false;
+  File? _downloadedFile;
+  int _downloadedBytes = 0;
+  int? _downloadTotalBytes;
+  bool _isDownloading = false;
+  bool _isSharing = false;
+  bool _checkedExistingDownload = false;
+
+  Future<void> _loadExistingDownload(RecordingArtifactSummary artifact) async {
+    final service = ref.read(cloudRecordingFileServiceProvider);
+    final File? file = await service.existingFile(
+      widget.recording.id,
+      expectedSizeBytes: artifact.sizeBytes,
+    );
+    final int existingBytes =
+        file?.lengthSync() ?? await service.existingBytes(widget.recording.id);
+    if (!mounted) return;
+    setState(() {
+      _downloadedFile = file;
+      _downloadedBytes = existingBytes;
+      _downloadTotalBytes = artifact.sizeBytes;
+    });
+  }
 
   Future<void> _downloadArtifact(RecordingArtifactSummary artifact) async {
     setState(() {
-      _downloadProgress = 0.15;
-      _downloaded = false;
+      _isDownloading = true;
+      _downloadTotalBytes = artifact.sizeBytes;
     });
     try {
-      final ArtifactDownloadUrl download = await ref
-          .read(recordingControllerProvider)
-          .createArtifactDownloadUrl(artifact.id);
-      if (download.isExpired) {
-        throw StateError('Artifact URL expired before use.');
-      }
-      if (!mounted) return;
-      setState(() => _downloadProgress = 0.65);
-      await Future<void>.delayed(Duration.zero);
+      final File file = await ref
+          .read(cloudRecordingFileServiceProvider)
+          .download(
+            recordingId: widget.recording.id,
+            artifactId: artifact.id,
+            onProgress:
+                ({required int receivedBytes, required int? totalBytes}) {
+                  if (!mounted) return;
+                  setState(() {
+                    _downloadedBytes = receivedBytes;
+                    _downloadTotalBytes = totalBytes ?? artifact.sizeBytes;
+                  });
+                },
+          );
       if (!mounted) return;
       setState(() {
-        _downloadProgress = 1;
-        _downloaded = true;
+        _downloadedFile = file;
+        _downloadedBytes = file.lengthSync();
+        _downloadTotalBytes = _downloadedBytes;
       });
     } on Object {
       if (mounted) {
-        setState(() => _downloadProgress = null);
         SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
     }
+  }
+
+  Future<void> _shareArtifact(RecordingArtifactSummary artifact) async {
+    setState(() => _isSharing = true);
+    try {
+      await ref
+          .read(cloudRecordingShareCoordinatorProvider)
+          .share(
+            artifactId: artifact.id,
+            displayName: widget.recording.creatorDisplayName,
+          );
+    } on Object {
+      if (mounted) {
+        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSharing = false);
+      }
+    }
+  }
+
+  Future<void> _deleteCloudAndDownloaded() async {
+    await ref.read(recordingControllerProvider).delete(widget.recording.id);
+    await ref
+        .read(cloudRecordingFileServiceProvider)
+        .delete(widget.recording.id);
+    if (!mounted) return;
+    setState(() {
+      _downloadedFile = null;
+      _downloadedBytes = 0;
+      _downloadTotalBytes = null;
+    });
+    context.go(AppRoutes.recordings);
   }
 
   @override
@@ -737,6 +802,16 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
           final RecordingArtifactSummary? artifact = items.isEmpty
               ? null
               : items.first;
+          if (artifact != null && !_checkedExistingDownload) {
+            _checkedExistingDownload = true;
+            unawaited(_loadExistingDownload(artifact));
+          }
+          final int totalBytes =
+              _downloadTotalBytes ?? artifact?.sizeBytes ?? 0;
+          final double? progress = totalBytes <= 0
+              ? null
+              : (_downloadedBytes / totalBytes).clamp(0.0, 1.0);
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
@@ -774,84 +849,65 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                       child: SsSecondaryButton(
                         label: l10n.playRecordingAction,
                         icon: Icons.play_arrow_rounded,
-                        onPressed: _isOpening
-                            ? null
-                            : () {
-                                final Uri uri =
-                                    Uri.parse(
-                                      AppRoutes.recordingPlayer(
-                                        widget.recording.id,
-                                      ),
-                                    ).replace(
-                                      queryParameters: <String, String>{
-                                        'title':
-                                            widget.recording.creatorDisplayName,
-                                        'duration': widget
-                                            .recording
-                                            .durationSeconds
-                                            .toString(),
-                                      },
-                                    );
-                                context.push(uri.toString());
-                              },
+                        onPressed: () {
+                          final Uri uri =
+                              Uri.parse(
+                                AppRoutes.recordingPlayer(widget.recording.id),
+                              ).replace(
+                                queryParameters: <String, String>{
+                                  'source': 'cloud',
+                                  'title': widget.recording.creatorDisplayName,
+                                  'duration': widget.recording.durationSeconds
+                                      .toString(),
+                                },
+                              );
+                          context.push(uri.toString());
+                        },
                       ),
                     ),
                     const SizedBox(width: SsSpacing.sm),
                     Expanded(
                       child: SsSecondaryButton(
-                        label: _downloaded
+                        label: _downloadedFile != null
                             ? l10n.recordingDownloadedLabel
                             : l10n.downloadRecordingAction,
-                        icon: _downloaded
+                        icon: _downloadedFile != null
                             ? Icons.download_done_rounded
                             : Icons.download_rounded,
-                        onPressed: _isOpening || _downloaded
+                        onPressed: _isDownloading || _downloadedFile != null
                             ? null
                             : () => _downloadArtifact(artifact),
                       ),
                     ),
                   ],
                 ),
-                if (_downloadProgress != null) ...<Widget>[
+                if (_isDownloading ||
+                    _downloadedFile != null ||
+                    _downloadedBytes > 0) ...<Widget>[
                   const SizedBox(height: SsSpacing.sm),
-                  LinearProgressIndicator(value: _downloadProgress),
+                  LinearProgressIndicator(
+                    value: _downloadedFile != null ? 1 : progress,
+                  ),
                   const SizedBox(height: SsSpacing.xs),
                   Text(
-                    _downloaded
+                    _downloadedFile != null
                         ? l10n.recordingDownloadedBody
                         : l10n.recordingDownloadingBytes(
-                            formatBytes(
-                              (artifact.sizeBytes * _downloadProgress!).round(),
-                            ),
-                            formatBytes(artifact.sizeBytes),
+                            formatBytes(_downloadedBytes),
+                            formatBytes(totalBytes),
                           ),
                   ),
                 ],
-                if (_downloaded) ...<Widget>[
-                  const SizedBox(height: SsSpacing.sm),
-                  SsSecondaryButton(
-                    label: l10n.shareRecordingAction,
-                    icon: Icons.ios_share_rounded,
-                    onPressed: () => ref
-                        .read(shareServiceProvider)
-                        .shareFile(
-                          filePath: '/downloads/${widget.recording.id}.mp4',
-                          displayName: widget.recording.creatorDisplayName,
-                        ),
-                  ),
+                const SizedBox(height: SsSpacing.sm),
+                SsSecondaryButton(
+                  label: l10n.shareRecordingAction,
+                  icon: Icons.ios_share_rounded,
+                  onPressed: _isSharing ? null : () => _shareArtifact(artifact),
+                ),
+                if (_downloadedFile != null) ...<Widget>[
                   const SizedBox(height: SsSpacing.sm),
                   TextButton.icon(
-                    onPressed: () async {
-                      await ref
-                          .read(recordingControllerProvider)
-                          .delete(widget.recording.id);
-                      if (!mounted) return;
-                      setState(() {
-                        _downloaded = false;
-                        _downloadProgress = null;
-                      });
-                      context.go(AppRoutes.recordings);
-                    },
+                    onPressed: _deleteCloudAndDownloaded,
                     icon: const Icon(Icons.delete_forever_outlined),
                     label: Text(l10n.deleteCloudAndDownloadedAction),
                   ),
