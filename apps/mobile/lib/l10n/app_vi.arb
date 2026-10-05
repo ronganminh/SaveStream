@@ -1668,5 +1668,7 @@
   "notificationMarketingTitle": "Tin khuyến mãi và cập nhật sản phẩm",
   "languageSystem": "Theo hệ thống",
   "logoutCloudRecordingWarning": "Đang có bản ghi Cloud. Bản ghi này vẫn tiếp tục trên server sau khi bạn đăng xuất.",
-  "logoutLocalAndCloudRecordingWarning": "Bản ghi Local sẽ được dừng và lưu trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server."
+  "logoutLocalAndCloudRecordingWarning": "Bản ghi Local sẽ được dừng và lưu trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server.",
+  "deleteAccountPasswordLabel": "Mật khẩu",
+  "sessionExpiredReloginFailed": "Không thể đăng nhập. Hãy kiểm tra thông tin và thử lại."
 }
