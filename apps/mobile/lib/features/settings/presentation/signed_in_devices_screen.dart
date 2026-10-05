@@ -14,9 +14,9 @@ class SignedInDevicesScreen extends StatefulWidget {
 
 class _SignedInDevicesScreenState extends State<SignedInDevicesScreen> {
   final List<_DeviceItem> _devices = <_DeviceItem>[
-    const _DeviceItem(name: 'iPhone 15', detail: 'This device', current: true),
-    const _DeviceItem(name: 'Chrome on macOS', detail: 'Web · 2 hours ago'),
-    const _DeviceItem(name: 'Pixel 8', detail: 'Android · 5 days ago'),
+    const _DeviceItem(kind: _DeviceKind.iphone, current: true),
+    const _DeviceItem(kind: _DeviceKind.web),
+    const _DeviceItem(kind: _DeviceKind.android),
   ];
 
   void _remove(int index) {
@@ -41,8 +41,16 @@ class _SignedInDevicesScreenState extends State<SignedInDevicesScreen> {
               padding: const EdgeInsets.only(bottom: SsSpacing.sm),
               child: SsCard(
                 child: SsListTile(
-                  title: _devices[index].name,
-                  subtitle: _devices[index].detail,
+                  title: switch (_devices[index].kind) {
+                    _DeviceKind.iphone => context.l10n.signedDeviceIphoneTitle,
+                    _DeviceKind.web => context.l10n.signedDeviceWebTitle,
+                    _DeviceKind.android => context.l10n.signedDeviceAndroidTitle,
+                  },
+                  subtitle: switch (_devices[index].kind) {
+                    _DeviceKind.iphone => context.l10n.currentDeviceLabel,
+                    _DeviceKind.web => context.l10n.signedDeviceWebDetail,
+                    _DeviceKind.android => context.l10n.signedDeviceAndroidDetail,
+                  },
                   leading: Icon(
                     _devices[index].current
                         ? Icons.smartphone_rounded
@@ -68,14 +76,11 @@ class _SignedInDevicesScreenState extends State<SignedInDevicesScreen> {
   }
 }
 
-class _DeviceItem {
-  const _DeviceItem({
-    required this.name,
-    required this.detail,
-    this.current = false,
-  });
+enum _DeviceKind { iphone, web, android }
 
-  final String name;
-  final String detail;
+class _DeviceItem {
+  const _DeviceItem({required this.kind, this.current = false});
+
+  final _DeviceKind kind;
   final bool current;
 }
