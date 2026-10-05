@@ -91,6 +91,11 @@ GoRouter createAppRouter({
         return AppRoutes.welcome;
       }
 
+      if (session.authStatus == AppAuthStatus.expired) {
+        if (isAuth) return null;
+        return null;
+      }
+
       if (!session.isAuthenticated) {
         if (isAuth || isWelcome) return null;
         return AppRoutes.signIn;
@@ -386,7 +391,10 @@ GoRouter createAppRouter({
               GoRouterState state,
               StatefulNavigationShell navigationShell,
             ) {
-              return MainShell(navigationShell: navigationShell);
+              return MainShell(
+                navigationShell: navigationShell,
+                session: session,
+              );
             },
         branches: <StatefulShellBranch>[
           StatefulShellBranch(
