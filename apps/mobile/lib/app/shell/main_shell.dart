@@ -105,7 +105,7 @@ class MainShell extends ConsumerWidget {
         children: <Widget>[
           if (!isOnline)
             Material(
-              color: Theme.of(context).colorScheme.errorContainer,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               child: SafeArea(
                 bottom: false,
                 child: Semantics(
