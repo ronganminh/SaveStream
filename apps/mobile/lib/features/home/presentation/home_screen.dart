@@ -497,9 +497,8 @@ class _HomeDashboard extends StatelessWidget {
         SsPrimaryButton(
           label: l10n.buyMoreCloudHoursAction,
           icon: Icons.add_card_rounded,
-          onPressed: () => context.push(
-            AppRoutes.cloudHoursLocation('auto_record'),
-          ),
+          onPressed: () =>
+              context.push(AppRoutes.cloudHoursLocation('auto_record')),
         ),
       ],
       if (active != null) ...<Widget>[
