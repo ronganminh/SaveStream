@@ -1658,5 +1658,10 @@
   "deviceStorageNothingToCleanToast": "No old Local recordings to delete",
   "deviceStorageCleanedToast": "Old Local recordings deleted",
   "globalOpenLocalRecordingsAction": "Open Local recordings",
-  "globalOpenStoreAction": "Open app store"
+  "globalOpenStoreAction": "Open app store",
+  "signedDeviceIphoneTitle": "iPhone 15",
+  "signedDeviceWebTitle": "Chrome on macOS",
+  "signedDeviceWebDetail": "Web · 2 hours ago",
+  "signedDeviceAndroidTitle": "Pixel 8",
+  "signedDeviceAndroidDetail": "Android · 5 days ago"
 }
