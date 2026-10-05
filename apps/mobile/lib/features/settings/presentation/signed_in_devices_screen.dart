@@ -44,12 +44,14 @@ class _SignedInDevicesScreenState extends State<SignedInDevicesScreen> {
                   title: switch (_devices[index].kind) {
                     _DeviceKind.iphone => context.l10n.signedDeviceIphoneTitle,
                     _DeviceKind.web => context.l10n.signedDeviceWebTitle,
-                    _DeviceKind.android => context.l10n.signedDeviceAndroidTitle,
+                    _DeviceKind.android =>
+                      context.l10n.signedDeviceAndroidTitle,
                   },
                   subtitle: switch (_devices[index].kind) {
                     _DeviceKind.iphone => context.l10n.currentDeviceLabel,
                     _DeviceKind.web => context.l10n.signedDeviceWebDetail,
-                    _DeviceKind.android => context.l10n.signedDeviceAndroidDetail,
+                    _DeviceKind.android =>
+                      context.l10n.signedDeviceAndroidDetail,
                   },
                   leading: Icon(
                     _devices[index].current
