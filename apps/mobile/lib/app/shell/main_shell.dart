@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/widgets/savestream_widgets.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
@@ -59,8 +60,12 @@ class MainShell extends ConsumerWidget {
     final bool localRecordingActive =
         localController.hasActiveSession || localController.hasSecondarySession;
 
-    if (gate != A6GlobalGate.none && !localRecordingActive) {
-      final bool maintenance = gate == A6GlobalGate.maintenance;
+    final bool maintenanceGate = gate == A6GlobalGate.maintenance;
+    final bool onRecordings = location.startsWith(AppRoutes.recordings);
+    if (gate != A6GlobalGate.none &&
+        !localRecordingActive &&
+        !(maintenanceGate && onRecordings)) {
+      final bool maintenance = maintenanceGate;
       return Scaffold(
         body: SafeArea(
           child: Center(
@@ -92,6 +97,25 @@ class MainShell extends ConsumerWidget {
                           : l10n.globalUpdateRequiredBody,
                       textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 20),
+                    if (maintenance) ...<Widget>[
+                      SsPrimaryButton(
+                        label: l10n.globalOpenLocalRecordingsAction,
+                        onPressed: () => context.go(AppRoutes.recordings),
+                      ),
+                      const SizedBox(height: 8),
+                      SsSecondaryButton(
+                        label: l10n.retryAction,
+                        onPressed: () => ref.invalidate(a6GlobalGateProvider),
+                      ),
+                    ] else
+                      SsPrimaryButton(
+                        label: l10n.globalOpenStoreAction,
+                        onPressed: () => launchUrl(
+                          Uri.parse('https://savestream.online/download'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                      ),
                   ],
                 ),
               ),
