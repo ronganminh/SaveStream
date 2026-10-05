@@ -1518,5 +1518,12 @@
   "purchaseContextRemoveAdsTitle": "Bỏ quảng cáo",
   "purchaseContextRemoveAdsBody": "Mua giờ cloud để bỏ quảng cáo SaveStream.",
   "settingsUsageSubtitle": "Giờ cloud, giới hạn creator và khôi phục giao dịch",
-  "buyMoreCloudHoursAction": "Mua thêm giờ cloud"
+  "buyMoreCloudHoursAction": "Mua thêm giờ cloud",
+  "notificationCreatorLiveTitle": "Creator bắt đầu LIVE",
+  "notificationRecordingExpiringTitle": "Bản ghi cloud sắp hết hạn",
+  "notificationFreeMinutesLowTitle": "Phút ghi Free sắp hết",
+  "globalUpdateRequiredTitle": "Cần cập nhật",
+  "globalUpdateRequiredBody": "Hãy cập nhật SaveStream để tiếp tục sử dụng ứng dụng.",
+  "globalMaintenanceTitle": "SaveStream đang bảo trì",
+  "globalMaintenanceBody": "Dữ liệu bản ghi vẫn an toàn. Hãy thử lại sau khi bảo trì hoàn tất."
 }
