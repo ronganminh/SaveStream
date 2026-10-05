@@ -1680,5 +1680,7 @@
   "cloudHoursExhaustedBody": "Cloud auto-recording is paused until you buy more hours. Your creators stay followed and auto-record resumes when cloud hours are available again.",
   "cloudHoursExhaustedRecordingBody": "No cloud hours remain. The active cloud recording will stop safely when the server reaches the available limit. Buy more hours to resume auto-recording.",
   "autoRecordPausedNoCloudHoursLabel": "Auto-record paused · no cloud hours",
-  "autoRecordPausedNoCloudHoursBody": "This creator stays followed. Auto-record turns back on automatically after more cloud hours are credited."
+  "autoRecordPausedNoCloudHoursBody": "This creator stays followed. Auto-record turns back on automatically after more cloud hours are credited.",
+  "foreignLocalRecordingsTitle": "Local recordings from another account",
+  "foreignLocalRecordingsBody": "This device still contains Local recording files owned by another SaveStream account. They stay isolated and are not imported or reassigned to this account."
 }

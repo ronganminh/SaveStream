@@ -1680,5 +1680,7 @@
   "cloudHoursExhaustedBody": "Auto-record cloud tạm dừng cho tới khi bạn mua thêm giờ. Creator vẫn được theo dõi và auto-record tự bật lại khi tài khoản có giờ cloud.",
   "cloudHoursExhaustedRecordingBody": "Không còn giờ cloud. Recording cloud đang chạy sẽ dừng an toàn khi server dùng hết phần thời gian khả dụng. Mua thêm giờ để tiếp tục auto-record.",
   "autoRecordPausedNoCloudHoursLabel": "Auto-record tạm dừng · hết giờ cloud",
-  "autoRecordPausedNoCloudHoursBody": "Creator vẫn được theo dõi. Auto-record tự bật lại sau khi giờ cloud mới được cộng."
+  "autoRecordPausedNoCloudHoursBody": "Creator vẫn được theo dõi. Auto-record tự bật lại sau khi giờ cloud mới được cộng.",
+  "foreignLocalRecordingsTitle": "Có bản ghi Local của tài khoản khác",
+  "foreignLocalRecordingsBody": "Thiết bị này vẫn còn file recording Local thuộc một tài khoản SaveStream khác. Các file đó được giữ tách biệt, không được nhập hoặc đổi chủ sang tài khoản này."
 }

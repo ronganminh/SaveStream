@@ -1,11 +1,31 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+
+import '../../../../core/api/api_providers.dart';
 import '../../../../platform/platform_providers.dart';
+import '../../../auth/data/current_user_id_source.dart';
+import '../../../local_recordings/data/local_file_index.dart';
 import '../../../local_recordings/domain/models/local_recording_models.dart';
 import '../../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../domain/models/recording_summary.dart';
 import '../models/recording_library_item.dart';
 import 'recording_providers.dart';
+
+final FutureProvider<bool> foreignLocalRecordingOwnershipProvider =
+    FutureProvider<bool>((Ref ref) async {
+      if (!Platform.isAndroid && !Platform.isIOS) {
+        return false;
+      }
+      final String userId = await CurrentUserIdSource(
+        apiClient: ref.watch(apiClientProvider),
+      ).get();
+      final Directory support = await getApplicationSupportDirectory();
+      return LocalFileIndex(
+        root: Directory('${support.path}/local_recordings'),
+      ).hasRecordingsOwnedByOtherUsers(userId: userId);
+    });
 
 final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
     FutureProvider<List<RecordingLibraryItem>>((Ref ref) async {

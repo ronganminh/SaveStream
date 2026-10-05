@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current milestone
 
-Phase 16 includes:
+Current V2 mobile implementation includes:
 
 - Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
 - `MaterialApp.router` with `go_router`;
@@ -128,7 +128,12 @@ Phase 16 includes:
 - full-app critical-flow tests exercise navigation and state through the real app shell/router with repository boundaries;
 - critical automated flows cover launch -> onboarding -> login -> home, add channel -> channel detail, active recording -> stop -> stopped, and billing -> pending -> paid;
 - the Phase 15 suite reuses prior DTO/domain mapper, error/status mapping, idempotency, auth session/token, auth form, status-variant, credit, theme/language, and async-state coverage instead of duplicating those cases;
-- final Phase 15 validation runs 96 passing Flutter tests under the same CI format/analyze/test gates.
+- final Phase 15 validation runs 96 passing Flutter tests under the same CI format/analyze/test gates;
+- A7 cloud-hour exhaustion states pause cloud auto-recording, explain safe active-recording stop, and route users to buy more hours;
+- Free ad consent has an in-app explanation gate backed by `AdsService.consentState`, while Pro bypasses the gate;
+- Local files remain namespaced by account and device; files owned by another account are detected only to show a warning and are never imported or reassigned;
+- Home, active Local recording, and cloud-hour purchase layouts are audited for 200% text scaling, with the recording timer capped at 1.5x;
+- A7 copy and legacy terminology are swept so mobile uses one-time cloud hours rather than subscription/Cloud Pack language.
 
 Authentication, Channels/Watch management, Recordings, Credits, and Billing now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch/Recording data and the real available-credit balance; Profile remains on its current repository until a later integration phase.
 

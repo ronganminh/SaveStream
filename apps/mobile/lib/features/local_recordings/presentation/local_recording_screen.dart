@@ -145,7 +145,12 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(SsSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(
+            SsSpacing.lg,
+            SsSpacing.lg,
+            SsSpacing.lg,
+            SsSpacing.xxl,
+          ),
           children: <Widget>[
             Center(
               child: ConstrainedBox(
@@ -186,6 +191,8 @@ class _LocalRecordingScreenState extends ConsumerState<LocalRecordingScreen> {
                         formatDurationHms(
                           Duration(seconds: state.recordedSeconds),
                         ),
+                        textScaler: MediaQuery.textScalerOf(context)
+                            .clamp(maxScaleFactor: 1.5),
                         style: Theme.of(context).textTheme.displaySmall,
                       ),
                     ),

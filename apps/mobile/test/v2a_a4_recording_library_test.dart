@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:savestream_mobile/features/local_recordings/data/local_file_index.dart';
 import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/features/recordings/presentation/models/recording_library_item.dart';
@@ -118,4 +121,31 @@ void main() {
       RecordingDeleteTarget.both,
     );
   });
+
+  test(
+    'A16 foreign local files stay isolated from the current account',
+    () async {
+      final Directory root = await Directory.systemTemp.createTemp(
+        'savestream-a16-',
+      );
+      final Directory foreign = Directory('${root.path}/user-other/device-b');
+      await foreign.create(recursive: true);
+      await File('${foreign.path}/foreign-recording.mp4')
+          .writeAsBytes(<int>[1]);
+
+      final LocalFileIndex index = LocalFileIndex(root: root);
+      expect(
+        await index.hasRecordingsOwnedByOtherUsers(userId: 'user-current'),
+        isTrue,
+      );
+
+      final LocalFileReconciliation result = await index.reconcile(
+        userId: 'user-current',
+        deviceId: 'device-a',
+        backendRecordings: const <LocalRecordingSummary>[],
+      );
+      expect(result.entries, isEmpty);
+      expect(result.orphanFiles, isEmpty);
+    },
+  );
 }
