@@ -29,14 +29,20 @@ class LanguageScreen extends StatelessWidget {
               child: Column(
                 children: <Widget>[
                   _LanguageOption(
+                    label: l10n.languageSystem,
+                    selected: settings.useSystemLocale,
+                    onTap: settings.setSystemLocale,
+                  ),
+                  const Divider(),
+                  _LanguageOption(
                     label: l10n.languageEnglish,
-                    selected: settings.locale.languageCode == 'en',
+                    selected: !settings.useSystemLocale && settings.locale.languageCode == 'en',
                     onTap: () => settings.setLocale(const Locale('en')),
                   ),
                   const Divider(),
                   _LanguageOption(
                     label: l10n.languageVietnamese,
-                    selected: settings.locale.languageCode == 'vi',
+                    selected: !settings.useSystemLocale && settings.locale.languageCode == 'vi',
                     onTap: () => settings.setLocale(const Locale('vi')),
                   ),
                 ],
