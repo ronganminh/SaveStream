@@ -1668,5 +1668,7 @@
   "notificationMarketingTitle": "Promotions and product news",
   "languageSystem": "Follow system",
   "logoutCloudRecordingWarning": "Cloud recording is running. It will continue on the server after you sign out.",
-  "logoutLocalAndCloudRecordingWarning": "A Local recording will be stopped and saved before sign-out. Cloud recording will continue on the server."
+  "logoutLocalAndCloudRecordingWarning": "A Local recording will be stopped and saved before sign-out. Cloud recording will continue on the server.",
+  "deleteAccountPasswordLabel": "Password",
+  "sessionExpiredReloginFailed": "Could not sign in. Check your credentials and try again."
 }
