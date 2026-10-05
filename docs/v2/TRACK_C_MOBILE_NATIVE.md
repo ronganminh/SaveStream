@@ -32,7 +32,7 @@ flutter gen-l10n
 dart format --output=none --set-exit-if-changed lib/app lib/core lib/features lib/l10n/l10n.dart test
 flutter analyze --fatal-infos
 flutter test
-flutter build appbundle --release --dart-define=APP_ENV=production --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+flutter build appbundle --release --dart-define=APP_ENV=production
 bash tool/release_audit.sh
 ```
 

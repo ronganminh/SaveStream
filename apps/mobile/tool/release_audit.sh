@@ -28,10 +28,9 @@ grep -q 'DEVELOPMENT_TEAM' ios/Flutter/ReleaseSigning.xcconfig.example ||
 
 grep -q "https://api.savestream.online" lib/core/config/app_config.dart ||
   fail "production API default is missing"
-grep -q "MOBILE_EXTERNAL_CHECKOUT_ENABLED" lib/core/config/app_config.dart ||
-  fail "native external checkout gate is missing"
-grep -q "environment != AppEnvironment.production" lib/core/config/app_config.dart ||
-  fail "production external checkout must default off"
+if grep -qs "MOBILE_EXTERNAL_CHECKOUT_ENABLED" lib/core/config/app_config.dart tool/android_emulator_smoke.sh ../../.github/workflows/mobile-ci.yml; then
+  fail "legacy external checkout gate must be removed"
+fi
 
 grep -q "NotificationSettingsScreen" lib/app/router/app_router.dart ||
   fail "Notifications must use the real settings screen"

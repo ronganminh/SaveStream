@@ -22,19 +22,25 @@ Build Android production:
 flutter pub get --enforce-lockfile
 bash tool/generate_native_assets.sh
 flutter build appbundle --release \
-  --dart-define=APP_ENV=production \
-  --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+  --dart-define=APP_ENV=production
 ```
 
 Launcher icons and the native splash are generated from `assets/branding/savestream_mark.svg` and are **not committed**. `tool/generate_native_assets.sh` must run once after cloning, and again whenever the brand mark changes, before any Android or iOS build; without it the build cannot resolve `@mipmap/ic_launcher` or the iOS `AppIcon`. It needs Python 3 and the Cairo library (`brew install cairo` on macOS).
 
-The external Lemon Squeezy checkout gate is deliberately **off by default** for native production builds. Enable it only for a distribution channel whose App Store / Google Play payment policy has been reviewed and approved:
+Mobile cloud-hour purchases use the native App Store / Google Play billing flow. The mobile app has no external hosted checkout switch.
 
-```text
---dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=true
-```
+## Store purchase sandbox verification
 
-This flag is a release-policy gate, not a bypass for store rules.
+C6 code and CI use fake store/plugin behavior; no real store transaction is run in CI. Before release, verify:
+
+- App Store Sandbox: load all three consumable products, confirm localized prices come from StoreKit, buy each product, cancel once, and exercise a pending approval flow if available.
+- Google Play license tester: load all three one-time products, buy each product, cancel once, and exercise a pending purchase flow.
+- For a successful purchase, confirm the backend returns `credited` before the app completes the store transaction, then verify entitlement, Channels and Home refresh.
+- Disable networking after store purchase but before backend verification, relaunch, restore connectivity, and confirm the persisted transaction retries without double credit.
+- Relaunch with an unfinished transaction and confirm backend replay is idempotent and the store transaction completes only after `credited`.
+- Restore purchases and confirm restored transactions are verified by the backend before completion.
+
+Record device/OS, store environment, product ID, transaction ID (non-secret), backend result, and final cloud-minute balance in release evidence.
 
 ## Android signing
 
@@ -100,7 +106,7 @@ Current backend delivery is in-app only. The app does not claim email/push deliv
 - Launcher icon and native splash generators run successfully.
 - Production API resolves over HTTPS.
 - Privacy/Terms URLs are reachable.
-- External checkout is disabled unless store policy review explicitly permits it.
+- Mobile uses native App Store / Google Play purchases only; no external checkout route is exposed.
 - Backend checkout-disabled/503 state renders as unavailable, not as payment success.
 - Auth, Watch, Recording, artifact URL, Credits, Billing history, notification preferences and account deletion smoke tests pass.
 - Version/build numbers are incremented before submission.

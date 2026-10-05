@@ -4,7 +4,6 @@ class AppConfig {
   AppConfig({
     required this.environment,
     required this.apiBaseUrl,
-    this.externalCheckoutEnabled = true,
     Uri? privacyPolicyUrl,
     Uri? termsOfUseUrl,
   }) : privacyPolicyUrl =
@@ -15,10 +14,6 @@ class AppConfig {
   final AppEnvironment environment;
   final Uri apiBaseUrl;
 
-  /// External hosted checkout is intentionally disabled by default for
-  /// production native builds. Enable only for a distribution channel whose
-  /// payment policy has been explicitly reviewed.
-  final bool externalCheckoutEnabled;
   final Uri privacyPolicyUrl;
   final Uri termsOfUseUrl;
 
@@ -31,9 +26,6 @@ class AppConfig {
       defaultValue: 'local',
     );
     const String configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
-    const String configuredExternalCheckout = String.fromEnvironment(
-      'MOBILE_EXTERNAL_CHECKOUT_ENABLED',
-    );
     const String configuredPrivacyPolicyUrl = String.fromEnvironment(
       'PRIVACY_POLICY_URL',
     );
@@ -51,13 +43,6 @@ class AppConfig {
       name: 'API_BASE_URL',
       requireHttps: environment != AppEnvironment.local,
     );
-
-    final bool externalCheckoutEnabled = configuredExternalCheckout.isEmpty
-        ? environment != AppEnvironment.production
-        : _parseBoolDefine(
-            configuredExternalCheckout,
-            'MOBILE_EXTERNAL_CHECKOUT_ENABLED',
-          );
 
     final Uri privacyPolicyUrl = _requireAbsoluteUri(
       configuredPrivacyPolicyUrl.isEmpty
@@ -77,7 +62,6 @@ class AppConfig {
     return AppConfig(
       environment: environment,
       apiBaseUrl: apiBaseUrl,
-      externalCheckoutEnabled: externalCheckoutEnabled,
       privacyPolicyUrl: privacyPolicyUrl,
       termsOfUseUrl: termsOfUseUrl,
     );
@@ -113,20 +97,5 @@ class AppConfig {
       throw StateError('HTTPS $name is required for release builds.');
     }
     return uri;
-  }
-
-  static bool _parseBoolDefine(String value, String name) {
-    switch (value.trim().toLowerCase()) {
-      case 'true':
-      case '1':
-      case 'yes':
-        return true;
-      case 'false':
-      case '0':
-      case 'no':
-        return false;
-      default:
-        throw StateError('$name must be true or false.');
-    }
   }
 }

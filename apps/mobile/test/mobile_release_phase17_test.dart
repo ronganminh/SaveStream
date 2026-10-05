@@ -102,12 +102,10 @@ void main() {
     final config = AppConfig(
       environment: AppEnvironment.production,
       apiBaseUrl: Uri.parse('https://api.savestream.online'),
-      externalCheckoutEnabled: false,
     );
 
     expect(config.isProduction, isTrue);
     expect(config.developerToolsEnabled, isFalse);
-    expect(config.externalCheckoutEnabled, isFalse);
     expect(
       config.privacyPolicyUrl,
       Uri.parse('https://savestream.online/privacy'),

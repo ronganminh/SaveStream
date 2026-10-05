@@ -4,8 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 flutter build apk --debug \
-  --dart-define=APP_ENV=production \
-  --dart-define=MOBILE_EXTERNAL_CHECKOUT_ENABLED=false
+  --dart-define=APP_ENV=production
 
 apk="build/app/outputs/flutter-apk/app-debug.apk"
 test -f "$apk"

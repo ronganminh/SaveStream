@@ -1,8 +1,5 @@
 class StoreProductInfo {
-  const StoreProductInfo({
-    required this.id,
-    required this.localizedPrice,
-  });
+  const StoreProductInfo({required this.id, required this.localizedPrice});
 
   final String id;
   final String localizedPrice;
@@ -32,6 +29,8 @@ abstract interface class PurchaseService {
   Future<void> buy(String productId);
 
   Future<void> restore();
+
+  Future<void> completePurchase(String transactionId);
 
   Stream<PurchaseServiceEvent> get purchaseEvents;
 }
