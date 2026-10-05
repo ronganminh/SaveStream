@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/savestream_widgets.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/local_recordings/presentation/controllers/local_recording_controller.dart';
@@ -58,7 +59,7 @@ class MainShell extends ConsumerWidget {
     final bool localRecordingActive =
         localController.hasActiveSession || localController.hasSecondarySession;
 
-    if (gate != A6GlobalGate.none) {
+    if (gate != A6GlobalGate.none && !localRecordingActive) {
       final bool maintenance = gate == A6GlobalGate.maintenance;
       return Scaffold(
         body: SafeArea(
