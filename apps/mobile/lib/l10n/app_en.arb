@@ -1663,5 +1663,6 @@
   "signedDeviceWebTitle": "Chrome on macOS",
   "signedDeviceWebDetail": "Web · 2 hours ago",
   "signedDeviceAndroidTitle": "Pixel 8",
-  "signedDeviceAndroidDetail": "Android · 5 days ago"
+  "signedDeviceAndroidDetail": "Android · 5 days ago",
+  "deleteAction": "Delete"
 }
