@@ -639,12 +639,15 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
+    final Finder logoutAction = find.text('Log out');
     await tester.scrollUntilVisible(
-      find.text('Log out'),
+      logoutAction,
       320,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('Log out'));
+    await tester.ensureVisible(logoutAction);
+    await tester.pumpAndSettle();
+    await tester.tap(logoutAction);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
@@ -659,12 +662,15 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pump();
 
+    final Finder deleteAccountAction = find.text('Delete account');
     await tester.scrollUntilVisible(
-      find.text('Delete account'),
+      deleteAccountAction,
       320,
       scrollable: find.byType(Scrollable).last,
     );
-    await tester.tap(find.text('Delete account'));
+    await tester.ensureVisible(deleteAccountAction);
+    await tester.pumpAndSettle();
+    await tester.tap(deleteAccountAction);
     await tester.pumpAndSettle();
 
     expect(find.text('Delete your account?'), findsOneWidget);
