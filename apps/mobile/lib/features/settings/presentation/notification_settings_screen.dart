@@ -95,6 +95,36 @@ class NotificationSettingsScreen extends ConsumerWidget {
                   child: Column(
                     children: <Widget>[
                       _PreferenceSwitch(
+                        title: l10n.notificationCreatorLiveTitle,
+                        value: value.creatorLive,
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(creatorLive: enabled),
+                        ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationRecordingExpiringTitle,
+                        value: value.recordingExpiring,
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(recordingExpiring: enabled),
+                        ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
+                        title: l10n.notificationFreeMinutesLowTitle,
+                        value: value.freeMinutesLow,
+                        onChanged: (bool enabled) => _save(
+                          context,
+                          ref,
+                          value.copyWith(freeMinutesLow: enabled),
+                        ),
+                      ),
+                      const Divider(),
+                      _PreferenceSwitch(
                         title: l10n.notificationRecordingStartedTitle,
                         value: value.recordingStarted,
                         onChanged: (bool enabled) => _save(
