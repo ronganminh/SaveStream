@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/savestream_widgets.dart';
+import '../../features/ads/presentation/ad_consent_gate.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/local_recordings/presentation/controllers/local_recording_controller.dart';
@@ -132,8 +133,9 @@ class MainShell extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: Stack(
-        children: <Widget>[
+      body: AdConsentGate(
+        child: Stack(
+          children: <Widget>[
           shellBody,
           if (sessionExpired)
             Positioned.fill(
@@ -192,7 +194,8 @@ class MainShell extends ConsumerWidget {
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: compactFab
           ? FloatingActionButton(
