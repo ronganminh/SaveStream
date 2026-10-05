@@ -9,29 +9,29 @@ import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 
-final StateProvider<bool> adConsentExplanationAcknowledgedProvider =
-    StateProvider<bool>((Ref ref) => false);
-
-class AdConsentGate extends ConsumerWidget {
+class AdConsentGate extends ConsumerStatefulWidget {
   const AdConsentGate({required this.child, super.key});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdConsentGate> createState() => _AdConsentGateState();
+}
+
+class _AdConsentGateState extends ConsumerState<AdConsentGate> {
+  bool _acknowledged = false;
+
+  @override
+  Widget build(BuildContext context) {
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
     final AdConsentState consent = ref.watch(adsServiceProvider).consentState;
-    final bool acknowledged = ref.watch(
-      adConsentExplanationAcknowledgedProvider,
-    );
-
     final bool pro = entitlement.value?.plan == Plan.pro;
     final bool shouldExplain =
-        !pro && consent == AdConsentState.required && !acknowledged;
+        !pro && consent == AdConsentState.required && !_acknowledged;
 
     return Stack(
       children: <Widget>[
-        child,
+        widget.child,
         if (shouldExplain)
           Positioned.fill(
             child: ColoredBox(
@@ -69,14 +69,7 @@ class AdConsentGate extends ConsumerWidget {
                             const SizedBox(height: SsSpacing.lg),
                             SsPrimaryButton(
                               label: context.l10n.adConsentContinueAction,
-                              onPressed: () =>
-                                  ref
-                                          .read(
-                                            adConsentExplanationAcknowledgedProvider
-                                                .notifier,
-                                          )
-                                          .state =
-                                      true,
+                              onPressed: () => setState(() => _acknowledged = true),
                             ),
                           ],
                         ),
