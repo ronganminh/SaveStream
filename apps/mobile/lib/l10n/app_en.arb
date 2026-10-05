@@ -1656,5 +1656,7 @@
   },
   "deviceStorageCleanupLockedBody": "Unavailable while a Local recording is running",
   "deviceStorageNothingToCleanToast": "No old Local recordings to delete",
-  "deviceStorageCleanedToast": "Old Local recordings deleted"
+  "deviceStorageCleanedToast": "Old Local recordings deleted",
+  "globalOpenLocalRecordingsAction": "Open Local recordings",
+  "globalOpenStoreAction": "Open app store"
 }
