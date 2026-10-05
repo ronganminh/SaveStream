@@ -51,8 +51,7 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
-    final int cloudMinutes =
-        entitlement.value?.cloudMinutesAvailable ?? 0;
+    final int cloudMinutes = entitlement.value?.cloudMinutesAvailable ?? 0;
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.deleteAccountTitle)),
       body: ListView(
@@ -81,7 +80,9 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                     cloudMinutes ~/ 60,
                   ),
                 ),
-                SsChecklistItem(label: context.l10n.deleteAccountLocalFilesItem),
+                SsChecklistItem(
+                  label: context.l10n.deleteAccountLocalFilesItem,
+                ),
               ],
             ),
             const SizedBox(height: SsSpacing.lg),

@@ -158,10 +158,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(creatorLive: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(creatorLive: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -170,10 +170,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingExpiring: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(recordingExpiring: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -182,10 +182,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(freeMinutesLow: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(freeMinutesLow: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -194,10 +194,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingStarted: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(recordingStarted: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -206,10 +206,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingReady: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(recordingReady: enabled),
+                              ),
                       ),
                       const Divider(),
                       _PreferenceSwitch(
@@ -218,10 +218,10 @@ class NotificationSettingsScreen extends ConsumerWidget {
                         onChanged: permissionDenied
                             ? null
                             : (bool enabled) => _save(
-                          context,
-                          ref,
-                          value.copyWith(recordingFailed: enabled),
-                        ),
+                                context,
+                                ref,
+                                value.copyWith(recordingFailed: enabled),
+                              ),
                       ),
                     ],
                   ),
