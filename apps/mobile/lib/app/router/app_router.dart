@@ -1,3 +1,7 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../core/config/app_config.dart';
 import '../../core/widgets/savestream_widgets.dart';
 import '../../features/auth/data/auth_providers.dart';
@@ -55,9 +59,6 @@ import '../session/app_session_controller.dart';
 import '../shell/main_shell.dart';
 import '../splash/splash_screen.dart';
 import 'app_routes.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 GoRouter createAppRouter({
   required AppConfig config,
