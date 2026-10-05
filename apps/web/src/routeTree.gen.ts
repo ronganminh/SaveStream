@@ -14,6 +14,7 @@ import { Route as AcceptableUseRouteImport } from './routes/acceptable-use'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CopyrightRouteImport } from './routes/copyright'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -88,6 +89,11 @@ const ChannelsRoute = ChannelsRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CopyrightRoute = CopyrightRouteImport.update({
+  id: '/copyright',
+  path: '/copyright',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -347,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
+  '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acceptable-use': typeof AcceptableUseRoute
   '/contact': typeof ContactRoute
+  '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
+  '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
@@ -514,6 +523,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/channels'
     | '/contact'
+    | '/copyright'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -569,6 +579,7 @@ export interface FileRouteTypes {
     | '/'
     | '/acceptable-use'
     | '/contact'
+    | '/copyright'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -679,6 +690,7 @@ export interface RootRouteChildren {
   BillingRoute: typeof BillingRouteWithChildren
   ChannelsRoute: typeof ChannelsRouteWithChildren
   ContactRoute: typeof ContactRoute
+  CopyrightRoute: typeof CopyrightRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HelpRoute: typeof HelpRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -746,6 +758,13 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/copyright': {
+      id: '/copyright'
+      path: '/copyright'
+      fullPath: '/copyright'
+      preLoaderRoute: typeof CopyrightRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1216,6 +1235,7 @@ const rootRouteChildren: RootRouteChildren = {
   BillingRoute: BillingRouteWithChildren,
   ChannelsRoute: ChannelsRouteWithChildren,
   ContactRoute: ContactRoute,
+  CopyrightRoute: CopyrightRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HelpRoute: HelpRoute,
   NotificationsRoute: NotificationsRoute,

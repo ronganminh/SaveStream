@@ -3859,9 +3859,10 @@ export function PublicFooter() {
     [
       "Legal",
       [
-        ["/terms", "Terms"],
-        ["/privacy", "Privacy"],
-        ["/acceptable-use", "Acceptable use"],
+        ["/terms", "Terms of Use"],
+        ["/privacy", "Privacy Policy"],
+        ["/acceptable-use", "Acceptable Use Policy"],
+        ["/copyright", "Copyright & Takedown"],
         ["/refund", "Refund policy"],
       ],
     ],
@@ -3879,7 +3880,7 @@ export function PublicFooter() {
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
-            Cloud recording for TikTok channels you own, manage, or have permission to record.
+            Cloud recording, processing, and private storage infrastructure for content you own or are authorized to record.
           </p>
         </div>
         {cols.map(([h, links]) => (
@@ -3901,7 +3902,7 @@ export function PublicFooter() {
         ))}
       </div>
       <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-muted-foreground sm:px-6">
-        © 2026 SaveStream. Record only channels you’re authorized to manage.
+        © 2026 SaveStream. We provide recording and storage infrastructure — not a public content catalog.
       </p>
     </footer>
   );
