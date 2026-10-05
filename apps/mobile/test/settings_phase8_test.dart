@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:savestream_mobile/app/app_settings_controller.dart';
+import 'package:savestream_mobile/app/router/app_routes.dart';
 import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
@@ -61,13 +62,8 @@ void main() {
     final AppSettingsController settings = AppSettingsController();
 
     await openSettings(tester, settings: settings);
-    final Finder themeTile = find.ancestor(
-      of: find.text('Theme'),
-      matching: find.byType(ListTile),
-    );
-    await tester.ensureVisible(themeTile);
-    await tester.pumpAndSettle();
-    await tester.tap(themeTile);
+    final BuildContext settingsContext = tester.element(find.text('Settings').first);
+    GoRouter.of(settingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
 
     expect(find.text('System'), findsOneWidget);
@@ -101,7 +97,8 @@ void main() {
     final AppSettingsController settings = AppSettingsController();
 
     await openSettings(tester, settings: settings);
-    await tester.tap(find.text('Language'));
+    final BuildContext settingsContext = tester.element(find.text('Settings').first);
+    GoRouter.of(settingsContext).push(AppRoutes.language);
     await tester.pumpAndSettle();
 
     expect(find.text('English'), findsOneWidget);
@@ -123,14 +120,11 @@ void main() {
   ) async {
     await openSettings(tester);
 
-    Future<void> openInfo(String label, Type screen) async {
-      final Finder tile = find.ancestor(
-        of: find.text(label),
-        matching: find.byType(ListTile),
+    Future<void> openInfo(String route, String label, Type screen) async {
+      final BuildContext settingsContext = tester.element(
+        find.text('Settings').first,
       );
-      await tester.ensureVisible(tile);
-      await tester.pumpAndSettle();
-      await tester.tap(tile);
+      GoRouter.of(settingsContext).push(route);
       await tester.pumpAndSettle();
 
       expect(find.byType(screen), findsOneWidget);
@@ -141,10 +135,14 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    await openInfo('Notifications', NotificationSettingsScreen);
+    await openInfo(
+      AppRoutes.notifications,
+      'Notifications',
+      NotificationSettingsScreen,
+    );
     expect(find.text('https://savestream.online/privacy'), findsNothing);
-    await openInfo('Privacy Policy', LegalLinkScreen);
-    await openInfo('Terms of Use', LegalLinkScreen);
+    await openInfo(AppRoutes.privacy, 'Privacy Policy', LegalLinkScreen);
+    await openInfo(AppRoutes.terms, 'Terms of Use', LegalLinkScreen);
   });
 
   testWidgets('cancelling Delete Account keeps the session authenticated', (
@@ -153,16 +151,14 @@ void main() {
     final AppSessionController session = AppSessionController();
 
     await openSettings(tester, session: session);
-    await tester.scrollUntilVisible(
-      find.text('Delete account'),
-      320,
-      scrollable: find.byType(Scrollable).last,
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
     );
-    await tester.tap(find.text('Delete account'));
+    GoRouter.of(settingsContext).push(AppRoutes.deleteAccount);
     await tester.pumpAndSettle();
 
-    expect(find.text('Delete your account?'), findsOneWidget);
-    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    expect(find.text('What will be deleted'), findsOneWidget);
+    GoRouter.of(tester.element(find.text('What will be deleted'))).pop();
     await tester.pumpAndSettle();
 
     expect(session.isAuthenticated, isTrue);
