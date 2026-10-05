@@ -1,7 +1,3 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../core/config/app_config.dart';
 import '../../core/widgets/savestream_widgets.dart';
 import '../../features/auth/data/auth_providers.dart';
@@ -36,19 +32,19 @@ import '../../features/recordings/presentation/recordings_screen.dart';
 import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
 import '../../features/settings/presentation/android_recording_background_screen.dart';
 import '../../features/settings/presentation/delete_account_screen.dart';
-import '../../features/settings/presentation/help_screen.dart';
-import '../../features/settings/presentation/legal_privacy_screen.dart';
-import '../../features/settings/presentation/report_issue_screen.dart';
-import '../../features/settings/presentation/responsible_use_screen.dart';
-import '../../features/settings/presentation/security_account_screen.dart';
-import '../../features/settings/presentation/signed_in_devices_screen.dart';
 import '../../features/settings/presentation/device_storage_screen.dart';
+import '../../features/settings/presentation/help_screen.dart';
 import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
+import '../../features/settings/presentation/legal_privacy_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
+import '../../features/settings/presentation/report_issue_screen.dart';
+import '../../features/settings/presentation/responsible_use_screen.dart';
+import '../../features/settings/presentation/security_account_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
+import '../../features/settings/presentation/signed_in_devices_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
 import '../../features/store/presentation/a5_purchase_controller.dart';
 import '../../features/store/presentation/a5_usage_screen.dart';
@@ -59,6 +55,10 @@ import '../session/app_session_controller.dart';
 import '../shell/main_shell.dart';
 import '../splash/splash_screen.dart';
 import 'app_routes.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
 
 GoRouter createAppRouter({
   required AppConfig config,
