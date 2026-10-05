@@ -1664,5 +1664,6 @@
   "signedDeviceWebDetail": "Web · 2 hours ago",
   "signedDeviceAndroidTitle": "Pixel 8",
   "signedDeviceAndroidDetail": "Android · 5 days ago",
-  "deleteAction": "Delete"
+  "deleteAction": "Delete",
+  "notificationMarketingTitle": "Promotions and product news"
 }
