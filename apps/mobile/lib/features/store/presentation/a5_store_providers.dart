@@ -4,7 +4,9 @@ import '../../../core/mock/mock_providers.dart';
 import '../../../platform/platform_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
 import '../data/repositories/mock_store_repository.dart';
+import '../data/retry/memory_store_purchase_retry_store.dart';
 import '../domain/models/store_models.dart';
+import '../domain/repositories/store_purchase_retry_store.dart';
 import '../domain/repositories/store_repository.dart';
 
 class CloudHoursOffer {
@@ -24,6 +26,11 @@ class CloudHoursOffer {
 final Provider<StoreRepository> storeRepositoryProvider =
     Provider<StoreRepository>(
       (Ref ref) => MockStoreRepository(ref.watch(mockBehaviorProvider)),
+    );
+
+final Provider<StorePurchaseRetryStore> storePurchaseRetryStoreProvider =
+    Provider<StorePurchaseRetryStore>(
+      (Ref ref) => MemoryStorePurchaseRetryStore(),
     );
 
 final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =

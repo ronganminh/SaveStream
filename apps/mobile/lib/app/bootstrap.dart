@@ -20,12 +20,16 @@ import '../features/recordings/data/repositories/api_recording_repository.dart';
 import '../features/settings/data/repositories/api_notification_preferences_repository.dart';
 import '../features/settings/data/repositories/api_notifications_repository.dart';
 import '../features/settings/data/repositories/api_profile_repository.dart';
+import '../features/store/data/repositories/api_store_repository.dart';
+import '../features/store/data/retry/secure_store_purchase_retry_store.dart';
+import '../features/store/presentation/a5_store_providers.dart' as store_ui;
 import '../features/v2_foundation/v2_foundation_providers.dart';
 import '../platform/android_local_recorder.dart';
 import '../platform/android_local_recovery_service.dart';
 import '../platform/android_recording_platform_service.dart';
 import '../platform/connectivity_plus_service.dart';
 import '../platform/device_info_plus_service.dart';
+import '../platform/in_app_purchase_service.dart';
 import '../platform/platform_providers.dart';
 import '../platform/share_plus_service.dart';
 import 'app_settings_controller.dart';
@@ -123,6 +127,13 @@ Future<void> bootstrap() async {
           ConnectivityPlusService(),
         ),
         deviceInfoServiceProvider.overrideWithValue(deviceInfoService),
+        purchaseServiceProvider.overrideWithValue(InAppPurchaseService()),
+        store_ui.storeRepositoryProvider.overrideWithValue(
+          ApiStoreRepository(apiClient: authenticatedApiClient),
+        ),
+        store_ui.storePurchaseRetryStoreProvider.overrideWithValue(
+          SecureStorePurchaseRetryStore(),
+        ),
         entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
         appStatusRepositoryProvider.overrideWithValue(appStatusRepository),
         deviceRepositoryProvider.overrideWithValue(deviceRepository),
