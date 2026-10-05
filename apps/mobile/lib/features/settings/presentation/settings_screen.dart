@@ -93,7 +93,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         .watch(deviceInfoServiceProvider)
         .platform;
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
-    final Entitlement? entitlementValue = entitlement.value;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
