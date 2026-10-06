@@ -228,18 +228,16 @@ void main() {
           AutoRecordState.waitingForCloudSlot,
         );
 
-        final RecordingSummary waitingRecording =
-            await _waitForQueuedRecording(recordingRepository);
-        expect(
-          waitingRecording.status,
-          RecordingStatus.waitingForCloudSlot,
+        final RecordingSummary waitingRecording = await _waitForQueuedRecording(
+          recordingRepository,
         );
+        expect(waitingRecording.status, RecordingStatus.waitingForCloudSlot);
         expect(waitingRecording.queuePosition, greaterThanOrEqualTo(1));
       } finally {
         if (recordingRepository != null) {
           try {
-            final List<RecordingSummary> recordings =
-                await recordingRepository.listRecordings();
+            final List<RecordingSummary> recordings = await recordingRepository
+                .listRecordings();
             for (final RecordingSummary item in recordings) {
               try {
                 await recordingRepository.deleteRecording(item.id);
