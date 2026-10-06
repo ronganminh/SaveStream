@@ -297,6 +297,10 @@ class _WatchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final bool pro = entitlement.plan == Plan.pro;
+    final bool cloudExhausted = pro && entitlement.cloudMinutesAvailable <= 0;
+    final bool pausedNoCloudMinutes =
+        watch.autoRecordState == AutoRecordState.pausedNoCloudMinutes ||
+        cloudExhausted;
     final RecordingStatus? recordingStatus = recording?.status;
 
     return SsCard(
@@ -339,7 +343,13 @@ class _WatchTile extends StatelessWidget {
                               icon: Icons.event_busy_rounded,
                               tone: SsStatusTone.warning,
                             ),
-                          if (watch.status == WatchStatus.paused)
+                          if (pausedNoCloudMinutes)
+                            SsStatusChip(
+                              label: l10n.autoRecordPausedNoCloudHoursLabel,
+                              icon: Icons.pause_circle_outline_rounded,
+                              tone: SsStatusTone.warning,
+                            )
+                          else if (watch.status == WatchStatus.paused)
                             SsStatusChip(
                               label: l10n.watchPausedStatus,
                               icon: Icons.pause_rounded,
@@ -375,18 +385,33 @@ class _WatchTile extends StatelessWidget {
               onChanged: mutating ? null : onNotify,
             ),
           ),
-          if (pro)
+          if (pro) ...<Widget>[
             Semantics(
               label: l10n.watchAutoRecordCloud,
               child: SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: watch.autoRecord,
                 title: Text(l10n.watchAutoRecordCloud),
+                subtitle: pausedNoCloudMinutes
+                    ? Text(l10n.autoRecordPausedNoCloudHoursBody)
+                    : null,
                 secondary: const Icon(Icons.cloud_outlined),
-                onChanged: mutating ? null : onAutoRecord,
+                onChanged: mutating || pausedNoCloudMinutes
+                    ? null
+                    : onAutoRecord,
               ),
-            )
-          else
+            ),
+            if (pausedNoCloudMinutes)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      context.push(AppRoutes.cloudHoursLocation('auto_record')),
+                  icon: const Icon(Icons.add_card_rounded),
+                  label: Text(l10n.buyMoreCloudHoursAction),
+                ),
+              ),
+          ] else
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.lock_outline_rounded),

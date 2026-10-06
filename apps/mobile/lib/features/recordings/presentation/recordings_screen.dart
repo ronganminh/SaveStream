@@ -28,6 +28,8 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
     final AsyncValue<List<RecordingLibraryItem>> library = ref.watch(
       recordingLibraryProvider,
     );
+    final bool hasForeignLocalRecordings =
+        ref.watch(foreignLocalRecordingOwnershipProvider).value ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text(context.l10n.recordingsTitle)),
@@ -70,6 +72,14 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                   SsSpacing.xxl,
                 ),
                 children: <Widget>[
+                  if (hasForeignLocalRecordings) ...<Widget>[
+                    SsInlineAlert(
+                      title: context.l10n.foreignLocalRecordingsTitle,
+                      message: context.l10n.foreignLocalRecordingsBody,
+                      tone: SsInlineAlertTone.warning,
+                    ),
+                    const SizedBox(height: SsSpacing.md),
+                  ],
                   TextField(
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.search_rounded),

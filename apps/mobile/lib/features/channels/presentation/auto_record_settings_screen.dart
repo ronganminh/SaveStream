@@ -119,6 +119,7 @@ class _AutoRecordSettingsScreenState
       );
     }
 
+    final bool cloudExhausted = access.cloudMinutesAvailable <= 0;
     final int activeCloud = recordings.requireValue
         .where(
           (RecordingSummary recording) =>
@@ -170,9 +171,22 @@ class _AutoRecordSettingsScreenState
                     title: Text(context.l10n.autoRecordWhenLive),
                     subtitle: Text(context.l10n.autoRecordCloudLocation),
                     secondary: const Icon(Icons.bolt_rounded),
-                    onChanged: _mutating ? null : _toggle,
+                    onChanged: _mutating || cloudExhausted ? null : _toggle,
                   ),
                 ),
+                if (cloudExhausted) ...<Widget>[
+                  const SizedBox(height: SsSpacing.md),
+                  SsInlineAlert(
+                    title: context.l10n.cloudHoursExhaustedTitle,
+                    message: context.l10n.autoRecordPausedNoCloudHoursBody,
+                    tone: SsInlineAlertTone.warning,
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  SsPrimaryButton(
+                    label: context.l10n.buyMoreCloudHoursAction,
+                    onPressed: () => showCloudHoursUpsellSheet(context),
+                  ),
+                ],
                 const SizedBox(height: SsSpacing.md),
                 SsCard(
                   child: Column(

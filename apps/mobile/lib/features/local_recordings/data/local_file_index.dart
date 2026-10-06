@@ -81,6 +81,34 @@ final class LocalFileIndex {
     );
   }
 
+  Future<bool> hasRecordingsOwnedByOtherUsers({required String userId}) async {
+    if (!await _root.exists()) {
+      return false;
+    }
+
+    await for (final FileSystemEntity entity in _root.list(
+      followLinks: false,
+    )) {
+      if (entity is! Directory) {
+        continue;
+      }
+      final String ownerId = entity.uri.pathSegments
+          .where((String segment) => segment.isNotEmpty)
+          .last;
+      if (ownerId == userId) {
+        continue;
+      }
+      final Map<String, File> foreignFiles = await _recordingFiles(
+        entity,
+        recursive: true,
+      );
+      if (foreignFiles.isNotEmpty) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   Future<void> deleteRecordingFiles({
     required String userId,
     required String recordingId,

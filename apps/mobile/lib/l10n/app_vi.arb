@@ -1670,5 +1670,17 @@
   "logoutCloudRecordingWarning": "Đang có bản ghi Cloud. Bản ghi này vẫn tiếp tục trên server sau khi bạn đăng xuất.",
   "logoutLocalAndCloudRecordingWarning": "Bản ghi Local sẽ được dừng và lưu trước khi đăng xuất. Bản ghi Cloud vẫn tiếp tục trên server.",
   "deleteAccountPasswordLabel": "Mật khẩu",
-  "sessionExpiredReloginFailed": "Không thể đăng nhập. Hãy kiểm tra thông tin và thử lại."
+  "sessionExpiredReloginFailed": "Không thể đăng nhập. Hãy kiểm tra thông tin và thử lại.",
+  "adConsentTitle": "Chọn cách quảng cáo hoạt động",
+  "adConsentBody": "SaveStream Free dùng quảng cáo để hỗ trợ recording Local. Trước lời nhắc quyền của hệ thống, hãy xem lựa chọn consent ảnh hưởng thế nào tới cá nhân hoá quảng cáo.",
+  "adConsentPrivacyTitle": "Lựa chọn không ảnh hưởng recording",
+  "adConsentPrivacyBody": "Từ chối quảng cáo cá nhân hoá không tắt recording Local và không xoá các file đã lưu.",
+  "adConsentContinueAction": "Tiếp tục tới lựa chọn hệ thống",
+  "cloudHoursExhaustedTitle": "Đã hết giờ cloud",
+  "cloudHoursExhaustedBody": "Auto-record cloud tạm dừng cho tới khi bạn mua thêm giờ. Creator vẫn được theo dõi và auto-record tự bật lại khi tài khoản có giờ cloud.",
+  "cloudHoursExhaustedRecordingBody": "Không còn giờ cloud. Recording cloud đang chạy sẽ dừng an toàn khi server dùng hết phần thời gian khả dụng. Mua thêm giờ để tiếp tục auto-record.",
+  "autoRecordPausedNoCloudHoursLabel": "Auto-record tạm dừng · hết giờ cloud",
+  "autoRecordPausedNoCloudHoursBody": "Creator vẫn được theo dõi. Auto-record tự bật lại sau khi giờ cloud mới được cộng.",
+  "foreignLocalRecordingsTitle": "Có bản ghi Local của tài khoản khác",
+  "foreignLocalRecordingsBody": "Thiết bị này vẫn còn file recording Local thuộc một tài khoản SaveStream khác. Các file đó được giữ tách biệt, không được nhập hoặc đổi chủ sang tài khoản này."
 }
