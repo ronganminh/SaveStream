@@ -27,7 +27,7 @@ Implemented on `main` before C9:
 - persisted notification preferences, legal links, maintenance/minimum-version gates and EN/VI localization;
 - Light/Dark/System theme plus responsive/accessibility coverage.
 
-C8 Firebase push is intentionally not shipped yet. Do not claim production push notifications in store copy until C8 is completed with the production Firebase project.
+C8 Firebase push is intentionally not shipped yet. Do not claim production push notifications in store copy until C8 is completed with the owner-supplied production Firebase project.
 
 ## Requirements
 
