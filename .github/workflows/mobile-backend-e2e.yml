@@ -38,7 +38,7 @@ jobs:
         working-directory: backend
         run: |
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build \
-            postgres redis minio minio-init mail-debug fake-stream api worker outbox-dispatcher
+            postgres redis minio minio-init mail-debug fake-stream api worker scheduler outbox-dispatcher
 
       - name: Seed pricing and billing fixtures
         working-directory: backend
@@ -61,7 +61,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml ps
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml logs \
-            api worker outbox-dispatcher fake-stream mail-debug minio postgres redis
+            api worker scheduler outbox-dispatcher fake-stream mail-debug minio postgres redis
 
       - name: Tear down backend E2E stack
         if: always()
