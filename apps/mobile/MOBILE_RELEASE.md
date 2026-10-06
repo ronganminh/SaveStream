@@ -42,6 +42,40 @@ C6 code and CI use fake store/plugin behavior; no real store transaction is run 
 
 Record device/OS, store environment, product ID, transaction ID (non-secret), backend result, and final cloud-minute balance in release evidence.
 
+## C7 ads and consent
+
+Free-plan ads use Google Mobile Ads with UMP consent. Production ad unit IDs are supplied at build time; when omitted, the app uses Google demo/test units so CI and development do not generate live traffic.
+
+Android production ad unit defines:
+
+```text
+ADMOB_BANNER_HOME_ANDROID
+ADMOB_BANNER_WATCH_ANDROID
+ADMOB_BANNER_LIBRARY_ANDROID
+ADMOB_REWARDED_ANDROID
+```
+
+iOS production ad unit defines:
+
+```text
+ADMOB_BANNER_HOME_IOS
+ADMOB_BANNER_WATCH_IOS
+ADMOB_BANNER_LIBRARY_IOS
+ADMOB_REWARDED_IOS
+```
+
+The Android AdMob app ID continues to come from `SAVESTREAM_ADMOB_ANDROID_APP_ID`. For iOS release signing, set the real `ADMOB_APP_ID` in the private release xcconfig. Configure GDPR/privacy messages and the iOS IDFA/ATT message in AdMob Privacy & messaging before store release.
+
+Manual C7 checks:
+
+- Free account with zero watched creators: confirm no UMP prompt and no ad request occurs.
+- Free account after the first creator is added: complete the in-app explanation, then verify UMP appears only when required for the region.
+- iOS: verify the localized ATT description appears only when the AdMob IDFA flow needs the system prompt.
+- Pro account: confirm Google Mobile Ads is never initialized and no consent prompt appears.
+- Home, Watch list and Library: verify adaptive banners collapse to zero height on no-fill.
+- Recording, purchase and player screens: confirm no banner request is made.
+- Rewarded local-minutes/local-slot flow: verify `ssv_user_id` and `ssv_custom_data` from `POST /v1/rewards` reach AdMob SSV, then wait for backend `valid` before granting the reward.
+
 ## Android signing
 
 Never commit a keystore or passwords. The Gradle release config reads:

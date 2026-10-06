@@ -277,6 +277,13 @@ final class _AdsSpy implements AdsService {
   AdConsentState get consentState => AdConsentState.granted;
 
   @override
+  Stream<AdConsentState> get consentStates =>
+      Stream<AdConsentState>.value(AdConsentState.granted);
+
+  @override
+  Future<void> requestConsent() async {}
+
+  @override
   Widget? bannerFor(AdPlacement placement) => null;
 
   @override

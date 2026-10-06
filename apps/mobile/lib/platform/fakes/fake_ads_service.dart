@@ -15,6 +15,13 @@ final class FakeAdsService implements AdsService {
   final bool rewardResult;
 
   @override
+  Stream<AdConsentState> get consentStates =>
+      Stream<AdConsentState>.value(consentState);
+
+  @override
+  Future<void> requestConsent() async {}
+
+  @override
   Widget? bannerFor(AdPlacement placement) => null;
 
   @override

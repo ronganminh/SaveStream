@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -12,11 +13,13 @@ import '../features/auth/data/current_user_id_source.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
 import '../features/entitlement/data/repositories/api_entitlement_repository.dart';
+import '../features/entitlement/domain/models/entitlement.dart';
 import '../features/local_recordings/data/repositories/api_local_recording_repository.dart';
 import '../features/local_recordings/data/repositories/indexed_local_recording_repository.dart';
 import '../features/local_recordings/presentation/controllers/local_recording_controller.dart'
     as local_recording;
 import '../features/recordings/data/repositories/api_recording_repository.dart';
+import '../features/rewards/data/repositories/api_reward_repository.dart';
 import '../features/settings/data/repositories/api_notification_preferences_repository.dart';
 import '../features/settings/data/repositories/api_notifications_repository.dart';
 import '../features/settings/data/repositories/api_profile_repository.dart';
@@ -29,6 +32,7 @@ import '../platform/android_local_recovery_service.dart';
 import '../platform/android_recording_platform_service.dart';
 import '../platform/connectivity_plus_service.dart';
 import '../platform/device_info_plus_service.dart';
+import '../platform/google_mobile_ads_service.dart';
 import '../platform/in_app_purchase_service.dart';
 import '../platform/platform_providers.dart';
 import '../platform/share_plus_service.dart';
@@ -67,6 +71,24 @@ Future<void> bootstrap() async {
   final appStatusRepository = ApiAppStatusRepository(
     apiClient: authenticatedApiClient,
   );
+  final rewardRepository = ApiRewardRepository(
+    apiClient: authenticatedApiClient,
+  );
+  final GoogleMobileAdsService adsService = GoogleMobileAdsService(
+    isEligible: () async {
+      if (!session.isAuthenticated) return false;
+      final entitlement = await entitlementRepository.getEntitlement();
+      return entitlement.plan == Plan.free && entitlement.watchCount > 0;
+    },
+  );
+  void refreshAdsConsent() {
+    if (session.isAuthenticated) {
+      unawaited(adsService.refreshConsentInfo());
+    }
+  }
+
+  session.addListener(refreshAdsConsent);
+  refreshAdsConsent();
   final deviceRepository = ApiDeviceRepository(
     apiClient: authenticatedApiClient,
   );
@@ -127,6 +149,7 @@ Future<void> bootstrap() async {
           ConnectivityPlusService(),
         ),
         deviceInfoServiceProvider.overrideWithValue(deviceInfoService),
+        adsServiceProvider.overrideWithValue(adsService),
         purchaseServiceProvider.overrideWithValue(InAppPurchaseService()),
         store_ui.storeRepositoryProvider.overrideWithValue(
           ApiStoreRepository(apiClient: authenticatedApiClient),
@@ -135,6 +158,10 @@ Future<void> bootstrap() async {
           SecureStorePurchaseRetryStore(),
         ),
         entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
+        rewardRepositoryProvider.overrideWithValue(rewardRepository),
+        local_recording.rewardRepositoryProvider.overrideWithValue(
+          rewardRepository,
+        ),
         appStatusRepositoryProvider.overrideWithValue(appStatusRepository),
         deviceRepositoryProvider.overrideWithValue(deviceRepository),
         if (localRecordingRepository != null)

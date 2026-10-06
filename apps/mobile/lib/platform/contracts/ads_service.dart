@@ -12,4 +12,8 @@ abstract interface class AdsService {
   Widget? bannerFor(AdPlacement placement);
 
   AdConsentState get consentState;
+
+  Stream<AdConsentState> get consentStates;
+
+  Future<void> requestConsent();
 }
