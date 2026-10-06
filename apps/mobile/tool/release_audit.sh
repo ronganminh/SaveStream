@@ -11,6 +11,131 @@ fail() {
 git ls-files --error-unmatch pubspec.lock >/dev/null 2>&1 ||
   fail "pubspec.lock must be committed"
 
+grep -q '^version: 2.0.0+200
+grep -q "branches:" ../../.github/workflows/mobile-ci.yml || fail "mobile CI branch gate missing"
+grep -q -- "- main" ../../.github/workflows/mobile-ci.yml || fail "mobile CI must run for pushes to main"
+
+if grep -q 'signingConfigs.getByName("debug")' android/app/build.gradle.kts; then
+  fail "Android release must not use debug signing"
+fi
+for token in   SAVESTREAM_ANDROID_KEYSTORE_PATH   SAVESTREAM_ANDROID_KEYSTORE_PASSWORD   SAVESTREAM_ANDROID_KEY_ALIAS   SAVESTREAM_ANDROID_KEY_PASSWORD; do
+  grep -q "$token" android/app/build.gradle.kts || fail "missing Android signing input $token"
+done
+
+grep -q "ios-release-compile:" ../../.github/workflows/mobile-ci.yml ||
+  fail "Android-only release must keep the iOS compile gate green"
+
+grep -q "https://api.savestream.online" lib/core/config/app_config.dart ||
+  fail "production API default is missing"
+if grep -qs "MOBILE_EXTERNAL_CHECKOUT_ENABLED" lib/core/config/app_config.dart tool/android_emulator_smoke.sh ../../.github/workflows/mobile-ci.yml; then
+  fail "legacy external checkout gate must be removed"
+fi
+
+grep -q "NotificationSettingsScreen" lib/app/router/app_router.dart ||
+  fail "Notifications must use the real settings screen"
+grep -q "/v1/me/notification-preferences"   lib/features/settings/data/repositories/api_notification_preferences_repository.dart ||
+  fail "Notification preferences API integration is missing"
+
+grep -q "https://savestream.online/privacy" lib/core/config/app_config.dart ||
+  fail "published privacy URL is missing"
+grep -q "https://savestream.online/terms" lib/core/config/app_config.dart ||
+  fail "published terms URL is missing"
+
+grep -q "flutter_launcher_icons:" pubspec.yaml ||
+  fail "launcher icon generator is missing"
+grep -q "flutter_native_splash:" pubspec.yaml ||
+  fail "native splash generator is missing"
+grep -q "build/branding/savestream_app_icon.png" pubspec.yaml ||
+  fail "native asset generators must use the rasterized official brand mark"
+grep -q 'fill="#4F46E5"' assets/branding/savestream_mark.svg ||
+  fail "official SaveStream brand mark source is missing"
+grep -q "cairosvg.svg2png" tool/generate_brand_assets.py ||
+  fail "official SVG rasterizer is missing"
+
+grep -q "billingPurchasesUnavailableTitle" lib/l10n/app_en.arb ||
+  fail "billing-disabled UX copy is missing"
+
+for plugin in connectivity_plus path_provider permission_handler device_info_plus package_info_plus share_plus wakelock_plus video_player in_app_purchase google_mobile_ads; do
+  grep -q "^  ${plugin}:" pubspec.yaml || fail "missing C0 plugin ${plugin}"
+done
+
+grep -q "minSdk = 24" android/app/build.gradle.kts ||
+  fail "Android minSdk must be 24 for the C0 plugin set"
+grep -q "isMinifyEnabled = true" android/app/build.gradle.kts ||
+  fail "Android release must enable R8 minification"
+grep -q "isShrinkResources = true" android/app/build.gradle.kts ||
+  fail "Android release must enable resource shrinking"
+grep -q '"proguard-rules.pro"' android/app/build.gradle.kts ||
+  fail "Android release must load app ProGuard rules"
+test -f android/app/proguard-rules.pro ||
+  fail "Android ProGuard rules file is missing"
+
+for permission in   android.permission.INTERNET   android.permission.FOREGROUND_SERVICE   android.permission.FOREGROUND_SERVICE_DATA_SYNC; do
+  grep -q "$permission" android/app/src/main/AndroidManifest.xml ||
+    fail "required Android permission missing: $permission"
+done
+
+for permission in   android.permission.READ_EXTERNAL_STORAGE   android.permission.WRITE_EXTERNAL_STORAGE   android.permission.MANAGE_EXTERNAL_STORAGE   android.permission.CAMERA   android.permission.RECORD_AUDIO; do
+  if grep -q "$permission" android/app/src/main/AndroidManifest.xml; then
+    fail "unexpected broad Android permission: $permission"
+  fi
+done
+
+if grep -q "android.permission.POST_NOTIFICATIONS" android/app/src/main/AndroidManifest.xml; then
+  fail "C8 is deferred; Android notification permission must not ship yet"
+fi
+
+for key in   NSCameraUsageDescription   NSMicrophoneUsageDescription   NSPhotoLibraryUsageDescription   NSPhotoLibraryAddUsageDescription   NSLocationWhenInUseUsageDescription   NSLocationAlwaysAndWhenInUseUsageDescription   NSLocalNetworkUsageDescription; do
+  if grep -q "$key" ios/Runner/Info.plist; then
+    fail "unexpected iOS privacy permission key: $key"
+  fi
+done
+grep -q "min_sdk_android: 24" pubspec.yaml ||
+  fail "launcher icon minSdk must match Android minSdk"
+grep -q "SAVESTREAM_ADMOB_ANDROID_APP_ID" android/app/build.gradle.kts ||
+  fail "Android AdMob build variable is missing"
+grep -q "ca-app-pub-3940256099942544~3347511713" android/app/build.gradle.kts ||
+  fail "Android AdMob test app ID fallback is missing"
+grep -q 'android:name="com.google.android.gms.ads.APPLICATION_ID"' android/app/src/main/AndroidManifest.xml ||
+  fail "Android AdMob application metadata is missing"
+grep -q "GADApplicationIdentifier" ios/Runner/Info.plist ||
+  fail "iOS AdMob application metadata is missing"
+grep -q "ADMOB_APP_ID" ios/Runner/Info.plist ||
+  fail "iOS AdMob build variable is missing"
+grep -q "ca-app-pub-3940256099942544~1458002511" ios/Flutter/Debug.xcconfig ||
+  fail "iOS AdMob test app ID fallback is missing"
+grep -q "ADMOB_BANNER_HOME_ANDROID" lib/platform/google_mobile_ads_service.dart ||
+  fail "Android banner dart-define is missing"
+grep -q "ADMOB_REWARDED_ANDROID" lib/platform/google_mobile_ads_service.dart ||
+  fail "Android rewarded dart-define is missing"
+grep -q "ADMOB_BANNER_HOME_IOS" lib/platform/google_mobile_ads_service.dart ||
+  fail "iOS banner dart-define is missing"
+grep -q "ADMOB_REWARDED_IOS" lib/platform/google_mobile_ads_service.dart ||
+  fail "iOS rewarded dart-define is missing"
+grep -q "ServerSideVerificationOptions" lib/platform/google_mobile_ads_service.dart ||
+  fail "rewarded-ad SSV wiring is missing"
+grep -q "requestConsentInfoUpdate" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP consent refresh is missing"
+grep -q "canRequestAds" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP canRequestAds gate is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/Info.plist ||
+  fail "iOS ATT usage description is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/en.lproj/InfoPlist.strings ||
+  fail "English ATT localization is missing"
+grep -q "NSUserTrackingUsageDescription" ios/Runner/vi.lproj/InfoPlist.strings ||
+  fail "Vietnamese ATT localization is missing"
+grep -q "AppTrackingTransparency.framework" ios/Runner.xcodeproj/project.pbxproj ||
+  fail "iOS AppTrackingTransparency framework is missing"
+
+test -f ../../docs/v2/RELEASE_CHECKLIST_MOBILE.md ||
+  fail "C9 release checklist is missing"
+
+echo "C9 mobile release audit passed."
+ pubspec.yaml ||
+  fail "C9 release version must be 2.0.0+200"
+grep -q "APP_VERSION" lib/features/app_status/presentation/a6_app_status_providers.dart ||
+  fail "production app-version gate is missing"
+
 grep -q "branches:" ../../.github/workflows/mobile-ci.yml || fail "mobile CI branch gate missing"
 grep -q -- "- main" ../../.github/workflows/mobile-ci.yml || fail "mobile CI must run for pushes to main"
 
