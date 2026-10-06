@@ -6,16 +6,19 @@ import uuid
 from app.api.schemas.recordings import Source
 from app.application.watches.scheduler import WatchClaim, WatchLiveResult, WatchScheduler
 from app.infrastructure.db.session import Database
-from app.infrastructure.recording.runtime import TikTokSourceResolver
+from app.infrastructure.recording.runtime import build_recording_runtime
 from app.settings import AppSettings, get_app_settings
-from core.tiktok_api import TikTokAPI
 
 
-class TikTokWatchChecker:
+class RuntimeWatchChecker:
+    def __init__(self, settings: AppSettings) -> None:
+        self._resolver = build_recording_runtime(settings).resolver
+
     async def check(self, source: Source) -> WatchLiveResult:
-        api = TikTokAPI(proxy=None, cookies={})
-        resolver = TikTokSourceResolver(api)
-        resolved, is_live = await asyncio.to_thread(resolver.live_status, source)
+        resolved, is_live = await asyncio.to_thread(
+            self._resolver.live_status,
+            source,
+        )
         return WatchLiveResult(
             username=resolved.username,
             room_id=resolved.room_id,
@@ -42,7 +45,7 @@ async def _check(
         async with database.session() as session:
             await WatchScheduler(session, settings).process_claim(
                 WatchClaim(watch_id=watch_id, lease_id=lease_id),
-                TikTokWatchChecker(),
+                RuntimeWatchChecker(settings),
             )
     finally:
         await database.close()
