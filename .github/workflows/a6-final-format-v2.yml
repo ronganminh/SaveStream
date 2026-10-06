@@ -1,0 +1,34 @@
+name: A6 Final Formatter V2
+
+on:
+  push:
+    branches:
+      - tmp/a6-final-format-20261005-v2
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/app lib/features/settings lib/features/app_status test/v2a_a6_settings_global_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/lib/app apps/mobile/lib/features/settings apps/mobile/lib/features/app_status apps/mobile/test/v2a_a6_settings_global_test.dart
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(mobile): format completed A6 [formatted]"
+          git push
