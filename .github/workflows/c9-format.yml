@@ -1,0 +1,34 @@
+name: C9 Format E2E
+
+on:
+  push:
+    branches:
+      - v2/c9-android-release-prep
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: ${{ !contains(github.event.head_commit.message, '[c9-formatted]') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.0'
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format test/backend_connectivity_e2e_test.dart
+      - name: Commit formatter output
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/c9-format.yml
+          git add apps/mobile/test/backend_connectivity_e2e_test.dart
+          git commit -m "style(mobile): format C9 E2E [c9-formatted]"
+          git push
