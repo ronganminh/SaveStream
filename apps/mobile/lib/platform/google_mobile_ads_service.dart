@@ -200,11 +200,19 @@ final class GoogleMobileAdsService implements AdsService {
   final MobileAdsRuntime _runtime;
 
   AdConsentState _consentState = AdConsentState.unknown;
+  final StreamController<AdConsentState> _consentController =
+      StreamController<AdConsentState>.broadcast();
   Future<void>? _consentRefresh;
   bool _initialized = false;
 
   @override
   AdConsentState get consentState => _consentState;
+
+  @override
+  Stream<AdConsentState> get consentStates async* {
+    yield _consentState;
+    yield* _consentController.stream;
+  }
 
   Future<void> refreshConsentInfo() {
     return _consentRefresh ??= _refreshConsentInfo().whenComplete(() {
@@ -215,12 +223,22 @@ final class GoogleMobileAdsService implements AdsService {
   Future<void> _refreshConsentInfo() async {
     if (!await _eligible()) return;
     try {
-      _consentState = await _runtime.refreshConsentInfo();
+      _setConsentState(await _runtime.refreshConsentInfo());
     } on Object {
       if (await _runtime.canRequestAds()) {
-        _consentState = AdConsentState.granted;
+        _setConsentState(AdConsentState.granted);
       }
     }
+  }
+
+  @override
+  Future<void> requestConsent() async {
+    if (!await _eligible()) return;
+    if (_consentState == AdConsentState.unknown) {
+      await refreshConsentInfo();
+    }
+    if (_consentState != AdConsentState.required) return;
+    _setConsentState(await _runtime.gatherConsentIfRequired());
   }
 
   @override
@@ -244,12 +262,10 @@ final class GoogleMobileAdsService implements AdsService {
       await refreshConsentInfo();
     }
     if (_consentState == AdConsentState.required) {
-      _consentState = await _runtime.gatherConsentIfRequired();
+      return false;
     }
     if (!await _runtime.canRequestAds()) {
-      if (_consentState != AdConsentState.required) {
-        _consentState = AdConsentState.denied;
-      }
+      _setConsentState(AdConsentState.denied);
       return false;
     }
     if (!_initialized) {
@@ -257,6 +273,12 @@ final class GoogleMobileAdsService implements AdsService {
       _initialized = true;
     }
     return true;
+  }
+
+  void _setConsentState(AdConsentState next) {
+    if (_consentState == next) return;
+    _consentState = next;
+    _consentController.add(next);
   }
 
   Future<bool> _eligible() async {

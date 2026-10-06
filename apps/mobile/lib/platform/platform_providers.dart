@@ -40,6 +40,11 @@ final Provider<AdsService> adsServiceProvider = Provider<AdsService>(
   (Ref ref) => const FakeAdsService(),
 );
 
+final StreamProvider<AdConsentState> adConsentStateProvider =
+    StreamProvider<AdConsentState>(
+      (Ref ref) => ref.watch(adsServiceProvider).consentStates,
+    );
+
 final Provider<PushService> pushServiceProvider = Provider<PushService>(
   (Ref ref) => FakePushService(),
 );

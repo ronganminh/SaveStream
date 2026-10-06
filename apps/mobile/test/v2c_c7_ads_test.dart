@@ -75,6 +75,35 @@ void main() {
     expect(runtime.rewardedCalls, 0);
   });
 
+  test('C7 consent state stream updates after UMP result', () async {
+    final _FakeAdsRuntime runtime = _FakeAdsRuntime(
+      refreshState: AdConsentState.required,
+      gatheredState: AdConsentState.granted,
+      canRequest: true,
+    );
+    final GoogleMobileAdsService service = GoogleMobileAdsService(
+      isEligible: () async => true,
+      runtime: runtime,
+      config: _config,
+    );
+    final List<AdConsentState> states = <AdConsentState>[];
+    final subscription = service.consentStates.listen(states.add);
+    addTearDown(subscription.cancel);
+
+    await service.refreshConsentInfo();
+    await service.requestConsent();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(
+      states,
+      containsAllInOrder(<AdConsentState>[
+        AdConsentState.unknown,
+        AdConsentState.required,
+        AdConsentState.granted,
+      ]),
+    );
+  });
+
   testWidgets('C7 banner stays zero-size when ads are ineligible', (
     WidgetTester tester,
   ) async {
@@ -111,6 +140,13 @@ void main() {
         config: _config,
       );
 
+      final bool beforeConsent = await service.showRewarded(_reward);
+      expect(beforeConsent, isFalse);
+      expect(runtime.gatherCalls, 0);
+      expect(runtime.initializeCalls, 0);
+      expect(runtime.rewardedCalls, 0);
+
+      await service.requestConsent();
       final bool first = await service.showRewarded(_reward);
       final bool second = await service.showRewarded(_reward);
 
@@ -140,6 +176,7 @@ void main() {
         config: _config,
       );
 
+      await service.requestConsent();
       final bool shown = await service.showRewarded(_reward);
 
       expect(shown, isFalse);

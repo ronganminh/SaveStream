@@ -24,7 +24,9 @@ class _AdConsentGateState extends ConsumerState<AdConsentGate> {
   @override
   Widget build(BuildContext context) {
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
-    final AdConsentState consent = ref.watch(adsServiceProvider).consentState;
+    final AdsService adsService = ref.watch(adsServiceProvider);
+    final AdConsentState consent =
+        ref.watch(adConsentStateProvider).value ?? adsService.consentState;
     final bool pro = entitlement.value?.plan == Plan.pro;
     final bool shouldExplain =
         !pro && consent == AdConsentState.required && !_acknowledged;
@@ -69,8 +71,13 @@ class _AdConsentGateState extends ConsumerState<AdConsentGate> {
                             const SizedBox(height: SsSpacing.lg),
                             SsPrimaryButton(
                               label: context.l10n.adConsentContinueAction,
-                              onPressed: () =>
-                                  setState(() => _acknowledged = true),
+                              onPressed: () async {
+                                await ref
+                                    .read(adsServiceProvider)
+                                    .requestConsent();
+                                if (!mounted) return;
+                                setState(() => _acknowledged = true);
+                              },
                             ),
                           ],
                         ),
