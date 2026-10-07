@@ -115,4 +115,23 @@ git check-ignore -q android/app/google-services.json ||
 git check-ignore -q ios/Runner/GoogleService-Info.plist ||
   fail "GoogleService-Info.plist must stay outside Git"
 
+grep -q '^version: 2\.0\.0[+][0-9][0-9]*$' pubspec.yaml ||
+  fail "C9 app version must be 2.0.0+<build>"
+grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts ||
+  fail "Android release R8 minification must be enabled"
+grep -q 'isShrinkResources = true' android/app/build.gradle.kts ||
+  fail "Android release resource shrinking must be enabled"
+grep -q 'proguard-rules.pro' android/app/build.gradle.kts ||
+  fail "Android release ProGuard rules must be configured"
+test -f android/app/proguard-rules.pro ||
+  fail "Android proguard-rules.pro is missing"
+test -f ../../docs/v2/RELEASE_CHECKLIST_MOBILE.md ||
+  fail "mobile owner release checklist is missing"
+
+for forbidden_permission in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION READ_CONTACTS WRITE_CONTACTS CAMERA RECORD_AUDIO READ_MEDIA_IMAGES READ_MEDIA_VIDEO READ_EXTERNAL_STORAGE WRITE_EXTERNAL_STORAGE; do
+  if grep -q "android.permission.${forbidden_permission}" android/app/src/main/AndroidManifest.xml; then
+    fail "unexpected Android permission ${forbidden_permission}"
+  fi
+done
+
 echo "Phase 17 mobile release audit passed."

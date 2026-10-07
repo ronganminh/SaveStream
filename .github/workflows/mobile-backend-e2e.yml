@@ -46,6 +46,12 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm e2e-runner \
             sh -c 'until curl -fsS http://api:8000/health/ready; do sleep 1; done; python -m app.e2e.seed'
 
+      - name: Verify C9 entitlement, watch-limit, and slot-queue invariants
+        working-directory: backend
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.e2e.yml run --rm e2e-runner \
+            python -m app.e2e.c9_release_invariants
+
       - name: Run Flutter against the real backend
         working-directory: apps/mobile
         env:

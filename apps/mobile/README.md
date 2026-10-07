@@ -2,7 +2,9 @@
 
 Flutter mobile client for SaveStream.
 
-## Current milestone
+## Current V2 release architecture
+
+SaveStream V2 is Android-first. Production bootstrap uses real authenticated repositories, native Local recording on Android, cloud recording through the backend, native store purchases, AdMob/UMP for Free, and Firebase Cloud Messaging for push/deep links. Mock/fake implementations are retained for deterministic tests and previews only.
 
 Current V2 mobile implementation includes:
 
@@ -28,19 +30,19 @@ Current V2 mobile implementation includes:
 - lifecycle-specific detail UI for queued, resolving, waiting_live, recording, processing, uploading, completed, failed, stop_requested, and stopped;
 - Stop / Retry / Delete actions driven by backend-aligned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete` flags;
 - mutable mock recording actions for stop, retry, and delete, with Home and Channel recording history refresh signals;
-- artifact Play / Download UI gated by artifact readiness and reserved for real backend integration in Phase 12;
+- artifact Play / Download is wired to real backend artifact discovery and fresh presigned URLs, with Local files handled separately on-device;
 - Credits screen with backend-authoritative integer posted, reserved, and available balances;
 - real credit ledger, reservation history, active reservation count, pricing metadata, empty/loading/error states, and pull-to-refresh;
 - Billing screen with backend credit packages, exact minor-unit money values, recent payment orders, and buy CTA;
 - payment order status coverage for created, pending, paid, failed, cancelled, expired, partially_refunded, and refunded;
-- real checkout flow that creates an order, creates provider checkout, returns through the `savestream:` deep link, and only treats payment as successful after backend status becomes `paid`;
+- native App Store / Google Play one-time purchase flow for cloud hours, with backend verification and backend-authoritative crediting; no external hosted checkout is exposed in the mobile release;
 - Settings sections for Profile, Credits/Billing, Preferences, Legal, Account actions, and Developer tools;
 - Profile screen backed by `ProfileRepository`, including email and verified/unverified state;
 - dedicated Language screen for English / Vietnamese and Theme screen for Light / Dark / System;
 - `AppSettingsStore` abstraction for local preferences, with production persistence via `SharedPreferencesAsync`;
 - bootstrap restores persisted theme/language before `runApp` so preferences survive app restart;
-- Notifications placeholder kept separate until a backend notification contract exists;
-- Privacy Policy and Terms of Use navigation entries are present without inventing production URLs; published links remain a release dependency;
+- notification preferences, Firebase Messaging permission/token lifecycle, Android Creator LIVE/Recording channels, foreground in-app notifications, and push deep links are wired to the real backend/device contracts;
+- Privacy Policy and Terms of Use open the published production documents at `savestream.online`;
 - Logout and Delete Account actions go through the auth/session abstraction, with destructive confirmation for account deletion;
 - Settings entries for Credits and Billing plus direct Home low-credit navigation;
 - auth mock outcomes for invalid credentials, unverified email, rate limits, server failure, and offline-like behavior;
@@ -202,7 +204,8 @@ Recordings / Home Recording slice
 Other feature screen
   -> Riverpod provider/controller
   -> Repository interface
-  -> Mock repository (until later phases)
+  -> API/native production implementation via bootstrap override
+  -> fake/mock boundary only in tests and previews
 
 MaterialApp.router
   -> guards
@@ -210,7 +213,7 @@ MaterialApp.router
   -> four preserved tab stacks
 ```
 
-Repository boundaries remain intact: Watch and Recording production paths now use `ApiWatchRepository` and `ApiRecordingRepository` without moving raw HTTP/SSE parsing into presentation code, and the remaining mock-backed features can follow the same pattern.
+Repository boundaries remain intact: production bootstrap supplies API/native implementations without moving raw HTTP/SSE/plugin parsing into presentation code; fake/mock implementations are test/preview boundaries only.
 
 Theme and language preferences are persisted locally through `AppSettingsStore`; production uses `SharedPreferencesAsync`. Authentication/session secrets are separate: access tokens stay in memory and refresh tokens use platform secure storage.
 
@@ -397,14 +400,9 @@ Phase 8 settings validation additionally covers unverified profile fallback, all
 
 ## Cloud recording and artifacts
 
-The mobile app is a client for SaveStream cloud recording. It does not capture
-livestream video on the phone and does not keep recording artifacts in app
-storage. Recording jobs continue on backend infrastructure after the app is
-closed.
+SaveStream V2 supports both Android Local recording and cloud recording. Local captures are stored in app-private device storage under the owning account/device namespace; cloud jobs continue on backend infrastructure after the app is closed.
 
-Play / Download requests a fresh presigned artifact URL from the backend and
-opens that URL through the platform/browser. The cloud recording artifact
-remains authoritative.
+Cloud Play / Download requests a fresh presigned artifact URL from the backend. Local recordings remain device-owned files and cloud artifacts remain authoritative only for cloud recordings.
 
 Notification preferences now use the persisted backend preference API. Privacy
 Policy and Terms of Use open the published documents at savestream.online.
