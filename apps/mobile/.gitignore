@@ -29,3 +29,7 @@ ios/Flutter/flutter_export_environment.sh
 ios/Runner/GeneratedPluginRegistrant.h
 ios/Runner/GeneratedPluginRegistrant.m
 .brand-venv/
+
+# Firebase release configuration
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist

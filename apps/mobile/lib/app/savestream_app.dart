@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -22,6 +24,7 @@ import '../features/settings/presentation/controllers/notification_feed_provider
 import '../features/settings/presentation/controllers/notification_preferences_providers.dart';
 import '../features/settings/presentation/controllers/settings_providers.dart';
 import '../l10n/l10n.dart';
+import '../platform/push_runtime.dart';
 import 'app_settings_controller.dart';
 import 'lifecycle/app_lifecycle_controller.dart';
 import 'router/app_router.dart';
@@ -40,6 +43,8 @@ class SaveStreamApp extends StatefulWidget {
     this.profileRepository,
     this.notificationsRepository,
     this.notificationPreferencesRepository,
+    this.foregroundPushMessages,
+    this.openedPushMessages,
     this.mockScenario = MockScenario.success,
     this.authMockScenario = AuthMockScenario.success,
     this.extraOverrides = const <Override>[],
@@ -56,6 +61,8 @@ class SaveStreamApp extends StatefulWidget {
   final ProfileRepository? profileRepository;
   final NotificationsRepository? notificationsRepository;
   final NotificationPreferencesRepository? notificationPreferencesRepository;
+  final Stream<ForegroundPushMessage>? foregroundPushMessages;
+  final Stream<ForegroundPushMessage>? openedPushMessages;
   final MockScenario mockScenario;
   final AuthMockScenario authMockScenario;
   final List<Override> extraOverrides;
@@ -71,6 +78,10 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
   late final GoRouter _router;
   late final bool _ownsSettings;
   late final bool _ownsSession;
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+  StreamSubscription<ForegroundPushMessage>? _foregroundPushSubscription;
+  StreamSubscription<ForegroundPushMessage>? _openedPushSubscription;
 
   @override
   void initState() {
@@ -85,10 +96,50 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
       settings: _settings,
       session: _session,
     );
+    _foregroundPushSubscription = widget.foregroundPushMessages?.listen(
+      _showForegroundPush,
+    );
+    _openedPushSubscription = widget.openedPushMessages?.listen(_openPush);
+  }
+
+  void _showForegroundPush(ForegroundPushMessage message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ScaffoldMessengerState? messenger = _messengerKey.currentState;
+      if (messenger == null) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  message.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                if (message.body.isNotEmpty) Text(message.body),
+              ],
+            ),
+          ),
+        );
+    });
+  }
+
+  void _openPush(ForegroundPushMessage message) {
+    _router.go(
+      PushRuntime.routeFor(
+        kind: message.kind,
+        resourceType: message.resourceType,
+        resourceId: message.resourceId,
+      ),
+    );
   }
 
   @override
   void dispose() {
+    unawaited(_foregroundPushSubscription?.cancel());
+    unawaited(_openedPushSubscription?.cancel());
     _router.dispose();
     _lifecycle.dispose();
     if (_ownsSettings) _settings.dispose();
@@ -132,6 +183,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
         animation: _settings,
         builder: (BuildContext context, Widget? child) {
           return MaterialApp.router(
+            scaffoldMessengerKey: _messengerKey,
             debugShowCheckedModeBanner: false,
             restorationScopeId: 'savestream_app',
             onGenerateTitle: (BuildContext context) => context.l10n.appTitle,

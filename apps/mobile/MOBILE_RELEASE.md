@@ -118,7 +118,7 @@ https://savestream.online/terms
 
 The app opens these published documents externally.
 
-## Notifications
+## Notifications and Firebase Cloud Messaging
 
 Mobile notification preferences use the persisted backend contract:
 
@@ -127,7 +127,18 @@ GET   /v1/me/notification-preferences
 PATCH /v1/me/notification-preferences
 ```
 
-Current backend delivery is in-app only. The app does not claim email/push delivery when the backend does not support it.
+Firebase app configuration is release input and is intentionally not tracked in Git. Before a real build, place:
+
+```text
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+```
+
+CI generates non-production placeholder files with `tool/generate_firebase_ci_config.sh` only to compile the app.
+
+The mobile client registers the current FCM token, token refreshes, locale and app version through `PUT /v1/me/devices/{device_id}`. Android creates separate notification channels for Creator LIVE and recording events. Push taps route by `resource_type` and `resource_id`; foreground messages render inside SaveStream instead of showing a system notification.
+
+For production delivery, configure `SAVESTREAM_PUSH_PROVIDER=fcm` and provide `SAVESTREAM_PUSH_FCM_SERVICE_ACCOUNT_JSON` to the backend outside Git. For iOS runtime push, upload the APNs authentication key to Firebase and configure the Apple Team/Key IDs before device testing.
 
 ## Release checklist
 

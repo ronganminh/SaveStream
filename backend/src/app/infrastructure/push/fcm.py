@@ -127,6 +127,15 @@ class FcmPushSender:
                             "title": message.title,
                             "body": message.body,
                         },
+                        "android": {
+                            "notification": {
+                                "channel_id": (
+                                    "savestream_creator_live"
+                                    if message.data.get("type") == "creator_live"
+                                    else "savestream_recordings"
+                                )
+                            }
+                        },
                         "data": message.data,
                     }
                 },

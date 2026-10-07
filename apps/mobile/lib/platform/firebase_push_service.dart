@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'contracts/push_service.dart';
+import 'push_runtime.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -19,10 +20,16 @@ final class FirebasePushService implements PushService {
       StreamController<String?>.broadcast();
   final StreamController<PushOpenedMessage> _openedMessages =
       StreamController<PushOpenedMessage>.broadcast();
+  final StreamController<ForegroundPushMessage> _foregroundMessages =
+      StreamController<ForegroundPushMessage>.broadcast();
+  final StreamController<ForegroundPushMessage> _runtimeOpenedMessages =
+      StreamController<ForegroundPushMessage>.broadcast();
 
   StreamSubscription<String>? _tokenRefreshSubscription;
+  StreamSubscription<RemoteMessage>? _foregroundMessageSubscription;
   StreamSubscription<RemoteMessage>? _openedMessageSubscription;
   PushOpenedMessage? _initialOpenedMessage;
+  ForegroundPushMessage? _initialRuntimeOpenedMessage;
   bool _initialized = false;
 
   Future<void> initialize() async {
@@ -32,19 +39,27 @@ final class FirebasePushService implements PushService {
     _initialized = true;
 
     _tokenRefreshSubscription = _messaging.onTokenRefresh.listen(_tokens.add);
-    _openedMessageSubscription = FirebaseMessaging.onMessageOpenedApp.listen(
-      (RemoteMessage message) => _openedMessages.add(_mapMessage(message)),
+    _foregroundMessageSubscription = FirebaseMessaging.onMessage.listen(
+      (RemoteMessage message) =>
+          _foregroundMessages.add(_mapRuntimeMessage(message)),
     );
+    _openedMessageSubscription = FirebaseMessaging.onMessageOpenedApp.listen((
+      RemoteMessage message,
+    ) {
+      _openedMessages.add(_mapMessage(message));
+      _runtimeOpenedMessages.add(_mapRuntimeMessage(message));
+    });
 
     await _messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
+      alert: false,
+      badge: false,
+      sound: false,
     );
 
     final RemoteMessage? initialMessage = await _messaging.getInitialMessage();
     if (initialMessage != null) {
       _initialOpenedMessage = _mapMessage(initialMessage);
+      _initialRuntimeOpenedMessage = _mapRuntimeMessage(initialMessage);
     }
 
     if (await permissionStatus == PushPermissionStatus.granted) {
@@ -82,6 +97,18 @@ final class FirebasePushService implements PushService {
   @override
   Stream<String?> get tokenStream => _tokens.stream;
 
+  Stream<ForegroundPushMessage> get foregroundMessageStream =>
+      _foregroundMessages.stream;
+
+  Stream<ForegroundPushMessage> get runtimeOpenedMessageStream async* {
+    final ForegroundPushMessage? initial = _initialRuntimeOpenedMessage;
+    if (initial != null) {
+      _initialRuntimeOpenedMessage = null;
+      yield initial;
+    }
+    yield* _runtimeOpenedMessages.stream;
+  }
+
   @override
   Stream<PushOpenedMessage> get openedMessageStream async* {
     final PushOpenedMessage? initial = _initialOpenedMessage;
@@ -94,9 +121,12 @@ final class FirebasePushService implements PushService {
 
   Future<void> dispose() async {
     await _tokenRefreshSubscription?.cancel();
+    await _foregroundMessageSubscription?.cancel();
     await _openedMessageSubscription?.cancel();
     await _tokens.close();
     await _openedMessages.close();
+    await _foregroundMessages.close();
+    await _runtimeOpenedMessages.close();
   }
 
   Future<void> _emitCurrentToken() async {
@@ -121,6 +151,16 @@ final class FirebasePushService implements PushService {
   static PushOpenedMessage _mapMessage(RemoteMessage message) {
     return PushOpenedMessage(
       kind: message.data['type'] ?? 'unknown',
+      resourceId: message.data['resource_id'],
+    );
+  }
+
+  static ForegroundPushMessage _mapRuntimeMessage(RemoteMessage message) {
+    return ForegroundPushMessage(
+      title: message.notification?.title ?? 'SaveStream',
+      body: message.notification?.body ?? '',
+      kind: message.data['type'] ?? 'unknown',
+      resourceType: message.data['resource_type'],
       resourceId: message.data['resource_id'],
     );
   }
