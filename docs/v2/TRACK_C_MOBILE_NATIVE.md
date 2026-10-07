@@ -16,7 +16,7 @@
 - [x] C5 — Trình phát, thư viện file, chia sẻ, tải bản cloud — **đã merge PR #137 vào `main`**
 - [x] C6 — Mua trong app — **đã merge PR #148 vào `main`**
 - [x] C7 — Quảng cáo và xin đồng ý — **đã merge PR #152 vào `main`**
-- [ ] C8 — Push và deep link (**cần dự án Firebase**)
+- [x] C8 — Push và deep link — **đã merge PR #162 vào `main`**
 - [ ] C9 — Hoàn thiện để phát hành
 
 ## Chính sách phát hành nền tảng
