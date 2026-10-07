@@ -17,7 +17,7 @@
 - [x] C6 — Mua trong app — **đã merge PR #148 vào `main`**
 - [x] C7 — Quảng cáo và xin đồng ý — **đã merge PR #152 vào `main`**
 - [x] C8 — Push và deep link — **đã merge PR #162 vào `main`**
-- [ ] C9 — Hoàn thiện để phát hành
+- [x] C9 — Hoàn thiện để phát hành — **đã merge PR #163 vào `main`**
 
 ## Chính sách phát hành nền tảng
 
