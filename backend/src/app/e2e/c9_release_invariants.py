@@ -4,6 +4,11 @@ import asyncio
 import uuid
 
 from app.application.billing.credits import BillingCreditService
+# Prime the recording application package before entitlement imports. The
+# production app loads these modules in this order; importing entitlement first
+# in a standalone module otherwise exposes their intentional cross-boundary
+# dependency while the package is only partially initialized.
+from app.application.recordings.service import RecordingService as _RecordingService
 from app.application.entitlements.service import EntitlementService
 from app.application.quotas.service import QuotaService
 from app.application.recordings.cloud_slots import CloudSlotQueueService
