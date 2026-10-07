@@ -24,6 +24,18 @@ services:
       fake-stream:
         condition: service_healthy
 
+  scheduler:
+    environment:
+      SAVESTREAM_ENVIRONMENT: test
+      SAVESTREAM_RECORDING_SOURCE_BACKEND: fake_http
+      SAVESTREAM_E2E_STREAM_BASE_URL: http://fake-stream:8090
+      SAVESTREAM_WATCH_SCHEDULER_TICK_SECONDS: 1
+      SAVESTREAM_WATCH_JITTER_RATIO: 0.01
+      SAVESTREAM_API_RATE_LIMIT: 1000
+    depends_on:
+      fake-stream:
+        condition: service_healthy
+
   outbox-dispatcher:
     environment:
       SAVESTREAM_ENVIRONMENT: test

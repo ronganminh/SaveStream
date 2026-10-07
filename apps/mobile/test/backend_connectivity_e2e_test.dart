@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/core/api/api_client.dart';
+import 'package:savestream_mobile/core/api/api_exception.dart';
 import 'package:savestream_mobile/core/api/memory_access_token_store.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
@@ -48,7 +49,7 @@ void main() {
       ApiClient? authenticatedClient;
       ApiWatchRepository? watchRepository;
       ApiRecordingRepository? recordingRepository;
-      String? watchId;
+      final List<String> watchIds = <String>[];
       String? recordingId;
 
       final String unique = DateTime.now().microsecondsSinceEpoch.toString();
@@ -90,15 +91,34 @@ void main() {
         expect(initialEntitlement.local.enabled, isTrue);
 
         watchRepository = ApiWatchRepository(apiClient: authenticatedClient);
-        final watch = await watchRepository.createWatch(
-          const CreateWatchCommand(
-            sourceType: WatchSourceType.roomId,
-            sourceValue: 'e2e-room',
-            autoRecord: false,
+        for (int index = 1; index <= 3; index += 1) {
+          final WatchSummary watch = await watchRepository.createWatch(
+            CreateWatchCommand(
+              sourceType: WatchSourceType.roomId,
+              sourceValue: 'e2e-watch-$index',
+              autoRecord: false,
+            ),
+          );
+          watchIds.add(watch.id);
+          expect(watch.status, WatchStatus.active);
+        }
+        expect(await watchRepository.listWatches(), hasLength(3));
+        await expectLater(
+          watchRepository.createWatch(
+            const CreateWatchCommand(
+              sourceType: WatchSourceType.roomId,
+              sourceValue: 'e2e-watch-free-over-limit',
+              autoRecord: false,
+            ),
+          ),
+          throwsA(
+            isA<ApiException>().having(
+              (ApiException error) => error.code,
+              'code',
+              'WATCH_LIMIT_REACHED',
+            ),
           ),
         );
-        watchId = watch.id;
-        expect(watch.status, WatchStatus.active);
 
         final billingRepository = ApiBillingRepository(
           apiClient: authenticatedClient,
@@ -175,19 +195,73 @@ void main() {
 
         final settledBalance = await creditsRepository.getBalance();
         expect(settledBalance.posted, package.credits - 1);
+
+        for (final String id in watchIds) {
+          final WatchSummary? updated = await watchRepository.setAutoRecord(
+            id,
+            enabled: true,
+          );
+          expect(updated?.autoRecord, isTrue);
+          expect(
+            (await watchRepository.pauseWatch(id))?.status,
+            WatchStatus.paused,
+          );
+          expect(
+            (await watchRepository.resumeWatch(id))?.status,
+            WatchStatus.active,
+          );
+        }
+        final WatchSummary fourth = await watchRepository.createWatch(
+          const CreateWatchCommand(
+            sourceType: WatchSourceType.roomId,
+            sourceValue: 'e2e-watch-4',
+            autoRecord: true,
+          ),
+        );
+        watchIds.add(fourth.id);
+
+        final WatchSummary waitingWatch = await _waitForCloudSlotQueue(
+          watchRepository,
+        );
+        expect(
+          waitingWatch.autoRecordState,
+          AutoRecordState.waitingForCloudSlot,
+        );
+
+        final RecordingSummary waitingRecording = await _waitForQueuedRecording(
+          recordingRepository,
+        );
+        expect(waitingRecording.status, RecordingStatus.waitingForCloudSlot);
+        expect(waitingRecording.queuePosition, greaterThanOrEqualTo(1));
       } finally {
-        if (recordingId != null && recordingRepository != null) {
+        if (recordingRepository != null) {
           try {
-            await recordingRepository.deleteRecording(recordingId);
+            final List<RecordingSummary> recordings = await recordingRepository
+                .listRecordings();
+            for (final RecordingSummary item in recordings) {
+              try {
+                await recordingRepository.deleteRecording(item.id);
+              } on Object {
+                // Best-effort E2E cleanup.
+              }
+            }
           } on Object {
-            // Best-effort E2E cleanup.
+            if (recordingId != null) {
+              try {
+                await recordingRepository.deleteRecording(recordingId);
+              } on Object {
+                // Best-effort E2E cleanup.
+              }
+            }
           }
         }
-        if (watchId != null && watchRepository != null) {
-          try {
-            await watchRepository.deleteWatch(watchId);
-          } on Object {
-            // Best-effort E2E cleanup.
+        if (watchRepository != null) {
+          for (final String id in watchIds) {
+            try {
+              await watchRepository.deleteWatch(id);
+            } on Object {
+              // Best-effort E2E cleanup.
+            }
           }
         }
         if (authenticatedClient != null) {
@@ -206,8 +280,41 @@ void main() {
       }
     },
     skip: !enabled,
-    timeout: const Timeout(Duration(minutes: 3)),
+    timeout: const Timeout(Duration(minutes: 5)),
   );
+}
+
+Future<WatchSummary> _waitForCloudSlotQueue(
+  ApiWatchRepository repository,
+) async {
+  final DateTime deadline = DateTime.now().add(const Duration(seconds: 75));
+  while (DateTime.now().isBefore(deadline)) {
+    final List<WatchSummary> watches = await repository.listWatches();
+    for (final WatchSummary watch in watches) {
+      if (watch.autoRecordState == AutoRecordState.waitingForCloudSlot) {
+        return watch;
+      }
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+  }
+  throw TimeoutException('No Watch entered the cloud-slot queue.');
+}
+
+Future<RecordingSummary> _waitForQueuedRecording(
+  ApiRecordingRepository repository,
+) async {
+  final DateTime deadline = DateTime.now().add(const Duration(seconds: 30));
+  while (DateTime.now().isBefore(deadline)) {
+    final List<RecordingSummary> recordings = await repository.listRecordings();
+    for (final RecordingSummary recording in recordings) {
+      if (recording.status == RecordingStatus.waitingForCloudSlot &&
+          recording.queuePosition != null) {
+        return recording;
+      }
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+  }
+  throw TimeoutException('No queued recording exposed a queue position.');
 }
 
 Future<String> _waitForVerificationToken(
