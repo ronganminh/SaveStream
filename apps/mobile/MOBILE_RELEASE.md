@@ -170,3 +170,63 @@ Real-device checks are intentionally deferred to the final APK pass. Record mode
 - Sign out while a granted lease is active and verify capture is not truncated solely because the auth session ended.
 - Verify app-private files remain under the source `user_id` and are hidden after a different account signs in; sign back into the original account and confirm they are visible again.
 - Check the Android battery-optimization state shown by the app, open the corresponding system battery settings, switch to unrestricted where supported, then return and confirm the state refreshes.
+
+
+## C9 production configuration
+
+The release version starts at `2.0.0+1`; increment the build number for every store upload.
+
+Supported production Dart defines:
+
+```text
+APP_ENV=production
+API_BASE_URL=https://api.savestream.online
+PRIVACY_POLICY_URL=https://savestream.online/privacy
+TERMS_OF_USE_URL=https://savestream.online/terms
+APP_VERSION=2.0.0
+
+ADMOB_BANNER_HOME_ANDROID=<production ad unit id>
+ADMOB_BANNER_WATCH_ANDROID=<production ad unit id>
+ADMOB_BANNER_LIBRARY_ANDROID=<production ad unit id>
+ADMOB_REWARDED_ANDROID=<production ad unit id>
+
+ADMOB_BANNER_HOME_IOS=<production ad unit id>
+ADMOB_BANNER_WATCH_IOS=<production ad unit id>
+ADMOB_BANNER_LIBRARY_IOS=<production ad unit id>
+ADMOB_REWARDED_IOS=<production ad unit id>
+```
+
+Android's AdMob app ID is supplied separately through `SAVESTREAM_ADMOB_ANDROID_APP_ID`. Firebase app files and signing material remain outside Git.
+
+## C9 permission and privacy audit
+
+Android release permissions are intentionally limited to:
+
+- `INTERNET`: authenticated API, Firebase, store billing, ads and artifact URLs.
+- `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_DATA_SYNC`: Android Local recording foreground service.
+- `POST_NOTIFICATIONS`: Local-recording service notifications plus FCM notifications on Android 13+.
+
+No location, contacts, camera, microphone, broad storage or media-library permission is declared.
+
+iOS `Info.plist` contains only the ATT usage description required by the Free-plan advertising flow plus local-network development transport configuration. No camera, microphone, contacts, location or photo-library usage description is declared.
+
+## C9 R8 / release shrinking
+
+Android release builds enable R8 code shrinking and resource shrinking with `android/app/proguard-rules.pro`. The app keeps SaveStream native entry points, Flutter generated plugin registration and Firebase Messaging plugin classes while relying on SDK consumer rules for the remaining plugins.
+
+Before publishing, run the exact release AAB through the emulator/device smoke flow and verify Firebase push, Google Mobile Ads, Store billing, Local recording and artifact playback after shrinking.
+
+## Store data disclosure inventory
+
+Use this inventory when filling Google Play Data safety / App Store privacy declarations:
+
+- account identity and authenticated device registration identifiers;
+- FCM push token and notification preferences;
+- purchase/order/transaction history used for store verification and cloud-hour crediting;
+- advertising/consent identifiers handled by Google Mobile Ads / UMP where applicable;
+- support diagnostics such as request IDs and issue reports actually submitted by the user;
+- creator/watch configuration and recording metadata required to provide the SaveStream service.
+
+SaveStream does not require background location, contacts, microphone, camera or broad media-library access for the Android-first release.
+
+The owner-operated release steps are tracked in `docs/v2/RELEASE_CHECKLIST_MOBILE.md`.
