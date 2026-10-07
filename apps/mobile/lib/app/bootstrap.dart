@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 
 import '../core/config/app_config.dart';
@@ -32,9 +34,11 @@ import '../platform/android_local_recovery_service.dart';
 import '../platform/android_recording_platform_service.dart';
 import '../platform/connectivity_plus_service.dart';
 import '../platform/device_info_plus_service.dart';
+import '../platform/firebase_push_service.dart';
 import '../platform/google_mobile_ads_service.dart';
 import '../platform/in_app_purchase_service.dart';
 import '../platform/platform_providers.dart';
+import '../platform/push_token_registration_coordinator.dart';
 import '../platform/share_plus_service.dart';
 import 'app_settings_controller.dart';
 import 'savestream_app.dart';
@@ -49,6 +53,9 @@ Future<void> bootstrap() async {
     errorReporter.reportUnhandled(error, stackTrace);
     return true;
   };
+
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   final AppConfig config = AppConfig.fromEnvironment();
   final AppSettingsController settings = AppSettingsController(
@@ -93,6 +100,16 @@ Future<void> bootstrap() async {
     apiClient: authenticatedApiClient,
   );
   final DeviceInfoPlusService deviceInfoService = DeviceInfoPlusService();
+  final FirebasePushService pushService = FirebasePushService();
+  PushTokenRegistrationCoordinator(
+    session: session,
+    settings: settings,
+    pushService: pushService,
+    deviceInfoService: deviceInfoService,
+    deviceRepository: deviceRepository,
+  ).start();
+  await pushService.initialize();
+
   final CurrentUserIdSource currentUserIdSource = CurrentUserIdSource(
     apiClient: authenticatedApiClient,
   );
@@ -150,6 +167,7 @@ Future<void> bootstrap() async {
         ),
         deviceInfoServiceProvider.overrideWithValue(deviceInfoService),
         adsServiceProvider.overrideWithValue(adsService),
+        pushServiceProvider.overrideWithValue(pushService),
         purchaseServiceProvider.overrideWithValue(InAppPurchaseService()),
         store_ui.storeRepositoryProvider.overrideWithValue(
           ApiStoreRepository(apiClient: authenticatedApiClient),
