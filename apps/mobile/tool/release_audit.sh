@@ -99,4 +99,20 @@ grep -q "NSUserTrackingUsageDescription" ios/Runner/vi.lproj/InfoPlist.strings |
 grep -q "AppTrackingTransparency.framework" ios/Runner.xcodeproj/project.pbxproj ||
   fail "iOS AppTrackingTransparency framework is missing"
 
+for plugin in firebase_core firebase_messaging; do
+  grep -q "^  ${plugin}:" pubspec.yaml || fail "missing C8 plugin ${plugin}"
+done
+grep -q 'com.google.gms.google-services' android/app/build.gradle.kts ||
+  fail "Android Google Services plugin is missing"
+grep -q 'android.permission.POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml ||
+  fail "Android notification permission is missing"
+grep -q 'savestream_creator_live' android/app/src/main/kotlin/com/savestream/app/MainActivity.kt ||
+  fail "Creator LIVE notification channel is missing"
+grep -q 'savestream_recordings' android/app/src/main/kotlin/com/savestream/app/MainActivity.kt ||
+  fail "recording notification channel is missing"
+git check-ignore -q android/app/google-services.json ||
+  fail "google-services.json must stay outside Git"
+git check-ignore -q ios/Runner/GoogleService-Info.plist ||
+  fail "GoogleService-Info.plist must stay outside Git"
+
 echo "Phase 17 mobile release audit passed."

@@ -467,6 +467,10 @@ def test_v2_b3_fcm_http_v1_sender_works_with_fake_server(tmp_path) -> None:
             body = json.loads(request.content.decode("utf-8"))
             assert body["message"]["token"] == "fcm-device-token"
             assert body["message"]["data"]["resource_type"] == "watch"
+            assert (
+                body["message"]["android"]["notification"]["channel_id"]
+                == "savestream_creator_live"
+            )
             return httpx.Response(
                 200,
                 json={"name": "projects/project-test/messages/1"},
@@ -481,7 +485,11 @@ def test_v2_b3_fcm_http_v1_sender_works_with_fake_server(tmp_path) -> None:
             PushMessage(
                 title="Creator is LIVE",
                 body="@creator is LIVE now.",
-                data={"resource_type": "watch", "resource_id": "watch-1"},
+                data={
+                    "type": "creator_live",
+                    "resource_type": "watch",
+                    "resource_id": "watch-1",
+                },
             ),
         )
         assert seen == ["oauth", "send"]

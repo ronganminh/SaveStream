@@ -29,6 +29,7 @@ import '../features/store/data/repositories/api_store_repository.dart';
 import '../features/store/data/retry/secure_store_purchase_retry_store.dart';
 import '../features/store/presentation/a5_store_providers.dart' as store_ui;
 import '../features/v2_foundation/v2_foundation_providers.dart';
+import '../l10n/l10n.dart';
 import '../platform/android_local_recorder.dart';
 import '../platform/android_local_recovery_service.dart';
 import '../platform/android_recording_platform_service.dart';
@@ -38,6 +39,7 @@ import '../platform/firebase_push_service.dart';
 import '../platform/google_mobile_ads_service.dart';
 import '../platform/in_app_purchase_service.dart';
 import '../platform/platform_providers.dart';
+import '../platform/push_runtime.dart';
 import '../platform/push_token_registration_coordinator.dart';
 import '../platform/share_plus_service.dart';
 import 'app_settings_controller.dart';
@@ -109,6 +111,15 @@ Future<void> bootstrap() async {
     deviceRepository: deviceRepository,
   ).start();
   await pushService.initialize();
+  if (Platform.isAndroid) {
+    final AppLocalizations l10n = await AppLocalizations.delegate.load(
+      settings.locale,
+    );
+    await PushRuntime.configureAndroidChannels(
+      liveName: l10n.nativePushChannelLiveName,
+      recordingName: l10n.nativePushChannelRecordingName,
+    );
+  }
 
   final CurrentUserIdSource currentUserIdSource = CurrentUserIdSource(
     apiClient: authenticatedApiClient,
@@ -161,6 +172,8 @@ Future<void> bootstrap() async {
       notificationPreferencesRepository: ApiNotificationPreferencesRepository(
         apiClient: authenticatedApiClient,
       ),
+      foregroundPushMessages: pushService.foregroundMessageStream,
+      openedPushMessages: pushService.runtimeOpenedMessageStream,
       extraOverrides: [
         connectivityServiceProvider.overrideWithValue(
           ConnectivityPlusService(),

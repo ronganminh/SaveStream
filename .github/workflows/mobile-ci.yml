@@ -27,6 +27,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate CI Firebase config
+        run: bash tool/generate_firebase_ci_config.sh
+
       - name: Set up Flutter
         id: flutter_setup
         continue-on-error: true
@@ -94,6 +97,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Generate CI Firebase config
+        run: bash tool/generate_firebase_ci_config.sh
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -146,6 +152,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Generate CI Firebase config
+        run: bash tool/generate_firebase_ci_config.sh
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

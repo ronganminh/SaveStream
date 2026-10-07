@@ -1,5 +1,7 @@
 package com.savestream.app
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -18,9 +20,43 @@ class MainActivity : FlutterActivity() {
     private val localRecordingEvents = "savestream/local_recording/events"
     private val recordingPlatformChannel = "savestream/recording_platform"
     private val recordingPlatformActions = "savestream/recording_platform/actions"
+    private val pushChannel = "savestream/push"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            pushChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "configureChannels" -> {
+                    val liveName = call.argument<String>("live_name")
+                    val recordingName = call.argument<String>("recording_name")
+                    if (liveName == null || recordingName == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing push channel names.", null)
+                    } else {
+                        val manager = getSystemService(NotificationManager::class.java)
+                        manager.createNotificationChannel(
+                            NotificationChannel(
+                                "savestream_creator_live",
+                                liveName,
+                                NotificationManager.IMPORTANCE_HIGH,
+                            ),
+                        )
+                        manager.createNotificationChannel(
+                            NotificationChannel(
+                                "savestream_recordings",
+                                recordingName,
+                                NotificationManager.IMPORTANCE_DEFAULT,
+                            ),
+                        )
+                        result.success(null)
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
