@@ -77,6 +77,15 @@ void main() {
       expect(repository.startCalls, 1);
     });
 
+    test('releases the session when native stop throws', () async {
+      await controller.start(watchId: 'watch_cleanup');
+      recorder.stopError = StateError('native recorder timed out');
+
+      await expectLater(controller.stop(), throwsStateError);
+
+      expect(controller.activeSession, isNull);
+    });
+
     test('recover requires and delegates an active session', () async {
       expect(controller.recover, throwsStateError);
 
@@ -95,6 +104,7 @@ final class _RecorderSpy implements LocalRecorder {
   LocalRecordingSession? startedSession;
   int stopCalls = 0;
   int recoverCalls = 0;
+  Object? stopError;
 
   @override
   Stream<LocalRecorderState> watch() => _states.stream;
@@ -109,6 +119,9 @@ final class _RecorderSpy implements LocalRecorder {
   @override
   Future<void> stop() async {
     stopCalls += 1;
+    if (stopError case final Object error) {
+      throw error;
+    }
     emit(const LocalRecorderState(phase: LocalRecorderPhase.finalizing));
     emit(const LocalRecorderState(phase: LocalRecorderPhase.stopped));
   }

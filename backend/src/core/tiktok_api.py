@@ -1,5 +1,7 @@
 import json
 import re
+from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from core.tiktok_waf_solver import WAFSolver
 from http_utils.http_client import HttpClient
@@ -7,6 +9,13 @@ from utils.enums import StatusCode, TikTokError
 from utils.logger_manager import logger
 from utils.custom_exceptions import UserLiveError, TikTokRecorderError, \
     LiveNotFound, IPBlockedByWAF
+
+
+@dataclass(frozen=True)
+class TikTokProfile:
+    username: str
+    display_name: str
+    avatar_url: str | None
 
 
 class TikTokAPI:
@@ -157,6 +166,86 @@ class TikTokAPI:
             raise UserLiveError(TikTokError.ROOM_ID_ERROR)
 
         return room_id
+
+    def get_user_profile(self, user: str) -> TikTokProfile | None:
+        """Return public creator metadata from TikTok's profile page.
+
+        The page payload has changed format several times, so this deliberately
+        accepts both SIGI_STATE and the newer universal-data script.  Metadata
+        is optional: callers must keep the Watch usable when TikTok omits it.
+        """
+        username = user.lstrip("@").strip()
+        if not username:
+            return None
+        response = self.http_client.get(f"{self.BASE_URL}/@{username}")
+        response.raise_for_status()
+
+        for payload in self._page_json_payloads(response.text):
+            profile = self._profile_from_payload(payload, username)
+            if profile is not None:
+                return profile
+        return None
+
+    @staticmethod
+    def _page_json_payloads(content: str) -> list[object]:
+        pattern = re.compile(
+            r'<script[^>]+id="(?:SIGI_STATE|__UNIVERSAL_DATA_FOR_REHYDRATION__)"'
+            r'[^>]*>(.*?)</script>',
+            re.DOTALL,
+        )
+        payloads: list[object] = []
+        for raw in pattern.findall(content):
+            try:
+                payloads.append(json.loads(raw))
+            except json.JSONDecodeError:
+                continue
+        return payloads
+
+    @classmethod
+    def _profile_from_payload(
+        cls,
+        payload: object,
+        requested_username: str,
+    ) -> TikTokProfile | None:
+        requested = requested_username.casefold()
+        for candidate in cls._objects(payload):
+            raw_username = candidate.get("uniqueId") or candidate.get("unique_id")
+            if not isinstance(raw_username, str) or raw_username.casefold() != requested:
+                continue
+            display_name = candidate.get("nickname") or candidate.get("displayName")
+            if not isinstance(display_name, str) or not display_name.strip():
+                display_name = raw_username
+            avatar_url = cls._safe_avatar_url(
+                candidate.get("avatarLarger")
+                or candidate.get("avatarMedium")
+                or candidate.get("avatarThumb")
+                or candidate.get("avatar_url")
+            )
+            return TikTokProfile(
+                username=raw_username.strip(),
+                display_name=display_name.strip()[:160],
+                avatar_url=avatar_url,
+            )
+        return None
+
+    @classmethod
+    def _objects(cls, value: object):
+        if isinstance(value, dict):
+            yield value
+            for nested in value.values():
+                yield from cls._objects(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                yield from cls._objects(nested)
+
+    @staticmethod
+    def _safe_avatar_url(value: object) -> str | None:
+        if not isinstance(value, str) or len(value) > 2048:
+            return None
+        parsed = urlparse(value.strip())
+        if parsed.scheme != "https" or not parsed.netloc:
+            return None
+        return parsed.geturl()
 
     def get_followers_list(self, sec_uid) -> list:
         """

@@ -14,6 +14,9 @@ __pycache__/
 .idea/
 .vscode/
 
+# Local review credentials. Never commit this file.
+docs/REVIEW_TEST_ACCOUNTS.local.md
+
 # Flutter mobile
 apps/mobile/.dart_tool/
 apps/mobile/.flutter-plugins

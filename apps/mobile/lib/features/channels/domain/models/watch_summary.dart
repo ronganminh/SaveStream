@@ -50,6 +50,7 @@ class WatchSummary {
     required this.id,
     required this.creatorDisplayName,
     required this.creatorUsername,
+    this.creatorAvatarUrl,
     required this.status,
     required this.isLive,
     this.sourceType,
@@ -65,6 +66,7 @@ class WatchSummary {
   final String id;
   final String creatorDisplayName;
   final String creatorUsername;
+  final String? creatorAvatarUrl;
   final WatchStatus status;
   final bool isLive;
   final WatchSourceType? sourceType;
@@ -79,6 +81,7 @@ class WatchSummary {
   WatchSummary copyWith({
     String? creatorDisplayName,
     String? creatorUsername,
+    String? creatorAvatarUrl,
     WatchStatus? status,
     bool? isLive,
     WatchSourceType? sourceType,
@@ -94,6 +97,7 @@ class WatchSummary {
       id: id,
       creatorDisplayName: creatorDisplayName ?? this.creatorDisplayName,
       creatorUsername: creatorUsername ?? this.creatorUsername,
+      creatorAvatarUrl: creatorAvatarUrl ?? this.creatorAvatarUrl,
       status: status ?? this.status,
       isLive: isLive ?? this.isLive,
       sourceType: sourceType ?? this.sourceType,

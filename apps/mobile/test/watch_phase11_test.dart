@@ -154,6 +154,33 @@ void main() {
     expect(created.creatorUsername, '@ada_live');
   });
 
+  test('maps creator profile metadata from a Watch payload', () async {
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      return _jsonResponse(
+        200,
+        _watchJson(
+          id: 'watch-profile',
+          creator: <String, Object?>{
+            'platform': 'tiktok',
+            'username': 'ada_live',
+            'display_name': 'Ada LIVE',
+            'avatar_url': 'https://p16.tiktokcdn.com/avatar.jpeg',
+          },
+        ),
+      );
+    });
+
+    final WatchSummary? watch = await repositoryFor(
+      adapter,
+    ).getWatch('watch-profile');
+
+    expect(watch?.creatorDisplayName, 'Ada LIVE');
+    expect(watch?.creatorAvatarUrl, 'https://p16.tiktokcdn.com/avatar.jpeg');
+  });
+
   test('maps Watch mutation endpoints exactly', () async {
     final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,

@@ -3,9 +3,11 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Protocol
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -23,6 +25,8 @@ from app.domain.watches.state import WatchStatus, can_resume, validate_user_stat
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
+
+logger = logging.getLogger(__name__)
 
 
 def utcnow() -> datetime:
@@ -73,10 +77,30 @@ class WatchPage:
     has_more: bool
 
 
+@dataclass(frozen=True, slots=True)
+class CreatorMetadata:
+    """Public profile fields shown for a creator Watch."""
+
+    username: str
+    display_name: str
+    avatar_url: str | None
+
+
+class CreatorMetadataLookup(Protocol):
+    async def lookup(self, source: Source) -> CreatorMetadata | None: ...
+
+
 class WatchService:
-    def __init__(self, session: AsyncSession, settings: AppSettings) -> None:
+    def __init__(
+        self,
+        session: AsyncSession,
+        settings: AppSettings,
+        *,
+        creator_metadata_lookup: CreatorMetadataLookup | None = None,
+    ) -> None:
         self.session = session
         self.settings = settings
+        self.creator_metadata_lookup = creator_metadata_lookup
 
     async def entitlement_for(self, user_id: uuid.UUID) -> EntitlementSnapshot:
         return await EntitlementService(self.session, self.settings).get(user_id)
@@ -158,7 +182,30 @@ class WatchService:
                 status_code=409,
             ) from exc
         await self.session.refresh(watch)
+        await self._enrich_creator_metadata(watch, source)
         return watch
+
+    async def _enrich_creator_metadata(self, watch: Watch, source: Source) -> None:
+        """Best-effort profile lookup; adding a Watch must remain reliable.
+
+        TikTok can reject or rate-limit a profile request.  In that case the
+        regular Watch still works and clients render their initials fallback.
+        """
+        if self.creator_metadata_lookup is None:
+            return
+        try:
+            metadata = await self.creator_metadata_lookup.lookup(source)
+        except Exception:
+            logger.info("Creator metadata lookup failed", exc_info=True)
+            return
+        if metadata is None:
+            return
+
+        watch.resolved_username = metadata.username
+        watch.creator_display_name = metadata.display_name
+        watch.creator_avatar_url = metadata.avatar_url
+        await self.session.commit()
+        await self.session.refresh(watch)
 
     async def get(self, principal: AuthPrincipal, watch_id: str) -> Watch:
         try:

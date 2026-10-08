@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.URL
@@ -31,10 +32,16 @@ class LocalRecordingService : Service() {
     @Volatile
     private var worker: Future<*>? = null
 
+    @Volatile
+    private var activeConnection: HttpURLConnection? = null
+
+    @Volatile
+    private var activeInput: InputStream? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        stopRequested.set(true)
+        requestStop()
         worker?.cancel(true)
         executor.shutdownNow()
         super.onDestroy()
@@ -53,7 +60,7 @@ class LocalRecordingService : Service() {
             }
             ACTION_STOP -> {
                 RecordingPlatformActionEventBus.emit("stop_recording")
-                stopRequested.set(true)
+                requestStop()
                 emitState("finalizing", finalizationStep = "stopCapture")
                 START_NOT_STICKY
             }
@@ -205,6 +212,7 @@ class LocalRecordingService : Service() {
                         setRequestProperty(name, value)
                     }
                 }
+                activeConnection = connection
                 connection.connect()
                 val status = connection.responseCode
                 if (status !in 200..299) {
@@ -219,6 +227,7 @@ class LocalRecordingService : Service() {
                     freeBytesOverride = freeStorageBytes(tempFile.parentFile),
                 )
                 connection.inputStream.use { input ->
+                    activeInput = input
                     FileOutputStream(tempFile, true).use { output ->
                         val buffer = ByteArray(BUFFER_SIZE)
                         while (
@@ -280,6 +289,10 @@ class LocalRecordingService : Service() {
                 }
             } catch (error: IOException) {
                 failureMessage = error.message
+                if (stopRequested.get()) {
+                    endReason = "user_stopped"
+                    break
+                }
                 reconnectAttempts += 1
                 if (
                     reconnectAttempts > MAX_RECONNECT_ATTEMPTS ||
@@ -295,8 +308,13 @@ class LocalRecordingService : Service() {
                     freeBytesOverride = freeStorageBytes(tempFile.parentFile),
                     errorMessage = error.message,
                 )
-                SystemClock.sleep(reconnectDelayMillis(reconnectAttempts))
+                if (!waitForReconnect(reconnectDelayMillis(reconnectAttempts))) {
+                    endReason = "user_stopped"
+                    break
+                }
             } finally {
+                activeInput = null
+                activeConnection = null
                 connection?.disconnect()
             }
         }
@@ -557,6 +575,24 @@ class LocalRecordingService : Service() {
             4 -> 16_000L
             else -> 30_000L
         }
+    }
+
+    private fun requestStop() {
+        stopRequested.set(true)
+        try {
+            activeInput?.close()
+        } catch (_: IOException) {
+            // The network stream was already closing.
+        }
+        activeConnection?.disconnect()
+    }
+
+    private fun waitForReconnect(delayMillis: Long): Boolean {
+        val deadline = SystemClock.elapsedRealtime() + delayMillis
+        while (!stopRequested.get() && SystemClock.elapsedRealtime() < deadline) {
+            SystemClock.sleep(200L)
+        }
+        return !stopRequested.get()
     }
 
     private fun emitState(

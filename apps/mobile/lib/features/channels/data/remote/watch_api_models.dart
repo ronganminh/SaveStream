@@ -17,6 +17,7 @@ final class WatchApiModel {
     required this.sourceValue,
     required this.creatorDisplayName,
     required this.creatorUsername,
+    this.creatorAvatarUrl,
     required this.status,
     required this.liveStatus,
     required this.autoRecord,
@@ -34,6 +35,7 @@ final class WatchApiModel {
   final String sourceValue;
   final String creatorDisplayName;
   final String creatorUsername;
+  final String? creatorAvatarUrl;
   final WatchStatus status;
   final WatchLiveStatus liveStatus;
   final bool autoRecord;
@@ -56,6 +58,7 @@ final class WatchApiModel {
     final Object? rawCreator = map['creator'];
     String? creatorUsername;
     String? creatorDisplayName;
+    String? creatorAvatarUrl;
     if (rawCreator != null) {
       final Map<Object?, Object?> creator = _requiredMap(rawCreator, 'creator');
       final Object? platform = creator['platform'];
@@ -69,6 +72,10 @@ final class WatchApiModel {
       creatorDisplayName = _requiredString(
         creator['display_name'],
         'creator.display_name',
+      );
+      creatorAvatarUrl = _optionalString(
+        creator['avatar_url'],
+        'creator.avatar_url',
       );
     }
 
@@ -89,6 +96,9 @@ final class WatchApiModel {
       sourceValue: sourceValue,
       creatorDisplayName: normalizedDisplayName,
       creatorUsername: normalizedUsername,
+      creatorAvatarUrl: creatorAvatarUrl?.isEmpty ?? true
+          ? null
+          : creatorAvatarUrl,
       status: _watchStatus(_requiredString(map['status'], 'status')),
       liveStatus: _liveStatus(
         _requiredString(map['live_status'], 'live_status'),
@@ -116,6 +126,7 @@ final class WatchApiModel {
       id: id,
       creatorDisplayName: creatorDisplayName,
       creatorUsername: creatorUsername,
+      creatorAvatarUrl: creatorAvatarUrl,
       status: status,
       isLive: liveStatus == WatchLiveStatus.live,
       sourceType: sourceType,

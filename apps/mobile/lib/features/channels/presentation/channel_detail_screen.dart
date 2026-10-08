@@ -418,7 +418,11 @@ class _CreatorHeader extends StatelessWidget {
     return SsCard(
       child: Row(
         children: <Widget>[
-          SsAvatar(label: watch.creatorDisplayName, radius: 30),
+          SsAvatar(
+            label: watch.creatorDisplayName,
+            imageUrl: watch.creatorAvatarUrl,
+            radius: 30,
+          ),
           const SizedBox(width: SsSpacing.md),
           Expanded(
             child: Column(

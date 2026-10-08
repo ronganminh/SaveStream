@@ -312,7 +312,11 @@ class _WatchTile extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                SsAvatar(label: watch.creatorDisplayName, radius: 24),
+                SsAvatar(
+                  label: watch.creatorDisplayName,
+                  imageUrl: watch.creatorAvatarUrl,
+                  radius: 24,
+                ),
                 const SizedBox(width: SsSpacing.md),
                 Expanded(
                   child: Column(

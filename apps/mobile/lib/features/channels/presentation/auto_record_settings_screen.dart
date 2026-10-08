@@ -145,7 +145,11 @@ class _AutoRecordSettingsScreenState
                 SsCard(
                   child: Row(
                     children: <Widget>[
-                      SsAvatar(label: item.creatorDisplayName, radius: 24),
+                      SsAvatar(
+                        label: item.creatorDisplayName,
+                        imageUrl: item.creatorAvatarUrl,
+                        radius: 24,
+                      ),
                       const SizedBox(width: SsSpacing.md),
                       Expanded(
                         child: Column(

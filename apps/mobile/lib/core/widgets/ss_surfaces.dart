@@ -115,9 +115,15 @@ class SsStatusChip extends StatelessWidget {
 }
 
 class SsAvatar extends StatelessWidget {
-  const SsAvatar({required this.label, this.radius = 20, super.key});
+  const SsAvatar({
+    required this.label,
+    this.imageUrl,
+    this.radius = 20,
+    super.key,
+  });
 
   final String label;
+  final String? imageUrl;
   final double radius;
 
   @override
@@ -130,15 +136,40 @@ class SsAvatar extends StatelessWidget {
         .map((String part) => part.substring(0, 1).toUpperCase())
         .join();
 
+    final String? safeImageUrl = _safeAvatarUrl(imageUrl);
+    final Color background = Theme.of(context).colorScheme.primaryContainer;
+    final Color foreground = Theme.of(context).colorScheme.onPrimaryContainer;
+    final Widget fallback = Center(
+      child: Text(initials.isEmpty ? 'S' : initials),
+    );
+
     return ExcludeSemantics(
       child: CircleAvatar(
         radius: radius,
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        child: Text(initials.isEmpty ? 'S' : initials),
+        backgroundColor: background,
+        foregroundColor: foreground,
+        child: safeImageUrl == null
+            ? fallback
+            : ClipOval(
+                child: Image.network(
+                  safeImageUrl,
+                  width: radius * 2,
+                  height: radius * 2,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => fallback,
+                ),
+              ),
       ),
     );
   }
+}
+
+String? _safeAvatarUrl(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final Uri? uri = Uri.tryParse(value.trim());
+  return uri != null && uri.scheme == 'https' && uri.host.isNotEmpty
+      ? uri.toString()
+      : null;
 }
 
 class SsListTile extends StatelessWidget {

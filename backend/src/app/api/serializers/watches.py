@@ -21,8 +21,8 @@ def watch_response(
     if watch.resolved_username:
         creator = Creator(
             username=watch.resolved_username,
-            display_name=watch.resolved_username,
-            avatar_url=None,
+            display_name=watch.creator_display_name or watch.resolved_username,
+            avatar_url=watch.creator_avatar_url,
         )
     if not watch.auto_record:
         auto_record_state: AutoRecordStateValue = "off"

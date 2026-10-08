@@ -43,9 +43,13 @@ final class AndroidLocalRecorder implements LocalRecorder {
           state.phase == LocalRecorderPhase.stopped ||
           state.phase == LocalRecorderPhase.error,
     );
-    await androidLocalRecordingMethodChannel.invokeMethod<void>('stop');
-    await completed.timeout(const Duration(seconds: 30));
-    _session = null;
+    try {
+      await androidLocalRecordingMethodChannel.invokeMethod<void>('stop');
+      await completed.timeout(const Duration(seconds: 30));
+    } finally {
+      // A native failure must not strand the account in an active state.
+      _session = null;
+    }
   }
 
   @override

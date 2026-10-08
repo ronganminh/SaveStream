@@ -25,6 +25,12 @@ class Watch(Base):
     source_value: Mapped[str] = mapped_column(String(2048), nullable=False)
     active_dedupe_key: Mapped[str | None] = mapped_column(String(64), nullable=True)
     resolved_username: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    creator_display_name: Mapped[str | None] = mapped_column(
+        String(160), nullable=True
+    )
+    creator_avatar_url: Mapped[str | None] = mapped_column(
+        String(2048), nullable=True
+    )
     resolved_room_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="active")
     live_status: Mapped[str] = mapped_column(String(16), nullable=False, default="unknown")

@@ -157,17 +157,20 @@ class LocalRecordingController {
         _activeSession ??
         (throw StateError('There is no active local recording session.'));
     final LocalRecorderState snapshot = _latestRecorderState;
-
-    await _recorder.stop();
-    final LocalRecordingSummary summary = await _repository.finish(
-      session.sessionId,
-      recordedSeconds: snapshot.recordedSeconds,
-      sizeBytes: snapshot.sizeBytes,
-      endReason: endReason,
-      status: status,
-    );
-    _activeSession = null;
-    return summary;
+    try {
+      await _recorder.stop();
+      return await _repository.finish(
+        session.sessionId,
+        recordedSeconds: snapshot.recordedSeconds,
+        sizeBytes: snapshot.sizeBytes,
+        endReason: endReason,
+        status: status,
+      );
+    } finally {
+      // Preserve any recovery data on disk, but never block logout or a new
+      // recording because native cleanup/registration threw.
+      _activeSession = null;
+    }
   }
 
   Future<LocalRecordingSummary> stopSecond({
@@ -178,17 +181,18 @@ class LocalRecordingController {
         _secondarySession ??
         (throw StateError('There is no secondary local recording session.'));
     final LocalRecorderState snapshot = _latestSecondaryRecorderState;
-
-    await _secondaryRecorder.stop();
-    final LocalRecordingSummary summary = await _repository.finish(
-      session.sessionId,
-      recordedSeconds: snapshot.recordedSeconds,
-      sizeBytes: snapshot.sizeBytes,
-      endReason: endReason,
-      status: status,
-    );
-    _secondarySession = null;
-    return summary;
+    try {
+      await _secondaryRecorder.stop();
+      return await _repository.finish(
+        session.sessionId,
+        recordedSeconds: snapshot.recordedSeconds,
+        sizeBytes: snapshot.sizeBytes,
+        endReason: endReason,
+        status: status,
+      );
+    } finally {
+      _secondarySession = null;
+    }
   }
 
   Future<LocalRecordingSession> extendWithReward(String rewardId) async {

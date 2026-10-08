@@ -148,7 +148,13 @@ def get_watch_service(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> WatchService:
-    return WatchService(session, request.app.state.settings)
+    from app.infrastructure.creators.tiktok_profile import TikTokCreatorMetadataLookup
+
+    return WatchService(
+        session,
+        request.app.state.settings,
+        creator_metadata_lookup=TikTokCreatorMetadataLookup(),
+    )
 
 
 def get_credit_service(

@@ -16,6 +16,8 @@ import '../features/channels/data/repositories/api_watch_repository.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
 import '../features/entitlement/data/repositories/api_entitlement_repository.dart';
 import '../features/entitlement/domain/models/entitlement.dart';
+import '../features/entitlement/presentation/entitlement_providers.dart'
+    as entitlement_ui;
 import '../features/local_recordings/data/repositories/api_local_recording_repository.dart';
 import '../features/local_recordings/data/repositories/indexed_local_recording_repository.dart';
 import '../features/local_recordings/presentation/controllers/local_recording_controller.dart'
@@ -188,7 +190,12 @@ Future<void> bootstrap() async {
         store_ui.storePurchaseRetryStoreProvider.overrideWithValue(
           SecureStorePurchaseRetryStore(),
         ),
+        // Production screens consume the presentation-layer provider.
+        // `v2_foundation` has a similarly named provider for mock previews.
         entitlementRepositoryProvider.overrideWithValue(entitlementRepository),
+        entitlement_ui.entitlementRepositoryProvider.overrideWithValue(
+          entitlementRepository,
+        ),
         rewardRepositoryProvider.overrideWithValue(rewardRepository),
         local_recording.rewardRepositoryProvider.overrideWithValue(
           rewardRepository,
