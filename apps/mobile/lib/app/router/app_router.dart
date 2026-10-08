@@ -17,6 +17,7 @@ import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/channels/presentation/live_notification_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
+import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/local_recordings/presentation/local_recording_screen.dart';
 import '../../features/local_recordings/presentation/local_recovery_screen.dart';
@@ -153,6 +154,7 @@ GoRouter createAppRouter({
               return SignInScreen(
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
+                onSignedIn: () => ref.invalidate(entitlementProvider),
               );
             },
           );

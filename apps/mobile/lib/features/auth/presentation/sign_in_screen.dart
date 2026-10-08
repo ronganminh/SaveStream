@@ -17,11 +17,13 @@ class SignInScreen extends StatefulWidget {
   const SignInScreen({
     required this.repository,
     required this.session,
+    this.onSignedIn,
     super.key,
   });
 
   final AuthRepository repository;
   final AppSessionController session;
+  final VoidCallback? onSignedIn;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -53,10 +55,13 @@ class _SignInScreenState extends State<SignInScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    await _controller.signIn(
+    final bool signedIn = await _controller.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
+    if (signedIn) {
+      widget.onSignedIn?.call();
+    }
   }
 
   void _back() {
