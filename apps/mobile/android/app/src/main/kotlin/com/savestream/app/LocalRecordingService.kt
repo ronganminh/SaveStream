@@ -346,7 +346,6 @@ class LocalRecordingService : Service() {
         val interrupted = endReason == "interrupted"
         if (!interrupted && streamFormat == "flv") {
             repairFlvTail(tempFile)
-            normalizeFlvTimestamps(tempFile)
         }
         val finalFile = if (interrupted) null else finalizeFile(tempFile, streamFormat)
         val recordedSeconds = (recordedMillis / 1000L).toInt()
@@ -417,7 +416,6 @@ class LocalRecordingService : Service() {
         val format = metadata.optString("stream_format", "flv")
         if (format == "flv") {
             repairFlvTail(tempFile)
-            normalizeFlvTimestamps(tempFile)
         }
         val finalFile = finalizeFile(tempFile, format)
         val size = finalFile?.length() ?: tempFile.length()
@@ -481,81 +479,6 @@ class LocalRecordingService : Service() {
                     raf.setLength(safeLength)
                 }
                 safeLength >= 13L
-            }
-        } catch (_: IOException) {
-            false
-        }
-    }
-
-    private fun normalizeFlvTimestamps(file: File): Boolean {
-        if (!file.exists() || file.length() < 13L) {
-            return false
-        }
-        return try {
-            RandomAccessFile(file, "rw").use { raf ->
-                if (
-                    raf.readUnsignedByte() != 0x46 ||
-                        raf.readUnsignedByte() != 0x4c ||
-                        raf.readUnsignedByte() != 0x56
-                ) {
-                    return false
-                }
-                raf.seek(5)
-                val dataOffset = raf.readInt().toLong() and 0xffffffffL
-                var cursor = dataOffset + 4L
-                var mediaStart: Long? = null
-                var changed = false
-
-                while (cursor + 11L <= raf.length()) {
-                    raf.seek(cursor)
-                    val tagType = raf.readUnsignedByte() and 0x1f
-                    val dataSize =
-                        (raf.readUnsignedByte() shl 16) or
-                            (raf.readUnsignedByte() shl 8) or
-                            raf.readUnsignedByte()
-                    val timestampLow =
-                        (raf.readUnsignedByte() shl 16) or
-                            (raf.readUnsignedByte() shl 8) or
-                            raf.readUnsignedByte()
-                    val timestamp =
-                        ((raf.readUnsignedByte().toLong() shl 24) or
-                            timestampLow.toLong()) and 0xffffffffL
-                    val tagEnd = cursor + 11L + dataSize + 4L
-                    if (tagEnd > raf.length()) {
-                        break
-                    }
-
-                    val playableMediaTag = if (tagType == 8 || tagType == 9) {
-                        raf.seek(cursor + 11L)
-                        val first = if (dataSize > 0) raf.readUnsignedByte() else -1
-                        val second = if (dataSize > 1) raf.readUnsignedByte() else -1
-                        when (tagType) {
-                            8 -> !((first shr 4) == 10 && second == 0)
-                            9 -> {
-                                val codecId = first and 0x0f
-                                !((codecId == 7 || codecId == 12) && second == 0)
-                            }
-                            else -> false
-                        }
-                    } else {
-                        false
-                    }
-                    if (mediaStart == null && playableMediaTag) {
-                        mediaStart = timestamp
-                    }
-                    val base = mediaStart
-                    if (base != null && base > 0L) {
-                        val normalized = (timestamp - base).coerceAtLeast(0L)
-                        raf.seek(cursor + 4L)
-                        raf.writeByte(((normalized shr 16) and 0xff).toInt())
-                        raf.writeByte(((normalized shr 8) and 0xff).toInt())
-                        raf.writeByte((normalized and 0xff).toInt())
-                        raf.writeByte(((normalized shr 24) and 0xff).toInt())
-                        changed = true
-                    }
-                    cursor = tagEnd
-                }
-                changed
             }
         } catch (_: IOException) {
             false
