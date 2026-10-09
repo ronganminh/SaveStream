@@ -11,6 +11,7 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
+from app.api.routes import store_webhooks
 from app.application.billing.catalog import V2_STORE_CATALOG
 from app.application.billing.store import StorePurchaseService
 from app.application.credits.service import CreditService
@@ -29,6 +30,10 @@ from app.infrastructure.db.credit_models import (
 from app.infrastructure.db.models import Base, User, UserNotification
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import Watch
+from appstoreserverlibrary.signed_data_verifier import (
+    VerificationException,
+    VerificationStatus,
+)
 from app.infrastructure.store.apple import AppleStoreReceiptVerifier
 from app.infrastructure.store.base import VerifiedStoreRefund
 from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
@@ -381,6 +386,8 @@ class _FakeAppleSignedDataVerifier:
         )
 
     def verify_and_decode_notification(self, value: str):
+        if value == "apple-test-jws":
+            return SimpleNamespace(rawNotificationType="TEST", data=None)
         assert value == "apple-notification-jws"
         return SimpleNamespace(
             rawNotificationType="REFUND",
@@ -393,6 +400,169 @@ class _FakeAppleApiClient:
     async def get_transaction_info(self, transaction_id: str):
         assert transaction_id == "apple-live-txn"
         return SimpleNamespace(signedTransactionInfo="server-jws")
+
+
+@pytest.mark.parametrize('corrupt_phase', ['device', 'server'])
+def test_v2_b5_apple_rejects_unsigned_or_tampered_jws_before_credit(
+    corrupt_phase: str, tmp_path
+) -> None:
+    class RejectingSignedVerifier(_FakeAppleSignedDataVerifier):
+        def verify_and_decode_signed_transaction(self, value: str):
+            if (corrupt_phase == 'device' and value == 'device-jws') or (
+                corrupt_phase == 'server' and value == 'server-jws'
+            ):
+                raise VerificationException(VerificationStatus.VERIFICATION_FAILURE)
+            return super().verify_and_decode_signed_transaction(value)
+
+    class CountingAppleClient(_FakeAppleApiClient):
+        def __init__(self):
+            self.calls = 0
+
+        async def get_transaction_info(self, transaction_id: str):
+            self.calls += 1
+            return await super().get_transaction_info(transaction_id)
+
+    async def run() -> None:
+        settings = replace(
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'apple-invalid.db'}"),
+            app_store_bundle_id='com.savestream.app',
+            app_store_environment='sandbox',
+        )
+        client = CountingAppleClient()
+        verifier = AppleStoreReceiptVerifier(
+            settings,
+            signed_data_verifier=RejectingSignedVerifier(),
+            api_client=client,
+        )
+        with pytest.raises(ApplicationError) as error:
+            await verifier.verify_purchase(
+                product_id='savestream.hours.50',
+                transaction_id='apple-live-txn',
+                receipt='device-jws',
+            )
+        assert error.value.code == 'STORE_RECEIPT_INVALID'
+        assert error.value.status_code == 422
+        assert client.calls == (0 if corrupt_phase == 'device' else 1)
+
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize(
+    ('phase', 'field', 'value'),
+    [
+        ('device', 'productId', 'savestream.hours.400'),
+        ('device', 'transactionId', 'another-apple-transaction'),
+        ('device', 'revocationDate', 1_760_000_000_000),
+        ('server', 'productId', 'savestream.hours.400'),
+        ('server', 'transactionId', 'another-apple-transaction'),
+        ('server', 'revocationDate', 1_760_000_000_000),
+    ],
+)
+def test_v2_b5_apple_rejects_mismatched_and_revoked_transactions(
+    phase: str, field: str, value: object, tmp_path
+) -> None:
+    class MismatchingAppleVerifier(_FakeAppleSignedDataVerifier):
+        def verify_and_decode_signed_transaction(self, receipt: str):
+            transaction = super().verify_and_decode_signed_transaction(receipt)
+            if receipt == ('device-jws' if phase == 'device' else 'server-jws'):
+                setattr(transaction, field, value)
+            return transaction
+
+    async def run() -> None:
+        settings = replace(
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'apple-mismatch.db'}"),
+            app_store_bundle_id='com.savestream.app',
+            app_store_environment='sandbox',
+        )
+        verifier = AppleStoreReceiptVerifier(
+            settings,
+            signed_data_verifier=MismatchingAppleVerifier(),
+            api_client=_FakeAppleApiClient(),
+        )
+        with pytest.raises(ApplicationError) as error:
+            await verifier.verify_purchase(
+                product_id='savestream.hours.50',
+                transaction_id='apple-live-txn',
+                receipt='device-jws',
+            )
+        assert error.value.code == 'STORE_RECEIPT_INVALID'
+        assert error.value.status_code == 422
+
+    asyncio.run(run())
+
+
+def test_v2_b5_apple_webhook_acks_only_verified_non_refund_events(
+    tmp_path, monkeypatch
+) -> None:
+    async def run() -> None:
+        settings = replace(
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'apple-test-event.db'}"),
+            app_store_bundle_id='com.savestream.app',
+            app_store_environment='sandbox',
+        )
+        verifier = AppleStoreReceiptVerifier(
+            settings,
+            signed_data_verifier=_FakeAppleSignedDataVerifier(),
+            api_client=_FakeAppleApiClient(),
+        )
+        assert await verifier.verify_notification(
+            json.dumps({'signedPayload': 'apple-test-jws'}).encode('utf-8')
+        ) is None
+
+        monkeypatch.setattr(
+            store_webhooks,
+            'store_receipt_verifier_for_platform',
+            lambda _settings, _platform: verifier,
+        )
+
+        class FakeRequest:
+            app = SimpleNamespace(state=SimpleNamespace(settings=settings))
+
+            async def body(self) -> bytes:
+                return json.dumps({'signedPayload': 'apple-test-jws'}).encode('utf-8')
+
+        # No database session or credit grant should be required for TEST.
+        response = await store_webhooks.app_store_webhook(FakeRequest(), None)
+        assert response.status_code == 204
+
+        with pytest.raises(ApplicationError) as non_refund:
+            await verifier.verify_refund_notification(
+                json.dumps({'signedPayload': 'apple-test-jws'}).encode('utf-8'),
+                {},
+            )
+        assert non_refund.value.status_code == 422
+
+    asyncio.run(run())
+
+
+def test_v2_b5_apple_webhook_rejects_unsigned_and_tampered_notifications(
+    tmp_path
+) -> None:
+    class RejectingNotifications(_FakeAppleSignedDataVerifier):
+        def verify_and_decode_notification(self, value: str):
+            raise VerificationException(VerificationStatus.VERIFICATION_FAILURE)
+
+    async def run() -> None:
+        settings = replace(
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'apple-bad-event.db'}"),
+            app_store_bundle_id='com.savestream.app',
+            app_store_environment='sandbox',
+        )
+        verifier = AppleStoreReceiptVerifier(
+            settings,
+            signed_data_verifier=RejectingNotifications(),
+            api_client=_FakeAppleApiClient(),
+        )
+        for body in [
+            b'not-json', b'{}', b'[]',
+            json.dumps({'signedPayload': 'forged-jws'}).encode('utf-8'),
+        ]:
+            with pytest.raises(ApplicationError) as invalid:
+                await verifier.verify_notification(body)
+            assert invalid.value.code == 'STORE_RECEIPT_INVALID'
+            assert invalid.value.status_code == 422
+
+    asyncio.run(run())
 
 
 def test_v2_b5_live_apple_verifier_uses_server_transaction_and_signed_refund(

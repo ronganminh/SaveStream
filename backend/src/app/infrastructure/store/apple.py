@@ -172,29 +172,35 @@ class AppleStoreReceiptVerifier(StoreReceiptVerifier):
         # StoreKit 2 finishes the transaction on-device. Server-side B5 only
         # verifies the signed transaction; Google requires explicit finalize.
 
-    async def verify_refund_notification(
-        self,
-        raw_body: bytes,
-        headers: Mapping[str, str],
-    ) -> VerifiedStoreRefund:
-        del headers
+    async def verify_notification(
+        self, raw_body: bytes
+    ) -> VerifiedStoreRefund | None:
+        """Verify every Apple V2 notification; only refunds change balances.
+
+        Apple sends signed TEST and other event types to the same endpoint.
+        Acknowledge those after signature validation instead of returning 422,
+        which causes Apple to repeatedly retry valid notifications.
+        """
         try:
             envelope = json.loads(raw_body.decode("utf-8"))
-            signed_payload = str(envelope["signedPayload"])
+            if not isinstance(envelope, dict):
+                raise ValueError("App Store notification must be an object")
+            signed_payload = envelope.get("signedPayload")
+            if not isinstance(signed_payload, str) or not signed_payload:
+                raise ValueError("App Store signedPayload is missing")
             notification = await asyncio.to_thread(
                 self.signed_data_verifier.verify_and_decode_notification,
                 signed_payload,
             )
         except (
             UnicodeDecodeError,
-            json.JSONDecodeError,
-            KeyError,
+            ValueError,
             VerificationException,
         ) as exc:
             raise _invalid("App Store notification is invalid") from exc
 
         if notification.rawNotificationType != "REFUND":
-            raise _invalid("App Store notification is not a refund")
+            return None
         if (
             notification.data is None
             or not notification.data.signedTransactionInfo
@@ -220,3 +226,14 @@ class AppleStoreReceiptVerifier(StoreReceiptVerifier):
             transaction_id=transaction.transactionId,
             event_id=notification.notificationUUID,
         )
+
+    async def verify_refund_notification(
+        self,
+        raw_body: bytes,
+        headers: Mapping[str, str],
+    ) -> VerifiedStoreRefund:
+        del headers
+        refund = await self.verify_notification(raw_body)
+        if refund is None:
+            raise _invalid("App Store notification is not a refund")
+        return refund

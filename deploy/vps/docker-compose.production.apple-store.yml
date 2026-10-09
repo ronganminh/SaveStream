@@ -1,0 +1,46 @@
+# Opt-in overlay for enabling BOTH App Store and Google Play purchases.
+# Never include this file until Apple IAP products, key and public trust roots
+# have been installed with prepare-apple-store.sh. Base deployment remains
+# google_play-only, so Android is unaffected while iOS is being prepared.
+#
+# docker compose --env-file deploy/vps/production.env \
+#   -f deploy/vps/docker-compose.production.yml \
+#   -f deploy/vps/docker-compose.production.apple-store.yml up -d
+
+x-apple-store-env: &apple-store-env
+  SAVESTREAM_STORE_PURCHASE_PROVIDER: live
+  SAVESTREAM_APP_STORE_BUNDLE_ID: com.savestream.app
+  SAVESTREAM_APP_STORE_ISSUER_ID: ${SAVESTREAM_APP_STORE_ISSUER_ID:?Apple IAP Issuer ID missing}
+  SAVESTREAM_APP_STORE_KEY_ID: ${SAVESTREAM_APP_STORE_KEY_ID:?Apple IAP Key ID missing}
+  SAVESTREAM_APP_STORE_PRIVATE_KEY_FILE: /run/secrets/app_store_private_key
+  SAVESTREAM_APP_STORE_ROOT_CERTIFICATES_JSON_FILE: /run/secrets/app_store_root_certificates_json
+  SAVESTREAM_APP_STORE_APP_APPLE_ID: ${SAVESTREAM_APP_STORE_APP_APPLE_ID:?App Store Connect numeric app Apple ID missing}
+  # TestFlight uses sandbox even when the app is signed for App Store distribution.
+  SAVESTREAM_APP_STORE_ENVIRONMENT: ${SAVESTREAM_APP_STORE_ENVIRONMENT:-sandbox}
+
+x-apple-store-secrets: &apple-store-secrets
+  - app_store_private_key
+  - app_store_root_certificates_json
+
+services:
+  api:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+  worker:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+  recorder:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+  scheduler:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+  outbox-dispatcher:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+
+secrets:
+  app_store_private_key:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/app_store_private_key
+  app_store_root_certificates_json:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/app_store_root_certificates_json
