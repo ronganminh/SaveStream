@@ -2497,7 +2497,7 @@
           "phase": "B4"
         },
         "responses": {
-          "204": {
+          "200": {
             "description": "Verification callback accepted"
           },
           "400": {

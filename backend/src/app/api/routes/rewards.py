@@ -67,7 +67,9 @@ async def get_reward(
 
 @router.get(
     "/webhooks/admob-ssv",
-    status_code=status.HTTP_204_NO_CONTENT,
+    # AdMob retries unless the callback returns exactly HTTP 200 OK. A 204 is
+    # otherwise successful HTTP, but its console verification rejects it.
+    status_code=status.HTTP_200_OK,
     response_model=None,
     operation_id="admobSsvWebhook",
 )

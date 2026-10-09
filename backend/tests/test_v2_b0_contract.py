@@ -98,3 +98,18 @@ def test_v2_b0_public_routes_do_not_require_bearer_auth() -> None:
     spec = json.loads(CONTRACT.read_text(encoding="utf-8"))
     assert not spec["paths"]["/app/status"]["get"].get("security")
     assert not spec["paths"]["/webhooks/admob-ssv"]["get"].get("security")
+
+
+def test_admob_ssv_success_response_is_http_200() -> None:
+    frozen = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    generated = create_app(
+        identity_settings("sqlite+aiosqlite:///:memory:")
+    ).openapi()
+
+    frozen_responses = frozen["paths"]["/webhooks/admob-ssv"]["get"]["responses"]
+    generated_responses = generated["paths"]["/v1/webhooks/admob-ssv"]["get"][
+        "responses"
+    ]
+    assert "200" in frozen_responses
+    assert "204" not in frozen_responses
+    assert "200" in generated_responses

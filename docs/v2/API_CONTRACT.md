@@ -186,7 +186,7 @@ Trả `201`: `{ "reward_id": "rwd_123", "ssv_user_id": "usr_1", "ssv_custom_data
 
 ### `GET /v1/webhooks/admob-ssv`
 
-Điểm nhận gọi lại xác minh phía máy chủ của mạng quảng cáo. Kiểm tra chữ ký, đánh dấu phần thưởng `valid`. Chỉ phần thưởng `valid` mới tính vào giới hạn 8 mỗi ngày. Tham số query do AdMob quy định và được B4 kiểm từ request thô; B0 không đóng băng từng tên tham số. Thành công trả `204`.
+Điểm nhận gọi lại xác minh phía máy chủ của mạng quảng cáo. Kiểm tra chữ ký, đánh dấu phần thưởng `valid`. Chỉ phần thưởng `valid` mới tính vào giới hạn 8 mỗi ngày. Tham số query do AdMob quy định và được B4 kiểm từ request thô; B0 không đóng băng từng tên tham số. Thành công trả `200` theo yêu cầu của AdMob SSV.
 
 ## 6. Mua trong app
 
