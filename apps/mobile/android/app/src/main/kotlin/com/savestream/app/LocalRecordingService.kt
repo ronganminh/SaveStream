@@ -866,7 +866,12 @@ class LocalRecordingService : Service() {
             } ?: return
             val parent = metadataFile.parentFile
             File(parent, "$sessionId.part").delete()
+            File(parent, "$sessionId.flv").delete()
+            File(parent, "$sessionId.ts").delete()
             metadataFile.delete()
+            if (parent.listFiles()?.isEmpty() == true) {
+                parent.delete()
+            }
         }
 
         fun updateNotification(

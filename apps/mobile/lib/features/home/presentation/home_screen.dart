@@ -110,7 +110,7 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeDashboard extends StatelessWidget {
+class _HomeDashboard extends ConsumerWidget {
   const _HomeDashboard({
     required this.data,
     required this.online,
@@ -128,7 +128,7 @@ class _HomeDashboard extends StatelessWidget {
   final LocalRecorderState? secondaryLocalState;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final Entitlement entitlement = data.entitlement;
     final bool isPro = entitlement.plan == Plan.pro;
 
@@ -173,6 +173,26 @@ class _HomeDashboard extends StatelessWidget {
                     label: context.l10n.localRecoveryRecoverAction,
                     icon: Icons.restore_rounded,
                     onPressed: () => context.push(AppRoutes.localRecovery),
+                  ),
+                  const SizedBox(height: SsSpacing.xs),
+                  SsTextAction(
+                    label: context.l10n.localRecoveryDeleteTempAction,
+                    icon: Icons.delete_outline_rounded,
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(localRecoveryServiceProvider)
+                            .deleteTemporary(item.tempId);
+                        ref.invalidate(interruptedLocalRecordingProvider);
+                      } on Object {
+                        if (context.mounted) {
+                          SsToast.show(
+                            context,
+                            context.l10n.localRecordingErrorTitle,
+                          );
+                        }
+                      }
+                    },
                   ),
                 ],
                 if (data.watches.isEmpty) ...<Widget>[

@@ -39,6 +39,7 @@ void main() {
     expect(find.text('Recording was interrupted'), findsOneWidget);
     expect(find.textContaining('18:40'), findsOneWidget);
     expect(find.text('Advertisement'), findsNothing);
+    expect(find.text('Delete temporary file'), findsOneWidget);
 
     await tester.tap(find.text('Recover'));
     await tester.pump();
@@ -95,6 +96,39 @@ void main() {
     expect(find.text('Next time, keep SaveStream open'), findsOneWidget);
     expect(find.text('Advertisement'), findsNothing);
   });
+
+  testWidgets('recovery timeout still exposes delete-temp action', (
+    WidgetTester tester,
+  ) async {
+    final _RecoveryHarness service = _RecoveryHarness(
+      candidate: _candidate(),
+      outcome: LocalRecoveryOutcome.failed,
+      recoverError: TimeoutException('Recovery timed out'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          localRecoveryServiceProvider.overrideWithValue(service),
+          deviceInfoServiceProvider.overrideWithValue(
+            const FakeDeviceInfoService(platform: DevicePlatform.android),
+          ),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const LocalRecoveryScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Recover'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Recovery timed out'), findsOneWidget);
+    expect(find.text('Delete temporary file'), findsOneWidget);
+  });
 }
 
 LocalRecoveryCandidate _candidate() {
@@ -111,10 +145,15 @@ LocalRecoveryCandidate _candidate() {
 }
 
 final class _RecoveryHarness implements LocalRecoveryService {
-  _RecoveryHarness({required this.candidate, required this.outcome});
+  _RecoveryHarness({
+    required this.candidate,
+    required this.outcome,
+    this.recoverError,
+  });
 
   LocalRecoveryCandidate? candidate;
   final LocalRecoveryOutcome outcome;
+  final Object? recoverError;
   final StreamController<LocalRecoveryProgress> _progress =
       StreamController<LocalRecoveryProgress>.broadcast();
   final Completer<void> _finish = Completer<void>();
@@ -127,6 +166,8 @@ final class _RecoveryHarness implements LocalRecoveryService {
 
   @override
   Future<LocalRecoveryResult> recover(LocalRecoveryCandidate candidate) async {
+    final Object? error = recoverError;
+    if (error != null) throw error;
     _progress.add(
       const LocalRecoveryProgress(step: LocalRecoveryStep.repairTail),
     );

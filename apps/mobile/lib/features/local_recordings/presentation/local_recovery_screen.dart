@@ -22,6 +22,7 @@ class LocalRecoveryScreen extends ConsumerStatefulWidget {
 
 class _LocalRecoveryScreenState extends ConsumerState<LocalRecoveryScreen> {
   bool _recovering = false;
+  bool _deleting = false;
   LocalRecoveryResult? _result;
   String? _errorMessage;
 
@@ -72,6 +73,9 @@ class _LocalRecoveryScreenState extends ConsumerState<LocalRecoveryScreen> {
               platform: platform,
               errorMessage: _errorMessage,
               onRecover: () => _recover(value),
+              onDeleteTemporary: _deleting
+                  ? null
+                  : () => _deleteTemporary(value),
               onLater: () => context.go(AppRoutes.home),
             );
           },
@@ -108,12 +112,25 @@ class _LocalRecoveryScreenState extends ConsumerState<LocalRecoveryScreen> {
   }
 
   Future<void> _deleteTemporary(LocalRecoveryCandidate candidate) async {
-    await ref
-        .read(localRecoveryServiceProvider)
-        .deleteTemporary(candidate.tempId);
-    ref.invalidate(interruptedLocalRecordingProvider);
-    if (!mounted) return;
-    context.go(AppRoutes.home);
+    if (_deleting) return;
+    setState(() {
+      _deleting = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref
+          .read(localRecoveryServiceProvider)
+          .deleteTemporary(candidate.tempId);
+      ref.invalidate(interruptedLocalRecordingProvider);
+      if (!mounted) return;
+      context.go(AppRoutes.home);
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _deleting = false;
+        _errorMessage = error.toString();
+      });
+    }
   }
 }
 
@@ -122,6 +139,7 @@ class _InterruptedBody extends StatelessWidget {
     required this.candidate,
     required this.platform,
     required this.onRecover,
+    required this.onDeleteTemporary,
     required this.onLater,
     this.errorMessage,
   });
@@ -129,6 +147,7 @@ class _InterruptedBody extends StatelessWidget {
   final LocalRecoveryCandidate candidate;
   final DevicePlatform platform;
   final VoidCallback onRecover;
+  final VoidCallback? onDeleteTemporary;
   final VoidCallback onLater;
   final String? errorMessage;
 
@@ -175,7 +194,13 @@ class _InterruptedBody extends StatelessWidget {
           onPressed: onRecover,
         ),
         const SizedBox(height: SsSpacing.sm),
-        SsSecondaryButton(label: context.l10n.laterAction, onPressed: onLater),
+        SsSecondaryButton(
+          label: context.l10n.localRecoveryDeleteTempAction,
+          icon: Icons.delete_outline_rounded,
+          onPressed: onDeleteTemporary,
+        ),
+        const SizedBox(height: SsSpacing.xs),
+        SsTextAction(label: context.l10n.laterAction, onPressed: onLater),
       ],
     );
   }
