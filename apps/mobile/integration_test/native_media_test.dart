@@ -11,6 +11,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_player_screen.dart';
+import 'package:savestream_mobile/l10n/l10n.dart';
 import 'package:savestream_mobile/platform/android_local_recorder.dart';
 import 'package:savestream_mobile/platform/contracts/local_recorder.dart';
 import 'package:savestream_mobile/platform/video_player_ss_controller.dart';
@@ -45,6 +46,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
               home: RecordingPlayerScreen(
                 recordingId: 'ci-media',
                 source: RecordingPlaybackSource.local,
