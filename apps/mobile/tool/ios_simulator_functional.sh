@@ -51,18 +51,51 @@ for attempt in $(seq 1 20); do
 done
 curl --fail --silent http://127.0.0.1:18095/health >/dev/null
 
-# Flutter integration_test runs on-device via Xcode and the iOS Flutter engine.
-set -o pipefail
-flutter test integration_test/native_journeys_test.dart \
-  -d "$ios_device" --reporter expanded 2>&1 | tee build/ci/ios-functional.txt
-flutter test integration_test/native_media_test.dart \
-  -d "$ios_device" --reporter expanded \
-  --dart-define=CI_MEDIA_HOST=127.0.0.1 \
-  --dart-define=CI_MEDIA_PORT=18095 2>&1 | tee build/ci/ios-media.txt
+# An iOS Simulator sometimes gets stuck after "Xcode build done" without ever
+# connecting Dart VM Service. Fail in bounded time, reboot and retry once on a
+# fresh simulator process. All tests remain gating; never silently skip failures.
+run_ios_suite() {
+  local label="$1"
+  local deadline="$2"
+  shift 2
+  local attempt result logfile
+  for attempt in 1 2; do
+    logfile="build/ci/ios-${label}-attempt-${attempt}.txt"
+    echo "iOS ${label} device test attempt ${attempt}/2 (limit ${deadline}s)"
+    if python3 tool/ci_deadline.py --seconds "$deadline" -- \
+      flutter test "$@" -d "$ios_device" --reporter expanded \
+      2>&1 | tee "$logfile"; then
+      echo "iOS ${label} device tests PASS"
+      return 0
+    else
+      result=${PIPESTATUS[0]}
+      echo "::warning::iOS ${label} attempt ${attempt} exited ${result}"
+    fi
+    # Retry only missing VM-service startup / process hang, not assertion
+    # failures or a media/player regression.
+    if [[ "$result" -ne 124 || "$attempt" -eq 2 ]]; then
+      return "$result"
+    fi
+    echo '::warning::Resetting stuck iPhone Simulator after test startup timeout.'
+    xcrun simctl terminate "$ios_device" com.savestream.app 2>/dev/null || true
+    xcrun simctl shutdown "$ios_device" || true
+    xcrun simctl boot "$ios_device"
+    xcrun simctl bootstatus "$ios_device" -b
+  done
+}
 
-# Non-gating network-dependent AdMob test inventory and SSV parameter setup.
-if flutter test integration_test/native_admob_sdk_test.dart -d "$ios_device" \
-  --reporter expanded > build/ci/ios-admob-network.txt 2>&1; then
+# Keep every run bounded so the CI reaches log/artifact upload on failures.
+run_ios_suite functional 840 integration_test/native_journeys_test.dart
+run_ios_suite media 840 integration_test/native_media_test.dart \
+  --dart-define=CI_MEDIA_HOST=127.0.0.1 \
+  --dart-define=CI_MEDIA_PORT=18095
+
+# Native test-unit SDK loading is network dependent; never creates real
+# advertising impressions, and failure here must not block app functionality.
+if python3 tool/ci_deadline.py --seconds 360 -- \
+  flutter test integration_test/native_admob_sdk_test.dart \
+  -d "$ios_device" --reporter expanded \
+  > build/ci/ios-admob-network.txt 2>&1; then
   echo 'Google AdMob test-unit SDK load: PASS (iOS)'
 else
   echo '::warning::Google TEST inventory unavailable on iOS runner; inspect ios-admob-network.txt'

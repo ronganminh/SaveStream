@@ -98,12 +98,18 @@ jobs:
 
 
   ios-release-compile:
-    runs-on: macos-latest
+    # Use a stable iOS 18.5 simulator; iOS 26.4 hung >50m after Xcode build.
+    runs-on: macos-15
     timeout-minutes: 75
     defaults:
       run:
         working-directory: apps/mobile
     steps:
+      - name: Select tested Xcode and Simulator SDK
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.4'
+
       - name: Checkout
         uses: actions/checkout@v4
 
