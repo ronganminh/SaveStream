@@ -265,4 +265,39 @@ void main() {
     await tester.pump();
     expect(find.text('Toast'), findsOneWidget);
   });
+
+  testWidgets('A0 recording bar uses readable inverse foreground colors', (
+    WidgetTester tester,
+  ) async {
+    final ThemeData theme = SsTheme.light();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme,
+        home: const Scaffold(
+          body: SsRecordingBar(
+            label: 'v_nenee is recording',
+            elapsed: '00:03:10',
+          ),
+        ),
+      ),
+    );
+
+    final BuildContext labelContext = tester.element(
+      find.text('v_nenee is recording'),
+    );
+    final BuildContext timerContext = tester.element(find.text('00:03:10'));
+    final BuildContext iconContext = tester.element(
+      find.byIcon(Icons.fiber_manual_record_rounded),
+    );
+
+    expect(
+      DefaultTextStyle.of(labelContext).style.color,
+      theme.colorScheme.onInverseSurface,
+    );
+    expect(
+      DefaultTextStyle.of(timerContext).style.color,
+      theme.colorScheme.onInverseSurface,
+    );
+    expect(IconTheme.of(iconContext).color, theme.colorScheme.onInverseSurface);
+  });
 }

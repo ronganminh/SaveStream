@@ -272,29 +272,39 @@ class SsRecordingBar extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Theme.of(context).colorScheme.inverseSurface,
-    child: InkWell(
-      onTap: onTap,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 44),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: SsSpacing.lg,
-            vertical: SsSpacing.sm,
-          ),
-          child: Row(
-            children: <Widget>[
-              const Icon(Icons.fiber_manual_record_rounded, size: 14),
-              const SizedBox(width: SsSpacing.sm),
-              Expanded(child: Text(label)),
-              Text(elapsed, style: SsTypography.mono),
-            ],
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    final Color foreground = colors.onInverseSurface;
+    return Material(
+      color: colors.inverseSurface,
+      child: InkWell(
+        onTap: onTap,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: foreground),
+          child: IconTheme.merge(
+            data: IconThemeData(color: foreground),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: SsSpacing.lg,
+                  vertical: SsSpacing.sm,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    const Icon(Icons.fiber_manual_record_rounded, size: 14),
+                    const SizedBox(width: SsSpacing.sm),
+                    Expanded(child: Text(label)),
+                    Text(elapsed, style: SsTypography.mono),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 enum SsInlineAlertTone { info, success, warning, error }
