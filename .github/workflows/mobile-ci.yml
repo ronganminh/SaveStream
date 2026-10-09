@@ -68,13 +68,22 @@ jobs:
       - name: Check formatting
         run: >-
           dart format --output=none --set-exit-if-changed
-          lib/app lib/core lib/features lib/l10n/l10n.dart test
+          lib/app lib/core lib/features lib/l10n/l10n.dart test integration_test test_support
 
       - name: Analyze
         run: flutter analyze --fatal-infos
 
-      - name: Test
-        run: flutter test
+      - name: Unit and widget regression tests with coverage
+        run: flutter test --coverage --reporter expanded
+
+      - name: Upload Flutter unit/widget coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-unit-widget-coverage
+          path: apps/mobile/coverage/lcov.info
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build production Android App Bundle
         run: >-
@@ -89,11 +98,20 @@ jobs:
 
 
   ios-release-compile:
-    runs-on: macos-latest
+    # device_info_plus 13.3 requires iOS 26.1+ SDK. Run on macOS 15/Xcode
+    # 26.3 (iOS 26.2 SDK), avoiding the macos-latest iOS 26.4 runner that
+    # stalled after Xcode build. Bound integration tests via ci_deadline.py.
+    runs-on: macos-15
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: apps/mobile
     steps:
+      - name: Select tested Xcode and Simulator SDK
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '26.3'
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -143,9 +161,22 @@ jobs:
             sleep $((attempt * 10))
           done
 
+      - name: Execute functional journeys on iPhone Simulator
+        run: bash tool/ios_simulator_functional.sh
+
+      - name: Upload iOS Simulator diagnostics if a test fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-diagnostics
+          path: apps/mobile/build/ci/
+          if-no-files-found: ignore
+          retention-days: 7
+
   android-emulator-smoke:
     needs: flutter-checks
     runs-on: ubuntu-latest
+    timeout-minutes: 65
     defaults:
       run:
         working-directory: apps/mobile
@@ -169,13 +200,20 @@ jobs:
       - name: Generate native assets
         run: bash tool/generate_native_assets.sh
 
+      - name: Install FFmpeg for real media capture test
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Launch SaveStream on Android emulator
+      - name: Launch and exercise SaveStream on Android Emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -184,4 +222,13 @@ jobs:
           profile: pixel_6
           disable-animations: true
           working-directory: apps/mobile
-          script: bash tool/android_emulator_smoke.sh
+          script: bash tool/android_emulator_functional.sh
+
+      - name: Upload Android emulator diagnostics if a test fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-diagnostics
+          path: apps/mobile/build/ci/
+          if-no-files-found: ignore
+          retention-days: 7

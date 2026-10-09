@@ -23,7 +23,7 @@ cat > android/app/google-services.json <<'JSON'
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDUMMY_CI_KEY_NOT_FOR_PRODUCTION"
+          "current_key": "AIzaSy000000000000000000000000000000000"
         }
       ],
       "services": {
@@ -43,7 +43,7 @@ cat > ios/Runner/GoogleService-Info.plist <<'PLIST'
 <plist version="1.0">
 <dict>
   <key>API_KEY</key>
-  <string>AIzaSyDUMMY_CI_KEY_NOT_FOR_PRODUCTION</string>
+  <string>AIzaSy000000000000000000000000000000000</string>
   <key>GCM_SENDER_ID</key>
   <string>1234567890</string>
   <key>PLIST_VERSION</key>
@@ -57,3 +57,25 @@ cat > ios/Runner/GoogleService-Info.plist <<'PLIST'
 </dict>
 </plist>
 PLIST
+
+# Firebase Installations validates API key *syntax* during iOS plugin
+# registration, before the Dart integration_test runner can start. An invalid
+# placeholder crashes the app with FIRInstallations validateAPIKey SIGABRT.
+# The all-zero suffix is intentionally NOT a real Google/Firebase credential.
+python3 - <<'PY_VALIDATE_CI_FIREBASE'
+import json
+import plistlib
+import re
+from pathlib import Path
+android = json.loads(Path('android/app/google-services.json').read_text())
+ios = plistlib.loads(Path('ios/Runner/GoogleService-Info.plist').read_bytes())
+android_key = android['client'][0]['api_key'][0]['current_key']
+ios_key = ios['API_KEY']
+assert android_key == ios_key, 'Android/iOS CI Firebase API keys must match'
+assert re.fullmatch(r'AIza[A-Za-z0-9_-]{35}', ios_key), (
+    'Firebase Installations iOS requires a syntactically valid 39-character API key'
+)
+assert ios_key[6:] == '0' * 33, 'CI must not use a real Firebase API credential'
+assert ios['BUNDLE_ID'] == 'com.savestream.app'
+print('CI Firebase placeholder shape valid; no production credentials used.')
+PY_VALIDATE_CI_FIREBASE
