@@ -5,19 +5,25 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 mkdir -p build/ci
-# Prefer the user-supplied UDID, otherwise select an available iPhone simulator
-# from the runner's installed Xcode, without assuming a particular iOS version.
+# Match the iOS Simulator runtime to the selected Xcode 26.3 SDK. Previously,
+# the runner silently selected a booted iOS 18.5 simulator while compiling with
+# Xcode 26.3, followed by a Flutter VM-service/debug-log connection hang.
+# Never mask missing iOS 26.2 with an unrelated older runtime.
 ios_device="${IOS_SIMULATOR_ID:-}"
 if [[ -z "$ios_device" ]]; then
   ios_device="$(xcrun simctl list devices available -j | python3 -c '
 import json,sys
 r=json.load(sys.stdin)
-options=[d for devices in r["devices"].values() for d in devices if d.get("isAvailable",True) and d["name"].startswith("iPhone")]
-options.sort(key=lambda d: (d["state"]!="Booted", "Pro" not in d["name"], d["name"]))
-if not options:sys.exit("No available iPhone Simulator is installed")
+runtime="com.apple.CoreSimulator.SimRuntime.iOS-26-2"
+options=[d for d in r["devices"].get(runtime,[]) if d.get("isAvailable",True) and d["name"].startswith("iPhone")]
+if not options:
+  sys.exit("iOS 26.2 iPhone Simulator is missing; check the Xcode 26.3 runner image")
+options.sort(key=lambda d: (d["name"] != "iPhone 17 Pro", d["state"]!="Booted", d["name"]))
 print(options[0]["udid"])
 ')"
 fi
+printf 'Selected iOS 26.2 test device: %s\n' "$ios_device"
+xcrun simctl list devices | grep -F "$ios_device" || true
 
 media_server_pid=''
 on_exit() {
@@ -27,8 +33,12 @@ on_exit() {
   fi
   if [[ "$status" -ne 0 ]]; then
     xcrun simctl io "$ios_device" screenshot build/ci/ios-failure.png 2>/dev/null || true
-    xcrun simctl spawn "$ios_device" log show --last 3m --style compact \
-      --predicate 'process == "Runner"' > build/ci/ios-runner.log 2>&1 || true
+    xcrun simctl spawn "$ios_device" log show --last 10m --style compact \
+      --predicate 'process == "Runner" OR process == "runningboardd" OR eventMessage CONTAINS "com.savestream.app"' \
+      > build/ci/ios-runner.log 2>&1 || true
+    find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 1 \
+      -iname '*Runner*' -type f -mmin -50 \
+      -exec cp {} build/ci/ \; 2>/dev/null || true
   fi
 }
 trap on_exit EXIT
@@ -36,8 +46,9 @@ trap on_exit EXIT
 if ! xcrun simctl list devices booted | grep -Fq "$ios_device"; then
   xcrun simctl boot "$ios_device"
 fi
-xcrun simctl bootstatus "$ios_device" -b
-flutter devices
+python3 tool/ci_deadline.py --seconds 180 -- \
+  xcrun simctl bootstatus "$ios_device" -b
+python3 tool/ci_deadline.py --seconds 75 -- flutter devices
 
 # Serve an actual H.264/AAC MP4 for native AVPlayer decoding; never request
 # ads, App Store purchases or livestreams from outside the CI runner.
@@ -80,13 +91,14 @@ run_ios_suite() {
     xcrun simctl terminate "$ios_device" com.savestream.app 2>/dev/null || true
     xcrun simctl shutdown "$ios_device" || true
     xcrun simctl boot "$ios_device"
-    xcrun simctl bootstatus "$ios_device" -b
+    python3 tool/ci_deadline.py --seconds 180 -- \
+      xcrun simctl bootstatus "$ios_device" -b
   done
 }
 
 # Keep every run bounded so the CI reaches log/artifact upload on failures.
-run_ios_suite functional 840 integration_test/native_journeys_test.dart
-run_ios_suite media 840 integration_test/native_media_test.dart \
+run_ios_suite functional 420 integration_test/native_journeys_test.dart
+run_ios_suite media 420 integration_test/native_media_test.dart \
   --dart-define=CI_MEDIA_HOST=127.0.0.1 \
   --dart-define=CI_MEDIA_PORT=18095
 
