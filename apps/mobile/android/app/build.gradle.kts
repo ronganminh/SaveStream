@@ -76,6 +76,11 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Google Mobile Ads pulls WorkManager 2.7.0 transitively. Its bundled
+    // Room 2.2.5 database fails during startup after AGP 9/R8 optimization.
+    // Keep the AndroidX runtime current so release builds can initialize on
+    // Android 10 as well as newer devices.
+    implementation("androidx.work:work-runtime:2.12.0")
 }
 
 flutter {
