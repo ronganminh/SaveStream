@@ -98,7 +98,9 @@ jobs:
 
 
   ios-release-compile:
-    # Use a stable iOS 18.5 simulator; iOS 26.4 hung >50m after Xcode build.
+    # device_info_plus 13.3 requires iOS 26.1+ SDK. Run on macOS 15/Xcode
+    # 26.3 (iOS 26.2 SDK), avoiding the macos-latest iOS 26.4 runner that
+    # stalled after Xcode build. Bound integration tests via ci_deadline.py.
     runs-on: macos-15
     timeout-minutes: 75
     defaults:
@@ -108,7 +110,7 @@ jobs:
       - name: Select tested Xcode and Simulator SDK
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.4'
+          xcode-version: '26.3'
 
       - name: Checkout
         uses: actions/checkout@v4
