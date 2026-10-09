@@ -11,6 +11,7 @@ import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/watch_summary.dart';
+import '../domain/repositories/watch_repository.dart';
 import 'cloud_hours_upsell_sheet.dart';
 import 'controllers/watch_providers.dart';
 
@@ -28,6 +29,7 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
   final TextEditingController _sourceController = TextEditingController();
 
   _LookupState _lookupState = _LookupState.idle;
+  CreatorLookupResult? _lookupResult;
   bool _submitting = false;
   Object? _error;
 
@@ -73,25 +75,44 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
 
     setState(() {
       _lookupState = _LookupState.checking;
+      _lookupResult = null;
       _error = null;
     });
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    if (!mounted) return;
-
-    final String normalized = _source.toLowerCase();
-    final _LookupState next;
-    if (normalized.contains('missing') || normalized.contains('notfound')) {
-      next = _LookupState.notFound;
-    } else if (normalized.contains('private') ||
-        normalized.contains('douyin.com')) {
-      next = _LookupState.restricted;
-    } else if (normalized.contains('unavailable') ||
-        normalized.contains('restricted')) {
-      next = _LookupState.unavailable;
-    } else {
-      next = _LookupState.found;
+    final WatchSourceType sourceType =
+        _source.startsWith('http://') || _source.startsWith('https://')
+        ? WatchSourceType.url
+        : WatchSourceType.username;
+    try {
+      final CreatorLookupResult result =
+          await (ref.read(watchRepositoryProvider) as CreatorLookupRepository)
+              .lookupCreator(
+                CreateWatchCommand(
+                  sourceType: sourceType,
+                  sourceValue: _source,
+                  autoRecord: false,
+                  notifyOnLive: true,
+                ),
+              );
+      if (!mounted) return;
+      setState(() {
+        _lookupResult = result;
+        _lookupState = _LookupState.found;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _lookupState = error.statusCode == 404
+            ? _LookupState.notFound
+            : _LookupState.unavailable;
+      });
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _lookupState = _LookupState.unavailable;
+      });
     }
-    setState(() => _lookupState = next);
   }
 
   Future<void> _create(Entitlement entitlement) async {
@@ -130,6 +151,7 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
   void _resetLookup() {
     setState(() {
       _lookupState = _LookupState.idle;
+      _lookupResult = null;
       _error = null;
     });
   }
@@ -280,9 +302,21 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
                 ),
                 const SizedBox(height: SsSpacing.md),
                 SsListTile(
-                  title: _displayName,
-                  subtitle: '$_handle · TikTok',
-                  leading: SsAvatar(label: _displayName),
+                  title: _lookupResult?.displayName ?? _displayName,
+                  subtitle: '${_lookupResult?.username ?? _handle} · TikTok',
+                  leading: SsAvatar(
+                    label: _lookupResult?.displayName ?? _displayName,
+                    imageUrl: _lookupResult?.avatarUrl,
+                    isLive: _lookupResult?.isLive ?? false,
+                  ),
+                ),
+                const SizedBox(height: SsSpacing.md),
+                SsStatusChip(
+                  label: _lookupStatusLabel(l10n),
+                  icon: _lookupResult?.isLive == true
+                      ? Icons.circle
+                      : Icons.circle_outlined,
+                  tone: _lookupStatusTone,
                 ),
               ],
             ),
@@ -316,6 +350,22 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
         body: l10n.creatorUnavailableBody,
         onTryAgain: _resetLookup,
       ),
+    };
+  }
+
+  String _lookupStatusLabel(AppLocalizations l10n) {
+    return switch (_lookupResult?.liveStatus) {
+      CreatorLiveStatus.live => l10n.liveStatus,
+      CreatorLiveStatus.offline => l10n.offlineStatus,
+      _ => l10n.watchUnknownStatus,
+    };
+  }
+
+  SsStatusTone get _lookupStatusTone {
+    return switch (_lookupResult?.liveStatus) {
+      CreatorLiveStatus.live => SsStatusTone.recording,
+      CreatorLiveStatus.offline => SsStatusTone.neutral,
+      _ => SsStatusTone.warning,
     };
   }
 }

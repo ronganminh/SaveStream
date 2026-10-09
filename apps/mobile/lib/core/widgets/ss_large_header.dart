@@ -9,12 +9,14 @@ class SsLargeHeader extends StatelessWidget {
   const SsLargeHeader({
     required this.title,
     this.subtitle,
+    this.badge,
     this.actions = const <Widget>[],
     super.key,
   });
 
   final String title;
   final String? subtitle;
+  final Widget? badge;
   final List<Widget> actions;
 
   @override
@@ -56,6 +58,10 @@ class SsLargeHeader extends StatelessWidget {
               ],
             ),
           ),
+          if (badge != null) ...<Widget>[
+            const SizedBox(width: SsSpacing.sm),
+            badge!,
+          ],
           ...actions,
         ],
       ),

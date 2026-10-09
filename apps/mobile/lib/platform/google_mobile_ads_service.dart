@@ -15,45 +15,73 @@ final class GoogleAdsConfig {
     required this.rewardedId,
   });
 
-  factory GoogleAdsConfig.forPlatform(TargetPlatform platform) {
+  factory GoogleAdsConfig.forPlatform(
+    TargetPlatform platform, {
+    bool useProductionIds = kReleaseMode,
+  }) {
     final bool ios = platform == TargetPlatform.iOS;
+    const String bannerHomeIos = String.fromEnvironment(
+      'ADMOB_BANNER_HOME_IOS',
+    );
+    const String bannerHomeAndroid = String.fromEnvironment(
+      'ADMOB_BANNER_HOME_ANDROID',
+    );
+    const String bannerWatchIos = String.fromEnvironment(
+      'ADMOB_BANNER_WATCH_IOS',
+    );
+    const String bannerWatchAndroid = String.fromEnvironment(
+      'ADMOB_BANNER_WATCH_ANDROID',
+    );
+    const String bannerLibraryIos = String.fromEnvironment(
+      'ADMOB_BANNER_LIBRARY_IOS',
+    );
+    const String bannerLibraryAndroid = String.fromEnvironment(
+      'ADMOB_BANNER_LIBRARY_ANDROID',
+    );
+    const String rewardedIos = String.fromEnvironment('ADMOB_REWARDED_IOS');
+    const String rewardedAndroid = String.fromEnvironment(
+      'ADMOB_REWARDED_ANDROID',
+    );
+
+    const String androidTestBannerId = 'ca-app-pub-3940256099942544/9214589741';
+    const String androidProductionBannerId =
+        'ca-app-pub-2078852906622512/4061426634';
+    const String androidTestRewardedId =
+        'ca-app-pub-3940256099942544/5224354917';
+    const String androidProductionRewardedId =
+        'ca-app-pub-2078852906622512/5155016450';
+
+    String configuredOr(String configured, String fallback) =>
+        configured.trim().isEmpty ? fallback : configured.trim();
+
+    final String androidBannerFallback = useProductionIds
+        ? androidProductionBannerId
+        : androidTestBannerId;
+    final String androidRewardedFallback = useProductionIds
+        ? androidProductionRewardedId
+        : androidTestRewardedId;
     return GoogleAdsConfig(
       bannerHomeId: ios
-          ? const String.fromEnvironment(
-              'ADMOB_BANNER_HOME_IOS',
-              defaultValue: 'ca-app-pub-3940256099942544/2435281174',
+          ? configuredOr(
+              bannerHomeIos,
+              'ca-app-pub-3940256099942544/2435281174',
             )
-          : const String.fromEnvironment(
-              'ADMOB_BANNER_HOME_ANDROID',
-              defaultValue: 'ca-app-pub-3940256099942544/9214589741',
-            ),
+          : configuredOr(bannerHomeAndroid, androidBannerFallback),
       bannerWatchListId: ios
-          ? const String.fromEnvironment(
-              'ADMOB_BANNER_WATCH_IOS',
-              defaultValue: 'ca-app-pub-3940256099942544/2435281174',
+          ? configuredOr(
+              bannerWatchIos,
+              'ca-app-pub-3940256099942544/2435281174',
             )
-          : const String.fromEnvironment(
-              'ADMOB_BANNER_WATCH_ANDROID',
-              defaultValue: 'ca-app-pub-3940256099942544/9214589741',
-            ),
+          : configuredOr(bannerWatchAndroid, androidBannerFallback),
       bannerLibraryId: ios
-          ? const String.fromEnvironment(
-              'ADMOB_BANNER_LIBRARY_IOS',
-              defaultValue: 'ca-app-pub-3940256099942544/2435281174',
+          ? configuredOr(
+              bannerLibraryIos,
+              'ca-app-pub-3940256099942544/2435281174',
             )
-          : const String.fromEnvironment(
-              'ADMOB_BANNER_LIBRARY_ANDROID',
-              defaultValue: 'ca-app-pub-3940256099942544/9214589741',
-            ),
+          : configuredOr(bannerLibraryAndroid, androidBannerFallback),
       rewardedId: ios
-          ? const String.fromEnvironment(
-              'ADMOB_REWARDED_IOS',
-              defaultValue: 'ca-app-pub-3940256099942544/1712485313',
-            )
-          : const String.fromEnvironment(
-              'ADMOB_REWARDED_ANDROID',
-              defaultValue: 'ca-app-pub-3940256099942544/5224354917',
-            ),
+          ? configuredOr(rewardedIos, 'ca-app-pub-3940256099942544/1712485313')
+          : configuredOr(rewardedAndroid, androidRewardedFallback),
     );
   }
 
@@ -304,11 +332,54 @@ final class _GoogleAdaptiveBannerState extends State<_GoogleAdaptiveBanner> {
   int? _width;
   Future<BannerAd?>? _future;
   BannerAd? _ad;
+  StreamSubscription<AdConsentState>? _consentSubscription;
+  AdConsentState? _lastConsentState;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToConsent(widget.service);
+  }
+
+  @override
+  void didUpdateWidget(covariant _GoogleAdaptiveBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.service, widget.service)) {
+      unawaited(_consentSubscription?.cancel());
+      _lastConsentState = null;
+      _listenToConsent(widget.service);
+      _resetAd();
+    }
+  }
 
   @override
   void dispose() {
+    unawaited(_consentSubscription?.cancel());
     _ad?.dispose();
     super.dispose();
+  }
+
+  void _listenToConsent(GoogleMobileAdsService service) {
+    _consentSubscription = service.consentStates.listen((AdConsentState state) {
+      final AdConsentState? previous = _lastConsentState;
+      _lastConsentState = state;
+      // An UNKNOWN -> GRANTED transition happens inside the in-flight load,
+      // which can continue normally. A REQUIRED -> GRANTED transition occurs
+      // after the consent sheet, so the earlier collapsed banner must retry.
+      if (!mounted ||
+          previous != AdConsentState.required ||
+          state != AdConsentState.granted) {
+        return;
+      }
+      setState(_resetAd);
+    });
+  }
+
+  void _resetAd() {
+    _ad?.dispose();
+    _ad = null;
+    _width = null;
+    _future = null;
   }
 
   @override
@@ -328,10 +399,13 @@ final class _GoogleAdaptiveBannerState extends State<_GoogleAdaptiveBanner> {
           builder: (BuildContext context, AsyncSnapshot<BannerAd?> snapshot) {
             final BannerAd? ad = snapshot.data;
             if (ad == null) return const SizedBox.shrink();
-            return SizedBox(
-              width: ad.size.width.toDouble(),
-              height: ad.size.height.toDouble(),
-              child: AdWidget(ad: ad),
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: SizedBox(
+                width: ad.size.width.toDouble(),
+                height: ad.size.height.toDouble(),
+                child: AdWidget(ad: ad),
+              ),
             );
           },
         );

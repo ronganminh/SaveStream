@@ -57,6 +57,14 @@
   "mockFoundationBody": "Kênh và bản ghi dùng repository interface với các kịch bản thành công, đang tải, rỗng, lỗi và giống mất mạng.",
   "channelsTitle": "Theo dõi",
   "recordingsTitle": "Bản ghi",
+  "recordingsRetentionSubtitle": "Cloud lưu {days} ngày · Local trên thiết bị này",
+  "@recordingsRetentionSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "settingsTitle": "Cài đặt",
   "profileTitle": "Hồ sơ",
   "languageTitle": "Ngôn ngữ",
@@ -256,9 +264,60 @@
   "recordingCostLabel": "Chi phí",
   "notStartedLabel": "Chưa bắt đầu",
   "artifactReadyLabel": "Artifact sẵn sàng",
+  "recordingArtifactMissingStatus": "Lỗi xử lý",
+  "recordingArtifactMissingTitle": "Chưa tạo được file video",
+  "recordingArtifactMissingBody": "Recording đã kết thúc nhưng SaveStream không tạo được video cloud để phát. Hãy kiểm tra lại trạng thái hoặc xoá mục này.",
   "artifactPendingLabel": "Artifact đang chờ",
   "thumbnailReadyLabel": "Thumbnail sẵn sàng",
   "thumbnailPendingLabel": "Thumbnail đang chờ",
+  "recordingContentViewLabel": "Nội dung",
+  "recordingListViewLabel": "Danh sách",
+  "recordingSortTooltip": "Sắp xếp recording",
+  "recordingSortDate": "Mới nhất trước",
+  "recordingSortSize": "Dung lượng lớn trước",
+  "recordingSortName": "Tên A–Z",
+  "recordingSortExpiring": "Sắp hết hạn trước",
+  "recordingFiltersTitle": "Lọc bản ghi",
+  "recordingFiltersResetAction": "Đặt lại",
+  "recordingFiltersStorageTitle": "NƠI LƯU",
+  "recordingFiltersStatusTitle": "TRẠNG THÁI",
+  "recordingFiltersSortTitle": "SẮP XẾP",
+  "recordingFiltersApplyAction": "Xem {count} bản ghi",
+  "@recordingFiltersApplyAction": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "recordingFiltersActiveSubtitle": "Đang lọc",
+  "recordingStatusGroupCompleted": "Hoàn tất",
+  "recordingStatusGroupProcessing": "Đang xử lý",
+  "recordingStatusGroupPartial": "Một phần / khôi phục",
+  "recordingStatusGroupIssues": "Lỗi / hết hạn",
+  "recordingSearchResults": "{count} kết quả cho “{query}”",
+  "@recordingSearchResults": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "query": {"type": "String"}
+    }
+  },
+  "recordingSearchCancelAction": "Huỷ",
+  "recordingSearchHelpTitle": "Không thấy?",
+  "recordingSearchHelpBody": "Bản Cloud đã hết hạn quá 7 ngày sẽ không còn trong kết quả.",
+  "recordingSearchEmptyTitle": "Không có bản ghi khớp",
+  "recordingSearchEmptyBody": "Thử tên creator hoặc tiêu đề live khác.",
+  "recordingSearchClearAction": "Xoá tìm kiếm",
+  "recordingFilteredEmptyTitle": "Không có bản ghi phù hợp",
+  "recordingFilteredEmptyBody": "Thử bỏ bớt bộ lọc.",
+  "recordingClearFiltersAction": "Xoá lọc",
+  "recordingEmptyAddCreatorAction": "Thêm creator",
+  "recordingEmptyRecordNowAction": "Record ngay",
+  "recordingDateToday": "Hôm nay",
+  "recordingDateYesterday": "Hôm qua",
+  "recordingsStorageCount": "{localCount} Local · {cloudCount} Cloud",
+  "@recordingsStorageCount": {
+    "placeholders": {
+      "localCount": {"type": "int"},
+      "cloudCount": {"type": "int"}
+    }
+  },
   "recordingEndOfListLabel": "Bạn đã xem hết danh sách.",
   "recordingLoadMoreFailed": "Không tải được thêm recording.",
   "loadMoreAction": "Tải thêm",
@@ -364,7 +423,7 @@
   "authSessionExpiredMessage": "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.",
   "watchAlreadyExistsMessage": "Đã có Watch cho creator này.",
   "watchResumeInsufficientCreditMessage": "Credit khả dụng không đủ để tiếp tục theo dõi có auto-record. Hãy nạp thêm credit rồi thử lại.",
-  "recordNowAction": "Ghi ngay",
+  "recordNowAction": "Record ngay",
   "recordingInsufficientCreditMessage": "Credit khả dụng không đủ để bắt đầu recording này.",
   "artifactOpenFailedMessage": "Không thể mở artifact của recording. Hãy thử lại để lấy liên kết mới.",
   "paymentStatusCreated": "Đã tạo",
@@ -575,6 +634,29 @@
   "homeResetAfter": "Reset sau {duration}",
   "homeRewardsUsed": "Rewarded {used}/{cap}",
   "homeWatchingCapacity": "Theo dõi {count}/{limit}",
+  "homeLiveNowTitle": "Đang LIVE",
+  "homeNoLiveCreators": "Hiện chưa có creator bạn theo dõi đang LIVE.",
+  "homeLiveSinceLabel": "LIVE từ {time}",
+  "@homeLiveSinceLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLocalStorageLabel": "Local · Lưu trên thiết bị này",
+  "homeFreeMinutesRemainingTail": " / {daily} phút còn lại",
+  "@homeFreeMinutesRemainingTail": {
+    "placeholders": {
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "viewProAction": "Xem Pro",
+  "homeRewardedMetricLabel": "Rewarded",
+  "homeSlotMetricLabel": "Slot",
+  "homeWatchingMetricLabel": "Theo dõi",
   "homeCloudTimeTitle": "Giờ cloud còn lại",
   "homeCloudSlots": "Slot cloud {used}/{limit}",
   "homeCloudRetention": "Bản ghi cloud lưu {days} ngày",
@@ -582,7 +664,7 @@
   "homeLiveCreatorBody": "Mở creator để Record ngay.",
   "homeLocalSaveHint": "Local · Lưu trên thiết bị này",
   "homeAutoRecordUpsellTitle": "Tự động record khi creator LIVE",
-  "homeAutoRecordUpsellBody": "Mua giờ cloud để mở auto-record trên cloud, theo dõi 20 creator và bỏ quảng cáo.",
+  "homeAutoRecordUpsellBody": "Pro record trên cloud, điện thoại không cần online.",
   "buyCloudHoursAction": "Mua giờ cloud",
   "homeOfflineTitle": "Không có kết nối",
   "homeOfflineBody": "Đang hiện dữ liệu đã lưu. Trạng thái LIVE có thể đã thay đổi. Các thao tác cần mạng tạm thời không dùng được.",
@@ -1404,6 +1486,27 @@
   "settingsIosRecordingTitle": "Record trên iPhone",
   "settingsIosRecordingSubtitle": "Giữ app mở và khôi phục",
   "settingsRecordingSectionTitle": "RECORDING",
+  "settingsAutoRecordDefaultTitle": "Mặc định tự động record",
+  "settingsCloudRetentionTitle": "Thời hạn lưu Cloud",
+  "settingsLocalRecordingTitle": "Record Local",
+  "settingsLocalRecordingUnlimitedValue": "Không giới hạn trên thiết bị này",
+  "settingsLocalRecordingAvailableValue": "Khả dụng trên thiết bị này",
+  "settingsLocalRecordingDisabledValue": "Không khả dụng cho tài khoản này",
+  "settingsRecordingQualityTitle": "Chất lượng",
+  "settingsRecordingQualityValue": "Tự động / theo nguồn",
+  "settingsAppSectionTitle": "ỨNG DỤNG",
+  "settingsPurchasesSectionTitle": "TÀI KHOẢN & MUA HÀNG",
+  "settingsTodayLabel": "Hôm nay",
+  "settingsDailyUsageValue": "{remaining}/{daily} phút · {used}/{cap} ads",
+  "@settingsDailyUsageValue": {
+    "placeholders": {
+      "remaining": {"type": "int"},
+      "daily": {"type": "int"},
+      "used": {"type": "int"},
+      "cap": {"type": "int"}
+    }
+  },
+  "upgradeToProAction": "Nâng cấp Pro",
   "recordingSearchHint": "Tìm theo creator",
   "recordingCrossDeviceValue": "Đã ghi trên {device}",
   "@recordingCrossDeviceValue": {
@@ -1413,7 +1516,7 @@
       }
     }
   },
-  "recordingCrossDeviceUnavailable": "Không có trên máy này. Không thể phát, chia sẻ hoặc xoá tại đây.",
+  "recordingCrossDeviceUnavailable": "Không có trên máy này. Không thể phát hoặc chia sẻ tại đây.",
   "recordingLocalFileMissing": "File trên máy đã bị di chuyển hoặc xoá. SaveStream không thể phát hoặc chia sẻ file này.",
   "shareRecordingAction": "Chia sẻ bản ghi",
   "deleteLocalRecordingAction": "Xoá khỏi thiết bị này",
@@ -1429,6 +1532,44 @@
   "cloudRecordingExpiredBody": "Bản ghi cloud này đã hết hạn và không còn khả dụng để phát hoặc tải xuống.",
   "recordingDownloadedLabel": "Đã tải về",
   "recordingDownloadedBody": "Đã lưu trên thiết bị này. Bạn có thể phát hoặc chia sẻ bản trên máy.",
+  "recordingLocalOnlyTitle": "Chỉ có trên thiết bị này",
+  "recordingLocalOnlyBody": "File nằm trong bộ nhớ của {device}. Xoá app hoặc dọn bộ nhớ có thể làm mất file.",
+  "@recordingLocalOnlyBody": {
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "recordingStorageLabel": "Nơi lưu",
+  "recordingQualityLabel": "Chất lượng",
+  "recordingQualitySourceValue": "Tự động / theo nguồn",
+  "recordingStartedByLabel": "Bắt đầu",
+  "recordingStartedManuallyValue": "Bạn bấm Record ngay",
+  "recordingStartedAutomaticallyValue": "Auto-record khi LIVE",
+  "recordingLocalStorageValue": "Local · {device}",
+  "@recordingLocalStorageValue": {
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "recordingCloudStorageValue": "Cloud · SaveStream server",
+  "recordingCloudRetentionLabel": "Lưu đến",
+  "recordingCloudRetentionValue": "{date} · còn {days} ngày",
+  "@recordingCloudRetentionValue": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "days": {"type": "int"}
+    }
+  },
+  "recordingCloudRetentionTomorrow": "{date} · hết hạn ngày mai",
+  "@recordingCloudRetentionTomorrow": {
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "recordingCloudExpiringTitle": "Sắp hết hạn lưu trữ",
+  "recordingCloudExpiringBody": "Bản ghi cloud sẽ bị xoá ngày {date}. Pro lưu 30 ngày; Free + Cloud Pack lưu 7 ngày.",
+  "@recordingCloudExpiringBody": {
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "recordingDownloadDeviceAction": "Tải về thiết bị",
+  "recordingDownloadedTitle": "Đã tải xuống thiết bị này",
+  "recordingDownloadedChip": "Đã tải xuống thiết bị này",
+  "recordingLocalCopyLabel": "Bản local",
+  "recordingPlayerSpeedTooltip": "Tốc độ phát",
   "recordingDownloadingBytes": "Đang tải {done} / {total}",
   "@recordingDownloadingBytes": {
     "placeholders": {

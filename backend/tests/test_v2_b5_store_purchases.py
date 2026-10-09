@@ -34,6 +34,7 @@ from app.infrastructure.store.base import VerifiedStoreRefund
 from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
 from app.infrastructure.store.disabled import DisabledStoreReceiptVerifier
 from app.main import create_app
+from app.settings import store_purchase_platform_enabled
 from app.infrastructure.store.fake import FakeStoreReceiptVerifier
 from tests.identity_helpers import identity_settings
 
@@ -101,13 +102,21 @@ def test_v2_b5_catalog_matches_locked_decisions() -> None:
     ]
 
 
+def test_android_only_store_provider_does_not_require_enabling_app_store() -> None:
+    assert store_purchase_platform_enabled("google_play", "google_play") is True
+    assert store_purchase_platform_enabled("google_play", "app_store") is False
+    assert store_purchase_platform_enabled("app_store", "app_store") is True
+    assert store_purchase_platform_enabled("app_store", "google_play") is False
+    assert store_purchase_platform_enabled("live", "app_store") is True
+    assert store_purchase_platform_enabled("live", "google_play") is True
+    assert store_purchase_platform_enabled("disabled", "google_play") is False
+
+
 def test_v2_b5_store_purchase_is_verified_idempotent_and_resumes_b2(
     tmp_path,
 ) -> None:
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'b5-purchase.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-purchase.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -151,9 +160,7 @@ def test_v2_b5_store_purchase_is_verified_idempotent_and_resumes_b2(
                 await session.refresh(watch)
                 assert watch.status == "active"
                 assert watch.next_check_at is not None
-                entitlement = await EntitlementService(session, settings).get(
-                    user.id
-                )
+                entitlement = await EntitlementService(session, settings).get(user.id)
                 assert entitlement.plan == "pro"
                 assert entitlement.has_purchased is True
 
@@ -209,9 +216,7 @@ def test_v2_b5_store_purchase_is_verified_idempotent_and_resumes_b2(
 
 def test_v2_b5_rejects_receipt_or_product_mismatch(tmp_path) -> None:
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'b5-invalid.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-invalid.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -236,9 +241,7 @@ def test_v2_b5_rejects_receipt_or_product_mismatch(tmp_path) -> None:
                     )
                 assert mismatch.value.code == "STORE_RECEIPT_INVALID"
                 assert mismatch.value.status_code == 422
-                assert (
-                    await CreditService(session).balance(user.id)
-                ).posted == 0
+                assert (await CreditService(session).balance(user.id)).posted == 0
 
                 with pytest.raises(ApplicationError) as unknown:
                     await service.purchase(
@@ -260,9 +263,7 @@ def test_v2_b5_rejects_receipt_or_product_mismatch(tmp_path) -> None:
 
 def test_v2_b5_store_refund_claws_back_only_remaining_credit(tmp_path) -> None:
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'b5-refund.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-refund.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -290,9 +291,7 @@ def test_v2_b5_store_refund_claws_back_only_remaining_credit(tmp_path) -> None:
                 )
                 assert order is not None
                 account = await session.scalar(
-                    select(CreditAccount).where(
-                        CreditAccount.user_id == user.id
-                    )
+                    select(CreditAccount).where(CreditAccount.user_id == user.id)
                 )
                 assert account is not None
 
@@ -329,17 +328,13 @@ def test_v2_b5_store_refund_claws_back_only_remaining_credit(tmp_path) -> None:
                 )
                 assert result.applied is True
                 assert result.deducted_credits == 200
-                assert (
-                    await CreditService(session).balance(user.id)
-                ).posted == 0
+                assert (await CreditService(session).balance(user.id)).posted == 0
 
                 await session.refresh(order)
                 assert order.status == "refunded"
                 assert order.refunded_credits == 3_000
                 assert order.refunded_amount_minor == 999
-                entitlement = await EntitlementService(session, settings).get(
-                    user.id
-                )
+                entitlement = await EntitlementService(session, settings).get(user.id)
                 assert entitlement.plan == "free"
                 assert entitlement.has_purchased is False
 
@@ -351,17 +346,14 @@ def test_v2_b5_store_refund_claws_back_only_remaining_credit(tmp_path) -> None:
                     },
                 )
                 assert replay.applied is False
-                assert (
-                    await CreditService(session).balance(user.id)
-                ).posted == 0
+                assert (await CreditService(session).balance(user.id)).posted == 0
                 assert (
                     await session.scalar(
                         select(func.count())
                         .select_from(PaymentEvent)
                         .where(
                             PaymentEvent.provider == "google_play",
-                            PaymentEvent.provider_event_id
-                            == "google-refund-event-1",
+                            PaymentEvent.provider_event_id == "google-refund-event-1",
                         )
                     )
                     or 0
@@ -370,7 +362,6 @@ def test_v2_b5_store_refund_claws_back_only_remaining_credit(tmp_path) -> None:
             await database.close()
 
     asyncio.run(run())
-
 
 
 class _FakeAppleSignedDataVerifier:
@@ -409,9 +400,7 @@ def test_v2_b5_live_apple_verifier_uses_server_transaction_and_signed_refund(
 ) -> None:
     async def run() -> None:
         settings = replace(
-            identity_settings(
-                f"sqlite+aiosqlite:///{tmp_path / 'b5-apple-live.db'}"
-            ),
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-apple-live.db'}"),
             app_store_bundle_id="online.savestream.app",
             app_store_environment="sandbox",
             app_store_private_key="unused-in-injected-test",
@@ -435,9 +424,7 @@ def test_v2_b5_live_apple_verifier_uses_server_transaction_and_signed_refund(
         assert purchase.needs_consume is False
 
         refund = await verifier.verify_refund_notification(
-            json.dumps(
-                {"signedPayload": "apple-notification-jws"}
-            ).encode("utf-8"),
+            json.dumps({"signedPayload": "apple-notification-jws"}).encode("utf-8"),
             {},
         )
         assert refund == VerifiedStoreRefund(
@@ -454,6 +441,40 @@ class _FakeGoogleCredentials:
     token = "google-oauth-token"
 
 
+@pytest.mark.parametrize("status_code", [400, 404, 410])
+def test_v2_b5_google_invalid_purchase_token_is_terminal(
+    tmp_path,
+    status_code: int,
+) -> None:
+    async def run() -> None:
+        settings = replace(
+            identity_settings(
+                f"sqlite+aiosqlite:///{tmp_path / f'b5-google-invalid-{status_code}.db'}"
+            ),
+            google_play_package_name="com.savestream.app",
+        )
+        verifier = GooglePlayReceiptVerifier(
+            settings,
+            transport=httpx.MockTransport(
+                lambda _request: httpx.Response(status_code)
+            ),
+            credentials=_FakeGoogleCredentials(),
+        )
+
+        with pytest.raises(ApplicationError) as invalid:
+            await verifier.verify_purchase(
+                product_id="savestream.hours.50",
+                transaction_id="invalid-google-transaction",
+                receipt="invalid-google-token",
+            )
+
+        assert invalid.value.code == "STORE_RECEIPT_INVALID"
+        assert invalid.value.status_code == 422
+        assert invalid.value.retryable is False
+
+    asyncio.run(run())
+
+
 def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
     tmp_path,
 ) -> None:
@@ -462,9 +483,7 @@ def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
 
         def handler(request: httpx.Request) -> httpx.Response:
             seen.append((request.method, request.url.path))
-            assert request.headers["authorization"] == (
-                "Bearer google-oauth-token"
-            )
+            assert request.headers["authorization"] == ("Bearer google-oauth-token")
             if request.method == "GET":
                 return httpx.Response(
                     200,
@@ -482,14 +501,10 @@ def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
             return httpx.Response(200)
 
         settings = replace(
-            identity_settings(
-                f"sqlite+aiosqlite:///{tmp_path / 'b5-google-live.db'}"
-            ),
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-google-live.db'}"),
             google_play_package_name="online.savestream.app",
             google_play_rtdn_audience="https://api.savestream.online/v1/webhooks/google-play",
-            google_play_rtdn_service_account_email=(
-                "rtdn@example.iam.gserviceaccount.com"
-            ),
+            google_play_rtdn_service_account_email=("rtdn@example.iam.gserviceaccount.com"),
             store_purchase_timeout_seconds=3.0,
         )
         verifier = GooglePlayReceiptVerifier(
@@ -529,9 +544,7 @@ def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
         envelope = {
             "message": {
                 "messageId": "google-rtdn-event-1",
-                "data": base64.b64encode(
-                    json.dumps(rtdn_data).encode("utf-8")
-                ).decode("ascii"),
+                "data": base64.b64encode(json.dumps(rtdn_data).encode("utf-8")).decode("ascii"),
             }
         }
         refund = await verifier.verify_refund_notification(
@@ -545,7 +558,6 @@ def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
         )
 
     asyncio.run(run())
-
 
 
 def test_v2_b5_disabled_store_fails_closed(tmp_path) -> None:
@@ -564,18 +576,12 @@ def test_v2_b5_disabled_store_fails_closed(tmp_path) -> None:
 
 
 def test_v2_b5_runtime_openapi_has_real_store_routes(tmp_path) -> None:
-    settings = identity_settings(
-        f"sqlite+aiosqlite:///{tmp_path / 'b5-openapi.db'}"
-    )
+    settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b5-openapi.db'}")
     generated = create_app(settings).openapi()
     purchase = generated["paths"]["/v1/billing/store-purchases"]["post"]
     assert purchase["operationId"] == "createStorePurchase"
     assert "501" not in purchase["responses"]
+    assert generated["paths"]["/v1/webhooks/app-store"]["post"]["operationId"] == "appStoreWebhook"
     assert (
-        generated["paths"]["/v1/webhooks/app-store"]["post"]["operationId"]
-        == "appStoreWebhook"
-    )
-    assert (
-        generated["paths"]["/v1/webhooks/google-play"]["post"]["operationId"]
-        == "googlePlayWebhook"
+        generated["paths"]["/v1/webhooks/google-play"]["post"]["operationId"] == "googlePlayWebhook"
     )

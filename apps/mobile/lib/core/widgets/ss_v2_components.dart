@@ -15,6 +15,7 @@ class SsLocationChip extends StatelessWidget {
     return SsStatusChip(
       label: label ?? (local ? 'Local' : 'Cloud'),
       icon: local ? Icons.smartphone_rounded : Icons.cloud_rounded,
+      tone: local ? SsStatusTone.local : SsStatusTone.cloud,
     );
   }
 }
@@ -47,6 +48,7 @@ class SsQuotaCard extends StatelessWidget {
     required this.value,
     this.subtitle,
     this.progress,
+    this.metrics = const <SsQuotaMetric>[],
     super.key,
   });
 
@@ -54,6 +56,7 @@ class SsQuotaCard extends StatelessWidget {
   final String value;
   final String? subtitle;
   final double? progress;
+  final List<SsQuotaMetric> metrics;
 
   @override
   Widget build(BuildContext context) => SsCard(
@@ -77,9 +80,65 @@ class SsQuotaCard extends StatelessWidget {
                 : progress!,
           ),
         ],
+        if (metrics.isNotEmpty) ...<Widget>[
+          const SizedBox(height: SsSpacing.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              for (int index = 0; index < metrics.length; index++) ...<Widget>[
+                if (index > 0) const SizedBox(width: SsSpacing.sm),
+                Expanded(child: _SsQuotaMetricCell(metric: metrics[index])),
+              ],
+            ],
+          ),
+        ],
       ],
     ),
   );
+}
+
+class SsQuotaMetric {
+  const SsQuotaMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+class _SsQuotaMetricCell extends StatelessWidget {
+  const _SsQuotaMetricCell({required this.metric});
+
+  final SsQuotaMetric metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: SsRadii.field,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SsSpacing.md,
+          vertical: SsSpacing.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              metric.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(metric.value, style: SsTypography.mono),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class SsCreatorTile extends StatelessWidget {
@@ -87,24 +146,50 @@ class SsCreatorTile extends StatelessWidget {
     required this.name,
     required this.handle,
     this.isLive = false,
+    this.imageUrl,
     this.trailing,
+    this.actionLabel,
+    this.actionIcon,
+    this.onAction,
     this.onTap,
     super.key,
   });
   final String name;
   final String handle;
   final bool isLive;
+  final String? imageUrl;
   final Widget? trailing;
+  final String? actionLabel;
+  final IconData? actionIcon;
+  final VoidCallback? onAction;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) => SsCard(
-    child: SsListTile(
-      title: name,
-      subtitle: handle,
-      leading: SsAvatar(label: name),
-      trailing: trailing ?? SsLiveBadge(isLive: isLive),
-      onTap: onTap,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SsListTile(
+          title: name,
+          subtitle: handle,
+          leading: SsAvatar(
+            label: name,
+            imageUrl: imageUrl,
+            radius: 22,
+            isLive: isLive,
+          ),
+          trailing: trailing ?? SsLiveBadge(isLive: isLive),
+          onTap: onTap,
+        ),
+        if (actionLabel != null) ...<Widget>[
+          const SizedBox(height: SsSpacing.sm),
+          FilledButton.icon(
+            onPressed: onAction,
+            icon: Icon(actionIcon ?? Icons.arrow_forward_rounded),
+            label: Text(actionLabel!),
+          ),
+        ],
+      ],
     ),
   );
 }
@@ -162,7 +247,7 @@ class SsActiveRecordingCard extends StatelessWidget {
                   value: elapsed,
                   child: Text(
                     elapsed,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: SsTypography.timer.copyWith(fontSize: 24),
                   ),
                 ),
               ],
@@ -203,7 +288,7 @@ class SsRecordingBar extends StatelessWidget {
               const Icon(Icons.fiber_manual_record_rounded, size: 14),
               const SizedBox(width: SsSpacing.sm),
               Expanded(child: Text(label)),
-              Text(elapsed),
+              Text(elapsed, style: SsTypography.mono),
             ],
           ),
         ),
@@ -219,20 +304,24 @@ class SsInlineAlert extends StatelessWidget {
     required this.title,
     this.message,
     this.tone = SsInlineAlertTone.info,
+    this.icon,
     super.key,
   });
   final String title;
   final String? message;
   final SsInlineAlertTone tone;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
-    final IconData icon = switch (tone) {
-      SsInlineAlertTone.info => Icons.info_outline_rounded,
-      SsInlineAlertTone.success => Icons.check_circle_outline_rounded,
-      SsInlineAlertTone.warning => Icons.warning_amber_rounded,
-      SsInlineAlertTone.error => Icons.error_outline_rounded,
-    };
+    final IconData resolvedIcon =
+        icon ??
+        switch (tone) {
+          SsInlineAlertTone.info => Icons.info_outline_rounded,
+          SsInlineAlertTone.success => Icons.check_circle_outline_rounded,
+          SsInlineAlertTone.warning => Icons.warning_amber_rounded,
+          SsInlineAlertTone.error => Icons.error_outline_rounded,
+        };
     return Semantics(
       container: true,
       liveRegion:
@@ -241,7 +330,7 @@ class SsInlineAlert extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Icon(icon),
+            Icon(resolvedIcon),
             const SizedBox(width: SsSpacing.md),
             Expanded(
               child: Column(

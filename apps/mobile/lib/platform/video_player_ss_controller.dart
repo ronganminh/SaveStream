@@ -45,17 +45,22 @@ final class VideoPlayerSsController extends ChangeNotifier
   @override
   Duration get duration => _player.value.duration;
 
+  double get playbackSpeed => _player.value.playbackSpeed;
+
   @override
   Future<void> play() => _player.play();
 
   @override
   Future<void> pause() => _player.pause();
 
+  Future<void> setPlaybackSpeed(double speed) =>
+      _player.setPlaybackSpeed(speed);
+
   @override
   Future<void> seekTo(Duration value) {
     final Duration target = value < Duration.zero
         ? Duration.zero
-        : value > duration
+        : duration >= const Duration(seconds: 2) && value > duration
         ? duration
         : value;
     return _player.seekTo(target);

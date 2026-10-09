@@ -22,6 +22,7 @@ def recording_response(
     *,
     retention_days: int = 0,
     queue_position: int | None = None,
+    artifact_ready: bool = False,
 ) -> RecordingResponse:
     """retention_days > 0 adds expires_at for finished recordings."""
     status = RecordingStatus(recording.status)
@@ -42,7 +43,9 @@ def recording_response(
         )
     return RecordingResponse(
         id=str(recording.id),
-        source=Source.model_validate({"type": recording.source_type, "value": recording.source_value}),
+        source=Source.model_validate(
+            {"type": recording.source_type, "value": recording.source_value}
+        ),
         creator=creator,
         status=status.value,
         started_at=recording.started_at,
@@ -64,11 +67,11 @@ def recording_response(
             recording.retention_expires_at
             or (
                 expires_at(recording.created_at, retention_days)
-                if status in TERMINAL_RECORDING_STATUSES
-                and recording.deleted_at is None
+                if status in TERMINAL_RECORDING_STATUSES and recording.deleted_at is None
                 else None
             )
         ),
+        playback_ready=artifact_ready,
         engine="cloud",
         minutes_charged=max(recording.actual_cost or 0, 0),
         updated_at=recording.updated_at,

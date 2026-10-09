@@ -103,7 +103,11 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             f"{product_id}/tokens/{receipt}"
         )
         response = await self._request("GET", path)
-        if response.status_code in {404, 410}:
+        # Google returns 400 for malformed/unknown purchase tokens and may
+        # return 404 or 410 for tokens that no longer resolve.  All three are
+        # terminal receipt failures; treating 400 as a transient 503 makes the
+        # mobile retry queue loop forever on a receipt Google will never accept.
+        if response.status_code in {400, 404, 410}:
             raise _invalid("Google Play purchase token is invalid")
         if response.status_code >= 400:
             raise ApplicationError(

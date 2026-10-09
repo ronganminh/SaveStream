@@ -51,7 +51,7 @@ void main() {
     await tester.pump();
 
     expect(session.isAuthenticated, isTrue);
-    expect(find.text('Welcome back, Alex'), findsOneWidget);
+    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
   });
 

@@ -52,6 +52,29 @@ void main() {
     expect(item.issue, RecordingLibraryIssue.missingLocalFile);
     expect(item.canPlay, isFalse);
     expect(item.canShare, isFalse);
+    expect(item.canDelete, isTrue);
+  });
+
+  test('zero-byte stale local recording can be removed from the library', () {
+    final RecordingLibraryItem item = libraryItemFromLocal(
+      LocalRecordingSummary(
+        id: 'local-empty',
+        watchId: 'watch-1',
+        creatorDisplayName: 'v_nenee',
+        creatorHandle: '@v_nenee',
+        deviceId: 'previous-install',
+        deviceName: 'LG V60',
+        startedAt: DateTime.utc(2026, 10, 4),
+        recordedSeconds: 0,
+        sizeBytes: 0,
+        status: RecordingStatus.failed,
+        fileAvailable: false,
+      ),
+      currentDeviceId: 'current-install',
+    );
+
+    expect(item.canPlay, isFalse);
+    expect(item.canDelete, isTrue);
   });
 
   test('L07 expiry warning begins inside three days', () {
@@ -89,6 +112,7 @@ void main() {
         actions: actions,
         startedAt: DateTime.utc(2026, 10, 4),
         durationSeconds: 60,
+        artifactReady: true,
       ),
     );
     final RecordingLibraryItem missed = libraryItemFromCloud(
@@ -104,7 +128,32 @@ void main() {
     );
 
     expect(partial.issue, RecordingLibraryIssue.partialTimeline);
+    expect(partial.canShare, isTrue);
     expect(missed.issue, RecordingLibraryIssue.missedNoCloudSlot);
+  });
+
+  test('terminal cloud item without an artifact is not playable', () {
+    const RecordingActions actions = RecordingActions(
+      canStop: false,
+      canRetry: true,
+      canDelete: true,
+    );
+    final RecordingLibraryItem item = libraryItemFromCloud(
+      RecordingSummary(
+        id: 'missing-artifact',
+        creatorDisplayName: 'Missing',
+        creatorUsername: '@missing',
+        status: RecordingStatus.stopped,
+        actions: actions,
+        startedAt: DateTime.utc(2026, 10, 4),
+        durationSeconds: 60,
+      ),
+    );
+
+    expect(item.issue, RecordingLibraryIssue.missingCloudArtifact);
+    expect(item.canPlay, isFalse);
+    expect(item.canShare, isFalse);
+    expect(item.canDelete, isTrue);
   });
 
   test('L13 resolves local cloud and both delete contexts', () {

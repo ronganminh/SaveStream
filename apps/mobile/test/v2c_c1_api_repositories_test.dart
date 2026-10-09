@@ -285,6 +285,7 @@ void main() {
                 expiresAt: '2026-11-03T00:00:00Z',
                 minutesCharged: 7,
                 queuePosition: 2,
+                artifactReady: true,
               ),
               _recordingJson(id: 'rec-future', status: 'future_backend_state'),
               _recordingJson(id: 'rec-missed', status: 'missed_no_cloud_slot'),
@@ -308,6 +309,8 @@ void main() {
       expect(recordings[0].queuePosition, 2);
       expect(recordings[0].minutesCharged, 7);
       expect(recordings[0].expiresAt, DateTime.utc(2026, 11, 3));
+      expect(recordings[0].artifactReady, isTrue);
+      expect(recordings[1].artifactReady, isFalse);
       expect(recordings[1].status, RecordingStatus.failed);
       expect(recordings[2].status, RecordingStatus.missedNoCloudSlot);
     },
@@ -437,6 +440,7 @@ Map<String, Object?> _recordingJson({
   String? expiresAt,
   int minutesCharged = 0,
   int? queuePosition,
+  bool? artifactReady,
 }) {
   return <String, Object?>{
     'id': id,
@@ -459,6 +463,7 @@ Map<String, Object?> _recordingJson({
     'created_at': '2026-10-04T00:00:00Z',
     'updated_at': '2026-10-04T00:00:00Z',
     'expires_at': expiresAt,
+    if (artifactReady != null) 'playback_ready': artifactReady,
     'engine': 'cloud',
     'minutes_charged': minutesCharged,
     'queue_position': queuePosition,

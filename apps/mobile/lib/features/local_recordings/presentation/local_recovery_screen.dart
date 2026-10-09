@@ -291,7 +291,7 @@ class _RecoveryResultBody extends StatelessWidget {
             label: context.l10n.localRecordingOpenAction,
             icon: Icons.play_circle_outline_rounded,
             onPressed: () =>
-                context.push(AppRoutes.recordingDetail(result.recordingId!)),
+                context.go(AppRoutes.localRecordingDetail(result.recordingId!)),
           ),
         const SizedBox(height: SsSpacing.sm),
         SsSecondaryButton(

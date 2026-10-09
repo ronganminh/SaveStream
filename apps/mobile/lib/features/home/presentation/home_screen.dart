@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../app/theme/ss_semantic_colors.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/contracts/ads_service.dart';
 import '../../../platform/contracts/local_recorder.dart';
 import '../../../platform/contracts/local_recovery_service.dart';
+import '../../../platform/platform_providers.dart';
 import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
@@ -17,6 +20,9 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
+import '../../settings/domain/models/user_profile.dart';
+import '../../settings/presentation/controllers/settings_providers.dart';
+import '../../settings/presentation/notification_action_button.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
 import 'home_recording_widgets.dart';
@@ -43,7 +49,14 @@ class HomeScreen extends ConsumerWidget {
     final LocalRecorderState? secondaryLocalState = ref
         .watch(secondaryLocalRecorderStateProvider)
         .value;
-    final String? displayName = dashboard.value?.metrics.displayName;
+    final UserProfile? profile = ref.watch(profileProvider).value;
+    final String? profileName = profile?.displayName?.trim();
+    final String? profileEmail = profile?.email.trim();
+    final String? displayName = profileName != null && profileName.isNotEmpty
+        ? profileName
+        : profileEmail != null && profileEmail.isNotEmpty
+        ? profileEmail.split('@').first
+        : null;
 
     return Scaffold(
       body: SafeArea(
@@ -57,13 +70,10 @@ class HomeScreen extends ConsumerWidget {
               subtitle: MaterialLocalizations.of(
                 context,
               ).formatFullDate(DateTime.now()),
-              actions: <Widget>[
-                IconButton(
-                  tooltip: l10n.notificationsTitle,
-                  onPressed: () => context.push(AppRoutes.notifications),
-                  icon: const Icon(Icons.notifications_outlined),
-                ),
-              ],
+              badge: dashboard.value == null
+                  ? null
+                  : SsPlanBadge(plan: dashboard.value!.entitlement.plan),
+              actions: <Widget>[const NotificationActionButton()],
             ),
             Expanded(
               child: SsAsyncRefreshFrame(
@@ -137,10 +147,6 @@ class _HomeDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: SsPlanBadge(plan: entitlement.plan),
-                ),
                 if (!online) ...<Widget>[
                   const SizedBox(height: SsSpacing.md),
                   SsInlineAlert(
@@ -263,9 +269,6 @@ class _HomeDashboard extends StatelessWidget {
         ? secondaryRemainingRaw
         : 0;
     final int limit = entitlement.limits.maxWatches;
-    final int remainingSlots = (limit - data.watches.length)
-        .clamp(0, limit)
-        .toInt();
     final Duration resetIn = local.resetsAt.difference(DateTime.now().toUtc());
     final String reset = formatResetCountdown(
       resetIn,
@@ -336,51 +339,21 @@ class _HomeDashboard extends StatelessWidget {
           unlimited: local.unlimited,
         ),
       ],
-      if (live != null && !hasLocalActivity && interrupted == null) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        SsCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      l10n.homeLiveCreatorTitle(live.creatorDisplayName),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  const SsLiveBadge(isLive: true),
-                ],
-              ),
-              const SizedBox(height: SsSpacing.sm),
-              Text(l10n.homeLocalSaveHint),
-              const SizedBox(height: SsSpacing.md),
-              SsPrimaryButton(
-                label: l10n.recordNowAction,
-                icon: Icons.fiber_manual_record_rounded,
-                onPressed: online
-                    ? () => context.push(AppRoutes.channelDetail(live.id))
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ],
       const SizedBox(height: SsSpacing.lg),
-      SsQuotaCard(
+      _HomeFreeQuotaCard(
         title: local.minutesRemaining > 0
             ? l10n.homeFreeMinutesTitle
             : l10n.homeMinutesExhaustedTitle,
-        value: l10n.homeFreeMinutesRemaining(
-          local.minutesRemaining,
-          local.dailyMinutes,
-        ),
-        subtitle:
-            '${l10n.homeResetAfter(reset)} · ${l10n.homeRewardsUsed(local.rewardsUsedToday, local.rewardsCapPerDay)}',
-        progress: local.dailyMinutes == 0
-            ? 0
-            : local.minutesRemaining / local.dailyMinutes,
+        minutesRemaining: local.minutesRemaining,
+        dailyMinutes: local.dailyMinutes,
+        resetLabel: l10n.homeResetAfter(reset),
+        rewardedLabel: l10n.homeRewardedMetricLabel,
+        rewardedValue: '${local.rewardsUsedToday}/${local.rewardsCapPerDay}',
+        slotLabel: l10n.homeSlotMetricLabel,
+        slotValue:
+            '${(primaryActive ? 1 : 0) + (secondaryActive ? 1 : 0)}/${local.maxConcurrentSessions}',
+        watchingLabel: l10n.homeWatchingMetricLabel,
+        watchingValue: '${data.watches.length}/$limit',
       ),
       if (fullyExhausted) ...<Widget>[
         const SizedBox(height: SsSpacing.md),
@@ -406,15 +379,7 @@ class _HomeDashboard extends StatelessWidget {
               : () => context.push(AppRoutes.channelDetail(live.id)),
         ),
       ],
-      const SizedBox(height: SsSpacing.lg),
-      _WatchingSummary(
-        count: data.watches.length,
-        limit: limit,
-        detail: remainingSlots > 0
-            ? l10n.watchCapacityRemaining(remainingSlots)
-            : l10n.watchCapacityFull,
-      ),
-      if (data.liveWatches.isNotEmpty) ...<Widget>[
+      if (data.watches.isNotEmpty) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsSectionHeader(
           title: l10n.channelsTitle,
@@ -422,47 +387,51 @@ class _HomeDashboard extends StatelessWidget {
           onAction: () => context.go(AppRoutes.channels),
         ),
         const SizedBox(height: SsSpacing.sm),
-        for (final WatchSummary watch in data.liveWatches.take(3))
+        if (data.liveWatches.isEmpty)
           Padding(
-            padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-            child: SsCreatorTile(
-              name: watch.creatorDisplayName,
-              handle: watch.creatorUsername,
-              isLive: true,
-              onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+            padding: const EdgeInsets.symmetric(vertical: SsSpacing.md),
+            child: Text(
+              l10n.homeNoLiveCreators,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
+          )
+        else
+          for (final WatchSummary watch in data.liveWatches.take(1))
+            Padding(
+              padding: const EdgeInsets.only(bottom: SsSpacing.sm),
+              child: _HomeLiveCreatorCard(
+                watch: watch,
+                onRecord: online && !hasLocalActivity && interrupted == null
+                    ? () => context.push(AppRoutes.channelDetail(watch.id))
+                    : null,
+                onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+              ),
+            ),
       ],
-      if (data.hasAhaMoment &&
+      if (data.watches.isNotEmpty &&
           local.minutesRemaining > 0 &&
           online &&
           interrupted == null &&
           !hasLocalActivity &&
           !fullyExhausted) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
-        SsCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(
-                l10n.homeAutoRecordUpsellTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: SsSpacing.sm),
-              Text(l10n.homeAutoRecordUpsellBody),
-              const SizedBox(height: SsSpacing.md),
-              SsSecondaryButton(
-                label: l10n.buyCloudHoursAction,
-                icon: Icons.cloud_outlined,
-                onPressed: () => showCloudHoursUpsellSheet(context),
-              ),
-            ],
-          ),
+        _HomeProUpsellCard(onTap: () => context.push(AppRoutes.usage)),
+      ],
+      if (data.watches.isNotEmpty &&
+          local.minutesRemaining > 0 &&
+          online &&
+          interrupted == null &&
+          !hasLocalActivity &&
+          !fullyExhausted &&
+          MediaQuery.textScalerOf(context).scale(1) < 1.8) ...<Widget>[
+        Consumer(
+          builder: (BuildContext context, WidgetRef ref, Widget? child) {
+            return ref.watch(adsServiceProvider).bannerFor(AdPlacement.home) ??
+                const SizedBox.shrink();
+          },
         ),
-        if (MediaQuery.textScalerOf(context).scale(1) < 1.8) ...<Widget>[
-          const SizedBox(height: SsSpacing.lg),
-          SsBannerAdSlot(label: l10n.advertisementLabel),
-        ],
       ],
     ];
   }
@@ -555,6 +524,7 @@ class _HomeDashboard extends StatelessWidget {
               name: watch.creatorDisplayName,
               handle: watch.creatorUsername,
               isLive: watch.isLive,
+              imageUrl: watch.creatorAvatarUrl,
               onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
             ),
           ),
@@ -563,34 +533,299 @@ class _HomeDashboard extends StatelessWidget {
   }
 }
 
-class _WatchingSummary extends StatelessWidget {
-  const _WatchingSummary({
-    required this.count,
-    required this.limit,
-    required this.detail,
+class _HomeFreeQuotaCard extends StatelessWidget {
+  const _HomeFreeQuotaCard({
+    required this.title,
+    required this.minutesRemaining,
+    required this.dailyMinutes,
+    required this.resetLabel,
+    required this.rewardedLabel,
+    required this.rewardedValue,
+    required this.slotLabel,
+    required this.slotValue,
+    required this.watchingLabel,
+    required this.watchingValue,
   });
 
-  final int count;
-  final int limit;
-  final String detail;
+  final String title;
+  final int minutesRemaining;
+  final int dailyMinutes;
+  final String resetLabel;
+  final String rewardedLabel;
+  final String rewardedValue;
+  final String slotLabel;
+  final String slotValue;
+  final String watchingLabel;
+  final String watchingValue;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final double progress = dailyMinutes == 0
+        ? 0
+        : (minutesRemaining / dailyMinutes).clamp(0, 1);
     return SsCard(
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            context.l10n.homeWatchingCapacity(count, limit),
-            style: Theme.of(context).textTheme.titleMedium,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runSpacing: SsSpacing.xs,
+            spacing: SsSpacing.md,
+            children: <Widget>[
+              Text(title, style: theme.textTheme.titleMedium),
+              Text(
+                resetLabel,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: SsSpacing.xs),
-          Text(detail),
           const SizedBox(height: SsSpacing.md),
-          LinearProgressIndicator(
-            value: limit == 0 ? 0 : (count / limit).clamp(0.0, 1.0).toDouble(),
+          Text.rich(
+            TextSpan(
+              children: <InlineSpan>[
+                TextSpan(
+                  text: '$minutesRemaining',
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                TextSpan(
+                  text: context.l10n.homeFreeMinutesRemainingTail(dailyMinutes),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: SsSpacing.md),
+          LinearProgressIndicator(value: progress),
+          const SizedBox(height: SsSpacing.md),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _HomeMetric(label: rewardedLabel, value: rewardedValue),
+              ),
+              const SizedBox(width: SsSpacing.sm),
+              Expanded(
+                child: _HomeMetric(label: slotLabel, value: slotValue),
+              ),
+              const SizedBox(width: SsSpacing.sm),
+              Expanded(
+                child: _HomeMetric(label: watchingLabel, value: watchingValue),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HomeMetric extends StatelessWidget {
+  const _HomeMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: SsRadii.field,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: SsSpacing.md,
+          vertical: SsSpacing.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Text(value, style: SsTypography.mono.copyWith(fontSize: 18)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeLiveCreatorCard extends StatelessWidget {
+  const _HomeLiveCreatorCard({
+    required this.watch,
+    required this.onRecord,
+    required this.onTap,
+  });
+
+  final WatchSummary watch;
+  final VoidCallback? onRecord;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String handle = watch.creatorUsername.startsWith('@')
+        ? watch.creatorUsername
+        : '@${watch.creatorUsername}';
+    final DateTime? liveSince = watch.lastLiveAt?.toLocal();
+    final String subtitle = liveSince == null
+        ? handle
+        : '$handle · ${context.l10n.homeLiveSinceLabel(MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(liveSince)))}';
+
+    return SsCard(
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                SsAvatar(
+                  label: watch.creatorDisplayName,
+                  imageUrl: watch.creatorAvatarUrl,
+                  radius: 24,
+                  isLive: true,
+                ),
+                const SizedBox(width: SsSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        watch.creatorDisplayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: SsSpacing.xs),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: SsSpacing.sm),
+                const SsLiveBadge(isLive: true),
+              ],
+            ),
+            const SizedBox(height: SsSpacing.md),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final Widget storage = Row(
+                  children: <Widget>[
+                    Icon(
+                      Icons.smartphone_rounded,
+                      size: 20,
+                      color: context.semanticColors.local,
+                    ),
+                    const SizedBox(width: SsSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        context.l10n.homeLocalStorageLabel,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: context.semanticColors.local,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+                final Widget recordButton = FilledButton.icon(
+                  onPressed: onRecord,
+                  icon: const Icon(Icons.radio_button_checked_rounded),
+                  label: Text(context.l10n.recordNowAction),
+                );
+                final bool stackActions =
+                    MediaQuery.textScalerOf(context).scale(1) >= 1.4 ||
+                    constraints.maxWidth < 240;
+                if (stackActions) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      storage,
+                      const SizedBox(height: SsSpacing.sm),
+                      recordButton,
+                    ],
+                  );
+                }
+                return Row(
+                  children: <Widget>[
+                    Expanded(child: storage),
+                    const SizedBox(width: SsSpacing.sm),
+                    recordButton,
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeProUpsellCard extends StatelessWidget {
+  const _HomeProUpsellCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: SsRadii.card,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(SsSpacing.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Icons.bolt_rounded, color: theme.colorScheme.primary),
+            const SizedBox(width: SsSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    context.l10n.homeAutoRecordUpsellTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: SsSpacing.xs),
+                  Text(
+                    context.l10n.homeAutoRecordUpsellBody,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: SsSpacing.sm),
+                  TextButton(
+                    onPressed: onTap,
+                    child: Text(context.l10n.viewProAction),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

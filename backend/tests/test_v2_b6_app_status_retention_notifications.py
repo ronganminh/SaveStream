@@ -93,6 +93,8 @@ def test_b6_app_status_and_recording_response_use_server_config() -> None:
         assert response.engine == "cloud"
         assert response.minutes_charged == 4
         assert response.expires_at == expires_at(created, 30)
+        assert response.playback_ready is False
+        assert recording_response(recording, artifact_ready=True).playback_ready is True
 
     asyncio.run(run())
 
@@ -100,9 +102,7 @@ def test_b6_app_status_and_recording_response_use_server_config() -> None:
 def test_b6_expiry_scan_uses_30_and_7_day_retention_once(tmp_path) -> None:
     async def run() -> None:
         settings = replace(
-            identity_settings(
-                f"sqlite+aiosqlite:///{tmp_path / 'b6-expiry.db'}"
-            ),
+            identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b6-expiry.db'}"),
             recording_retention_days=30,
             recording_retention_days_free=7,
             recording_expiring_window_hours=24,
@@ -193,16 +193,13 @@ def test_b6_expiry_scan_uses_30_and_7_day_retention_once(tmp_path) -> None:
                     (
                         await session.scalars(
                             select(UserNotification).where(
-                                UserNotification.kind
-                                == "recording_expiring"
+                                UserNotification.kind == "recording_expiring"
                             )
                         )
                     ).all()
                 )
                 assert len(notifications) == 2
-                assert {
-                    item.resource_id for item in notifications
-                } == {
+                assert {item.resource_id for item in notifications} == {
                     str(paid_recording.id),
                     str(free_recording.id),
                 }
@@ -214,9 +211,7 @@ def test_b6_expiry_scan_uses_30_and_7_day_retention_once(tmp_path) -> None:
 
 def test_b6_balance_notifications_are_idempotent(tmp_path) -> None:
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'b6-balance.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'b6-balance.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:

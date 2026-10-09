@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +12,9 @@ import '../../entitlement/domain/models/entitlement.dart';
 import '../../local_recordings/domain/models/local_recording_models.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import 'controllers/recording_library_controller.dart';
+import 'models/recording_library_item.dart';
+import 'recording_detail_components.dart';
+import 'recording_thumbnail.dart';
 import 'recording_ui_helpers.dart';
 
 /// L06 — Local recording detail.
@@ -26,7 +30,7 @@ class LocalRecordingDetailScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.recordingDetailTitle)),
+      appBar: AppBar(title: const SizedBox.shrink()),
       body: SafeArea(
         child: recording.when(
           loading: () => const _LocalDetailSkeleton(),
@@ -67,99 +71,143 @@ class _LocalDetailBody extends ConsumerWidget {
       builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
         final bool sameDevice = snapshot.data == recording.deviceId;
         final bool available = recording.fileAvailable;
+        final bool canDelete =
+            sameDevice || recording.sizeBytes == 0 || !available;
+        final VoidCallback? openPlayer = sameDevice && available
+            ? () {
+                final Uri uri =
+                    Uri.parse(AppRoutes.recordingPlayer(recording.id)).replace(
+                      queryParameters: <String, String>{
+                        'source': 'local',
+                        'title': recording.creatorDisplayName,
+                        'duration': recording.recordedSeconds.toString(),
+                        'started': recording.startedAt.toIso8601String(),
+                      },
+                    );
+                context.push(uri.toString());
+              }
+            : null;
+
+        Future<void> deleteRecording() async {
+          final bool? confirmed = await SsConfirmDialog.show(
+            context,
+            title: context.l10n.deleteRecordingTitle,
+            message: context.l10n.deleteRecordingMessage,
+            cancelLabel: context.l10n.cancelAction,
+            confirmLabel: context.l10n.deleteRecordingAction,
+          );
+          if (confirmed != true || !context.mounted) return;
+          try {
+            await ref
+                .read(localRecordingRepositoryProvider)
+                .delete(recording.id, deviceId: recording.deviceId);
+            ref.invalidate(recordingLibraryProvider);
+            if (context.mounted) context.pop();
+          } on Object catch (error) {
+            if (context.mounted) SsSnackbar.show(context, error.toString());
+          }
+        }
+
         return ListView(
-          padding: const EdgeInsets.all(SsSpacing.lg),
+          scrollCacheExtent: const ScrollCacheExtent.pixels(800),
+          padding: const EdgeInsets.fromLTRB(
+            SsSpacing.lg,
+            SsSpacing.xs,
+            SsSpacing.lg,
+            SsSpacing.xxl,
+          ),
           children: <Widget>[
-            SsCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          recording.creatorDisplayName,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      SsLocationChip(
-                        engine: Engine.local,
-                        label: context.l10n.localLabel,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: SsSpacing.sm),
-                  Text(recording.creatorHandle),
-                  const SizedBox(height: SsSpacing.md),
-                  Text(recording.deviceName),
-                  const SizedBox(height: SsSpacing.sm),
-                  Text(formatDuration(recording.recordedSeconds)),
-                  Text(formatBytes(recording.sizeBytes)),
-                ],
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: RecordingThumbnail(
+                recordingId: recording.id,
+                storage: RecordingLibraryStorage.local,
+                filePath: recording.filePath,
+                enabled: sameDevice && available,
+                borderRadius: SsRadii.lg,
+                onTap: openPlayer,
               ),
             ),
-            if (!sameDevice) ...<Widget>[
-              const SizedBox(height: SsSpacing.md),
+            const SizedBox(height: SsSpacing.md),
+            RecordingDetailHeading(
+              name: recording.creatorDisplayName,
+              startedAt: recording.startedAt,
+              durationSeconds: recording.recordedSeconds,
+              sizeBytes: recording.sizeBytes,
+              status: recording.status,
+              engine: Engine.local,
+            ),
+            const SizedBox(height: SsSpacing.md),
+            if (sameDevice && available)
+              SsInlineAlert(
+                title: context.l10n.recordingLocalOnlyTitle,
+                message: context.l10n.recordingLocalOnlyBody(
+                  recording.deviceName,
+                ),
+                icon: Icons.smartphone_rounded,
+              )
+            else if (!sameDevice)
               SsInlineAlert(
                 title: context.l10n.recordingNotFoundTitle,
                 message: context.l10n.recordingCrossDeviceUnavailable,
                 tone: SsInlineAlertTone.warning,
-              ),
-            ] else if (!available) ...<Widget>[
-              const SizedBox(height: SsSpacing.md),
+              )
+            else
               SsInlineAlert(
                 title: context.l10n.recordingNotFoundTitle,
                 message: context.l10n.recordingLocalFileMissing,
                 tone: SsInlineAlertTone.warning,
               ),
-            ],
-            if (sameDevice && available) ...<Widget>[
-              const SizedBox(height: SsSpacing.lg),
-              SsPrimaryButton(
-                label: context.l10n.playRecordingAction,
-                icon: Icons.play_arrow_rounded,
-                onPressed: () {
-                  final Uri uri =
-                      Uri.parse(
-                        AppRoutes.recordingPlayer(recording.id),
-                      ).replace(
-                        queryParameters: <String, String>{
-                          'source': 'local',
-                          'title': recording.creatorDisplayName,
-                          'duration': recording.recordedSeconds.toString(),
-                        },
-                      );
-                  context.push(uri.toString());
-                },
-              ),
-              const SizedBox(height: SsSpacing.sm),
-              SsSecondaryButton(
-                label: context.l10n.shareRecordingAction,
-                icon: Icons.ios_share_rounded,
-                onPressed: recording.filePath == null
-                    ? null
-                    : () => ref
-                          .read(shareServiceProvider)
-                          .shareFile(
-                            filePath: recording.filePath!,
-                            displayName: recording.creatorDisplayName,
-                          ),
-              ),
-              const SizedBox(height: SsSpacing.sm),
-              TextButton.icon(
-                onPressed: () async {
-                  await ref
-                      .read(localRecordingRepositoryProvider)
-                      .delete(recording.id, deviceId: recording.deviceId);
-                  ref.invalidate(
-                    localRecordingLibraryDetailProvider(recording.id),
-                  );
-                  ref.invalidate(recordingLibraryProvider);
-                },
-                icon: const Icon(Icons.delete_outline_rounded),
-                label: Text(context.l10n.deleteLocalRecordingAction),
-              ),
-            ],
+            const SizedBox(height: SsSpacing.md),
+            RecordingDetailInfoCard(
+              rows: <RecordingDetailInfoRow>[
+                RecordingDetailInfoRow(
+                  context.l10n.recordingStorageLabel,
+                  context.l10n.recordingLocalStorageValue(recording.deviceName),
+                ),
+                RecordingDetailInfoRow(
+                  context.l10n.recordingQualityLabel,
+                  context.l10n.recordingQualitySourceValue,
+                ),
+                RecordingDetailInfoRow(
+                  context.l10n.recordingSizeLabel,
+                  formatBytes(recording.sizeBytes),
+                ),
+                RecordingDetailInfoRow(
+                  context.l10n.recordingStartedByLabel,
+                  context.l10n.recordingStartedManuallyValue,
+                ),
+              ],
+            ),
+            const SizedBox(height: SsSpacing.md),
+            RecordingDetailActions(
+              actions: <RecordingDetailActionData>[
+                RecordingDetailActionData(
+                  label: context.l10n.playRecordingAction,
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: openPlayer,
+                ),
+                RecordingDetailActionData(
+                  label: context.l10n.shareRecordingAction,
+                  icon: Icons.ios_share_rounded,
+                  onPressed:
+                      sameDevice && available && recording.filePath != null
+                      ? () => ref
+                            .read(shareServiceProvider)
+                            .shareFile(
+                              filePath: recording.filePath!,
+                              displayName: recording.creatorDisplayName,
+                            )
+                      : null,
+                ),
+                RecordingDetailActionData(
+                  label: context.l10n.deleteAction,
+                  icon: Icons.delete_outline_rounded,
+                  destructive: true,
+                  onPressed: canDelete ? deleteRecording : null,
+                ),
+              ],
+            ),
           ],
         );
       },

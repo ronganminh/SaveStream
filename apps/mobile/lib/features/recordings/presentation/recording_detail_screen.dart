@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,11 +12,15 @@ import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_file_providers.dart';
 import 'controllers/recording_providers.dart';
+import 'models/recording_library_item.dart';
+import 'recording_detail_components.dart';
+import 'recording_thumbnail.dart';
 import 'recording_ui_helpers.dart';
 
 class RecordingDetailScreen extends ConsumerStatefulWidget {
@@ -123,9 +128,12 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
       return;
     }
 
-    await _runMutation(
-      () => ref.read(recordingControllerProvider).delete(recording.id),
-    );
+    await _runMutation(() async {
+      await ref.read(recordingControllerProvider).delete(recording.id);
+      if (recording.engine == Engine.cloud) {
+        await ref.read(cloudRecordingFileServiceProvider).delete(recording.id);
+      }
+    });
     if (_mutationError == null && mounted) {
       context.go(AppRoutes.recordings);
     }
@@ -143,7 +151,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
         ?.cloudMinutesAvailable;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.recordingDetailTitle)),
+      appBar: AppBar(),
       body: SafeArea(
         child: SsAsyncRefreshFrame(
           isRefreshing: recording.isRefreshing,
@@ -173,6 +181,17 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                   value.engine == Engine.cloud &&
                   value.expiresAt != null &&
                   !value.expiresAt!.isAfter(now);
+              final bool isTerminalCloud =
+                  value.engine == Engine.cloud &&
+                  switch (value.status) {
+                    RecordingStatus.completed ||
+                    RecordingStatus.partial ||
+                    RecordingStatus.recovered ||
+                    RecordingStatus.stopped => true,
+                    _ => false,
+                  };
+              final bool missingCloudArtifact =
+                  isTerminalCloud && !value.artifactReady && !cloudExpired;
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -183,6 +202,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                   );
                 },
                 child: ListView(
+                  scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(
                     SsSpacing.lg,
@@ -191,7 +211,40 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     SsSpacing.xxl,
                   ),
                   children: <Widget>[
-                    _CreatorHeader(recording: value),
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: RecordingThumbnail(
+                        recordingId: value.id,
+                        storage: RecordingLibraryStorage.cloud,
+                        enabled: value.artifactReady,
+                        borderRadius: SsRadii.lg,
+                        onTap: () {
+                          final Uri uri =
+                              Uri.parse(
+                                AppRoutes.recordingPlayer(value.id),
+                              ).replace(
+                                queryParameters: <String, String>{
+                                  'source': 'cloud',
+                                  'title': value.creatorDisplayName,
+                                  'duration': value.durationSeconds.toString(),
+                                  if (value.startedAt != null)
+                                    'started': value.startedAt!
+                                        .toIso8601String(),
+                                },
+                              );
+                          context.push(uri.toString());
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: SsSpacing.lg),
+                    RecordingDetailHeading(
+                      name: value.creatorDisplayName,
+                      startedAt: value.startedAt,
+                      durationSeconds: value.durationSeconds,
+                      sizeBytes: value.sizeBytes ?? value.bytesRecorded ?? 0,
+                      status: value.status,
+                      engine: value.engine,
+                    ),
                     if (value.engine == Engine.cloud &&
                         value.expiresAt != null) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
@@ -200,13 +253,15 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                         now: now,
                       ),
                     ],
-                    const SizedBox(height: SsSpacing.lg),
-                    value.engine == Engine.cloud
-                        ? CloudRecordingLifecycleCard(
-                            recording: value,
-                            cloudMinutesAvailable: cloudMinutesAvailable,
-                          )
-                        : _LifecycleCard(recording: value),
+                    if (!isTerminalCloud) ...<Widget>[
+                      const SizedBox(height: SsSpacing.lg),
+                      value.engine == Engine.cloud
+                          ? CloudRecordingLifecycleCard(
+                              recording: value,
+                              cloudMinutesAvailable: cloudMinutesAvailable,
+                            )
+                          : _LifecycleCard(recording: value),
+                    ],
                     if (value.status == RecordingStatus.partial) ...<Widget>[
                       const SizedBox(height: SsSpacing.md),
                       SsInlineAlert(
@@ -233,22 +288,23 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                     const SizedBox(height: SsSpacing.lg),
                     _MetadataCard(recording: value),
                     const SizedBox(height: SsSpacing.lg),
-                    if (!cloudExpired)
-                      _ArtifactCard(recording: value)
-                    else
-                      SsInlineAlert(
-                        title: l10n.recordingNotFoundTitle,
-                        message: l10n.cloudRecordingExpiredBody,
-                        tone: SsInlineAlertTone.warning,
-                      ),
-                    const SizedBox(height: SsSpacing.lg),
-                    _ActionsCard(
+                    _ArtifactCard(
                       recording: value,
+                      cloudExpired: cloudExpired,
+                      missingTerminalArtifact: missingCloudArtifact,
                       isMutating: _isMutating,
-                      onStop: () => _stop(value),
-                      onRetry: () => _retry(value),
                       onDelete: () => _delete(value),
                     ),
+                    if (!isTerminalCloud) ...<Widget>[
+                      const SizedBox(height: SsSpacing.lg),
+                      _ActionsCard(
+                        recording: value,
+                        isMutating: _isMutating,
+                        onStop: () => _stop(value),
+                        onRetry: () => _retry(value),
+                        onDelete: () => _delete(value),
+                      ),
+                    ],
                   ],
                 ),
               );
@@ -275,69 +331,14 @@ class _CloudRetentionNotice extends StatelessWidget {
       context,
     ).formatShortDate(expiresAt.toLocal());
 
+    if (!expired && !expiringSoon) return const SizedBox.shrink();
     return SsInlineAlert(
-      title: context.l10n.cloudRecordingExpiresValue(date),
+      icon: Icons.schedule_rounded,
+      title: context.l10n.recordingCloudExpiringTitle,
       message: expired
           ? context.l10n.cloudRecordingExpiredBody
-          : expiringSoon
-          ? context.l10n.cloudRecordingExpiringSoon
-          : null,
-      tone: expired || expiringSoon
-          ? SsInlineAlertTone.warning
-          : SsInlineAlertTone.info,
-    );
-  }
-}
-
-class _CreatorHeader extends StatelessWidget {
-  const _CreatorHeader({required this.recording});
-
-  final RecordingSummary recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SsCard(
-      child: Row(
-        children: <Widget>[
-          SsAvatar(label: recording.creatorDisplayName, radius: 28),
-          const SizedBox(width: SsSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  recording.creatorDisplayName,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: SsSpacing.xs),
-                Text(
-                  recording.creatorUsername,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: SsSpacing.sm),
-                Text(
-                  recording.id,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SsStatusChip(
-            label: recordingStatusLabel(l10n, recording.status),
-            tone: recordingStatusTone(recording.status),
-            icon: recording.status == RecordingStatus.recording
-                ? Icons.fiber_manual_record_rounded
-                : null,
-          ),
-        ],
-      ),
+          : context.l10n.recordingCloudExpiringBody(date),
+      tone: SsInlineAlertTone.warning,
     );
   }
 }
@@ -636,42 +637,65 @@ class _MetadataCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final DateTime now = DateTime.now();
+    final DateTime? expiresAt = recording.expiresAt;
+    final int daysLeft = expiresAt == null
+        ? 0
+        : (expiresAt.difference(now).inHours / 24).ceil().clamp(0, 999);
+    final String? retention = expiresAt == null
+        ? null
+        : daysLeft <= 1
+        ? l10n.recordingCloudRetentionTomorrow(
+            MaterialLocalizations.of(context).formatShortDate(expiresAt),
+          )
+        : l10n.recordingCloudRetentionValue(
+            MaterialLocalizations.of(context).formatShortDate(expiresAt),
+            daysLeft,
+          );
 
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.recordingMetadataTitle,
-            style: Theme.of(context).textTheme.titleMedium,
+    return RecordingDetailInfoCard(
+      rows: <RecordingDetailInfoRow>[
+        RecordingDetailInfoRow(
+          l10n.recordingStorageLabel,
+          recording.engine == Engine.cloud
+              ? l10n.recordingCloudStorageValue
+              : l10n.localLabel,
+        ),
+        if (retention != null)
+          RecordingDetailInfoRow(
+            l10n.recordingCloudRetentionLabel,
+            retention,
+            emphasize: daysLeft <= 3,
           ),
-          const SizedBox(height: SsSpacing.md),
-          _DetailRow(
-            label: l10n.recordingStartedLabel,
-            value: recordingTimestamp(context, recording.startedAt),
-          ),
-          _DetailRow(
-            label: l10n.recordingDurationLabel,
-            value: formatDuration(recording.durationSeconds),
-          ),
-          _DetailRow(
-            label: l10n.recordingSizeLabel,
-            value: formatBytes(recording.sizeBytes ?? recording.bytesRecorded),
-          ),
-          _DetailRow(
-            label: l10n.recordingCostLabel,
-            value: formatCredits(recording.costCredits),
-          ),
-        ],
-      ),
+        RecordingDetailInfoRow(
+          l10n.recordingQualityLabel,
+          l10n.recordingQualitySourceValue,
+        ),
+        RecordingDetailInfoRow(
+          l10n.recordingStartedByLabel,
+          recording.watchId == null
+              ? l10n.recordingStartedManuallyValue
+              : l10n.recordingStartedAutomaticallyValue,
+        ),
+      ],
     );
   }
 }
 
 class _ArtifactCard extends ConsumerStatefulWidget {
-  const _ArtifactCard({required this.recording});
+  const _ArtifactCard({
+    required this.recording,
+    required this.cloudExpired,
+    required this.missingTerminalArtifact,
+    required this.isMutating,
+    required this.onDelete,
+  });
 
   final RecordingSummary recording;
+  final bool cloudExpired;
+  final bool missingTerminalArtifact;
+  final bool isMutating;
+  final VoidCallback onDelete;
 
   @override
   ConsumerState<_ArtifactCard> createState() => _ArtifactCardState();
@@ -685,11 +709,11 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   bool _isSharing = false;
   bool _checkedExistingDownload = false;
 
-  Future<void> _loadExistingDownload(RecordingArtifactSummary artifact) async {
+  Future<void> _loadExistingDownload(RecordingArtifactSummary? artifact) async {
     final service = ref.read(cloudRecordingFileServiceProvider);
     final File? file = await service.existingFile(
       widget.recording.id,
-      expectedSizeBytes: artifact.sizeBytes,
+      expectedSizeBytes: artifact?.sizeBytes,
     );
     final int existingBytes =
         file?.lengthSync() ?? await service.existingBytes(widget.recording.id);
@@ -697,7 +721,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
     setState(() {
       _downloadedFile = file;
       _downloadedBytes = existingBytes;
-      _downloadTotalBytes = artifact.sizeBytes;
+      _downloadTotalBytes = artifact?.sizeBytes;
     });
   }
 
@@ -738,15 +762,24 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
     }
   }
 
-  Future<void> _shareArtifact(RecordingArtifactSummary artifact) async {
+  Future<void> _shareArtifact(RecordingArtifactSummary? artifact) async {
     setState(() => _isSharing = true);
     try {
-      await ref
-          .read(cloudRecordingShareCoordinatorProvider)
-          .share(
-            artifactId: artifact.id,
-            displayName: widget.recording.creatorDisplayName,
-          );
+      if (_downloadedFile case final File file) {
+        await ref
+            .read(shareServiceProvider)
+            .shareFile(
+              filePath: file.path,
+              displayName: widget.recording.creatorDisplayName,
+            );
+      } else if (artifact != null) {
+        await ref
+            .read(cloudRecordingShareCoordinatorProvider)
+            .share(
+              artifactId: artifact.id,
+              displayName: widget.recording.creatorDisplayName,
+            );
+      }
     } on Object {
       if (mounted) {
         SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
@@ -758,20 +791,6 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
     }
   }
 
-  Future<void> _deleteCloudAndDownloaded() async {
-    await ref.read(recordingControllerProvider).delete(widget.recording.id);
-    await ref
-        .read(cloudRecordingFileServiceProvider)
-        .delete(widget.recording.id);
-    if (!mounted) return;
-    setState(() {
-      _downloadedFile = null;
-      _downloadedBytes = 0;
-      _downloadTotalBytes = null;
-    });
-    context.go(AppRoutes.recordings);
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -779,144 +798,158 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
       recordingArtifactsProvider(widget.recording.id),
     );
 
-    return SsCard(
-      child: artifacts.when(
-        loading: () => const SsSkeleton(height: 96, radius: SsRadii.md),
-        error: (Object error, StackTrace stackTrace) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Text(
-              l10n.recordingArtifactTitle,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: SsSpacing.sm),
-            SsInlineAsyncError(
-              error: error,
-              onRetry: () => ref.invalidate(
-                recordingArtifactsProvider(widget.recording.id),
-              ),
-            ),
-          ],
-        ),
-        data: (List<RecordingArtifactSummary> items) {
-          final RecordingArtifactSummary? artifact = items.isEmpty
-              ? null
-              : items.first;
-          if (artifact != null && !_checkedExistingDownload) {
-            _checkedExistingDownload = true;
-            unawaited(_loadExistingDownload(artifact));
-          }
-          final int totalBytes =
-              _downloadTotalBytes ?? artifact?.sizeBytes ?? 0;
-          final double? progress = totalBytes <= 0
-              ? null
-              : (_downloadedBytes / totalBytes).clamp(0.0, 1.0);
+    return artifacts.when(
+      loading: () => const SsSkeleton(height: 96, radius: SsRadii.md),
+      error: (Object error, StackTrace stackTrace) => SsInlineAsyncError(
+        error: error,
+        onRetry: () =>
+            ref.invalidate(recordingArtifactsProvider(widget.recording.id)),
+      ),
+      data: (List<RecordingArtifactSummary> items) {
+        final RecordingArtifactSummary? artifact = items.isEmpty
+            ? null
+            : items.first;
+        if (!_checkedExistingDownload) {
+          _checkedExistingDownload = true;
+          unawaited(_loadExistingDownload(artifact));
+        }
+        final int totalBytes = _downloadTotalBytes ?? artifact?.sizeBytes ?? 0;
+        final double? progress = totalBytes <= 0
+            ? null
+            : (_downloadedBytes / totalBytes).clamp(0.0, 1.0);
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Text(
-                l10n.recordingArtifactTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: SsSpacing.md),
-              Wrap(
-                spacing: SsSpacing.sm,
-                runSpacing: SsSpacing.sm,
-                children: <Widget>[
-                  SsStatusChip(
-                    label: artifact != null
-                        ? l10n.artifactReadyLabel
-                        : l10n.artifactPendingLabel,
-                    tone: artifact != null
-                        ? SsStatusTone.success
-                        : SsStatusTone.neutral,
-                    icon: Icons.inventory_2_outlined,
-                  ),
-                  if (artifact != null)
-                    SsStatusChip(
-                      label: formatBytes(artifact.sizeBytes),
-                      tone: SsStatusTone.neutral,
-                      icon: Icons.data_usage_rounded,
-                    ),
-                ],
-              ),
-              if (artifact != null) ...<Widget>[
-                const SizedBox(height: SsSpacing.lg),
+        if (artifact == null && _downloadedFile == null) {
+          if (widget.missingTerminalArtifact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SsInlineAlert(
+                  icon: Icons.error_outline_rounded,
+                  title: l10n.recordingArtifactMissingTitle,
+                  message: l10n.recordingArtifactMissingBody,
+                  tone: SsInlineAlertTone.error,
+                ),
+                const SizedBox(height: SsSpacing.sm),
                 Row(
                   children: <Widget>[
                     Expanded(
-                      child: SsSecondaryButton(
-                        label: l10n.playRecordingAction,
-                        icon: Icons.play_arrow_rounded,
-                        onPressed: () {
-                          final Uri uri =
-                              Uri.parse(
-                                AppRoutes.recordingPlayer(widget.recording.id),
-                              ).replace(
-                                queryParameters: <String, String>{
-                                  'source': 'cloud',
-                                  'title': widget.recording.creatorDisplayName,
-                                  'duration': widget.recording.durationSeconds
-                                      .toString(),
-                                },
-                              );
-                          context.push(uri.toString());
-                        },
+                      child: OutlinedButton.icon(
+                        onPressed: () => ref.invalidate(
+                          recordingArtifactsProvider(widget.recording.id),
+                        ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: Text(l10n.retryAction),
                       ),
                     ),
                     const SizedBox(width: SsSpacing.sm),
                     Expanded(
-                      child: SsSecondaryButton(
-                        label: _downloadedFile != null
-                            ? l10n.recordingDownloadedLabel
-                            : l10n.downloadRecordingAction,
-                        icon: _downloadedFile != null
-                            ? Icons.download_done_rounded
-                            : Icons.download_rounded,
-                        onPressed: _isDownloading || _downloadedFile != null
-                            ? null
-                            : () => _downloadArtifact(artifact),
+                      child: OutlinedButton.icon(
+                        onPressed: widget.isMutating ? null : widget.onDelete,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        label: Text(l10n.deleteRecordingAction),
                       ),
                     ),
                   ],
                 ),
-                if (_isDownloading ||
-                    _downloadedFile != null ||
-                    _downloadedBytes > 0) ...<Widget>[
-                  const SizedBox(height: SsSpacing.sm),
-                  LinearProgressIndicator(
-                    value: _downloadedFile != null ? 1 : progress,
-                  ),
-                  const SizedBox(height: SsSpacing.xs),
-                  Text(
-                    _downloadedFile != null
-                        ? l10n.recordingDownloadedBody
-                        : l10n.recordingDownloadingBytes(
-                            formatBytes(_downloadedBytes),
-                            formatBytes(totalBytes),
-                          ),
-                  ),
-                ],
-                const SizedBox(height: SsSpacing.sm),
-                SsSecondaryButton(
+              ],
+            );
+          }
+          return SsInlineAlert(
+            title: widget.cloudExpired
+                ? l10n.recordingNotFoundTitle
+                : l10n.artifactPendingLabel,
+            message: widget.cloudExpired
+                ? l10n.cloudRecordingExpiredBody
+                : l10n.recordingPlaybackNotReadyBody,
+            tone: widget.cloudExpired
+                ? SsInlineAlertTone.warning
+                : SsInlineAlertTone.info,
+          );
+        }
+
+        void openPlayer() {
+          final File? local = _downloadedFile;
+          final Uri uri =
+              Uri.parse(AppRoutes.recordingPlayer(widget.recording.id)).replace(
+                queryParameters: <String, String>{
+                  'source': local == null ? 'cloud' : 'local',
+                  'title': widget.recording.creatorDisplayName,
+                  'duration': widget.recording.durationSeconds.toString(),
+                  if (widget.recording.startedAt != null)
+                    'started': widget.recording.startedAt!.toIso8601String(),
+                  if (local != null) 'path': local.path,
+                },
+              );
+          context.push(uri.toString());
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (_isDownloading || _downloadedBytes > 0) ...<Widget>[
+              SsInlineAlert(
+                icon: _downloadedFile == null
+                    ? Icons.downloading_rounded
+                    : Icons.download_done_rounded,
+                title: _downloadedFile == null
+                    ? l10n.downloadRecordingAction
+                    : l10n.recordingDownloadedTitle,
+                message: _downloadedFile == null
+                    ? l10n.recordingDownloadingBytes(
+                        formatBytes(_downloadedBytes),
+                        formatBytes(totalBytes),
+                      )
+                    : l10n.recordingDownloadedBody,
+              ),
+              const SizedBox(height: SsSpacing.sm),
+              LinearProgressIndicator(
+                value: _downloadedFile != null ? 1 : progress,
+              ),
+              const SizedBox(height: SsSpacing.lg),
+            ],
+            RecordingDetailActions(
+              actions: <RecordingDetailActionData>[
+                RecordingDetailActionData(
+                  label: l10n.playRecordingAction,
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: openPlayer,
+                ),
+                RecordingDetailActionData(
                   label: l10n.shareRecordingAction,
                   icon: Icons.ios_share_rounded,
-                  onPressed: _isSharing ? null : () => _shareArtifact(artifact),
+                  loading: _isSharing,
+                  onPressed: () => _shareArtifact(artifact),
                 ),
-                if (_downloadedFile != null) ...<Widget>[
-                  const SizedBox(height: SsSpacing.sm),
-                  TextButton.icon(
-                    onPressed: _deleteCloudAndDownloaded,
-                    icon: const Icon(Icons.delete_forever_outlined),
-                    label: Text(l10n.deleteCloudAndDownloadedAction),
-                  ),
-                ],
+                RecordingDetailActionData(
+                  label: _downloadedFile == null
+                      ? l10n.recordingDownloadDeviceAction
+                      : l10n.recordingDownloadedLabel,
+                  icon: _downloadedFile == null
+                      ? Icons.download_rounded
+                      : Icons.download_done_rounded,
+                  loading: _isDownloading,
+                  onPressed:
+                      _downloadedFile == null &&
+                          artifact != null &&
+                          !widget.cloudExpired
+                      ? () => _downloadArtifact(artifact)
+                      : null,
+                ),
+                RecordingDetailActionData(
+                  label: l10n.deleteRecordingAction,
+                  icon: Icons.delete_outline_rounded,
+                  destructive: true,
+                  loading: widget.isMutating,
+                  onPressed: widget.onDelete,
+                ),
               ],
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1007,42 +1040,6 @@ class _ActionsCard extends StatelessWidget {
             if (index < actions.length - 1)
               const SizedBox(height: SsSpacing.sm),
           ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: SsSpacing.sm),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: colors.onSurfaceVariant),
-            ),
-          ),
-          const SizedBox(width: SsSpacing.md),
-          Flexible(
-            child: Text(
-              value,
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
         ],
       ),
     );

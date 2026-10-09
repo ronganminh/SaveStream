@@ -27,6 +27,23 @@ x-app-env: &app-env
   SAVESTREAM_SMTP_STARTTLS: "true"
   SAVESTREAM_EMAIL_FROM: SaveStream <no-reply@savestream.online>
 
+  SAVESTREAM_PUSH_PROVIDER: ${SAVESTREAM_PUSH_PROVIDER:-noop}
+  SAVESTREAM_PUSH_FCM_SERVICE_ACCOUNT_JSON_FILE: /run/secrets/push_fcm_service_account_json
+
+  # Android launches first. `google_play` enables Play purchases without
+  # requiring unused App Store credentials; keep `disabled` until the service
+  # account has been granted access in Play Console.
+  SAVESTREAM_STORE_PURCHASE_PROVIDER: ${SAVESTREAM_STORE_PURCHASE_PROVIDER:-disabled}
+  SAVESTREAM_GOOGLE_PLAY_PACKAGE_NAME: ${SAVESTREAM_GOOGLE_PLAY_PACKAGE_NAME:-com.savestream.app}
+  SAVESTREAM_GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_FILE: /run/secrets/google_play_service_account_json
+  SAVESTREAM_GOOGLE_PLAY_RTDN_AUDIENCE: ${SAVESTREAM_GOOGLE_PLAY_RTDN_AUDIENCE:-https://api.savestream.online/v1/webhooks/google-play}
+  SAVESTREAM_GOOGLE_PLAY_RTDN_SERVICE_ACCOUNT_EMAIL: ${SAVESTREAM_GOOGLE_PLAY_RTDN_SERVICE_ACCOUNT_EMAIL:-}
+
+  # AdMob SSV uses Google's public verification keys, so no shared secret is
+  # stored in the deployment.
+  SAVESTREAM_REWARD_PROVIDER: ${SAVESTREAM_REWARD_PROVIDER:-admob}
+  SAVESTREAM_ADMOB_SSV_KEYS_URL: https://www.gstatic.com/admob/reward/verifier-keys.json
+
   # "disabled" launches before Lemon Squeezy Live is approved; the API then
   # rejects checkout/webhooks and the Live store/variant IDs may stay empty.
   SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:-lemonsqueezy}
@@ -51,6 +68,8 @@ x-app-env: &app-env
   SAVESTREAM_QUOTA_MAX_RECORDINGS_PER_DAY: "100"
   SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER: "2"
   SAVESTREAM_WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER: "2"
+  # Check offline creators every ~20s so LIVE transitions are visible promptly.
+  SAVESTREAM_WATCH_OFFLINE_CHECK_SECONDS: "20"
 
   SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
   # Recordings run on the dedicated `recorder` service (see below).
@@ -76,6 +95,8 @@ x-app-secrets: &app-secrets
   - payment_api_key
   - payment_webhook_secret
   - metrics_token
+  - push_fcm_service_account_json
+  - google_play_service_account_json
 
 services:
   api:
@@ -263,3 +284,7 @@ secrets:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/payment_webhook_secret
   metrics_token:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/metrics_token
+  push_fcm_service_account_json:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/push_fcm_service_account_json
+  google_play_service_account_json:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/google_play_service_account_json

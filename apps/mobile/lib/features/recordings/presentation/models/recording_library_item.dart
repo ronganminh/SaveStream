@@ -11,6 +11,7 @@ enum RecordingLibraryIssue {
   expiredCloud,
   partialTimeline,
   missedNoCloudSlot,
+  missingCloudArtifact,
 }
 
 class RecordingLibraryItem {
@@ -26,6 +27,7 @@ class RecordingLibraryItem {
     required this.canPlay,
     required this.canShare,
     required this.canDelete,
+    this.filePath,
     this.deviceId,
     this.deviceName,
     this.expiresAt,
@@ -43,6 +45,7 @@ class RecordingLibraryItem {
   final bool canPlay;
   final bool canShare;
   final bool canDelete;
+  final String? filePath;
   final String? deviceId;
   final String? deviceName;
   final DateTime? expiresAt;
@@ -61,10 +64,19 @@ class RecordingLibraryItem {
 }
 
 RecordingLibraryItem libraryItemFromCloud(RecordingSummary recording) {
+  final bool supportsArtifact = switch (recording.status) {
+    RecordingStatus.completed ||
+    RecordingStatus.partial ||
+    RecordingStatus.recovered ||
+    RecordingStatus.stopped => true,
+    _ => false,
+  };
   final RecordingLibraryIssue issue = switch (recording.status) {
     RecordingStatus.missedNoCloudSlot =>
       RecordingLibraryIssue.missedNoCloudSlot,
     RecordingStatus.partial => RecordingLibraryIssue.partialTimeline,
+    _ when supportsArtifact && !recording.artifactReady =>
+      RecordingLibraryIssue.missingCloudArtifact,
     _ => RecordingLibraryIssue.none,
   };
 
@@ -77,11 +89,8 @@ RecordingLibraryItem libraryItemFromCloud(RecordingSummary recording) {
     startedAt: recording.startedAt,
     durationSeconds: recording.durationSeconds,
     sizeBytes: recording.sizeBytes ?? recording.bytesRecorded ?? 0,
-    canPlay:
-        recording.status == RecordingStatus.completed ||
-        recording.status == RecordingStatus.partial ||
-        recording.status == RecordingStatus.recovered,
-    canShare: false,
+    canPlay: supportsArtifact && recording.artifactReady,
+    canShare: supportsArtifact && recording.artifactReady,
     canDelete: recording.actions.canDelete,
     expiresAt: recording.expiresAt,
     issue: issue,
@@ -111,7 +120,11 @@ RecordingLibraryItem libraryItemFromLocal(
     sizeBytes: recording.sizeBytes,
     canPlay: sameDevice && available,
     canShare: sameDevice && available,
-    canDelete: sameDevice,
+    // Empty/missing recordings contain no playable media. Allow their stale
+    // metadata to be removed even when the app's generated device id changed
+    // after reinstalling or clearing app data on the same physical phone.
+    canDelete: sameDevice || recording.sizeBytes == 0 || !available,
+    filePath: recording.filePath,
     deviceId: recording.deviceId,
     deviceName: recording.deviceName,
     issue: issue,

@@ -9,6 +9,16 @@ from typing import Literal, cast
 from urllib.parse import urlparse
 
 Environment = Literal["local", "test", "staging", "production"]
+StorePurchasePlatform = Literal["app_store", "google_play"]
+
+
+def store_purchase_platform_enabled(
+    provider: str,
+    platform: StorePurchasePlatform,
+) -> bool:
+    if provider in {"fake", "live"}:
+        return True
+    return provider == platform
 
 
 def _env(name: str, default: str) -> str:
@@ -52,9 +62,7 @@ def _optional_datetime_env(name: str) -> datetime | None:
     try:
         value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError as exc:
-        raise ValueError(
-            f"SAVESTREAM_{name} must be an ISO 8601 datetime"
-        ) from exc
+        raise ValueError(f"SAVESTREAM_{name} must be an ISO 8601 datetime") from exc
     if value.tzinfo is None:
         value = value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
@@ -144,7 +152,9 @@ class AppSettings:
     watch_scheduler_tick_seconds: int = 15
     watch_scheduler_batch_size: int = 50
     watch_scheduler_lease_seconds: int = 90
-    watch_offline_check_seconds: int = 60
+    # Offline watches are checked more frequently so a creator going live is
+    # reflected quickly instead of waiting for the old one-minute interval.
+    watch_offline_check_seconds: int = 20
     watch_live_check_seconds: int = 20
     watch_error_backoff_base_seconds: int = 30
     watch_error_backoff_max_seconds: int = 900
@@ -251,11 +261,7 @@ class AppSettings:
         payment_provider = _env("PAYMENT_PROVIDER", "fake").lower()
         payment_provider_base_url = _env(
             "PAYMENT_PROVIDER_BASE_URL",
-            (
-                "https://api.lemonsqueezy.com/v1"
-                if payment_provider == "lemonsqueezy"
-                else ""
-            ),
+            ("https://api.lemonsqueezy.com/v1" if payment_provider == "lemonsqueezy" else ""),
         ).rstrip("/")
         payment_provider_api_key = _secret_env("PAYMENT_PROVIDER_API_KEY", "")
         payment_webhook_secret = _secret_env(
@@ -270,26 +276,18 @@ class AppSettings:
         smtp_password = _secret_env("SMTP_PASSWORD", "")
         smtp_starttls = _bool_env("SMTP_STARTTLS", False)
         email_from = _env("EMAIL_FROM", "SaveStream <no-reply@savestream.local>")
-        if payment_provider == "lemonsqueezy" and not (
-            6 <= len(payment_webhook_secret) <= 40
-        ):
-            raise ValueError(
-                "Lemon Squeezy webhook secret must be 6 to 40 characters"
-            )
+        if payment_provider == "lemonsqueezy" and not (6 <= len(payment_webhook_secret) <= 40):
+            raise ValueError("Lemon Squeezy webhook secret must be 6 to 40 characters")
         metrics_token = _secret_env("METRICS_TOKEN", "savestream-local-metrics")
         trusted_proxy_cidrs = _csv_env("TRUSTED_PROXY_CIDRS", "")
         force_https = _bool_env("FORCE_HTTPS", environment_raw == "production")
         api_rate_limit = _nonnegative_int_env("API_RATE_LIMIT", 300)
         quota_max_watches = _nonnegative_int_env("QUOTA_MAX_WATCHES_PER_USER", 100)
-        quota_max_recordings_day = _nonnegative_int_env(
-            "QUOTA_MAX_RECORDINGS_PER_DAY", 100
-        )
+        quota_max_recordings_day = _nonnegative_int_env("QUOTA_MAX_RECORDINGS_PER_DAY", 100)
         quota_max_active_recordings = _nonnegative_int_env(
             "QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER", 2
         )
-        frontend_base_url = _env(
-            "FRONTEND_BASE_URL", "http://localhost:5173"
-        ).rstrip("/")
+        frontend_base_url = _env("FRONTEND_BASE_URL", "http://localhost:5173").rstrip("/")
         recording_source_backend = _env("RECORDING_SOURCE_BACKEND", "tiktok").lower()
         e2e_stream_base_url = _env("E2E_STREAM_BASE_URL", "").rstrip("/")
         push_provider = _env("PUSH_PROVIDER", "noop").lower()
@@ -312,10 +310,16 @@ class AppSettings:
             "STORE_PURCHASE_PROVIDER",
             "disabled",
         ).lower()
-        if store_purchase_provider not in {"disabled", "fake", "live"}:
+        if store_purchase_provider not in {
+            "disabled",
+            "fake",
+            "live",
+            "app_store",
+            "google_play",
+        }:
             raise ValueError(
                 "SAVESTREAM_STORE_PURCHASE_PROVIDER must be one of "
-                "disabled, fake, live"
+                "disabled, fake, live, app_store, google_play"
             )
         app_store_bundle_id = _env("APP_STORE_BUNDLE_ID", "")
         app_store_issuer_id = _env("APP_STORE_ISSUER_ID", "")
@@ -334,9 +338,7 @@ class AppSettings:
             "sandbox",
         ).lower()
         if app_store_environment not in {"sandbox", "production"}:
-            raise ValueError(
-                "SAVESTREAM_APP_STORE_ENVIRONMENT must be sandbox or production"
-            )
+            raise ValueError("SAVESTREAM_APP_STORE_ENVIRONMENT must be sandbox or production")
         google_play_package_name = _env("GOOGLE_PLAY_PACKAGE_NAME", "")
         google_play_service_account_json = _secret_env(
             "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON",
@@ -377,18 +379,14 @@ class AppSettings:
             "unlimited",
         ).lower()
         if pro_local_recording not in {"unlimited", "disabled"}:
-            raise ValueError(
-                "SAVESTREAM_PRO_LOCAL_RECORDING must be unlimited or disabled"
-            )
+            raise ValueError("SAVESTREAM_PRO_LOCAL_RECORDING must be unlimited or disabled")
         free_local_daily_minutes = _nonnegative_int_env(
             "FREE_LOCAL_DAILY_MINUTES",
             10,
         )
         reward_provider = _env("REWARD_PROVIDER", "disabled").lower()
         if reward_provider not in {"disabled", "fake", "admob"}:
-            raise ValueError(
-                "SAVESTREAM_REWARD_PROVIDER must be disabled, fake, or admob"
-            )
+            raise ValueError("SAVESTREAM_REWARD_PROVIDER must be disabled, fake, or admob")
         reward_daily_cap = _nonnegative_int_env("REWARD_DAILY_CAP", 8)
         reward_minutes = _nonnegative_int_env("REWARD_MINUTES", 10)
         reward_extensions_cap = _nonnegative_int_env(
@@ -423,41 +421,47 @@ class AppSettings:
                 "SAVESTREAM_PUSH_PROVIDER=fcm"
             )
         if recording_source_backend not in {"tiktok", "fake_http"}:
-            raise ValueError(
-                "SAVESTREAM_RECORDING_SOURCE_BACKEND must be one of tiktok, fake_http"
-            )
+            raise ValueError("SAVESTREAM_RECORDING_SOURCE_BACKEND must be one of tiktok, fake_http")
         if recording_source_backend == "fake_http" and not e2e_stream_base_url:
             raise ValueError(
                 "SAVESTREAM_E2E_STREAM_BASE_URL is required for fake_http recording backend"
             )
         if environment_raw == "production":
             if store_purchase_provider == "fake":
-                raise ValueError(
-                    "SAVESTREAM_STORE_PURCHASE_PROVIDER cannot be fake in production"
-                )
+                raise ValueError("SAVESTREAM_STORE_PURCHASE_PROVIDER cannot be fake in production")
             if reward_provider == "fake":
-                raise ValueError(
-                    "SAVESTREAM_REWARD_PROVIDER cannot be fake in production"
-                )
+                raise ValueError("SAVESTREAM_REWARD_PROVIDER cannot be fake in production")
             if reward_provider == "admob" and not admob_ssv_keys_url.startswith("https://"):
-                raise ValueError(
-                    "SAVESTREAM_ADMOB_SSV_KEYS_URL must use https in production"
-                )
-            if store_purchase_provider == "live" and (
+                raise ValueError("SAVESTREAM_ADMOB_SSV_KEYS_URL must use https in production")
+            apple_store_enabled = store_purchase_platform_enabled(
+                store_purchase_provider,
+                "app_store",
+            )
+            google_play_enabled = store_purchase_platform_enabled(
+                store_purchase_provider,
+                "google_play",
+            )
+            if apple_store_enabled and (
                 not app_store_bundle_id
                 or not app_store_issuer_id
                 or not app_store_key_id
                 or not app_store_private_key
                 or not app_store_root_certificates_json
                 or app_store_app_apple_id <= 0
-                or not google_play_package_name
+            ):
+                raise ValueError(
+                    "Apple App Store credentials must be configured when "
+                    "SAVESTREAM_STORE_PURCHASE_PROVIDER enables app_store in production"
+                )
+            if google_play_enabled and (
+                not google_play_package_name
                 or not google_play_service_account_json
                 or not google_play_rtdn_audience
                 or not google_play_rtdn_service_account_email
             ):
                 raise ValueError(
-                    "Apple and Google store credentials must be configured "
-                    "when SAVESTREAM_STORE_PURCHASE_PROVIDER=live in production"
+                    "Google Play credentials must be configured when "
+                    "SAVESTREAM_STORE_PURCHASE_PROVIDER enables google_play in production"
                 )
             if push_provider == "fcm" and (
                 not push_fcm_base_url.startswith("https://")
@@ -465,9 +469,7 @@ class AppSettings:
             ):
                 raise ValueError("FCM endpoints must use https in production")
             if recording_source_backend != "tiktok":
-                raise ValueError(
-                    "SAVESTREAM_RECORDING_SOURCE_BACKEND must be tiktok in production"
-                )
+                raise ValueError("SAVESTREAM_RECORDING_SOURCE_BACKEND must be tiktok in production")
             if payment_provider == "fake":
                 raise ValueError("SAVESTREAM_PAYMENT_PROVIDER cannot be fake in production")
             # "disabled" launches without a payment provider; checkout fails closed.
@@ -500,17 +502,11 @@ class AppSettings:
                 or not smtp_password
                 or not smtp_starttls
             ):
-                raise ValueError(
-                    "Authenticated STARTTLS SMTP must be configured in production"
-                )
+                raise ValueError("Authenticated STARTTLS SMTP must be configured in production")
             if "savestream.local" in email_from:
-                raise ValueError(
-                    "SAVESTREAM_EMAIL_FROM must be configured in production"
-                )
+                raise ValueError("SAVESTREAM_EMAIL_FROM must be configured in production")
             if metrics_token == "savestream-local-metrics":
-                raise ValueError(
-                    "SAVESTREAM_METRICS_TOKEN must be configured in production"
-                )
+                raise ValueError("SAVESTREAM_METRICS_TOKEN must be configured in production")
             if len(jwt_secret) < 32:
                 raise ValueError("SAVESTREAM_JWT_SECRET must be at least 32 characters")
             if jwt_secret in jwt_previous_secrets:
@@ -518,9 +514,7 @@ class AppSettings:
                     "SAVESTREAM_JWT_PREVIOUS_SECRETS must not include the current JWT secret"
                 )
             if not trusted_proxy_cidrs:
-                raise ValueError(
-                    "SAVESTREAM_TRUSTED_PROXY_CIDRS must be configured in production"
-                )
+                raise ValueError("SAVESTREAM_TRUSTED_PROXY_CIDRS must be configured in production")
             if not force_https:
                 raise ValueError("SAVESTREAM_FORCE_HTTPS must be enabled in production")
             if api_rate_limit <= 0:
@@ -532,9 +526,7 @@ class AppSettings:
             ):
                 raise ValueError("Production quotas must be explicitly enabled")
             if not frontend_base_url.startswith("https://"):
-                raise ValueError(
-                    "SAVESTREAM_FRONTEND_BASE_URL must use https in production"
-                )
+                raise ValueError("SAVESTREAM_FRONTEND_BASE_URL must use https in production")
             frontend_origin = _exact_origin(
                 frontend_base_url,
                 "SAVESTREAM_FRONTEND_BASE_URL",
@@ -548,9 +540,7 @@ class AppSettings:
                     "Production CORS origins must include SAVESTREAM_FRONTEND_BASE_URL"
                 )
             if not origins:
-                raise ValueError(
-                    "SAVESTREAM_CORS_ALLOW_ORIGINS must be configured in production"
-                )
+                raise ValueError("SAVESTREAM_CORS_ALLOW_ORIGINS must be configured in production")
             for origin in origins:
                 if not origin.startswith("https://") or "localhost" in origin:
                     raise ValueError(
@@ -610,14 +600,10 @@ class AppSettings:
             watch_scheduler_tick_seconds=_int_env("WATCH_SCHEDULER_TICK_SECONDS", 15),
             watch_scheduler_batch_size=_int_env("WATCH_SCHEDULER_BATCH_SIZE", 50),
             watch_scheduler_lease_seconds=_int_env("WATCH_SCHEDULER_LEASE_SECONDS", 90),
-            watch_offline_check_seconds=_int_env("WATCH_OFFLINE_CHECK_SECONDS", 60),
+            watch_offline_check_seconds=_int_env("WATCH_OFFLINE_CHECK_SECONDS", 20),
             watch_live_check_seconds=_int_env("WATCH_LIVE_CHECK_SECONDS", 20),
-            watch_error_backoff_base_seconds=_int_env(
-                "WATCH_ERROR_BACKOFF_BASE_SECONDS", 30
-            ),
-            watch_error_backoff_max_seconds=_int_env(
-                "WATCH_ERROR_BACKOFF_MAX_SECONDS", 900
-            ),
+            watch_error_backoff_base_seconds=_int_env("WATCH_ERROR_BACKOFF_BASE_SECONDS", 30),
+            watch_error_backoff_max_seconds=_int_env("WATCH_ERROR_BACKOFF_MAX_SECONDS", 900),
             watch_error_pause_threshold=_int_env("WATCH_ERROR_PAUSE_THRESHOLD", 5),
             watch_jitter_ratio=_float_env("WATCH_JITTER_RATIO", 0.2),
             watch_max_concurrent_recordings_per_user=_int_env(
@@ -642,12 +628,8 @@ class AppSettings:
             ops_failed_recording_alert_threshold=_int_env(
                 "OPS_FAILED_RECORDING_ALERT_THRESHOLD", 10
             ),
-            ops_payment_event_alert_threshold=_int_env(
-                "OPS_PAYMENT_EVENT_ALERT_THRESHOLD", 10
-            ),
-            ops_paused_watch_alert_threshold=_int_env(
-                "OPS_PAUSED_WATCH_ALERT_THRESHOLD", 20
-            ),
+            ops_payment_event_alert_threshold=_int_env("OPS_PAYMENT_EVENT_ALERT_THRESHOLD", 10),
+            ops_paused_watch_alert_threshold=_int_env("OPS_PAUSED_WATCH_ALERT_THRESHOLD", 20),
             api_rate_limit=api_rate_limit,
             api_rate_window_seconds=_int_env("API_RATE_WINDOW_SECONDS", 60),
             trusted_proxy_cidrs=trusted_proxy_cidrs,
@@ -656,16 +638,10 @@ class AppSettings:
             quota_max_watches_per_user=quota_max_watches,
             quota_max_recordings_per_day=quota_max_recordings_day,
             quota_max_active_recordings_per_user=quota_max_active_recordings,
-            recording_retention_days=_nonnegative_int_env(
-                "RECORDING_RETENTION_DAYS", 30
-            ),
-            recording_retention_days_free=_nonnegative_int_env(
-                "RECORDING_RETENTION_DAYS_FREE", 7
-            ),
+            recording_retention_days=_nonnegative_int_env("RECORDING_RETENTION_DAYS", 30),
+            recording_retention_days_free=_nonnegative_int_env("RECORDING_RETENTION_DAYS_FREE", 7),
             signup_credits=_nonnegative_int_env("SIGNUP_CREDITS", 0),
-            account_deletion_grace_days=_nonnegative_int_env(
-                "ACCOUNT_DELETION_GRACE_DAYS", 0
-            ),
+            account_deletion_grace_days=_nonnegative_int_env("ACCOUNT_DELETION_GRACE_DAYS", 0),
             retention_check_seconds=_int_env("RETENTION_CHECK_SECONDS", 3600),
             recording_source_backend=recording_source_backend,
             e2e_stream_base_url=e2e_stream_base_url,
@@ -685,9 +661,7 @@ class AppSettings:
             google_play_package_name=google_play_package_name,
             google_play_service_account_json=google_play_service_account_json,
             google_play_rtdn_audience=google_play_rtdn_audience,
-            google_play_rtdn_service_account_email=(
-                google_play_rtdn_service_account_email
-            ),
+            google_play_rtdn_service_account_email=(google_play_rtdn_service_account_email),
             store_purchase_timeout_seconds=store_purchase_timeout_seconds,
             app_min_supported_android=app_min_supported_android,
             app_min_supported_ios=app_min_supported_ios,

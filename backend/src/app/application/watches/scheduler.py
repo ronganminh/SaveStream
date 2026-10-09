@@ -161,6 +161,30 @@ class WatchScheduler:
         watch.resolved_username = result.username
         watch.resolved_room_id = result.room_id
         watch.live_status = "live" if result.is_live else "offline"
+
+        # Older watches may have been created while TikTok served a profile
+        # WAF shell, leaving their optional metadata empty.  Refresh it during
+        # the normal production poll so the existing watch eventually gets the
+        # same avatar/display name as a newly added creator.  Keep this out of
+        # the test/fake runtime and treat metadata as best-effort.
+        if (
+            self.settings.environment == "production"
+            and (
+                watch.creator_avatar_url is None
+                or watch.creator_display_name is None
+            )
+        ):
+            try:
+                from app.infrastructure.creators.tiktok_profile import (
+                    TikTokCreatorMetadataLookup,
+                )
+
+                metadata = await TikTokCreatorMetadataLookup().lookup(source)
+            except Exception:
+                metadata = None
+            if metadata is not None:
+                watch.creator_display_name = metadata.display_name
+                watch.creator_avatar_url = metadata.avatar_url
         watch.scheduler_lease_id = None
         watch.scheduler_lease_expires_at = None
         if result.is_live:

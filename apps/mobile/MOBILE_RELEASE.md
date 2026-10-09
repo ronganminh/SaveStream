@@ -64,7 +64,15 @@ ADMOB_BANNER_LIBRARY_IOS
 ADMOB_REWARDED_IOS
 ```
 
-The Android AdMob app ID continues to come from `SAVESTREAM_ADMOB_ANDROID_APP_ID`. For iOS release signing, set the real `ADMOB_APP_ID` in the private release xcconfig. Configure GDPR/privacy messages and the iOS IDFA/ATT message in AdMob Privacy & messaging before store release.
+The Android release defaults to AdMob app ID
+`ca-app-pub-2078852906622512~2464439785`, banner unit
+`ca-app-pub-2078852906622512/4061426634`, and rewarded unit
+`ca-app-pub-2078852906622512/5155016450`. Debug/profile builds keep Google's
+sample IDs to avoid invalid production traffic. `SAVESTREAM_ADMOB_ANDROID_APP_ID`
+and the Android Dart defines above can still override those release defaults.
+For iOS release signing, set the real `ADMOB_APP_ID` in the private release
+xcconfig. Configure GDPR/privacy messages and the iOS IDFA/ATT message in AdMob
+Privacy & messaging before store release.
 
 Manual C7 checks:
 

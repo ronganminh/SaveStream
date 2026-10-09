@@ -12,8 +12,8 @@ abstract final class SsTheme {
     brightness: Brightness.light,
     primary: SsColors.brandPrimary,
     onPrimary: Color(0xFFFFFFFF),
-    primaryContainer: Color(0xFFEEF2FF),
-    onPrimaryContainer: Color(0xFF3730A3),
+    primaryContainer: Color(0xFFF0F0FF),
+    onPrimaryContainer: Color(0xFF3A1FB0),
     secondary: Color(0xFF626671),
     onSecondary: Color(0xFFFFFFFF),
     secondaryContainer: Color(0xFFF2F3F7),
@@ -42,9 +42,9 @@ abstract final class SsTheme {
   static const ColorScheme _darkScheme = ColorScheme(
     brightness: Brightness.dark,
     primary: SsColors.brandPrimaryDark,
-    onPrimary: Color(0xFF1E1B4B),
-    primaryContainer: Color(0xFF27245C),
-    onPrimaryContainer: Color(0xFFE0E7FF),
+    onPrimary: Color(0xFF120E2E),
+    primaryContainer: Color(0xFF1F1B40),
+    onPrimaryContainer: Color(0xFFD9D5FF),
     secondary: Color(0xFF9BA1AC),
     onSecondary: Color(0xFF090B10),
     secondaryContainer: Color(0xFF181C24),
@@ -72,6 +72,7 @@ abstract final class SsTheme {
 
   static TextStyle _text(double size, double lineHeight, FontWeight weight) {
     return TextStyle(
+      fontFamily: SsTypography.uiFamily,
       fontSize: size,
       height: lineHeight / size,
       fontWeight: weight,
@@ -109,6 +110,7 @@ abstract final class SsTheme {
       brightness: brightness,
       colorScheme: colorScheme,
       useMaterial3: true,
+      fontFamily: SsTypography.uiFamily,
       scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
       textTheme: textTheme,
       dividerTheme: DividerThemeData(
@@ -252,6 +254,8 @@ abstract final class SsTheme {
           error: isDark ? SsColors.errorDark : SsColors.error,
           recording: isDark ? SsColors.recordingDark : SsColors.recording,
           info: isDark ? SsColors.infoDark : SsColors.info,
+          local: isDark ? SsColors.localDark : SsColors.local,
+          cloud: isDark ? SsColors.cloudDark : SsColors.cloud,
           successSubtle: isDark
               ? SsColors.successSubtleDark
               : SsColors.successSubtle,
@@ -260,6 +264,8 @@ abstract final class SsTheme {
               : SsColors.warningSubtle,
           errorSubtle: isDark ? SsColors.errorSubtleDark : SsColors.errorSubtle,
           infoSubtle: isDark ? SsColors.infoSubtleDark : SsColors.infoSubtle,
+          localSubtle: isDark ? SsColors.localSubtleDark : SsColors.localSubtle,
+          cloudSubtle: isDark ? SsColors.cloudSubtleDark : SsColors.cloudSubtle,
         ),
       ],
     );

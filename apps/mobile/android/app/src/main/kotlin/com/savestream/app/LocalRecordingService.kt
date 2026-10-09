@@ -11,32 +11,36 @@ import android.os.Build
 import android.os.IBinder
 import android.os.StatFs
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
 import java.io.RandomAccessFile
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 
 class LocalRecordingService : Service() {
     private val executor = Executors.newSingleThreadExecutor()
     private val stopRequested = AtomicBoolean(false)
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(CONNECT_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+        .readTimeout(READ_TIMEOUT_MS.toLong(), TimeUnit.MILLISECONDS)
+        .retryOnConnectionFailure(false)
+        .build()
 
     @Volatile
     private var worker: Future<*>? = null
 
     @Volatile
-    private var activeConnection: HttpURLConnection? = null
-
-    @Volatile
-    private var activeInput: InputStream? = null
+    private var activeCall: Call? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -54,7 +58,7 @@ class LocalRecordingService : Service() {
                 stopRequested.set(false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 if (worker?.isDone != false) {
-                    worker = executor.submit { record(intent) }
+                    worker = submitWorker { record(intent) }
                 }
                 START_NOT_STICKY
             }
@@ -69,11 +73,20 @@ class LocalRecordingService : Service() {
                 stopRequested.set(false)
                 startForeground(NOTIFICATION_ID, buildNotification())
                 if (worker?.isDone != false) {
-                    worker = executor.submit { recoverAndFinalize(intent) }
+                    worker = submitWorker { recoverAndFinalize(intent) }
                 }
                 START_NOT_STICKY
             }
             else -> START_NOT_STICKY
+        }
+    }
+
+    private fun submitWorker(block: () -> Unit): Future<*> = executor.submit {
+        try {
+            block()
+        } catch (error: Throwable) {
+            Log.e(TAG, "Local recording worker failed.", error)
+            stopWithError(error.message ?: "Local recording failed unexpectedly.")
         }
     }
 
@@ -199,95 +212,95 @@ class LocalRecordingService : Service() {
                 break
             }
 
-            var connection: HttpURLConnection? = null
+            var call: Call? = null
             var segmentLastChunkAt = SystemClock.elapsedRealtime()
             try {
-                connection = (URL(streamUrl).openConnection() as HttpURLConnection).apply {
-                    connectTimeout = CONNECT_TIMEOUT_MS
-                    readTimeout = READ_TIMEOUT_MS
-                    useCaches = false
-                    instanceFollowRedirects = true
-                    requestMethod = "GET"
-                    streamHeaders.forEach { (name, value) ->
-                        setRequestProperty(name, value)
+                val requestBuilder = Request.Builder()
+                    .url(streamUrl)
+                    .get()
+                    .header("Accept", "*/*")
+                    .header("User-Agent", DEFAULT_USER_AGENT)
+                streamHeaders.forEach { (name, value) ->
+                    requestBuilder.header(name, value)
+                }
+                call = httpClient.newCall(requestBuilder.build())
+                activeCall = call
+                call.execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Stream HTTP status ${response.code}")
                     }
-                }
-                activeConnection = connection
-                connection.connect()
-                val status = connection.responseCode
-                if (status !in 200..299) {
-                    throw IOException("Stream HTTP status $status")
-                }
+                    val responseBody = response.body
+                        ?: throw IOException("Stream response body is empty.")
 
-                reconnectAttempts = 0
-                emitState(
-                    "recording",
-                    recordedSeconds = (recordedMillis / 1000L).toInt(),
-                    sizeBytes = sizeBytes,
-                    freeBytesOverride = freeStorageBytes(tempFile.parentFile),
-                )
-                connection.inputStream.use { input ->
-                    activeInput = input
-                    FileOutputStream(tempFile, true).use { output ->
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        while (
-                            !stopRequested.get() &&
-                                SystemClock.elapsedRealtime() < leaseDeadlineElapsedMs
-                        ) {
-                            val count = input.read(buffer)
-                            if (count < 0) {
-                                liveEnded = true
-                                endReason = "live_ended"
-                                break
+                    reconnectAttempts = 0
+                    emitState(
+                        "recording",
+                        recordedSeconds = (recordedMillis / 1000L).toInt(),
+                        sizeBytes = sizeBytes,
+                        freeBytesOverride = freeStorageBytes(tempFile.parentFile),
+                    )
+                    responseBody.byteStream().use { input ->
+                        FileOutputStream(tempFile, true).use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            while (
+                                !stopRequested.get() &&
+                                    SystemClock.elapsedRealtime() < leaseDeadlineElapsedMs
+                            ) {
+                                val count = input.read(buffer)
+                                if (count < 0) {
+                                    liveEnded = true
+                                    endReason = "live_ended"
+                                    break
+                                }
+                                if (count == 0) {
+                                    continue
+                                }
+
+                                val now = SystemClock.elapsedRealtime()
+                                recordedMillis +=
+                                    (now - segmentLastChunkAt).coerceIn(0L, MAX_CHUNK_GAP_MS)
+                                segmentLastChunkAt = now
+                                output.write(buffer, 0, count)
+                                sizeBytes += count
+
+                                val freeBytes = freeStorageBytes(tempFile.parentFile)
+                                if (freeBytes < CRITICAL_STORAGE_BYTES) {
+                                    endReason = "storage_low"
+                                    stopRequested.set(true)
+                                }
+
+                                val recordedSeconds = (recordedMillis / 1000L).toInt()
+                                persistMetadata(
+                                    metadataFile = metadataFile,
+                                    sessionId = sessionId,
+                                    userId = userId,
+                                    watchId = watchId,
+                                    deviceId = deviceId,
+                                    streamUrl = streamUrl,
+                                    streamFormat = streamFormat,
+                                    streamHeaders = streamHeaders,
+                                    grantedSeconds = grantedSeconds,
+                                    startedAtMs = startedAtMs,
+                                    interruptedAtMs = null,
+                                    recordedSeconds = recordedSeconds,
+                                    sizeBytes = sizeBytes,
+                                )
+                                emitState(
+                                    "recording",
+                                    recordedSeconds = recordedSeconds,
+                                    sizeBytes = sizeBytes,
+                                    freeBytesOverride = freeBytes,
+                                )
                             }
-                            if (count == 0) {
-                                continue
-                            }
-
-                            val now = SystemClock.elapsedRealtime()
-                            recordedMillis +=
-                                (now - segmentLastChunkAt).coerceIn(0L, MAX_CHUNK_GAP_MS)
-                            segmentLastChunkAt = now
-                            output.write(buffer, 0, count)
-                            sizeBytes += count
-
-                            val freeBytes = freeStorageBytes(tempFile.parentFile)
-                            if (freeBytes < CRITICAL_STORAGE_BYTES) {
-                                endReason = "storage_low"
-                                stopRequested.set(true)
-                            }
-
-                            val recordedSeconds = (recordedMillis / 1000L).toInt()
-                            persistMetadata(
-                                metadataFile = metadataFile,
-                                sessionId = sessionId,
-                                userId = userId,
-                                watchId = watchId,
-                                deviceId = deviceId,
-                                streamUrl = streamUrl,
-                                streamFormat = streamFormat,
-                                streamHeaders = streamHeaders,
-                                grantedSeconds = grantedSeconds,
-                                startedAtMs = startedAtMs,
-                                interruptedAtMs = null,
-                                recordedSeconds = recordedSeconds,
-                                sizeBytes = sizeBytes,
-                            )
-                            emitState(
-                                "recording",
-                                recordedSeconds = recordedSeconds,
-                                sizeBytes = sizeBytes,
-                                freeBytesOverride = freeBytes,
-                            )
+                            output.flush()
                         }
-                        output.flush()
                     }
                 }
 
                 if (liveEnded) {
                     break
                 }
-            } catch (error: IOException) {
+            } catch (error: Exception) {
                 failureMessage = error.message
                 if (stopRequested.get()) {
                     endReason = "user_stopped"
@@ -313,9 +326,8 @@ class LocalRecordingService : Service() {
                     break
                 }
             } finally {
-                activeInput = null
-                activeConnection = null
-                connection?.disconnect()
+                activeCall = null
+                call?.cancel()
             }
         }
 
@@ -332,6 +344,10 @@ class LocalRecordingService : Service() {
         )
 
         val interrupted = endReason == "interrupted"
+        if (!interrupted && streamFormat == "flv") {
+            repairFlvTail(tempFile)
+            normalizeFlvTimestamps(tempFile)
+        }
         val finalFile = if (interrupted) null else finalizeFile(tempFile, streamFormat)
         val recordedSeconds = (recordedMillis / 1000L).toInt()
         persistMetadata(
@@ -401,6 +417,7 @@ class LocalRecordingService : Service() {
         val format = metadata.optString("stream_format", "flv")
         if (format == "flv") {
             repairFlvTail(tempFile)
+            normalizeFlvTimestamps(tempFile)
         }
         val finalFile = finalizeFile(tempFile, format)
         val size = finalFile?.length() ?: tempFile.length()
@@ -464,6 +481,81 @@ class LocalRecordingService : Service() {
                     raf.setLength(safeLength)
                 }
                 safeLength >= 13L
+            }
+        } catch (_: IOException) {
+            false
+        }
+    }
+
+    private fun normalizeFlvTimestamps(file: File): Boolean {
+        if (!file.exists() || file.length() < 13L) {
+            return false
+        }
+        return try {
+            RandomAccessFile(file, "rw").use { raf ->
+                if (
+                    raf.readUnsignedByte() != 0x46 ||
+                        raf.readUnsignedByte() != 0x4c ||
+                        raf.readUnsignedByte() != 0x56
+                ) {
+                    return false
+                }
+                raf.seek(5)
+                val dataOffset = raf.readInt().toLong() and 0xffffffffL
+                var cursor = dataOffset + 4L
+                var mediaStart: Long? = null
+                var changed = false
+
+                while (cursor + 11L <= raf.length()) {
+                    raf.seek(cursor)
+                    val tagType = raf.readUnsignedByte() and 0x1f
+                    val dataSize =
+                        (raf.readUnsignedByte() shl 16) or
+                            (raf.readUnsignedByte() shl 8) or
+                            raf.readUnsignedByte()
+                    val timestampLow =
+                        (raf.readUnsignedByte() shl 16) or
+                            (raf.readUnsignedByte() shl 8) or
+                            raf.readUnsignedByte()
+                    val timestamp =
+                        ((raf.readUnsignedByte().toLong() shl 24) or
+                            timestampLow.toLong()) and 0xffffffffL
+                    val tagEnd = cursor + 11L + dataSize + 4L
+                    if (tagEnd > raf.length()) {
+                        break
+                    }
+
+                    val playableMediaTag = if (tagType == 8 || tagType == 9) {
+                        raf.seek(cursor + 11L)
+                        val first = if (dataSize > 0) raf.readUnsignedByte() else -1
+                        val second = if (dataSize > 1) raf.readUnsignedByte() else -1
+                        when (tagType) {
+                            8 -> !((first shr 4) == 10 && second == 0)
+                            9 -> {
+                                val codecId = first and 0x0f
+                                !((codecId == 7 || codecId == 12) && second == 0)
+                            }
+                            else -> false
+                        }
+                    } else {
+                        false
+                    }
+                    if (mediaStart == null && playableMediaTag) {
+                        mediaStart = timestamp
+                    }
+                    val base = mediaStart
+                    if (base != null && base > 0L) {
+                        val normalized = (timestamp - base).coerceAtLeast(0L)
+                        raf.seek(cursor + 4L)
+                        raf.writeByte(((normalized shr 16) and 0xff).toInt())
+                        raf.writeByte(((normalized shr 8) and 0xff).toInt())
+                        raf.writeByte((normalized and 0xff).toInt())
+                        raf.writeByte(((normalized shr 24) and 0xff).toInt())
+                        changed = true
+                    }
+                    cursor = tagEnd
+                }
+                changed
             }
         } catch (_: IOException) {
             false
@@ -579,12 +671,7 @@ class LocalRecordingService : Service() {
 
     private fun requestStop() {
         stopRequested.set(true)
-        try {
-            activeInput?.close()
-        } catch (_: IOException) {
-            // The network stream was already closing.
-        }
-        activeConnection?.disconnect()
+        activeCall?.cancel()
     }
 
     private fun waitForReconnect(delayMillis: Long): Boolean {
@@ -694,6 +781,9 @@ class LocalRecordingService : Service() {
         private const val STOP_REQUEST_CODE = 3202
         private const val CONNECT_TIMEOUT_MS = 15_000
         private const val READ_TIMEOUT_MS = 15_000
+        private const val DEFAULT_USER_AGENT =
+            "Mozilla/5.0 (Linux; Android) AppleWebKit/537.36 Mobile Safari/537.36"
+        private const val TAG = "SaveStreamRecorder"
         private const val BUFFER_SIZE = 64 * 1024
         private const val MAX_RECONNECT_ATTEMPTS = 5
         private const val MAX_CHUNK_GAP_MS = 2_000L

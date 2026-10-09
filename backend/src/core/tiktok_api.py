@@ -177,13 +177,23 @@ class TikTokAPI:
         username = user.lstrip("@").strip()
         if not username:
             return None
-        response = self.http_client.get(f"{self.BASE_URL}/@{username}")
-        response.raise_for_status()
-
-        for payload in self._page_json_payloads(response.text):
-            profile = self._profile_from_payload(payload, username)
-            if profile is not None:
-                return profile
+        # TikTok occasionally serves a WAF/login shell for the profile page
+        # (with no SIGI/universal payload at all) while the public LIVE page
+        # still contains the creator object. Try the normal profile first,
+        # then use the LIVE page as a metadata-only fallback.
+        for url in (
+            f"{self.BASE_URL}/@{username}",
+            f"{self.BASE_URL}/@{username}/live/",
+        ):
+            try:
+                response = self.http_client.get(url)
+                response.raise_for_status()
+            except Exception:
+                continue
+            for payload in self._page_json_payloads(response.text):
+                profile = self._profile_from_payload(payload, username)
+                if profile is not None:
+                    return profile
         return None
 
     @staticmethod

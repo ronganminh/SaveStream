@@ -54,6 +54,23 @@ def _checksum(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _ensure_stop_requested_transition(recording: Recording) -> bool:
+    """Normalize a user-stopped capture before its terminal transition.
+
+    Returns True when this worker had to persist the intermediate transition.
+    The API normally writes it first, but Redis cancellation can reach the
+    capture loop before that database update is visible to this session.
+    """
+    current_status = RecordingStatus(recording.status)
+    if current_status is RecordingStatus.STOP_REQUESTED:
+        return False
+    recording.status = transition(
+        current_status,
+        RecordingStatus.STOP_REQUESTED,
+    ).value
+    return True
+
+
 async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> None:
     database = Database(settings.database_url)
     storage = MinioStorageClient(settings)
@@ -177,6 +194,12 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                     heartbeat_task.cancel()
                     await asyncio.gather(heartbeat_task, return_exceptions=True)
 
+            # The stop endpoint updates this row in a different session while
+            # the recorder is blocked in the capture thread.  Refresh before
+            # deciding the terminal transition; otherwise this session can
+            # still hold `recording` and incorrectly attempt
+            # `recording -> stopped`, rolling back the uploaded artifact.
+            await session.refresh(recording)
             recording.bytes_recorded = result.bytes_recorded
             recording.duration_seconds = max(
                 recording.duration_seconds,
@@ -195,7 +218,14 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 result.stop_reason is StopReason.USER_REQUESTED
                 or recording.status == RecordingStatus.STOP_REQUESTED.value
             )
-            if not stopped_by_request:
+            if stopped_by_request:
+                if _ensure_stop_requested_transition(recording):
+                    await append_event(
+                        session,
+                        recording,
+                        "recording.stop_requested",
+                    )
+            else:
                 await store.set_status(
                     recording,
                     RecordingStatus.PROCESSING,
@@ -208,10 +238,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 )
 
             artifact_id = uuid.uuid4()
-            storage_key = (
-                f"users/{recording.user_id}/recordings/{recording.id}/"
-                f"{artifact_id}.mp4"
-            )
+            storage_key = f"users/{recording.user_id}/recordings/{recording.id}/{artifact_id}.mp4"
             checksum = await asyncio.to_thread(_checksum, result.artifact_path)
             size_bytes = result.artifact_path.stat().st_size
             try:
@@ -255,11 +282,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                         user_id=recording.user_id,
                         recording_id=recording.id,
                     )
-            target = (
-                RecordingStatus.STOPPED
-                if stopped_by_request
-                else RecordingStatus.COMPLETED
-            )
+            target = RecordingStatus.STOPPED if stopped_by_request else RecordingStatus.COMPLETED
             recording.status = transition(
                 RecordingStatus(recording.status),
                 target,
@@ -272,9 +295,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
             await append_event(
                 session,
                 recording,
-                "recording.stopped"
-                if target is RecordingStatus.STOPPED
-                else "recording.completed",
+                "recording.stopped" if target is RecordingStatus.STOPPED else "recording.completed",
             )
             await session.commit()
             from app.application.recordings.cloud_slots import CloudSlotQueueService

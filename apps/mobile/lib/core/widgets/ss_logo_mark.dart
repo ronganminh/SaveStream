@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/theme/ss_tokens.dart';
+
 class SsLogoMark extends StatelessWidget {
   const SsLogoMark({this.size = 48, super.key});
 
@@ -25,7 +27,7 @@ class _SaveStreamMarkPainter extends CustomPainter {
     canvas.save();
     canvas.scale(scale, scale);
 
-    final Paint backgroundPaint = Paint()..color = const Color(0xFF4F46E5);
+    final Paint backgroundPaint = Paint()..color = SsColors.brandPrimary;
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         const Rect.fromLTWH(0, 0, _sourceSize, _sourceSize),

@@ -10,6 +10,64 @@ enum WatchLiveStatus {
   final String apiValue;
 }
 
+final class CreatorLookupApiModel {
+  const CreatorLookupApiModel({
+    required this.username,
+    required this.displayName,
+    required this.liveStatus,
+    this.avatarUrl,
+    this.roomId,
+    this.checkedAt,
+  });
+
+  final String username;
+  final String displayName;
+  final String? avatarUrl;
+  final WatchLiveStatus liveStatus;
+  final String? roomId;
+  final DateTime? checkedAt;
+
+  factory CreatorLookupApiModel.fromJson(Object? json) {
+    final Map<Object?, Object?> map = _requiredMap(json, 'live status');
+    final Map<Object?, Object?> creator = _requiredMap(
+      map['creator'],
+      'creator',
+    );
+    final Object? platform = creator['platform'];
+    if (platform != null && platform != 'tiktok') {
+      throw const FormatException('Unsupported creator platform.');
+    }
+    return CreatorLookupApiModel(
+      username: _requiredString(creator['username'], 'creator.username'),
+      displayName: _requiredString(
+        creator['display_name'],
+        'creator.display_name',
+      ),
+      avatarUrl: _optionalString(creator['avatar_url'], 'creator.avatar_url'),
+      liveStatus: _liveStatus(
+        _requiredString(map['live_status'], 'live_status'),
+      ),
+      roomId: _optionalString(map['room_id'], 'room_id'),
+      checkedAt: _optionalDateTime(map['checked_at'], 'checked_at'),
+    );
+  }
+
+  CreatorLookupResult toDomain() {
+    return CreatorLookupResult(
+      username: username,
+      displayName: displayName,
+      avatarUrl: avatarUrl?.isEmpty ?? true ? null : avatarUrl,
+      liveStatus: switch (liveStatus) {
+        WatchLiveStatus.unknown => CreatorLiveStatus.unknown,
+        WatchLiveStatus.offline => CreatorLiveStatus.offline,
+        WatchLiveStatus.live => CreatorLiveStatus.live,
+      },
+      roomId: roomId,
+      checkedAt: checkedAt,
+    );
+  }
+}
+
 final class WatchApiModel {
   const WatchApiModel({
     required this.id,

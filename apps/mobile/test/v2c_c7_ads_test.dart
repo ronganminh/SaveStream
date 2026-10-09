@@ -13,6 +13,28 @@ import 'package:savestream_mobile/platform/contracts/ads_service.dart';
 import 'package:savestream_mobile/platform/google_mobile_ads_service.dart';
 
 void main() {
+  test('C7 Android production defaults use the configured SaveStream IDs', () {
+    final GoogleAdsConfig config = GoogleAdsConfig.forPlatform(
+      TargetPlatform.android,
+      useProductionIds: true,
+    );
+
+    expect(config.bannerHomeId, 'ca-app-pub-2078852906622512/4061426634');
+    expect(config.bannerWatchListId, 'ca-app-pub-2078852906622512/4061426634');
+    expect(config.bannerLibraryId, 'ca-app-pub-2078852906622512/4061426634');
+    expect(config.rewardedId, 'ca-app-pub-2078852906622512/5155016450');
+  });
+
+  test('C7 Android debug defaults keep Google test ad units', () {
+    final GoogleAdsConfig config = GoogleAdsConfig.forPlatform(
+      TargetPlatform.android,
+      useProductionIds: false,
+    );
+
+    expect(config.bannerHomeId, 'ca-app-pub-3940256099942544/9214589741');
+    expect(config.rewardedId, 'ca-app-pub-3940256099942544/5224354917');
+  });
+
   test(
     'C7 reward API sends purpose/session and preserves SSV metadata',
     () async {

@@ -4,13 +4,29 @@ import '../../domain/models/watch_summary.dart';
 import '../../domain/repositories/watch_repository.dart';
 import '../remote/watch_api_models.dart';
 
-final class ApiWatchRepository implements WatchRepository {
+final class ApiWatchRepository
+    implements WatchRepository, CreatorLookupRepository {
   const ApiWatchRepository({required ApiClient apiClient})
     : _apiClient = apiClient;
 
   static const int _pageSize = 100;
 
   final ApiClient _apiClient;
+
+  @override
+  Future<CreatorLookupResult> lookupCreator(CreateWatchCommand command) async {
+    final response = await _apiClient.post<CreatorLookupApiModel>(
+      '/v1/live-status',
+      data: <String, Object?>{
+        'source': <String, Object?>{
+          'type': command.sourceType.apiValue,
+          'value': command.sourceValue,
+        },
+      },
+      decoder: CreatorLookupApiModel.fromJson,
+    );
+    return response.data.toDomain();
+  }
 
   @override
   Future<List<WatchSummary>> listWatches() async {

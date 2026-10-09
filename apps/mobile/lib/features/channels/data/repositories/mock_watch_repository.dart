@@ -1,9 +1,11 @@
+import '../../../../core/api/api_exception.dart';
 import '../../../../core/mock/mock_repository_base.dart';
+import '../../../../core/mock/mock_scenario.dart';
 import '../../domain/models/watch_summary.dart';
 import '../../domain/repositories/watch_repository.dart';
 
 final class MockWatchRepository extends MockRepositoryBase
-    implements WatchRepository {
+    implements WatchRepository, CreatorLookupRepository {
   MockWatchRepository(super.behavior) : _items = List<WatchSummary>.of(_seed);
 
   static final List<WatchSummary> _seed = <WatchSummary>[
@@ -94,6 +96,59 @@ final class MockWatchRepository extends MockRepositoryBase
   ];
 
   final List<WatchSummary> _items;
+
+  @override
+  Future<CreatorLookupResult> lookupCreator(CreateWatchCommand command) {
+    // Keep the zero-latency mock synchronous enough for the existing widget
+    // flows, which pump only one frame after tapping Find creator.
+    if (behavior.scenario == MockScenario.success) {
+      final String username = _usernameFromSource(command.sourceValue);
+      if (username.toLowerCase().contains('notfound') ||
+          username.toLowerCase().contains('missing')) {
+        return Future<CreatorLookupResult>.error(
+          const ApiException(
+            kind: ApiExceptionKind.api,
+            statusCode: 404,
+            retryable: false,
+          ),
+        );
+      }
+      return Future<CreatorLookupResult>.value(_lookupResult(username));
+    }
+    return respond<CreatorLookupResult>(
+      success: () {
+        final String username = _usernameFromSource(command.sourceValue);
+        if (username.toLowerCase().contains('notfound') ||
+            username.toLowerCase().contains('missing')) {
+          throw const ApiException(
+            kind: ApiExceptionKind.api,
+            statusCode: 404,
+            retryable: false,
+          );
+        }
+        return _lookupResult(username);
+      },
+      empty: () => CreatorLookupResult(
+        username: _usernameFromSource(command.sourceValue),
+        displayName: _displayNameFromUsername(
+          _usernameFromSource(command.sourceValue),
+        ),
+        liveStatus: CreatorLiveStatus.unknown,
+      ),
+    );
+  }
+
+  CreatorLookupResult _lookupResult(String username) {
+    return CreatorLookupResult(
+      username: username,
+      displayName: _displayNameFromUsername(username),
+      liveStatus: username == 'ada_live'
+          ? CreatorLiveStatus.live
+          : CreatorLiveStatus.offline,
+      avatarUrl: null,
+      checkedAt: DateTime.utc(2026, 9, 30, 14, 30),
+    );
+  }
 
   @override
   Future<List<WatchSummary>> listWatches() {

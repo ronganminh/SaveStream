@@ -10,7 +10,8 @@ from app.infrastructure.db.billing_models import PaymentOrder
 from app.infrastructure.db.credit_models import CreditLedgerEntry
 from app.settings import AppSettings
 
-# Accounts that have bought credits keep recordings longer than trial-only accounts.
+# Accounts that have bought credits use the Pro retention window; trial-only
+# accounts use the shorter Free + Cloud Pack window.
 PAID_ORDER_STATUSES = ("paid", "partially_refunded")
 
 

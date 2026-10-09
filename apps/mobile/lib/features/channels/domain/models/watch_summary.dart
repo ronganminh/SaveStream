@@ -45,6 +45,36 @@ class CreateWatchCommand {
   final bool notifyOnLive;
 }
 
+enum CreatorLiveStatus {
+  unknown('unknown'),
+  offline('offline'),
+  live('live');
+
+  const CreatorLiveStatus(this.apiValue);
+
+  final String apiValue;
+}
+
+class CreatorLookupResult {
+  const CreatorLookupResult({
+    required this.username,
+    required this.displayName,
+    required this.liveStatus,
+    this.avatarUrl,
+    this.roomId,
+    this.checkedAt,
+  });
+
+  final String username;
+  final String displayName;
+  final String? avatarUrl;
+  final CreatorLiveStatus liveStatus;
+  final String? roomId;
+  final DateTime? checkedAt;
+
+  bool get isLive => liveStatus == CreatorLiveStatus.live;
+}
+
 class WatchSummary {
   const WatchSummary({
     required this.id,

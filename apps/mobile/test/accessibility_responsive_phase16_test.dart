@@ -103,24 +103,36 @@ void main() {
       await tester.tap(find.byIcon(Icons.video_library_outlined));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('Quality'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   }
 
-  testWidgets('narrow shell uses compact add action at large text scale', (
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 640);
-    tester.view.devicePixelRatio = 1;
-    tester.platformDispatcher.textScaleFactorTestValue = 2;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  testWidgets(
+    'add creator action stays scoped to Watching at large text scale',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.byTooltip('Add creator'), findsWidgets);
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.byTooltip('Add creator'), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.visibility_outlined));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byTooltip('Add creator'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

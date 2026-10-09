@@ -37,14 +37,26 @@ class A5UsageScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text(
-                      data.hasPurchased
-                          ? context.l10n.cloudHoursAvailableTitle
-                          : context.l10n.freeUsageTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+                    if (data.hasPurchased)
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              context.l10n.settingsPlanProTitle,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          const SsPlanBadge(plan: Plan.pro),
+                        ],
+                      )
+                    else
+                      Text(
+                        context.l10n.freeUsageTitle,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     const SizedBox(height: SsSpacing.md),
                     if (data.hasPurchased) ...<Widget>[
+                      Text(context.l10n.cloudHoursAvailableTitle),
                       Text(
                         formatMinutesAsHoursMinutes(
                           data.cloudMinutesAvailable,
@@ -69,6 +81,13 @@ class A5UsageScreen extends ConsumerWidget {
                         context.l10n.cloudRetentionValue(
                           data.limits.cloudRetentionDays,
                         ),
+                      ),
+                      Text(
+                        !data.local.enabled
+                            ? context.l10n.settingsLocalRecordingDisabledValue
+                            : data.local.unlimited
+                            ? context.l10n.settingsLocalRecordingUnlimitedValue
+                            : context.l10n.settingsLocalRecordingAvailableValue,
                       ),
                     ] else ...<Widget>[
                       Text(

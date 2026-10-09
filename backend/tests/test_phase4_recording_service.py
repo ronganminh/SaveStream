@@ -19,9 +19,7 @@ from tests.identity_helpers import identity_settings
 
 def test_recording_create_is_idempotent_scoped_and_deduped(tmp_path):
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'phase4-service.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'phase4-service.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -125,9 +123,7 @@ def test_recording_create_is_idempotent_scoped_and_deduped(tmp_path):
 
 def test_worker_lease_blocks_duplicate_delivery_and_recovers_stale(tmp_path):
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'phase4-lease.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'phase4-lease.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -153,9 +149,7 @@ def test_worker_lease_blocks_duplicate_delivery_and_recovers_stale(tmp_path):
                 )
                 recording = await RecordingService(session, settings).create(
                     principal,
-                    CreateRecordingRequest(
-                        source=Source(type="room_id", value="12345")
-                    ),
+                    CreateRecordingRequest(source=Source(type="room_id", value="12345")),
                     idempotency_key=str(uuid.uuid4()),
                 )
                 store = RecordingStateStore(session, settings)
@@ -181,9 +175,7 @@ def test_worker_lease_blocks_duplicate_delivery_and_recovers_stale(tmp_path):
 
 def test_artifact_authorization_is_tenant_scoped(tmp_path):
     async def run() -> None:
-        settings = identity_settings(
-            f"sqlite+aiosqlite:///{tmp_path / 'phase4-artifact.db'}"
-        )
+        settings = identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'phase4-artifact.db'}")
         database = Database(settings.database_url)
         try:
             async with database.engine.begin() as connection:
@@ -225,6 +217,7 @@ def test_artifact_authorization_is_tenant_scoped(tmp_path):
                 session.add(artifact)
                 await session.commit()
                 await session.refresh(artifact)
+                assert await service.artifact_recording_ids([recording]) == {recording.id}
                 assert (await service.artifact(owner_p, str(artifact.id))).id == artifact.id
                 try:
                     await service.artifact(other_p, str(artifact.id))

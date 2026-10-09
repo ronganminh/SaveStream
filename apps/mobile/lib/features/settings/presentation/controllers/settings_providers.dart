@@ -13,11 +13,9 @@ final Provider<ProfileRepository> profileRepositoryProvider =
       (ref) => MockProfileRepository(ref.watch(mockBehaviorProvider)),
     );
 
-final FutureProvider<UserProfile> profileProvider = FutureProvider<UserProfile>(
-  (ref) {
-    return ref.watch(profileRepositoryProvider).getProfile();
-  },
-);
+final profileProvider = FutureProvider.autoDispose<UserProfile>((ref) {
+  return ref.watch(profileRepositoryProvider).getProfile();
+});
 
 final settingsAccountControllerProvider =
     Provider.family<SettingsAccountController, AppSessionController>(

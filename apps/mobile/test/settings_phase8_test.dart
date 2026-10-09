@@ -8,6 +8,8 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
+import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/settings/presentation/legal_link_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/notification_settings_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
@@ -44,10 +46,11 @@ void main() {
   ) async {
     await openSettings(tester, mockScenario: MockScenario.empty);
 
-    await tester.tap(find.text('Profile'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
+    );
+    GoRouter.of(settingsContext).push(AppRoutes.profile);
+    await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('SaveStream user'), findsOneWidget);
@@ -168,5 +171,39 @@ void main() {
     expect(session.isAuthenticated, isTrue);
     expect(find.text('Sign in'), findsNothing);
     expect(find.text('Settings'), findsWidgets);
+  });
+
+  testWidgets('Pro settings show cloud balance and unlimited Local recording', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      SaveStreamApp(
+        config: testConfig(),
+        extraOverrides: [
+          entitlementRepositoryProvider.overrideWithValue(
+            const MockEntitlementRepository(
+              MockBehavior(
+                scenario: MockScenario.success,
+                latency: Duration.zero,
+              ),
+              state: EntitlementMockState.pro,
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SaveStream Pro'), findsOneWidget);
+    expect(find.textContaining('133 hours'), findsOneWidget);
+    expect(find.textContaining('ads'), findsNothing);
+    expect(find.text('Local recording'), findsOneWidget);
+    expect(find.text('Unlimited on this device'), findsWidgets);
+
+    final Text email = tester.widget<Text>(find.text('alex@example.com').first);
+    expect(email.maxLines, 1);
+    expect(email.overflow, TextOverflow.ellipsis);
   });
 }

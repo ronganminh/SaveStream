@@ -219,6 +219,30 @@ void main() {
     expect(find.byType(SsLiveBadge), findsAtLeastNWidgets(2));
     expect(find.byType(SsQuotaCard), findsOneWidget);
     expect(find.byType(SsCreatorTile), findsOneWidget);
+    final SsAvatar liveAvatar = tester.widget<SsAvatar>(
+      find.descendant(
+        of: find.byType(SsCreatorTile),
+        matching: find.byType(SsAvatar),
+      ),
+    );
+    expect(liveAvatar.isLive, isTrue);
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey<String>('ss-live-avatar-pulse-opacity')),
+          )
+          .opacity,
+      .78,
+    );
+    await tester.pump(const Duration(milliseconds: 850));
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey<String>('ss-live-avatar-pulse-opacity')),
+          )
+          .opacity,
+      .22,
+    );
     expect(find.byType(SsRecordingTile), findsOneWidget);
     expect(find.byType(SsActiveRecordingCard), findsOneWidget);
     expect(find.byType(SsRecordingBar), findsOneWidget);

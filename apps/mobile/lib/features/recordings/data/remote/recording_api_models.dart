@@ -12,6 +12,7 @@ final class RecordingApiModel {
     required this.durationSeconds,
     required this.bytesRecorded,
     required this.estimatedMaxCost,
+    required this.artifactReady,
     required this.createdAt,
     required this.updatedAt,
     this.startedAt,
@@ -37,6 +38,7 @@ final class RecordingApiModel {
   final int durationSeconds;
   final int bytesRecorded;
   final int estimatedMaxCost;
+  final bool artifactReady;
   final int? actualCost;
   final String? creditReservationId;
   final String? errorCode;
@@ -120,6 +122,8 @@ final class RecordingApiModel {
         map['estimated_max_cost'],
         'estimated_max_cost',
       ),
+      artifactReady:
+          _optionalBool(map['playback_ready'], 'playback_ready') ?? false,
       actualCost: _optionalInt(map['actual_cost'], 'actual_cost'),
       creditReservationId: _optionalString(
         map['credit_reservation_id'],
@@ -152,6 +156,7 @@ final class RecordingApiModel {
       endedAt: endedAt,
       durationSeconds: durationSeconds,
       bytesRecorded: bytesRecorded,
+      artifactReady: artifactReady,
       costCredits: actualCost?.toDouble(),
       errorCode: errorCode,
       errorMessage: errorMessage,
@@ -329,6 +334,11 @@ bool _requiredBool(Object? value, String name) {
     throw FormatException('Expected $name boolean.');
   }
   return value;
+}
+
+bool? _optionalBool(Object? value, String name) {
+  if (value == null) return null;
+  return _requiredBool(value, name);
 }
 
 int _requiredInt(Object? value, String name) {

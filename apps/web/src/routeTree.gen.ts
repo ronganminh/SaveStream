@@ -32,17 +32,17 @@ import { Route as StatusRouteImport } from './routes/status'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
-import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
-import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
-import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
-import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
-import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminSystemRouteImport } from './routes/admin/system'
-import { Route as AdminSafetyRouteImport } from './routes/admin/safety'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as AdminOverviewD9RouteImport } from './routes/admin/overview'
-import { Route as AdminReportsD9RouteImport } from './routes/admin/reports'
+import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
+import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
+import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
+import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
+import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
+import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
+import { Route as AdminReportsRouteImport } from './routes/admin/reports'
+import { Route as AdminSafetyRouteImport } from './routes/admin/safety'
+import { Route as AdminSystemRouteImport } from './routes/admin/system'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminWorkersRouteImport } from './routes/admin/workers'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as BillingIndexRouteImport } from './routes/billing.index'
@@ -181,14 +181,9 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminErrorsRoute = AdminErrorsRouteImport.update({
-  id: '/admin/errors',
-  path: '/admin/errors',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminOperationsRoute = AdminOperationsRouteImport.update({
-  id: '/admin/operations',
-  path: '/admin/operations',
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCatalogRoute = AdminCatalogRouteImport.update({
@@ -196,9 +191,9 @@ const AdminCatalogRoute = AdminCatalogRouteImport.update({
   path: '/admin/catalog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/admin/payments',
-  path: '/admin/payments',
+const AdminErrorsRoute = AdminErrorsRouteImport.update({
+  id: '/admin/errors',
+  path: '/admin/errors',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminJobsRoute = AdminJobsRouteImport.update({
@@ -206,14 +201,24 @@ const AdminJobsRoute = AdminJobsRouteImport.update({
   path: '/admin/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
+const AdminOperationsRoute = AdminOperationsRouteImport.update({
+  id: '/admin/operations',
+  path: '/admin/operations',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSystemRoute = AdminSystemRouteImport.update({
-  id: '/admin/system',
-  path: '/admin/system',
+const AdminOverviewRoute = AdminOverviewRouteImport.update({
+  id: '/admin/overview',
+  path: '/admin/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/admin/payments',
+  path: '/admin/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSafetyRoute = AdminSafetyRouteImport.update({
@@ -221,19 +226,14 @@ const AdminSafetyRoute = AdminSafetyRouteImport.update({
   path: '/admin/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
+const AdminSystemRoute = AdminSystemRouteImport.update({
+  id: '/admin/system',
+  path: '/admin/system',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminOverviewD9Route = AdminOverviewD9RouteImport.update({
-  id: '/admin/overview',
-  path: '/admin/overview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminReportsD9Route = AdminReportsD9RouteImport.update({
-  id: '/admin/reports',
-  path: '/admin/reports',
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminWorkersRoute = AdminWorkersRouteImport.update({
@@ -371,17 +371,16 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
-  '/admin/errors': typeof AdminErrorsRoute
-  '/admin/operations': typeof AdminOperationsRoute
   '/admin/catalog': typeof AdminCatalogRoute
-  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/errors': typeof AdminErrorsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
-  '/admin/users': typeof AdminUsersRouteWithChildren
-  '/admin/system': typeof AdminSystemRoute
+  '/admin/operations': typeof AdminOperationsRoute
+  '/admin/overview': typeof AdminOverviewRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/overview': typeof AdminOverviewD9Route
-  '/admin/reports': typeof AdminReportsD9Route
+  '/admin/system': typeof AdminSystemRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -395,14 +394,15 @@ export interface FileRoutesByFullPath {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
   '/admin/jobs/$id': typeof AdminJobsIdRoute
-  '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
+  '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -424,17 +424,14 @@ export interface FileRoutesByTo {
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
   '/usage': typeof UsageRoute
+  '/admin/catalog': typeof AdminCatalogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
-  '/admin/catalog': typeof AdminCatalogRoute
+  '/admin/overview': typeof AdminOverviewRoute
   '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/users/$id': typeof AdminUsersIdRoute
-  '/admin/users': typeof AdminUsersIndexRoute
-  '/admin/system': typeof AdminSystemRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/overview': typeof AdminOverviewD9Route
-  '/admin/reports': typeof AdminReportsD9Route
+  '/admin/system': typeof AdminSystemRoute
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -448,13 +445,16 @@ export interface FileRoutesByTo {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/admin': typeof AdminIndexRoute
   '/billing': typeof BillingIndexRoute
   '/channels': typeof ChannelsIndexRoute
   '/recordings': typeof RecordingsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/verify-email': typeof VerifyEmailIndexRoute
   '/admin/jobs/$id': typeof AdminJobsIdRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/admin/jobs': typeof AdminJobsIndexRoute
+  '/admin/users': typeof AdminUsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -481,17 +481,16 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
-  '/admin/errors': typeof AdminErrorsRoute
-  '/admin/operations': typeof AdminOperationsRoute
   '/admin/catalog': typeof AdminCatalogRoute
-  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/errors': typeof AdminErrorsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
-  '/admin/users': typeof AdminUsersRouteWithChildren
-  '/admin/system': typeof AdminSystemRoute
+  '/admin/operations': typeof AdminOperationsRoute
+  '/admin/overview': typeof AdminOverviewRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/overview': typeof AdminOverviewD9Route
-  '/admin/reports': typeof AdminReportsD9Route
+  '/admin/system': typeof AdminSystemRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
   '/billing/canceled': typeof BillingCanceledRoute
@@ -505,14 +504,15 @@ export interface FileRoutesById {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
   '/admin/jobs/$id': typeof AdminJobsIdRoute
-  '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
+  '/admin/jobs/': typeof AdminJobsIndexRoute
   '/admin/users/': typeof AdminUsersIndexRoute
 }
 export interface FileRouteTypes {
@@ -541,17 +541,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/usage'
     | '/verify-email'
-    | '/admin/errors'
-    | '/admin/operations'
     | '/admin/catalog'
-    | '/admin/payments'
+    | '/admin/errors'
     | '/admin/jobs'
-    | '/admin/users'
-    | '/admin/system'
-    | '/admin/safety'
-    | '/admin/'
+    | '/admin/operations'
     | '/admin/overview'
+    | '/admin/payments'
     | '/admin/reports'
+    | '/admin/safety'
+    | '/admin/system'
+    | '/admin/users'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -565,14 +564,15 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/admin/'
     | '/billing/'
     | '/channels/'
     | '/recordings/'
     | '/settings/'
     | '/verify-email/'
     | '/admin/jobs/$id'
-    | '/admin/jobs/'
     | '/admin/users/$id'
+    | '/admin/jobs/'
     | '/admin/users/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -594,15 +594,14 @@ export interface FileRouteTypes {
     | '/status'
     | '/terms'
     | '/usage'
+    | '/admin/catalog'
     | '/admin/errors'
     | '/admin/operations'
-    | '/admin/catalog'
-    | '/admin/payments'
-    | '/admin/system'
-    | '/admin/safety'
-    | '/admin/'
     | '/admin/overview'
+    | '/admin/payments'
     | '/admin/reports'
+    | '/admin/safety'
+    | '/admin/system'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -616,14 +615,15 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/admin'
     | '/billing'
     | '/channels'
     | '/recordings'
     | '/settings'
     | '/verify-email'
     | '/admin/jobs/$id'
-    | '/admin/jobs'
     | '/admin/users/$id'
+    | '/admin/jobs'
     | '/admin/users'
   id:
     | '__root__'
@@ -632,6 +632,7 @@ export interface FileRouteTypes {
     | '/billing'
     | '/channels'
     | '/contact'
+    | '/copyright'
     | '/forgot-password'
     | '/help'
     | '/notifications'
@@ -649,17 +650,16 @@ export interface FileRouteTypes {
     | '/terms'
     | '/usage'
     | '/verify-email'
-    | '/admin/errors'
-    | '/admin/operations'
     | '/admin/catalog'
-    | '/admin/payments'
+    | '/admin/errors'
     | '/admin/jobs'
-    | '/admin/users'
-    | '/admin/system'
-    | '/admin/safety'
-    | '/admin/'
+    | '/admin/operations'
     | '/admin/overview'
+    | '/admin/payments'
     | '/admin/reports'
+    | '/admin/safety'
+    | '/admin/system'
+    | '/admin/users'
     | '/admin/workers'
     | '/auth/error'
     | '/billing/canceled'
@@ -673,14 +673,15 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/admin/'
     | '/billing/'
     | '/channels/'
     | '/recordings/'
     | '/settings/'
     | '/verify-email/'
     | '/admin/jobs/$id'
-    | '/admin/jobs/'
     | '/admin/users/$id'
+    | '/admin/jobs/'
     | '/admin/users/'
   fileRoutesById: FileRoutesById
 }
@@ -708,19 +709,19 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
-  AdminErrorsRoute: typeof AdminErrorsRoute
-  AdminOperationsRoute: typeof AdminOperationsRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
-  AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminErrorsRoute: typeof AdminErrorsRoute
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
-  AdminUsersRoute: typeof AdminUsersRouteWithChildren
-  AdminSystemRoute: typeof AdminSystemRoute
+  AdminOperationsRoute: typeof AdminOperationsRoute
+  AdminOverviewRoute: typeof AdminOverviewRoute
+  AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
   AdminSafetyRoute: typeof AdminSafetyRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminOverviewD9Route: typeof AdminOverviewD9Route
-  AdminReportsD9Route: typeof AdminReportsD9Route
+  AdminSystemRoute: typeof AdminSystemRoute
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -886,18 +887,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/errors': {
-      id: '/admin/errors'
-      path: '/admin/errors'
-      fullPath: '/admin/errors'
-      preLoaderRoute: typeof AdminErrorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/operations': {
-      id: '/admin/operations'
-      path: '/admin/operations'
-      fullPath: '/admin/operations'
-      preLoaderRoute: typeof AdminOperationsRouteImport
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/catalog': {
@@ -907,11 +901,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/admin/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
+    '/admin/errors': {
+      id: '/admin/errors'
+      path: '/admin/errors'
+      fullPath: '/admin/errors'
+      preLoaderRoute: typeof AdminErrorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/jobs': {
@@ -921,18 +915,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
+    '/admin/operations': {
+      id: '/admin/operations'
+      path: '/admin/operations'
+      fullPath: '/admin/operations'
+      preLoaderRoute: typeof AdminOperationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/system': {
-      id: '/admin/system'
-      path: '/admin/system'
-      fullPath: '/admin/system'
-      preLoaderRoute: typeof AdminSystemRouteImport
+    '/admin/overview': {
+      id: '/admin/overview'
+      path: '/admin/overview'
+      fullPath: '/admin/overview'
+      preLoaderRoute: typeof AdminOverviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/admin/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/safety': {
@@ -942,25 +950,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
+    '/admin/system': {
+      id: '/admin/system'
+      path: '/admin/system'
+      fullPath: '/admin/system'
+      preLoaderRoute: typeof AdminSystemRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/overview': {
-      id: '/admin/overview'
-      path: '/admin/overview'
-      fullPath: '/admin/overview'
-      preLoaderRoute: typeof AdminOverviewD9RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/reports': {
-      id: '/admin/reports'
-      path: '/admin/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsD9RouteImport
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/workers': {
@@ -1253,19 +1254,19 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
-  AdminErrorsRoute: AdminErrorsRoute,
-  AdminOperationsRoute: AdminOperationsRoute,
   AdminCatalogRoute: AdminCatalogRoute,
-  AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminErrorsRoute: AdminErrorsRoute,
   AdminJobsRoute: AdminJobsRouteWithChildren,
-  AdminUsersRoute: AdminUsersRouteWithChildren,
-  AdminSystemRoute: AdminSystemRoute,
+  AdminOperationsRoute: AdminOperationsRoute,
+  AdminOverviewRoute: AdminOverviewRoute,
+  AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminReportsRoute: AdminReportsRoute,
   AdminSafetyRoute: AdminSafetyRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  AdminOverviewD9Route: AdminOverviewD9Route,
-  AdminReportsD9Route: AdminReportsD9Route,
+  AdminSystemRoute: AdminSystemRoute,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

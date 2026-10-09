@@ -47,8 +47,12 @@ def test_paid_accounts_keep_recordings_30_days_and_trial_accounts_7(tmp_path) ->
             async with database.engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
             async with database.session() as session:
-                paid = User(email="paid@example.com", normalized_email="paid@example.com", role="user")
-                trial = User(email="trial@example.com", normalized_email="trial@example.com", role="user")
+                paid = User(
+                    email="paid@example.com", normalized_email="paid@example.com", role="user"
+                )
+                trial = User(
+                    email="trial@example.com", normalized_email="trial@example.com", role="user"
+                )
                 package = CreditPackage(
                     code="starter", name="Starter", credits=3000, amount_minor=999, currency="USD"
                 )

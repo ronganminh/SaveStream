@@ -149,6 +149,7 @@ class _AutoRecordSettingsScreenState
                         label: item.creatorDisplayName,
                         imageUrl: item.creatorAvatarUrl,
                         radius: 24,
+                        isLive: item.isLive,
                       ),
                       const SizedBox(width: SsSpacing.md),
                       Expanded(

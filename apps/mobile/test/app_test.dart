@@ -20,6 +20,8 @@ import 'package:savestream_mobile/features/recordings/presentation/controllers/r
 import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_providers.dart';
 import 'package:savestream_mobile/features/recordings/presentation/models/recording_library_item.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recording_thumbnail.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recording_ui_helpers.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
 
@@ -54,8 +56,16 @@ void main() {
     // The Home tab opens with the V2 greeting header instead of an app bar.
     expect(find.byType(SsLargeHeader), findsOneWidget);
     expect(find.byTooltip('Notifications'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('notification-unread-dot')),
+      findsOneWidget,
+    );
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationDestination), findsNWidgets(4));
+    expect(
+      tester.widget<NavigationBar>(find.byType(NavigationBar)).labelBehavior,
+      NavigationDestinationLabelBehavior.alwaysShow,
+    );
   });
 
   testWidgets('renders the aggregated home dashboard', (
@@ -65,13 +75,23 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Welcome back, Alex'), findsOneWidget);
+    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
     expect(find.text('Free minutes today'), findsOneWidget);
     expect(find.text('6 / 10 minutes remaining'), findsOneWidget);
-    expect(find.text('Watching 8/3'), findsOneWidget);
+    expect(find.text('Watching'), findsWidgets);
+    expect(find.text('8/3'), findsOneWidget);
     expect(find.text('Available credit'), findsNothing);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
     expect(find.text('Ada Live'), findsWidgets);
+    expect(find.text('Local · Saved on this device'), findsWidgets);
+    expect(find.text('Record now'), findsWidgets);
+    expect(find.text('View Pro'), findsOneWidget);
+    expect(
+      tester
+          .widgetList<SsAvatar>(find.byType(SsAvatar))
+          .any((SsAvatar avatar) => avatar.isLive),
+      isTrue,
+    );
   });
 
   testWidgets('renders skeleton while the home dashboard is loading', (
@@ -186,7 +206,7 @@ void main() {
     await tester.pump();
 
     expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Welcome back, Alex'), findsOneWidget);
+    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
   });
 
   testWidgets('shows invalid credentials from mock auth repository', (
@@ -342,10 +362,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Ada Live'), findsOneWidget);
-    expect(find.text('All'), findsOneWidget);
+    expect(find.text('All · 8'), findsOneWidget);
     expect(find.text('LIVE'), findsWidgets);
-    expect(find.text('Offline'), findsOneWidget);
-    expect(find.text('Paused'), findsOneWidget);
+    expect(find.text('Offline · 2'), findsOneWidget);
+    expect(find.text('Paused · 4'), findsNothing);
+    expect(find.text('Record now'), findsWidgets);
     expect(
       find.textContaining('You already have 8 creators from an older plan'),
       findsWidgets,
@@ -469,7 +490,70 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Cloud'));
     await tester.pump();
     expect(find.text('Cloud'), findsWidgets);
+
+    expect(find.widgetWithText(ChoiceChip, 'Error'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Error'));
+    await tester.pump();
+    expect(find.text('Studio North'), findsWidgets);
   });
+
+  testWidgets(
+    'Recordings switches between content thumbnails and compact list',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+      await tester.pump();
+      await tester.tap(find.text('Recordings'));
+      await tester.pumpAndSettle();
+
+      final Finder allFilter = find.widgetWithText(ChoiceChip, 'All');
+      final Finder localFilter = find.widgetWithText(ChoiceChip, 'Local');
+      final Finder cloudFilter = find.widgetWithText(ChoiceChip, 'Cloud');
+      expect(tester.getCenter(localFilter).dy, tester.getCenter(allFilter).dy);
+      expect(tester.getCenter(cloudFilter).dy, tester.getCenter(allFilter).dy);
+
+      final double searchCenter = tester.getCenter(find.byType(TextField)).dy;
+      expect(
+        tester.getCenter(find.byIcon(Icons.tune_rounded)).dy,
+        closeTo(searchCenter, 1),
+      );
+      expect(
+        tester.getCenter(find.byIcon(Icons.view_list_rounded)).dy,
+        closeTo(searchCenter, 1),
+      );
+
+      final BuildContext context = tester.element(
+        find.byType(RecordingsScreen),
+      );
+      final String dateGroupLabel = MaterialLocalizations.of(
+        context,
+      ).formatMediumDate(DateTime(2026, 9, 30));
+      expect(find.text(dateGroupLabel), findsOneWidget);
+      expect(find.text('Swipe left for Play, Share and Delete'), findsNothing);
+
+      expect(find.byType(RecordingThumbnail), findsWidgets);
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pumpAndSettle();
+      expect(find.byType(RecordingThumbnail), findsNothing);
+      expect(find.byIcon(Icons.video_file_outlined), findsWidgets);
+      final String visibleDate = recordingTimestamp(
+        tester.element(find.byType(RecordingsScreen)),
+        DateTime.utc(2026, 9, 30, 13, 42),
+      );
+      expect(find.textContaining(visibleDate), findsWidgets);
+
+      await tester.tap(find.byTooltip('Filter recordings'));
+      await tester.pumpAndSettle();
+      expect(find.text('Newest first'), findsOneWidget);
+      expect(find.text('Expiring first'), findsOneWidget);
+      expect(find.text('Largest first'), findsOneWidget);
+      expect(find.text('Name A–Z'), findsOneWidget);
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.text('Ada Live').first, const Offset(-260, 0));
+      await tester.pumpAndSettle();
+    },
+  );
 
   testWidgets('active recording Stop action follows canStop flag', (
     WidgetTester tester,
@@ -518,9 +602,13 @@ void main() {
       tester.element(find.byType(RecordingsScreen)),
     );
     router.go(AppRoutes.recordingDetail('rec_003'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('Recording error'),
+      320,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Recording error'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Retry recording'),
@@ -580,9 +668,11 @@ void main() {
     await tester.pump();
     await tester.tap(find.text('Settings'));
     await tester.pump();
-    await tester.tap(find.text('Profile'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    final BuildContext settingsContext = tester.element(
+      find.text('Settings').first,
+    );
+    GoRouter.of(settingsContext).push(AppRoutes.profile);
+    await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreen), findsOneWidget);
     expect(find.text('Alex Nguyen'), findsOneWidget);

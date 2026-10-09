@@ -26,15 +26,7 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final double width = MediaQuery.sizeOf(context).width;
     final double textScale = MediaQuery.textScalerOf(context).scale(1);
-    final bool compactFab = width < 360 || textScale >= 1.4;
-    final NavigationDestinationLabelBehavior navigationLabelBehavior =
-        textScale >= 1.4
-        ? NavigationDestinationLabelBehavior.alwaysHide
-        : width < 440
-        ? NavigationDestinationLabelBehavior.onlyShowSelected
-        : NavigationDestinationLabelBehavior.alwaysShow;
     final String location = GoRouterState.of(context).matchedLocation;
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
@@ -200,18 +192,6 @@ class MainShell extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: compactFab
-          ? FloatingActionButton(
-              tooltip: l10n.addChannelAction,
-              onPressed: () => context.push(AppRoutes.addChannel),
-              child: const Icon(Icons.add_rounded),
-            )
-          : FloatingActionButton.extended(
-              tooltip: l10n.addChannelAction,
-              onPressed: () => context.push(AppRoutes.addChannel),
-              icon: const Icon(Icons.add_rounded),
-              label: Text(l10n.addChannelAction),
-            ),
       bottomNavigationBar: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.2,
         child: Column(
@@ -221,7 +201,7 @@ class MainShell extends ConsumerWidget {
               ActiveRecordingBar(items: activeRecordings),
             NavigationBar(
               height: textScale >= 1.4 ? 64 : null,
-              labelBehavior: navigationLabelBehavior,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: (int index) {
                 navigationShell.goBranch(

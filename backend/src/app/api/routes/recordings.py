@@ -42,10 +42,23 @@ async def live_status(
 ) -> LiveStatusResponse:
     del principal
     runtime = build_recording_runtime(request.app.state.settings)
+    # Resolve the profile in parallel with the LIVE check.  The search result
+    # should show the real TikTok avatar/display name without making the
+    # status request wait for a second sequential TikTok round-trip.  Profile
+    # metadata is best-effort; a live-status result is still useful when
+    # TikTok temporarily blocks the profile page.
+    from app.infrastructure.creators.tiktok_profile import TikTokCreatorMetadataLookup
+
+    profile_task = TikTokCreatorMetadataLookup().lookup(payload.source)
+    status_task = asyncio.to_thread(
+        runtime.resolver.live_status,
+        payload.source,
+    )
     try:
-        resolved, is_live = await asyncio.to_thread(
-            runtime.resolver.live_status,
-            payload.source,
+        profile_result, status_result = await asyncio.gather(
+            profile_task,
+            status_task,
+            return_exceptions=True,
         )
     except Exception as exc:
         raise ApplicationError(
@@ -54,14 +67,25 @@ async def live_status(
             status_code=503,
             retryable=True,
         ) from exc
+
+    if isinstance(status_result, BaseException):
+        raise ApplicationError(
+            "STREAM_UNAVAILABLE",
+            "Unable to resolve live status",
+            status_code=503,
+            retryable=True,
+        ) from status_result
+
+    resolved, is_live = status_result
+    metadata = profile_result if not isinstance(profile_result, BaseException) else None
     from app.api.schemas.recordings import Creator
 
     return LiveStatusResponse(
         source=payload.source,
         creator=Creator(
-            username=resolved.username,
-            display_name=resolved.username,
-            avatar_url=None,
+            username=metadata.username if metadata is not None else resolved.username,
+            display_name=(metadata.display_name if metadata is not None else resolved.username),
+            avatar_url=metadata.avatar_url if metadata is not None else None,
         ),
         live_status="live" if is_live else "offline",
         room_id=resolved.room_id,
@@ -109,12 +133,14 @@ async def list_recordings(
     )
     days = await service.retention_days_for(principal.user_id)
     positions = await service.queue_positions(page.items)
+    artifact_recording_ids = await service.artifact_recording_ids(page.items)
     return RecordingListResponse(
         items=[
             recording_response(
                 item,
                 retention_days=days,
                 queue_position=positions.get(item.id),
+                artifact_ready=item.id in artifact_recording_ids,
             )
             for item in page.items
         ],
@@ -135,10 +161,12 @@ async def get_recording(
     recording = await service.get(principal, recording_id)
     days = await service.retention_days_for(principal.user_id)
     queue_position = await service.queue_position(recording)
+    artifact_recording_ids = await service.artifact_recording_ids([recording])
     return recording_response(
         recording,
         retention_days=days,
         queue_position=queue_position,
+        artifact_ready=recording.id in artifact_recording_ids,
     )
 
 
@@ -257,8 +285,7 @@ async def stream_recording_events(
                 if idle_ticks % 15 == 0:
                     yield ": keep-alive\n\n"
             if (
-                current is None
-                or RecordingStatus(current.status) in TERMINAL_RECORDING_STATUSES
+                current is None or RecordingStatus(current.status) in TERMINAL_RECORDING_STATUSES
             ) and not events:
                 return
             await asyncio.sleep(poll_seconds)

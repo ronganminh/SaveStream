@@ -45,7 +45,7 @@ Không được làm:
 
 ## 3. Vòng lặp điều phối: 30 phút một lần
 
-Cứ **30 phút** quay lại xem một lần. Giữa hai lần xem, không làm gì.
+Cứ **20 phút** quay lại xem một lần. Giữa hai lần xem, không làm gì.
 
 Mỗi lần xem:
 

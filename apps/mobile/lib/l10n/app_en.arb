@@ -57,6 +57,14 @@
   "mockFoundationBody": "Channels and recordings are backed by repository interfaces with success, loading, empty, error, and offline-like scenarios.",
   "channelsTitle": "Watching",
   "recordingsTitle": "Recordings",
+  "recordingsRetentionSubtitle": "Cloud kept {days} days · Local on this device",
+  "@recordingsRetentionSubtitle": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
   "settingsTitle": "Settings",
   "profileTitle": "Profile",
   "languageTitle": "Language",
@@ -256,9 +264,60 @@
   "recordingCostLabel": "Cost",
   "notStartedLabel": "Not started",
   "artifactReadyLabel": "Artifact ready",
+  "recordingArtifactMissingStatus": "Processing failed",
+  "recordingArtifactMissingTitle": "Video file was not created",
+  "recordingArtifactMissingBody": "The recording ended, but SaveStream could not create a playable cloud video. Retry the status check or delete this item.",
   "artifactPendingLabel": "Artifact pending",
   "thumbnailReadyLabel": "Thumbnail ready",
   "thumbnailPendingLabel": "Thumbnail pending",
+  "recordingContentViewLabel": "Content",
+  "recordingListViewLabel": "List",
+  "recordingSortTooltip": "Sort recordings",
+  "recordingSortDate": "Newest first",
+  "recordingSortSize": "Largest first",
+  "recordingSortName": "Name A–Z",
+  "recordingSortExpiring": "Expiring first",
+  "recordingFiltersTitle": "Filter recordings",
+  "recordingFiltersResetAction": "Reset",
+  "recordingFiltersStorageTitle": "STORAGE",
+  "recordingFiltersStatusTitle": "STATUS",
+  "recordingFiltersSortTitle": "SORT",
+  "recordingFiltersApplyAction": "View {count} recordings",
+  "@recordingFiltersApplyAction": {
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "recordingFiltersActiveSubtitle": "Filtering",
+  "recordingStatusGroupCompleted": "Completed",
+  "recordingStatusGroupProcessing": "Processing",
+  "recordingStatusGroupPartial": "Partial / recovered",
+  "recordingStatusGroupIssues": "Error / expired",
+  "recordingSearchResults": "{count} results for “{query}”",
+  "@recordingSearchResults": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "query": {"type": "String"}
+    }
+  },
+  "recordingSearchCancelAction": "Cancel",
+  "recordingSearchHelpTitle": "Can't find it?",
+  "recordingSearchHelpBody": "Cloud recordings expired for more than 7 days no longer appear in results.",
+  "recordingSearchEmptyTitle": "No matching recordings",
+  "recordingSearchEmptyBody": "Try another creator name or live title.",
+  "recordingSearchClearAction": "Clear search",
+  "recordingFilteredEmptyTitle": "No matching recordings",
+  "recordingFilteredEmptyBody": "Try removing some filters.",
+  "recordingClearFiltersAction": "Clear filters",
+  "recordingEmptyAddCreatorAction": "Add creator",
+  "recordingEmptyRecordNowAction": "Record now",
+  "recordingDateToday": "Today",
+  "recordingDateYesterday": "Yesterday",
+  "recordingsStorageCount": "{localCount} Local · {cloudCount} Cloud",
+  "@recordingsStorageCount": {
+    "placeholders": {
+      "localCount": {"type": "int"},
+      "cloudCount": {"type": "int"}
+    }
+  },
   "recordingEndOfListLabel": "You’re all caught up.",
   "recordingLoadMoreFailed": "Couldn’t load more recordings.",
   "loadMoreAction": "Load more",
@@ -575,6 +634,29 @@
   "homeResetAfter": "Resets in {duration}",
   "homeRewardsUsed": "Rewarded {used}/{cap}",
   "homeWatchingCapacity": "Watching {count}/{limit}",
+  "homeLiveNowTitle": "Live now",
+  "homeNoLiveCreators": "No followed creators are LIVE right now.",
+  "homeLiveSinceLabel": "LIVE since {time}",
+  "@homeLiveSinceLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeLocalStorageLabel": "Local · Saved on this device",
+  "homeFreeMinutesRemainingTail": " / {daily} minutes remaining",
+  "@homeFreeMinutesRemainingTail": {
+    "placeholders": {
+      "daily": {
+        "type": "int"
+      }
+    }
+  },
+  "viewProAction": "View Pro",
+  "homeRewardedMetricLabel": "Rewarded",
+  "homeSlotMetricLabel": "Slot",
+  "homeWatchingMetricLabel": "Watching",
   "homeCloudTimeTitle": "Cloud time available",
   "homeCloudSlots": "Cloud slots {used}/{limit}",
   "homeCloudRetention": "Cloud recordings kept {days} days",
@@ -582,7 +664,7 @@
   "homeLiveCreatorBody": "Open the creator to record now.",
   "homeLocalSaveHint": "Local · Saved on this device",
   "homeAutoRecordUpsellTitle": "Automatically record when a creator goes LIVE",
-  "homeAutoRecordUpsellBody": "Buy cloud hours to unlock cloud auto-recording, 20 creators, and no ads.",
+  "homeAutoRecordUpsellBody": "Pro records in the cloud, so your phone doesn’t need to stay online.",
   "buyCloudHoursAction": "Buy cloud hours",
   "homeOfflineTitle": "No connection",
   "homeOfflineBody": "Showing saved data. LIVE status may have changed. Recording actions that need the network are unavailable.",
@@ -1404,6 +1486,27 @@
   "settingsIosRecordingTitle": "Record on iPhone",
   "settingsIosRecordingSubtitle": "Keep-open and recovery guidance",
   "settingsRecordingSectionTitle": "Recording",
+  "settingsAutoRecordDefaultTitle": "Auto-record default",
+  "settingsCloudRetentionTitle": "Cloud retention",
+  "settingsLocalRecordingTitle": "Local recording",
+  "settingsLocalRecordingUnlimitedValue": "Unlimited on this device",
+  "settingsLocalRecordingAvailableValue": "Available on this device",
+  "settingsLocalRecordingDisabledValue": "Unavailable for this account",
+  "settingsRecordingQualityTitle": "Quality",
+  "settingsRecordingQualityValue": "Auto / source",
+  "settingsAppSectionTitle": "App",
+  "settingsPurchasesSectionTitle": "Account & purchases",
+  "settingsTodayLabel": "Today",
+  "settingsDailyUsageValue": "{remaining}/{daily} min · {used}/{cap} ads",
+  "@settingsDailyUsageValue": {
+    "placeholders": {
+      "remaining": {"type": "int"},
+      "daily": {"type": "int"},
+      "used": {"type": "int"},
+      "cap": {"type": "int"}
+    }
+  },
+  "upgradeToProAction": "Upgrade to Pro",
   "recordingSearchHint": "Search by creator",
   "recordingCrossDeviceValue": "Recorded on {device}",
   "@recordingCrossDeviceValue": {
@@ -1413,7 +1516,7 @@
       }
     }
   },
-  "recordingCrossDeviceUnavailable": "Not available on this device. Playback, sharing, and deletion are disabled.",
+  "recordingCrossDeviceUnavailable": "Not available on this device. Playback and sharing are disabled.",
   "recordingLocalFileMissing": "The local file was moved or deleted. SaveStream cannot play or share it.",
   "shareRecordingAction": "Share recording",
   "deleteLocalRecordingAction": "Delete from this device",
@@ -1429,6 +1532,44 @@
   "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download.",
   "recordingDownloadedLabel": "Downloaded",
   "recordingDownloadedBody": "Saved on this device. You can play or share the local copy.",
+  "recordingLocalOnlyTitle": "Only on this device",
+  "recordingLocalOnlyBody": "The file is stored on {device}. Uninstalling the app or clearing storage may remove it.",
+  "@recordingLocalOnlyBody": {
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "recordingStorageLabel": "Storage",
+  "recordingQualityLabel": "Quality",
+  "recordingQualitySourceValue": "Automatic / source",
+  "recordingStartedByLabel": "Started by",
+  "recordingStartedManuallyValue": "You tapped Record now",
+  "recordingStartedAutomaticallyValue": "Auto-record when LIVE",
+  "recordingLocalStorageValue": "Local · {device}",
+  "@recordingLocalStorageValue": {
+    "placeholders": {"device": {"type": "String"}}
+  },
+  "recordingCloudStorageValue": "Cloud · SaveStream server",
+  "recordingCloudRetentionLabel": "Kept until",
+  "recordingCloudRetentionValue": "{date} · {days} days left",
+  "@recordingCloudRetentionValue": {
+    "placeholders": {
+      "date": {"type": "String"},
+      "days": {"type": "int"}
+    }
+  },
+  "recordingCloudRetentionTomorrow": "{date} · expires tomorrow",
+  "@recordingCloudRetentionTomorrow": {
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "recordingCloudExpiringTitle": "Storage expires soon",
+  "recordingCloudExpiringBody": "This cloud recording will be deleted on {date}. Pro keeps recordings for 30 days; Free + Cloud Pack for 7 days.",
+  "@recordingCloudExpiringBody": {
+    "placeholders": {"date": {"type": "String"}}
+  },
+  "recordingDownloadDeviceAction": "Download to device",
+  "recordingDownloadedTitle": "Downloaded to this device",
+  "recordingDownloadedChip": "On this device",
+  "recordingLocalCopyLabel": "Local copy",
+  "recordingPlayerSpeedTooltip": "Playback speed",
   "recordingDownloadingBytes": "Downloading {done} of {total}",
   "@recordingDownloadingBytes": {
     "placeholders": {

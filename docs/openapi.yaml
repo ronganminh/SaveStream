@@ -9079,6 +9079,11 @@
             ],
             "description": "Cloud retention expiry. B6 uses 30 days for accounts with a paid purchase and 7 days otherwise; null while not applicable."
           },
+          "playback_ready": {
+            "type": "boolean",
+            "default": false,
+            "description": "True when a playable cloud video exists for this recording."
+          },
           "engine": {
             "type": "string",
             "enum": [

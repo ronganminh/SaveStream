@@ -42,7 +42,8 @@ void main() {
 
     expect(find.text('Free minutes today'), findsOneWidget);
     expect(find.text('6 / 10 minutes remaining'), findsOneWidget);
-    expect(find.text('Watching 8/3'), findsOneWidget);
+    expect(find.text('Watching'), findsWidgets);
+    expect(find.text('8/3'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
 
     await tester.tap(find.byIcon(Icons.visibility_outlined));

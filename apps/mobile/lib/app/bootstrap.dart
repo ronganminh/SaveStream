@@ -112,7 +112,6 @@ Future<void> bootstrap() async {
     deviceInfoService: deviceInfoService,
     deviceRepository: deviceRepository,
   ).start();
-  await pushService.initialize();
   if (Platform.isAndroid) {
     final AppLocalizations l10n = await AppLocalizations.delegate.load(
       settings.locale,
@@ -122,6 +121,10 @@ Future<void> bootstrap() async {
       recordingName: l10n.nativePushChannelRecordingName,
     );
   }
+  // Create channels before Firebase can receive a message.  FCM uses the
+  // channel id from the server payload; creating it first prevents an early
+  // LIVE push from falling back to a missing/default channel on Android.
+  await pushService.initialize();
 
   final CurrentUserIdSource currentUserIdSource = CurrentUserIdSource(
     apiClient: authenticatedApiClient,

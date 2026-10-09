@@ -97,9 +97,7 @@ async def append_event(
     event_type: str,
 ) -> RecordingEvent:
     maximum = await session.scalar(
-        select(func.max(RecordingEvent.sequence)).where(
-            RecordingEvent.recording_id == recording.id
-        )
+        select(func.max(RecordingEvent.sequence)).where(RecordingEvent.recording_id == recording.id)
     )
     event = RecordingEvent(
         recording_id=recording.id,
@@ -136,10 +134,27 @@ class RecordingService:
         self.settings = settings
         self.outbox = outbox or OutboxWriter()
 
-
     async def retention_days_for(self, user_id: uuid.UUID) -> int:
         paid = await has_paid_purchase(self.session, user_id)
         return retention_days(self.settings, paid=paid)
+
+    async def artifact_recording_ids(
+        self,
+        recordings: Sequence[Recording],
+    ) -> set[uuid.UUID]:
+        recording_ids = [recording.id for recording in recordings]
+        if not recording_ids:
+            return set()
+        return set(
+            (
+                await self.session.scalars(
+                    select(RecordingArtifact.recording_id).where(
+                        RecordingArtifact.recording_id.in_(recording_ids),
+                        RecordingArtifact.deleted_at.is_(None),
+                    )
+                )
+            ).all()
+        )
 
     async def queue_position(self, recording: Recording) -> int | None:
         from app.application.recordings.cloud_slots import CloudSlotQueueService
@@ -261,9 +276,7 @@ class RecordingService:
             source_type=source.type,
             source_value=source.value,
             room_session_key=(
-                room_session_key(user_id, source.value)
-                if source.type == "room_id"
-                else None
+                room_session_key(user_id, source.value) if source.type == "room_id" else None
             ),
             status=RecordingStatus.QUEUED.value,
             active_dedupe_key=active_key,
@@ -272,10 +285,7 @@ class RecordingService:
             container=payload.container,
             estimated_max_cost=0,
         )
-        max_duration = (
-            payload.max_duration_seconds
-            or self.settings.recording_max_duration_seconds
-        )
+        max_duration = payload.max_duration_seconds or self.settings.recording_max_duration_seconds
         # Record until the credits run out: cap this recording to what the
         # balance covers. Unaffordable requests fail in reserve_recording below.
         affordable = await CreditService(self.session).affordable_duration_seconds(
@@ -454,9 +464,7 @@ class RecordingService:
             ).all()
         )
 
-    async def artifact(
-        self, principal: AuthPrincipal, artifact_id: str
-    ) -> RecordingArtifact:
+    async def artifact(self, principal: AuthPrincipal, artifact_id: str) -> RecordingArtifact:
         try:
             parsed = uuid.UUID(artifact_id)
         except ValueError as exc:
@@ -474,9 +482,10 @@ class RecordingService:
         if artifact is None:
             raise self._artifact_not_found()
         recording = await self.session.get(Recording, artifact.recording_id)
-        if recording is not None and await recording_creator_block(
-            self.session, recording
-        ) is not None:
+        if (
+            recording is not None
+            and await recording_creator_block(self.session, recording) is not None
+        ):
             raise ApplicationError(
                 "CREATOR_BLOCKED",
                 "This recording is unavailable due to a safety restriction",
@@ -487,15 +496,11 @@ class RecordingService:
 
     @staticmethod
     def _not_found() -> ApplicationError:
-        return ApplicationError(
-            "RESOURCE_NOT_FOUND", "Recording not found", status_code=404
-        )
+        return ApplicationError("RESOURCE_NOT_FOUND", "Recording not found", status_code=404)
 
     @staticmethod
     def _artifact_not_found() -> ApplicationError:
-        return ApplicationError(
-            "RESOURCE_NOT_FOUND", "Artifact not found", status_code=404
-        )
+        return ApplicationError("RESOURCE_NOT_FOUND", "Artifact not found", status_code=404)
 
 
 class RecordingStateStore:
@@ -535,11 +540,9 @@ class RecordingStateStore:
             return None
 
         now = utcnow()
-        fresh = (
-            recording.heartbeat_at is not None
-            and aware(recording.heartbeat_at)
-            > now - timedelta(seconds=self.settings.recording_stale_after_seconds)
-        )
+        fresh = recording.heartbeat_at is not None and aware(
+            recording.heartbeat_at
+        ) > now - timedelta(seconds=self.settings.recording_stale_after_seconds)
         if recording.worker_lease_id is not None and fresh:
             return None
         if recording.worker_attempts >= self.settings.recording_max_attempts:

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../app/theme/ss_semantic_colors.dart';
@@ -29,7 +31,7 @@ class SsCard extends StatelessWidget {
   }
 }
 
-enum SsStatusTone { neutral, success, warning, error, recording }
+enum SsStatusTone { neutral, success, warning, error, recording, local, cloud }
 
 class SsStatusChip extends StatelessWidget {
   const SsStatusChip({
@@ -56,6 +58,8 @@ class SsStatusChip extends StatelessWidget {
       SsStatusTone.warning => (semantic.warning, semantic.warningSubtle),
       SsStatusTone.error => (semantic.error, semantic.errorSubtle),
       SsStatusTone.recording => (semantic.recording, semantic.errorSubtle),
+      SsStatusTone.local => (semantic.local, semantic.localSubtle),
+      SsStatusTone.cloud => (semantic.cloud, semantic.cloudSubtle),
     };
 
     final double maxWidth = (MediaQuery.sizeOf(context).width - SsSpacing.xxl)
@@ -114,21 +118,69 @@ class SsStatusChip extends StatelessWidget {
   }
 }
 
-class SsAvatar extends StatelessWidget {
+class SsAvatar extends StatefulWidget {
   const SsAvatar({
     required this.label,
     this.imageUrl,
     this.radius = 20,
+    this.isLive = false,
     super.key,
   });
 
   final String label;
   final String? imageUrl;
   final double radius;
+  final bool isLive;
+
+  @override
+  State<SsAvatar> createState() => _SsAvatarState();
+}
+
+class _SsAvatarState extends State<SsAvatar> {
+  static const Duration _pulseInterval = Duration(milliseconds: 850);
+  static const Duration _pulseDuration = Duration(milliseconds: 620);
+
+  Timer? _pulseTimer;
+  bool _pulseExpanded = false;
+  bool _disableAnimations = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final bool disableAnimations = MediaQuery.disableAnimationsOf(context);
+    if (_disableAnimations != disableAnimations) {
+      _disableAnimations = disableAnimations;
+      _syncPulse();
+    } else if (_pulseTimer == null) {
+      _syncPulse();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SsAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isLive != widget.isLive) _syncPulse();
+  }
+
+  void _syncPulse() {
+    _pulseTimer?.cancel();
+    _pulseTimer = null;
+    _pulseExpanded = false;
+    if (!widget.isLive || _disableAnimations) return;
+    _pulseTimer = Timer.periodic(_pulseInterval, (_) {
+      if (mounted) setState(() => _pulseExpanded = !_pulseExpanded);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final String initials = label
+    final String initials = widget.label
         .trim()
         .split(RegExp(r'\s+'))
         .where((String part) => part.isNotEmpty)
@@ -136,16 +188,16 @@ class SsAvatar extends StatelessWidget {
         .map((String part) => part.substring(0, 1).toUpperCase())
         .join();
 
-    final String? safeImageUrl = _safeAvatarUrl(imageUrl);
+    final String? safeImageUrl = _safeAvatarUrl(widget.imageUrl);
     final Color background = Theme.of(context).colorScheme.primaryContainer;
     final Color foreground = Theme.of(context).colorScheme.onPrimaryContainer;
     final Widget fallback = Center(
       child: Text(initials.isEmpty ? 'S' : initials),
     );
 
-    return ExcludeSemantics(
+    final Widget avatar = ExcludeSemantics(
       child: CircleAvatar(
-        radius: radius,
+        radius: widget.radius,
         backgroundColor: background,
         foregroundColor: foreground,
         child: safeImageUrl == null
@@ -153,12 +205,53 @@ class SsAvatar extends StatelessWidget {
             : ClipOval(
                 child: Image.network(
                   safeImageUrl,
-                  width: radius * 2,
-                  height: radius * 2,
+                  width: widget.radius * 2,
+                  height: widget.radius * 2,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => fallback,
                 ),
               ),
+      ),
+    );
+    if (!widget.isLive) return avatar;
+
+    final Color liveColor = context.semanticColors.recording;
+    final double avatarDiameter = widget.radius * 2;
+    final double extent = avatarDiameter + 12;
+    return SizedBox.square(
+      dimension: extent,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          AnimatedScale(
+            key: const ValueKey<String>('ss-live-avatar-pulse-scale'),
+            scale: _pulseExpanded ? 1.12 : 1,
+            duration: _disableAnimations ? Duration.zero : _pulseDuration,
+            curve: Curves.easeInOut,
+            child: AnimatedOpacity(
+              key: const ValueKey<String>('ss-live-avatar-pulse-opacity'),
+              opacity: _pulseExpanded ? .22 : .78,
+              duration: _disableAnimations ? Duration.zero : _pulseDuration,
+              curve: Curves.easeInOut,
+              child: Container(
+                width: avatarDiameter + 6,
+                height: avatarDiameter + 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: liveColor, width: 2),
+                ),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: liveColor, width: 2),
+            ),
+            child: avatar,
+          ),
+        ],
       ),
     );
   }

@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.admin_models import AdminRuntimeSetting
-from app.settings import AppSettings
+from app.settings import AppSettings, store_purchase_platform_enabled
 
 SettingKind = Literal["bool", "int", "version", "enum", "datetime"]
 SettingValue = bool | int | str | None
@@ -156,13 +156,19 @@ def _setting_definitions() -> tuple[RuntimeSettingDefinition, ...]:
             "payment_app_store_enabled",
             "bool",
             "Allow App Store purchases when store purchases are configured.",
-            lambda settings: settings.store_purchase_provider != "disabled",
+            lambda settings: store_purchase_platform_enabled(
+                settings.store_purchase_provider,
+                "app_store",
+            ),
         ),
         RuntimeSettingDefinition(
             "payment_google_play_enabled",
             "bool",
             "Allow Google Play purchases when store purchases are configured.",
-            lambda settings: settings.store_purchase_provider != "disabled",
+            lambda settings: store_purchase_platform_enabled(
+                settings.store_purchase_provider,
+                "google_play",
+            ),
         ),
     )
 

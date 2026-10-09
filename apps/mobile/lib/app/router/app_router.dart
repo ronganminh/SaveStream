@@ -338,6 +338,10 @@ GoRouter createAppRouter({
                 context.l10n.recordingDetailTitle,
             durationSeconds:
                 int.tryParse(state.uri.queryParameters['duration'] ?? '') ?? 0,
+            startedAt: DateTime.tryParse(
+              state.uri.queryParameters['started'] ?? '',
+            ),
+            localPath: state.uri.queryParameters['path'],
           );
         },
       ),

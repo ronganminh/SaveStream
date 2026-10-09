@@ -17,3 +17,9 @@ abstract interface class WatchRepository {
 
   Future<void> deleteWatch(String id);
 }
+
+/// Lookup is deliberately a separate capability so older repository fakes and
+/// offline test doubles do not have to implement a network-only operation.
+abstract interface class CreatorLookupRepository {
+  Future<CreatorLookupResult> lookupCreator(CreateWatchCommand command);
+}

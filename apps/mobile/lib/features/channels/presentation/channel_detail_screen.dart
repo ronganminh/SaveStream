@@ -422,6 +422,7 @@ class _CreatorHeader extends StatelessWidget {
             label: watch.creatorDisplayName,
             imageUrl: watch.creatorAvatarUrl,
             radius: 30,
+            isLive: watch.isLive,
           ),
           const SizedBox(width: SsSpacing.md),
           Expanded(

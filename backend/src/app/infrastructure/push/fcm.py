@@ -128,6 +128,20 @@ class FcmPushSender:
                             "body": message.body,
                         },
                         "android": {
+                            # LIVE alerts are time-sensitive.  High priority
+                            # lets FCM wake a dozing Android device instead of
+                            # batching the message until the next maintenance
+                            # window; the short TTL prevents stale LIVE alerts.
+                            "priority": (
+                                "HIGH"
+                                if message.data.get("type") == "creator_live"
+                                else "NORMAL"
+                            ),
+                            "ttl": (
+                                "120s"
+                                if message.data.get("type") == "creator_live"
+                                else "3600s"
+                            ),
                             "notification": {
                                 "channel_id": (
                                     "savestream_creator_live"

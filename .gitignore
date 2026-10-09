@@ -35,3 +35,11 @@ apps/mobile/ios/.symlinks/
 # Firebase app configuration (release secrets/config live outside Git)
 apps/mobile/android/app/google-services.json
 apps/mobile/ios/Runner/GoogleService-Info.plist
+*-firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
+
+# Local release/review artifacts
+/releases/
+/tmp/
+/flutter_export/
