@@ -20,7 +20,7 @@ The Flutter app uses `in_app_purchase` / StoreKit 2 and calls `POST /v1/billing/
 
    Add at least one localization (English name/description), availability, price and required review metadata. StoreKit displays each product's *localized App Store price* rather than the backend's USD price. The product IDs cannot be changed after creation. Changes can take up to an hour to show in sandbox.
 4. Under **Users and Access → Integrations → In-App Purchase**, generate a dedicated **In-App Purchase** key. Retain its **Key ID**, **Issuer ID** and downloaded `SubscriptionKey_<KEY_ID>.p8` securely. This key is *different from* a Distribution certificate, APNs `.p8`, and the App Store Connect API Team key.
-5. Configure App Store Server Notifications V2 (sandbox and, later, production) to `https://api.savestream.online/v1/webhooks/app-store`, as supported by the backend's verified refund handler.
+5. Configure App Store Server Notifications V2 (sandbox and, later, production) to `https://api.savestream.online/v1/webhooks/app-store`. The backend verifies Apple-signed `TEST` and other non-refund events and acknowledges them with HTTP 204 without changing a balance; it applies a balance reversal only for validated `REFUND` events.
 6. Create an App Store Connect **Sandbox Apple Account** or install a TestFlight build for the eligible tester. TestFlight StoreKit purchases use **sandbox** transactions and do not charge real money.
 
 ## Secure VPS credentials (after items above exist)
