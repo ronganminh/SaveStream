@@ -6,8 +6,11 @@ import json
 import os
 import quopri
 import re
+import subprocess
+import tempfile
 import time
 import uuid
+from pathlib import Path
 from urllib.parse import unquote
 
 import httpx
@@ -83,6 +86,42 @@ def wait_recording(
             return last
         time.sleep(1)
     raise RuntimeError(f"recording timeout: {last}")
+
+
+def assert_recorded_media_decodes(media: bytes) -> None:
+    """Prove a cloud recording is actual decodable H264 MP4, not just bytes."""
+    with tempfile.TemporaryDirectory(prefix="savestream-e2e-media-") as temporary:
+        path = Path(temporary) / "cloud-recording.mp4"
+        path.write_bytes(media)
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_streams", "-show_format",
+             "-of", "json", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        metadata = json.loads(probe.stdout)
+        streams = metadata.get("streams", [])
+        video = [stream for stream in streams if stream.get("codec_type") == "video"]
+        if len(video) != 1:
+            raise RuntimeError("Downloaded recording does not contain one video stream")
+        if video[0].get("codec_name") not in {"h264", "hevc"}:
+            raise RuntimeError(
+                f"Unexpected recording video codec: {video[0].get('codec_name')}"
+            )
+        duration = float(metadata.get("format", {}).get("duration", 0))
+        if not 0.5 < duration <= 15:
+            raise RuntimeError(f"Recorded video duration invalid: {duration}")
+        subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i",
+             str(path), "-frames:v", "1", "-f", "null", "-"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        print(f"MEDIA_DECODE_PASS codec={video[0]['codec_name']} duration={duration:.2f}s size={len(media)}B")
 
 
 def main() -> None:
@@ -240,6 +279,7 @@ def main() -> None:
         media.raise_for_status()
         if len(media.content) <= 100_000:
             raise RuntimeError("downloaded artifact is unexpectedly small")
+        assert_recorded_media_decodes(media.content)
 
         response = client.delete(
             f"{api}/v1/recordings/{recording_id}",
