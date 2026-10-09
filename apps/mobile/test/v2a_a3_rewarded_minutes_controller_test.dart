@@ -72,6 +72,49 @@ void main() {
     expect(localController.activeSession?.grantedSeconds, 1200);
   });
 
+  test('valid unbound reward starts a new local recording', () async {
+    final _LocalRepositorySpy localRepository = _LocalRepositorySpy();
+    final _RecorderSpy recorder = _RecorderSpy();
+    final LocalRecordingController localController = LocalRecordingController(
+      repository: localRepository,
+      recorder: recorder,
+      deviceInfo: const FakeDeviceInfoService(id: 'device_reward_start'),
+    );
+    final _RewardRepositorySpy rewards = _RewardRepositorySpy(
+      statuses: <RewardStatus>[RewardStatus.valid],
+    );
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        localRecordingControllerProvider.overrideWithValue(localController),
+        rewardRepositoryProvider.overrideWithValue(rewards),
+        adsServiceProvider.overrideWithValue(const _AdsSpy(result: true)),
+      ],
+    );
+    addTearDown(() async {
+      container.dispose();
+      localController.dispose();
+      await recorder.dispose();
+    });
+
+    final bool started = await container
+        .read(rewardedMinutesControllerProvider.notifier)
+        .startNewRecording(
+          watchId: 'watch_reward_start',
+          entitlement: entitlement,
+        );
+
+    expect(started, isTrue);
+    expect(
+      container.read(rewardedMinutesControllerProvider).phase,
+      RewardedMinutesPhase.success,
+    );
+    expect(rewards.createdSessionId, isNull);
+    expect(localRepository.startCalls, 1);
+    expect(localRepository.startWatchId, 'watch_reward_start');
+    expect(localRepository.startRewardId, 'reward_1');
+    expect(localController.activeSession?.watchId, 'watch_reward_start');
+  });
+
   test('no-fill never asks server status or extends the lease', () async {
     final _Harness harness = await _Harness.create(
       adResult: false,
@@ -339,6 +382,9 @@ final class _RewardRepositorySpy implements RewardRepository {
 }
 
 final class _LocalRepositorySpy implements LocalRecordingRepository {
+  int startCalls = 0;
+  String? startWatchId;
+  String? startRewardId;
   int extendCalls = 0;
   String? extendRewardId;
   LocalRecordingSession? _session;
@@ -349,6 +395,9 @@ final class _LocalRepositorySpy implements LocalRecordingRepository {
     required String deviceId,
     String? rewardId,
   }) async {
+    startCalls += 1;
+    startWatchId = watchId;
+    startRewardId = rewardId;
     final LocalRecordingSession session = LocalRecordingSession(
       sessionId: 'session_reward',
       watchId: watchId,

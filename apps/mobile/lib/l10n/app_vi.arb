@@ -996,6 +996,31 @@
       }
     }
   },
+  "rewardStartOfferTitle": "Record {minutes} phút bằng quảng cáo",
+  "@rewardStartOfferTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardStartOfferBody": "Xem 1 quảng cáo. Sau khi xác nhận phần thưởng, SaveStream sẽ bắt đầu một recording Local mới và cấp {minutes} phút.",
+  "@rewardStartOfferBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardStartSuccessTitle": "Đã xác nhận phần thưởng",
+  "rewardStartSuccessBody": "Recording Local đã bắt đầu với {minutes} phút thưởng.",
+  "@rewardStartSuccessBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "rewardMinutesExtensionProgress": "Gia hạn recording này {used}/{cap}",
   "@rewardMinutesExtensionProgress": {
     "placeholders": {

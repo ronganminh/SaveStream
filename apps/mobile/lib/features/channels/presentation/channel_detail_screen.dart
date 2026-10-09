@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -13,6 +14,7 @@ import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
 import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
+import '../../local_recordings/presentation/local_recording_reward_sheet.dart';
 import '../../local_recordings/presentation/local_recording_start_sheet.dart';
 import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
@@ -46,12 +48,33 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     }
   }
 
+  Future<void> _startRewardedRecording(
+    WatchSummary watch,
+    Entitlement entitlement,
+  ) async {
+    final bool started = await showRewardedRecordingStartSheet(
+      context: context,
+      ref: ref,
+      watchId: watch.id,
+      entitlement: entitlement.local,
+    );
+    if (started && mounted) {
+      context.push(AppRoutes.localRecording(watch.id));
+    }
+  }
+
   Future<void> _startLocalRecording(
     WatchSummary watch,
     Entitlement entitlement, {
     bool skipConfirmation = false,
   }) async {
     if (!entitlement.local.enabled) return;
+
+    if (!entitlement.local.unlimited &&
+        entitlement.local.minutesRemaining <= 0) {
+      await _startRewardedRecording(watch, entitlement);
+      return;
+    }
 
     final LocalRecordingController recordingController = ref.read(
       localRecordingControllerProvider,
@@ -119,6 +142,24 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
       await recordingController.start(watchId: watch.id);
       if (mounted) {
         context.push(AppRoutes.localRecording(watch.id));
+      }
+    } on ApiException catch (error) {
+      if (error.code == 'FREE_MINUTES_EXHAUSTED') {
+        ref.invalidate(entitlementProvider);
+        final Entitlement refreshed = await ref.read(
+          entitlementProvider.future,
+        );
+        if (mounted) {
+          await _startRewardedRecording(watch, refreshed);
+        }
+        return;
+      }
+      if (mounted && error.code == 'LOCAL_SLOT_BUSY') {
+        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+        return;
+      }
+      if (mounted) {
+        SsToast.show(context, context.l10n.localRecordingErrorTitle);
       }
     } on Object {
       if (mounted) {

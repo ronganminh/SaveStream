@@ -30,15 +30,40 @@ Future<void> showRewardedMinutesSheet({
   );
 }
 
+Future<bool> showRewardedRecordingStartSheet({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String watchId,
+  required LocalEntitlement entitlement,
+}) async {
+  ref.read(rewardedMinutesControllerProvider.notifier).reset();
+  final bool? started = await showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
+    builder: (BuildContext sheetContext) {
+      return RewardedMinutesSheet(
+        entitlement: entitlement,
+        extensionsUsed: 0,
+        startWatchId: watchId,
+      );
+    },
+  );
+  return started ?? false;
+}
+
 class RewardedMinutesSheet extends ConsumerStatefulWidget {
   const RewardedMinutesSheet({
     required this.entitlement,
     required this.extensionsUsed,
+    this.startWatchId,
     super.key,
   });
 
   final LocalEntitlement entitlement;
   final int extensionsUsed;
+  final String? startWatchId;
 
   @override
   ConsumerState<RewardedMinutesSheet> createState() =>
@@ -65,10 +90,16 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
     ) {
       if (next.phase == RewardedMinutesPhase.pending) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) Navigator.of(context).pop();
+          if (mounted) Navigator.of(context).pop(false);
         });
       }
       if (next.phase == RewardedMinutesPhase.success) {
+        if (widget.startWatchId != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) Navigator.of(context).pop(true);
+          });
+          return;
+        }
         _successTimer?.cancel();
         _successTimer = Timer(const Duration(seconds: 4), () {
           if (mounted) Navigator.of(context).pop();
@@ -106,6 +137,19 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
   }
 
   String _title(BuildContext context, RewardedMinutesPhase phase) {
+    if (widget.startWatchId != null) {
+      return switch (phase) {
+        RewardedMinutesPhase.idle => context.l10n.rewardStartOfferTitle(
+          widget.entitlement.minutesPerReward,
+        ),
+        RewardedMinutesPhase.success => context.l10n.rewardStartSuccessTitle,
+        _ => _sharedTitle(context, phase),
+      };
+    }
+    return _sharedTitle(context, phase);
+  }
+
+  String _sharedTitle(BuildContext context, RewardedMinutesPhase phase) {
     return switch (phase) {
       RewardedMinutesPhase.idle => context.l10n.rewardMinutesOfferTitle(
         widget.entitlement.minutesPerReward,
@@ -135,6 +179,44 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
         ? state.extensionCount
         : widget.extensionsUsed;
 
+    if (widget.startWatchId != null) {
+      return switch (phase) {
+        RewardedMinutesPhase.idle => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              context.l10n.rewardStartOfferBody(
+                widget.entitlement.minutesPerReward,
+              ),
+            ),
+            const SizedBox(height: SsSpacing.md),
+            Text(
+              context.l10n.rewardMinutesDailyProgress(
+                widget.entitlement.rewardsUsedToday,
+                widget.entitlement.rewardsCapPerDay,
+              ),
+            ),
+          ],
+        ),
+        RewardedMinutesPhase.success => SsInlineAlert(
+          title: context.l10n.rewardStartSuccessTitle,
+          message: context.l10n.rewardStartSuccessBody(
+            widget.entitlement.minutesPerReward,
+          ),
+          tone: SsInlineAlertTone.success,
+        ),
+        _ => _sharedContent(context, phase, state, extensions),
+      };
+    }
+    return _sharedContent(context, phase, state, extensions);
+  }
+
+  Widget _sharedContent(
+    BuildContext context,
+    RewardedMinutesPhase phase,
+    RewardedMinutesState state,
+    int extensions,
+  ) {
     return switch (phase) {
       RewardedMinutesPhase.idle => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,12 +327,25 @@ class _RewardedMinutesSheetState extends ConsumerState<RewardedMinutesSheet> {
                 : context.l10n.retryAction,
             icon: Icons.ondemand_video_rounded,
             onPressed: () {
-              ref
-                  .read(rewardedMinutesControllerProvider.notifier)
-                  .start(
+              final RewardedMinutesController controller = ref.read(
+                rewardedMinutesControllerProvider.notifier,
+              );
+              final String? startWatchId = widget.startWatchId;
+              if (startWatchId != null) {
+                unawaited(
+                  controller.startNewRecording(
+                    watchId: startWatchId,
+                    entitlement: widget.entitlement,
+                  ),
+                );
+              } else {
+                unawaited(
+                  controller.start(
                     entitlement: widget.entitlement,
                     extensionsUsed: widget.extensionsUsed,
-                  );
+                  ),
+                );
+              }
             },
           ),
         if (phase == RewardedMinutesPhase.loadingAd ||

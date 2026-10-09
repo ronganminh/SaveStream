@@ -143,6 +143,72 @@ class RewardedMinutesController extends Notifier<RewardedMinutesState> {
     }
   }
 
+  Future<bool> startNewRecording({
+    required String watchId,
+    required LocalEntitlement entitlement,
+  }) async {
+    if (entitlement.rewardsUsedToday >= entitlement.rewardsCapPerDay) {
+      state = state.copyWith(
+        phase: RewardedMinutesPhase.dailyCap,
+        extensionCount: 0,
+        clearError: true,
+      );
+      return false;
+    }
+
+    final LocalRecordingController recording = ref.read(
+      localRecordingControllerProvider,
+    );
+    if (recording.hasActiveSession) {
+      state = state.copyWith(
+        phase: RewardedMinutesPhase.error,
+        errorMessage: 'A local recording session is already active.',
+      );
+      return false;
+    }
+
+    try {
+      state = state.copyWith(
+        phase: RewardedMinutesPhase.loadingAd,
+        extensionCount: 0,
+        clearError: true,
+      );
+
+      final Reward reward = await ref
+          .read(rewardRepositoryProvider)
+          .create(purpose: RewardPurpose.localMinutes);
+
+      final AdsService ads = ref.read(adsServiceProvider);
+      final bool watched = await ads.showRewarded(reward);
+      if (!watched) {
+        state = state.copyWith(
+          phase: RewardedMinutesPhase.noFill,
+          rewardId: reward.rewardId,
+        );
+        return false;
+      }
+
+      state = state.copyWith(
+        phase: RewardedMinutesPhase.verifying,
+        rewardId: reward.rewardId,
+      );
+      return await _verifyRewardForNewRecording(
+        rewardId: reward.rewardId,
+        watchId: watchId,
+        recording: recording,
+      );
+    } on ApiException catch (error) {
+      _applyApiException(error, extensionCount: 0);
+      return false;
+    } on Object catch (error) {
+      state = state.copyWith(
+        phase: RewardedMinutesPhase.error,
+        errorMessage: error.toString(),
+      );
+      return false;
+    }
+  }
+
   void _applyApiException(ApiException error, {required int extensionCount}) {
     final RewardedMinutesPhase phase = switch (error.code) {
       'REWARD_LOCKED' => RewardedMinutesPhase.locked,
@@ -200,6 +266,50 @@ class RewardedMinutesController extends Notifier<RewardedMinutesState> {
               rewardId: reward.rewardId,
             );
             return;
+          }
+          await Future<void>.delayed(interval);
+      }
+    }
+  }
+
+  Future<bool> _verifyRewardForNewRecording({
+    required String rewardId,
+    required String watchId,
+    required LocalRecordingController recording,
+  }) async {
+    final Duration timeout = ref.read(rewardVerificationTimeoutProvider);
+    final Duration interval = ref.read(rewardVerificationPollIntervalProvider);
+    final DateTime deadline = DateTime.now().add(timeout);
+
+    while (true) {
+      final Reward reward = await ref
+          .read(rewardRepositoryProvider)
+          .getStatus(rewardId);
+
+      switch (reward.status) {
+        case RewardStatus.valid:
+          await recording.start(watchId: watchId, rewardId: reward.rewardId);
+          state = state.copyWith(
+            phase: RewardedMinutesPhase.success,
+            rewardId: reward.rewardId,
+            extensionCount: 0,
+            clearError: true,
+          );
+          return true;
+        case RewardStatus.invalid:
+        case RewardStatus.expired:
+          state = state.copyWith(
+            phase: RewardedMinutesPhase.invalid,
+            rewardId: reward.rewardId,
+          );
+          return false;
+        case RewardStatus.pending:
+          if (!DateTime.now().isBefore(deadline)) {
+            state = state.copyWith(
+              phase: RewardedMinutesPhase.pending,
+              rewardId: reward.rewardId,
+            );
+            return false;
           }
           await Future<void>.delayed(interval);
       }

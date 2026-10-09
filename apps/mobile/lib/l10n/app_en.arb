@@ -996,6 +996,31 @@
       }
     }
   },
+  "rewardStartOfferTitle": "Record {minutes} minutes with an ad",
+  "@rewardStartOfferTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardStartOfferBody": "Watch 1 ad. SaveStream starts a new Local recording after confirming the reward and grants {minutes} minutes.",
+  "@rewardStartOfferBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "rewardStartSuccessTitle": "Reward confirmed",
+  "rewardStartSuccessBody": "Local recording started with {minutes} rewarded minutes.",
+  "@rewardStartSuccessBody": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "rewardMinutesExtensionProgress": "Extensions for this recording {used}/{cap}",
   "@rewardMinutesExtensionProgress": {
     "placeholders": {
