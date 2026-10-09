@@ -48,7 +48,10 @@ if ! xcrun simctl list devices booted | grep -Fq "$ios_device"; then
 fi
 python3 tool/ci_deadline.py --seconds 180 -- \
   xcrun simctl bootstatus "$ios_device" -b
-python3 tool/ci_deadline.py --seconds 75 -- flutter devices
+# Do NOT run `flutter devices` here. Flutter 3.47 can spend >75s attempting
+# wireless device discovery on a GitHub runner even after simctl says Booted.
+# The simulator's UDID is already known and is passed directly to each test.
+xcrun simctl list devices booted | grep -F "$ios_device"
 
 # Serve an actual H.264/AAC MP4 for native AVPlayer decoding; never request
 # ads, App Store purchases or livestreams from outside the CI runner.
