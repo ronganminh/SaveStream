@@ -116,8 +116,8 @@ test.describe("public and sign-in UX", () => {
 
   test("sign-in form uses consumer-friendly placeholders", async ({ page }) => {
     await page.goto("/sign-in");
-    await expect(page.getByLabel("Email")).toHaveAttribute("placeholder", "you@gmail.com");
-    await expect(page.getByLabel("Password")).toHaveAttribute("placeholder", "Password");
+    await expect.soft(page.getByLabel("Email")).toHaveAttribute("placeholder", "you@gmail.com");
+    await expect.soft(page.getByLabel("Password")).toHaveAttribute("placeholder", "Password");
   });
 
   test("public pages load without client-side crashes", async ({ page }) => {
