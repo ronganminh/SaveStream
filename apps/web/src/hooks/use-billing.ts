@@ -67,10 +67,7 @@ export function useBillingCheckoutMutation() {
       const order =
         input.kind === "order"
           ? await repositories.billing.getPaymentOrder(input.orderId)
-          : await repositories.billing.createPaymentOrder(
-              input.packageId,
-              idempotencyKey(),
-            );
+          : await repositories.billing.createPaymentOrder(input.packageId, idempotencyKey());
 
       if (!isAwaitingPaymentConfirmation(order.status)) {
         throw new Error(
@@ -97,6 +94,30 @@ export function useBillingCheckoutMutation() {
   });
 }
 
+export function usePayPalCaptureMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    retry: false,
+    mutationFn: async ({
+      paymentOrderId,
+      providerOrderId,
+    }: {
+      paymentOrderId: string;
+      providerOrderId: string;
+    }) => repositories.billing.capturePaymentOrder(paymentOrderId, providerOrderId),
+    onSuccess: async (order) => {
+      queryClient.setQueryData(domainQueryKeys.paymentOrder(order.id), order);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.creditBalance }),
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.creditTransactions }),
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.creditReservations }),
+        queryClient.invalidateQueries({ queryKey: domainQueryKeys.paymentOrders }),
+      ]);
+    },
+  });
+}
+
 export function useBillingReturnOrder(orderId: string | null | undefined) {
   const queryClient = useQueryClient();
   const result = usePaymentOrderData(orderId);
@@ -118,9 +139,7 @@ export function useBillingReturnOrder(orderId: string | null | undefined) {
 
 export function billingActionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) {
-    return error instanceof Error
-      ? error.message
-      : "The billing action could not be completed.";
+    return error instanceof Error ? error.message : "The billing action could not be completed.";
   }
   if (error.status === 0) {
     return "Unable to reach SaveStream. Check your connection and try again.";

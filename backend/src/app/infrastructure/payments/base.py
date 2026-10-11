@@ -66,6 +66,11 @@ class PaymentProvider(Protocol):
         currency: str,
     ) -> RefundSession: ...
 
+    async def capture_payment(
+        self,
+        provider_reference: str,
+    ) -> ProviderPaymentState: ...
+
     async def retrieve_payment(
         self,
         provider_reference: str,

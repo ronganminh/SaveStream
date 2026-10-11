@@ -112,6 +112,17 @@ class ConfiguredHttpPaymentProvider:
                 retryable=True,
             ) from exc
 
+    async def capture_payment(
+        self,
+        provider_reference: str,
+    ) -> ProviderPaymentState:
+        del provider_reference
+        raise ApplicationError(
+            "PAYMENT_FAILED",
+            "Payment provider does not support direct capture",
+            status_code=409,
+        )
+
     async def retrieve_payment(
         self,
         provider_reference: str,

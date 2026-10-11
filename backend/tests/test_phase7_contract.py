@@ -28,6 +28,10 @@ def test_phase7_billing_operation_ids_match_frozen_contract() -> None:
             "post",
         ): "createPaymentCheckout",
         (
+            "/billing/payment-orders/{payment_order_id}/capture",
+            "post",
+        ): "capturePaymentOrder",
+        (
             "/webhooks/payments/{provider}",
             "post",
         ): "paymentWebhook",

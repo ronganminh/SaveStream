@@ -110,7 +110,9 @@ ensure_random redis_password
 ensure_random jwt_secret
 ensure_random metrics_token
 
-PAYMENT_PROVIDER="$(ask 'Payment provider (disabled or lemonsqueezy)' "$(env_default SAVESTREAM_PAYMENT_PROVIDER disabled)")"
+PAYMENT_PROVIDER="$(ask 'Payment provider (disabled, paypal, or lemonsqueezy)' "$(env_default SAVESTREAM_PAYMENT_PROVIDER disabled)")"
+PAYMENT_BASE_URL=""
+PAYPAL_CLIENT_ID=""
 LEMON_STORE_ID=""
 LEMON_VARIANT_ID=""
 case "$PAYMENT_PROVIDER" in
@@ -125,7 +127,21 @@ case "$PAYMENT_PROVIDER" in
       fi
     done
     ;;
+  paypal)
+    if has_secret payment_api_key && [ "$(cat "$SECRETS_DIR/payment_api_key")" = "$PLACEHOLDER" ]; then
+      rm -f "$SECRETS_DIR/payment_api_key"
+    fi
+    ensure_prompted payment_api_key 'PayPal LIVE Client Secret' hidden
+    if ! has_secret payment_webhook_secret; then
+      write_secret payment_webhook_secret "$PLACEHOLDER"
+      printf 'created payment_webhook_secret (unused PayPal placeholder)\n' >&2
+    fi
+    PAYPAL_CLIENT_ID="$(ask 'PayPal LIVE Client ID' "$(env_default SAVESTREAM_PAYPAL_CLIENT_ID '')")"
+    [ -n "$PAYPAL_CLIENT_ID" ] || { echo 'PayPal LIVE Client ID is required.' >&2; exit 2; }
+    PAYMENT_BASE_URL="https://api-m.paypal.com"
+    ;;
   lemonsqueezy)
+    PAYMENT_BASE_URL="https://api.lemonsqueezy.com/v1"
     for name in payment_api_key payment_webhook_secret; do
       if has_secret "$name" && [ "$(cat "$SECRETS_DIR/$name")" = "$PLACEHOLDER" ]; then
         rm -f "$SECRETS_DIR/$name"
@@ -144,7 +160,7 @@ case "$PAYMENT_PROVIDER" in
     [ -n "$LEMON_VARIANT_ID" ] || { echo 'Lemon Squeezy LIVE Variant ID is required.' >&2; exit 2; }
     ;;
   *)
-    echo 'Payment provider must be disabled or lemonsqueezy.' >&2
+    echo 'Payment provider must be disabled, paypal, or lemonsqueezy.' >&2
     exit 2
     ;;
 esac
@@ -173,6 +189,8 @@ SAVESTREAM_CORS_ALLOW_ORIGINS=https://savestream.online,https://www.savestream.o
 SAVESTREAM_R2_ENDPOINT=$R2_ENDPOINT
 SAVESTREAM_R2_BUCKET=$R2_BUCKET
 SAVESTREAM_PAYMENT_PROVIDER=$PAYMENT_PROVIDER
+SAVESTREAM_PAYMENT_PROVIDER_BASE_URL=$PAYMENT_BASE_URL
+SAVESTREAM_PAYPAL_CLIENT_ID=$PAYPAL_CLIENT_ID
 SAVESTREAM_LEMON_SQUEEZY_STORE_ID=$LEMON_STORE_ID
 SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID=$LEMON_VARIANT_ID
 SAVESTREAM_OPS_ALERT_EMAIL=$OPS_ALERT_EMAIL

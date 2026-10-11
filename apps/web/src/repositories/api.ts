@@ -98,7 +98,9 @@ async function listRecordingPage(
 }
 
 async function collectAll<T>(
-  fetchPage: (cursor: string | null) => Promise<{ items: T[]; pagination: { next_cursor: string | null; has_more: boolean } }>,
+  fetchPage: (
+    cursor: string | null,
+  ) => Promise<{ items: T[]; pagination: { next_cursor: string | null; has_more: boolean } }>,
 ): Promise<T[]> {
   const items: T[] = [];
   let cursor: string | null = null;
@@ -272,16 +274,12 @@ export const apiRepositories: SaveStreamRepositories = {
     },
 
     async listArtifacts(id: string) {
-      const response = await apiClient.get<ArtifactsResponse>(
-        `/v1/recordings/${id}/artifacts`,
-      );
+      const response = await apiClient.get<ArtifactsResponse>(`/v1/recordings/${id}/artifacts`);
       return response.items;
     },
 
     createArtifactDownloadUrl(artifactId: string) {
-      return apiClient.post<DownloadUrlResponse>(
-        `/v1/artifacts/${artifactId}/download-url`,
-      );
+      return apiClient.post<DownloadUrlResponse>(`/v1/artifacts/${artifactId}/download-url`);
     },
 
     getLiveStatus(source: Source) {
@@ -359,13 +357,16 @@ export const apiRepositories: SaveStreamRepositories = {
     },
 
     createCheckout(id: string, returnUrl: string, idempotencyKey: string) {
-      return apiClient.post<CheckoutResponse>(
-        `/v1/billing/payment-orders/${id}/checkout`,
-        {
-          json: { return_url: returnUrl },
-          idempotencyKey,
-        },
-      );
+      return apiClient.post<CheckoutResponse>(`/v1/billing/payment-orders/${id}/checkout`, {
+        json: { return_url: returnUrl },
+        idempotencyKey,
+      });
+    },
+
+    capturePaymentOrder(id: string, providerOrderId: string) {
+      return apiClient.post<PaymentOrderResponse>(`/v1/billing/payment-orders/${id}/capture`, {
+        json: { provider_order_id: providerOrderId },
+      });
     },
   },
 
@@ -435,10 +436,9 @@ export const apiRepositories: SaveStreamRepositories = {
     },
 
     retryRecording(id: string, idempotencyKey: string) {
-      return apiClient.post<AdminRetryRecordingResponse>(
-        `/v1/admin/recordings/${id}/retry`,
-        { idempotencyKey },
-      );
+      return apiClient.post<AdminRetryRecordingResponse>(`/v1/admin/recordings/${id}/retry`, {
+        idempotencyKey,
+      });
     },
 
     listPayments(options = {}) {
@@ -452,23 +452,17 @@ export const apiRepositories: SaveStreamRepositories = {
     },
 
     refundPayment(id, input, idempotencyKey) {
-      return apiClient.post<AdminRefundResponse>(
-        `/v1/admin/payments/${id}/refunds`,
-        {
-          json: input,
-          idempotencyKey,
-        },
-      );
+      return apiClient.post<AdminRefundResponse>(`/v1/admin/payments/${id}/refunds`, {
+        json: input,
+        idempotencyKey,
+      });
     },
 
     adjustCredits(input, idempotencyKey) {
-      return apiClient.post<AdminCreditAdjustmentResponse>(
-        "/v1/admin/credits/adjustments",
-        {
-          json: input,
-          idempotencyKey,
-        },
-      );
+      return apiClient.post<AdminCreditAdjustmentResponse>("/v1/admin/credits/adjustments", {
+        json: input,
+        idempotencyKey,
+      });
     },
 
     listAudit(options = {}) {
@@ -489,9 +483,7 @@ export const apiRepositories: SaveStreamRepositories = {
 
   usage: {
     async getCurrent() {
-      throw new UnsupportedBackendCapabilityError(
-        "legacy Free/Pro quota usage",
-      );
+      throw new UnsupportedBackendCapabilityError("legacy Free/Pro quota usage");
     },
   },
 
@@ -508,20 +500,15 @@ export const apiRepositories: SaveStreamRepositories = {
       });
     },
     async markAllRead() {
-      await apiClient.post<MarkAllNotificationsReadResponse>(
-        "/v1/notifications/mark-all-read",
-      );
+      await apiClient.post<MarkAllNotificationsReadResponse>("/v1/notifications/mark-all-read");
     },
     getPreferences() {
-      return apiClient.get<NotificationPreferencesResponse>(
-        "/v1/me/notification-preferences",
-      );
+      return apiClient.get<NotificationPreferencesResponse>("/v1/me/notification-preferences");
     },
     updatePreferences(input: UpdateNotificationPreferencesRequest) {
-      return apiClient.patch<NotificationPreferencesResponse>(
-        "/v1/me/notification-preferences",
-        { json: input },
-      );
+      return apiClient.patch<NotificationPreferencesResponse>("/v1/me/notification-preferences", {
+        json: input,
+      });
     },
   },
 };

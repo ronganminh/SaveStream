@@ -165,6 +165,8 @@ class AppSettings:
     payment_provider_base_url: str = ""
     payment_provider_api_key: str = field(default="", repr=False)
     payment_webhook_secret: str = field(default="savestream-fake-payment-secret", repr=False)
+    paypal_client_id: str = ""
+    paypal_client_secret: str = field(default="", repr=False)
     lemon_squeezy_store_id: str = ""
     lemon_squeezy_variant_id: str = ""
     payment_timeout_seconds: float = 15.0
@@ -261,13 +263,21 @@ class AppSettings:
         payment_provider = _env("PAYMENT_PROVIDER", "fake").lower()
         payment_provider_base_url = _env(
             "PAYMENT_PROVIDER_BASE_URL",
-            ("https://api.lemonsqueezy.com/v1" if payment_provider == "lemonsqueezy" else ""),
+            (
+                "https://api.lemonsqueezy.com/v1"
+                if payment_provider == "lemonsqueezy"
+                else "https://api-m.paypal.com"
+                if payment_provider == "paypal"
+                else ""
+            ),
         ).rstrip("/")
         payment_provider_api_key = _secret_env("PAYMENT_PROVIDER_API_KEY", "")
         payment_webhook_secret = _secret_env(
             "PAYMENT_WEBHOOK_SECRET",
             "savestream-fake-payment-secret",
         )
+        paypal_client_id = _env("PAYPAL_CLIENT_ID", "")
+        paypal_client_secret = _secret_env("PAYPAL_CLIENT_SECRET", "")
         lemon_squeezy_store_id = _env("LEMON_SQUEEZY_STORE_ID", "")
         lemon_squeezy_variant_id = _env("LEMON_SQUEEZY_VARIANT_ID", "")
         smtp_host = _env("SMTP_HOST", "localhost")
@@ -482,14 +492,23 @@ class AppSettings:
                     raise ValueError(
                         "SAVESTREAM_PAYMENT_PROVIDER_BASE_URL must use https in production"
                     )
-                if not payment_provider_api_key or payment_provider_api_key == "payments-disabled":
-                    raise ValueError(
-                        "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
-                    )
-                if payment_webhook_secret == "savestream-fake-payment-secret":
-                    raise ValueError(
-                        "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
-                    )
+                if payment_provider == "paypal":
+                    if not paypal_client_id or not paypal_client_secret:
+                        raise ValueError(
+                            "PayPal client ID and client secret must be configured in production"
+                        )
+                else:
+                    if (
+                        not payment_provider_api_key
+                        or payment_provider_api_key == "payments-disabled"
+                    ):
+                        raise ValueError(
+                            "SAVESTREAM_PAYMENT_PROVIDER_API_KEY must be configured in production"
+                        )
+                    if payment_webhook_secret == "savestream-fake-payment-secret":
+                        raise ValueError(
+                            "SAVESTREAM_PAYMENT_WEBHOOK_SECRET must be configured in production"
+                        )
                 if payment_provider == "lemonsqueezy" and (
                     not lemon_squeezy_store_id or not lemon_squeezy_variant_id
                 ):
@@ -613,6 +632,8 @@ class AppSettings:
             payment_provider_base_url=payment_provider_base_url,
             payment_provider_api_key=payment_provider_api_key,
             payment_webhook_secret=payment_webhook_secret,
+            paypal_client_id=paypal_client_id,
+            paypal_client_secret=paypal_client_secret,
             lemon_squeezy_store_id=lemon_squeezy_store_id,
             lemon_squeezy_variant_id=lemon_squeezy_variant_id,
             payment_timeout_seconds=_float_env("PAYMENT_TIMEOUT_SECONDS", 15.0),

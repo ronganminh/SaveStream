@@ -1772,6 +1772,63 @@
         }
       }
     },
+    "/billing/payment-orders/{payment_order_id}/capture": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Capture approved PayPal order",
+        "operationId": "capturePaymentOrder",
+        "description": "Captures the provider order on the backend, verifies amount/currency, and grants credits idempotently after confirmed payment.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "payment_order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OpaqueId"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CapturePaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment captured and credits confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentOrder"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Capture conflict or provider-order mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks/payments/{provider}": {
       "post": {
         "tags": [
@@ -9843,6 +9900,20 @@
           },
           "payment_order": {
             "$ref": "#/components/schemas/PaymentOrder"
+          }
+        },
+        "additionalProperties": false
+      },
+      "CapturePaymentRequest": {
+        "type": "object",
+        "required": [
+          "provider_order_id"
+        ],
+        "properties": {
+          "provider_order_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
           }
         },
         "additionalProperties": false

@@ -90,11 +90,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  dailyRecordingHours,
-  usage,
-  user,
-} from "@/mocks/fixtures";
+import { dailyRecordingHours, usage, user } from "@/mocks/fixtures";
 import {
   ActiveRecordingCard,
   AddChannelDialog,
@@ -128,10 +124,16 @@ import {
   VideoPlayerShell,
 } from "@/components/app-components";
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
+import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
-import { planCatalog, planList, planLimitDefinitions, planMediaFootnote } from "@/mocks/demo-plan-catalog";
+import {
+  planCatalog,
+  planList,
+  planLimitDefinitions,
+  planMediaFootnote,
+} from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { billingCheckoutEnabled, isAdminRole, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
@@ -172,15 +174,8 @@ import {
   usePauseChannelMutation,
   useResumeChannelMutation,
 } from "@/hooks/use-channel-mutations";
-import type {
-  ChannelModel,
-  ChannelStatus,
-  RecordingModel,
-} from "@/repositories";
-import {
-  displayNameFromTikTokUsername,
-  parseTikTokSource,
-} from "@/lib/tiktok-source";
+import type { ChannelModel, ChannelStatus, RecordingModel } from "@/repositories";
+import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
 import {
   artifactActionErrorMessage,
   recordingActionErrorMessage,
@@ -188,15 +183,13 @@ import {
   useRecordingDownloadMutation,
   useStopRecordingMutation,
 } from "@/hooks/use-recording-mutations";
-import {
-  useRecordingRealtime,
-  type RecordingRealtimeState,
-} from "@/hooks/use-recording-realtime";
+import { useRecordingRealtime, type RecordingRealtimeState } from "@/hooks/use-recording-realtime";
 import { useAdminOperationalSnapshotData } from "@/hooks/use-admin-data";
 import {
   billingActionErrorMessage,
   isAwaitingPaymentConfirmation,
   useBillingCheckoutMutation,
+  usePayPalCaptureMutation,
   type BillingCheckoutInput,
 } from "@/hooks/use-billing";
 
@@ -341,7 +334,9 @@ function RecordingExamples() {
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{item.title}</p>
                 <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
-                  <span className="font-mono">{item.width}×{item.height}</span>
+                  <span className="font-mono">
+                    {item.width}×{item.height}
+                  </span>
                   <span className="font-mono">{formatSampleDuration(item.durationSeconds)}</span>
                 </div>
               </div>
@@ -665,7 +660,11 @@ export function LandingPage() {
                     <PlanCard
                       key={plan.id}
                       name={plan.name}
-                      price={plan.priceMonthlyUsd === 0 ? "Free" : formatCurrencyUsd(plan.priceMonthlyUsd, language)}
+                      price={
+                        plan.priceMonthlyUsd === 0
+                          ? "Free"
+                          : formatCurrencyUsd(plan.priceMonthlyUsd, language)
+                      }
                       features={[...plan.features]}
                     />
                   ))}
@@ -899,7 +898,11 @@ export function AuthPage({
         {isDemoMode && (
           <p className="mt-6 text-xs text-muted-foreground">
             Prototype:{" "}
-            <Link to="/reset-password" search={{ token: "" }} className="text-primary underline underline-offset-4">
+            <Link
+              to="/reset-password"
+              search={{ token: "" }}
+              className="text-primary underline underline-offset-4"
+            >
               open the reset link
             </Link>
           </p>
@@ -1100,10 +1103,7 @@ export function OnboardingPage() {
           {[1, 2, 3].map((number) => (
             <span
               key={number}
-              className={cn(
-                "h-1 flex-1 rounded-full",
-                number <= step ? "bg-primary" : "bg-border",
-              )}
+              className={cn("h-1 flex-1 rounded-full", number <= step ? "bg-primary" : "bg-border")}
             />
           ))}
         </div>
@@ -1203,10 +1203,7 @@ export function OnboardingPage() {
             <>
               <div className="flex items-center gap-4">
                 <div className="grid size-12 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  {(createdHandle ?? "@ss")
-                    .replace(/^@/, "")
-                    .slice(0, 2)
-                    .toUpperCase()}
+                  {(createdHandle ?? "@ss").replace(/^@/, "").slice(0, 2).toUpperCase()}
                 </div>
                 <div>
                   <h1 className="text-xl font-semibold">
@@ -1252,13 +1249,22 @@ function ProductionOverviewPage() {
   if (channelsQuery.isPending || recordingsQuery.isPending || balanceQuery.isPending) {
     return (
       <AppShell>
-        <PageHeader title="Overview" subtitle="Loading workspace status…" action={<AddChannelDialog />} />
+        <PageHeader
+          title="Overview"
+          subtitle="Loading workspace status…"
+          action={<AddChannelDialog />}
+        />
         <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
       </AppShell>
     );
   }
 
-  if (channelsQuery.isError || recordingsQuery.isError || balanceQuery.isError || !balanceQuery.data) {
+  if (
+    channelsQuery.isError ||
+    recordingsQuery.isError ||
+    balanceQuery.isError ||
+    !balanceQuery.data
+  ) {
     return (
       <AppShell>
         <PageHeader title="Overview" action={<AddChannelDialog />} />
@@ -1956,7 +1962,7 @@ export function RecordingDetailPage({
     : recordingQuery.data;
   const sourceState = forced ? recordingsState : recordingState;
   const realtime = useRecordingRealtime(rec?.id, rec?.backendStatus);
-  const artifactState = rec ? (forced ?? recordingDetailState(rec)) : forced ?? null;
+  const artifactState = rec ? (forced ?? recordingDetailState(rec)) : (forced ?? null);
   const shouldLoadArtifacts = artifactState === "ready" || artifactState === "failed";
   const { query: artifactsQuery, state: artifactsState } = useRecordingArtifactsData(
     rec?.id,
@@ -2020,8 +2026,7 @@ export function RecordingDetailPage({
   const channelItems = channelsQuery.data ?? [];
   const channel = channelItems.find(
     (candidate) =>
-      candidate.id === rec.channelId ||
-      candidate.handle.toLowerCase() === rec.handle.toLowerCase(),
+      candidate.id === rec.channelId || candidate.handle.toLowerCase() === rec.handle.toLowerCase(),
   );
   const expiringSoon = state === "ready" && rec.expiresDays !== null && rec.expiresDays <= 3;
   const artifact = artifactsQuery.data?.find(
@@ -2116,11 +2121,7 @@ export function RecordingDetailPage({
     ) : state === "failed" ? (
       <div className="flex flex-wrap gap-2">
         {(isDemoMode || artifact) && (
-          <Button
-            variant="outline"
-            disabled={downloadRecording.isPending}
-            onClick={download}
-          >
+          <Button variant="outline" disabled={downloadRecording.isPending} onClick={download}>
             <Download />
             {downloadRecording.isPending ? "Preparing…" : "Download partial"}
           </Button>
@@ -2387,10 +2388,7 @@ function ProcessingTimeline({ status }: { status: RecordingModel["backendStatus"
   const { t } = usePreferences();
   const waitingForSlot = status === "waiting_for_cloud_slot";
   const resolving =
-    status === "queued" ||
-    status === "resolving" ||
-    status === "waiting_live" ||
-    waitingForSlot;
+    status === "queued" || status === "resolving" || status === "waiting_live" || waitingForSlot;
   const processing = status === "processing";
   const uploading = status === "uploading";
 
@@ -2458,27 +2456,17 @@ function formatMoneyValue(money: Money, language: string) {
   }
 }
 
-function formatCreditMoney(
-  packageItem: CreditPackageResponse,
-  language: string,
-) {
+function formatCreditMoney(packageItem: CreditPackageResponse, language: string) {
   return formatMoneyValue(packageItem.price, language);
 }
 
-function formatApproxHours(
-  minutes: number | null | undefined,
-  language: string,
-) {
+function formatApproxHours(minutes: number | null | undefined, language: string) {
   if (minutes === null || minutes === undefined || minutes <= 0) return null;
   const hours = minutes / 60;
   const value = new Intl.NumberFormat(language, {
     maximumFractionDigits: hours < 10 ? 1 : 0,
   }).format(hours);
-  const unit = language.toLowerCase().startsWith("vi")
-    ? "giờ"
-    : hours === 1
-      ? "hour"
-      : "hours";
+  const unit = language.toLowerCase().startsWith("vi") ? "giờ" : hours === 1 ? "hour" : "hours";
   return `≈ ${value} ${unit}`;
 }
 
@@ -2494,10 +2482,7 @@ function pricingRuleDetail(rule: PricingResponse["rules"][number]) {
   const unitSeconds = rule["unit_seconds"];
   const creditsPerUnit = rule["credits_per_unit"];
   if (typeof unitSeconds === "number" && typeof creditsPerUnit === "number") {
-    const unit =
-      unitSeconds % 60 === 0
-        ? `${unitSeconds / 60} min`
-        : `${unitSeconds} sec`;
+    const unit = unitSeconds % 60 === 0 ? `${unitSeconds / 60} min` : `${unitSeconds} sec`;
     return `${creditsPerUnit} credit${creditsPerUnit === 1 ? "" : "s"} per ${unit}`;
   }
   return "See the pricing page for details.";
@@ -2572,10 +2557,8 @@ function CreditReservationRow({ reservation }: { reservation: CreditReservationR
 function CreditsUsagePage() {
   const { t, language } = usePreferences();
   const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
-  const { query: transactionsQuery, state: transactionsState } =
-    useCreditTransactionsData();
-  const { query: reservationsQuery, state: reservationsState } =
-    useCreditReservationsData();
+  const { query: transactionsQuery, state: transactionsState } = useCreditTransactionsData();
+  const { query: reservationsQuery, state: reservationsState } = useCreditReservationsData();
   const { query: pricingQuery, state: pricingState } = usePricingData();
   const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
 
@@ -2691,9 +2674,7 @@ function CreditsUsagePage() {
                 pricing.rules.map((rule, index) => (
                   <div key={String(rule["code"] ?? index)} className="rounded-md border p-4">
                     <p className="text-sm font-medium">{pricingRuleTitle(rule, index)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {pricingRuleDetail(rule)}
-                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{pricingRuleDetail(rule)}</p>
                   </div>
                 ))
               ) : (
@@ -2741,9 +2722,7 @@ function CreditsUsagePage() {
                         : ""}
                     </p>
                   </div>
-                  <p className="font-mono font-semibold">
-                    {formatCreditMoney(item, language)}
-                  </p>
+                  <p className="font-mono font-semibold">{formatCreditMoney(item, language)}</p>
                 </div>
               ))}
               <Link to="/billing" className="text-xs font-medium text-primary hover:underline">
@@ -2774,7 +2753,11 @@ function CreditsUsagePage() {
               title="Could not load credit holds"
               body="Please try again in a moment."
               action={
-                <Button size="sm" variant="outline" onClick={() => void reservationsQuery.refetch()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void reservationsQuery.refetch()}
+                >
                   Retry
                 </Button>
               }
@@ -2803,7 +2786,11 @@ function CreditsUsagePage() {
               title="Could not load credit history"
               body="Please try again in a moment."
               action={
-                <Button size="sm" variant="outline" onClick={() => void transactionsQuery.refetch()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void transactionsQuery.refetch()}
+                >
                   Retry
                 </Button>
               }
@@ -3096,12 +3083,7 @@ function PaymentOrderRow({
         {paymentStatusLabel(order.status)}
       </span>
       {billingCheckoutEnabled && isAwaitingPaymentConfirmation(order.status) ? (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={pending}
-          onClick={() => onContinue(order.id)}
-        >
+        <Button size="sm" variant="outline" disabled={pending} onClick={() => onContinue(order.id)}>
           <ExternalLink />
           Open checkout
         </Button>
@@ -3118,15 +3100,33 @@ function CreditBillingPage() {
   const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
   const { query: ordersQuery, state: ordersState } = usePaymentOrdersData();
   const checkout = useBillingCheckoutMutation();
+  const capture = usePayPalCaptureMutation();
   const [activePurchase, setActivePurchase] = useState<string | null>(null);
+  const [paypalCheckout, setPayPalCheckout] = useState<{
+    paymentOrderId: string;
+    providerOrderId: string;
+    credits: number;
+    amount: Money;
+  } | null>(null);
 
-  const redirectToCheckout = async (
-    input: BillingCheckoutInput,
-    activeId: string,
-  ) => {
+  const redirectToCheckout = async (input: BillingCheckoutInput, activeId: string) => {
     setActivePurchase(activeId);
     try {
       const result = await checkout.mutateAsync(input);
+      if (result.payment_order.provider === "paypal") {
+        const providerOrderId = result.payment_order.provider_reference;
+        if (!providerOrderId) {
+          throw new Error("PayPal did not return an order ID.");
+        }
+        setPayPalCheckout({
+          paymentOrderId: result.payment_order.id,
+          providerOrderId,
+          credits: result.payment_order.credits,
+          amount: result.payment_order.amount,
+        });
+        setActivePurchase(null);
+        return;
+      }
       window.location.assign(result.checkout_url);
     } catch (error) {
       toast.error("Could not open secure checkout", {
@@ -3210,7 +3210,7 @@ function CreditBillingPage() {
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Credit packages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose a package and pay securely with Lemon Squeezy. Credits never expire.
+            Choose a package and pay securely with PayPal. Credits never expire.
           </p>
         </div>
 
@@ -3311,15 +3311,11 @@ function CreditBillingPage() {
               order={order}
               language={language}
               pending={checkout.isPending}
-              onContinue={(orderId) =>
-                void redirectToCheckout({ kind: "order", orderId }, orderId)
-              }
+              onContinue={(orderId) => void redirectToCheckout({ kind: "order", orderId }, orderId)}
             />
           ))
         ) : (
-          <p className="border-t p-5 text-sm text-muted-foreground">
-            No purchases yet.
-          </p>
+          <p className="border-t p-5 text-sm text-muted-foreground">No purchases yet.</p>
         )}
       </section>
 
@@ -3327,9 +3323,57 @@ function CreditBillingPage() {
         <StateBanner
           tone="info"
           title="When do credits arrive?"
-          body="Credits are added to your balance as soon as Lemon Squeezy confirms your payment, usually within a minute. Refresh this page if a purchase still shows as pending."
+          body="Credits are added immediately after SaveStream securely captures the approved PayPal order. Refresh this page if a purchase still shows as pending."
         />
       </div>
+
+      <Dialog
+        open={paypalCheckout !== null}
+        onOpenChange={(open) => {
+          if (!open && !capture.isPending) setPayPalCheckout(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Pay securely with PayPal</DialogTitle>
+            <DialogDescription>
+              {paypalCheckout
+                ? `${pluralize(paypalCheckout.credits, "credit")} · ${formatMoneyValue(
+                    paypalCheckout.amount,
+                    language,
+                  )}`
+                : "Complete your one-time credit purchase."}
+            </DialogDescription>
+          </DialogHeader>
+          {paypalCheckout ? (
+            <PayPalCheckoutButtons
+              providerOrderId={paypalCheckout.providerOrderId}
+              onApprove={async (providerOrderId) => {
+                const order = await capture.mutateAsync({
+                  paymentOrderId: paypalCheckout.paymentOrderId,
+                  providerOrderId,
+                });
+                toast.success("Payment captured", {
+                  description: `${pluralize(order.credits, "credit")} added to your SaveStream account.`,
+                });
+                setPayPalCheckout(null);
+              }}
+              onCancel={() => {
+                setPayPalCheckout(null);
+                toast("PayPal checkout cancelled. No credits were charged.");
+              }}
+              onError={(error) => {
+                toast.error("PayPal checkout could not be completed", {
+                  description: billingActionErrorMessage(error),
+                });
+              }}
+            />
+          ) : null}
+          {capture.isPending ? (
+            <p className="text-sm text-muted-foreground">Confirming payment and adding credits…</p>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
@@ -3364,7 +3408,9 @@ function DemoBillingPage() {
     <AppShell>
       <PageHeader
         title="Billing"
-        subtitle={t("One-time cloud-hour purchases. No subscription and nothing renews automatically.")}
+        subtitle={t(
+          "One-time cloud-hour purchases. No subscription and nothing renews automatically.",
+        )}
       />
 
       <div className="mb-6">
@@ -3379,8 +3425,18 @@ function DemoBillingPage() {
 
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
         <StatCard label="Plan" value={t("Free")} detail={t("No recurring fee")} icon={Sparkles} />
-        <StatCard label="Trial credits" value="10" detail={t("10 minutes of cloud recording")} icon={Zap} />
-        <StatCard label="Monitored channels" value="0 / 3" detail={t("Free web limit")} icon={Radio} />
+        <StatCard
+          label="Trial credits"
+          value="10"
+          detail={t("10 minutes of cloud recording")}
+          icon={Zap}
+        />
+        <StatCard
+          label="Monitored channels"
+          value="0 / 3"
+          detail={t("Free web limit")}
+          icon={Radio}
+        />
       </div>
 
       <section className="mt-8">
@@ -3552,10 +3608,7 @@ function DemoAdminSystemPage() {
   const { t } = usePreferences();
   return (
     <AppShell>
-      <PageHeader
-        title="System"
-        subtitle="Illustrative admin metrics for the frontend demo."
-      />
+      <PageHeader title="System" subtitle="Illustrative admin metrics for the frontend demo." />
       <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-3">
         {[
           ["Active workers", "4 / 4", Server],
@@ -3810,18 +3863,28 @@ function DemoPricingPage() {
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
         <div className="text-center">
           <h1 className="text-4xl font-semibold">{t("Plans that scale with your livestreams.")}</h1>
-          <p className="mt-4 text-muted-foreground">{t("Start free. Upgrade when you need more recording time.")}</p>
+          <p className="mt-4 text-muted-foreground">
+            {t("Start free. Upgrade when you need more recording time.")}
+          </p>
         </div>
         <div className="mt-12 grid gap-5 md:grid-cols-2">
           {planList.map((plan) => (
             <PlanCard
               key={plan.id}
               name={plan.name}
-              price={plan.priceMonthlyUsd ? formatCurrencyUsd(plan.priceMonthlyUsd, language) : "Free"}
+              price={
+                plan.priceMonthlyUsd ? formatCurrencyUsd(plan.priceMonthlyUsd, language) : "Free"
+              }
               features={[...plan.features]}
               action={
-                <Button variant={plan.id === "pro" ? "default" : "outline"} className="mt-6 w-full" asChild>
-                  <Link to="/sign-up">{t(plan.id === "pro" ? "Start with Pro" : "Start for free")}</Link>
+                <Button
+                  variant={plan.id === "pro" ? "default" : "outline"}
+                  className="mt-6 w-full"
+                  asChild
+                >
+                  <Link to="/sign-up">
+                    {t(plan.id === "pro" ? "Start with Pro" : "Start for free")}
+                  </Link>
                 </Button>
               }
             />
@@ -3833,7 +3896,9 @@ function DemoPricingPage() {
             {planLimitDefinitions.map((item) => (
               <div key={item.key}>
                 <dt className="text-sm font-medium">{t(item.label)}</dt>
-                <dd className="mt-1 text-xs leading-5 text-muted-foreground">{t(item.description)}</dd>
+                <dd className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {t(item.description)}
+                </dd>
               </div>
             ))}
           </dl>
@@ -3880,7 +3945,8 @@ export function PublicFooter() {
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
-            Cloud recording, processing, and private storage infrastructure for content you own or are authorized to record.
+            Cloud recording, processing, and private storage infrastructure for content you own or
+            are authorized to record.
           </p>
         </div>
         {cols.map(([h, links]) => (
@@ -3902,7 +3968,8 @@ export function PublicFooter() {
         ))}
       </div>
       <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-muted-foreground sm:px-6">
-        © 2026 SaveStream. We provide recording and storage infrastructure — not a public content catalog.
+        © 2026 SaveStream. We provide recording and storage infrastructure — not a public content
+        catalog.
       </p>
     </footer>
   );
@@ -3954,11 +4021,8 @@ function ChannelDetail({
   const [previewState, setPreviewState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
   const state = isDemoMode ? previewState : channel.status;
-  const monitoring = isDemoMode
-    ? state !== "Paused"
-    : channel.backendStatus === "active";
-  const pending =
-    pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+  const monitoring = isDemoMode ? state !== "Paused" : channel.backendStatus === "active";
+  const pending = pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
 
   useEffect(() => {
     setPreviewState(channel.status);
@@ -4186,7 +4250,7 @@ function ChannelDetail({
           />
           <StatCard
             label="Last livestream"
-            value={state === "Recording" ? "Now" : channel.live.split(",")[0] ?? "—"}
+            value={state === "Recording" ? "Now" : (channel.live.split(",")[0] ?? "—")}
             detail={state === "Recording" ? "Currently recording" : channel.live}
             icon={Radio}
           />

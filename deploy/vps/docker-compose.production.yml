@@ -44,12 +44,15 @@ x-app-env: &app-env
   SAVESTREAM_REWARD_PROVIDER: ${SAVESTREAM_REWARD_PROVIDER:-admob}
   SAVESTREAM_ADMOB_SSV_KEYS_URL: https://www.gstatic.com/admob/reward/verifier-keys.json
 
-  # "disabled" launches before Lemon Squeezy Live is approved; the API then
-  # rejects checkout/webhooks and the Live store/variant IDs may stay empty.
-  SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:-lemonsqueezy}
-  SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: https://api.lemonsqueezy.com/v1
+  # Web checkout supports PayPal Business. Keep disabled until LIVE credentials
+  # are installed and the release payment smoke has passed.
+  SAVESTREAM_PAYMENT_PROVIDER: ${SAVESTREAM_PAYMENT_PROVIDER:-disabled}
+  SAVESTREAM_PAYMENT_PROVIDER_BASE_URL: ${SAVESTREAM_PAYMENT_PROVIDER_BASE_URL:-https://api-m.paypal.com}
   SAVESTREAM_PAYMENT_PROVIDER_API_KEY_FILE: /run/secrets/payment_api_key
   SAVESTREAM_PAYMENT_WEBHOOK_SECRET_FILE: /run/secrets/payment_webhook_secret
+  SAVESTREAM_PAYPAL_CLIENT_ID: ${SAVESTREAM_PAYPAL_CLIENT_ID:-}
+  # Reuse the protected payment_api_key secret file for the PayPal client secret.
+  SAVESTREAM_PAYPAL_CLIENT_SECRET_FILE: /run/secrets/payment_api_key
   SAVESTREAM_LEMON_SQUEEZY_STORE_ID: ${SAVESTREAM_LEMON_SQUEEZY_STORE_ID:-}
   SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID: ${SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID:-}
 
