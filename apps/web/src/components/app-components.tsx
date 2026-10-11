@@ -184,12 +184,18 @@ function useShellAccount() {
     subLabel: isAdminRole(authUser.role) ? `${authUser.role === "admin" ? "Owner" : authUser.role[0]!.toUpperCase() + authUser.role.slice(1)} admin` : "Account",
   };
 }
-export function Logo({ compact = false }: { compact?: boolean }) {
+export function Logo({
+  compact = false,
+  homeTo = "/",
+}: {
+  compact?: boolean;
+  homeTo?: "/" | "/overview";
+}) {
   const { t } = usePreferences();
   return (
     <Link
-      to="/"
-      aria-label={`SaveStream · ${t("Go home")}`}
+      to={homeTo}
+      aria-label={`SaveStream · ${homeTo === "/" ? t("Go home") : t("Overview")}`}
       className="flex min-w-0 items-center gap-2.5 font-semibold"
     >
       <img src="/savestream-mark.svg" alt="" className="size-8 shrink-0" width="32" height="32" />
@@ -476,7 +482,7 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         )}
       >
         <div className="flex h-16 items-center justify-between px-5">
-          <Logo />
+          <Logo homeTo="/overview" />
           <Button
             variant="ghost"
             size="icon"
@@ -589,6 +595,12 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
           onClick={() => setCmd(true)}
         >
           <Search />
+        </Button>
+        <Button asChild size="sm" className="h-9 shrink-0 px-2 sm:px-3">
+          <Link to="/billing" aria-label={t("Buy credits")}>
+            <CreditCard />
+            <span className="hidden sm:inline">{t("Buy credits")}</span>
+          </Link>
         </Button>
         <LanguageMenu />
         <ThemeMenu />
