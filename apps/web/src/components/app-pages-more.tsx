@@ -4162,54 +4162,81 @@ const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; bod
 ];
 
 export function HelpPage() {
-  return isDemoMode ? <DemoHelpPage /> : <PublicHelpPage />;
+  const { status } = useAuth();
+
+  if (isDemoMode) return <DemoHelpPage />;
+  if (status === "authenticated") {
+    return (
+      <AppShell>
+        <ProductionHelpContent embedded />
+      </AppShell>
+    );
+  }
+  return <PublicHelpPage />;
+}
+
+function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
+  const { t } = usePreferences();
+  return (
+    <>
+      {embedded ? (
+        <PageHeader
+          title="Help"
+          subtitle="Guidance for monitoring and recording authorized TikTok channels."
+        />
+      ) : (
+        <>
+          <h1 className="text-3xl font-semibold">{t("Help")}</h1>
+          <p className="mt-3 text-muted-foreground">
+            {t("Guidance for monitoring and recording authorized TikTok channels.")}
+          </p>
+        </>
+      )}
+      <div className={embedded ? "grid gap-4 lg:grid-cols-2" : "mt-10 grid gap-4 lg:grid-cols-2"}>
+        {productionHelpTopics.map((topic) => {
+          const I = topic.icon;
+          return (
+            <section
+              key={topic.id}
+              id={topic.id}
+              className="scroll-mt-24 rounded-lg border bg-surface p-5"
+            >
+              <div className="flex items-center gap-2">
+                <I className="size-4 text-primary" />
+                <h2 className="font-medium">{t(topic.title)}</h2>
+              </div>
+              <div className="mt-3 text-sm leading-6 text-muted-foreground">
+                {typeof topic.body === "string" ? t(topic.body) : topic.body}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      <section
+        id="contact"
+        className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
+      >
+        <CircleHelp className="size-5 text-primary" />
+        <div className="flex-1">
+          <h2 className="font-medium">{t("Still need help?")}</h2>
+          <p className="text-sm text-muted-foreground">
+            Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link to="/contact">{t("Contact support")}</Link>
+        </Button>
+      </section>
+    </>
+  );
 }
 
 function PublicHelpPage() {
-  const { t } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">{t("Help")}</h1>
-        <p className="mt-3 text-muted-foreground">
-          {t("Guidance for monitoring and recording authorized TikTok channels.")}
-        </p>
-        <div className="mt-10 grid gap-4 lg:grid-cols-2">
-          {productionHelpTopics.map((topic) => {
-            const I = topic.icon;
-            return (
-              <section
-                key={topic.id}
-                id={topic.id}
-                className="scroll-mt-24 rounded-lg border bg-surface p-5"
-              >
-                <div className="flex items-center gap-2">
-                  <I className="size-4 text-primary" />
-                  <h2 className="font-medium">{t(topic.title)}</h2>
-                </div>
-                <div className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {typeof topic.body === "string" ? t(topic.body) : topic.body}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-        <section
-          id="contact"
-          className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-        >
-          <CircleHelp className="size-5 text-primary" />
-          <div className="flex-1">
-            <h2 className="font-medium">{t("Still need help?")}</h2>
-            <p className="text-sm text-muted-foreground">
-              Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <Link to="/contact">{t("Contact support")}</Link>
-          </Button>
-        </section>
+        <ProductionHelpContent />
       </main>
       <PublicFooter />
     </div>
