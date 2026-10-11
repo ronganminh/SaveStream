@@ -1,5 +1,14 @@
+enum SocialAuthProvider { google, apple }
+
+abstract interface class SocialAuthRepository {
+  Future<void> signInSocial(SocialAuthProvider provider);
+}
+
 enum AuthFailureCode {
   invalidCredentials,
+  accountLinkRequired,
+  socialUnavailable,
+  cancelled,
   emailNotVerified,
   invalidToken,
   validation,
