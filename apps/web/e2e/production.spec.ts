@@ -62,7 +62,10 @@ test.describe("production authenticated UX", () => {
     await page.goto("/help");
     await expectAuthenticatedShell(page);
     await openWorkspaceMenuIfNeeded(page);
-    await page.getByRole("link", { name: /SaveStream/ }).first().click();
+    await page
+      .getByRole("link", { name: /SaveStream/ })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/overview$/);
   });
 

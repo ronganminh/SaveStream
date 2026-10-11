@@ -6,26 +6,16 @@ import { fileURLToPath } from "node:url";
 export default async function globalSetup(config: FullConfig) {
   const email = process.env.SAVESTREAM_E2E_EMAIL;
   const password = process.env.SAVESTREAM_E2E_PASSWORD;
-  const statePath = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    ".auth/user.json",
-  );
+  const statePath = resolve(dirname(fileURLToPath(import.meta.url)), ".auth/user.json");
   await mkdir(dirname(statePath), { recursive: true });
 
   if (!email || !password) {
-    await writeFile(
-      statePath,
-      JSON.stringify({ cookies: [], origins: [] }, null, 2),
-      "utf8",
-    );
+    await writeFile(statePath, JSON.stringify({ cookies: [], origins: [] }, null, 2), "utf8");
     return;
   }
 
-  const webBaseURL = String(
-    config.projects[0]?.use.baseURL ?? "https://savestream.online",
-  );
-  const apiBaseURL =
-    process.env.SAVESTREAM_E2E_API_URL || "https://api.savestream.online";
+  const webBaseURL = String(config.projects[0]?.use.baseURL ?? "https://savestream.online");
+  const apiBaseURL = process.env.SAVESTREAM_E2E_API_URL || "https://api.savestream.online";
   const origin = new URL(webBaseURL).origin;
 
   const api = await request.newContext({
