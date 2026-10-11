@@ -41,6 +41,27 @@ class AuthController extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInSocial(SocialAuthProvider provider) async {
+    _start();
+    try {
+      final repository = _repository;
+      if (repository is! SocialAuthRepository) {
+        throw const AuthException(AuthFailureCode.socialUnavailable);
+      }
+      await repository.signInSocial(provider);
+      _finish();
+      _session.markAuthenticated();
+      return true;
+    } on AuthException catch (error) {
+      if (error.code == AuthFailureCode.cancelled) {
+        _finish();
+        return false;
+      }
+      _fail(error.code);
+      return false;
+    }
+  }
+
   Future<bool> register({
     required String email,
     required String password,
