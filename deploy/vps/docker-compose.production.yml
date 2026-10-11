@@ -17,6 +17,9 @@ x-app-env: &app-env
   SAVESTREAM_MINIO_SECURE: "true"
 
   SAVESTREAM_JWT_SECRET_FILE: /run/secrets/jwt_secret
+  # Verified Firebase project ID is required for Google/Apple auth.
+  # Empty keeps social login disabled until the consoles are configured.
+  SAVESTREAM_FIREBASE_AUTH_PROJECT_ID: ${SAVESTREAM_FIREBASE_AUTH_PROJECT_ID:-}
   SAVESTREAM_FRONTEND_BASE_URL: ${SAVESTREAM_FRONTEND_ORIGIN:-https://savestream.online}
   SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:-https://savestream.online,https://www.savestream.online}
 

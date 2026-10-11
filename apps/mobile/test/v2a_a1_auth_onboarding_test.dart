@@ -51,7 +51,9 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: config(), session: session));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Create account'));
+    final createLink = find.text('Create account');
+    await tester.ensureVisible(createLink);
+    await tester.tap(createLink);
     await tester.pumpAndSettle();
 
     expect(find.text('At least 8 characters'), findsOneWidget);

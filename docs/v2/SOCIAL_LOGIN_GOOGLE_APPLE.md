@@ -49,3 +49,29 @@ Google and Apple can each sign in on web, Android and iPhone. One identity maps 
 8. Smoke test Google and Apple on production-hosted web, real Android/iPhone devices, then login across platforms with the SAME Firebase project/user identity. Include old-password account linking, account deletion, no duplicate grants, refresh and logout-all.
 
 **Known limitations**: Apple and Google sign-in cannot function until their console credentials are enabled. Existing accounts are never linked by email alone. Firebase authentication provider-linking/unlinking UI for passwordless users and an OAuth redirect fallback are future enhancements, not part of this initial release.
+
+## Activation status / requirements (2026-10-11)
+
+Production runtime is NOT activated by merging this PR: Firebase Google and Apple
+sign-in require additional owner console configuration.
+
+- Existing local Firebase project in Android and iOS config is
+  `savestream-d6684`. Existing Android configuration lacks OAuth clients,
+  and the iOS configuration lacks Google CLIENT_ID and REVERSED_CLIENT_ID.
+  Enable Google under Firebase Authentication then download both **new**
+  platform config files. Do not reuse old config files.
+- Configure Firebase Apple sign-in provider (Apple Services ID, Team ID,
+  Key ID, and private key kept solely in console/secret store), Apple
+  developer app ID capability, and appropriate Firebase redirect URL.
+- Set `SAVESTREAM_FIREBASE_AUTH_PROJECT_ID=savestream-d6684` for production
+  backend through the deployment environment **after** console settings
+  and validation; the production compose now forwards this variable.
+- Deploy the web Firebase PUBLIC configuration (four VITE_FIREBASE_* keys
+  from Firebase web app configuration) through the frontend build environment.
+  These values are project identifiers, not server OAuth secrets.
+- Test new Google/Apple identities on all 3 clients against production API,
+  plus collision linking, refresh, sign out, account deletion, credit purchase
+  and a user who already owns saved recordings.
+- Do not merge, publish a new mobile release, or enable social login
+  on production based only on unit tests/CI; provider-console testing is
+  a separate mandatory gate.
