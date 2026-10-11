@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
@@ -17,10 +18,12 @@ from app.infrastructure.db.models import (
     DeviceRegistration,
     OneTimeToken,
     PasswordCredential,
+    SocialIdentity,
     User,
 )
 from app.infrastructure.queue.outbox import OutboxWriter
 from app.infrastructure.rate_limit import RateLimiter
+from app.infrastructure.security.firebase_identity import FirebaseTokenVerifier
 from app.infrastructure.security.passwords import PasswordService
 from app.infrastructure.security.tokens import TokenError, TokenExpiredError, TokenService
 from app.settings import AppSettings
@@ -336,6 +339,220 @@ class IdentityService:
         )
         await self.session.commit()
         return LoginResult(access_token, expires_in, raw_refresh)
+
+    async def _social_session(
+        self,
+        user: User,
+        *,
+        client_type: str,
+        client_ip: str,
+        user_agent: str | None,
+        request_id: str | None,
+        provider: str,
+    ) -> LoginResult:
+        session_id = uuid.uuid4()
+        raw_refresh, refresh_hash = self.tokens.issue_refresh_token(session_id)
+        self.session.add(
+            AuthSession(
+                id=session_id,
+                user_id=user.id,
+                token_family_id=uuid.uuid4(),
+                client_type=client_type,
+                refresh_token_hash=refresh_hash,
+                refresh_history=[],
+                user_agent=user_agent,
+                ip_address=client_ip,
+                expires_at=utcnow() + timedelta(
+                    seconds=self.settings.refresh_token_ttl_seconds
+                ),
+            )
+        )
+        access_token, expires_in = self.tokens.issue_access_token(
+            user_id=user.id,
+            session_id=session_id,
+        )
+        await self._audit(
+            action="identity.social_login",
+            user_id=user.id,
+            request_id=request_id,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={"provider": provider, "client_type": client_type},
+        )
+        await self.session.commit()
+        return LoginResult(access_token, expires_in, raw_refresh)
+
+    async def social_login(
+        self,
+        *,
+        id_token: str,
+        client_type: str,
+        client_ip: str,
+        user_agent: str | None,
+        request_id: str | None,
+    ) -> LoginResult:
+        await self.rate_limiter.hit(
+            scope="social_login",
+            identifier=client_ip,
+            limit=self.settings.login_rate_limit,
+            window_seconds=self.settings.login_rate_window_seconds,
+        )
+        external = await FirebaseTokenVerifier(self.settings).verify(id_token)
+        linked = await self.session.get(SocialIdentity, external.uid)
+        if linked is not None:
+            user = await self.session.get(User, linked.user_id)
+            if user is None or not user.is_active:
+                raise ApplicationError(
+                    "AUTH_SOCIAL_UNAVAILABLE",
+                    "This account is unavailable",
+                    status_code=401,
+                )
+            return await self._social_session(
+                user,
+                client_type=client_type,
+                client_ip=client_ip,
+                user_agent=user_agent,
+                request_id=request_id,
+                provider=external.provider,
+            )
+
+        if not external.email or not external.email_verified:
+            raise ApplicationError(
+                "AUTH_SOCIAL_EMAIL_REQUIRED",
+                "An email verified by the provider is required for first sign-in",
+                status_code=422,
+            )
+        normalized = self.normalize_email(external.email)
+        existing = await self.session.scalar(
+            select(User).where(User.normalized_email == normalized)
+        )
+        if existing is not None:
+            # Even a verified matching email is not proof of ownership of an
+            # existing SaveStream account. Require a separate step-up link.
+            raise ApplicationError(
+                "AUTH_ACCOUNT_LINK_REQUIRED",
+                "Sign in with your existing method and link this provider",
+                status_code=409,
+            )
+
+        user = User(
+            email=external.email,
+            normalized_email=normalized,
+            display_name=external.display_name,
+            locale="en",
+            role="user",
+            email_verified_at=utcnow(),
+        )
+        self.session.add(user)
+        try:
+            await self.session.flush()
+            self.session.add(
+                SocialIdentity(
+                    firebase_uid=external.uid,
+                    user_id=user.id,
+                    provider=external.provider,
+                )
+            )
+            await self.session.flush()
+            signup_credits = await RuntimeSettingsService(
+                self.session, self.settings
+            ).integer("signup_credits")
+            await CreditService(self.session).grant_signup_credits(
+                user.id, signup_credits
+            )
+            await self._audit(
+                action="identity.social_registered",
+                user_id=user.id,
+                request_id=request_id,
+                ip_address=client_ip,
+                details={"provider": external.provider},
+            )
+            return await self._social_session(
+                user,
+                client_type=client_type,
+                client_ip=client_ip,
+                user_agent=user_agent,
+                request_id=request_id,
+                provider=external.provider,
+            )
+        except IntegrityError as exc:
+            # Protect from concurrent first sign-ins; never grant credits twice.
+            await self.session.rollback()
+            linked = await self.session.get(SocialIdentity, external.uid)
+            if linked is not None:
+                owner = await self.session.get(User, linked.user_id)
+                if owner is not None and owner.is_active:
+                    return await self._social_session(
+                        owner,
+                        client_type=client_type,
+                        client_ip=client_ip,
+                        user_agent=user_agent,
+                        request_id=request_id,
+                        provider=external.provider,
+                    )
+            raise ApplicationError(
+                "AUTH_ACCOUNT_LINK_REQUIRED",
+                "An account with this email already exists",
+                status_code=409,
+            ) from exc
+
+    async def link_social(
+        self,
+        *,
+        principal: AuthPrincipal,
+        id_token: str,
+        password: str,
+        client_ip: str,
+        request_id: str | None,
+    ) -> None:
+        await self._rate_limit_auth_write(
+            "social_link", f"{client_ip}|{principal.user_id}"
+        )
+        user = await self.session.get(User, principal.user_id)
+        password_row = await self.session.get(PasswordCredential, principal.user_id)
+        if (
+            user is None or not user.is_active or password_row is None
+            or not self.passwords.verify(password_row.password_hash, password)
+        ):
+            raise ApplicationError(
+                "AUTH_INVALID_CREDENTIALS",
+                "Confirm your existing SaveStream password to link an account",
+                status_code=401,
+            )
+        external = await FirebaseTokenVerifier(self.settings).verify(id_token)
+        linked = await self.session.get(SocialIdentity, external.uid)
+        if linked is not None:
+            if linked.user_id != user.id:
+                raise ApplicationError(
+                    "AUTH_SOCIAL_ALREADY_LINKED",
+                    "This provider identity is already linked to another account",
+                    status_code=409,
+                )
+            return
+        self.session.add(
+            SocialIdentity(
+                firebase_uid=external.uid,
+                user_id=user.id,
+                provider=external.provider,
+            )
+        )
+        try:
+            await self.session.flush()
+            await self._audit(
+                action="identity.social_linked",
+                user_id=user.id,
+                request_id=request_id,
+                ip_address=client_ip,
+                details={"provider": external.provider},
+            )
+            await self.session.commit()
+        except IntegrityError as exc:
+            await self.session.rollback()
+            raise ApplicationError(
+                "AUTH_SOCIAL_ALREADY_LINKED",
+                "This provider identity is already linked",
+                status_code=409,
+            ) from exc
 
     async def refresh(self, raw_token: str, *, request_id: str | None) -> LoginResult:
         try:
