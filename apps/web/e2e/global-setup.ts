@@ -1,15 +1,24 @@
 import { request, type FullConfig } from "@playwright/test";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export default async function globalSetup(config: FullConfig) {
   const email = process.env.SAVESTREAM_E2E_EMAIL;
   const password = process.env.SAVESTREAM_E2E_PASSWORD;
+  const statePath = resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    ".auth/user.json",
+  );
+  await mkdir(dirname(statePath), { recursive: true });
+
   if (!email || !password) {
-    throw new Error(
-      "Set SAVESTREAM_E2E_EMAIL and SAVESTREAM_E2E_PASSWORD before running production E2E tests.",
+    await writeFile(
+      statePath,
+      JSON.stringify({ cookies: [], origins: [] }, null, 2),
+      "utf8",
     );
+    return;
   }
 
   const webBaseURL = String(
@@ -43,11 +52,6 @@ export default async function globalSetup(config: FullConfig) {
     throw new Error(`E2E /v1/me check failed with HTTP ${me.status()}.`);
   }
 
-  const statePath = resolve(
-    dirname(fileURLToPath(import.meta.url)),
-    ".auth/user.json",
-  );
-  await mkdir(dirname(statePath), { recursive: true });
   await api.storageState({ path: statePath });
   await api.dispose();
 }
