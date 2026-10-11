@@ -58,10 +58,12 @@ void registerDeviceJourneys() {
     await tester.enterText(fields.at(0), 'alex@example.com');
     await tester.enterText(fields.at(1), 'secret');
 
-    // Social sign-in adds vertical content above the email form. On iOS the
-    // software keyboard can leave the primary action below the hittable
-    // viewport even though Flutter can still find the button widget.
-    tester.testTextInput.hide();
+    // Social sign-in adds vertical content above the email form. On native
+    // devices the software keyboard can leave the primary action below the
+    // hittable viewport even though Flutter can still find the button widget.
+    // Unfocus through the real focus tree rather than TestTextInput, which is
+    // not registered for integration tests running on a physical simulator.
+    FocusManager.instance.primaryFocus?.unfocus();
     await tester.pumpAndSettle();
     final Finder submit = find.widgetWithText(FilledButton, 'Sign in');
     await tester.ensureVisible(submit);
