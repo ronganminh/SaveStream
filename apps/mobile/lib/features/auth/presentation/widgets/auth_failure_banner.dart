@@ -23,6 +23,11 @@ class AuthFailureBanner extends StatelessWidget {
     final ColorScheme colors = Theme.of(context).colorScheme;
     final String message = switch (failure) {
       AuthFailureCode.invalidCredentials => l10n.invalidCredentialsMessage,
+      AuthFailureCode.accountLinkRequired =>
+        'This email already has a SaveStream account. Sign in using your password to link Google or Apple.',
+      AuthFailureCode.socialUnavailable =>
+        'Google and Apple sign-in are not configured yet.',
+      AuthFailureCode.cancelled => '',
       AuthFailureCode.emailNotVerified => l10n.emailNotVerifiedMessage,
       AuthFailureCode.invalidToken => l10n.authInvalidTokenMessage,
       AuthFailureCode.validation => l10n.authValidationErrorMessage,
