@@ -5,10 +5,29 @@ abstract interface class AuthProtectedApi {
   Future<void> deleteAccount();
 }
 
-final class DioAuthProtectedApi implements AuthProtectedApi {
+abstract interface class SocialLinkApi {
+  Future<void> linkSocial({required String idToken, required String password});
+}
+
+final class DioAuthProtectedApi implements AuthProtectedApi, SocialLinkApi {
   const DioAuthProtectedApi(this._client);
 
   final ApiClient _client;
+
+  @override
+  Future<void> linkSocial({
+    required String idToken,
+    required String password,
+  }) async {
+    await _client.post<Object?>(
+      '/v1/auth/social/link',
+      data: <String, Object?>{
+        'id_token': idToken,
+        'password': password,
+      },
+      decoder: (_) => null,
+    );
+  }
 
   @override
   Future<void> logout() async {
