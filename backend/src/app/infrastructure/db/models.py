@@ -54,6 +54,22 @@ class User(Base):
     )
 
 
+class SocialIdentity(Base):
+    """Stable Firebase UID -> SaveStream user mapping; unique across providers."""
+
+    __tablename__ = "social_identities"
+
+    firebase_uid: Mapped[str] = mapped_column(String(128), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PasswordCredential(Base):
     __tablename__ = "password_credentials"
 
