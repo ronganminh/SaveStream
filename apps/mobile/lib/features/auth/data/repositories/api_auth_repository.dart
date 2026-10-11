@@ -1,10 +1,11 @@
 import '../../../../core/api/api_exception.dart';
 import '../../domain/repositories/auth_repository.dart';
+import '../firebase_social_identity_client.dart';
 import '../remote/auth_protected_api.dart';
 import '../remote/auth_public_api.dart';
 import '../session/auth_session_manager.dart';
 
-final class ApiAuthRepository implements AuthRepository {
+final class ApiAuthRepository implements AuthRepository, SocialAuthRepository {
   const ApiAuthRepository({
     required AuthPublicApi publicApi,
     required AuthProtectedApi protectedApi,
@@ -22,6 +23,25 @@ final class ApiAuthRepository implements AuthRepository {
     try {
       final tokens = await _publicApi.login(email: email, password: password);
       await _sessionManager.storeAuthenticatedTokens(tokens);
+    } on ApiException catch (error) {
+      throw AuthException(_mapFailure(error));
+    } on Object {
+      throw const AuthException(AuthFailureCode.server);
+    }
+  }
+
+  @override
+  Future<void> signInSocial(SocialAuthProvider provider) async {
+    try {
+      final publicApi = _publicApi;
+      if (publicApi is! SocialAuthPublicApi) {
+        throw const AuthException(AuthFailureCode.socialUnavailable);
+      }
+      final idToken = await FirebaseSocialIdentityClient().getIdToken(provider);
+      final tokens = await publicApi.socialLogin(idToken: idToken);
+      await _sessionManager.storeAuthenticatedTokens(tokens);
+    } on AuthException {
+      rethrow;
     } on ApiException catch (error) {
       throw AuthException(_mapFailure(error));
     } on Object {
@@ -123,6 +143,12 @@ final class ApiAuthRepository implements AuthRepository {
     ApiException error, {
     bool tokenOperation = false,
   }) {
+    if (error.code == 'AUTH_ACCOUNT_LINK_REQUIRED') {
+      return AuthFailureCode.accountLinkRequired;
+    }
+    if (error.code == 'SOCIAL_AUTH_NOT_CONFIGURED') {
+      return AuthFailureCode.socialUnavailable;
+    }
     if (error.code == 'AUTH_INVALID_CREDENTIALS') {
       return AuthFailureCode.invalidCredentials;
     }
