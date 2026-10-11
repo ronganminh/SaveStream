@@ -23,6 +23,11 @@ async function openWorkspaceMenuIfNeeded(page: Page) {
 }
 
 test.describe("production authenticated UX", () => {
+  test.skip(
+    !process.env.SAVESTREAM_E2E_EMAIL || !process.env.SAVESTREAM_E2E_PASSWORD,
+    "Production credentials are not configured.",
+  );
+
   test("restores the cookie session and loads the workspace", async ({ page }) => {
     const errors = collectClientErrors(page);
     await page.goto("/overview");
