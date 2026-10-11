@@ -126,6 +126,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: SsSpacing.md),
                   SsPasswordField(
                     label: l10n.passwordLabel,
+                    hintText: 'Password',
                     controller: _passwordController,
                     autofillHints: const <String>[AutofillHints.password],
                     textInputAction: TextInputAction.done,

@@ -20,7 +20,7 @@
   "secondaryAction": "Secondary action",
   "textAction": "Text action",
   "emailLabel": "Email",
-  "emailHint": "name@example.com",
+  "emailHint": "you@gmail.com",
   "passwordLabel": "Password",
   "showPasswordAction": "Show password",
   "hidePasswordAction": "Hide password",

@@ -960,7 +960,7 @@ export function AuthPage({
         {mode !== "reset" && (
           <Field
             label="Email"
-            placeholder="you@company.com"
+            placeholder="you@gmail.com"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

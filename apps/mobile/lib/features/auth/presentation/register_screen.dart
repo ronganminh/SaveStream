@@ -131,6 +131,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: SsSpacing.md),
                   SsPasswordField(
                     label: l10n.passwordLabel,
+                    hintText: 'Password',
                     controller: _passwordController,
                     autofillHints: const <String>[AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,
