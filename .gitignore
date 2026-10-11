@@ -43,3 +43,8 @@ GoogleService-Info.plist
 /releases/
 /tmp/
 /flutter_export/
+
+# Playwright production E2E local artifacts
+apps/web/e2e/.auth/
+apps/web/playwright-report/
+apps/web/test-results/

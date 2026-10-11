@@ -29,7 +29,8 @@
     "test:cleanup": "node scripts/phase13-cleanup-audit.mjs",
     "test:release": "node scripts/phase14-release-audit.mjs",
     "test:lemon": "node scripts/lemon-readiness-audit.mjs",
-    "audit:public-site": "node scripts/public-site-audit.mjs"
+    "audit:public-site": "node scripts/public-site-audit.mjs",
+    "test:e2e:prod": "playwright test -c playwright.config.ts"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -106,7 +107,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "wrangler": "^4.41.0"
+    "wrangler": "^4.41.0",
+    "@playwright/test": "^1.56.1"
   },
   "version": "0.1.0"
 }
