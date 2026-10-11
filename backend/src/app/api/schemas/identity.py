@@ -50,6 +50,16 @@ class LoginRequest(StrictModel):
     _email = field_validator("email")(_validate_email)
 
 
+class SocialLoginRequest(StrictModel):
+    id_token: str = Field(min_length=20, max_length=16384)
+    client_type: Literal["web", "mobile"]
+
+
+class SocialLinkRequest(StrictModel):
+    id_token: str = Field(min_length=20, max_length=16384)
+    password: str = Field(min_length=1, max_length=128)
+
+
 class TokenResponse(StrictModel):
     access_token: str
     token_type: Literal["Bearer"] = "Bearer"
