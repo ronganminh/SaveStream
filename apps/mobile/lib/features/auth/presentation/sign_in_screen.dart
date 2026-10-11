@@ -61,6 +61,16 @@ class _SignInScreenState extends State<SignInScreen> {
       password: _passwordController.text,
     );
     if (signedIn) {
+      final repository = widget.repository;
+      if (repository is SocialLinkFeedback &&
+          repository.consumeSocialLinkFailure() &&
+          mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signed in, but Google/Apple linking did not finish.'),
+          ),
+        );
+      }
       widget.onSignedIn?.call();
     }
   }
