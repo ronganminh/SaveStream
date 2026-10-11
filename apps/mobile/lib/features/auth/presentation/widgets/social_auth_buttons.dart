@@ -20,13 +20,17 @@ class SocialAuthButtons extends StatelessWidget {
       children: <Widget>[
         const SizedBox(height: SsSpacing.lg),
         OutlinedButton.icon(
-          onPressed: isLoading ? null : () => onProvider(SocialAuthProvider.google),
+          onPressed: isLoading
+              ? null
+              : () => onProvider(SocialAuthProvider.google),
           icon: const Text('G', style: TextStyle(fontWeight: FontWeight.bold)),
           label: const Text('Continue with Google'),
         ),
         const SizedBox(height: SsSpacing.sm),
         OutlinedButton.icon(
-          onPressed: isLoading ? null : () => onProvider(SocialAuthProvider.apple),
+          onPressed: isLoading
+              ? null
+              : () => onProvider(SocialAuthProvider.apple),
           icon: const Icon(Icons.apple_rounded),
           label: const Text('Continue with Apple'),
         ),

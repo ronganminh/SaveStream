@@ -63,11 +63,13 @@ class _SignInScreenState extends State<SignInScreen> {
     if (signedIn) {
       final repository = widget.repository;
       if (repository is SocialLinkFeedback &&
-          repository.consumeSocialLinkFailure() &&
+          (repository as SocialLinkFeedback).consumeSocialLinkFailure() &&
           mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Signed in, but Google/Apple linking did not finish.'),
+            content: Text(
+              'Signed in, but Google/Apple linking did not finish.',
+            ),
           ),
         );
       }

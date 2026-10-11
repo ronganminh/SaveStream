@@ -10,7 +10,10 @@ void main() {
       final session = AppSessionController(
         authStatus: AppAuthStatus.unauthenticated,
       );
-      final controller = AuthController(repository: repository, session: session);
+      final controller = AuthController(
+        repository: repository,
+        session: session,
+      );
 
       expect(await controller.signInSocial(SocialAuthProvider.google), isTrue);
       expect(repository.lastProvider, SocialAuthProvider.google);
@@ -19,21 +22,30 @@ void main() {
       controller.dispose();
     });
 
-    test('cancelling Apple login does not show an error or create a session', () async {
-      final repository = _FakeSocialRepository(
-        failure: AuthFailureCode.cancelled,
-      );
-      final session = AppSessionController(
-        authStatus: AppAuthStatus.unauthenticated,
-      );
-      final controller = AuthController(repository: repository, session: session);
+    test(
+      'cancelling Apple login does not show an error or create a session',
+      () async {
+        final repository = _FakeSocialRepository(
+          failure: AuthFailureCode.cancelled,
+        );
+        final session = AppSessionController(
+          authStatus: AppAuthStatus.unauthenticated,
+        );
+        final controller = AuthController(
+          repository: repository,
+          session: session,
+        );
 
-      expect(await controller.signInSocial(SocialAuthProvider.apple), isFalse);
-      expect(session.authStatus, AppAuthStatus.unauthenticated);
-      expect(controller.failure, isNull);
-      expect(controller.isLoading, isFalse);
-      controller.dispose();
-    });
+        expect(
+          await controller.signInSocial(SocialAuthProvider.apple),
+          isFalse,
+        );
+        expect(session.authStatus, AppAuthStatus.unauthenticated);
+        expect(controller.failure, isNull);
+        expect(controller.isLoading, isFalse);
+        controller.dispose();
+      },
+    );
 
     test('existing email conflict requires secure account linking', () async {
       final repository = _FakeSocialRepository(
@@ -42,7 +54,10 @@ void main() {
       final session = AppSessionController(
         authStatus: AppAuthStatus.unauthenticated,
       );
-      final controller = AuthController(repository: repository, session: session);
+      final controller = AuthController(
+        repository: repository,
+        session: session,
+      );
 
       expect(await controller.signInSocial(SocialAuthProvider.google), isFalse);
       expect(controller.failure, AuthFailureCode.accountLinkRequired);
@@ -68,7 +83,10 @@ final class _FakeSocialRepository
   }
 
   @override
-  Future<void> signIn({required String email, required String password}) async {}
+  Future<void> signIn({
+    required String email,
+    required String password,
+  }) async {}
 
   @override
   Future<void> register({

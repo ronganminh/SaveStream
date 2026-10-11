@@ -78,10 +78,7 @@ final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
   Future<AuthTokenPair> socialLogin({required String idToken}) async {
     final response = await _client.post<AuthTokenPair>(
       '/v1/auth/social',
-      data: <String, Object?>{
-        'id_token': idToken,
-        'client_type': 'mobile',
-      },
+      data: <String, Object?>{'id_token': idToken, 'client_type': 'mobile'},
       decoder: AuthTokenPair.fromJson,
     );
     return response.data;

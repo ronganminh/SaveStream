@@ -48,7 +48,7 @@ class AuthController extends ChangeNotifier {
       if (repository is! SocialAuthRepository) {
         throw const AuthException(AuthFailureCode.socialUnavailable);
       }
-      await repository.signInSocial(provider);
+      await (repository as SocialAuthRepository).signInSocial(provider);
       _finish();
       _session.markAuthenticated();
       return true;

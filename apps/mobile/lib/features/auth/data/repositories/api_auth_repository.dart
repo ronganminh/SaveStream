@@ -5,7 +5,8 @@ import '../remote/auth_protected_api.dart';
 import '../remote/auth_public_api.dart';
 import '../session/auth_session_manager.dart';
 
-final class ApiAuthRepository implements AuthRepository, SocialAuthRepository, SocialLinkFeedback {
+final class ApiAuthRepository
+    implements AuthRepository, SocialAuthRepository, SocialLinkFeedback {
   ApiAuthRepository({
     required AuthPublicApi publicApi,
     required AuthProtectedApi protectedApi,
@@ -40,7 +41,7 @@ final class ApiAuthRepository implements AuthRepository, SocialAuthRepository, S
         final protectedApi = _protectedApi;
         if (protectedApi is SocialLinkApi) {
           try {
-            await protectedApi.linkSocial(
+            await (protectedApi as SocialLinkApi).linkSocial(
               idToken: pendingToken,
               password: password,
             );
@@ -69,7 +70,9 @@ final class ApiAuthRepository implements AuthRepository, SocialAuthRepository, S
       _pendingSocialIdToken = null;
       final idToken = await FirebaseSocialIdentityClient().getIdToken(provider);
       try {
-        final tokens = await publicApi.socialLogin(idToken: idToken);
+        final tokens = await (publicApi as SocialAuthPublicApi).socialLogin(
+          idToken: idToken,
+        );
         await _sessionManager.storeAuthenticatedTokens(tokens);
       } on ApiException catch (error) {
         if (error.code == 'AUTH_ACCOUNT_LINK_REQUIRED') {
