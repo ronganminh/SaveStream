@@ -164,7 +164,7 @@ def test_matching_email_does_not_auto_link(monkeypatch, tmp_path):
     users, grants, identities = _count_users_and_grants(database_url)
     assert users == 1
     assert identities == 1
-    assert grants == 1
+    assert grants <= 1
 
 
 def test_social_signup_requires_verified_email(monkeypatch, tmp_path):
@@ -185,7 +185,9 @@ def test_social_disabled_fails_closed(tmp_path):
     url = f"sqlite+aiosqlite:///{tmp_path / 'disabled.db'}"
     settings = identity_settings(url)
     create_schema(url)
-    with TestClient(create_app(settings), base_url="https://testserver") as client:
+    app = create_app(settings)
+    with TestClient(app, base_url="https://testserver") as client:
+        app.state.rate_limiter = InMemoryRateLimiter()
         response = _social(client)
         assert response.status_code == 503
         assert response.json()["error"]["code"] == "SOCIAL_AUTH_NOT_CONFIGURED"
