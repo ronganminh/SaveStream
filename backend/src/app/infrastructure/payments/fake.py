@@ -57,6 +57,13 @@ class FakePaymentProvider:
             provider_refund_reference=f"fake_refund_{refund_id}"
         )
 
+    async def capture_payment(
+        self,
+        provider_reference: str,
+    ) -> ProviderPaymentState:
+        del provider_reference
+        raise RuntimeError("Fake provider capture is not supported")
+
     async def retrieve_payment(
         self,
         provider_reference: str,

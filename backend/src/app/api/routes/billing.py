@@ -9,6 +9,7 @@ from app.api.dependencies import (
     require_scopes,
 )
 from app.api.schemas.billing import (
+    CapturePaymentRequest,
     CheckoutRequest,
     CheckoutResponse,
     CreatePaymentOrderRequest,
@@ -166,6 +167,33 @@ async def create_payment_checkout(
         checkout_url=result.checkout_url,
         payment_order=payment_order_response(result.payment_order),
     )
+
+
+@router.post(
+    "/payment-orders/{payment_order_id}/capture",
+    response_model=PaymentOrderResponse,
+    operation_id="capturePaymentOrder",
+)
+async def capture_payment_order(
+    payment_order_id: str,
+    payload: CapturePaymentRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(require_scopes("billing:write")),
+    service: BillingService = Depends(get_billing_service),
+    session: AsyncSession = Depends(get_db_session),
+) -> PaymentOrderResponse:
+    await _require_payment_channel(
+        session,
+        request,
+        setting_key="payment_web_enabled",
+        channel="web",
+    )
+    order = await service.capture(
+        user_id=principal.user_id,
+        payment_order_id=payment_order_id,
+        provider_order_id=payload.provider_order_id,
+    )
+    return payment_order_response(order)
 
 
 @router.post(

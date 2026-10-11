@@ -2,6 +2,8 @@
 
 This is the Phase 14 release gate for the production web + backend deployment.
 
+PayPal web checkout setup is documented in `deploy/vps/PAYPAL_WEB_CHECKOUT.md`.
+
 Canonical production endpoints:
 
 - Web: `https://savestream.online`

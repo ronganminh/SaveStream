@@ -49,6 +49,8 @@ const requestedBillingCheckout = import.meta.env["VITE_BILLING_CHECKOUT_ENABLED"
 export const billingCheckoutEnabled =
   isDemoMode || requestedBillingCheckout?.trim().toLowerCase() === "true";
 
+export const paypalClientId = import.meta.env["VITE_PAYPAL_CLIENT_ID"]?.trim() ?? "";
+
 /**
  * Route-access contract. Real auth/session state is supplied by AuthProvider.
  */
@@ -104,10 +106,11 @@ export function getRouteAccess(pathname: string): RouteAccess {
   if (pathname.startsWith("/admin")) {
     return { visibility: "admin", requiresAuth: true, requiredRole: "admin", indexable: false };
   }
-  if (protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  if (
+    protectedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+  ) {
     return { visibility: "authenticated", requiresAuth: true, indexable: false };
   }
   const indexable = PUBLIC_INDEXABLE_PATHS.includes(pathname);
   return { visibility: "public", requiresAuth: false, indexable };
 }
-

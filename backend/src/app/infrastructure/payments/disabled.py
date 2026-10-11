@@ -53,6 +53,13 @@ class DisabledPaymentProvider:
         del refund_id, provider_reference, amount_minor, currency
         _payments_disabled()
 
+    async def capture_payment(
+        self,
+        provider_reference: str,
+    ) -> ProviderPaymentState:
+        del provider_reference
+        _payments_disabled()
+
     async def retrieve_payment(
         self,
         provider_reference: str,

@@ -383,6 +383,96 @@ class BillingService:
         await self.session.refresh(order)
         return CheckoutResult(checkout_url, order)
 
+    async def capture(
+        self,
+        *,
+        user_id: uuid.UUID,
+        payment_order_id: str,
+        provider_order_id: str,
+    ) -> PaymentOrder:
+        order = await self.get(
+            user_id=user_id,
+            payment_order_id=payment_order_id,
+        )
+        status = PaymentStatus(order.status)
+        if status in {
+            PaymentStatus.PAID,
+            PaymentStatus.PARTIALLY_REFUNDED,
+            PaymentStatus.REFUNDED,
+        }:
+            return order
+        if self.provider.name != "paypal" or order.provider != "paypal":
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "This payment order does not use PayPal capture",
+                status_code=409,
+            )
+        if status is not PaymentStatus.PENDING:
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "Payment order cannot be captured in its current state",
+                status_code=409,
+                details={"status": order.status},
+            )
+        if not order.provider_reference or order.provider_reference != provider_order_id:
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "PayPal order does not match this SaveStream payment order",
+                status_code=409,
+            )
+
+        payment_state = await self.provider.capture_payment(provider_order_id)
+        if payment_state.status != "paid":
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "PayPal capture is not complete",
+                status_code=409,
+                retryable=True,
+            )
+        if (
+            payment_state.amount_minor != order.amount_minor
+            or payment_state.currency != order.currency
+        ):
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "PayPal captured amount does not match the order",
+                status_code=409,
+            )
+
+        await PaymentEventProcessor(self.session, self.provider).ingest(
+            ProviderEvent(
+                event_id=f"capture:{payment_state.event_id}",
+                event_type="payment.paid",
+                provider_reference=payment_state.provider_reference,
+                payment_order_id=str(order.id),
+                amount_minor=payment_state.amount_minor,
+                currency=payment_state.currency,
+            ),
+            raw_payload={
+                "id": f"capture:{payment_state.event_id}",
+                "type": "payment.paid",
+                "payment_reference": payment_state.provider_reference,
+                "payment_order_id": str(order.id),
+                "amount_minor": payment_state.amount_minor,
+                "currency": payment_state.currency,
+                "source": "paypal_capture",
+            },
+            signature_verified=True,
+        )
+        await self.session.refresh(order)
+        if PaymentStatus(order.status) not in {
+            PaymentStatus.PAID,
+            PaymentStatus.PARTIALLY_REFUNDED,
+            PaymentStatus.REFUNDED,
+        }:
+            raise ApplicationError(
+                "PAYMENT_FAILED",
+                "PayPal capture completed but credit confirmation is pending",
+                status_code=503,
+                retryable=True,
+            )
+        return order
+
     @staticmethod
     def _not_found() -> ApplicationError:
         return ApplicationError(

@@ -46,11 +46,7 @@ function emptyRecordingEventStream(): AsyncIterable<RecordingEventResponse> {
 function demoWatchFromChannel(channel: (typeof channels)[number]): WatchResponse {
   const username = channel.handle.replace(/^@/, "");
   const backendStatus =
-    channel.status === "Paused"
-      ? "paused"
-      : channel.status === "Error"
-        ? "paused_error"
-        : "active";
+    channel.status === "Paused" ? "paused" : channel.status === "Error" ? "paused_error" : "active";
   const liveStatus =
     channel.status === "Recording" ? "live" : channel.status === "Offline" ? "offline" : "unknown";
   return {
@@ -257,7 +253,8 @@ export const demoRepositories: SaveStreamRepositories = {
     async update(id, input) {
       const item = demoWatchState.find((watch) => watch.id === id);
       if (!item) throw new Error("Demo watch not found");
-      if (input.auto_record !== undefined && input.auto_record !== null) item.auto_record = input.auto_record;
+      if (input.auto_record !== undefined && input.auto_record !== null)
+        item.auto_record = input.auto_record;
       if (input.status) item.status = input.status;
       item.updated_at = new Date().toISOString();
       syncDemoChannel(item);
@@ -502,6 +499,9 @@ export const demoRepositories: SaveStreamRepositories = {
         checkout_url: "https://demo.savestream.invalid/checkout",
         payment_order: { ...demoPaymentOrder("demo-100"), id },
       };
+    },
+    async capturePaymentOrder(id) {
+      return { ...demoPaymentOrder("demo-100"), id, status: "paid" };
     },
   },
 

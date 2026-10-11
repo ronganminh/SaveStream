@@ -50,14 +50,12 @@ def validate_release(
         errors.append(str(exc))
         frontend_origin = manifest.frontend_origin.rstrip("/")
 
-    expected_webhook = (
-        f"{api_origin}/v1/webhooks/payments/lemonsqueezy"
-    )
-    if manifest.payment_webhook_url != expected_webhook:
-        errors.append(
-            "Payment webhook URL must be "
-            f"{expected_webhook}"
-        )
+    expected_webhook = f"{api_origin}/v1/webhooks/payments/lemonsqueezy"
+    if (
+        settings.payment_provider == "lemonsqueezy"
+        and manifest.payment_webhook_url != expected_webhook
+    ):
+        errors.append(f"Payment webhook URL must be {expected_webhook}")
 
     if settings.environment != "production":
         errors.append("SAVESTREAM_ENVIRONMENT must be production")
@@ -105,11 +103,19 @@ def validate_release(
             errors.append(
                 "SAVESTREAM_PAYMENT_PROVIDER=disabled requires --allow-disabled-payments"
             )
-    else:
-        if settings.payment_provider != "lemonsqueezy":
+    elif settings.payment_provider == "paypal":
+        if (
+            settings.payment_provider_base_url.rstrip("/")
+            != "https://api-m.paypal.com"
+        ):
             errors.append(
-                "Production release manifest expects SAVESTREAM_PAYMENT_PROVIDER=lemonsqueezy"
+                "Production PayPal API URL must be https://api-m.paypal.com"
             )
+        if not settings.paypal_client_id:
+            errors.append("PayPal Live client ID must be configured")
+        if not settings.paypal_client_secret:
+            errors.append("PayPal Live client secret must be configured")
+    elif settings.payment_provider == "lemonsqueezy":
         if (
             settings.payment_provider_base_url.rstrip("/")
             != "https://api.lemonsqueezy.com/v1"
@@ -123,6 +129,10 @@ def validate_release(
             errors.append("Lemon Squeezy Live variant ID must be configured")
         if settings.payment_provider_api_key == "payments-disabled":
             errors.append("Payment API key is still the payments-disabled placeholder")
+    else:
+        errors.append(
+            "Production web payments support paypal, lemonsqueezy, or disabled"
+        )
 
     if settings.smtp_host in {"localhost", "mail-debug"}:
         errors.append("Production SMTP host must be external")
@@ -179,6 +189,8 @@ def main() -> int:
     print(f"api origin: {manifest.api_origin}")
     if settings.payment_provider == "disabled":
         print("payments: disabled (checkout fails closed; keep VITE_BILLING_CHECKOUT_ENABLED=false)")
+    elif settings.payment_provider == "paypal":
+        print("payments: PayPal Orders v2 with backend capture")
     else:
         print(f"payment webhook: {manifest.payment_webhook_url}")
     print("oauth: disabled (no production OAuth backend is implemented)")

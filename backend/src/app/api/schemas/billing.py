@@ -95,6 +95,10 @@ class CheckoutResponse(StrictModel):
     payment_order: PaymentOrderResponse
 
 
+class CapturePaymentRequest(StrictModel):
+    provider_order_id: str = Field(min_length=1, max_length=255)
+
+
 StorePurchasePlatform = Literal["app_store", "google_play"]
 StorePurchaseStatus = Literal["credited", "pending", "rejected"]
 

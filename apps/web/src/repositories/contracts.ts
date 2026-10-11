@@ -39,13 +39,7 @@ import type {
 } from "@/api/types";
 
 export type ChannelStatus = "Recording" | "Waiting" | "Offline" | "Paused" | "Error";
-export type RecordingStatus =
-  | "Recording"
-  | "Processing"
-  | "Waiting"
-  | "Missed"
-  | "Ready"
-  | "Error";
+export type RecordingStatus = "Recording" | "Processing" | "Waiting" | "Missed" | "Ready" | "Error";
 export type Status = ChannelStatus | RecordingStatus;
 
 export type ChannelModel = {
@@ -196,11 +190,8 @@ export interface BillingRepository {
   createPaymentOrder(packageId: string, idempotencyKey: string): Promise<PaymentOrderResponse>;
   listPaymentOrders(options?: PageOptions): Promise<PaymentOrderListResponse>;
   getPaymentOrder(id: string): Promise<PaymentOrderResponse>;
-  createCheckout(
-    id: string,
-    returnUrl: string,
-    idempotencyKey: string,
-  ): Promise<CheckoutResponse>;
+  createCheckout(id: string, returnUrl: string, idempotencyKey: string): Promise<CheckoutResponse>;
+  capturePaymentOrder(id: string, providerOrderId: string): Promise<PaymentOrderResponse>;
 }
 
 export interface UsersRepository {
@@ -217,7 +208,9 @@ export interface UsersRepository {
 }
 
 export interface AdminRepository {
-  listUsers(options?: PageOptions & { role?: string; isActive?: boolean }): Promise<AdminUserListResponse>;
+  listUsers(
+    options?: PageOptions & { role?: string; isActive?: boolean },
+  ): Promise<AdminUserListResponse>;
   getUser(id: string): Promise<AdminUserResponse>;
   updateUser(
     id: string,

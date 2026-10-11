@@ -5,6 +5,7 @@ from .base import PaymentProvider
 from .disabled import DisabledPaymentProvider
 from .fake import FakePaymentProvider
 from .lemonsqueezy import LemonSqueezyPaymentProvider
+from .paypal import PayPalPaymentProvider
 from .provider import ConfiguredHttpPaymentProvider
 
 
@@ -33,6 +34,20 @@ def payment_provider_for_name(
                 status_code=503,
             )
         return FakePaymentProvider(settings)
+    if normalized == "paypal":
+        if settings.payment_provider != "paypal":
+            raise ApplicationError(
+                "RESOURCE_NOT_FOUND",
+                "Payment provider not found",
+                status_code=404,
+            )
+        if not settings.paypal_client_id or not settings.paypal_client_secret:
+            raise ApplicationError(
+                "SERVICE_UNAVAILABLE",
+                "PayPal is not configured",
+                status_code=503,
+            )
+        return PayPalPaymentProvider(settings)
     if normalized == "lemonsqueezy":
         if settings.payment_provider != "lemonsqueezy":
             raise ApplicationError(
