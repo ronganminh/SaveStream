@@ -1,0 +1,39 @@
+name: Web Production E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAVESTREAM_E2E_BASE_URL: https://savestream.online
+      SAVESTREAM_E2E_API_URL: https://api.savestream.online
+      SAVESTREAM_E2E_EMAIL: ${{ secrets.SAVESTREAM_E2E_EMAIL }}
+      SAVESTREAM_E2E_PASSWORD: ${{ secrets.SAVESTREAM_E2E_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Verify E2E credentials are configured
+        run: |
+          test -n "$SAVESTREAM_E2E_EMAIL"
+          test -n "$SAVESTREAM_E2E_PASSWORD"
+      - name: Run production browser tests
+        run: npm --workspace apps/web run test:e2e:prod
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-production-e2e-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
