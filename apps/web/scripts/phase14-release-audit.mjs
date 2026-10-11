@@ -38,16 +38,21 @@ must("src/hooks/use-billing.ts", "Hosted checkout must use HTTPS.");
 must("src/repositories/api.ts", "json: { return_url: returnUrl }");
 must("src/api/client.ts", 'credentials = "include"');
 
-const pages = read("src/components/app-pages.tsx");
-const googleButton = pages.indexOf("Google sign-in isn’t connected in this prototype.");
-const demoAuthGuard = pages.lastIndexOf(
-  'isDemoMode && (mode === "sign-in" || mode === "sign-up")',
-  googleButton,
-);
-if (googleButton < 0 || demoAuthGuard < 0 || googleButton - demoAuthGuard > 2500) {
-  failures.push(
-    "src/components/app-pages.tsx: unsupported Google auth entrypoint must remain demo-only",
-  );
+// Google/Apple entrypoints are now implemented, but may only render in
+// production after *all* public Firebase web config fields are populated.
+// Demo mode keeps its prototype path and cannot exchange real credentials.
+must("src/components/app-pages.tsx", "firebaseSocialConfigured");
+must("src/components/app-pages.tsx", '(isDemoMode || firebaseSocialConfigured)');
+must("src/components/app-pages.tsx", "Continue with Google");
+must("src/components/app-pages.tsx", "Continue with Apple");
+must("src/lib/firebase-social-login.ts", "inMemoryPersistence");
+for (const variable of [
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_APP_ID",
+]) {
+  must(".env.production.example", variable);
 }
 
 forbid(".env.production.example", "staging-api.savestream.online");
