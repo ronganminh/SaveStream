@@ -12,6 +12,7 @@ import 'auth_validation.dart';
 import 'controllers/auth_controller.dart';
 import 'widgets/auth_failure_banner.dart';
 import 'widgets/auth_scaffold.dart';
+import 'widgets/social_auth_buttons.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({
@@ -64,6 +65,13 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
+  Future<void> _socialSignIn(SocialAuthProvider provider) async {
+    final signedIn = await _controller.signInSocial(provider);
+    if (signedIn && mounted) {
+      widget.onSignedIn?.call();
+    }
+  }
+
   void _back() {
     if (context.canPop()) {
       context.pop();
@@ -105,6 +113,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: SsSpacing.lg),
                   ],
+                  SocialAuthButtons(
+                    isLoading: _controller.isLoading,
+                    onProvider: (provider) => _socialSignIn(provider),
+                  ),
                   SsTextField(
                     label: l10n.emailLabel,
                     hintText: l10n.emailHint,
