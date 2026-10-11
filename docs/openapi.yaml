@@ -8429,6 +8429,155 @@
           }
         }
       }
+    },
+    "/auth/social": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Sign in with Google or Apple",
+        "operationId": "socialLogin",
+        "description": "Exchange a verified Firebase ID token for a standard SaveStream session. Returns 409 AUTH_ACCOUNT_LINK_REQUIRED on collision with an existing email/password account; never automatically merges accounts. Web session uses the HttpOnly refresh cookie; mobile returns the refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocialLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired Firebase identity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Existing account must be linked after password sign-in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Provider email is unverified or unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Social login is not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/social/link": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Link Google/Apple to existing account",
+        "operationId": "linkSocialLogin",
+        "description": "Requires SaveStream Bearer session, a fresh external Firebase ID token, and confirmation of the existing SaveStream password. Does not automatically trust matching email addresses.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocialLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account linked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMessage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Wrong password or missing/invalid identity token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Provider identity already linked to another account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -14705,6 +14854,50 @@
           }
         },
         "additionalProperties": false
+      },
+      "SocialLoginRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_token",
+          "client_type"
+        ],
+        "properties": {
+          "id_token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 16384,
+            "description": "Firebase Authentication ID token for Google or Apple. Never send OAuth access tokens."
+          },
+          "client_type": {
+            "type": "string",
+            "enum": [
+              "web",
+              "mobile"
+            ]
+          }
+        }
+      },
+      "SocialLinkRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id_token",
+          "password"
+        ],
+        "properties": {
+          "id_token": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 16384
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Current SaveStream password required as step-up verification."
+          }
+        }
       }
     }
   }
