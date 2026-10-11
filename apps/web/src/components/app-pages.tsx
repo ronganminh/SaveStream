@@ -207,6 +207,8 @@ const publicLinks = [
 ] as const;
 export function PublicHeader() {
   const { t } = usePreferences();
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
   return (
     <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
@@ -227,12 +229,28 @@ export function PublicHeader() {
         <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
           <LanguageMenu />
           <ThemeMenu />
-          <Button variant="ghost" asChild className="hidden md:inline-flex">
-            <Link to="/sign-in">{t("Sign in")}</Link>
-          </Button>
-          <Button asChild className="hidden md:inline-flex">
-            <Link to="/sign-up">{t("Sign up")}</Link>
-          </Button>
+          {authenticated ? (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to="/overview">{t("Overview")}</Link>
+              </Button>
+              <Button asChild className="hidden md:inline-flex">
+                <Link to="/billing">
+                  <CreditCard />
+                  {t("Buy credits")}
+                </Link>
+              </Button>
+            </>
+          ) : status === "guest" ? (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to="/sign-in">{t("Sign in")}</Link>
+              </Button>
+              <Button asChild className="hidden md:inline-flex">
+                <Link to="/sign-up">{t("Sign up")}</Link>
+              </Button>
+            </>
+          ) : null}
         </div>
         <div className="lg:hidden">
           <Sheet>
@@ -262,12 +280,28 @@ export function PublicHeader() {
                 )}
               </nav>
               <div className="mt-6 grid gap-2 border-t pt-6">
-                <Button variant="outline" asChild>
-                  <Link to="/sign-in">{t("Sign in")}</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/sign-up">{t("Sign up")}</Link>
-                </Button>
+                {authenticated ? (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/overview">{t("Overview")}</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/billing">
+                        <CreditCard />
+                        {t("Buy credits")}
+                      </Link>
+                    </Button>
+                  </>
+                ) : status === "guest" ? (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/sign-in">{t("Sign in")}</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/sign-up">{t("Sign up")}</Link>
+                    </Button>
+                  </>
+                ) : null}
               </div>
             </SheetContent>
           </Sheet>
@@ -288,6 +322,9 @@ function formatSampleDuration(seconds?: number) {
 
 function RecordingExamples() {
   const { t } = usePreferences();
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
+  const recordingCtaTo = authenticated ? "/channels" : "/sign-up";
   const [selected, setSelected] = useState<SampleMediaItem | null>(null);
 
   return (
@@ -349,8 +386,8 @@ function RecordingExamples() {
 
         <div className="mt-10 text-center">
           <Button size="lg" asChild>
-            <Link to="/sign-up">
-              {t("Start recording your own livestreams")}
+            <Link to={recordingCtaTo}>
+              {t(authenticated ? "Open your channels" : "Start recording your own livestreams")}
               <ArrowRight />
             </Link>
           </Button>
@@ -408,7 +445,9 @@ function RecordingExamples() {
 
           <DialogFooter>
             <Button asChild>
-              <Link to="/sign-up">{t("Start recording your own")}</Link>
+              <Link to={recordingCtaTo}>
+                {t(authenticated ? "Open your channels" : "Start recording your own")}
+              </Link>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -441,6 +480,8 @@ function RecordingPreviewCard() {
 
 export function LandingPage() {
   const { t, language } = usePreferences();
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -483,8 +524,8 @@ export function LandingPage() {
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
-                <Link to="/sign-up">
-                  {t("Start for free")}
+                <Link to={authenticated ? "/overview" : "/sign-up"}>
+                  {t(authenticated ? "Open dashboard" : "Start for free")}
                   <ArrowRight />
                 </Link>
               </Button>
@@ -492,7 +533,9 @@ export function LandingPage() {
                 <a href="#how">{t("See how it works")}</a>
               </Button>
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("No credit card required.")}</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {t(authenticated ? "Continue in your SaveStream workspace." : "No credit card required.")}
+            </p>
             <div className="relative mx-auto mt-16 max-w-6xl overflow-hidden rounded-xl border bg-surface p-2 shadow-dashboard">
               <div className="flex h-10 items-center gap-2 border-b px-3">
                 <span className="size-2.5 rounded-full bg-border" />
@@ -706,7 +749,9 @@ export function LandingPage() {
                   ))}
                 </div>
                 <Button className="mt-8" variant="outline" asChild>
-                  <Link to="/pricing">{t("See pricing")}</Link>
+                  <Link to={authenticated ? "/billing" : "/pricing"}>
+                    {t(authenticated ? "Buy credits" : "See pricing")}
+                  </Link>
                 </Button>
               </>
             )}
@@ -781,7 +826,7 @@ export function AuthPage({
 }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
-  const { signIn, signInWithSocial } = useAuth();
+  const { signIn, signInWithSocial, status, user: authUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -789,6 +834,25 @@ export function AuthPage({
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (
+      isDemoMode ||
+      (mode !== "sign-in" && mode !== "sign-up") ||
+      status !== "authenticated"
+    ) {
+      return;
+    }
+    void navigate({
+      to: authUser && isAdminRole(authUser.role) ? "/admin/system" : "/overview",
+      replace: true,
+    });
+  }, [authUser, mode, navigate, status]);
+
+  const restoringExistingSession =
+    !isDemoMode &&
+    (mode === "sign-in" || mode === "sign-up") &&
+    status !== "guest";
+
   const copy = {
     "sign-in": ["Welcome back", "Sign in to manage your recordings.", "Sign in"],
     "sign-up": [
@@ -884,6 +948,19 @@ export function AuthPage({
       setBusy(false);
     }
   };
+  if (restoringExistingSession) {
+    return (
+      <AuthLayout>
+        <div className="text-center">
+          <span className="mx-auto block size-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <h1 className="mt-5 text-xl font-semibold">
+            {t(status === "authenticated" ? "Returning to your workspace…" : "Restoring your session…")}
+          </h1>
+        </div>
+      </AuthLayout>
+    );
+  }
+
   if (done && mode === "forgot")
     return (
       <AuthLayout>
@@ -3874,8 +3951,8 @@ function CreditPricingPage() {
             <div>
               <h3 className="font-medium text-foreground">Payments and refunds</h3>
               <p className="mt-1 leading-6">
-                Payments are processed by Lemon Squeezy, our reseller and Merchant of Record. Prices
-                are shown in USD; applicable taxes are calculated at checkout. See our{" "}
+                Payments are processed by the payment provider shown at checkout. Prices are shown
+                in USD; applicable taxes are calculated at checkout. See our{" "}
                 <Link to="/refund" className="text-primary underline underline-offset-4">
                   refund policy
                 </Link>
@@ -3947,6 +4024,20 @@ function DemoPricingPage() {
 
 export function PublicFooter() {
   const { t } = usePreferences();
+  const { status } = useAuth();
+  const accountLinks: [string, string][] =
+    status === "authenticated"
+      ? [
+          ["/overview", "Overview"],
+          ["/billing", "Buy credits"],
+          ["/settings/account", "Account settings"],
+        ]
+      : status === "guest"
+        ? [
+            ["/sign-in", "Sign in"],
+            ["/sign-up", "Create account"],
+          ]
+        : [];
   const cols: [string, [string, string][]][] = [
     [
       "Product",
@@ -3966,13 +4057,7 @@ export function PublicFooter() {
         ["/refund", "Refund policy"],
       ],
     ],
-    [
-      "Account",
-      [
-        ["/sign-in", "Sign in"],
-        ["/sign-up", "Create account"],
-      ],
-    ],
+    ["Account", accountLinks],
   ];
   return (
     <footer className="border-t py-12">

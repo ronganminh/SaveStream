@@ -1471,7 +1471,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
             <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <h1 className="mt-5 text-xl font-semibold">Checking payment status…</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              We’re confirming your payment with Lemon Squeezy.
+              We’re confirming your payment with the payment provider.
             </p>
           </div>
         </div>
@@ -1504,7 +1504,7 @@ export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
               tone="info"
               icon={Clock3}
               title="Payment is being confirmed"
-              body="Your payment is still being confirmed. Credits are added as soon as Lemon Squeezy confirms it, usually within a minute."
+              body="Your payment is still being confirmed. Credits are added as soon as the payment provider confirms it, usually within a minute."
               action={
                 <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
                   <RotateCcw />
@@ -3915,6 +3915,28 @@ export function RefundPage() {
   );
 }
 export function ContactPage() {
+  const { status } = useAuth();
+
+  if (!isDemoMode && status === "authenticated") {
+    return (
+      <AppShell>
+        <ProductionContactContent embedded />
+      </AppShell>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <PublicHeader />
+      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
+        <ProductionContactContent />
+      </main>
+      <PublicFooter />
+    </div>
+  );
+}
+
+function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {
   const contacts: { title: string; email: string; body: string }[] = [
     {
       title: "Support",
@@ -3924,7 +3946,7 @@ export function ContactPage() {
     {
       title: "Billing and refunds",
       email: SUPPORT_EMAIL,
-      body: "Include the order number from your Lemon Squeezy receipt.",
+      body: "Include the order number from your payment receipt.",
     },
     {
       title: "Privacy",
@@ -3937,32 +3959,38 @@ export function ContactPage() {
       body: "Tell us the channel name and why you believe it is being recorded without permission.",
     },
   ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">Contact us</h1>
-        <p className="mt-3 text-muted-foreground">
-          Email us and we will get back to you. For answers to common questions, see{" "}
-          <Link to="/help" className="text-primary underline underline-offset-4">
-            Help
-          </Link>
-          .
-        </p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-2">
-          {contacts.map((item) => (
-            <section key={item.title} className="rounded-lg border bg-surface p-5">
-              <h2 className="font-medium">{item.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</p>
-              <p className="mt-3 text-sm">
-                <MailLink email={item.email} />
-              </p>
-            </section>
-          ))}
-        </div>
-      </main>
-      <PublicFooter />
-    </div>
+    <>
+      {embedded ? (
+        <PageHeader
+          title="Contact us"
+          subtitle="Email SaveStream support, billing, privacy, or abuse reporting without leaving your workspace."
+        />
+      ) : (
+        <>
+          <h1 className="text-3xl font-semibold">Contact us</h1>
+          <p className="mt-3 text-muted-foreground">
+            Email us and we will get back to you. For answers to common questions, see{" "}
+            <Link to="/help" className="text-primary underline underline-offset-4">
+              Help
+            </Link>
+            .
+          </p>
+        </>
+      )}
+      <div className={embedded ? "grid gap-4 sm:grid-cols-2" : "mt-10 grid gap-4 sm:grid-cols-2"}>
+        {contacts.map((item) => (
+          <section key={item.title} className="rounded-lg border bg-surface p-5">
+            <h2 className="font-medium">{item.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.body}</p>
+            <p className="mt-3 text-sm">
+              <MailLink email={item.email} />
+            </p>
+          </section>
+        ))}
+      </div>
+    </>
   );
 }
 export function StatusPage() {
@@ -4162,54 +4190,95 @@ const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; bod
 ];
 
 export function HelpPage() {
-  return isDemoMode ? <DemoHelpPage /> : <PublicHelpPage />;
+  const { status } = useAuth();
+
+  if (isDemoMode) return <DemoHelpPage />;
+  if (status === "authenticated") {
+    return (
+      <AppShell>
+        <ProductionHelpContent embedded />
+      </AppShell>
+    );
+  }
+  return <PublicHelpPage />;
+}
+
+function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
+  const { t } = usePreferences();
+  return (
+    <>
+      {embedded ? (
+        <PageHeader
+          title="Help"
+          subtitle="Guidance for monitoring and recording authorized TikTok channels."
+        />
+      ) : (
+        <>
+          <h1 className="text-3xl font-semibold">{t("Help")}</h1>
+          <p className="mt-3 text-muted-foreground">
+            {t("Guidance for monitoring and recording authorized TikTok channels.")}
+          </p>
+        </>
+      )}
+      <div className={embedded ? "grid gap-4 lg:grid-cols-2" : "mt-10 grid gap-4 lg:grid-cols-2"}>
+        {productionHelpTopics.map((topic) => {
+          const I = topic.icon;
+          return (
+            <section
+              key={topic.id}
+              id={topic.id}
+              className="scroll-mt-24 rounded-lg border bg-surface p-5"
+            >
+              <div className="flex items-center gap-2">
+                <I className="size-4 text-primary" />
+                <h2 className="font-medium">{t(topic.title)}</h2>
+              </div>
+              <div className="mt-3 text-sm leading-6 text-muted-foreground">
+                {embedded && topic.id === "credits" ? (
+                  <>
+                    Recording time is paid with credits, bought once and never expiring. New accounts
+                    get free trial credits after verifying their email. A recording runs until the
+                    livestream ends or your credits run out. See{" "}
+                    <Link to="/billing" className="text-primary underline underline-offset-4">
+                      Billing
+                    </Link>{" "}
+                    to buy credits and review your current balance.
+                  </>
+                ) : typeof topic.body === "string" ? (
+                  t(topic.body)
+                ) : (
+                  topic.body
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      <section
+        id="contact"
+        className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
+      >
+        <CircleHelp className="size-5 text-primary" />
+        <div className="flex-1">
+          <h2 className="font-medium">{t("Still need help?")}</h2>
+          <p className="text-sm text-muted-foreground">
+            Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
+          </p>
+        </div>
+        <Button variant="outline" asChild>
+          <Link to="/contact">{t("Contact support")}</Link>
+        </Button>
+      </section>
+    </>
+  );
 }
 
 function PublicHelpPage() {
-  const { t } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">{t("Help")}</h1>
-        <p className="mt-3 text-muted-foreground">
-          {t("Guidance for monitoring and recording authorized TikTok channels.")}
-        </p>
-        <div className="mt-10 grid gap-4 lg:grid-cols-2">
-          {productionHelpTopics.map((topic) => {
-            const I = topic.icon;
-            return (
-              <section
-                key={topic.id}
-                id={topic.id}
-                className="scroll-mt-24 rounded-lg border bg-surface p-5"
-              >
-                <div className="flex items-center gap-2">
-                  <I className="size-4 text-primary" />
-                  <h2 className="font-medium">{t(topic.title)}</h2>
-                </div>
-                <div className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {typeof topic.body === "string" ? t(topic.body) : topic.body}
-                </div>
-              </section>
-            );
-          })}
-        </div>
-        <section
-          id="contact"
-          className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-        >
-          <CircleHelp className="size-5 text-primary" />
-          <div className="flex-1">
-            <h2 className="font-medium">{t("Still need help?")}</h2>
-            <p className="text-sm text-muted-foreground">
-              Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <Link to="/contact">{t("Contact support")}</Link>
-          </Button>
-        </section>
+        <ProductionHelpContent />
       </main>
       <PublicFooter />
     </div>
