@@ -5,8 +5,8 @@ import '../remote/auth_protected_api.dart';
 import '../remote/auth_public_api.dart';
 import '../session/auth_session_manager.dart';
 
-final class ApiAuthRepository implements AuthRepository, SocialAuthRepository {
-  const ApiAuthRepository({
+final class ApiAuthRepository implements AuthRepository, SocialAuthRepository, SocialLinkFeedback {
+  ApiAuthRepository({
     required AuthPublicApi publicApi,
     required AuthProtectedApi protectedApi,
     required AuthSessionManager sessionManager,
@@ -18,11 +18,40 @@ final class ApiAuthRepository implements AuthRepository, SocialAuthRepository {
   final AuthProtectedApi _protectedApi;
   final AuthSessionManager _sessionManager;
 
+  String? _pendingSocialIdToken;
+  bool _lastSocialLinkFailed = false;
+
+  @override
+  bool consumeSocialLinkFailure() {
+    final failed = _lastSocialLinkFailed;
+    _lastSocialLinkFailed = false;
+    return failed;
+  }
+
   @override
   Future<void> signIn({required String email, required String password}) async {
     try {
       final tokens = await _publicApi.login(email: email, password: password);
       await _sessionManager.storeAuthenticatedTokens(tokens);
+      final pendingToken = _pendingSocialIdToken;
+      _pendingSocialIdToken = null;
+      _lastSocialLinkFailed = false;
+      if (pendingToken != null) {
+        final protectedApi = _protectedApi;
+        if (protectedApi is SocialLinkApi) {
+          try {
+            await protectedApi.linkSocial(
+              idToken: pendingToken,
+              password: password,
+            );
+          } on Object {
+            // The password session remains valid; surface a separate warning.
+            _lastSocialLinkFailed = true;
+          }
+        } else {
+          _lastSocialLinkFailed = true;
+        }
+      }
     } on ApiException catch (error) {
       throw AuthException(_mapFailure(error));
     } on Object {
@@ -37,9 +66,17 @@ final class ApiAuthRepository implements AuthRepository, SocialAuthRepository {
       if (publicApi is! SocialAuthPublicApi) {
         throw const AuthException(AuthFailureCode.socialUnavailable);
       }
+      _pendingSocialIdToken = null;
       final idToken = await FirebaseSocialIdentityClient().getIdToken(provider);
-      final tokens = await publicApi.socialLogin(idToken: idToken);
-      await _sessionManager.storeAuthenticatedTokens(tokens);
+      try {
+        final tokens = await publicApi.socialLogin(idToken: idToken);
+        await _sessionManager.storeAuthenticatedTokens(tokens);
+      } on ApiException catch (error) {
+        if (error.code == 'AUTH_ACCOUNT_LINK_REQUIRED') {
+          _pendingSocialIdToken = idToken;
+        }
+        rethrow;
+      }
     } on AuthException {
       rethrow;
     } on ApiException catch (error) {
