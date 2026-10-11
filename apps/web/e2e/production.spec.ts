@@ -97,11 +97,12 @@ test.describe("public and sign-in UX", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test("email and password sign-in succeeds", async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "desktop-chromium", "Run one real credential login per suite.");
-
     const email = process.env.SAVESTREAM_E2E_EMAIL;
     const password = process.env.SAVESTREAM_E2E_PASSWORD;
-    if (!email || !password) throw new Error("Production E2E credentials are missing.");
+    test.skip(
+      testInfo.project.name !== "desktop-chromium" || !email || !password,
+      "Run one real credential login per suite when production credentials are configured.",
+    );
 
     await page.goto("/sign-in");
     await page.getByLabel("Email").fill(email);
