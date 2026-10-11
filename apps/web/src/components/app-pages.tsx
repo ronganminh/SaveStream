@@ -204,6 +204,8 @@ const publicLinks = [
 ] as const;
 export function PublicHeader() {
   const { t } = usePreferences();
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
   return (
     <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
@@ -224,12 +226,28 @@ export function PublicHeader() {
         <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
           <LanguageMenu />
           <ThemeMenu />
-          <Button variant="ghost" asChild className="hidden md:inline-flex">
-            <Link to="/sign-in">{t("Sign in")}</Link>
-          </Button>
-          <Button asChild className="hidden md:inline-flex">
-            <Link to="/sign-up">{t("Sign up")}</Link>
-          </Button>
+          {authenticated ? (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to="/overview">{t("Overview")}</Link>
+              </Button>
+              <Button asChild className="hidden md:inline-flex">
+                <Link to="/billing">
+                  <CreditCard />
+                  {t("Buy credits")}
+                </Link>
+              </Button>
+            </>
+          ) : status === "guest" ? (
+            <>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
+                <Link to="/sign-in">{t("Sign in")}</Link>
+              </Button>
+              <Button asChild className="hidden md:inline-flex">
+                <Link to="/sign-up">{t("Sign up")}</Link>
+              </Button>
+            </>
+          ) : null}
         </div>
         <div className="lg:hidden">
           <Sheet>
@@ -259,12 +277,28 @@ export function PublicHeader() {
                 )}
               </nav>
               <div className="mt-6 grid gap-2 border-t pt-6">
-                <Button variant="outline" asChild>
-                  <Link to="/sign-in">{t("Sign in")}</Link>
-                </Button>
-                <Button asChild>
-                  <Link to="/sign-up">{t("Sign up")}</Link>
-                </Button>
+                {authenticated ? (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/overview">{t("Overview")}</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/billing">
+                        <CreditCard />
+                        {t("Buy credits")}
+                      </Link>
+                    </Button>
+                  </>
+                ) : status === "guest" ? (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/sign-in">{t("Sign in")}</Link>
+                    </Button>
+                    <Button asChild>
+                      <Link to="/sign-up">{t("Sign up")}</Link>
+                    </Button>
+                  </>
+                ) : null}
               </div>
             </SheetContent>
           </Sheet>
