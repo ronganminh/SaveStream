@@ -56,7 +56,7 @@ function loadPayPalSdk(): Promise<PayPalNamespace> {
     });
     script.src = `https://www.paypal.com/sdk/js?${query.toString()}`;
     script.async = true;
-    script.dataset.savestreamPaypalSdk = "true";
+    script.dataset["savestreamPaypalSdk"] = "true";
     script.onload = () => {
       if (window.paypal) resolve(window.paypal);
       else reject(new Error("PayPal SDK loaded without the Buttons API."));
