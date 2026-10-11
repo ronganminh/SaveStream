@@ -590,6 +590,12 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
         >
           <Search />
         </Button>
+        <Button asChild size="sm" className="h-9 shrink-0 px-2 sm:px-3">
+          <Link to="/billing" aria-label={t("Buy credits")}>
+            <CreditCard />
+            <span className="hidden sm:inline">{t("Buy credits")}</span>
+          </Link>
+        </Button>
         <LanguageMenu />
         <ThemeMenu />
         <DropdownMenu>
