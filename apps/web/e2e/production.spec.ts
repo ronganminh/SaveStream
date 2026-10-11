@@ -109,7 +109,7 @@ test.describe("public and sign-in UX", () => {
 
     await page.goto("/sign-in");
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
+    await page.locator("input#password").fill(password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/(overview|admin\/system)$/);
   });
@@ -117,7 +117,7 @@ test.describe("public and sign-in UX", () => {
   test("sign-in form uses consumer-friendly placeholders", async ({ page }) => {
     await page.goto("/sign-in");
     await expect.soft(page.getByLabel("Email")).toHaveAttribute("placeholder", "you@gmail.com");
-    await expect.soft(page.getByLabel("Password")).toHaveAttribute("placeholder", "Password");
+    await expect.soft(page.locator("input#password")).toHaveAttribute("placeholder", "Password");
   });
 
   test("public pages load without client-side crashes", async ({ page }) => {
