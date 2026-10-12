@@ -22,7 +22,10 @@ def test_d9_rollup_revenue_usage_and_retention(tmp_path) -> None:
         database = Database(
             f"sqlite+aiosqlite:///{tmp_path / 'd9-reporting.db'}"
         )
-        now = datetime.now(timezone.utc)
+        # Keep every fixture on the same UTC calendar day. Using the real
+        # clock made the two-hour-old user fall on the previous day whenever
+        # CI ran shortly after midnight UTC.
+        now = datetime(2026, 1, 15, 12, tzinfo=timezone.utc)
         try:
             async with database.engine.begin() as connection:
                 await connection.run_sync(Base.metadata.create_all)
