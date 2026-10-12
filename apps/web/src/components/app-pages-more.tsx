@@ -4050,7 +4050,7 @@ function ProductionStatusPage() {
             icon={ShieldCheck}
             title={t("Service status information")}
             body={t(
-              "SaveStream does not currently publish automated uptime metrics or a live incident feed. We will post confirmed service notices here when public incident reporting is available.",
+              "SaveStream does not currently publish a public live incident feed and does not display illustrative service health on the production site. We will post confirmed service notices here when public incident reporting is available.",
             )}
           />
         </div>

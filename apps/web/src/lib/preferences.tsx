@@ -689,8 +689,8 @@ const vi: Record<string, string> = {
   "Current information about SaveStream service availability and incident reporting.":
     "Thông tin hiện tại về tính khả dụng của dịch vụ SaveStream và báo cáo sự cố.",
   "Service status information": "Thông tin trạng thái dịch vụ",
-  "SaveStream does not currently publish automated uptime metrics or a live incident feed. We will post confirmed service notices here when public incident reporting is available.":
-    "SaveStream hiện chưa công bố số liệu uptime tự động hoặc luồng sự cố trực tiếp. Các thông báo dịch vụ đã xác nhận sẽ được đăng tại đây khi hệ thống báo cáo sự cố công khai sẵn sàng.",
+  "SaveStream does not currently publish a public live incident feed and does not display illustrative service health on the production site. We will post confirmed service notices here when public incident reporting is available.":
+    "SaveStream hiện chưa công bố luồng sự cố trực tiếp và không hiển thị trạng thái dịch vụ minh họa trên trang production. Các thông báo dịch vụ đã xác nhận sẽ được đăng tại đây khi hệ thống báo cáo sự cố công khai sẵn sàng.",
   "What is available": "Thông tin hiện có",
   "Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.":
     "Các trang sản phẩm đã đăng nhập hiển thị lỗi yêu cầu trực tiếp từ API SaveStream. Dữ liệu vận hành Admin chỉ dành cho tài khoản quản trị được cấp quyền.",
