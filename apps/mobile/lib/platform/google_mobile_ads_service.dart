@@ -43,6 +43,17 @@ final class GoogleAdsConfig {
       'ADMOB_REWARDED_ANDROID',
     );
 
+    const String iosTestBannerId = 'ca-app-pub-3940256099942544/2435281174';
+    const String iosTestRewardedId = 'ca-app-pub-3940256099942544/1712485313';
+    const String iosProductionHomeBannerId =
+        'ca-app-pub-2078852906622512/3246896193';
+    const String iosProductionWatchBannerId =
+        'ca-app-pub-2078852906622512/6342909381';
+    const String iosProductionLibraryBannerId =
+        'ca-app-pub-2078852906622512/7771541125';
+    const String iosProductionRewardedId =
+        'ca-app-pub-2078852906622512/1819456424';
+
     const String androidTestBannerId = 'ca-app-pub-3940256099942544/9214589741';
     const String androidProductionBannerId =
         'ca-app-pub-2078852906622512/4061426634';
@@ -60,27 +71,30 @@ final class GoogleAdsConfig {
     final String androidRewardedFallback = useProductionIds
         ? androidProductionRewardedId
         : androidTestRewardedId;
+    final String iosHomeFallback = useProductionIds
+        ? iosProductionHomeBannerId
+        : iosTestBannerId;
+    final String iosWatchFallback = useProductionIds
+        ? iosProductionWatchBannerId
+        : iosTestBannerId;
+    final String iosLibraryFallback = useProductionIds
+        ? iosProductionLibraryBannerId
+        : iosTestBannerId;
+    final String iosRewardedFallback = useProductionIds
+        ? iosProductionRewardedId
+        : iosTestRewardedId;
     return GoogleAdsConfig(
       bannerHomeId: ios
-          ? configuredOr(
-              bannerHomeIos,
-              'ca-app-pub-3940256099942544/2435281174',
-            )
+          ? configuredOr(bannerHomeIos, iosHomeFallback)
           : configuredOr(bannerHomeAndroid, androidBannerFallback),
       bannerWatchListId: ios
-          ? configuredOr(
-              bannerWatchIos,
-              'ca-app-pub-3940256099942544/2435281174',
-            )
+          ? configuredOr(bannerWatchIos, iosWatchFallback)
           : configuredOr(bannerWatchAndroid, androidBannerFallback),
       bannerLibraryId: ios
-          ? configuredOr(
-              bannerLibraryIos,
-              'ca-app-pub-3940256099942544/2435281174',
-            )
+          ? configuredOr(bannerLibraryIos, iosLibraryFallback)
           : configuredOr(bannerLibraryAndroid, androidBannerFallback),
       rewardedId: ios
-          ? configuredOr(rewardedIos, 'ca-app-pub-3940256099942544/1712485313')
+          ? configuredOr(rewardedIos, iosRewardedFallback)
           : configuredOr(rewardedAndroid, androidRewardedFallback),
     );
   }

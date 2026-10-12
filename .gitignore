@@ -43,3 +43,4 @@ GoogleService-Info.plist
 /releases/
 /tmp/
 /flutter_export/
+*.mobileprovision

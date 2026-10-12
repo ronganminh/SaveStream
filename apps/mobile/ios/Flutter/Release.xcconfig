@@ -1,3 +1,4 @@
-ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"
+ADMOB_APP_ID = ca-app-pub-2078852906622512~9812304548
 #include "Generated.xcconfig"
 #include? "ReleaseSigning.xcconfig"

@@ -25,6 +25,30 @@ void main() {
     expect(config.rewardedId, 'ca-app-pub-2078852906622512/5155016450');
   });
 
+  test('C7 iOS Release uses SaveStream ad units for every placement', () {
+    final GoogleAdsConfig config = GoogleAdsConfig.forPlatform(
+      TargetPlatform.iOS,
+      useProductionIds: true,
+    );
+
+    expect(config.bannerHomeId, 'ca-app-pub-2078852906622512/3246896193');
+    expect(config.bannerWatchListId, 'ca-app-pub-2078852906622512/6342909381');
+    expect(config.bannerLibraryId, 'ca-app-pub-2078852906622512/7771541125');
+    expect(config.rewardedId, 'ca-app-pub-2078852906622512/1819456424');
+  });
+
+  test('C7 iOS Debug retains official Google test units', () {
+    final GoogleAdsConfig config = GoogleAdsConfig.forPlatform(
+      TargetPlatform.iOS,
+      useProductionIds: false,
+    );
+
+    expect(config.bannerHomeId, 'ca-app-pub-3940256099942544/2435281174');
+    expect(config.bannerWatchListId, 'ca-app-pub-3940256099942544/2435281174');
+    expect(config.bannerLibraryId, 'ca-app-pub-3940256099942544/2435281174');
+    expect(config.rewardedId, 'ca-app-pub-3940256099942544/1712485313');
+  });
+
   test('C7 Android debug defaults keep Google test ad units', () {
     final GoogleAdsConfig config = GoogleAdsConfig.forPlatform(
       TargetPlatform.android,

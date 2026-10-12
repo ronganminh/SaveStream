@@ -26,8 +26,12 @@ ios/Flutter/ReleaseSigning.xcconfig
 # Flutter tool output
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Flutter.podspec
 ios/Runner/GeneratedPluginRegistrant.h
 ios/Runner/GeneratedPluginRegistrant.m
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+ios/build/
 .brand-venv/
 
 # Firebase release configuration
