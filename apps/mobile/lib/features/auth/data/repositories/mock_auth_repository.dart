@@ -20,7 +20,7 @@ enum _AuthOperation {
   deleteAccount,
 }
 
-class MockAuthRepository implements AuthRepository {
+class MockAuthRepository implements AuthRepository, SocialAuthRepository {
   const MockAuthRepository({
     required this.scenario,
     this.latency = const Duration(milliseconds: 160),
@@ -31,6 +31,11 @@ class MockAuthRepository implements AuthRepository {
 
   @override
   Future<void> signIn({required String email, required String password}) {
+    return _respond(_AuthOperation.signIn);
+  }
+
+  @override
+  Future<void> signInSocial(SocialAuthProvider provider) {
     return _respond(_AuthOperation.signIn);
   }
 

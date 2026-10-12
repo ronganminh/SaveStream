@@ -20,7 +20,7 @@
   "secondaryAction": "Hành động phụ",
   "textAction": "Hành động dạng chữ",
   "emailLabel": "Email",
-  "emailHint": "name@example.com",
+  "emailHint": "you@gmail.com",
   "passwordLabel": "Mật khẩu",
   "showPasswordAction": "Hiện mật khẩu",
   "hidePasswordAction": "Ẩn mật khẩu",

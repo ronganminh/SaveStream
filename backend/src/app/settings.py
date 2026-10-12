@@ -129,6 +129,7 @@ class AppSettings:
     refresh_token_ttl_seconds: int = 2_592_000
     one_time_token_ttl_seconds: int = 1_800
     refresh_cookie_name: str = "savestream_refresh"
+    firebase_auth_project_id: str = ""
     frontend_base_url: str = "http://localhost:5173"
     smtp_host: str = "localhost"
     smtp_port: int = 1025
@@ -596,6 +597,7 @@ class AppSettings:
             refresh_token_ttl_seconds=_int_env("REFRESH_TOKEN_TTL_SECONDS", 2_592_000),
             one_time_token_ttl_seconds=_int_env("ONE_TIME_TOKEN_TTL_SECONDS", 1_800),
             refresh_cookie_name=_env("REFRESH_COOKIE_NAME", "savestream_refresh"),
+            firebase_auth_project_id=_env("FIREBASE_AUTH_PROJECT_ID", ""),
             frontend_base_url=frontend_base_url,
             smtp_host=smtp_host,
             smtp_port=smtp_port,

@@ -14,7 +14,11 @@ abstract interface class AuthPublicApi {
   Future<void> resetPassword({required String token, required String password});
 }
 
-final class DioAuthPublicApi implements AuthPublicApi {
+abstract interface class SocialAuthPublicApi {
+  Future<AuthTokenPair> socialLogin({required String idToken});
+}
+
+final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
   const DioAuthPublicApi(this._client);
 
   final ApiClient _client;
@@ -65,6 +69,16 @@ final class DioAuthPublicApi implements AuthPublicApi {
         'password': password,
         'client_type': 'mobile',
       },
+      decoder: AuthTokenPair.fromJson,
+    );
+    return response.data;
+  }
+
+  @override
+  Future<AuthTokenPair> socialLogin({required String idToken}) async {
+    final response = await _client.post<AuthTokenPair>(
+      '/v1/auth/social',
+      data: <String, Object?>{'id_token': idToken, 'client_type': 'mobile'},
       decoder: AuthTokenPair.fromJson,
     );
     return response.data;

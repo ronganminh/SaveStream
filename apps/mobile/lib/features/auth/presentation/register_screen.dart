@@ -12,6 +12,7 @@ import 'auth_validation.dart';
 import 'controllers/auth_controller.dart';
 import 'widgets/auth_failure_banner.dart';
 import 'widgets/auth_scaffold.dart';
+import 'widgets/social_auth_buttons.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
@@ -65,6 +66,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  Future<void> _socialSignIn(SocialAuthProvider provider) async {
+    final signedIn = await _controller.signInSocial(provider);
+    if (signedIn && mounted) {
+      context.go(AppRoutes.home);
+    }
+  }
+
   void _back() {
     if (context.canPop()) {
       context.pop();
@@ -110,6 +118,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: SsSpacing.md),
+                  SocialAuthButtons(
+                    isLoading: _controller.isLoading,
+                    onProvider: (provider) => _socialSignIn(provider),
+                  ),
                   SsTextField(
                     label: l10n.emailLabel,
                     hintText: l10n.emailHint,
@@ -131,6 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: SsSpacing.md),
                   SsPasswordField(
                     label: l10n.passwordLabel,
+                    hintText: 'Password',
                     controller: _passwordController,
                     autofillHints: const <String>[AutofillHints.newPassword],
                     textInputAction: TextInputAction.done,

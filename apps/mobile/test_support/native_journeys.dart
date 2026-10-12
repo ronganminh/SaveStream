@@ -57,7 +57,18 @@ void registerDeviceJourneys() {
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'alex@example.com');
     await tester.enterText(fields.at(1), 'secret');
-    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+
+    // Social sign-in adds vertical content above the email form. On native
+    // devices the software keyboard can leave the primary action below the
+    // hittable viewport even though Flutter can still find the button widget.
+    // Unfocus through the real focus tree rather than TestTextInput, which is
+    // not registered for integration tests running on a physical simulator.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    final Finder submit = find.widgetWithText(FilledButton, 'Sign in');
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
 
     await _waitFor(tester, find.text('Welcome back, Alex Nguyen'));
     expect(session.isAuthenticated, isTrue);

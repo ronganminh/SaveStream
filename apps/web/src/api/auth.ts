@@ -59,6 +59,20 @@ export const authApi = {
     });
   },
 
+  socialLogin(idToken: string) {
+    return apiClient.post<TokenResponse>("/v1/auth/social", {
+      json: { id_token: idToken, client_type: "web" },
+      skipAuth: true,
+      skipAuthRefresh: true,
+    });
+  },
+
+  linkSocial(idToken: string, password: string) {
+    return apiClient.post<AuthMessage>("/v1/auth/social/link", {
+      json: { id_token: idToken, password },
+    });
+  },
+
   refresh() {
     return apiClient.post<TokenResponse>("/v1/auth/refresh", {
       json: {},
@@ -107,6 +121,16 @@ export function authErrorMessage(error: unknown): string {
       return "Email or password is incorrect.";
     case "AUTH_EMAIL_NOT_VERIFIED":
       return "Verify your email address before signing in.";
+    case "AUTH_ACCOUNT_LINK_REQUIRED":
+      return "An account with this email already exists. Sign in below with your password to link Google or Apple.";
+    case "AUTH_SOCIAL_INVALID_TOKEN":
+      return "Your Google or Apple sign-in expired. Please try again.";
+    case "AUTH_SOCIAL_EMAIL_REQUIRED":
+      return "Your provider must share a verified email for first sign-in.";
+    case "SOCIAL_AUTH_NOT_CONFIGURED":
+      return "Google and Apple sign-in are not enabled yet.";
+    case "AUTH_SOCIAL_ALREADY_LINKED":
+      return "This Google or Apple account is already linked to another account.";
     case "AUTH_SESSION_REVOKED":
       return "Your session has expired. Sign in again.";
     case "ADMIN_MFA_SETUP_REQUIRED":

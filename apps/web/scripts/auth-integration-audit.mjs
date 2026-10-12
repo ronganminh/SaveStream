@@ -14,6 +14,17 @@ const forbid = (file, text) => {
 must("src/api/auth.ts", '"/v1/auth/register"');
 must("src/api/auth.ts", '"/v1/auth/verify-email"');
 must("src/api/auth.ts", '"/v1/auth/login"');
+must("src/api/auth.ts", '"/v1/auth/social"');
+must("src/api/auth.ts", '"/v1/auth/social/link"');
+must("src/auth/auth-context.tsx", "signInWithSocial");
+must("src/lib/firebase-social-login.ts", "signInWithPopup");
+must("src/lib/firebase-social-login.ts", "inMemoryPersistence");
+must("src/components/app-pages.tsx", "Continue with Google");
+must("src/components/app-pages.tsx", "Continue with Apple");
+must("src/components/app-pages.tsx", 'placeholder="you@gmail.com"');
+must("src/components/app-components.tsx", 'placeholder="Password"');
+forbid("src/lib/firebase-social-login.ts", "localStorage");
+
 must("src/api/auth.ts", '"/v1/auth/refresh"');
 must("src/api/auth.ts", '"/v1/auth/logout"');
 must("src/api/auth.ts", '"/v1/auth/forgot-password"');

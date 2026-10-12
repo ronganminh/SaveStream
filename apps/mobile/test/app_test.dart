@@ -237,7 +237,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Create account'));
+    final createLink = find.text('Create account');
+    await tester.ensureVisible(createLink);
+    await tester.tap(createLink);
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);

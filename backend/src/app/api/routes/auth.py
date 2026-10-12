@@ -10,6 +10,8 @@ from app.api.schemas.identity import (
     RefreshRequest,
     RegisterRequest,
     ResetPasswordRequest,
+    SocialLoginRequest,
+    SocialLinkRequest,
     TokenResponse,
     VerifyEmailRequest,
 )
@@ -128,6 +130,48 @@ async def login(
         expires_in=result.expires_in,
         refresh_token=refresh_token,
     )
+
+
+@router.post("/social", response_model=TokenResponse, operation_id="socialLogin")
+async def social_login(
+    payload: SocialLoginRequest,
+    request: Request,
+    response: Response,
+    service: IdentityService = Depends(get_identity_service),
+) -> TokenResponse:
+    result = await service.social_login(
+        id_token=payload.id_token,
+        client_type=payload.client_type,
+        client_ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+        request_id=_request_id(request),
+    )
+    refresh_token: str | None = result.refresh_token
+    if payload.client_type == "web":
+        _set_refresh_cookie(response, request, result.refresh_token)
+        refresh_token = None
+    return TokenResponse(
+        access_token=result.access_token,
+        expires_in=result.expires_in,
+        refresh_token=refresh_token,
+    )
+
+
+@router.post("/social/link", response_model=AuthMessage, operation_id="linkSocialLogin")
+async def social_link(
+    payload: SocialLinkRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    service: IdentityService = Depends(get_identity_service),
+) -> AuthMessage:
+    await service.link_social(
+        principal=principal,
+        id_token=payload.id_token,
+        password=payload.password,
+        client_ip=_client_ip(request),
+        request_id=_request_id(request),
+    )
+    return AuthMessage(message="Social sign-in linked")
 
 
 @router.post("/refresh", response_model=TokenResponse, operation_id="refreshToken")

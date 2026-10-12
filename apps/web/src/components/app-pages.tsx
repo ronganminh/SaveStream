@@ -26,6 +26,7 @@ import {
 import {
   Activity,
   AlertTriangle,
+  Apple,
   ArrowLeft,
   ArrowRight,
   ArrowUpDown,
@@ -137,6 +138,8 @@ import {
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { billingCheckoutEnabled, isAdminRole, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
+import { ApiError } from "@/api/errors";
+import { firebaseSocialConfigured, socialProviderErrorMessage, type SocialProvider } from "@/lib/firebase-social-login";
 import type {
   CreditPackageResponse,
   CreditReservationResponse,
@@ -823,7 +826,7 @@ export function AuthPage({
 }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
-  const { signIn, status, user: authUser } = useAuth();
+  const { signIn, signInWithSocial, status, user: authUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -864,6 +867,24 @@ export function AuthPage({
     ],
     reset: ["Choose a new password", "Use at least 8 characters.", "Reset password"],
   }[mode];
+  const startSocial = async (provider: SocialProvider) => {
+    setErr(null);
+    if (isDemoMode) {
+      toast("Social sign-in isn't connected in this prototype.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const currentUser = await signInWithSocial(provider);
+      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
+    } catch (error) {
+      setErr(
+        error instanceof ApiError ? authErrorMessage(error) : socialProviderErrorMessage(error),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
@@ -1004,22 +1025,36 @@ export function AuthPage({
     <AuthLayout>
       <h1 className="text-2xl font-semibold">{copy[0]}</h1>
       <p className="mt-2 text-sm text-muted-foreground">{copy[1]}</p>
-      {isDemoMode && (mode === "sign-in" || mode === "sign-up") && (
-        <>
-          <Button
-            variant="outline"
-            className="mt-8 w-full"
-            onClick={() => toast("Google sign-in isn’t connected in this prototype.")}
-          >
-            <span className="font-bold">G</span>Continue with Google
-          </Button>
-          <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            or continue with email
-            <span className="h-px flex-1 bg-border" />
+      {(mode === "sign-in" || mode === "sign-up") &&
+        (isDemoMode || firebaseSocialConfigured) && (
+          <div className="mt-8 space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-3"
+              disabled={busy}
+              onClick={() => void startSocial("google")}
+            >
+              <span aria-hidden="true" className="font-semibold">G</span>
+              Continue with Google
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-3"
+              disabled={busy}
+              onClick={() => void startSocial("apple")}
+            >
+              <Apple aria-hidden="true" className="size-4" />
+              Continue with Apple
+            </Button>
+            <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              or continue with email
+              <span className="h-px flex-1 bg-border" />
+            </div>
           </div>
-        </>
-      )}
+        )}
       <form
         className={cn("space-y-4", (mode === "forgot" || mode === "reset") && "mt-8")}
         onSubmit={submit}
@@ -1037,7 +1072,7 @@ export function AuthPage({
         {mode !== "reset" && (
           <Field
             label="Email"
-            placeholder="you@company.com"
+            placeholder="you@gmail.com"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

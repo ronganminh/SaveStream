@@ -53,6 +53,7 @@ class SsTextField extends StatelessWidget {
 class SsPasswordField extends StatefulWidget {
   const SsPasswordField({
     required this.label,
+    this.hintText,
     this.controller,
     this.validator,
     this.autofillHints,
@@ -62,6 +63,7 @@ class SsPasswordField extends StatefulWidget {
   });
 
   final String label;
+  final String? hintText;
   final TextEditingController? controller;
   final FormFieldValidator<String>? validator;
   final Iterable<String>? autofillHints;
@@ -86,6 +88,7 @@ class _SsPasswordFieldState extends State<SsPasswordField> {
       onFieldSubmitted: widget.onFieldSubmitted,
       decoration: InputDecoration(
         labelText: widget.label,
+        hintText: widget.hintText,
         prefixIcon: const Icon(Icons.lock_outline_rounded),
         suffixIcon: IconButton(
           tooltip: _obscureText

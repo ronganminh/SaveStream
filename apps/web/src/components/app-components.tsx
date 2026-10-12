@@ -2222,7 +2222,7 @@ export function PasswordField({
         className="mt-2"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="••••••••"
+        placeholder="Password"
         autoComplete={autoComplete}
       />
       {showStrength &&

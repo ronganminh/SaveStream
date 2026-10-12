@@ -12,6 +12,10 @@ import {
 import { authApi, type AuthRole, type AuthUser } from "@/api/auth";
 import { configureApiSession } from "@/api/client";
 import { isDemoMode } from "@/lib/app-config";
+import { ApiError } from "@/api/errors";
+import { authErrorMessage } from "@/api/auth";
+import { requestFirebaseIdToken, type SocialProvider } from "@/lib/firebase-social-login";
+import { toast } from "sonner";
 
 export type AuthStatus = "bootstrapping" | "authenticated" | "guest";
 
@@ -25,6 +29,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   identity: AuthIdentity;
   signIn: (email: string, password: string) => Promise<AuthUser>;
+  signInWithSocial: (provider: SocialProvider) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   signOutEverywhere: () => Promise<void>;
   refreshSession: () => Promise<AuthUser | null>;
@@ -38,10 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const [user, setUser] = useState<AuthUser | null>(null);
   const accessTokenRef = useRef<string | null>(null);
+  const pendingSocialLinkRef = useRef<string | null>(null);
   const refreshInFlightRef = useRef<Promise<string | null> | null>(null);
 
   const clearSession = useCallback(() => {
     accessTokenRef.current = null;
+    pendingSocialLinkRef.current = null;
     setUser(null);
     setStatus(isDemoMode ? "authenticated" : "guest");
   }, []);
@@ -131,7 +138,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const tokens = await authApi.login(email, password);
-      return loadCurrentUser(tokens.access_token);
+      const signedIn = await loadCurrentUser(tokens.access_token);
+      const pendingSocialIdToken = pendingSocialLinkRef.current;
+      pendingSocialLinkRef.current = null;
+      if (pendingSocialIdToken) {
+        try {
+          await authApi.linkSocial(pendingSocialIdToken, password);
+          toast.success("Your Google or Apple account is now linked.");
+        } catch (error) {
+          toast.error("Signed in, but unable to link provider: " + authErrorMessage(error));
+        }
+      }
+      return signedIn;
+    },
+    [loadCurrentUser],
+  );
+
+  const signInWithSocial = useCallback(
+    async (provider: SocialProvider): Promise<AuthUser> => {
+      if (isDemoMode) {
+        throw new Error("Social sign-in is not available in the demo.");
+      }
+      pendingSocialLinkRef.current = null;
+      const firebaseIdToken = await requestFirebaseIdToken(provider);
+      try {
+        const tokens = await authApi.socialLogin(firebaseIdToken);
+        return await loadCurrentUser(tokens.access_token);
+      } catch (error) {
+        if (error instanceof ApiError && error.code === "AUTH_ACCOUNT_LINK_REQUIRED") {
+          // Keep only in memory. After explicit password sign-in, the user can
+          // approve linking the Google/Apple identity to the existing account.
+          pendingSocialLinkRef.current = firebaseIdToken;
+        }
+        throw error;
+      }
     },
     [loadCurrentUser],
   );
@@ -183,11 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       identity,
       signIn,
+      signInWithSocial,
       signOut,
       signOutEverywhere,
       refreshSession,
     }),
-    [identity, refreshSession, signIn, signOut, signOutEverywhere, status, user],
+    [identity, refreshSession, signIn, signInWithSocial, signOut, signOutEverywhere, status, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

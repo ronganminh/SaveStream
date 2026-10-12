@@ -12,6 +12,7 @@ import 'auth_validation.dart';
 import 'controllers/auth_controller.dart';
 import 'widgets/auth_failure_banner.dart';
 import 'widgets/auth_scaffold.dart';
+import 'widgets/social_auth_buttons.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({
@@ -60,6 +61,25 @@ class _SignInScreenState extends State<SignInScreen> {
       password: _passwordController.text,
     );
     if (signedIn) {
+      final repository = widget.repository;
+      if (repository is SocialLinkFeedback &&
+          (repository as SocialLinkFeedback).consumeSocialLinkFailure() &&
+          mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Signed in, but Google/Apple linking did not finish.',
+            ),
+          ),
+        );
+      }
+      widget.onSignedIn?.call();
+    }
+  }
+
+  Future<void> _socialSignIn(SocialAuthProvider provider) async {
+    final signedIn = await _controller.signInSocial(provider);
+    if (signedIn && mounted) {
       widget.onSignedIn?.call();
     }
   }
@@ -105,6 +125,10 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: SsSpacing.lg),
                   ],
+                  SocialAuthButtons(
+                    isLoading: _controller.isLoading,
+                    onProvider: (provider) => _socialSignIn(provider),
+                  ),
                   SsTextField(
                     label: l10n.emailLabel,
                     hintText: l10n.emailHint,
@@ -126,6 +150,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: SsSpacing.md),
                   SsPasswordField(
                     label: l10n.passwordLabel,
+                    hintText: 'Password',
                     controller: _passwordController,
                     autofillHints: const <String>[AutofillHints.password],
                     textInputAction: TextInputAction.done,
