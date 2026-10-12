@@ -64,7 +64,13 @@ type DangerousAction = {
   execute: (stepUpToken: string, reason: string) => Promise<void>;
 };
 
-function StepUpDialog({ action, onClose }: { action: DangerousAction | null; onClose: () => void }) {
+function StepUpDialog({
+  action,
+  onClose,
+}: {
+  action: DangerousAction | null;
+  onClose: () => void;
+}) {
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
   const [reason, setReason] = useState("");
@@ -121,7 +127,9 @@ function StepUpDialog({ action, onClose }: { action: DangerousAction | null; onC
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
             disabled={busy || !password || totp.length !== 6 || reason.trim().length < 3}
             onClick={() => void confirm()}
@@ -164,7 +172,10 @@ export function AdminFinancePage() {
   const [busy, setBusy] = useState(true);
 
   const loadPayments = async (cursor?: string | null) => {
-    const result = await adminFinanceApi.listPayments({ ...paymentFilters, cursor: cursor ?? null });
+    const result = await adminFinanceApi.listPayments({
+      ...paymentFilters,
+      cursor: cursor ?? null,
+    });
     setPayments(result.items);
     setPaymentCursor(result.pagination.next_cursor);
     setPaymentHasMore(result.pagination.has_more);
@@ -227,7 +238,10 @@ export function AdminFinancePage() {
 
   const exportPayments = async () => {
     try {
-      downloadText("savestream-admin-payments.csv", await adminFinanceApi.exportPayments(paymentFilters));
+      downloadText(
+        "savestream-admin-payments.csv",
+        await adminFinanceApi.exportPayments(paymentFilters),
+      );
     } catch (error) {
       toast.error("Payment export failed", { description: authErrorMessage(error) });
     }
@@ -235,7 +249,10 @@ export function AdminFinancePage() {
 
   const exportLedger = async () => {
     try {
-      downloadText("savestream-admin-credit-ledger.csv", await adminFinanceApi.exportLedger(ledgerFilters));
+      downloadText(
+        "savestream-admin-credit-ledger.csv",
+        await adminFinanceApi.exportLedger(ledgerFilters),
+      );
     } catch (error) {
       toast.error("Ledger export failed", { description: authErrorMessage(error) });
     }
@@ -288,13 +305,23 @@ export function AdminFinancePage() {
         )}
 
         <Tabs defaultValue="orders" className="space-y-5">
-          <TabsList>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="stuck">Stuck orders</TabsTrigger>
-            {canManageMoney && <TabsTrigger value="ledger">Credit ledger</TabsTrigger>}
-            {canManageMoney && <TabsTrigger value="adjust">Manual minutes</TabsTrigger>}
-            {canManageMoney && <TabsTrigger value="holds">Stuck holds</TabsTrigger>}
-          </TabsList>
+          <div>
+            <div className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
+              <TabsList
+                className="h-auto min-w-max justify-start"
+                aria-label="Payment administration sections"
+              >
+                <TabsTrigger value="orders">Orders</TabsTrigger>
+                <TabsTrigger value="stuck">Stuck orders</TabsTrigger>
+                {canManageMoney && <TabsTrigger value="ledger">Credit ledger</TabsTrigger>}
+                {canManageMoney && <TabsTrigger value="adjust">Manual minutes</TabsTrigger>}
+                {canManageMoney && <TabsTrigger value="holds">Stuck holds</TabsTrigger>}
+              </TabsList>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground sm:hidden">
+              Swipe horizontally to see all payment sections.
+            </p>
+          </div>
 
           <TabsContent value="orders" className="space-y-4">
             <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-4">
@@ -313,8 +340,19 @@ export function AdminFinancePage() {
                 }
               >
                 <option value="">All statuses</option>
-                {["created", "pending", "paid", "partially_refunded", "refunded", "failed", "cancelled", "expired"].map((status) => (
-                  <option key={status} value={status}>{status}</option>
+                {[
+                  "created",
+                  "pending",
+                  "paid",
+                  "partially_refunded",
+                  "refunded",
+                  "failed",
+                  "cancelled",
+                  "expired",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
                 ))}
               </select>
               <select
@@ -415,9 +453,11 @@ export function AdminFinancePage() {
                   </tr>
                 ))}
                 {!payments.length && (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    {busy ? "Loading orders…" : "No orders match the current filters."}
-                  </td></tr>
+                  <tr>
+                    <td colSpan={8} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      {busy ? "Loading orders…" : "No orders match the current filters."}
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </AdminDataTable>
@@ -426,7 +466,9 @@ export function AdminFinancePage() {
                 variant="outline"
                 onClick={() =>
                   void loadPayments(paymentCursor).catch((error) =>
-                    toast.error("Could not load next page", { description: authErrorMessage(error) }),
+                    toast.error("Could not load next page", {
+                      description: authErrorMessage(error),
+                    }),
                   )
                 }
               >
@@ -439,8 +481,9 @@ export function AdminFinancePage() {
             <section className="rounded-lg border bg-background p-4">
               <h2 className="font-medium">Orders needing attention</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Paid orders missing their idempotent credit grant, or web orders pending for more than 15 minutes.
-                Store payment state is never changed manually; only verified Apple or Google events may do that.
+                Paid orders missing their idempotent credit grant, or web orders pending for more
+                than 15 minutes. Store payment state is never changed manually; only verified Apple
+                or Google events may do that.
               </p>
             </section>
             <AdminDataTable>
@@ -495,9 +538,11 @@ export function AdminFinancePage() {
                   </tr>
                 ))}
                 {!stuck.length && (
-                  <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No stuck orders detected.
-                  </td></tr>
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No stuck orders detected.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </AdminDataTable>
@@ -525,7 +570,9 @@ export function AdminFinancePage() {
                 >
                   <option value="">All categories</option>
                   {["purchase", "spend", "refund", "adjustment", "gift"].map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
                 <Input
@@ -545,7 +592,8 @@ export function AdminFinancePage() {
                 <div className="flex gap-2">
                   <Button onClick={() => void applyLedgerFilters()}>Apply</Button>
                   <Button variant="outline" onClick={() => void exportLedger()}>
-                    <Download className="mr-2 size-4" />CSV
+                    <Download className="mr-2 size-4" />
+                    CSV
                   </Button>
                 </div>
               </div>
@@ -600,8 +648,9 @@ export function AdminFinancePage() {
                 <div>
                   <h2 className="font-medium">Manual cloud-minute adjustment</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Enter minutes directly. Negative values subtract minutes but can never make the balance negative.
-                    Gifts do not create Pro entitlement unless “Counts as purchase” is explicitly checked.
+                    Enter minutes directly. Negative values subtract minutes but can never make the
+                    balance negative. Gifts do not create Pro entitlement unless “Counts as
+                    purchase” is explicitly checked.
                   </p>
                 </div>
                 <Input
@@ -671,8 +720,8 @@ export function AdminFinancePage() {
               <section className="rounded-lg border bg-background p-4">
                 <h2 className="font-medium">Stuck credit holds</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Only active reservations whose recording is already terminal are shown. Release re-checks the
-                  recording state on the backend before changing the reservation.
+                  Only active reservations whose recording is already terminal are shown. Release
+                  re-checks the recording state on the backend before changing the reservation.
                 </p>
               </section>
               <AdminDataTable>
@@ -706,9 +755,7 @@ export function AdminFinancePage() {
                                   reason,
                                   token,
                                 );
-                                toast.success(
-                                  `Released ${result.released_credits} cloud minutes`,
-                                );
+                                toast.success(`Released ${result.released_credits} cloud minutes`);
                                 await loadFinance();
                               },
                             })
@@ -720,9 +767,14 @@ export function AdminFinancePage() {
                     </tr>
                   ))}
                   {!reservations.length && (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      No stuck credit holds.
-                    </td></tr>
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-4 py-8 text-center text-sm text-muted-foreground"
+                      >
+                        No stuck credit holds.
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </AdminDataTable>
@@ -741,21 +793,32 @@ export function AdminFinancePage() {
             {detail && (
               <div className="space-y-5">
                 <div className="grid gap-3 md:grid-cols-3">
-                  <AdminMetricCard label="Gross revenue" value={usd(detail.order.gross_usd_minor)} />
+                  <AdminMetricCard
+                    label="Gross revenue"
+                    value={usd(detail.order.gross_usd_minor)}
+                  />
                   <AdminMetricCard label="Cloud minutes" value={minutes(detail.order.credits)} />
                   <AdminMetricCard label="Status" value={detail.order.status} />
                 </div>
                 <div className="rounded-lg border p-4 text-sm">
-                  <p><strong>User:</strong> {detail.order.user_email}</p>
-                  <p><strong>Package:</strong> {detail.order.package_name}</p>
-                  <p><strong>Channel:</strong> {detail.order.purchase_channel}</p>
-                  <p><strong>Transaction:</strong> {detail.order.provider_transaction_id ?? "—"}</p>
+                  <p>
+                    <strong>User:</strong> {detail.order.user_email}
+                  </p>
+                  <p>
+                    <strong>Package:</strong> {detail.order.package_name}
+                  </p>
+                  <p>
+                    <strong>Channel:</strong> {detail.order.purchase_channel}
+                  </p>
+                  <p>
+                    <strong>Transaction:</strong> {detail.order.provider_transaction_id ?? "—"}
+                  </p>
                   {detail.order.estimated_store_fee_minor !== null && (
                     <p>
                       <strong>Estimated store fee:</strong>{" "}
                       {usd(detail.order.estimated_store_fee_minor)} at{" "}
-                      {(detail.order.estimated_store_fee_rate_bps ?? 0) / 100}%.
-                      This is an estimate; revenue above is gross before store fees.
+                      {(detail.order.estimated_store_fee_rate_bps ?? 0) / 100}%. This is an
+                      estimate; revenue above is gross before store fees.
                     </p>
                   )}
                 </div>
@@ -766,8 +829,8 @@ export function AdminFinancePage() {
                       <div>
                         <p className="font-medium">Refund managed by Apple or Google</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          Admin cannot initiate a store refund. SaveStream updates this order only after a verified
-                          App Store or Google Play refund notification arrives.
+                          Admin cannot initiate a store refund. SaveStream updates this order only
+                          after a verified App Store or Google Play refund notification arrives.
                         </p>
                       </div>
                     </div>
@@ -776,8 +839,8 @@ export function AdminFinancePage() {
                   <div className="space-y-3 rounded-lg border p-4">
                     <h3 className="font-medium">Web refund</h3>
                     <p className="text-sm text-muted-foreground">
-                      Amount is in USD cents. Preview calculates the proportional cloud minutes and caps the
-                      actual clawback so the user balance never becomes negative.
+                      Amount is in USD cents. Preview calculates the proportional cloud minutes and
+                      caps the actual clawback so the user balance never becomes negative.
                     </p>
                     <div className="flex gap-2">
                       <Input
@@ -797,10 +860,13 @@ export function AdminFinancePage() {
                       <div className="text-sm">
                         <p>Refund: {usd(refundPreview.amount_minor)}</p>
                         <p>Corresponding minutes: {minutes(refundPreview.corresponding_credits)}</p>
-                        <p>Minutes actually deducted now: {minutes(refundPreview.deducted_credits)}</p>
+                        <p>
+                          Minutes actually deducted now: {minutes(refundPreview.deducted_credits)}
+                        </p>
                         {refundPreview.deducted_credits < refundPreview.corresponding_credits && (
                           <p className="mt-1 text-muted-foreground">
-                            The remaining refunded minutes were already used; balance stays at or above zero.
+                            The remaining refunded minutes were already used; balance stays at or
+                            above zero.
                           </p>
                         )}
                         <Button
@@ -836,12 +902,17 @@ export function AdminFinancePage() {
                   <h3 className="mb-2 font-medium">Timeline</h3>
                   <div className="space-y-2">
                     {detail.timeline.map((item, index) => (
-                      <div key={`${item.at}-${item.event}-${index}`} className="rounded border p-3 text-sm">
+                      <div
+                        key={`${item.at}-${item.event}-${index}`}
+                        className="rounded border p-3 text-sm"
+                      >
                         <div className="flex justify-between gap-4">
                           <span className="font-mono">{item.event}</span>
                           <span className="text-xs text-muted-foreground">{dateTime(item.at)}</span>
                         </div>
-                        {item.detail && <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>}
+                        {item.detail && (
+                          <p className="mt-1 text-xs text-muted-foreground">{item.detail}</p>
+                        )}
                       </div>
                     ))}
                   </div>

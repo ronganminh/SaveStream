@@ -5,11 +5,7 @@ import { toast } from "sonner";
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, PageHeader } from "@/components/app-components";
-import {
-  AdminDataTable,
-  AdminMfaGate,
-  AdminMetricCard,
-} from "@/components/admin/foundation";
+import { AdminDataTable, AdminMfaGate, AdminMetricCard } from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,11 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import {
-  adminD9Api,
-  type AdminOverview,
-  type AdminSupportReport,
-} from "@/repositories/admin-api";
+import { adminD9Api, type AdminOverview, type AdminSupportReport } from "@/repositories/admin-api";
 
 function usd(minor: number) {
   return new Intl.NumberFormat("en-US", {
@@ -121,9 +113,7 @@ function OverviewBody() {
       ? previous.recording_errors_24h / previous.recording_total_24h
       : 0;
 
-  const exportReport = async (
-    kind: "revenue" | "new-users" | "cloud-usage" | "recordings",
-  ) => {
+  const exportReport = async (kind: "revenue" | "new-users" | "cloud-usage" | "recordings") => {
     try {
       const csv = await adminD9Api.exportReport(kind);
       downloadCsv(`savestream-${kind}.csv`, csv);
@@ -135,16 +125,12 @@ function OverviewBody() {
   };
 
   const alerts = [
-    capacity >= 0.8
-      ? `Recording capacity is at ${Math.round(capacity * 100)}%.`
-      : null,
-    latest &&
-    latest.recording_errors_24h > 0 &&
-    errorRate > previousErrorRate + 0.05
+    capacity >= 0.8 ? `Recording capacity is at ${Math.round(capacity * 100)}%.` : null,
+    latest && latest.recording_errors_24h > 0 && errorRate > previousErrorRate + 0.05
       ? `Recording error rate increased to ${Math.round(errorRate * 100)}% in the last 24 hours.`
       : null,
     latest && latest.stuck_orders > 0
-      ? `${latest.stuck_orders} payment orders are stuck.`
+      ? `${latest.stuck_orders} payment ${latest.stuck_orders === 1 ? "order is" : "orders are"} stuck.`
       : null,
     latest && latest.open_complaints > 0
       ? `${latest.open_complaints} complaint cases are still open.`
@@ -181,30 +167,17 @@ function OverviewBody() {
               : "—"
           }
         />
-        <AdminMetricCard
-          label="Free → Pro (7d)"
-          value={latest?.free_to_pro_weekly ?? "—"}
-        />
-        <AdminMetricCard
-          label="Gross revenue"
-          value={latest ? usd(gross) : "—"}
-        />
+        <AdminMetricCard label="Free → Pro (7d)" value={latest?.free_to_pro_weekly ?? "—"} />
+        <AdminMetricCard label="Gross revenue" value={latest ? usd(gross) : "—"} />
         <AdminMetricCard
           label="Running / waiting"
-          value={
-            latest
-              ? `${latest.recording_running} / ${latest.recording_waiting}`
-              : "—"
-          }
+          value={latest ? `${latest.recording_running} / ${latest.recording_waiting}` : "—"}
         />
         <AdminMetricCard
           label="Recording errors (24h)"
           value={latest?.recording_errors_24h ?? "—"}
         />
-        <AdminMetricCard
-          label="Computed"
-          value={dateTime(latest?.computed_at)}
-        />
+        <AdminMetricCard label="Computed" value={dateTime(latest?.computed_at)} />
       </div>
 
       <section className="mt-6 rounded-lg border bg-background p-5">
@@ -231,10 +204,7 @@ function OverviewBody() {
           </p>
         </div>
         <div className="grid gap-3 p-5 md:grid-cols-4">
-          <AdminMetricCard
-            label="Web"
-            value={latest ? usd(latest.revenue_web_usd_minor) : "—"}
-          />
+          <AdminMetricCard label="Web" value={latest ? usd(latest.revenue_web_usd_minor) : "—"} />
           <AdminMetricCard
             label="App Store"
             value={latest ? usd(latest.revenue_app_store_usd_minor) : "—"}
@@ -256,10 +226,7 @@ function OverviewBody() {
           />
         </div>
         <div className="grid gap-3 border-t p-5 md:grid-cols-5">
-          <AdminMetricCard
-            label="Month · Gross total"
-            value={data ? usd(monthGross) : "—"}
-          />
+          <AdminMetricCard label="Month · Gross total" value={data ? usd(monthGross) : "—"} />
           <AdminMetricCard
             label="Month · Web"
             value={data ? usd(data.month_revenue_web_usd_minor) : "—"}
@@ -293,11 +260,7 @@ function OverviewBody() {
               ["recordings", "Recordings by status"],
             ] as const
           ).map(([kind, label]) => (
-            <Button
-              key={kind}
-              variant="outline"
-              onClick={() => void exportReport(kind)}
-            >
+            <Button key={kind} variant="outline" onClick={() => void exportReport(kind)}>
               <Download className="mr-2 size-4" />
               {label}
             </Button>
@@ -337,13 +300,8 @@ function OverviewBody() {
             ))}
             {!data?.series.length && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-8 text-center text-sm text-muted-foreground"
-                >
-                  {busy
-                    ? "Loading snapshots…"
-                    : "No aggregate snapshots have been computed yet."}
+                <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {busy ? "Loading snapshots…" : "No aggregate snapshots have been computed yet."}
                 </td>
               </tr>
             )}
@@ -363,8 +321,7 @@ function ReportDialog({
   onClose: () => void;
   onSaved: (report: AdminSupportReport) => void;
 }) {
-  const [status, setStatus] =
-    useState<AdminSupportReport["status"]>("new");
+  const [status, setStatus] = useState<AdminSupportReport["status"]>("new");
   const [assignee, setAssignee] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -404,9 +361,7 @@ function ReportDialog({
         <DialogHeader>
           <DialogTitle>App report</DialogTitle>
           <DialogDescription>
-            {report
-              ? `${report.user_email} · ${dateTime(report.created_at)}`
-              : "Loading…"}
+            {report ? `${report.user_email} · ${dateTime(report.created_at)}` : "Loading…"}
           </DialogDescription>
         </DialogHeader>
         {report && (
@@ -448,9 +403,7 @@ function ReportDialog({
               <select
                 className="h-9 rounded-md border bg-background px-3 text-sm"
                 value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as AdminSupportReport["status"])
-                }
+                onChange={(event) => setStatus(event.target.value as AdminSupportReport["status"])}
               >
                 <option value="new">New</option>
                 <option value="reviewing">Reviewing</option>
@@ -474,10 +427,7 @@ function ReportDialog({
           <Button variant="outline" disabled={busy} onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            disabled={busy || reason.trim().length < 3}
-            onClick={() => void save()}
-          >
+          <Button disabled={busy || reason.trim().length < 3} onClick={() => void save()}>
             {busy ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>
@@ -581,9 +531,7 @@ function ReportsBody() {
         <select
           className="h-9 rounded-md border bg-background px-3 text-sm"
           value={sortOrder}
-          onChange={(event) =>
-            setSortOrder(event.target.value as "asc" | "desc")
-          }
+          onChange={(event) => setSortOrder(event.target.value as "asc" | "desc")}
         >
           <option value="desc">Newest first</option>
           <option value="asc">Oldest first</option>
@@ -611,22 +559,14 @@ function ReportsBody() {
             {reports.map((report) => (
               <tr key={report.id} className="border-b last:border-0">
                 <td className="px-4 py-3 text-sm">{report.user_email}</td>
-                <td className="max-w-md truncate px-4 py-3 text-sm">
-                  {report.description}
-                </td>
-                <td className="px-4 py-3 text-xs">
-                  {report.recording_id ?? "—"}
-                </td>
+                <td className="max-w-md truncate px-4 py-3 text-sm">{report.description}</td>
+                <td className="px-4 py-3 text-xs">{report.recording_id ?? "—"}</td>
                 <td className="px-4 py-3 text-xs">
                   {report.platform ?? "—"} {report.app_version ?? ""}
                 </td>
                 <td className="px-4 py-3 text-sm">{report.status}</td>
                 <td className="px-4 py-3 text-right">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSelected(report)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => setSelected(report)}>
                     Review
                   </Button>
                 </td>
@@ -634,13 +574,8 @@ function ReportsBody() {
             ))}
             {!reports.length && (
               <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-8 text-center text-sm text-muted-foreground"
-                >
-                  {busy
-                    ? "Loading app reports…"
-                    : "No app reports match the current filters."}
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  {busy ? "Loading app reports…" : "No app reports match the current filters."}
                 </td>
               </tr>
             )}
@@ -650,11 +585,7 @@ function ReportsBody() {
 
       {hasMore && nextCursor && (
         <div className="mt-4">
-          <Button
-            variant="outline"
-            onClick={() => void load(nextCursor)}
-            disabled={busy}
-          >
+          <Button variant="outline" onClick={() => void load(nextCursor)} disabled={busy}>
             Next page
           </Button>
         </div>
@@ -664,9 +595,7 @@ function ReportsBody() {
         report={selected}
         onClose={() => setSelected(null)}
         onSaved={(updated) =>
-          setReports((current) =>
-            current.map((item) => (item.id === updated.id ? updated : item)),
-          )
+          setReports((current) => current.map((item) => (item.id === updated.id ? updated : item)))
         }
       />
     </>

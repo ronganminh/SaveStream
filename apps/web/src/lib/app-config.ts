@@ -93,6 +93,7 @@ const protectedPrefixes = [
 export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/",
   "/pricing",
+  "/status",
   "/help",
   "/contact",
   "/terms",

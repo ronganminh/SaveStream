@@ -25,6 +25,7 @@ const CANONICAL = "https://savestream.online";
 const PUBLIC_PATHS = [
   "/",
   "/pricing",
+  "/status",
   "/help",
   "/contact",
   "/terms",
@@ -74,9 +75,9 @@ for (const route of [
   if (!fs.existsSync(path.join(root, `src/routes/${route}.tsx`)))
     fail(`missing route src/routes/${route}.tsx`);
 }
-must("src/routes/status.tsx", 'redirect({ to: "/help"');
+forbid("src/routes/status.tsx", "redirect(");
 
-// Footer links Refund + Contact and no longer links Status.
+// Footer links core product, support, status, and policy pages.
 const pages = read("src/components/app-pages.tsx");
 const footer = between(pages, "export function PublicFooter()", "export function AuthLayout");
 for (const link of [
@@ -88,10 +89,10 @@ for (const link of [
   '"/copyright"',
   '"/help"',
   '"/pricing"',
+  '"/status"',
 ]) {
   if (!footer.includes(link)) fail(`PublicFooter: missing ${link}`);
 }
-if (footer.includes('"/status"')) fail("PublicFooter: must not link /status");
 
 // Legal, refund, contact, help: production copy only.
 const more = read("src/components/app-pages-more.tsx");

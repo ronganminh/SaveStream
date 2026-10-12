@@ -139,7 +139,11 @@ import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { billingCheckoutEnabled, isAdminRole, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { ApiError } from "@/api/errors";
-import { firebaseSocialConfigured, socialProviderErrorMessage, type SocialProvider } from "@/lib/firebase-social-login";
+import {
+  firebaseSocialConfigured,
+  socialProviderErrorMessage,
+  type SocialProvider,
+} from "@/lib/firebase-social-login";
 import type {
   CreditPackageResponse,
   CreditReservationResponse,
@@ -385,7 +389,11 @@ function RecordingExamples() {
         </div>
 
         <div className="mt-10 text-center">
-          <Button size="lg" asChild>
+          <Button
+            size="lg"
+            asChild
+            className="h-auto max-w-full whitespace-normal px-4 py-2 text-center sm:px-8"
+          >
             <Link to={recordingCtaTo}>
               {t(authenticated ? "Open your channels" : "Start recording your own livestreams")}
               <ArrowRight />
@@ -534,14 +542,18 @@ export function LandingPage() {
               </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              {t(authenticated ? "Continue in your SaveStream workspace." : "No credit card required.")}
+              {t(
+                authenticated
+                  ? "Continue in your SaveStream workspace."
+                  : "No credit card required.",
+              )}
             </p>
             <div className="relative mx-auto mt-16 max-w-6xl overflow-hidden rounded-xl border bg-surface p-2 shadow-dashboard">
               <div className="flex h-10 items-center gap-2 border-b px-3">
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
                 <span className="size-2.5 rounded-full bg-border" />
-                <span className="mx-auto rounded border bg-background px-20 py-1 text-[9px] text-muted-foreground">
+                <span className="mx-auto min-w-0 max-w-[calc(100%-4.5rem)] truncate rounded border bg-background px-3 py-1 text-[9px] text-muted-foreground sm:px-20">
                   savestream.online/overview
                 </span>
               </div>
@@ -557,7 +569,7 @@ export function LandingPage() {
                           i === 0 ? "bg-accent font-medium" : "text-muted-foreground",
                         )}
                       >
-                        {x}
+                        {t(x)}
                       </div>
                     ))}
                   </div>
@@ -601,21 +613,21 @@ export function LandingPage() {
                     ) : (
                       <>
                         <StatCard
-                          label="Channels monitored"
+                          label={t("Channels monitored")}
                           value="3"
-                          detail="Checked automatically"
+                          detail={t("Checked automatically")}
                           icon={Radio}
                         />
                         <StatCard
-                          label="Credits available"
+                          label={t("Credits available")}
                           value="2,480"
-                          detail="About 41 hours of recording"
+                          detail={t("About 41 hours of recording")}
                           icon={CreditCard}
                         />
                         <StatCard
-                          label="Recordings"
+                          label={t("Recordings")}
                           value="12"
-                          detail="Ready to watch or download"
+                          detail={t("Ready to watch or download")}
                           icon={FileVideo}
                         />
                       </>
@@ -835,11 +847,7 @@ export function AuthPage({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    if (
-      isDemoMode ||
-      (mode !== "sign-in" && mode !== "sign-up") ||
-      status !== "authenticated"
-    ) {
+    if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
     }
     void navigate({
@@ -849,9 +857,7 @@ export function AuthPage({
   }, [authUser, mode, navigate, status]);
 
   const restoringExistingSession =
-    !isDemoMode &&
-    (mode === "sign-in" || mode === "sign-up") &&
-    status !== "guest";
+    !isDemoMode && (mode === "sign-in" || mode === "sign-up") && status !== "guest";
 
   const copy = {
     "sign-in": ["Welcome back", "Sign in to manage your recordings.", "Sign in"],
@@ -954,7 +960,11 @@ export function AuthPage({
         <div className="text-center">
           <span className="mx-auto block size-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <h1 className="mt-5 text-xl font-semibold">
-            {t(status === "authenticated" ? "Returning to your workspace…" : "Restoring your session…")}
+            {t(
+              status === "authenticated"
+                ? "Returning to your workspace…"
+                : "Restoring your session…",
+            )}
           </h1>
         </div>
       </AuthLayout>
@@ -969,8 +979,8 @@ export function AuthPage({
         </span>
         <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          If an account exists for <b className="font-medium text-foreground">{email}</b>, we sent a
-          password reset link. It expires in 60 minutes.
+          {t("If an account exists, we sent a password reset link to")}{" "}
+          <b className="font-medium text-foreground">{email}</b>. {t("It expires in 60 minutes.")}
         </p>
         <div className="mt-8 space-y-2">
           <Button
@@ -987,7 +997,7 @@ export function AuthPage({
                 .catch((error) => toast.error(authErrorMessage(error)));
             }}
           >
-            Resend link
+            {t("Resend link")}
           </Button>
           <Button variant="ghost" className="w-full" asChild>
             <Link to="/sign-in">{t("Back to sign in")}</Link>
@@ -1011,8 +1021,10 @@ export function AuthPage({
     return (
       <AuthLayout>
         <SuccessState
-          title="Password updated"
-          body="Your password has been changed. Other sessions were signed out for your security."
+          title={t("Password updated")}
+          body={t(
+            "Your password has been changed. Other sessions were signed out for your security.",
+          )}
           action={
             <Button asChild className="w-full">
               <Link to="/sign-in">{t("Back to sign in")}</Link>
@@ -1023,38 +1035,39 @@ export function AuthPage({
     );
   return (
     <AuthLayout>
-      <h1 className="text-2xl font-semibold">{copy[0]}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{copy[1]}</p>
-      {(mode === "sign-in" || mode === "sign-up") &&
-        (isDemoMode || firebaseSocialConfigured) && (
-          <div className="mt-8 space-y-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-3"
-              disabled={busy}
-              onClick={() => void startSocial("google")}
-            >
-              <span aria-hidden="true" className="font-semibold">G</span>
-              Continue with Google
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full gap-3"
-              disabled={busy}
-              onClick={() => void startSocial("apple")}
-            >
-              <Apple aria-hidden="true" className="size-4" />
-              Continue with Apple
-            </Button>
-            <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              or continue with email
-              <span className="h-px flex-1 bg-border" />
-            </div>
+      <h1 className="text-2xl font-semibold">{t(copy[0] ?? "")}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{t(copy[1] ?? "")}</p>
+      {(mode === "sign-in" || mode === "sign-up") && (isDemoMode || firebaseSocialConfigured) && (
+        <div className="mt-8 space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-3"
+            disabled={busy}
+            onClick={() => void startSocial("google")}
+          >
+            <span aria-hidden="true" className="font-semibold">
+              G
+            </span>
+            {t("Continue with Google")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-3"
+            disabled={busy}
+            onClick={() => void startSocial("apple")}
+          >
+            <Apple aria-hidden="true" className="size-4" />
+            {t("Continue with Apple")}
+          </Button>
+          <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            {t("or continue with email")}
+            <span className="h-px flex-1 bg-border" />
           </div>
-        )}
+        </div>
+      )}
       <form
         className={cn("space-y-4", (mode === "forgot" || mode === "reset") && "mt-8")}
         onSubmit={submit}
@@ -1103,7 +1116,7 @@ export function AuthPage({
         {mode === "sign-in" && (
           <div className="text-right">
             <Link to="/forgot-password" className="text-xs font-medium text-primary">
-              Forgot password?
+              {t("Forgot password?")}
             </Link>
           </div>
         )}
@@ -1116,21 +1129,21 @@ export function AuthPage({
           {busy && (
             <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           )}
-          {copy[2]}
+          {t(copy[2] ?? "")}
         </Button>
         {mode === "sign-up" && (
           <p className="text-xs leading-5 text-muted-foreground">
-            By creating an account you agree to the{" "}
+            {t("By creating an account you agree to the")}{" "}
             <Link to="/terms" className="underline underline-offset-4">
-              Terms
+              {t("Terms")}
             </Link>
             ,{" "}
             <Link to="/privacy" className="underline underline-offset-4">
-              Privacy Policy
+              {t("Privacy Policy")}
             </Link>
             , and{" "}
             <Link to="/acceptable-use" className="underline underline-offset-4">
-              Acceptable Use Policy
+              {t("Acceptable Use Policy")}
             </Link>
             .
           </p>
@@ -1139,16 +1152,16 @@ export function AuthPage({
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "sign-in" ? (
           <>
-            New to SaveStream?{" "}
+            {t("New to SaveStream?")}{" "}
             <Link to="/sign-up" className="font-medium text-primary">
-              Create account
+              {t("Create account")}
             </Link>
           </>
         ) : mode === "sign-up" ? (
           <>
-            Already have an account?{" "}
+            {t("Already have an account?")}{" "}
             <Link to="/sign-in" className="font-medium text-primary">
-              Sign in
+              {t("Sign in")}
             </Link>
           </>
         ) : (
@@ -1161,11 +1174,12 @@ export function AuthPage({
   );
 }
 function Field({ label, id, ...props }: { label: string } & ComponentProps<typeof Input>) {
+  const { t } = usePreferences();
   const fid = id ?? label.toLowerCase().replace(/\s+/g, "-");
   return (
     <div>
       <label htmlFor={fid} className="block text-sm font-medium">
-        {label}
+        {t(label)}
       </label>
       <Input id={fid} className="mt-2" {...props} />
     </div>
@@ -3278,7 +3292,11 @@ function CreditBillingPage() {
     <AppShell>
       <PageHeader
         title="Billing"
-        subtitle="Buy credits for cloud recording. One-time purchase, no subscription."
+        subtitle={
+          billingCheckoutEnabled
+            ? "Buy credits for cloud recording. One-time purchase, no subscription."
+            : "Review credit packages and your balance. Online checkout is not open yet."
+        }
         action={
           <Button variant="outline" asChild>
             <Link to="/usage">View credits & usage</Link>
@@ -3322,7 +3340,9 @@ function CreditBillingPage() {
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Credit packages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Choose a package and pay securely with PayPal. Credits never expire.
+            {billingCheckoutEnabled
+              ? "Choose a package and pay securely with PayPal. Credits never expire."
+              : "Preview the available packages. Checkout will become available after payment readiness checks are complete."}
           </p>
         </div>
 
@@ -3770,37 +3790,55 @@ function minutesPerCredit(rate: PublicRecordingRate) {
   return rate.unit_seconds / 60 / rate.credits_per_unit;
 }
 
-function formatRecordingTime(minutes: number) {
+function formatRecordingTime(minutes: number, language: "en" | "vi" = "en") {
+  if (language === "vi") {
+    if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} giờ`;
+    if (minutes >= 60) return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
+    return `${minutes} phút`;
+  }
   if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
   return pluralize(minutes, "minute");
 }
 
-function rateSentence(rate: PublicRecordingRate | null) {
+function rateSentence(rate: PublicRecordingRate | null, language: "en" | "vi") {
   if (!rate || rate.credits_per_unit === 0) return null;
   const minutes = minutesPerCredit(rate);
+  if (language === "vi") return `1 credit = ${minutes} phút ghi hình đám mây`;
   return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
 }
 
-function packageLimits(pricing: PublicPricingResponse | undefined) {
+function packageLimits(pricing: PublicPricingResponse | undefined, language: "en" | "vi") {
   const lines: string[] = [];
   const channels = pricing?.max_channels_per_user;
   const parallel = pricing?.max_concurrent_recordings_per_user;
-  if (channels) lines.push(`Monitor up to ${channels} channels`);
+  if (channels) {
+    lines.push(
+      language === "vi" ? `Theo dõi tối đa ${channels} kênh` : `Monitor up to ${channels} channels`,
+    );
+  }
   if (parallel) {
     lines.push(
-      parallel === 1
-        ? "Record 1 livestream at a time"
-        : `Record up to ${parallel} livestreams at the same time`,
+      language === "vi"
+        ? parallel === 1
+          ? "Ghi 1 livestream tại một thời điểm"
+          : `Ghi tối đa ${parallel} livestream cùng lúc`
+        : parallel === 1
+          ? "Record 1 livestream at a time"
+          : `Record up to ${parallel} livestreams at the same time`,
     );
   }
   const paidDays = pricing?.recording_retention_days;
   const trialDays = pricing?.trial_recording_retention_days;
   if (paidDays) {
     lines.push(
-      trialDays && trialDays !== paidDays
-        ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
-        : `Recordings stored for ${pluralize(paidDays, "day")}`,
+      language === "vi"
+        ? trialDays && trialDays !== paidDays
+          ? `Lưu bản ghi ${paidDays} ngày (${trialDays} ngày với gói dùng thử)`
+          : `Lưu bản ghi ${paidDays} ngày`
+        : trialDays && trialDays !== paidDays
+          ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
+          : `Recordings stored for ${pluralize(paidDays, "day")}`,
     );
   }
   return lines;
@@ -3820,7 +3858,7 @@ function CreditPricingPage() {
   const { query, state } = usePublicPricingData();
   const pricing = query.data;
   const rate = pricing?.recording_rate ?? null;
-  const rateLine = rateSentence(rate);
+  const rateLine = rateSentence(rate, language);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
 
   return (
@@ -3828,7 +3866,7 @@ function CreditPricingPage() {
       <PublicHeader />
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
         <div className="text-center">
-          <h1 className="text-4xl font-semibold">Simple, pay-as-you-go pricing</h1>
+          <h1 className="text-4xl font-semibold">{t("Simple, pay-as-you-go pricing")}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
             {t(
               "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.",
@@ -3841,11 +3879,11 @@ function CreditPricingPage() {
           <div className="mx-auto mt-10 max-w-3xl">
             <StateBanner
               tone="warning"
-              title="Pricing could not be loaded"
-              body="Please refresh the page in a moment."
+              title={t("Pricing could not be loaded")}
+              body={t("Please refresh the page in a moment.")}
               action={
                 <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
-                  Retry
+                  {t("Retry")}
                 </Button>
               }
             />
@@ -3860,8 +3898,8 @@ function CreditPricingPage() {
           <div className="mt-12">
             <EmptyState
               icon={CreditCard}
-              title="Credit packages are not available right now"
-              body="Please check back soon."
+              title={t("Credit packages are not available right now")}
+              body={t("Please check back soon.")}
             />
           </div>
         ) : (
@@ -3872,10 +3910,10 @@ function CreditPricingPage() {
                 <p className="mt-4 font-mono text-4xl font-semibold">
                   {formatMoneyValue(item.price, language)}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">One-time purchase</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("One-time purchase")}</p>
                 <dl className="mt-6 space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-3 border-t pt-3">
-                    <dt className="text-muted-foreground">Credits</dt>
+                    <dt className="text-muted-foreground">{t("Credits")}</dt>
                     <dd className="font-medium">
                       {item.credits.toLocaleString(language)}
                       {formatApproxHours(item.recording_minutes, language)
@@ -3885,13 +3923,15 @@ function CreditPricingPage() {
                   </div>
                   {item.recording_minutes !== null && (
                     <div className="flex items-center justify-between gap-3 border-t pt-3">
-                      <dt className="text-muted-foreground">Recording time</dt>
-                      <dd className="font-medium">{formatRecordingTime(item.recording_minutes)}</dd>
+                      <dt className="text-muted-foreground">{t("Recording time")}</dt>
+                      <dd className="font-medium">
+                        {formatRecordingTime(item.recording_minutes, language)}
+                      </dd>
                     </div>
                   )}
                 </dl>
                 <Button className="mt-6 w-full" asChild>
-                  <Link to={ctaTo}>{authenticated ? "Buy credits" : "Get started"}</Link>
+                  <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
                 </Button>
               </section>
             ))}
@@ -3907,18 +3947,19 @@ function CreditPricingPage() {
         {pricing && pricing.signup_credits > 0 && (
           <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-medium">Free trial</h2>
+              <h2 className="font-medium">{t("Free trial")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Get {pricing.signup_credits} free credits
+                {language === "vi" ? "Nhận" : "Get"} {pricing.signup_credits}{" "}
+                {language === "vi" ? "credit miễn phí" : "free credits"}
                 {rate && rate.credits_per_unit > 0
-                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate))} of recording)`
+                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate), language)} ${t("of recording")})`
                   : ""}{" "}
-                when you create an account and verify your email.
+                {t("when you create an account and verify your email.")}
               </p>
             </div>
             {!authenticated && (
               <Button variant="outline" asChild>
-                <Link to="/sign-up">Create free account</Link>
+                <Link to="/sign-up">{t("Create free account")}</Link>
               </Button>
             )}
           </section>
@@ -3926,35 +3967,43 @@ function CreditPricingPage() {
 
         <section className="mt-8 grid gap-8 rounded-lg border bg-surface p-6 md:grid-cols-2">
           <div>
-            <h2 className="font-medium">Included with every package</h2>
+            <h2 className="font-medium">{t("Included with every package")}</h2>
             <ul className="mt-4 space-y-3 text-sm">
-              {[...packageLimits(pricing), ...includedInEveryPackage].map((line) => (
-                <li key={line} className="flex gap-2">
-                  <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                  <span>{line}</span>
-                </li>
-              ))}
+              {[...packageLimits(pricing, language), ...includedInEveryPackage.map(t)].map(
+                (line) => (
+                  <li key={line} className="flex gap-2">
+                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span>{line}</span>
+                  </li>
+                ),
+              )}
             </ul>
           </div>
           <div className="space-y-4 text-sm text-muted-foreground">
             <div>
-              <h3 className="font-medium text-foreground">How credits are used</h3>
+              <h3 className="font-medium text-foreground">{t("How credits are used")}</h3>
               <p className="mt-1 leading-6">
-                Credits are used only while a livestream is being recorded, rounded up to the next
-                minute
-                {rate && rate.minimum_credits > 0
-                  ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
-                  : ""}
-                . Monitoring a channel while it is offline is free.
+                {language === "vi"
+                  ? `Credit chỉ được dùng khi livestream đang được ghi và được làm tròn lên phút tiếp theo${
+                      rate && rate.minimum_credits > 0
+                        ? `, tối thiểu ${rate.minimum_credits} credit cho mỗi bản ghi`
+                        : ""
+                    }. Theo dõi kênh khi ngoại tuyến là miễn phí.`
+                  : `Credits are used only while a livestream is being recorded, rounded up to the next minute${
+                      rate && rate.minimum_credits > 0
+                        ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
+                        : ""
+                    }. Monitoring a channel while it is offline is free.`}
               </p>
             </div>
             <div>
-              <h3 className="font-medium text-foreground">Payments and refunds</h3>
+              <h3 className="font-medium text-foreground">{t("Payments and refunds")}</h3>
               <p className="mt-1 leading-6">
-                Payments are processed by the payment provider shown at checkout. Prices are shown
-                in USD; applicable taxes are calculated at checkout. See our{" "}
+                {t(
+                  "Payments are processed by the payment provider shown at checkout. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
+                )}{" "}
                 <Link to="/refund" className="text-primary underline underline-offset-4">
-                  refund policy
+                  {t("refund policy")}
                 </Link>
                 .
               </p>
@@ -4043,6 +4092,7 @@ export function PublicFooter() {
       "Product",
       [
         ["/pricing", "Pricing"],
+        ["/status", "Status"],
         ["/help", "Help"],
         ["/contact", "Contact"],
       ],
@@ -4106,7 +4156,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         <div className="max-w-lg px-10">
           <Cloud className="size-10 text-primary" />
           <p className="mt-8 text-3xl font-medium leading-tight">
-            “We monitor. We record. You can close the browser.”
+            {t("“We monitor. We record. You can close the browser.”")}
           </p>
           <div className="mt-8 flex items-center gap-3 text-sm text-muted-foreground">
             <span className="size-2 animate-pulse rounded-full bg-recording" />

@@ -37,10 +37,12 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function isSessionRejected(error: unknown): boolean {
+  return error instanceof ApiError && (error.status === 401 || error.status === 403);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<AuthStatus>(
-    isDemoMode ? "authenticated" : "bootstrapping",
-  );
+  const [status, setStatus] = useState<AuthStatus>(isDemoMode ? "authenticated" : "bootstrapping");
   const [user, setUser] = useState<AuthUser | null>(null);
   const accessTokenRef = useRef<string | null>(null);
   const pendingSocialLinkRef = useRef<string | null>(null);
@@ -63,7 +65,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessTokenRef.current = result.access_token;
         return result.access_token;
       })
-      .catch(() => null)
+      .catch((error: unknown) => {
+        if (isSessionRejected(error)) return null;
+        throw error;
+      })
       .finally(() => {
         refreshInFlightRef.current = null;
       });
@@ -81,42 +86,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => configureApiSession(null);
   }, [clearSession, refreshAccessToken]);
 
-  const loadCurrentUser = useCallback(
-    async (accessToken: string): Promise<AuthUser> => {
-      const currentUser = await authApi.getCurrentUser(accessToken);
-      accessTokenRef.current = accessToken;
-      setUser(currentUser);
-      setStatus("authenticated");
-      return currentUser;
-    },
-    [],
-  );
+  const loadCurrentUser = useCallback(async (accessToken: string): Promise<AuthUser> => {
+    const currentUser = await authApi.getCurrentUser(accessToken);
+    accessTokenRef.current = accessToken;
+    setUser(currentUser);
+    setStatus("authenticated");
+    return currentUser;
+  }, []);
 
   useEffect(() => {
     if (isDemoMode) return;
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryAttempt = 0;
 
-    void (async () => {
-      const token = await refreshAccessToken();
-      if (cancelled) return;
-      if (!token) {
-        clearSession();
-        return;
-      }
-
+    const bootstrapSession = async () => {
       try {
+        const token = await refreshAccessToken();
+        if (cancelled) return;
+        if (!token) {
+          clearSession();
+          return;
+        }
         const currentUser = await authApi.getCurrentUser(token);
         if (cancelled) return;
         accessTokenRef.current = token;
         setUser(currentUser);
         setStatus("authenticated");
-      } catch {
-        if (!cancelled) clearSession();
+        retryAttempt = 0;
+      } catch (error) {
+        if (cancelled) return;
+        if (isSessionRejected(error)) {
+          clearSession();
+          return;
+        }
+        // Preserve the refresh cookie and any in-memory token on transient
+        // network, rate-limit, or server errors. A later successful request
+        // restores the same session instead of redirecting to sign-in.
+        const retryDelayMs = Math.min(1_000 * 2 ** retryAttempt, 10_000);
+        retryAttempt += 1;
+        retryTimer = setTimeout(() => void bootstrapSession(), retryDelayMs);
       }
-    })();
+    };
+
+    void bootstrapSession();
 
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
     };
   }, [clearSession, refreshAccessToken]);
 
@@ -203,9 +220,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       return await loadCurrentUser(token);
-    } catch {
-      clearSession();
-      return null;
+    } catch (error) {
+      if (isSessionRejected(error)) {
+        clearSession();
+        return null;
+      }
+      throw error;
     }
   }, [clearSession, loadCurrentUser, refreshAccessToken, user]);
 

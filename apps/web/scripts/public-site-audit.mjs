@@ -11,6 +11,7 @@ const CANONICAL = "https://savestream.online";
 const PUBLIC_PATHS = [
   "/",
   "/pricing",
+  "/status",
   "/help",
   "/contact",
   "/terms",
@@ -30,7 +31,6 @@ const FORBIDDEN = [
   "Backend-authoritative",
   "does not invent",
   "Sign in to view current packages",
-  "Live public status is not available yet",
   "Manage subscription",
   "Cancel subscription",
   "Resume subscription",
@@ -74,16 +74,6 @@ const notFoundHtml = await notFound.text();
 if (!notFoundHtml.includes("<title>Page not found — SaveStream</title>"))
   fail("404: missing 'Page not found — SaveStream' title");
 if (!visibleText(notFoundHtml).includes("Page not found")) fail("404: custom page not rendered");
-
-const status = await fetch(`${origin}/status`, { redirect: "manual" });
-if (
-  ![301, 302, 307, 308].includes(status.status) ||
-  !status.headers.get("location")?.endsWith("/help")
-) {
-  fail(
-    `/status: expected redirect to /help, got ${status.status} ${status.headers.get("location")}`,
-  );
-}
 
 const favicon = await fetch(`${origin}/favicon.ico`);
 const iconType = favicon.headers.get("content-type") ?? "";

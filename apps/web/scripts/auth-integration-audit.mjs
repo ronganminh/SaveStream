@@ -34,9 +34,13 @@ must("src/api/auth.ts", '"/v1/me"');
 must("src/api/client.ts", "configureApiSession");
 must("src/api/client.ts", "skipAuthRefresh");
 must("src/api/client.ts", "response.status === 401");
+must("src/api/client.ts", "if (refreshError) throw refreshError");
 must("src/auth/auth-context.tsx", "refreshInFlightRef");
 must("src/auth/auth-context.tsx", "accessTokenRef");
 must("src/auth/auth-context.tsx", "AuthProvider");
+must("src/auth/auth-context.tsx", "isSessionRejected");
+must("src/auth/auth-context.tsx", "retryDelayMs");
+must("src/auth/auth-context.tsx", "Math.min(1_000 * 2 ** retryAttempt, 10_000)");
 must("src/auth/auth-guards.tsx", '"/sign-in"');
 must("src/auth/auth-guards.tsx", '"/overview"');
 must("src/routes/__root.tsx", "AuthRouteGuard");
@@ -52,7 +56,10 @@ must("src/components/app-pages.tsx", "restoringExistingSession");
 must("src/components/app-pages.tsx", 'status === "authenticated"');
 must("src/components/app-pages.tsx", '["/billing", "Buy credits"]');
 must("src/components/app-pages-more.tsx", "<ProductionContactContent embedded />");
-must("src/components/app-pages-more.tsx", '<Link to="/billing" className="text-primary underline underline-offset-4">');
+must(
+  "src/components/app-pages-more.tsx",
+  '<Link to="/billing" className="text-primary underline underline-offset-4">',
+);
 forbid("src/components/app-pages.tsx", "Lemon Squeezy");
 forbid("src/components/app-pages-more.tsx", "Lemon Squeezy");
 forbid("src/lib/app-config.ts", "getFrontendIdentity()");

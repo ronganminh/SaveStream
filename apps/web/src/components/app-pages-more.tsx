@@ -99,11 +99,7 @@ import { pluralize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
-import type {
-  AuditLogResponse,
-  RecordingResponse,
-  RecordingStatusValue,
-} from "@/api/types";
+import type { AuditLogResponse, RecordingResponse, RecordingStatusValue } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
 import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
@@ -120,10 +116,7 @@ import {
   useRevokeSessionMutation,
   useUpdateProfileMutation,
 } from "@/hooks/use-account-settings";
-import {
-  isAwaitingPaymentConfirmation,
-  useBillingReturnOrder,
-} from "@/hooks/use-billing";
+import { isAwaitingPaymentConfirmation, useBillingReturnOrder } from "@/hooks/use-billing";
 import {
   useAdminAuditData,
   useAdminOperationalSnapshotData,
@@ -203,7 +196,9 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
       </span>
       <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        {t("We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.")}
+        {t(
+          "We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.",
+        )}
         {email && (
           <>
             {" "}
@@ -341,7 +336,9 @@ export function AuthErrorPage() {
           </Button>
         )}
         <Button className="w-full" variant={kind === "failed" ? "outline" : "default"} asChild>
-          <Link to="/verify-email" search={{ token: "" }}>{t("Request a new link")}</Link>
+          <Link to="/verify-email" search={{ token: "" }}>
+            {t("Request a new link")}
+          </Link>
         </Button>
         <Button className="w-full" variant="ghost" asChild>
           <Link to="/sign-in">{t("Back to sign in")}</Link>
@@ -850,12 +847,11 @@ function ProductionNotificationSettings() {
     );
   }
 
-  const current =
-    draft ?? {
-      recording_started: preferences.data.recording_started,
-      recording_ready: preferences.data.recording_ready,
-      recording_failed: preferences.data.recording_failed,
-    };
+  const current = draft ?? {
+    recording_started: preferences.data.recording_started,
+    recording_ready: preferences.data.recording_ready,
+    recording_failed: preferences.data.recording_failed,
+  };
   const dirty =
     current.recording_started !== preferences.data.recording_started ||
     current.recording_ready !== preferences.data.recording_ready ||
@@ -942,7 +938,6 @@ function ProductionNotificationSettings() {
     </>
   );
 }
-
 
 function DemoNotificationSettings() {
   const { t } = usePreferences();
@@ -1119,11 +1114,7 @@ function ProductionSecuritySettings() {
           <p className="text-sm text-muted-foreground">No sessions were returned.</p>
         )}
 
-        <Button
-          variant="outline"
-          className="w-fit"
-          onClick={() => setSignOutAll(true)}
-        >
+        <Button variant="outline" className="w-fit" onClick={() => setSignOutAll(true)}>
           Sign out everywhere
         </Button>
       </Section>
@@ -1141,9 +1132,7 @@ function ProductionSecuritySettings() {
           <span className="grid size-4 place-items-center text-xs font-bold">G</span>
           <div className="flex-1">
             <p className="text-sm font-medium">{t("Google")}</p>
-            <p className="text-xs text-muted-foreground">
-              Coming soon.
-            </p>
+            <p className="text-xs text-muted-foreground">Coming soon.</p>
           </div>
           <span className="text-xs text-muted-foreground">Unavailable</span>
         </div>
@@ -1315,10 +1304,7 @@ export function NotificationsPage() {
   if (!isDemoMode && query.isPending) {
     return (
       <AppShell>
-        <PageHeader
-          title="Notifications"
-          subtitle="Updates about your recordings."
-        />
+        <PageHeader title="Notifications" subtitle="Updates about your recordings." />
         <div className="h-64 max-w-3xl animate-pulse rounded-lg border bg-muted" aria-busy="true" />
       </AppShell>
     );
@@ -1327,10 +1313,7 @@ export function NotificationsPage() {
   if (!isDemoMode && query.isError) {
     return (
       <AppShell>
-        <PageHeader
-          title="Notifications"
-          subtitle="Updates about your recordings."
-        />
+        <PageHeader title="Notifications" subtitle="Updates about your recordings." />
         <ErrorState
           title="Could not load notifications"
           body="Please try again in a moment."
@@ -1388,7 +1371,8 @@ export function NotificationsPage() {
               t("All")
             ) : (
               <>
-                {t("Unread")} <span className="font-mono text-xs text-muted-foreground">{unread}</span>
+                {t("Unread")}{" "}
+                <span className="font-mono text-xs text-muted-foreground">{unread}</span>
               </>
             )}
           </Button>
@@ -1611,9 +1595,7 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
         <div className="grid min-h-[60vh] place-items-center">
           <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
             <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="mt-4 text-sm text-muted-foreground">
-              Checking your payment status…
-            </p>
+            <p className="mt-4 text-sm text-muted-foreground">Checking your payment status…</p>
           </div>
         </div>
       </AppShell>
@@ -1642,7 +1624,9 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
       <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
         <div className="w-full space-y-5">
           <StateBanner
-            tone={paid ? "success" : isAwaitingPaymentConfirmation(order.status) ? "warning" : "info"}
+            tone={
+              paid ? "success" : isAwaitingPaymentConfirmation(order.status) ? "warning" : "info"
+            }
             icon={paid ? CheckCircle2 : XCircle}
             title={
               paid
@@ -2207,9 +2191,7 @@ function ProductionAdminJobsPage() {
                       <AdminRecordingStatusPill status={recording.status} />
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 font-mono">
-                      {recording.started_at
-                        ? new Date(recording.started_at).toLocaleString()
-                        : "—"}
+                      {recording.started_at ? new Date(recording.started_at).toLocaleString() : "—"}
                     </td>
                     <td className="px-4 py-3 font-mono">
                       {formatAdminDuration(recording.duration_seconds)}
@@ -2218,9 +2200,7 @@ function ProductionAdminJobsPage() {
                       {formatAdminBytes(recording.bytes_recorded)}
                     </td>
                     <td className="px-4 py-3 font-mono">
-                      {recording.actual_cost === null
-                        ? "—"
-                        : `${recording.actual_cost} credits`}
+                      {recording.actual_cost === null ? "—" : `${recording.actual_cost} credits`}
                     </td>
                     <td
                       className="max-w-56 truncate px-4 py-3 text-muted-foreground"
@@ -2274,9 +2254,7 @@ function ProductionAdminJobsPage() {
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Output</dt>
-                    <dd className="mt-1 font-mono">
-                      {formatAdminBytes(recording.bytes_recorded)}
-                    </dd>
+                    <dd className="mt-1 font-mono">{formatAdminBytes(recording.bytes_recorded)}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Cost</dt>
@@ -2643,8 +2621,8 @@ function ProductionAdminJobDetailPage() {
       <section className="mt-6 rounded-lg border bg-surface p-5">
         <h2 className="font-medium">Actions exposed by backend</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Retry is available only when the recording response says can_retry. The admin API does
-          not expose a browser action to mark a job failed, kill a worker, or edit hidden job state.
+          Retry is available only when the recording response says can_retry. The admin API does not
+          expose a browser action to mark a job failed, kill a worker, or edit hidden job state.
         </p>
       </section>
 
@@ -3030,9 +3008,7 @@ function ProductionAdminErrorsPage() {
                 className="block w-full rounded-lg border bg-surface p-4 text-left"
               >
                 <p className="font-mono text-xs font-medium">{entry.action}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {adminAuditResource(entry)}
-                </p>
+                <p className="mt-2 text-xs text-muted-foreground">{adminAuditResource(entry)}</p>
                 <p className="mt-2 font-mono text-[11px] text-muted-foreground">
                   {new Date(entry.created_at).toLocaleString()}
                 </p>
@@ -3331,7 +3307,8 @@ function InlineLink({
   to,
   children,
 }: {
-  to: "/acceptable-use" | "/copyright" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
+  to:
+    "/acceptable-use" | "/copyright" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
   children: ReactNode;
 }) {
   return (
@@ -3386,7 +3363,8 @@ export function TermsPage() {
         <p>
           These Terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a software and cloud
           infrastructure service for authorized livestream recording, processing, private storage,
-          playback, and download. By creating an account or using SaveStream, you agree to these Terms.
+          playback, and download. By creating an account or using SaveStream, you agree to these
+          Terms.
         </p>
       }
       sections={[
@@ -3395,9 +3373,9 @@ export function TermsPage() {
           p: (
             <p>
               SaveStream provides software functionality and cloud infrastructure that can monitor
-              sources selected by a user and process recordings requested by that user. SaveStream is
-              not a media catalog, content marketplace, publisher, or redistribution service, and it
-              does not sell, license, provide, or redistribute third-party livestreams or other
+              sources selected by a user and process recordings requested by that user. SaveStream
+              is not a media catalog, content marketplace, publisher, or redistribution service, and
+              it does not sell, license, provide, or redistribute third-party livestreams or other
               third-party content.
             </p>
           ),
@@ -3417,8 +3395,8 @@ export function TermsPage() {
                 policies of the third-party platforms or sources from which content is accessed.
               </p>
               <p>
-                SaveStream does not grant you rights to third-party content. You must stop monitoring
-                or recording when your authorization ends. See our{" "}
+                SaveStream does not grant you rights to third-party content. You must stop
+                monitoring or recording when your authorization ends. See our{" "}
                 <InlineLink to="/acceptable-use">Acceptable Use Policy</InlineLink> and{" "}
                 <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>.
               </p>
@@ -3451,15 +3429,16 @@ export function TermsPage() {
           p: (
             <>
               <p>
-                Payments made to SaveStream are payments for software functionality, cloud processing
-                capacity, storage, and related service credits. Payments do not purchase, license, or
-                grant rights to any livestream, video, audio, or other third-party content.
+                Payments made to SaveStream are payments for software functionality, cloud
+                processing capacity, storage, and related service credits. Payments do not purchase,
+                license, or grant rights to any livestream, video, audio, or other third-party
+                content.
               </p>
               <p>
                 Purchasing credits does not grant intellectual-property rights in content processed
                 or stored through SaveStream. Web checkout may be processed by a third-party payment
-                provider or Merchant of Record identified at checkout. Mobile purchases are processed
-                by the App Store or Google Play.
+                provider or Merchant of Record identified at checkout. Mobile purchases are
+                processed by the App Store or Google Play.
               </p>
             </>
           ),
@@ -3500,8 +3479,8 @@ export function TermsPage() {
             <p>
               We may restrict, suspend, or terminate access to SaveStream and may restrict or remove
               hosted material when we reasonably believe the service is being used in violation of
-              these Terms, applicable law, platform rules, or third-party rights. Repeated or serious
-              infringement may result in account termination.
+              these Terms, applicable law, platform rules, or third-party rights. Repeated or
+              serious infringement may result in account termination.
             </p>
           ),
         },
@@ -3539,8 +3518,8 @@ export function TermsPage() {
           h: "Contact",
           p: (
             <p>
-              Questions about these Terms: <MailLink email={SUPPORT_EMAIL} />. Copyright notices:
-              {" "}<MailLink email={COPYRIGHT_EMAIL} />.
+              Questions about these Terms: <MailLink email={SUPPORT_EMAIL} />. Copyright notices:{" "}
+              <MailLink email={COPYRIGHT_EMAIL} />.
             </p>
           ),
         },
@@ -3565,11 +3544,25 @@ export function PrivacyPage() {
           h: "Information we collect",
           p: (
             <ul className="list-disc space-y-1 pl-5">
-              <li>Account data such as email address, display name, authentication and security data.</li>
-              <li>Livestream URLs, channel identifiers, source information, and monitoring settings you submit.</li>
-              <li>Recording metadata, recording status, timestamps, duration, storage metadata, and media files.</li>
-              <li>Billing records, purchased credits, order references, and app-store transaction references.</li>
-              <li>Device, browser, IP address, push token, locale, diagnostics, security logs, and audit events.</li>
+              <li>
+                Account data such as email address, display name, authentication and security data.
+              </li>
+              <li>
+                Livestream URLs, channel identifiers, source information, and monitoring settings
+                you submit.
+              </li>
+              <li>
+                Recording metadata, recording status, timestamps, duration, storage metadata, and
+                media files.
+              </li>
+              <li>
+                Billing records, purchased credits, order references, and app-store transaction
+                references.
+              </li>
+              <li>
+                Device, browser, IP address, push token, locale, diagnostics, security logs, and
+                audit events.
+              </li>
               <li>Support, abuse, privacy, and copyright communications you send to us.</li>
             </ul>
           ),
@@ -3581,13 +3574,14 @@ export function PrivacyPage() {
               <p>
                 SaveStream may process livestream URLs, channel identifiers, recording metadata,
                 recording status, timestamps, and media files when necessary to provide recording,
-                processing, playback, download, and cloud storage functionality requested by the user.
+                processing, playback, download, and cloud storage functionality requested by the
+                user.
               </p>
               <p>
-                SaveStream does not sell users’ recordings or make them publicly available as part of
-                the service. Cloud recordings are processed and stored only as necessary to provide
-                the requested service, subject to the applicable retention period or until deleted by
-                the user.
+                SaveStream does not sell users’ recordings or make them publicly available as part
+                of the service. Cloud recordings are processed and stored only as necessary to
+                provide the requested service, subject to the applicable retention period or until
+                deleted by the user.
               </p>
             </>
           ),
@@ -3596,10 +3590,11 @@ export function PrivacyPage() {
           h: "How we use information",
           p: (
             <p>
-              We use information to provide and secure the service, execute user-requested processing
-              and storage, maintain account sessions, deliver notifications, process billing and
-              entitlements, prevent abuse and fraud, investigate reports, provide support, and comply
-              with legal obligations. We do not sell personal information or recordings.
+              We use information to provide and secure the service, execute user-requested
+              processing and storage, maintain account sessions, deliver notifications, process
+              billing and entitlements, prevent abuse and fraud, investigate reports, provide
+              support, and comply with legal obligations. We do not sell personal information or
+              recordings.
             </p>
           ),
         },
@@ -3612,9 +3607,9 @@ export function PrivacyPage() {
               for server infrastructure, Brevo for transactional email, Apple App Store or Google
               Play for mobile purchases, and the web payment provider or Merchant of Record
               identified at checkout. We may also disclose information when required by law, to
-              protect rights or safety, or to investigate abuse, fraud, or infringement. Payment-card
-              details are processed by the applicable payment provider and are not stored by
-              SaveStream in full.
+              protect rights or safety, or to investigate abuse, fraud, or infringement.
+              Payment-card details are processed by the applicable payment provider and are not
+              stored by SaveStream in full.
             </p>
           ),
         },
@@ -3623,8 +3618,8 @@ export function PrivacyPage() {
           p: (
             <p>
               The website uses essential session and preference storage. Mobile devices may register
-              a push token, platform, and locale so SaveStream can deliver notifications and open the
-              correct screen.
+              a push token, platform, and locale so SaveStream can deliver notifications and open
+              the correct screen.
             </p>
           ),
         },
@@ -3633,8 +3628,8 @@ export function PrivacyPage() {
           p: (
             <p>
               The Free mobile app may use advertising services for banner and rewarded ads. Those
-              services may receive device or advertising identifiers needed to deliver and verify ads,
-              subject to device settings and applicable law.
+              services may receive device or advertising identifiers needed to deliver and verify
+              ads, subject to device settings and applicable law.
             </p>
           ),
         },
@@ -3652,11 +3647,11 @@ export function PrivacyPage() {
           h: "Retention and deletion",
           p: (
             <p>
-              Recordings are kept only for the applicable retention period or until deleted sooner by
-              the user. Account and operational data are retained only as long as needed for the
+              Recordings are kept only for the applicable retention period or until deleted sooner
+              by the user. Account and operational data are retained only as long as needed for the
               service, security, fraud prevention, dispute resolution, accounting, tax, and legal
-              obligations. Users can delete recordings and request account and personal-data deletion,
-              subject to limited mandatory retention.
+              obligations. Users can delete recordings and request account and personal-data
+              deletion, subject to limited mandatory retention.
             </p>
           ),
         },
@@ -3682,7 +3677,11 @@ export function PrivacyPage() {
         },
         {
           h: "Children",
-          p: <p>SaveStream is not intended for children and we do not knowingly collect their data.</p>,
+          p: (
+            <p>
+              SaveStream is not intended for children and we do not knowingly collect their data.
+            </p>
+          ),
         },
         {
           h: "Changes to this Policy",
@@ -3695,7 +3694,11 @@ export function PrivacyPage() {
         },
         {
           h: "Contact",
-          p: <p>Privacy questions and requests: <MailLink email={PRIVACY_EMAIL} />.</p>,
+          p: (
+            <p>
+              Privacy questions and requests: <MailLink email={PRIVACY_EMAIL} />.
+            </p>
+          ),
         },
       ]}
     />
@@ -3718,7 +3721,8 @@ export function AcceptableUsePage() {
           p: (
             <p>
               You may use SaveStream for content you own, manage, are authorized to record, or
-              otherwise have the legal right and necessary permissions to process and privately store.
+              otherwise have the legal right and necessary permissions to process and privately
+              store.
             </p>
           ),
         },
@@ -3726,12 +3730,31 @@ export function AcceptableUsePage() {
           h: "Prohibited Activities",
           p: (
             <ul className="list-disc space-y-2 pl-5">
-              <li>Using SaveStream to copy, record, download, store, share, or distribute content without sufficient rights or authorization.</li>
-              <li>Circumventing DRM, authentication, subscriber-only restrictions, paywalls, private-access mechanisms, rate limits, technical protection measures, or other restrictions imposed by a content owner or third-party service.</li>
-              <li>Using SaveStream primarily to facilitate copyright infringement or unauthorized redistribution of third-party content.</li>
-              <li>Using the service to harass, stalk, surveil, dox, or unlawfully collect personal information about another person.</li>
-              <li>Uploading malware, abusing credentials, interfering with service security, evading quotas or enforcement, or intentionally overloading infrastructure.</li>
-              <li>Using SaveStream in a way that violates applicable law or the applicable source platform’s terms and policies.</li>
+              <li>
+                Using SaveStream to copy, record, download, store, share, or distribute content
+                without sufficient rights or authorization.
+              </li>
+              <li>
+                Circumventing DRM, authentication, subscriber-only restrictions, paywalls,
+                private-access mechanisms, rate limits, technical protection measures, or other
+                restrictions imposed by a content owner or third-party service.
+              </li>
+              <li>
+                Using SaveStream primarily to facilitate copyright infringement or unauthorized
+                redistribution of third-party content.
+              </li>
+              <li>
+                Using the service to harass, stalk, surveil, dox, or unlawfully collect personal
+                information about another person.
+              </li>
+              <li>
+                Uploading malware, abusing credentials, interfering with service security, evading
+                quotas or enforcement, or intentionally overloading infrastructure.
+              </li>
+              <li>
+                Using SaveStream in a way that violates applicable law or the applicable source
+                platform’s terms and policies.
+              </li>
             </ul>
           ),
         },
@@ -3740,7 +3763,8 @@ export function AcceptableUsePage() {
           p: (
             <p>
               SaveStream is not intended to create or operate a public library of third-party media.
-              Users may not use SaveStream as a redistribution, syndication, piracy, or content-resale service.
+              Users may not use SaveStream as a redistribution, syndication, piracy, or
+              content-resale service.
             </p>
           ),
         },
@@ -3800,10 +3824,22 @@ export function CopyrightPage() {
           p: (
             <ul className="list-disc space-y-1 pl-5">
               <li>Your full legal name, email address, and relationship to the rights holder.</li>
-              <li>A description or representative list of the copyrighted work claimed to be infringed.</li>
-              <li>The SaveStream recording, account, channel, source URL, or other information sufficient for us to locate the material.</li>
-              <li>A good-faith statement that the disputed use is not authorized by the rights holder, its agent, or applicable law.</li>
-              <li>A statement that the information in the notice is accurate and that you are the rights holder or authorized to act for the rights holder.</li>
+              <li>
+                A description or representative list of the copyrighted work claimed to be
+                infringed.
+              </li>
+              <li>
+                The SaveStream recording, account, channel, source URL, or other information
+                sufficient for us to locate the material.
+              </li>
+              <li>
+                A good-faith statement that the disputed use is not authorized by the rights holder,
+                its agent, or applicable law.
+              </li>
+              <li>
+                A statement that the information in the notice is accurate and that you are the
+                rights holder or authorized to act for the rights holder.
+              </li>
               <li>Your physical or electronic signature.</li>
             </ul>
           ),
@@ -3833,7 +3869,8 @@ export function CopyrightPage() {
             <p>
               If affected users are eligible to dispute a restriction or removal, we may request
               information needed to evaluate that response. We do not adjudicate ownership disputes
-              and may require parties to resolve complex claims through the appropriate legal process.
+              and may require parties to resolve complex claims through the appropriate legal
+              process.
             </p>
           ),
         },
@@ -3862,8 +3899,8 @@ export function RefundPage() {
           p: (
             <p>
               Credit purchases are processed by our authorized Merchant of Record (MoR). Your order
-              receipt is issued by the applicable authorized MoR, and the provider terms presented at
-              checkout also apply to your purchase.
+              receipt is issued by the applicable authorized MoR, and the provider terms presented
+              at checkout also apply to your purchase.
             </p>
           ),
         },
@@ -3887,10 +3924,10 @@ export function RefundPage() {
           p: (
             <p>
               We review every request individually and reply by email. Refunds are not issued
-              automatically. When a refund is approved, it is issued through our authorized
-              Merchant of Record (MoR) to your original payment method, and the credits from that
-              purchase are removed from your balance. Credits that have already been used for
-              recordings may reduce or rule out a refund.
+              automatically. When a refund is approved, it is issued through our authorized Merchant
+              of Record (MoR) to your original payment method, and the credits from that purchase
+              are removed from your balance. Credits that have already been used for recordings may
+              reduce or rule out a refund.
             </p>
           ),
         },
@@ -4005,20 +4042,24 @@ function ProductionStatusPage() {
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
         <h1 className="text-3xl font-semibold">{t("System status")}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          SaveStream does not currently publish a public live incident feed from the production backend.
+          {t("Current information about SaveStream service availability and incident reporting.")}
         </p>
         <div className="mt-6">
           <StateBanner
             tone="info"
             icon={ShieldCheck}
-            title="Live public status is not available yet"
-            body="This page deliberately does not display illustrative service health, fake uptime bars, or synthetic incidents in production."
+            title={t("Service status information")}
+            body={t(
+              "SaveStream does not currently publish automated uptime metrics or a live incident feed. We will post confirmed service notices here when public incident reporting is available.",
+            )}
           />
         </div>
         <section className="mt-8 rounded-lg border bg-surface p-5">
-          <h2 className="font-medium">What is available</h2>
+          <h2 className="font-medium">{t("What is available")}</h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.
+            {t(
+              "Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.",
+            )}
           </p>
         </section>
       </main>
@@ -4040,7 +4081,9 @@ function DemoStatusPage() {
           </span>
         </div>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {t("This status page is a frontend preview. It is not connected to live monitoring or incident data.")}
+          {t(
+            "This status page is a frontend preview. It is not connected to live monitoring or incident data.",
+          )}
         </p>
         <div className="mt-6">
           <StateBanner
@@ -4060,9 +4103,13 @@ function DemoStatusPage() {
                       {t("Demo")}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">{t("Illustrative service state")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {t("Illustrative service state")}
+                  </p>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground">{t(service.state)}</span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t(service.state)}
+                </span>
               </div>
               <div className="mt-3 flex gap-px opacity-50" aria-hidden>
                 {Array.from({ length: 30 }).map((_, i) => (
@@ -4074,7 +4121,11 @@ function DemoStatusPage() {
         </section>
         <section className="mt-10">
           <SectionTitle title="Incident history preview" />
-          <EmptyState icon={ShieldCheck} title="Demo data" body="No live incident source is connected." />
+          <EmptyState
+            icon={ShieldCheck}
+            title="Demo data"
+            body="No live incident source is connected."
+          />
         </section>
       </main>
       <PublicFooter />
@@ -4236,9 +4287,9 @@ function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
               <div className="mt-3 text-sm leading-6 text-muted-foreground">
                 {embedded && topic.id === "credits" ? (
                   <>
-                    Recording time is paid with credits, bought once and never expiring. New accounts
-                    get free trial credits after verifying their email. A recording runs until the
-                    livestream ends or your credits run out. See{" "}
+                    Recording time is paid with credits, bought once and never expiring. New
+                    accounts get free trial credits after verifying their email. A recording runs
+                    until the livestream ends or your credits run out. See{" "}
                     <Link to="/billing" className="text-primary underline underline-offset-4">
                       Billing
                     </Link>{" "}
@@ -4309,7 +4360,11 @@ function DemoHelpPage() {
             href={`#${topic.id}`}
             className="shrink-0 rounded-md border bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            {t(topic.title === "What happens if I close my browser or computer?" ? "Browser closed" : topic.title)}
+            {t(
+              topic.title === "What happens if I close my browser or computer?"
+                ? "Browser closed"
+                : topic.title,
+            )}
           </a>
         ))}
       </nav>
@@ -4317,12 +4372,18 @@ function DemoHelpPage() {
         {helpTopics.map((topic) => {
           const I = topic.icon;
           return (
-            <section key={topic.id} id={topic.id} className="scroll-mt-24 rounded-lg border bg-surface p-5">
+            <section
+              key={topic.id}
+              id={topic.id}
+              className="scroll-mt-24 rounded-lg border bg-surface p-5"
+            >
               <div className="flex items-center gap-2">
                 <I className="size-4 text-primary" />
                 <h2 className="font-medium">{t(topic.title)}</h2>
               </div>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">{t(topic.body)}</div>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
+                {t(topic.body)}
+              </div>
             </section>
           );
         })}

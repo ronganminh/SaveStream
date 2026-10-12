@@ -1,10 +1,5 @@
 import { apiBaseUrl } from "@/lib/app-config";
-import {
-  ApiError,
-  REQUEST_ID_HEADER,
-  apiErrorFromResponse,
-  apiNetworkError,
-} from "@/api/errors";
+import { ApiError, REQUEST_ID_HEADER, apiErrorFromResponse, apiNetworkError } from "@/api/errors";
 
 export type ApiResponseMode = "json" | "text" | "response";
 
@@ -103,17 +98,13 @@ export class ApiClient {
       throw apiNetworkError(error, requestId);
     }
 
-    if (
-      response.status === 401 &&
-      !skipAuth &&
-      !skipAuthRefresh &&
-      apiSessionHooks
-    ) {
+    if (response.status === 401 && !skipAuth && !skipAuthRefresh && apiSessionHooks) {
       let refreshedAccessToken: string | null = null;
+      let refreshError: unknown;
       try {
         refreshedAccessToken = await apiSessionHooks.refreshAccessToken();
-      } catch {
-        refreshedAccessToken = null;
+      } catch (error) {
+        refreshError = error;
       }
 
       if (refreshedAccessToken) {
@@ -124,6 +115,10 @@ export class ApiClient {
           skipAuthRefresh: true,
         });
       }
+      // A network, rate-limit, or server failure while refreshing does not
+      // prove that the session expired. Preserve local auth state and surface
+      // the transient error so the caller can retry without logging the user out.
+      if (refreshError) throw refreshError;
       apiSessionHooks.onAuthExpired();
     }
 
