@@ -103,6 +103,12 @@ void registerDeviceJourneys() {
     await tester.tap(find.widgetWithText(FilledButton, 'Find creator'));
     await _waitFor(tester, find.text('Use recordings responsibly'));
 
+    // 5.2.3 gate: affirm authorization before the add is enabled.
+    final Finder rightsCheckbox = find.byType(Checkbox);
+    await tester.ensureVisible(rightsCheckbox);
+    await tester.tap(rightsCheckbox);
+    await tester.pump();
+
     final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
     await tester.ensureVisible(add);
     await tester.tap(add);
@@ -176,9 +182,7 @@ void registerDeviceJourneys() {
     expect(find.text('Watch ad'), findsNothing);
   });
 
-  testWidgets('device: settings -> Vietnamese -> dark theme', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('device: settings -> dark theme', (WidgetTester tester) async {
     final AppSettingsController settings = AppSettingsController();
     addTearDown(settings.dispose);
     await tester.pumpWidget(
@@ -188,19 +192,9 @@ void registerDeviceJourneys() {
     await tester.tap(find.text('Settings'));
     await _waitFor(tester, find.text('Settings'));
     final BuildContext context = tester.element(find.text('Settings').first);
-    GoRouter.of(context).push(AppRoutes.language);
-    await _waitFor(tester, find.text('Vietnamese'));
-    await tester.tap(find.text('Vietnamese'));
-    await _waitFor(tester, find.text('Ngôn ngữ'));
-    expect(settings.locale.languageCode, 'vi');
-
-    GoRouter.of(tester.element(find.text('Ngôn ngữ').first)).pop();
-    await _waitFor(tester, find.text('Cài đặt'));
-    GoRouter.of(
-      tester.element(find.text('Cài đặt').first),
-    ).push(AppRoutes.theme);
-    await _waitFor(tester, find.text('Tối'));
-    await tester.tap(find.text('Tối'));
+    GoRouter.of(context).push(AppRoutes.theme);
+    await _waitFor(tester, find.text('Dark'));
+    await tester.tap(find.text('Dark'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(settings.themeMode, ThemeMode.dark);
     expect(

@@ -96,32 +96,6 @@ void main() {
     expect(settings.themeMode, ThemeMode.system);
   });
 
-  testWidgets('switches Vietnamese and English from Language screen', (
-    WidgetTester tester,
-  ) async {
-    final AppSettingsController settings = AppSettingsController();
-
-    await openSettings(tester, settings: settings);
-    final BuildContext settingsContext = tester.element(
-      find.text('Settings').first,
-    );
-    GoRouter.of(settingsContext).push(AppRoutes.language);
-    await tester.pumpAndSettle();
-
-    expect(find.text('English'), findsOneWidget);
-    expect(find.text('Vietnamese'), findsOneWidget);
-
-    await tester.tap(find.text('Vietnamese'));
-    await tester.pumpAndSettle();
-    expect(settings.locale.languageCode, 'vi');
-    expect(find.text('Ngôn ngữ'), findsOneWidget);
-
-    await tester.tap(find.text('Tiếng Anh'));
-    await tester.pumpAndSettle();
-    expect(settings.locale.languageCode, 'en');
-    expect(find.text('Language'), findsOneWidget);
-  });
-
   testWidgets('opens Notifications Privacy and Terms settings entries', (
     WidgetTester tester,
   ) async {

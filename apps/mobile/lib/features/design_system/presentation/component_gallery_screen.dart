@@ -372,27 +372,6 @@ class _PreferenceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: SsSpacing.xl),
-          Text(
-            l10n.languageLabel,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: SsSpacing.sm),
-          Wrap(
-            spacing: SsSpacing.sm,
-            children: <Widget>[
-              ChoiceChip(
-                label: Text(l10n.languageEnglish),
-                selected: settings.locale.languageCode == 'en',
-                onSelected: (_) => settings.setLocale(const Locale('en')),
-              ),
-              ChoiceChip(
-                label: Text(l10n.languageVietnamese),
-                selected: settings.locale.languageCode == 'vi',
-                onSelected: (_) => settings.setLocale(const Locale('vi')),
-              ),
-            ],
-          ),
         ],
       ),
     );

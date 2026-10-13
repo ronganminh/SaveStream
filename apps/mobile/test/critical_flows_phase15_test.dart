@@ -92,8 +92,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
 
-    expect(find.byType(Checkbox), findsNothing);
     expect(find.text('Use recordings responsibly'), findsOneWidget);
+
+    // 5.2.3 gate: confirm authorization before the add is enabled.
+    final Finder rightsCheckbox = find.byType(Checkbox);
+    expect(rightsCheckbox, findsOneWidget);
+    await tester.ensureVisible(rightsCheckbox);
+    await tester.tap(rightsCheckbox);
+    await tester.pump();
 
     final Finder addButton = find.widgetWithText(FilledButton, 'Add & follow');
     await tester.ensureVisible(addButton);

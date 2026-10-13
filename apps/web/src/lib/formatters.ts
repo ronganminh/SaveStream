@@ -1,6 +1,6 @@
 import type { Language } from "@/lib/preferences";
 
-export const localeFor = (language: Language) => (language === "vi" ? "vi-VN" : "en-US");
+export const localeFor = (_language: Language) => "en-US";
 
 export function formatNumber(value: number, language: Language, options?: Intl.NumberFormatOptions) {
   return new Intl.NumberFormat(localeFor(language), options).format(value);
@@ -41,19 +41,19 @@ export function formatStorageGb(value: number, language: Language) {
 
 export function formatRecordingHours(value: number, language: Language) {
   const number = formatNumber(value, language, { maximumFractionDigits: 1 });
-  return language === "vi" ? `${number} giờ ghi hình` : `${number} recording hours`;
+  return `${number} recording hours`;
 }
 
 export function formatDurationMinutes(minutes: number, language: Language) {
   if (minutes < 60) {
-    return language === "vi" ? `${formatNumber(minutes, language)} phút` : `${formatNumber(minutes, language)} min`;
+    return `${formatNumber(minutes, language)} min`;
   }
   const hours = Math.floor(minutes / 60);
   const remaining = minutes % 60;
   if (!remaining) {
-    return language === "vi" ? `${hours} giờ` : `${hours} h`;
+    return `${hours} h`;
   }
-  return language === "vi" ? `${hours} giờ ${remaining} phút` : `${hours} h ${remaining} min`;
+  return `${hours} h ${remaining} min`;
 }
 
 /** "1 channel", "2 channels"; pass `plural` for irregular nouns. */

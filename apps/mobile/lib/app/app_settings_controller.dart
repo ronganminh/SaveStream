@@ -111,14 +111,10 @@ class AppSettingsController extends ChangeNotifier {
   Locale? _parseLocale(String? value) {
     return switch (value) {
       'en' => const Locale('en'),
-      'vi' => const Locale('vi'),
       _ => null,
     };
   }
 
-  Locale _systemLocale() {
-    final String languageCode =
-        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
-    return languageCode == 'vi' ? const Locale('vi') : const Locale('en');
-  }
+  // SaveStream ships in English only; the system locale always resolves to en.
+  Locale _systemLocale() => const Locale('en');
 }

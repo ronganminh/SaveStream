@@ -192,16 +192,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => context.push(AppRoutes.theme),
                         ),
-                        const Divider(),
-                        SsListTile(
-                          title: l10n.languageTitle,
-                          subtitle: widget.settings.locale.languageCode == 'vi'
-                              ? l10n.languageVietnamese
-                              : l10n.languageEnglish,
-                          leading: const Icon(Icons.language_rounded),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => context.push(AppRoutes.language),
-                        ),
                       ],
                     ),
                   ),
