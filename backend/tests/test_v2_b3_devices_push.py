@@ -414,7 +414,8 @@ def test_v2_b3_fake_push_sender_localizes_and_removes_invalid_token(
                 assert sent == 2
                 by_token = {token: message for token, message in sender.sent}
                 assert by_token["en-token"].title == "Creator is LIVE"
-                assert by_token["vi-token"].title == "Kênh đang LIVE"
+                # English-only: device locale no longer changes push copy.
+                assert by_token["vi-token"].title == "Creator is LIVE"
                 assert by_token["vi-token"].data["resource_type"] == "watch"
                 assert by_token["vi-token"].data["resource_id"] == watch_id
 
