@@ -4,7 +4,7 @@ Older API/mobile clients could store arbitrary text (for example an email
 address) as a Watch source; the scheduler then failed forever with
 "Error extracting RoomID". The rows are kept for audit but stop polling.
 
-Revision ID: 0022_disable_invalid_watch_sources
+Revision ID: 0022_invalid_watch_sources
 Revises: 0021_social_identities
 """
 
@@ -15,7 +15,7 @@ import re
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0022_disable_invalid_watch_sources"
+revision = "0022_invalid_watch_sources"
 down_revision = "0021_social_identities"
 branch_labels = None
 depends_on = None

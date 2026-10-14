@@ -204,3 +204,19 @@ def test_watch_sources_are_validated_like_the_web_form() -> None:
         with pytest.raises(ApplicationError) as error:
             validate_tiktok_source(bad)
         assert error.value.code == "VALIDATION_ERROR"
+
+
+def test_alembic_revision_ids_fit_postgres_version_column() -> None:
+    # alembic_version.version_num is VARCHAR(32) on PostgreSQL; a longer id
+    # makes `alembic upgrade head` (and so API startup) fail in production.
+    import re
+    from pathlib import Path
+
+    versions = (
+        Path(__file__).resolve().parents[1]
+        / "src/app/infrastructure/db/migrations/versions"
+    )
+    for path in versions.glob("*.py"):
+        match = re.search(r'^revision = "([^"]+)"', path.read_text(), re.MULTILINE)
+        assert match is not None, path.name
+        assert len(match.group(1)) <= 32, f"{path.name}: {match.group(1)}"
