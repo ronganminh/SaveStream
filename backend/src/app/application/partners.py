@@ -13,6 +13,7 @@ import base64
 import binascii
 import re
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
@@ -198,6 +199,25 @@ class PartnerService:
             ).all()
         }
         return list(rows), counts
+
+    async def published_stories(self, *, limit: int = 12) -> Sequence[PartnerApplication]:
+        """Stories shown on the home page: published and consent not withdrawn."""
+        rows = await self.session.scalars(
+            select(PartnerApplication)
+            .where(
+                PartnerApplication.status == "published",
+                PartnerApplication.consent_withdrawn_at.is_(None),
+            )
+            .order_by(PartnerApplication.published_at.desc())
+            .limit(limit)
+        )
+        return rows.all()
+
+    async def published_story(self, application_id: str) -> PartnerApplication:
+        application = await self.get(application_id)
+        if application.status != "published" or application.consent_withdrawn_at is not None:
+            raise ApplicationError("RESOURCE_NOT_FOUND", "Story not found", status_code=404)
+        return application
 
     async def get(self, application_id: str) -> PartnerApplication:
         try:

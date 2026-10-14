@@ -206,3 +206,44 @@ def test_admin_endpoints_need_admin_scope_and_mfa(tmp_path) -> None:
             codes.append(client.get("/v1/admin/partners").json()["error"]["code"])
 
     assert codes == ["FORBIDDEN", "FORBIDDEN", "ADMIN_MFA_REQUIRED"]
+
+
+def test_public_stories_show_only_published_with_consent(tmp_path) -> None:
+    app, database_url = _app(tmp_path)
+    support = _principal(database_url, "support")
+    photo = "data:image/png;base64," + base64.b64encode(PNG).decode()
+    reason = "Final story approved by the creator."
+    with TestClient(app, base_url="https://testserver") as client:
+        _start(client, app)
+        for handle in ("pending.one", "approved.one", "live.one", "gone.one"):
+            client.post(
+                "/v1/public/partner-applications",
+                json={**APPLICATION, "tiktok_handle": handle, "photo": photo},
+            )
+        app.dependency_overrides[get_current_principal] = lambda: support
+        rows = {
+            row["tiktok_handle"]: row["id"]
+            for row in client.get("/v1/admin/partners").json()["items"]
+        }
+
+        def act(handle: str, *actions: str) -> None:
+            for action in actions:
+                path = f"/v1/admin/partners/{rows[handle]}/actions"
+                client.post(path, json={"action": action, "reason": reason})
+
+        act("approved.one", "approve")
+        act("live.one", "approve", "publish")
+        act("gone.one", "approve", "publish", "unpublish")
+        app.dependency_overrides.clear()
+
+        stories = client.get("/v1/public/partner-stories").json()["items"]
+        assert [story["tiktok_handle"] for story in stories] == ["live.one"]
+        assert set(stories[0]) == {
+            "id", "name", "tiktok_handle", "niche", "story", "has_photo", "published_at"
+        }
+        live = client.get(f"/v1/public/partner-stories/{rows['live.one']}/photo")
+        assert live.status_code == 200 and live.content == PNG
+        assert live.headers["cache-control"] == "public, max-age=300"
+        for handle in ("pending.one", "approved.one", "gone.one"):
+            hidden = client.get(f"/v1/public/partner-stories/{rows[handle]}/photo")
+            assert hidden.status_code == 404

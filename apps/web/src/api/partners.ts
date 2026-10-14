@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client";
+import { apiBaseUrl } from "@/lib/app-config";
 
 /** Niches offered on /partners/apply; the backend accepts exactly these. */
 export const PARTNER_NICHES = [
@@ -40,4 +41,27 @@ export function submitPartnerApplication(payload: PartnerApplicationRequest) {
   return apiClient.post<PartnerApplicationReceipt>("/v1/public/partner-applications", {
     json: payload,
   });
+}
+
+/** A published creator story (approved, published, consent not withdrawn). */
+export type PartnerStory = {
+  id: string;
+  name: string;
+  tiktok_handle: string;
+  niche: string;
+  story: string;
+  has_photo: boolean;
+  published_at: string | null;
+};
+
+/** GET /v1/public/partner-stories — empty when no story is published. */
+export function listPartnerStories() {
+  return apiClient.get<{ items: PartnerStory[] }>("/v1/public/partner-stories", {
+    skipAuth: true,
+  });
+}
+
+/** Public photo URL; served only while the story is published and consented. */
+export function partnerStoryPhotoUrl(storyId: string) {
+  return `${apiBaseUrl.replace(/\/$/, "")}/v1/public/partner-stories/${encodeURIComponent(storyId)}/photo`;
 }

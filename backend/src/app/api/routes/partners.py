@@ -14,6 +14,8 @@ from app.api.schemas.partners import (
     AdminPartnerApplicationResponse,
     PartnerApplicationReceipt,
     PartnerApplicationRequest,
+    PartnerStoryListResponse,
+    PartnerStoryResponse,
 )
 from app.application.audit.service import AuditService
 from app.application.partners import MAX_PHOTO_BYTES, STATUSES, PartnerService
@@ -91,6 +93,68 @@ async def create_partner_application(
     return PartnerApplicationReceipt(reference=_reference(application))
 
 
+async def _photo_response(
+    request: Request, application: PartnerApplication, *, cache_control: str
+) -> Response:
+    if application.photo_key is None:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "No photo", status_code=404)
+    found = await asyncio.to_thread(
+        request.app.state.minio.get_bytes, application.photo_key, max_bytes=MAX_PHOTO_BYTES
+    )
+    if found is None:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "No photo", status_code=404)
+    data, _ = found
+    return Response(
+        content=data,
+        media_type=application.photo_content_type or "image/jpeg",
+        headers={"Cache-Control": cache_control},
+    )
+
+
+@public_router.get(
+    "/partner-stories",
+    response_model=PartnerStoryListResponse,
+    operation_id="listPartnerStories",
+)
+async def list_partner_stories(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> PartnerStoryListResponse:
+    rows = await PartnerService(session, request.app.state.settings).published_stories()
+    return PartnerStoryListResponse(
+        items=[
+            PartnerStoryResponse(
+                id=str(row.id),
+                name=row.name,
+                tiktok_handle=row.tiktok_handle,
+                niche=row.niche,
+                story=row.story,
+                has_photo=row.photo_key is not None,
+                published_at=row.published_at,
+            )
+            for row in rows
+        ]
+    )
+
+
+@public_router.get(
+    "/partner-stories/{application_id}/photo",
+    response_class=Response,
+    operation_id="getPartnerStoryPhoto",
+    responses={200: {"content": {"image/png": {}, "image/jpeg": {}}}},
+)
+async def get_partner_story_photo(
+    application_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+) -> Response:
+    application = await PartnerService(session, request.app.state.settings).published_story(
+        application_id
+    )
+    # Short cache so an unpublished story's photo disappears quickly.
+    return await _photo_response(request, application, cache_control="public, max-age=300")
+
+
 @admin_router.get("", response_model=AdminPartnerApplicationListResponse)
 async def list_partner_applications(
     request: Request,
@@ -135,19 +199,7 @@ async def get_partner_application_photo(
 ) -> Response:
     _require_scope(principal, "admin:partners:read")
     application = await PartnerService(session, request.app.state.settings).get(application_id)
-    if application.photo_key is None:
-        raise ApplicationError("RESOURCE_NOT_FOUND", "No photo", status_code=404)
-    found = await asyncio.to_thread(
-        request.app.state.minio.get_bytes, application.photo_key, max_bytes=MAX_PHOTO_BYTES
-    )
-    if found is None:
-        raise ApplicationError("RESOURCE_NOT_FOUND", "No photo", status_code=404)
-    data, _ = found
-    return Response(
-        content=data,
-        media_type=application.photo_content_type or "image/jpeg",
-        headers={"Cache-Control": "private, no-store"},
-    )
+    return await _photo_response(request, application, cache_control="private, no-store")
 
 
 @admin_router.post("/{application_id}/actions", response_model=AdminPartnerApplicationResponse)

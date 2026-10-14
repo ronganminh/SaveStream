@@ -29,6 +29,22 @@ class PartnerApplicationReceipt(BaseModel):
     reference: str
 
 
+class PartnerStoryResponse(BaseModel):
+    """A published creator story; only fields the creator consented to show."""
+
+    id: str
+    name: str
+    tiktok_handle: str
+    niche: str
+    story: str
+    has_photo: bool
+    published_at: datetime | None
+
+
+class PartnerStoryListResponse(BaseModel):
+    items: list[PartnerStoryResponse]
+
+
 PartnerStatus = Literal["pending", "approved", "rejected", "published", "withdrawn"]
 
 
