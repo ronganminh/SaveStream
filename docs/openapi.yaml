@@ -9612,7 +9612,7 @@
           "active_recording_status": {
             "type": ["string", "null"],
             "default": null,
-            "description": "Status of the in-flight Recording job (queued, resolving, waiting_live, recording, processing, uploading, stop_requested)."
+            "description": "Status of the in-flight Recording job (queued, resolving, waiting_live, recording, stop_requested)."
           }
         },
         "additionalProperties": false

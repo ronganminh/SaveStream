@@ -1775,7 +1775,7 @@ function ProductionAdminWorkersPage() {
           icon={Clock3}
         />
         <StatCard
-          label={`Recording failures (${failureWindowLabel(data.failed_recordings_window_seconds ?? 900)})`}
+          label={`Recent failures (${failureWindowLabel(data.failed_recordings_window_seconds ?? 900)})`}
           value={String(data.failed_recordings_recent)}
           detail="Live count. Admin Overview shows the last 24h, refreshed hourly"
           icon={AlertTriangle}

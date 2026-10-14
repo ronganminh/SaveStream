@@ -37,6 +37,26 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// The refresh cookie is httpOnly on the API domain, so the web app cannot
+// see it. This first-party marker holds no credential; it only decides
+// whether to show a "Restoring your session…" spinner or the signed-out UI
+// right away while the refresh call runs in the background.
+const SESSION_HINT_COOKIE = "ss_signed_in";
+const SESSION_HINT_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+
+function readSessionHint(): boolean {
+  if (typeof document === "undefined") return true;
+  return document.cookie.split("; ").some((part) => part === `${SESSION_HINT_COOKIE}=1`);
+}
+
+function writeSessionHint(present: boolean) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = present
+    ? `${SESSION_HINT_COOKIE}=1; Path=/; Max-Age=${SESSION_HINT_MAX_AGE_SECONDS}; SameSite=Lax${secure}`
+    : `${SESSION_HINT_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax${secure}`;
+}
+
 function isSessionRejected(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 401 || error.status === 403);
 }
@@ -51,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(() => {
     accessTokenRef.current = null;
     pendingSocialLinkRef.current = null;
+    writeSessionHint(false);
     setUser(null);
     setStatus(isDemoMode ? "authenticated" : "guest");
   }, []);
@@ -89,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadCurrentUser = useCallback(async (accessToken: string): Promise<AuthUser> => {
     const currentUser = await authApi.getCurrentUser(accessToken);
     accessTokenRef.current = accessToken;
+    writeSessionHint(true);
     setUser(currentUser);
     setStatus("authenticated");
     return currentUser;
@@ -99,6 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     let retryAttempt = 0;
+    // No hint means this browser never kept a session (or signed out): show
+    // the signed-out UI immediately and only upgrade if the refresh works.
+    const expectSession = readSessionHint();
+    if (!expectSession) setStatus("guest");
 
     const bootstrapSession = async () => {
       try {
@@ -111,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const currentUser = await authApi.getCurrentUser(token);
         if (cancelled) return;
         accessTokenRef.current = token;
+        writeSessionHint(true);
         setUser(currentUser);
         setStatus("authenticated");
         retryAttempt = 0;
@@ -120,6 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearSession();
           return;
         }
+        // Already showing the signed-out UI; don't keep retrying silently.
+        if (!expectSession) return;
         // Preserve the refresh cookie and any in-memory token on transient
         // network, rate-limit, or server errors. A later successful request
         // restores the same session instead of redirecting to sign-in.

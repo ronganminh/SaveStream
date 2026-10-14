@@ -22,7 +22,7 @@ from app.application.entitlements.service import EntitlementService, Entitlement
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
-from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
+from app.domain.recordings.state import RecordingStatus
 from app.domain.watches.state import WatchStatus, can_resume, validate_user_status
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
@@ -47,6 +47,19 @@ def normalize_source(source: Source) -> str:
         value = value.lstrip("@").casefold()
     return value
 
+
+# Jobs that make a channel "Recording" (same set the web Overview treats as
+# the active recording); processing/uploading happen after the stream ended.
+CHANNEL_RECORDING_STATUSES = tuple(
+    status.value
+    for status in (
+        RecordingStatus.QUEUED,
+        RecordingStatus.RESOLVING,
+        RecordingStatus.WAITING_LIVE,
+        RecordingStatus.RECORDING,
+        RecordingStatus.STOP_REQUESTED,
+    )
+)
 
 # Same rule as the web Add-channel form (apps/web/src/lib/tiktok-source.ts).
 TIKTOK_USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9._]{2,24}$")
@@ -169,9 +182,7 @@ class WatchService:
             .where(
                 Recording.user_id == user_id,
                 Recording.deleted_at.is_(None),
-                Recording.status.in_(
-                    [status.value for status in ACTIVE_RECORDING_STATUSES]
-                ),
+                Recording.status.in_(CHANNEL_RECORDING_STATUSES),
             )
             .order_by(Recording.created_at.desc())
         )

@@ -323,6 +323,7 @@ function formatSampleDuration(seconds?: number) {
   const hours = Math.floor(total / 3600);
   const minutes = Math.floor((total % 3600) / 60);
   const remaining = total % 60;
+  if (total < 60) return `0:${String(remaining).padStart(2, "0")}`;
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${remaining}s`;
 }
 
@@ -368,7 +369,7 @@ function RecordingExamples() {
                   <Play className="ml-0.5 size-4 fill-current" />
                 </span>
                 <span className="absolute bottom-3 right-3 rounded bg-black/70 px-1.5 py-0.5 font-mono text-[10px] text-white">
-                  {formatSampleDuration(item.durationSeconds)}
+                  {t("Preview")} {formatSampleDuration(item.durationSeconds)}
                 </span>
               </div>
               <div className="p-4">
@@ -380,10 +381,10 @@ function RecordingExamples() {
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{item.title}</p>
                 <div className="mt-4 flex items-center justify-between border-t pt-3 text-xs text-muted-foreground">
+                  <span>{t("Full recording")}</span>
                   <span className="font-mono">
-                    {item.width}×{item.height}
+                    {formatSampleDuration(item.sourceDurationSeconds ?? item.durationSeconds)}
                   </span>
-                  <span className="font-mono">{formatSampleDuration(item.durationSeconds)}</span>
                 </div>
               </div>
             </button>
@@ -442,9 +443,17 @@ function RecordingExamples() {
 
           <div className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
             {[
-              [t("Resolution"), selected ? `${selected.width}×${selected.height}` : "—"],
-              [t("Duration"), formatSampleDuration(selected?.durationSeconds)],
-              ["ID", selected?.id ?? "—"],
+              [t("Preview clip"), formatSampleDuration(selected?.durationSeconds)],
+              [
+                t("Full recording"),
+                formatSampleDuration(selected?.sourceDurationSeconds ?? selected?.durationSeconds),
+              ],
+              [
+                t("Original resolution"),
+                selected
+                  ? `${selected.sourceWidth ?? selected.width}×${selected.sourceHeight ?? selected.height}`
+                  : "—",
+              ],
             ].map(([label, value]) => (
               <div key={label} className="bg-surface p-3">
                 <p className="text-xs text-muted-foreground">{label}</p>
@@ -848,6 +857,11 @@ export function AuthPage({
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string | undefined;
+    password?: string | undefined;
+    confirm?: string | undefined;
+  }>({});
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
@@ -896,20 +910,23 @@ export function AuthPage({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setErr(null);
-    if (mode !== "reset" && !/^\S+@\S+\.\S+$/.test(email)) {
-      setErr("Enter a valid email address.");
-      return;
+    // Validate every field at once so each error shows next to its field.
+    const nextErrors: typeof fieldErrors = {};
+    if (mode !== "reset") {
+      if (!email.trim()) nextErrors.email = "Email is required.";
+      else if (!/^\S+@\S+\.\S+$/.test(email)) nextErrors.email = "Enter a valid email address.";
     }
     if (mode === "sign-in" && !pw) {
-      setErr("Enter your password.");
-      return;
+      nextErrors.password = "Password is required.";
     }
     if ((mode === "sign-up" || mode === "reset") && pw.length < 8) {
-      setErr("Password must be at least 8 characters.");
-      return;
+      nextErrors.password = pw ? "Password must be at least 8 characters." : "Password is required.";
     }
     if (mode === "reset" && pw !== pw2) {
-      setErr("Passwords don’t match.");
+      nextErrors.confirm = "Passwords don’t match.";
+    }
+    setFieldErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
       return;
     }
     if (mode === "reset" && !token) {
@@ -1090,8 +1107,12 @@ export function AuthPage({
             placeholder="you@gmail.com"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (fieldErrors.email) setFieldErrors((c) => ({ ...c, email: undefined }));
+            }}
             autoComplete="email"
+            error={fieldErrors.email}
           />
         )}
         {mode === "sign-in" && (
@@ -1099,8 +1120,12 @@ export function AuthPage({
             id="password"
             label="Password"
             value={pw}
-            onChange={setPw}
+            onChange={(value) => {
+              setPw(value);
+              if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+            }}
             autoComplete="current-password"
+            error={fieldErrors.password}
           />
         )}
         {(mode === "sign-up" || mode === "reset") && (
@@ -1108,12 +1133,25 @@ export function AuthPage({
             id="pw"
             label={mode === "reset" ? "New password" : "Password"}
             value={pw}
-            onChange={setPw}
+            onChange={(value) => {
+              setPw(value);
+              if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+            }}
             showStrength
+            error={fieldErrors.password}
           />
         )}
         {mode === "reset" && (
-          <PasswordField id="pw2" label="Confirm password" value={pw2} onChange={setPw2} />
+          <PasswordField
+            id="pw2"
+            label="Confirm password"
+            value={pw2}
+            onChange={(value) => {
+              setPw2(value);
+              if (fieldErrors.confirm) setFieldErrors((c) => ({ ...c, confirm: undefined }));
+            }}
+            error={fieldErrors.confirm}
+          />
         )}
         {mode === "sign-in" && (
           <div className="text-right">
@@ -1175,7 +1213,12 @@ export function AuthPage({
     </AuthLayout>
   );
 }
-function Field({ label, id, ...props }: { label: string } & ComponentProps<typeof Input>) {
+function Field({
+  label,
+  id,
+  error,
+  ...props
+}: { label: string; error?: string | null | undefined } & ComponentProps<typeof Input>) {
   const { t } = usePreferences();
   const fid = id ?? label.toLowerCase().replace(/\s+/g, "-");
   return (
@@ -1183,13 +1226,27 @@ function Field({ label, id, ...props }: { label: string } & ComponentProps<typeo
       <label htmlFor={fid} className="block text-sm font-medium">
         {t(label)}
       </label>
-      <Input id={fid} className="mt-2" {...props} />
+      <Input
+        id={fid}
+        className={cn("mt-2", error && "border-destructive focus-visible:ring-destructive")}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${fid}-error` : undefined}
+        {...props}
+      />
+      {error && (
+        <p id={`${fid}-error`} className="mt-1.5 text-xs text-destructive">
+          {t(error)}
+        </p>
+      )}
     </div>
   );
 }
 export function OnboardingPage() {
   const { t } = usePreferences();
   const createChannel = useCreateChannelMutation();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  // Automatic recording is a Pro feature; the backend rejects it for Free.
+  const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
   const [step, setStep] = useState(1);
   const [username, setUsername] = useState("");
   const [createdHandle, setCreatedHandle] = useState<string | null>(null);
@@ -1204,7 +1261,7 @@ export function OnboardingPage() {
     try {
       await createChannel.mutateAsync({
         source: parsed.source,
-        auto_record: true,
+        auto_record: canAutoRecord,
       });
       setCreatedHandle(parsed.handle);
       setStep(3);
@@ -1719,11 +1776,29 @@ export function ChannelsPage() {
             ))}
           </div>
         </>
+      ) : channelItems.length === 0 ? (
+        <EmptyState
+          icon={Radio}
+          title="No channels yet"
+          body="Add a TikTok channel and SaveStream will notify you when it goes live."
+          action={<AddChannelDialog />}
+        />
       ) : (
         <EmptyState
           icon={Search}
           title="No channels found"
           body="Try another search or clear the current filter."
+          action={
+            <Button
+              variant="outline"
+              onClick={() => {
+                setQ("");
+                setFilter("All");
+              }}
+            >
+              Clear search and filter
+            </Button>
+          }
         />
       )}
     </AppShell>
