@@ -1,4 +1,12 @@
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import {
+  formatRecordingTime as formatHoursLeft,
+  useCreditSummary,
+} from "@/components/app/shell-extras";
+import {
+  useNotificationPreferencesData,
+  useUpdateNotificationPreferencesMutation,
+} from "@/hooks/use-notifications";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -74,6 +82,7 @@ import {
   Wifi,
   XCircle,
   Zap,
+  Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,6 +107,7 @@ import { dailyRecordingHours, usage, user } from "@/mocks/fixtures";
 import {
   ActiveRecordingCard,
   AddChannelDialog,
+  AvatarCircle,
   AdminHealthBadge,
   AppShell,
   ChannelCard,
@@ -200,6 +210,7 @@ import {
   useRecordingData,
   useRecordingsData,
   useUsageData,
+  useCreatorPreview,
 } from "@/hooks/use-domain-data";
 import {
   channelActionErrorMessage,
@@ -1502,195 +1513,656 @@ function Field({
     </div>
   );
 }
+const onboardingSteps = [
+  { title: "Add a channel", detail: "Your TikTok username" },
+  { title: "Recording", detail: "Auto-record & monitoring" },
+  { title: "Notifications", detail: "How we reach you" },
+  { title: "Done", detail: "Start recording" },
+] as const;
+
 export function OnboardingPage() {
-  const { t } = usePreferences();
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { step?: number };
+  const step = Math.min(4, Math.max(1, Number(search.step) || 1));
+  const goTo = (next: number) => void navigate({ to: "/onboarding", search: { step: next } });
   const createChannel = useCreateChannelMutation();
+  const updateChannel = useUpdateChannelMutation();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
-  // Automatic recording is a Pro feature; the backend rejects it for Free.
+  const { query: pricingQuery } = usePublicPricingData();
+  const { query: channelsQuery } = useChannelsData();
+  const preferencesQuery = useNotificationPreferencesData();
+  const updatePreferences = useUpdateNotificationPreferencesMutation();
+  const trialLabel = useTrialMinutesLabel();
+  // Automatic recording needs purchased credits; the backend rejects it for Free.
   const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
-  const [step, setStep] = useState(1);
   const [username, setUsername] = useState("");
-  const [createdHandle, setCreatedHandle] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [channelId, setChannelId] = useState<string | null>(null);
+  const [autoRecord, setAutoRecord] = useState(true);
+  const [prefs, setPrefs] = useState({
+    recording_started: true,
+    recording_ready: true,
+    recording_failed: true,
+  });
+  useEffect(() => {
+    if (preferencesQuery.data) {
+      setPrefs({
+        recording_started: preferencesQuery.data.recording_started,
+        recording_ready: preferencesQuery.data.recording_ready,
+        recording_failed: preferencesQuery.data.recording_failed,
+      });
+    }
+  }, [preferencesQuery.data]);
   const parsed = parseTikTokSource(username);
-  const valid = Boolean(parsed);
-  const displayName = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
+  const preview = useCreatorPreview(step === 1 && parsed ? parsed.source : null);
+  const creator = preview.data?.creator ?? null;
+  // Steps 2–4 refer to the channel added in step 1, or (after a reload)
+  // the most recently added one.
+  const channels = channelsQuery.data ?? [];
+  const channel =
+    channels.find((item) => item.id === channelId) ?? (step > 1 ? channels.at(-1) : undefined);
+  const handle = channel?.handle ?? parsed?.handle ?? "your channel";
+  const busy = createChannel.isPending || updateChannel.isPending || updatePreferences.isPending;
 
   const addChannel = async () => {
-    if (!parsed || createChannel.isPending) return;
+    if (!parsed || busy) return;
     setError(null);
     try {
-      await createChannel.mutateAsync({
+      const watch = await createChannel.mutateAsync({
         source: parsed.source,
         auto_record: canAutoRecord,
       });
-      setCreatedHandle(parsed.handle);
-      setStep(3);
+      setChannelId(watch.id);
+      goTo(2);
     } catch (createError) {
       const duplicateId = existingWatchId(createError);
       if (duplicateId) {
-        setCreatedHandle(parsed.handle);
-        setStep(3);
+        setChannelId(duplicateId);
+        goTo(2);
         return;
       }
       setError(channelActionErrorMessage(createError));
     }
   };
 
+  const saveRecording = async () => {
+    if (channel && canAutoRecord && channel.autoRecord !== autoRecord) {
+      try {
+        await updateChannel.mutateAsync({ id: channel.id, input: { auto_record: autoRecord } });
+      } catch (updateError) {
+        setError(channelActionErrorMessage(updateError));
+        return;
+      }
+    }
+    setError(null);
+    goTo(3);
+  };
+
+  const saveNotifications = async () => {
+    try {
+      await updatePreferences.mutateAsync(prefs);
+    } catch {
+      toast.error("Couldn’t save notification settings — you can change them later in Settings.");
+    }
+    goTo(4);
+  };
+
+  const next =
+    step === 1
+      ? {
+          label: createChannel.isPending ? "Adding channel…" : "Add channel",
+          run: addChannel,
+          disabled: !parsed,
+        }
+      : step === 2
+        ? { label: "Continue", run: saveRecording, disabled: false }
+        : { label: "Finish setup", run: saveNotifications, disabled: false };
+
   return (
-    <div className="min-h-screen bg-surface-subtle">
-      <header className="border-b bg-background p-5">
-        <div className="mx-auto max-w-3xl">
-          <Logo />
-        </div>
+    <div className="relative flex min-h-screen flex-col bg-background">
+      <header className="border-b bg-surface/80 backdrop-blur">
+        <nav
+          aria-label="Onboarding"
+          className="mx-auto flex h-[68px] max-w-[1080px] items-center gap-4 px-4 sm:px-6"
+        >
+          <Logo homeTo="/overview" />
+          <span className="text-sm text-muted-foreground">Step {step} of 4</span>
+          <Button asChild variant="ghost" className="ml-auto">
+            <Link to="/overview">Skip for now</Link>
+          </Button>
+        </nav>
       </header>
-      <main className="mx-auto max-w-2xl px-4 py-12">
-        <div className="mb-8 flex items-center gap-2">
-          {[1, 2, 3].map((number) => (
-            <span
-              key={number}
-              className={cn("h-1 flex-1 rounded-full", number <= step ? "bg-primary" : "bg-border")}
-            />
-          ))}
-        </div>
-        <div className="rounded-lg border bg-background p-6 sm:p-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-[68px] h-[420px] bg-[radial-gradient(700px_300px_at_50%_0%,color-mix(in_oklab,var(--color-primary)_14%,transparent),transparent_70%)]"
+      />
+      <main className="relative mx-auto flex w-full max-w-[1080px] flex-wrap items-start gap-8 px-4 py-10 sm:px-6 lg:gap-12 lg:py-14">
+        <ol aria-label="Setup steps" className="flex w-full flex-col gap-1.5 lg:w-[260px]">
+          {onboardingSteps.map((item, index) => {
+            const number = index + 1;
+            const done = number < step;
+            const current = number === step;
+            return (
+              <li
+                key={item.title}
+                aria-current={current ? "step" : undefined}
+                className={cn(
+                  "flex items-center gap-3 rounded-[12px] px-3.5 py-3",
+                  current && "bg-surface shadow-sm",
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid size-7 shrink-0 place-items-center rounded-full text-[13px] font-extrabold",
+                    done
+                      ? "bg-success text-white"
+                      : current
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-surface-2 text-muted-foreground",
+                  )}
+                >
+                  {done ? <Check className="size-3.5" strokeWidth={3} /> : number}
+                </span>
+                <span>
+                  <b className={cn("block text-sm", !(done || current) && "text-muted-foreground")}>
+                    {item.title}
+                  </b>
+                  <span className="text-xs text-muted-foreground">{item.detail}</span>
+                </span>
+              </li>
+            );
+          })}
+          {trialLabel && (
+            <li className="mt-3.5 rounded-[14px] border bg-surface p-3.5">
+              <span className="flex items-center gap-2 text-sm font-bold">
+                <Gift className="size-4" />
+                {trialLabel}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Enough to test a real LIVE before you buy anything.
+              </span>
+            </li>
+          )}
+        </ol>
+        <section className="flex min-w-0 flex-[1_1_520px] flex-col gap-6 rounded-[24px] border bg-surface p-6 shadow-sm sm:p-10">
           {step === 1 && (
             <>
-              <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
-                <Radio />
-              </span>
-              <h1 className="mt-6 text-2xl font-semibold">
-                {t("Let’s record your first livestream.")}
-              </h1>
-              <p className="mt-2 text-muted-foreground">
-                Add a TikTok channel and we’ll monitor it automatically.
+              <div className="space-y-2">
+                <h1 className="text-[30px] font-extrabold leading-tight tracking-tight">
+                  Which TikTok channel should we watch?
+                </h1>
+                <p className="text-muted-foreground">
+                  Add a channel you own or are authorized to record. You can add more later.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="onboarding-username" className="text-sm font-semibold">
+                  TikTok username
+                </label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">
+                    @
+                  </span>
+                  <Input
+                    id="onboarding-username"
+                    autoFocus
+                    value={username}
+                    onChange={(event) => {
+                      setUsername(event.target.value);
+                      setError(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") void addChannel();
+                    }}
+                    aria-invalid={Boolean(username) && !parsed}
+                    placeholder="username or tiktok.com/@username"
+                    className="h-[52px] pl-8 text-[17px]"
+                  />
+                </div>
+                {username && !parsed && (
+                  <p className="text-xs font-semibold text-destructive">
+                    Enter a valid TikTok username or profile link.
+                  </p>
+                )}
+              </div>
+              {parsed && (
+                <div className="flex items-center gap-3.5 rounded-[14px] border p-4">
+                  <AvatarCircle
+                    src={creator?.avatar_url}
+                    initials={displayNameFromTikTokUsername(parsed.username)
+                      .slice(0, 2)
+                      .toUpperCase()}
+                    size="lg"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <b className="block truncate">
+                      {creator?.display_name || displayNameFromTikTokUsername(parsed.username)}
+                    </b>
+                    <span className="text-sm text-muted-foreground">{parsed.handle}</span>
+                  </div>
+                  {creator ? (
+                    <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-success-subtle px-2.5 text-xs font-bold text-success">
+                      <Check className="size-3" /> Found
+                    </span>
+                  ) : preview.isFetching ? (
+                    <span className="text-xs text-muted-foreground">Looking up…</span>
+                  ) : null}
+                </div>
+              )}
+              <p className="flex items-start gap-2 rounded-[12px] bg-primary-subtle px-3 py-2.5 text-sm text-accent-ink">
+                <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+                <span>
+                  Only add channels you own, manage, or have permission to record (
+                  <Link to="/acceptable-use" className="font-semibold hover:underline">
+                    Acceptable Use Policy
+                  </Link>
+                  ).
+                </span>
               </p>
-              <Button className="mt-8" onClick={() => setStep(2)}>
-                Add my first channel
-                <ArrowRight />
-              </Button>
             </>
           )}
           {step === 2 && (
             <>
-              <h1 className="text-2xl font-semibold">Add a channel</h1>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Enter a TikTok username or profile URL.
-              </p>
-              <div className="mt-8 grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-primary bg-primary-subtle p-4">
-                  <PlatformBadge />
-                  <p className="mt-3 text-sm font-medium">{t("Available")}</p>
-                </div>
-                <div className="rounded-lg border p-4 opacity-60">
-                  <PlatformBadge soon />
-                  <p className="mt-3 text-sm">{t("Coming soon")}</p>
-                </div>
+              <div className="space-y-2">
+                <h1 className="text-[30px] font-extrabold leading-tight tracking-tight">
+                  How should we record {handle}?
+                </h1>
+                <p className="text-muted-foreground">
+                  These are the defaults — change them anytime on the channel page.
+                </p>
               </div>
-              <div className="mt-6">
-                <Field
-                  label="TikTok username or URL"
-                  placeholder="@mikefitness"
-                  value={username}
-                  onChange={(event) => {
-                    setUsername(event.target.value);
-                    setError(null);
-                  }}
-                  aria-invalid={Boolean(username) && !valid}
+              <div className="flex items-center gap-4 rounded-[14px] border p-4">
+                <span className="flex-1">
+                  <b className="block">Auto-record every LIVE</b>
+                  <span className="text-sm text-muted-foreground">
+                    {canAutoRecord
+                      ? "Start recording as soon as the channel goes live."
+                      : "Unlocks after you buy credits. Until then we detect LIVEs and notify you."}
+                  </span>
+                </span>
+                <Switch
+                  checked={canAutoRecord && autoRecord}
+                  disabled={!canAutoRecord}
+                  onCheckedChange={setAutoRecord}
+                  aria-label="Auto-record every LIVE"
                 />
-                {username && !valid && (
-                  <p className="mt-2 text-xs text-destructive">
-                    {t("Enter a valid TikTok username.")}
-                  </p>
-                )}
-                {parsed && (
-                  <div className="mt-4 flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
-                    <div className="grid size-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                      {displayName
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{displayName}</p>
-                      <p className="text-xs text-muted-foreground">{parsed.handle}</p>
-                    </div>
-                    <CheckCircle2 className="ml-auto size-4 text-success" />
-                  </div>
-                )}
-                {error && (
-                  <p role="alert" className="mt-3 text-sm text-destructive">
-                    {error}
-                  </p>
-                )}
               </div>
-              <div className="mt-6 flex justify-end">
-                <Button
-                  disabled={!valid || createChannel.isPending}
-                  onClick={() => void addChannel()}
-                >
-                  {createChannel.isPending ? (
-                    <>
-                      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      Adding channel…
-                    </>
-                  ) : (
-                    <>
-                      Add &amp; start monitoring
-                      <ArrowRight />
-                    </>
-                  )}
-                </Button>
+              <div className="flex items-center gap-4 rounded-[14px] border p-4">
+                <span className="flex-1">
+                  <b className="block">Monitoring</b>
+                  <span className="text-sm text-muted-foreground">
+                    We check the channel around the clock and start within about a minute of the
+                    LIVE beginning.
+                  </span>
+                </span>
+                <StatusBadge status="Waiting" />
               </div>
+              <p className="flex items-start gap-2.5 rounded-[12px] border border-info/25 bg-info-subtle px-3.5 py-3 text-sm">
+                <Clock3 className="mt-0.5 size-4 shrink-0 text-info" />
+                <span>
+                  Credits are charged per minute recorded. {retentionSentence(pricingQuery.data)} —
+                  download anything you want to keep.
+                </span>
+              </p>
             </>
           )}
           {step === 3 && (
             <>
-              <div className="flex items-center gap-4">
-                <div className="grid size-12 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                  {(createdHandle ?? "@ss").replace(/^@/, "").slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold">
-                    {displayNameFromTikTokUsername(createdHandle ?? "channel")}
-                  </h1>
-                  <p className="text-sm text-muted-foreground">{createdHandle}</p>
-                </div>
-                <Switch className="ml-auto" checked disabled />
-              </div>
-              <div className="mt-8 rounded-lg border bg-success-subtle p-5">
-                <div className="flex items-center gap-2 font-medium text-success">
-                  <CheckCircle2 className="size-5" />
-                  Monitoring on
-                </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  You’re all set. SaveStream will monitor this channel and automatically start
-                  recording according to its watch settings.
+              <div className="space-y-2">
+                <h1 className="text-[30px] font-extrabold leading-tight tracking-tight">
+                  How should we tell you?
+                </h1>
+                <p className="text-muted-foreground">
+                  We’ll notify you in SaveStream. You can fine-tune this in Settings →
+                  Notifications.
                 </p>
               </div>
-              <Button className="mt-8" asChild>
-                <Link to="/channels">
-                  View channels
-                  <ArrowRight />
-                </Link>
-              </Button>
+              <div className="overflow-hidden rounded-[14px] border">
+                {(
+                  [
+                    [
+                      "recording_started",
+                      "LIVE detected & recording started",
+                      "So you know it’s working",
+                    ],
+                    ["recording_ready", "Recording ready", "With a link to watch or download"],
+                    ["recording_failed", "Recording failed", "With the reason and what to do next"],
+                  ] as const
+                ).map(([key, title, detail]) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-4 border-b px-4 py-3.5 last:border-b-0"
+                  >
+                    <span className="flex-1">
+                      <b className="block text-sm">{title}</b>
+                      <span className="text-xs text-muted-foreground">{detail}</span>
+                    </span>
+                    <Switch
+                      checked={prefs[key]}
+                      onCheckedChange={(value) =>
+                        setPrefs((current) => ({ ...current, [key]: value }))
+                      }
+                      aria-label={title}
+                    />
+                  </div>
+                ))}
+              </div>
             </>
           )}
-        </div>
+          {step === 4 && (
+            <div className="flex flex-col items-center gap-4 py-4 text-center">
+              <span className="grid size-[72px] place-items-center rounded-[22px] bg-success-subtle text-success">
+                <Check className="size-8" strokeWidth={2.4} />
+              </span>
+              <h1 className="text-[30px] font-extrabold tracking-tight">You’re all set</h1>
+              <p className="max-w-[420px] text-muted-foreground">
+                We’re now watching <b className="text-foreground">{handle}</b>.{" "}
+                {channel?.autoRecord && canAutoRecord
+                  ? "The next time it goes LIVE, we’ll record it automatically and let you know."
+                  : "We’ll let you know when it goes LIVE. Buy credits to record LIVEs automatically."}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                {channel ? (
+                  <Button asChild size="lg">
+                    <Link to="/channels/$id" params={{ id: channel.id }}>
+                      Open channel
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button asChild size="lg" variant="outline">
+                  <Link to="/overview">Go to dashboard</Link>
+                </Button>
+              </div>
+            </div>
+          )}
+          {error && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+          {step < 4 && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <Button variant="ghost" disabled={step === 1 || busy} onClick={() => goTo(step - 1)}>
+                Back
+              </Button>
+              <Button size="lg" disabled={next.disabled || busy} onClick={() => void next.run()}>
+                {next.label}
+              </Button>
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
 }
 export function OverviewPage() {
-  return isDemoMode ? <DemoOverviewPage /> : <ProductionOverviewPage />;
+  return <ProductionOverviewPage />;
+}
+
+function greeting(now = new Date()) {
+  const hour = now.getHours();
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
+
+function recordingStartedAt(recording: RecordingModel): number {
+  const time = new Date(`${recording.date} ${recording.time}`).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+const USAGE_RANGES = [7, 30, 90] as const;
+
+function UsageChart({ recordings }: { recordings: RecordingModel[] }) {
+  const [days, setDays] = useState<(typeof USAGE_RANGES)[number]>(30);
+  const dayMs = 864e5;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = today.getTime() - (days - 1) * dayMs;
+  const buckets = Array.from({ length: days }, () => 0);
+  const previous = { from: start - days * dayMs, total: 0 };
+  for (const recording of recordings) {
+    const at = recordingStartedAt(recording);
+    const hours = (recording.durationSeconds ?? 0) / 3600;
+    if (at >= start) {
+      const index = Math.min(days - 1, Math.floor((at - start) / dayMs));
+      buckets[index] = (buckets[index] ?? 0) + hours;
+    } else if (at >= previous.from) {
+      previous.total += hours;
+    }
+  }
+  const total = buckets.reduce((sum, value) => sum + value, 0);
+  const peak = Math.max(...buckets, 0);
+  const peakIndex = buckets.indexOf(peak);
+  const change =
+    previous.total > 0 ? Math.round(((total - previous.total) / previous.total) * 100) : null;
+  const label = (offset: number) =>
+    new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(
+      new Date(start + offset * dayMs),
+    );
+  return (
+    <section
+      aria-labelledby="usage-title"
+      className="flex flex-col gap-3.5 rounded-[18px] border bg-surface p-5"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="usage-title" className="text-[17px] font-bold">
+          Recorded hours
+        </h2>
+        <div role="group" aria-label="Range" className="flex rounded-[10px] bg-surface-2 p-0.5">
+          {USAGE_RANGES.map((range) => (
+            <button
+              key={range}
+              type="button"
+              aria-pressed={days === range}
+              onClick={() => setDays(range)}
+              className={cn(
+                "h-7 rounded-[8px] px-2.5 text-xs font-bold text-muted-foreground",
+                days === range && "bg-surface text-foreground shadow-sm",
+              )}
+            >
+              {range} d
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-baseline gap-2.5">
+        <span className="font-mono text-[26px] font-semibold">{formatHoursLeft(total * 60)}</span>
+        {change !== null && (
+          <span
+            className={cn(
+              "text-xs font-bold",
+              change >= 0 ? "text-success" : "text-muted-foreground",
+            )}
+          >
+            {change >= 0 ? "+" : ""}
+            {change}%
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground">
+          {change !== null ? `vs previous ${days} days` : `last ${days} days`}
+        </span>
+      </div>
+      <div
+        role="img"
+        aria-label={
+          peak > 0
+            ? `Daily recorded hours, last ${days} days, peak ${peak.toFixed(1)} hours on ${label(peakIndex)}`
+            : `No recordings in the last ${days} days`
+        }
+        className="flex h-[120px] items-end gap-[3px]"
+      >
+        {buckets.map((value, index) => (
+          <span
+            key={index}
+            title={value ? `${label(index)} · ${value.toFixed(1)} h` : `${label(index)} · no LIVE`}
+            className={cn(
+              "flex-1 rounded-t-[4px]",
+              value === 0 ? "bg-surface-3" : index === peakIndex ? "bg-primary" : "bg-primary/45",
+            )}
+            style={{ height: `${value && peak ? Math.max(6, (value / peak) * 100) : 3}%` }}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>{label(0)}</span>
+        <span>{label(days - 1)}</span>
+      </div>
+    </section>
+  );
+}
+
+function OverviewChecklist({
+  emailVerified,
+  hasChannel,
+  hasRecording,
+}: {
+  emailVerified: boolean;
+  hasChannel: boolean;
+  hasRecording: boolean;
+}) {
+  const [handle, setHandle] = useState("");
+  const [open, setOpen] = useState(false);
+  const steps = [
+    {
+      title: "Verify your email",
+      body: "Required before we can monitor channels and record.",
+      done: emailVerified,
+    },
+    {
+      title: "Add your first channel",
+      body: "Enter the TikTok @username you want to auto-record. We’ll show a preview before you confirm.",
+      done: hasChannel,
+    },
+    {
+      title: "Record your first LIVE",
+      body: "The next time your channel goes live, the recording appears in your library.",
+      done: hasRecording,
+    },
+  ];
+  const doneCount = steps.filter((step) => step.done).length;
+  const firstOpen = steps.findIndex((step) => !step.done);
+  return (
+    <section
+      aria-labelledby="checklist-title"
+      className="overflow-hidden rounded-[20px] border bg-surface"
+    >
+      <div className="flex flex-wrap items-center gap-6 bg-gradient-to-br from-primary-subtle to-surface px-6 py-6 sm:px-8">
+        <div className="min-w-0 flex-[1_1_320px] space-y-1.5">
+          <p className="text-[11px] font-bold uppercase tracking-[.08em] text-accent-ink">
+            Get started
+          </p>
+          <h2 id="checklist-title" className="text-2xl font-extrabold tracking-tight">
+            Let’s get your first LIVE recorded.
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Three quick steps. Once your channel is added we start watching it right away —
+            monitoring is free.
+          </p>
+        </div>
+        <div
+          role="img"
+          aria-label={`${doneCount} of 3 steps complete`}
+          className="grid size-[92px] place-items-center rounded-full"
+          style={{
+            background: `conic-gradient(var(--color-primary) ${(doneCount / 3) * 360}deg, var(--color-border) 0)`,
+          }}
+        >
+          <div className="grid size-[72px] place-items-center rounded-full bg-surface text-center">
+            <span>
+              <b className="block font-mono text-xl">{doneCount}/3</b>
+              <span className="text-xs text-muted-foreground">done</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <ol>
+        {steps.map((step, index) => {
+          const current = index === firstOpen;
+          return (
+            <li
+              key={step.title}
+              className={cn(
+                "flex gap-4 border-t px-6 py-5 sm:px-8",
+                current && "bg-primary-subtle/40",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-8 shrink-0 place-items-center rounded-full border-2 font-mono text-xs font-bold",
+                  step.done
+                    ? "border-success bg-success text-white"
+                    : current
+                      ? "border-primary text-accent-ink"
+                      : "border-line-strong text-muted-foreground",
+                )}
+              >
+                {step.done ? <Check className="size-4" strokeWidth={3} /> : index + 1}
+              </span>
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <b className={cn(step.done && "text-muted-foreground line-through")}>
+                    {step.title}
+                  </b>
+                  {step.done ? (
+                    <span className="rounded-full bg-success-subtle px-2 py-0.5 text-xs font-bold text-success">
+                      Complete
+                    </span>
+                  ) : current ? (
+                    <span className="rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-bold text-accent-ink">
+                      Up next
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-sm text-muted-foreground">{step.body}</p>
+                {index === 0 && !step.done && (
+                  <Button asChild size="sm" className="mt-2">
+                    <Link to="/verify-email" search={{ token: "" }}>
+                      Verify email
+                    </Link>
+                  </Button>
+                )}
+                {index === 1 && !step.done && (
+                  <form
+                    className="mt-2.5 flex flex-wrap gap-2.5"
+                    aria-label="Add your first channel"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      setOpen(true);
+                    }}
+                  >
+                    <label className="relative min-w-[220px] flex-[1_1_280px]">
+                      <span className="sr-only">TikTok username</span>
+                      <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">
+                        @
+                      </span>
+                      <Input
+                        value={handle}
+                        onChange={(event) => setHandle(event.target.value)}
+                        placeholder="your TikTok username"
+                        className="h-11 pl-8"
+                      />
+                    </label>
+                    <Button type="submit" className="h-11">
+                      Add channel
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      <AddChannelDialog initialInput={handle} open={open} onOpenChange={setOpen} />
+    </section>
+  );
 }
 
 function ProductionOverviewPage() {
-  const { t } = usePreferences();
+  const { user } = useAuth();
   const { query: channelsQuery } = useChannelsData();
   const { query: recordingsQuery } = useRecordingsData();
   const { query: balanceQuery } = useCreditBalanceData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  const credits = useCreditSummary();
 
   if (channelsQuery.isPending || recordingsQuery.isPending || balanceQuery.isPending) {
     return (
@@ -1700,7 +2172,11 @@ function ProductionOverviewPage() {
           subtitle="Loading workspace status…"
           action={<AddChannelDialog />}
         />
-        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+        <div className="grid gap-5 md:grid-cols-[2fr_1fr_1fr]" aria-busy="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-40 animate-pulse rounded-[18px] border bg-surface-2" />
+          ))}
+        </div>
       </AppShell>
     );
   }
@@ -1728,80 +2204,362 @@ function ProductionOverviewPage() {
   }
 
   const overviewChannels = channelsQuery.data ?? [];
-  const overviewRecordings = recordingsQuery.data ?? [];
-  const monitoredChannels = overviewChannels.filter((channel) => channel.monitoring).length;
-  const activeRecordingStatuses = new Set([
-    "queued",
-    "resolving",
-    "waiting_live",
-    "recording",
-    "processing",
-    "uploading",
-    "stop_requested",
-  ]);
-  const activeRecordings = overviewRecordings.filter((recording) =>
-    activeRecordingStatuses.has(recording.backendStatus),
-  ).length;
+  const overviewRecordings = [...(recordingsQuery.data ?? [])].sort(
+    (a, b) => recordingStartedAt(b) - recordingStartedAt(a),
+  );
   const balance = balanceQuery.data;
+  const channelLimit = entitlementQuery.data?.limits.max_watches ?? null;
+  const recordingChannels = overviewChannels.filter(
+    (c) => c.backendStatus === "active" && c.status === "Recording",
+  );
+  const liveNotRecording = overviewChannels.filter(
+    (c) => c.backendStatus === "active" && c.status === "Live",
+  );
+  const liveCount = recordingChannels.length + liveNotRecording.length;
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const thisMonth = overviewRecordings.filter((r) => recordingStartedAt(r) >= monthStart.getTime());
+  const monthSeconds = thisMonth.reduce((sum, r) => sum + (r.durationSeconds ?? 0), 0);
+  const firstName = (user?.display_name ?? "").trim().split(/\s+/)[0];
+  const showChecklist =
+    !isDemoMode &&
+    (!(user?.email_verified ?? true) ||
+      overviewChannels.length === 0 ||
+      overviewRecordings.length === 0);
+  const activeRecording = recordingChannels[0]
+    ? overviewRecordings.find((r) => r.id === recordingChannels[0]?.activeRecordingId)
+    : undefined;
+  const reservedMinutes =
+    credits.minutes > 0 && balance.available > 0
+      ? (balance.reserved / balance.available) * credits.minutes
+      : balance.reserved;
 
   return (
     <AppShell>
-      <PageHeader
-        title="Overview"
-        subtitle="Your channels, recordings, and credits at a glance."
-        action={<AddChannelDialog />}
-      />
-      <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Available credits"
-          value={String(balance.available)}
-          detail="Usable for new recordings"
-          icon={Zap}
+      <div className="flex flex-col gap-6">
+        <PageHeader
+          title={firstName ? `${greeting()}, ${firstName}` : "Overview"}
+          subtitle={
+            liveCount === 0
+              ? "Your channels, recordings, and credits at a glance."
+              : `${pluralize(liveCount, "channel")} ${liveCount === 1 ? "is" : "are"} live: ${recordingChannels.length} recording${
+                  liveNotRecording.length
+                    ? `, ${liveNotRecording.length} ${liveNotRecording.length === 1 ? "needs" : "need"} your attention`
+                    : ""
+                }.`
+          }
+          action={
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline">
+                <Link to="/recordings">View recordings</Link>
+              </Button>
+              <AddChannelDialog />
+            </div>
+          }
         />
-        <StatCard
-          label="Reserved credits"
-          value={String(balance.reserved)}
-          detail="Held for active recordings"
-          icon={CreditCard}
-        />
-        <StatCard
-          label="Monitored channels"
-          value={String(monitoredChannels)}
-          detail={`${pluralize(overviewChannels.length, "channel")} in workspace`}
-          icon={Radio}
-        />
-        <StatCard
-          label="Active recordings"
-          value={String(activeRecordings)}
-          detail={`${pluralize(overviewRecordings.length, "recording")} in library`}
-          icon={FileVideo}
-        />
-      </div>
-      <ActiveRecordingCard />
-      <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
-        <section>
-          <SectionTitle
-            title="Channel monitoring"
-            action={<Link to="/channels">{t("View all")}</Link>}
+
+        {showChecklist && (
+          <OverviewChecklist
+            emailVerified={user?.email_verified ?? true}
+            hasChannel={overviewChannels.length > 0}
+            hasRecording={overviewRecordings.length > 0}
           />
+        )}
+
+        <div className="flex flex-wrap gap-5">
+          <section
+            aria-label="Credit balance"
+            className="flex min-w-0 flex-[2_1_480px] flex-col gap-3 rounded-[18px] border bg-gradient-to-br from-surface to-surface-2 p-5"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-muted-foreground">Credit balance</span>
+              <Link to="/usage" className="text-sm font-bold text-accent-ink hover:underline">
+                Usage history →
+              </Link>
+            </div>
+            <div className="flex flex-wrap items-baseline gap-2.5">
+              <span className="font-mono text-[44px] font-semibold leading-none tracking-tight">
+                {credits.label}
+              </span>
+              <span className="text-muted-foreground">
+                of recording left · {balance.available.toLocaleString("en")} credits available
+              </span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-surface-3">
+              <span
+                className={cn(
+                  "block h-full rounded-full",
+                  credits.state === "out"
+                    ? "bg-destructive"
+                    : credits.state === "low"
+                      ? "bg-warning"
+                      : "bg-gradient-to-r from-primary to-accent",
+                )}
+                style={{ width: `${credits.percent}%` }}
+              />
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <span className="text-muted-foreground">
+                {balance.reserved > 0
+                  ? `${formatHoursLeft(reservedMinutes)} on hold for live recordings — released if unused.`
+                  : "Credits are only used while a LIVE is being recorded."}
+              </span>
+              <Button asChild size="sm">
+                <Link to="/billing">Buy credits</Link>
+              </Button>
+            </div>
+          </section>
+          <section
+            aria-label="Channels monitored"
+            className="flex flex-[1_1_220px] flex-col gap-2 rounded-[18px] border bg-surface p-5"
+          >
+            <span className="text-sm font-bold text-muted-foreground">Channels</span>
+            <span className="font-mono text-[32px] font-semibold leading-tight">
+              {overviewChannels.length}
+              {channelLimit !== null && (
+                <span className="text-lg text-muted-foreground"> / {channelLimit}</span>
+              )}
+            </span>
+            {channelLimit !== null && (
+              <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+                <span
+                  className={cn(
+                    "block h-full rounded-full",
+                    overviewChannels.length >= channelLimit
+                      ? "bg-warning"
+                      : "bg-gradient-to-r from-primary to-accent",
+                  )}
+                  style={{
+                    width: `${Math.min(100, (overviewChannels.length / Math.max(1, channelLimit)) * 100)}%`,
+                  }}
+                />
+              </div>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {channelLimit !== null && overviewChannels.length >= channelLimit
+                ? "Channel limit reached"
+                : `${pluralize(overviewChannels.length, "channel")} added`}
+            </span>
+          </section>
+          <section
+            aria-label="Recordings this month"
+            className="flex flex-[1_1_220px] flex-col gap-2 rounded-[18px] border bg-surface p-5"
+          >
+            <span className="text-sm font-bold text-muted-foreground">Recordings this month</span>
+            <span className="font-mono text-[32px] font-semibold leading-tight">
+              {thisMonth.length}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatHoursLeft(monthSeconds / 60)} recorded
+            </span>
+          </section>
+        </div>
+
+        <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))]">
+          <section
+            aria-labelledby="live-now"
+            className="flex flex-col gap-4 rounded-[18px] border bg-surface p-5"
+          >
+            <div className="flex items-center justify-between">
+              <h2 id="live-now" className="flex items-center gap-2 text-[17px] font-bold">
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    liveCount ? "animate-pulse bg-recording" : "bg-muted-foreground/40",
+                  )}
+                />
+                Live now
+              </h2>
+              <span className="text-xs text-muted-foreground">Updates automatically</span>
+            </div>
+            {liveCount === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-[14px] bg-surface-2 px-4 py-8 text-center">
+                <Radio className="size-6 text-muted-foreground" />
+                <b className="text-sm">No channels are live right now</b>
+                <span className="text-xs text-muted-foreground">
+                  {overviewChannels.length
+                    ? "We’re watching your channels and will start recording when one goes live."
+                    : "Add a channel and we’ll start watching it right away."}
+                </span>
+              </div>
+            ) : (
+              <>
+                {recordingChannels.map((channel) => {
+                  const recording =
+                    channel.id === recordingChannels[0]?.id
+                      ? activeRecording
+                      : overviewRecordings.find((r) => r.id === channel.activeRecordingId);
+                  return (
+                    <div key={channel.id} className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3.5">
+                        <div className="rounded-full ring-2 ring-recording ring-offset-2 ring-offset-surface">
+                          <CreatorAvatar channel={channel} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <b className="block truncate">{channel.handle}</b>
+                          <span className="text-xs text-muted-foreground">
+                            {recording ? `Started ${recording.time}` : "Recording on our servers"}
+                          </span>
+                        </div>
+                        <StatusBadge status="Recording" pulse />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 rounded-[14px] bg-surface-2 px-4 py-3.5">
+                        <span className="font-mono text-[28px] font-semibold tracking-tight">
+                          {recording?.duration ?? "—"}
+                        </span>
+                        <span className="ml-auto flex flex-col items-end">
+                          <span className="text-xs text-muted-foreground">Recorded so far</span>
+                          <b className="font-mono">{recording?.size ?? "—"}</b>
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {channel.activeRecordingId && (
+                          <Button asChild size="sm">
+                            <Link to="/recordings/$id" params={{ id: channel.activeRecordingId }}>
+                              View recording
+                            </Link>
+                          </Button>
+                        )}
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/channels/$id" params={{ id: channel.id }}>
+                            Channel details
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+                {liveNotRecording.map((channel) => (
+                  <div
+                    key={channel.id}
+                    className="flex flex-wrap items-center gap-3 rounded-[14px] px-4 py-3.5 shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--color-recording)_45%,transparent)]"
+                  >
+                    <CreatorAvatar channel={channel} size="sm" />
+                    <div className="min-w-0 flex-[1_1_200px]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <b className="text-sm">{channel.handle}</b>
+                        <StatusBadge status="Live" />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {channel.liveReason ?? "Not recording."}
+                      </span>
+                    </div>
+                    <Button asChild size="sm">
+                      <Link to="/channels/$id" params={{ id: channel.id }}>
+                        Details
+                      </Link>
+                    </Button>
+                  </div>
+                ))}
+              </>
+            )}
+          </section>
+          <UsageChart recordings={overviewRecordings} />
+        </div>
+
+        <section aria-labelledby="monitored" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 id="monitored" className="text-[17px] font-bold">
+              Monitored channels
+            </h2>
+            <Link to="/channels" className="text-sm font-bold text-accent-ink hover:underline">
+              All channels →
+            </Link>
+          </div>
           {overviewChannels.length ? (
             <>
-              <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
-                <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-                  <span>{t("Creator")}</span>
-                  <span>{t("Platform")}</span>
-                  <span>{t("Monitoring")}</span>
-                  <span>{t("Status")}</span>
-                  <span>{t("Checked")}</span>
-                  <span />
-                </div>
-                {overviewChannels.map((channel) => (
-                  <ChannelRow key={channel.id} channel={channel} />
-                ))}
+              <div className="hidden overflow-x-auto rounded-[16px] border bg-surface md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                      <th scope="col" className="px-4 py-3">
+                        Channel
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Status
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Last LIVE
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Auto-record
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        Recordings
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {overviewChannels.map((channel) => {
+                      const status: ChannelStatus =
+                        channel.backendStatus === "active" ? channel.status : "Paused";
+                      return (
+                        <tr key={channel.id} className="border-b last:border-b-0">
+                          <td className="px-4 py-3">
+                            <Link
+                              to="/channels/$id"
+                              params={{ id: channel.id }}
+                              className="flex items-center gap-3"
+                            >
+                              <CreatorAvatar channel={channel} size="sm" />
+                              <span className="min-w-0">
+                                <b className="block truncate">{channel.handle}</b>
+                                <span className="text-xs text-muted-foreground">
+                                  {channel.name}
+                                </span>
+                              </span>
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={status} pulse={status === "Recording"} />
+                            {status === "Live" && channel.liveReason && (
+                              <span className="mt-1 block max-w-[260px] text-xs text-muted-foreground">
+                                {channel.liveReason}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{channel.live}</td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-xs font-bold",
+                                channel.autoRecord
+                                  ? "bg-success-subtle text-success"
+                                  : "bg-surface-2 text-muted-foreground",
+                              )}
+                            >
+                              {channel.autoRecord ? "On" : "Off"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right font-mono">{channel.recordings}</td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              asChild
+                              size="sm"
+                              variant={status === "Live" ? "default" : "ghost"}
+                            >
+                              <Link to="/channels/$id" params={{ id: channel.id }}>
+                                {status === "Live"
+                                  ? "Details"
+                                  : status === "Paused"
+                                    ? "Resume"
+                                    : "Open"}
+                              </Link>
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-              <div className="space-y-3 md:hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
                 {overviewChannels.map((channel) => (
-                  <ChannelCard key={channel.id} channel={channel} />
+                  <ChannelGridCard key={channel.id} channel={channel} />
                 ))}
               </div>
             </>
@@ -1809,34 +2567,52 @@ function ProductionOverviewPage() {
             <EmptyState
               icon={Radio}
               title="No channels yet"
-              body="Add an authorized TikTok channel to start monitoring."
+              body="Add a TikTok channel you own or are authorized to record to start monitoring."
               action={<AddChannelDialog />}
             />
           )}
         </section>
-        <section>
-          <SectionTitle
-            title="Recent recordings"
-            action={<Link to="/recordings">{t("View library")}</Link>}
-          />
+
+        <section aria-labelledby="recent" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 id="recent" className="text-[17px] font-bold">
+              Recent recordings
+            </h2>
+            <Link to="/recordings" className="text-sm font-bold text-accent-ink hover:underline">
+              Library →
+            </Link>
+          </div>
           {overviewRecordings.length ? (
-            <div className="divide-y rounded-lg border bg-surface">
-              {overviewRecordings.slice(0, 3).map((recording) => (
+            <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr))]">
+              {overviewRecordings.slice(0, 6).map((recording) => (
                 <Link
                   key={recording.id}
                   to="/recordings/$id"
                   params={{ id: recording.id }}
-                  className="flex items-center gap-3 p-3"
+                  aria-label={`${recording.handle}, ${recording.date}, ${recording.duration}`}
+                  className={cn(
+                    "relative flex aspect-[9/16] flex-col justify-between overflow-hidden rounded-[14px] p-2.5 text-white transition-transform hover:-translate-y-0.5",
+                    recording.color,
+                  )}
                 >
-                  <div className={cn("aspect-video w-20 rounded", recording.color)} />
-                  <RecordingCreatorAvatar recording={recording} size="sm" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{recording.handle}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {recording.date} · {recording.duration}
-                    </p>
-                  </div>
-                  <StatusBadge status={recording.status} />
+                  <span
+                    className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"
+                    aria-hidden="true"
+                  />
+                  <span className="relative flex items-start justify-between gap-2">
+                    <StatusBadge status={recording.status} />
+                    {recording.resolution !== "—" && (
+                      <span className="rounded-md bg-black/40 px-1.5 py-0.5 font-mono text-[10px]">
+                        {recording.resolution}
+                      </span>
+                    )}
+                  </span>
+                  <span className="relative">
+                    <b className="block truncate text-sm">{recording.handle}</b>
+                    <span className="font-mono text-xs opacity-85">
+                      {recording.date.replace(/, \d{4}$/, "")} · {recording.duration}
+                    </span>
+                  </span>
                 </Link>
               ))}
             </div>
@@ -1853,99 +2629,6 @@ function ProductionOverviewPage() {
   );
 }
 
-function DemoOverviewPage() {
-  const { t } = usePreferences();
-  const { query: channelsQuery } = useChannelsData();
-  const { query: recordingsQuery } = useRecordingsData();
-  const overviewChannels = channelsQuery.data ?? [];
-  const overviewRecordings = recordingsQuery.data ?? [];
-  return (
-    <AppShell>
-      <PageHeader title="Overview" subtitle="Sunday, September 27" action={<AddChannelDialog />} />
-      <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Recording hours"
-          value="12.6 / 50 h"
-          detail="25% used · resets Oct 1"
-          icon={Clock3}
-          progress={25}
-        />
-        <StatCard
-          label="Active channels"
-          value="3 / 5"
-          detail="3 currently monitoring"
-          icon={Radio}
-        />
-        <StatCard
-          label="Stored recordings"
-          value="18.4 GB"
-          detail="4 recordings"
-          icon={HardDrive}
-        />
-        <StatCard
-          label="Download usage"
-          value="24.8 / 100 GB"
-          detail="25% used this month"
-          icon={Download}
-          progress={25}
-        />
-      </div>
-      <ActiveRecordingCard />
-      <div className="mt-8 grid gap-8 xl:grid-cols-[1.2fr_.8fr]">
-        <section>
-          <SectionTitle
-            title="Channel monitoring"
-            action={<Link to="/channels">{t("View all")}</Link>}
-          />
-          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
-            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>{t("Creator")}</span>
-              <span>{t("Platform")}</span>
-              <span>{t("Monitoring")}</span>
-              <span>{t("Status")}</span>
-              <span>{t("Checked")}</span>
-              <span />
-            </div>
-            {overviewChannels.map((c) => (
-              <ChannelRow key={c.id} channel={c} />
-            ))}
-          </div>
-          <div className="space-y-3 md:hidden">
-            {overviewChannels.map((c) => (
-              <ChannelCard key={c.id} channel={c} />
-            ))}
-          </div>
-        </section>
-        <section>
-          <SectionTitle
-            title="Recent recordings"
-            action={<Link to="/recordings">{t("View library")}</Link>}
-          />
-          <div className="divide-y rounded-lg border bg-surface">
-            {overviewRecordings.slice(0, 3).map((r) => (
-              <Link
-                key={r.id}
-                to="/recordings/$id"
-                params={{ id: r.id }}
-                className="flex items-center gap-3 p-3"
-              >
-                <div className={cn("aspect-video w-20 rounded", r.color)} />
-                <RecordingCreatorAvatar recording={r} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{r.handle}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.date} · {r.duration}
-                  </p>
-                </div>
-                <StatusBadge status={r.status} />
-              </Link>
-            ))}
-          </div>
-        </section>
-      </div>
-    </AppShell>
-  );
-}
 export function SectionTitle({ title, action }: { title: string; action?: ReactNode }) {
   const { t } = usePreferences();
   return (

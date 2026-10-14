@@ -65,12 +65,12 @@ for (const file of [
 const overview = block(
   "src/components/app-pages.tsx",
   "function ProductionOverviewPage()",
-  "function DemoOverviewPage()",
+  "export function SectionTitle(",
 );
 for (const text of [
   "useCreditBalanceData",
-  "Available credits",
-  "Reserved credits",
+  "Credit balance",
+  "on hold for live recordings",
   "Monitored channels",
   "Your channels, recordings, and credits at a glance.",
 ]) {
