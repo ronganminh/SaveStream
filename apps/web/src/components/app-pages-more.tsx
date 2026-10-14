@@ -90,8 +90,11 @@ import {
   AdminHealthBadge,
 } from "@/components/app-components";
 import { PublicFooter, PublicHeader, SectionTitle, formatMoneyValue } from "@/components/app-pages";
+import { firebaseSocialConfigured } from "@/lib/firebase-social-login";
 import {
+  AppleIcon,
   AuthCardLayout,
+  GoogleIcon,
   IconTile,
   ONE_TIME_LINK_MINUTES,
   SocialButton,
@@ -113,6 +116,7 @@ import {
   type WorkerStatus,
 } from "@/mocks/fixtures";
 import { notificationStore, useNotificationFeed } from "@/lib/notification-store";
+import type { NotificationModel } from "@/repositories";
 import { pluralize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
@@ -509,23 +513,23 @@ export function SettingsPage({ section = "account" }: { section?: SettingsSectio
   const { t } = usePreferences();
   return (
     <AppShell>
-      <PageHeader title="Settings" subtitle="Manage your account, notifications, and security." />
-      <nav aria-label="Settings sections" className="mb-6 flex gap-1 overflow-x-auto border-b">
-        {settingsTabs.map((tab) => (
-          <Link
-            key={tab.id}
-            to={tab.to}
-            aria-current={section === tab.id ? "page" : undefined}
-            className={cn(
-              "-mb-px shrink-0 border-b-2 border-transparent px-3 pb-3 text-sm font-medium text-muted-foreground hover:text-foreground",
-              section === tab.id && "border-primary text-foreground",
-            )}
-          >
-            {t(tab.label)}
-          </Link>
-        ))}
-      </nav>
-      <div className="max-w-2xl space-y-6">
+      <div className="flex max-w-[960px] flex-col gap-5">
+        <h1 className="text-[32px] font-extrabold tracking-tight">Settings</h1>
+        <nav aria-label="Settings sections" className="flex gap-1 overflow-x-auto border-b">
+          {settingsTabs.map((tab) => (
+            <Link
+              key={tab.id}
+              to={tab.to}
+              aria-current={section === tab.id ? "page" : undefined}
+              className={cn(
+                "-mb-px inline-flex h-11 shrink-0 items-center border-b-2 border-transparent px-3 text-sm font-bold text-muted-foreground hover:text-foreground",
+                section === tab.id && "border-primary text-foreground",
+              )}
+            >
+              {t(tab.label)}
+            </Link>
+          ))}
+        </nav>
         {section === "account" && <AccountSettings />}
         {section === "notifications" && <NotificationSettings />}
         {section === "security" && <SecuritySettings />}
@@ -538,18 +542,32 @@ function Section({
   body,
   children,
   danger,
+  action,
 }: {
   title: string;
-  body: string;
+  body: ReactNode;
   children: ReactNode;
   danger?: boolean;
+  action?: ReactNode;
 }) {
   const { t } = usePreferences();
   return (
-    <section className={cn("rounded-lg border bg-surface p-5", danger && "border-destructive/30")}>
-      <h2 className="font-medium">{t(title)}</h2>
-      <p className="mb-5 mt-1 text-sm text-muted-foreground">{t(body)}</p>
-      <div className="space-y-4">{children}</div>
+    <section
+      className={cn(
+        "overflow-hidden rounded-[18px] border bg-surface",
+        danger && "border-destructive/35",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4 sm:px-6">
+        <div className="space-y-1">
+          <h2 className={cn("text-[17px] font-bold", danger && "text-destructive")}>{t(title)}</h2>
+          <p className="text-sm text-muted-foreground">
+            {typeof body === "string" ? t(body) : body}
+          </p>
+        </div>
+        {action}
+      </div>
+      <div className="space-y-4 px-5 py-5 sm:px-6">{children}</div>
     </section>
   );
 }
@@ -654,38 +672,59 @@ function ProductionAccountSettings() {
 
   return (
     <>
-      <Section
-        title="Profile"
-        body="Your display name and language. To change your email address, contact support@savestream.online."
-      >
+      <Section title="Profile" body="How you appear in SaveStream and on order records.">
         <div className="flex items-center gap-4">
-          <span className="grid size-14 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+          <span className="grid size-16 place-items-center rounded-full bg-gradient-to-br from-avatar-one to-avatar-one-end text-lg font-extrabold text-avatar-foreground">
             {initials || "SS"}
           </span>
-          <div>
-            <p className="text-sm font-medium">{profile.email}</p>
-            <p className="text-xs text-muted-foreground">
-              {profile.email_verified ? "Email verified" : "Email verification pending"}
+          <div className="min-w-0">
+            <p className="truncate font-bold">{profile.display_name || profile.email}</p>
+            <p className="text-sm text-muted-foreground">
+              Member since{" "}
+              {new Date(profile.created_at).toLocaleDateString("en", {
+                month: "short",
+                year: "numeric",
+              })}
             </p>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))]">
           <LabeledInput
             id="acc-name"
-            label="Name"
+            label="Display name"
             value={name}
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
           />
+          <div>
+            <label htmlFor="acc-email" className="block text-sm font-medium">
+              Email
+            </label>
+            <div className="relative mt-2">
+              <Input
+                id="acc-email"
+                type="email"
+                value={profile.email}
+                readOnly
+                disabled
+                className="pr-24"
+              />
+              <span
+                className={cn(
+                  "absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-xs font-bold",
+                  profile.email_verified
+                    ? "bg-success-subtle text-success"
+                    : "bg-warning-subtle text-warning-foreground",
+                )}
+              >
+                {profile.email_verified ? "Verified" : "Not verified"}
+              </span>
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              To change your email address, contact support@savestream.online.
+            </p>
+          </div>
         </div>
-        <LabeledInput
-          id="acc-email"
-          label="Email"
-          type="email"
-          value={profile.email}
-          readOnly
-          disabled
-        />
         {!profile.email_verified && (
           <StateBanner
             tone="warning"
@@ -713,9 +752,54 @@ function ProductionAccountSettings() {
             }
           />
         )}
-        <Button onClick={save} disabled={!dirty || updateProfile.isPending}>
-          {updateProfile.isPending ? "Saving…" : t("Save changes")}
-        </Button>
+        <div className="flex justify-end gap-2.5">
+          <Button
+            variant="ghost"
+            disabled={!dirty}
+            onClick={() => setName(profile.display_name ?? "")}
+          >
+            Cancel
+          </Button>
+          <Button onClick={save} disabled={!dirty || updateProfile.isPending}>
+            {updateProfile.isPending ? "Saving…" : t("Save changes")}
+          </Button>
+        </div>
+      </Section>
+
+      <Section title="Sign-in methods" body="Ways you can sign in to SaveStream.">
+        <div className="-mx-5 -my-5 divide-y sm:-mx-6">
+          <div className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+            <KeyRound className="size-5 text-muted-foreground" />
+            <span className="min-w-0 flex-1">
+              <b className="block text-sm">Email & password</b>
+              <span className="text-xs text-muted-foreground">{profile.email}</span>
+            </span>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/settings/security">Change</Link>
+            </Button>
+          </div>
+          {!firebaseSocialConfigured && (
+            <div className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+              <GoogleIcon />
+              <span className="min-w-0 flex-1">
+                <b className="block text-sm">Google & Apple</b>
+                <span className="text-xs text-muted-foreground">Coming soon.</span>
+              </span>
+            </div>
+          )}
+          {(firebaseSocialConfigured ? (["Google", "Apple"] as const) : []).map((provider) => (
+            <div key={provider} className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+              {provider === "Google" ? <GoogleIcon /> : <AppleIcon />}
+              <span className="min-w-0 flex-1">
+                <b className="block text-sm">{provider}</b>
+                <span className="text-xs text-muted-foreground">
+                  Available on the sign-in page. If it uses this email, you’ll confirm your password
+                  once to link it.
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
       </Section>
 
       <Section
@@ -1133,6 +1217,30 @@ function DemoNotificationSettings() {
     </Section>
   );
 }
+function describeUserAgent(agent: string | null) {
+  if (!agent) return "Unknown browser or device";
+  const browser = /Edg\//.test(agent)
+    ? "Edge"
+    : /Chrome\//.test(agent)
+      ? "Chrome"
+      : /Firefox\//.test(agent)
+        ? "Firefox"
+        : /Safari\//.test(agent)
+          ? "Safari"
+          : null;
+  const os = /iPhone|iPad/.test(agent)
+    ? "iOS"
+    : /Android/.test(agent)
+      ? "Android"
+      : /Mac OS X/.test(agent)
+        ? "macOS"
+        : /Windows/.test(agent)
+          ? "Windows"
+          : /Linux/.test(agent)
+            ? "Linux"
+            : null;
+  return browser || os ? [browser, os].filter(Boolean).join(" on ") : agent.slice(0, 60);
+}
 function SecuritySettings() {
   return isDemoMode ? <DemoSecuritySettings /> : <ProductionSecuritySettings />;
 }
@@ -1195,8 +1303,17 @@ function ProductionSecuritySettings() {
       </Section>
 
       <Section
-        title="Sessions"
-        body={`SaveStream returned ${sessions.length} session${sessions.length === 1 ? "" : "s"}. The current device is marked below.`}
+        title="Active sessions"
+        body={`Devices currently signed in to your account (${sessions.length}).`}
+        action={
+          <Button
+            variant="ghost"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setSignOutAll(true)}
+          >
+            Sign out everywhere
+          </Button>
+        }
       >
         {sessionsState.kind === "error" ? (
           <ErrorState
@@ -1205,74 +1322,93 @@ function ProductionSecuritySettings() {
             onRetry={() => sessionsQuery.refetch()}
           />
         ) : sessions.length ? (
-          <ul className="divide-y border-y">
-            {sessions.map((session) => (
-              <li key={session.id} className="flex items-center gap-3 py-4">
-                <Monitor className="size-5 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                    <span className="truncate">
-                      {session.user_agent || "Unknown browser or device"}
-                    </span>
-                    {session.current && (
-                      <span className="rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-semibold uppercase text-success">
-                        {t("This device")}
-                      </span>
-                    )}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {session.ip_hint || "IP unavailable"} · Last active{" "}
-                    {new Date(session.last_seen_at).toLocaleString()}
-                  </p>
-                </div>
-                {!session.current && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={revokeSession.isPending}
-                    onClick={() => {
-                      void revokeSession
-                        .mutateAsync(session.id)
-                        .then(() => toast.success("Session revoked"))
-                        .catch((error) =>
-                          toast.error("Could not revoke session", {
-                            description: accountActionErrorMessage(error),
-                          }),
-                        );
-                    }}
-                  >
-                    {t("Revoke")}
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="-mx-5 overflow-x-auto sm:-mx-6">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-y bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                  <th scope="col" className="px-5 py-2.5 sm:px-6">
+                    Device
+                  </th>
+                  <th scope="col" className="px-4 py-2.5">
+                    IP
+                  </th>
+                  <th scope="col" className="px-4 py-2.5">
+                    Last active
+                  </th>
+                  <th scope="col" className="px-5 py-2.5 sm:px-6">
+                    <span className="sr-only">Action</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.map((session) => (
+                  <tr key={session.id} className="border-b last:border-b-0">
+                    <td className="px-5 py-3 sm:px-6">
+                      <div className="flex items-center gap-3">
+                        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">
+                          {/Mobile|iPhone|Android/i.test(session.user_agent ?? "") ? (
+                            <Smartphone className="size-[18px]" />
+                          ) : (
+                            <Monitor className="size-[18px]" />
+                          )}
+                        </span>
+                        <span className="min-w-0">
+                          <b className="block">{describeUserAgent(session.user_agent)}</b>
+                          <span className="text-xs text-muted-foreground">
+                            Signed in{" "}
+                            {new Date(session.created_at).toLocaleDateString("en", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                        </span>
+                        {session.current && (
+                          <span className="rounded-full bg-success-subtle px-2 py-0.5 text-xs font-bold text-success">
+                            {t("This device")}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                      {session.ip_hint || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {new Date(session.last_seen_at).toLocaleString("en", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="px-5 py-3 text-right sm:px-6">
+                      {!session.current && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={revokeSession.isPending}
+                          onClick={() => {
+                            void revokeSession
+                              .mutateAsync(session.id)
+                              .then(() => toast.success("Session revoked"))
+                              .catch((error) =>
+                                toast.error("Could not revoke session", {
+                                  description: accountActionErrorMessage(error),
+                                }),
+                              );
+                          }}
+                        >
+                          Sign out
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">No sessions were returned.</p>
         )}
-
-        <Button variant="outline" className="w-fit" onClick={() => setSignOutAll(true)}>
-          Sign out everywhere
-        </Button>
-      </Section>
-
-      <Section title="Sign-in methods" body="Ways you can sign in to SaveStream.">
-        <div className="flex items-center gap-3 rounded-md border p-3">
-          <KeyRound className="size-4 text-muted-foreground" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">{t("Email and password")}</p>
-            <p className="text-xs text-muted-foreground">{profile.email}</p>
-          </div>
-          <span className="text-xs font-medium text-success">{t("Connected")}</span>
-        </div>
-        <div className="flex items-center gap-3 rounded-md border p-3 opacity-70">
-          <span className="grid size-4 place-items-center text-xs font-bold">G</span>
-          <div className="flex-1">
-            <p className="text-sm font-medium">{t("Google")}</p>
-            <p className="text-xs text-muted-foreground">Coming soon.</p>
-          </div>
-          <span className="text-xs text-muted-foreground">Unavailable</span>
-        </div>
       </Section>
 
       <ConfirmDialog
@@ -1462,102 +1598,144 @@ export function NotificationsPage() {
 
   return (
     <AppShell>
-      <PageHeader
-        title="Notifications"
-        subtitle={
-          isDemoMode
-            ? "Recording activity, failures, and quota alerts."
-            : "Updates about your recordings."
-        }
-        action={
-          <Button
-            variant="outline"
-            disabled={!unread}
-            onClick={() => {
-              void notificationStore.markAllRead().then((ok) => {
-                if (ok) toast.success(t("All notifications marked as read"));
-                else toast.error("Could not mark notifications as read");
-              });
-            }}
-          >
-            {t("Mark all as read")}
-          </Button>
-        }
-      />
-      {!isDemoMode && (
-        <div className="mb-4 max-w-3xl">
-          <StateBanner
-            tone="info"
-            icon={Bell}
-            title="Synced across devices"
-            body="Your notifications and read status are the same on every device. New notifications appear automatically while this page is open."
-          />
-        </div>
-      )}
-      <div role="tablist" aria-label={t("Filter notifications")} className="mb-4 flex gap-1">
-        {(["all", "unread"] as const).map((f) => (
-          <Button
-            key={f}
-            role="tab"
-            aria-selected={filter === f}
-            size="sm"
-            variant={filter === f ? "secondary" : "ghost"}
-            onClick={() => setFilter(f)}
-          >
-            {f === "all" ? (
-              t("All")
-            ) : (
-              <>
-                {t("Unread")}{" "}
-                <span className="font-mono text-xs text-muted-foreground">{unread}</span>
-              </>
-            )}
-          </Button>
-        ))}
-      </div>
-      {shown.length ? (
-        <div className="max-w-3xl overflow-hidden rounded-lg border bg-surface">
-          {shown.map((n) => (
-            <NotificationItem key={n.id} notification={n} />
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={Bell}
-          title={filter === "unread" ? "No unread notifications" : "No notifications yet"}
-          body={
-            filter === "unread"
-              ? "You’re all caught up."
-              : "We’ll notify you when recordings start, finish, or need attention."
+      <div className="flex flex-col gap-5">
+        <PageHeader
+          title="Notifications"
+          subtitle={unread ? `${unread} unread` : "You’re all caught up."}
+          action={
+            <Button
+              variant="outline"
+              disabled={!unread}
+              onClick={() => {
+                void notificationStore.markAllRead().then((ok) => {
+                  if (ok) toast.success(t("All notifications marked as read"));
+                  else toast.error("Could not mark notifications as read");
+                });
+              }}
+            >
+              {t("Mark all as read")}
+            </Button>
           }
         />
-      )}
-      <p className="mt-4 text-xs text-muted-foreground">
-        {isDemoMode ? (
-          <>
-            Choose which emails you receive in{" "}
-            <Link
-              to="/settings/notifications"
-              className="text-primary underline underline-offset-4"
+        <div className="flex flex-wrap items-start gap-6">
+          <section
+            aria-label="Notification list"
+            className="min-w-0 flex-[999_1_560px] overflow-hidden rounded-[18px] border bg-surface"
+          >
+            <div
+              role="tablist"
+              aria-label={t("Filter notifications")}
+              className="flex gap-1 border-b px-4"
             >
-              notification settings
-            </Link>
-            .
-          </>
-        ) : (
-          <>
-            Choose which recording lifecycle events create in-app notifications in{" "}
-            <Link
-              to="/settings/notifications"
-              className="text-primary underline underline-offset-4"
-            >
-              notification settings
-            </Link>
-            .
-          </>
-        )}
-      </p>
+              {(["all", "unread"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  role="tab"
+                  aria-selected={filter === f}
+                  onClick={() => setFilter(f)}
+                  className={cn(
+                    "-mb-px inline-flex h-11 items-center gap-1.5 border-b-2 border-transparent px-3 text-sm font-bold text-muted-foreground",
+                    filter === f && "border-primary text-foreground",
+                  )}
+                >
+                  {f === "all" ? t("All") : `${t("Unread")} · ${unread}`}
+                </button>
+              ))}
+            </div>
+            {shown.length ? (
+              shown.map((n) => <NotificationRow key={n.id} notification={n} />)
+            ) : (
+              <div className="flex flex-col items-center gap-2 px-6 py-14 text-center">
+                <span className="grid size-14 place-items-center rounded-[18px] bg-success-subtle text-success">
+                  <CheckCircle2 className="size-7" />
+                </span>
+                <b className="text-lg">
+                  {filter === "unread" ? "You’re all caught up" : "No notifications yet"}
+                </b>
+                <p className="text-sm text-muted-foreground">
+                  {filter === "unread"
+                    ? "New alerts about your channels will show up here."
+                    : "We’ll notify you when recordings start, finish, or need attention."}
+                </p>
+              </div>
+            )}
+          </section>
+          <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-3">
+            <NotificationSettings />
+            <p className="px-1 text-xs text-muted-foreground">
+              <b>Synced across devices</b> —{" "}
+              {"Your notifications and read status are the same on every device."}{" "}
+              {"New ones appear automatically while this page is open."}
+            </p>
+          </aside>
+        </div>
+      </div>
     </AppShell>
+  );
+}
+
+const notificationTone: Record<string, { icon: typeof Bell; className: string; label: string }> = {
+  recording_started: {
+    icon: Radio,
+    className: "bg-recording-subtle text-recording",
+    label: "Recording started",
+  },
+  recording_ready: {
+    icon: CheckCircle2,
+    className: "bg-success-subtle text-success",
+    label: "Recording ready",
+  },
+  recording_failed: {
+    icon: AlertCircle,
+    className: "bg-destructive/10 text-destructive",
+    label: "Recording failed",
+  },
+  quota_warning: {
+    icon: CreditCard,
+    className: "bg-warning-subtle text-warning",
+    label: "Credits",
+  },
+};
+
+function NotificationRow({ notification: n }: { notification: NotificationModel }) {
+  const tone = notificationTone[n.type] ?? {
+    icon: Bell,
+    className: "bg-surface-2 text-muted-foreground",
+    label: "Update",
+  };
+  const Icon = tone.icon;
+  return (
+    <Link
+      {...n.link}
+      onClick={() => void notificationStore.markRead(n.id)}
+      className={cn(
+        "flex items-start gap-3.5 border-b px-5 py-4 last:border-b-0 hover:bg-surface-2 focus-visible:bg-surface-2 focus-visible:outline-none",
+        !n.read && "bg-primary-subtle/50",
+      )}
+    >
+      <span
+        className={cn(
+          "grid size-[38px] shrink-0 place-items-center rounded-[11px]",
+          tone.className,
+        )}
+      >
+        <Icon className="size-[18px]" />
+      </span>
+      <span className="min-w-0 flex-1 space-y-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <b className="text-sm">{n.title}</b>
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+            {tone.label}
+          </span>
+        </span>
+        <span className="block text-sm text-muted-foreground">{n.body}</span>
+      </span>
+      <span className="flex shrink-0 flex-col items-end gap-2">
+        <span className="text-xs text-muted-foreground">{n.time}</span>
+        {!n.read && <span aria-label="Unread" className="size-[9px] rounded-full bg-primary" />}
+      </span>
+    </Link>
   );
 }
 

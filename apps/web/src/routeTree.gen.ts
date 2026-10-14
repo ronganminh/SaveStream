@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AcceptableUseRouteImport } from './routes/acceptable-use'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as BillingRouteImport } from './routes/billing'
 import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -76,6 +77,11 @@ const IndexRoute = IndexRouteImport.update({
 const AcceptableUseRoute = AcceptableUseRouteImport.update({
   id: '/acceptable-use',
   path: '/acceptable-use',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BillingRoute = BillingRouteImport.update({
@@ -362,6 +368,7 @@ const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/acceptable-use': typeof AcceptableUseRoute
+  '/account': typeof AccountRoute
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
@@ -422,6 +429,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/acceptable-use': typeof AcceptableUseRoute
+  '/account': typeof AccountRoute
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -476,6 +484,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/acceptable-use': typeof AcceptableUseRoute
+  '/account': typeof AccountRoute
   '/billing': typeof BillingRouteWithChildren
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
@@ -538,6 +547,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/acceptable-use'
+    | '/account'
     | '/billing'
     | '/channels'
     | '/contact'
@@ -598,6 +608,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/acceptable-use'
+    | '/account'
     | '/contact'
     | '/copyright'
     | '/forgot-password'
@@ -651,6 +662,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/acceptable-use'
+    | '/account'
     | '/billing'
     | '/channels'
     | '/contact'
@@ -712,6 +724,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AcceptableUseRoute: typeof AcceptableUseRoute
+  AccountRoute: typeof AccountRoute
   BillingRoute: typeof BillingRouteWithChildren
   ChannelsRoute: typeof ChannelsRouteWithChildren
   ContactRoute: typeof ContactRoute
@@ -763,6 +776,13 @@ declare module '@tanstack/react-router' {
       path: '/acceptable-use'
       fullPath: '/acceptable-use'
       preLoaderRoute: typeof AcceptableUseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/billing': {
@@ -1274,6 +1294,7 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AcceptableUseRoute: AcceptableUseRoute,
+  AccountRoute: AccountRoute,
   BillingRoute: BillingRouteWithChildren,
   ChannelsRoute: ChannelsRouteWithChildren,
   ContactRoute: ContactRoute,
