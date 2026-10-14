@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import timedelta
 
 from app.application.billing.service import BillingReconciliationService
 from app.infrastructure.db.session import Database
@@ -17,6 +18,11 @@ async def reconcile_payments() -> int:
             return await BillingReconciliationService(
                 session,
                 provider,
+                pending_expiry=(
+                    timedelta(seconds=settings.payment_pending_expiry_seconds)
+                    if settings.payment_pending_expiry_seconds > 0
+                    else None
+                ),
             ).run_once()
     finally:
         await database.close()

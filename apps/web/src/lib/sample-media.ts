@@ -6,9 +6,14 @@ export interface SampleMediaItem {
   title: string;
   mediaUrl: string;
   thumbnailUrl: string;
+  /** Length of the preview clip that actually plays. */
   durationSeconds?: number;
   width: number;
   height: number;
+  /** Full livestream recording the preview was cut from. */
+  sourceDurationSeconds?: number;
+  sourceWidth?: number;
+  sourceHeight?: number;
 }
 
 export const sampleMedia: SampleMediaItem[] = [
@@ -18,9 +23,12 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 1",
     "mediaUrl": "/samples/video-01.mp4",
     "thumbnailUrl": "/samples/video-01.webp",
-    "durationSeconds": 1412.5,
-    "width": 640,
-    "height": 1280
+    "durationSeconds": 8,
+    "width": 960,
+    "height": 540,
+    "sourceDurationSeconds": 1412.5,
+    "sourceWidth": 640,
+    "sourceHeight": 1280
   },
   {
     "id": "video-02",
@@ -28,9 +36,12 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 2",
     "mediaUrl": "/samples/video-02.mp4",
     "thumbnailUrl": "/samples/video-02.webp",
-    "durationSeconds": 1869.4,
-    "width": 640,
-    "height": 1280
+    "durationSeconds": 8,
+    "width": 960,
+    "height": 540,
+    "sourceDurationSeconds": 1869.4,
+    "sourceWidth": 640,
+    "sourceHeight": 1280
   },
   {
     "id": "video-03",
@@ -38,9 +49,12 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 3",
     "mediaUrl": "/samples/video-03.mp4",
     "thumbnailUrl": "/samples/video-03.webp",
-    "durationSeconds": 2151.7,
-    "width": 640,
-    "height": 1280
+    "durationSeconds": 8,
+    "width": 960,
+    "height": 540,
+    "sourceDurationSeconds": 2151.7,
+    "sourceWidth": 640,
+    "sourceHeight": 1280
   },
   {
     "id": "video-04",
@@ -48,8 +62,11 @@ export const sampleMedia: SampleMediaItem[] = [
     "title": "Recorded livestream sample 4",
     "mediaUrl": "/samples/video-04.mp4",
     "thumbnailUrl": "/samples/video-04.webp",
-    "durationSeconds": 1704.4,
-    "width": 640,
-    "height": 1280
+    "durationSeconds": 8,
+    "width": 960,
+    "height": 540,
+    "sourceDurationSeconds": 1704.4,
+    "sourceWidth": 640,
+    "sourceHeight": 1280
   }
 ];

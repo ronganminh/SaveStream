@@ -159,7 +159,7 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                 first = await service.create(
                     principal,
                     CreateWatchRequest(
-                        source=Source(type="username", value="creator-one"),
+                        source=Source(type="username", value="creator_one"),
                         auto_record=True,
                     ),
                 )
@@ -188,7 +188,7 @@ def test_live_watches_dedupe_room_session_and_respect_user_concurrency(tmp_path)
                 third = await service.create(
                     principal,
                     CreateWatchRequest(
-                        source=Source(type="username", value="creator-three"),
+                        source=Source(type="username", value="creator_three"),
                         auto_record=True,
                     ),
                 )

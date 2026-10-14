@@ -349,3 +349,78 @@ def test_reconciliation_confirms_payment_without_browser_redirect_trust(tmp_path
             await database.close()
 
     asyncio.run(run())
+
+
+class PendingForeverProvider(FakePaymentProvider):
+    """Provider that never reports the abandoned checkout as paid."""
+
+    async def retrieve_payment(self, provider_reference: str) -> ProviderPaymentState | None:
+        return ProviderPaymentState(
+            event_id=f"pending-{provider_reference}",
+            status="pending",
+            provider_reference=provider_reference,
+            amount_minor=1000,
+            currency="USD",
+        )
+
+
+def test_reconciliation_expires_abandoned_pending_orders(tmp_path) -> None:
+    async def run() -> None:
+        from datetime import timedelta
+
+        settings = identity_settings(
+            f"sqlite+aiosqlite:///{tmp_path / 'reconcile-expire.db'}"
+        )
+        database = Database(settings.database_url)
+        try:
+            async with database.engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+            async with database.session() as session:
+                user, package = await _seed_user_and_package(session, settings)
+                provider = PendingForeverProvider(settings)
+                service = BillingService(session, settings, provider)
+                orders = []
+                for _ in range(2):
+                    order = await service.create_order(
+                        user_id=user.id,
+                        package_id=str(package.id),
+                        idempotency_key=str(uuid.uuid4()),
+                    )
+                    await service.checkout(
+                        user_id=user.id,
+                        payment_order_id=str(order.id),
+                        return_url="https://example.test/success",
+                        idempotency_key=str(uuid.uuid4()),
+                    )
+                    orders.append(order)
+                stale, fresh = orders
+                stale.updated_at = utcnow() - timedelta(days=3)
+                await session.commit()
+
+                await BillingReconciliationService(
+                    session,
+                    provider,
+                    pending_expiry=timedelta(hours=24),
+                ).run_once()
+                await session.refresh(stale)
+                await session.refresh(fresh)
+                assert stale.status == "expired"
+                assert stale.failure_code == "payment.expired"
+                assert fresh.status == "pending"
+
+                # A stale order the provider reports as paid is never expired.
+                paid_provider = ReconcileProvider(settings)
+                fresh.updated_at = utcnow() - timedelta(days=3)
+                fresh.provider = paid_provider.name
+                await session.commit()
+                await BillingReconciliationService(
+                    session,
+                    paid_provider,
+                    pending_expiry=timedelta(hours=24),
+                ).run_once()
+                await session.refresh(fresh)
+                assert fresh.status == "paid"
+        finally:
+            await database.close()
+
+    asyncio.run(run())

@@ -67,6 +67,7 @@ class OperationsService:
                 select(func.count())
                 .select_from(Recording)
                 .where(
+                    Recording.deleted_at.is_(None),
                     Recording.status == "failed",
                     Recording.updated_at >= failed_since,
                 )

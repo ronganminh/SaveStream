@@ -1,0 +1,82 @@
+name: Deploy Web
+
+# Builds apps/web in production mode and deploys it to Cloudflare Workers
+# (savestream.online), then smoke-checks the live site.
+#
+# Run manually (Actions tab or API). It also runs after Web CI succeeds on
+# main when the repository variable AUTO_DEPLOY_WEB is "true".
+#
+# Secrets (repository or the "production" environment):
+#   CLOUDFLARE_API_TOKEN   token with "Workers Scripts: Edit" on the account
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
+#   WEB_ENV_PRODUCTION     full contents of apps/web/.env.production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy"
+        default: main
+  workflow_run:
+    workflows: ["Web CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-web-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.AUTO_DEPLOY_WEB == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.workflow_run.head_sha || 'main' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Write .env.production
+        env:
+          WEB_ENV_PRODUCTION: ${{ secrets.WEB_ENV_PRODUCTION }}
+        run: |
+          test -n "$WEB_ENV_PRODUCTION" || { echo "WEB_ENV_PRODUCTION secret is missing"; exit 1; }
+          printf '%s\n' "$WEB_ENV_PRODUCTION" > apps/web/.env.production
+          # Without these the build silently falls back to Demo mode.
+          grep -Eq '^VITE_APP_MODE=production\s*$' apps/web/.env.production \
+            || { echo "VITE_APP_MODE=production missing"; exit 1; }
+          grep -Eq '^VITE_API_BASE_URL=https://api\.savestream\.online/?\s*$' apps/web/.env.production \
+            || { echo "VITE_API_BASE_URL is not https://api.savestream.online"; exit 1; }
+          sed -E 's/=.*/=***/' apps/web/.env.production
+
+      - run: npm install --no-audit --no-fund
+      - run: npm --workspace apps/web run typecheck
+      - run: npm --workspace apps/web run build
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npm --workspace apps/web run deploy
+
+      - name: Smoke check savestream.online
+        run: |
+          for path in / /sign-in /pricing; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "https://savestream.online${path}")"
+            echo "${path} -> ${code}"
+            test "$code" = 200
+          done
+          curl -fsS https://api.savestream.online/v1/public/pricing > /dev/null
+
+      - name: Remove .env.production
+        if: always()
+        run: rm -f apps/web/.env.production

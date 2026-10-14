@@ -178,6 +178,7 @@ from app.application.identity.service import ip_hint
 from app.application.privacy.service import PrivacyService
 from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditAdminService
+from app.application.watches.resume import resume_credit_paused_watches
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
 from app.infrastructure.db.admin_models import AdminComplaintCase, AdminSupportReport
@@ -1551,6 +1552,10 @@ async def adjust_admin_credit(
         counts_as_purchase=payload.counts_as_purchase,
         commit=False,
     )
+    if payload.amount > 0:
+        # Same as purchases, promotions and bulk grants: Watches paused for
+        # lack of cloud minutes resume once minutes are posted.
+        await resume_credit_paused_watches(session, user.id)
     await AuditService(session).record(
         actor_user_id=principal.user_id,
         actor_role=principal.role,

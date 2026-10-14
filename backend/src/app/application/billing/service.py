@@ -940,14 +940,25 @@ class BillingAdminService:
 
 
 class BillingReconciliationService:
+    """Settles provider state for pending orders and refunds.
+
+    Web orders whose checkout was abandoned stay ``pending`` at the provider
+    (PayPal ``CREATED``/``APPROVED`` without a capture) forever, so orders
+    untouched for ``pending_expiry`` are expired unless the provider reports
+    them paid.
+    """
+
     def __init__(
         self,
         session: AsyncSession,
         provider: PaymentProvider,
+        *,
+        pending_expiry: timedelta | None = timedelta(hours=24),
     ) -> None:
         self.session = session
         self.provider = provider
         self.processor = PaymentEventProcessor(session, provider)
+        self.pending_expiry = pending_expiry
 
     async def run_once(self, *, limit: int = 100) -> int:
         processed = await self.processor.reprocess_pending(limit=limit)
@@ -1000,6 +1011,8 @@ class BillingReconciliationService:
                 )
                 processed += int(accepted)
 
+        processed += await self._expire_abandoned_orders(limit=limit)
+
         refunds = list(
             (
                 await self.session.scalars(
@@ -1046,3 +1059,42 @@ class BillingReconciliationService:
             )
             processed += int(accepted)
         return processed
+
+    async def _expire_abandoned_orders(self, *, limit: int) -> int:
+        if self.pending_expiry is None:
+            return 0
+        cutoff = utcnow() - self.pending_expiry
+        stale = list(
+            (
+                await self.session.scalars(
+                    select(PaymentOrder)
+                    .where(
+                        PaymentOrder.provider == self.provider.name,
+                        PaymentOrder.status.in_(
+                            [PaymentStatus.CREATED.value, PaymentStatus.PENDING.value]
+                        ),
+                        PaymentOrder.updated_at <= cutoff,
+                    )
+                    .order_by(PaymentOrder.updated_at)
+                    .limit(limit)
+                )
+            ).all()
+        )
+        expired = 0
+        for order in stale:
+            if order.provider_reference:
+                try:
+                    state = await self.provider.retrieve_payment(order.provider_reference)
+                except Exception:
+                    # Provider unreachable: never expire an order we could not check.
+                    continue
+                if state is not None and state.status == "paid":
+                    continue
+            current = PaymentStatus(order.status)
+            order.status = transition_payment(current, PaymentStatus.EXPIRED).value
+            order.failure_code = "payment.expired"
+            order.failure_message = "checkout abandoned; expired by reconciliation"
+            expired += 1
+        if expired:
+            await self.session.commit()
+        return expired

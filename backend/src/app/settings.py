@@ -172,6 +172,7 @@ class AppSettings:
     lemon_squeezy_variant_id: str = ""
     payment_timeout_seconds: float = 15.0
     payment_reconcile_seconds: int = 300
+    payment_pending_expiry_seconds: int = 86_400
     metrics_token: str = field(default="savestream-local-metrics", repr=False)
     ops_alert_email: str = ""
     ops_alert_check_seconds: int = 60
@@ -640,6 +641,9 @@ class AppSettings:
             lemon_squeezy_variant_id=lemon_squeezy_variant_id,
             payment_timeout_seconds=_float_env("PAYMENT_TIMEOUT_SECONDS", 15.0),
             payment_reconcile_seconds=_int_env("PAYMENT_RECONCILE_SECONDS", 300),
+            payment_pending_expiry_seconds=_int_env(
+                "PAYMENT_PENDING_EXPIRY_SECONDS", 86_400
+            ),
             metrics_token=metrics_token,
             ops_alert_email=_env("OPS_ALERT_EMAIL", ""),
             ops_alert_check_seconds=_int_env("OPS_ALERT_CHECK_SECONDS", 60),

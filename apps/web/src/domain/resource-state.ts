@@ -31,7 +31,7 @@ export function recordingLifecycle(recording: Recording): RecordingLifecycle {
 }
 
 export function channelLifecycle(channel: Channel): ChannelLifecycle {
-  if (channel.status === "Recording") return "live";
+  if (channel.status === "Recording" || channel.status === "Live") return "live";
   if (channel.status === "Paused") return "paused";
   if (channel.status === "Error") return "error";
   if (channel.status === "Offline") return "offline";

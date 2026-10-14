@@ -316,6 +316,10 @@ def main() -> int:
         clip_seconds = min(args.clip_seconds, candidate.duration)
         clip_start = max(0.0, min(candidate.best_time - clip_seconds / 2.0, max(candidate.duration - clip_seconds, 0.0)))
         create_clip(candidate.path, clip_start, args.public_dir / clip_name, clip_seconds)
+        # Describe the clip that actually plays; keep the full recording's
+        # metadata separately so the page can say "preview of a 23m recording".
+        clip_meta = ffprobe(args.public_dir / clip_name)
+        clip_stream = (clip_meta.get("streams") or [{}])[0]
         items.append(
             {
                 "id": stem,
@@ -323,9 +327,14 @@ def main() -> int:
                 "title": f"Recorded livestream sample {index}",
                 "mediaUrl": f"/samples/{clip_name}",
                 "thumbnailUrl": f"/samples/{thumb_name}",
-                "durationSeconds": round(candidate.duration, 1),
-                "width": candidate.width,
-                "height": candidate.height,
+                "durationSeconds": round(
+                    float(clip_meta.get("format", {}).get("duration") or clip_seconds), 1
+                ),
+                "width": int(clip_stream.get("width") or 0),
+                "height": int(clip_stream.get("height") or 0),
+                "sourceDurationSeconds": round(candidate.duration, 1),
+                "sourceWidth": candidate.width,
+                "sourceHeight": candidate.height,
             }
         )
         report.append(

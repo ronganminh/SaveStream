@@ -1,6 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { AsyncResourceState } from "@/domain/resource-state";
-import { isDemoMode } from "@/lib/app-config";
+import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
 import { repositories, type RecordingModel } from "@/repositories";
 import { useSignedIn } from "@/hooks/use-signed-in";
 
@@ -161,6 +161,22 @@ export function usePublicPricingData() {
     staleTime: 5 * 60_000,
   });
   return { query, state: toResourceState(query, (data) => data.packages.length === 0) };
+}
+
+/**
+ * Purchase channels the backend currently accepts. The `payment_web_enabled`
+ * (and store) runtime flags plus provider readiness are the single source of
+ * truth for /billing and /pricing; closed until the catalog has loaded.
+ */
+export function useCheckoutChannels() {
+  const { query } = usePublicPricingData();
+  const checkout = query.data?.checkout;
+  return {
+    web: billingCheckoutEnabled && (checkout?.web ?? false),
+    appStore: checkout?.app_store ?? false,
+    googlePlay: checkout?.google_play ?? false,
+    loading: query.isLoading,
+  };
 }
 
 export function useCreditPackagesData(enabled = true) {

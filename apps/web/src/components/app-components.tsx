@@ -237,6 +237,7 @@ export function PlatformBadge({ soon = false }: { soon?: boolean }) {
 }
 const statusStyles: Record<Status, string> = {
   Recording: "border-recording/20 bg-recording-subtle text-recording",
+  Live: "border-recording/20 bg-surface text-recording",
   Processing: "border-info/20 bg-info-subtle text-info",
   Ready: "border-success/20 bg-success-subtle text-success",
   Waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
@@ -758,7 +759,46 @@ export function ActiveRecordingCard() {
   const { query: activeQuery, state: activeState } = useActiveRecordingData();
   const recording = activeQuery.data;
 
-  if (activeState.kind === "empty")
+  if (activeState.kind === "empty") {
+    // Describe what is really happening instead of always promising that
+    // recording "will start automatically".
+    const channels = channelsQuery.data ?? [];
+    const monitored = channels.filter((item) => item.monitoring);
+    const liveNotRecording = channels.filter((item) => item.status === "Live");
+    const autoRecording = monitored.filter((item) => item.autoRecord);
+    let body: string;
+    let action: ReactNode = null;
+    if (channels.length === 0) {
+      body = t("You have no channels yet. Add a TikTok channel to start monitoring.");
+      action = (
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/channels">{t("Add channel")}</Link>
+        </Button>
+      );
+    } else if (liveNotRecording.length > 0) {
+      const first = liveNotRecording[0]!;
+      body =
+        liveNotRecording.length === 1
+          ? `${first.handle} is LIVE but not being recorded. ${first.liveReason ?? ""}`.trim()
+          : `${liveNotRecording.length} channels are LIVE but not being recorded.`;
+      action = (
+        <Button size="sm" variant="outline" asChild>
+          <Link to="/channels/$id" params={{ id: first.id }}>
+            {t("View channel")}
+          </Link>
+        </Button>
+      );
+    } else if (monitored.length === 0) {
+      body = t("Monitoring is paused for all your channels. Resume a channel to get LIVE alerts.");
+    } else if (autoRecording.length === 0) {
+      body = t(
+        "We’re monitoring your channels and will notify you when one goes live. Automatic recording is off.",
+      );
+    } else {
+      body = t(
+        "We’re monitoring your enabled channels. Recording will start automatically when one goes live.",
+      );
+    }
     return (
       <section className="border-y bg-surface px-5 py-8">
         <div className="flex items-start gap-4">
@@ -767,15 +807,13 @@ export function ActiveRecordingCard() {
           </span>
           <div>
             <h2 className="font-semibold">{t("No active recordings")}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t(
-                "We’re monitoring your enabled channels. Recording will start automatically when one goes live.",
-              )}
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{body}</p>
+            {action && <div className="mt-3">{action}</div>}
           </div>
         </div>
       </section>
     );
+  }
 
   if (activeState.kind === "loading") {
     return <div className="h-44 animate-pulse rounded-lg border bg-muted" aria-busy="true" />;
@@ -1322,7 +1360,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       setPhase("success");
       toast.success(`Monitoring ${parsed.handle}`, {
         description: isFree
-          ? "Free accounts monitor up to 3 channels. Buy hours to enable automatic cloud recording."
+          ? "Free accounts monitor up to 3 channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
           : "We’ll record automatically when this channel goes live.",
       });
     } catch (error) {
@@ -1396,7 +1434,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogDescription className="mt-2">
               {handle} is now monitored.{" "}
               {isFree
-                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Buy hours to enable automatic cloud recording."
+                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
                 : "Recording starts automatically on our servers when the channel goes live."}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
@@ -2172,9 +2210,14 @@ export function PasswordInput({ className, ...props }: Omit<ComponentProps<typeo
   const { t } = usePreferences();
   const [visible, setVisible] = useState(false);
   const Icon = visible ? EyeOff : Eye;
+  const invalid = props["aria-invalid"] === true || props["aria-invalid"] === "true";
   return (
     <div className={cn("relative", className)}>
-      <Input {...props} type={visible ? "text" : "password"} className="pr-10" />
+      <Input
+        {...props}
+        type={visible ? "text" : "password"}
+        className={cn("pr-10", invalid && "border-destructive focus-visible:ring-destructive")}
+      />
       <button
         type="button"
         onClick={() => setVisible((v) => !v)}
@@ -2196,6 +2239,7 @@ export function PasswordField({
   onChange,
   showStrength = false,
   autoComplete = "new-password",
+  error,
 }: {
   label?: string;
   id: string;
@@ -2203,6 +2247,7 @@ export function PasswordField({
   onChange: (v: string) => void;
   showStrength?: boolean;
   autoComplete?: string;
+  error?: string | null | undefined;
 }) {
   const { t } = usePreferences();
   const score = [
@@ -2224,7 +2269,14 @@ export function PasswordField({
         onChange={(e) => onChange(e.target.value)}
         placeholder="Password"
         autoComplete={autoComplete}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
+      {error && (
+        <p id={`${id}-error`} className="mt-1.5 text-xs text-destructive">
+          {t(error)}
+        </p>
+      )}
       {showStrength &&
         (value ? (
           <div className="mt-2">

@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
 import { Download, ExternalLink, RefreshCw, RotateCcw, Square, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -28,7 +29,7 @@ import {
 } from "@/repositories/admin-api";
 
 function dateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString("en-US") : "—";
+  return formatAdminDateTime(value);
 }
 
 function channelLabel(recording: RecordingResponse) {

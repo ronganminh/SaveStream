@@ -154,6 +154,12 @@ const vi: Record<string, string> = {
     "Trang này tự động cập nhật khi bản ghi được xử lý.",
   "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.":
     "Mua giờ đám mây một lần và dùng khi các kênh phát trực tiếp. Không thuê bao, không phí định kỳ.",
+  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.":
+    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng Android qua Google Play.",
+  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.":
+    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng iOS qua App Store.",
+  "Online checkout is not open yet. Your free trial credits work as usual.":
+    "Thanh toán trực tuyến chưa mở. Credit dùng thử miễn phí của bạn vẫn hoạt động bình thường.",
   "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.":
     "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng qua App Store hoặc Google Play.",
   "Free web accounts get 10 trial credits after email verification and can monitor up to 3 channels.":
@@ -398,6 +404,17 @@ const vi: Record<string, string> = {
     "Màn hình này chưa khả dụng ở chế độ production cho đến khi xác thực và API được kết nối.",
   "Back to sign in": "Quay lại đăng nhập",
   "Coming soon": "Sắp ra mắt",
+  "Email is required.": "Vui lòng nhập email.",
+  "Password is required.": "Vui lòng nhập mật khẩu.",
+  "You have no channels yet. Add a TikTok channel to start monitoring.": "Bạn chưa có kênh nào. Thêm một kênh TikTok để bắt đầu theo dõi.",
+  "Monitoring is paused for all your channels. Resume a channel to get LIVE alerts.": "Tất cả kênh đang tạm dừng theo dõi. Tiếp tục theo dõi một kênh để nhận thông báo LIVE.",
+  "We’re monitoring your channels and will notify you when one goes live. Automatic recording is off.": "Chúng tôi đang theo dõi các kênh của bạn và sẽ báo khi có kênh phát trực tiếp. Tự động ghi đang tắt.",
+  "No channels yet": "Chưa có kênh nào",
+  "Add a TikTok channel and SaveStream will notify you when it goes live.": "Thêm một kênh TikTok và SaveStream sẽ báo cho bạn khi kênh phát trực tiếp.",
+  "Original resolution": "Độ phân giải gốc",
+  "Preview clip": "Đoạn xem trước",
+  "Full recording": "Bản ghi đầy đủ",
+  "Preview": "Xem trước",
   "Saved channels": "Kênh đã lưu",
   "Monitored channels": "Kênh được theo dõi",
   "Simultaneous recordings": "Bản ghi đồng thời",

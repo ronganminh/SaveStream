@@ -8,6 +8,7 @@ class StrictModel(BaseModel):
 class OperationalSnapshotResponse(StrictModel):
     active_recordings: int
     failed_recordings_recent: int
+    failed_recordings_window_seconds: int = 900
     pending_outbox_events: int
     unprocessed_payment_events: int
     pending_payment_orders: int

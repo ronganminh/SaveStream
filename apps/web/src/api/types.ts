@@ -31,6 +31,9 @@ export type WatchResponse = {
   status: WatchStatusValue;
   live_status: LiveStatusValue;
   auto_record: boolean;
+  auto_record_state?: "off" | "active" | "paused_no_cloud_minutes" | "waiting_for_cloud_slot";
+  active_recording_id?: string | null;
+  active_recording_status?: string | null;
   last_checked_at: string | null;
   next_check_at: string | null;
   last_live_at: string | null;
@@ -268,6 +271,8 @@ export type PublicPricingResponse = {
   max_concurrent_recordings_per_user: number | null;
   recording_retention_days: number | null;
   trial_recording_retention_days: number | null;
+  /** Purchase channels open right now (admin flag + provider readiness). */
+  checkout?: { web: boolean; app_store: boolean; google_play: boolean };
 };
 
 export type PaymentStatusValue =
@@ -397,6 +402,7 @@ export type AuditLogListResponse = {
 export type OperationalSnapshotResponse = {
   active_recordings: number;
   failed_recordings_recent: number;
+  failed_recordings_window_seconds?: number;
   pending_outbox_events: number;
   unprocessed_payment_events: number;
   pending_payment_orders: number;

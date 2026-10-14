@@ -7,7 +7,26 @@ from app.api.schemas.watches import (
     WatchResponse,
     WatchStatusValue,
 )
+from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
+
+
+def active_recording_for(
+    watch: Watch,
+    recordings: list[Recording],
+) -> Recording | None:
+    """Match an in-flight Recording to a Watch by room id or creator handle."""
+    room_id = watch.resolved_room_id
+    username = (watch.resolved_username or "").lower() or None
+    for recording in recordings:
+        if room_id and (
+            recording.room_id == room_id
+            or (recording.source_type == "room_id" and recording.source_value == room_id)
+        ):
+            return recording
+        if username and (recording.resolved_username or "").lower() == username:
+            return recording
+    return None
 
 
 def watch_response(
@@ -16,6 +35,7 @@ def watch_response(
     is_pro: bool | None = None,
     has_purchased: bool | None = None,
     waiting_for_cloud_slot: bool = False,
+    active_recording: Recording | None = None,
 ) -> WatchResponse:
     creator = None
     if watch.resolved_username:
@@ -47,6 +67,12 @@ def watch_response(
         live_status=cast(LiveStatusValue, watch.live_status),
         auto_record=watch.auto_record,
         auto_record_state=auto_record_state,
+        active_recording_id=(
+            str(active_recording.id) if active_recording is not None else None
+        ),
+        active_recording_status=(
+            active_recording.status if active_recording is not None else None
+        ),
         notify_on_live=watch.notify_on_live,
         last_checked_at=watch.last_checked_at,
         next_check_at=watch.next_check_at,

@@ -9603,6 +9603,16 @@
             "$ref": "#/components/schemas/AutoRecordState",
             "default": "off",
             "description": "Derived V2 state. B1 implements off/active/paused_no_cloud_minutes; B2 implements waiting_for_cloud_slot."
+          },
+          "active_recording_id": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "ID of the in-flight Recording job for this channel. Null when no recording job exists, even if live_status is live."
+          },
+          "active_recording_status": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Status of the in-flight Recording job (queued, resolving, waiting_live, recording, stop_requested)."
           }
         },
         "additionalProperties": false
@@ -10381,6 +10391,16 @@
             ],
             "minimum": 1,
             "description": "Days finished recordings are kept for trial-only accounts; null keeps them until deleted."
+          },
+          "checkout": {
+            "type": "object",
+            "description": "Purchase channels open right now: the admin runtime flag is on and the provider is configured. Clients must only offer these channels.",
+            "properties": {
+              "web": {"type": "boolean", "default": false},
+              "app_store": {"type": "boolean", "default": false},
+              "google_play": {"type": "boolean", "default": false}
+            },
+            "additionalProperties": false
           }
         },
         "additionalProperties": false

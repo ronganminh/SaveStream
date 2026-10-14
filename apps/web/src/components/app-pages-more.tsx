@@ -1775,9 +1775,9 @@ function ProductionAdminWorkersPage() {
           icon={Clock3}
         />
         <StatCard
-          label="Recent failures"
+          label={`Recent failures (${failureWindowLabel(data.failed_recordings_window_seconds ?? 900)})`}
           value={String(data.failed_recordings_recent)}
-          detail="Backend failure window"
+          detail="Live count. Admin Overview shows the last 24h, refreshed hourly"
           icon={AlertTriangle}
         />
         <StatCard
@@ -1801,6 +1801,11 @@ function ProductionAdminWorkersPage() {
 }
 
 /* ---------------- Admin: workers ---------------- */
+function failureWindowLabel(seconds: number) {
+  if (seconds % 3600 === 0) return `last ${seconds / 3600}h`;
+  return `last ${Math.max(1, Math.round(seconds / 60))} min`;
+}
+
 function WorkerBadge({ status }: { status: WorkerStatus }) {
   if (status === "Recording" || status === "Processing") return <StatusBadge status={status} />;
   const s = {

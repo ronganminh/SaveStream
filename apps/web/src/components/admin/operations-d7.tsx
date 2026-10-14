@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
 import { Download, RefreshCw, Send, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ function bytes(value: number) {
 }
 
 function dateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString("en-US") : "—";
+  return formatAdminDateTime(value);
 }
 
 function downloadText(filename: string, content: string) {
