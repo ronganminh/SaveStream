@@ -134,7 +134,7 @@ for (const email of [
 ]) {
   if (!legal.includes(email)) fail(`legal pages: missing ${email}`);
 }
-for (const provider of ["Cloudflare", "VNPT", "Brevo", "Merchant of Record"]) {
+for (const provider of ["Cloudflare", "Brevo", "PayPal"]) {
   if (
     !between(legal, "export function PrivacyPage", "export function AcceptableUsePage").includes(
       provider,

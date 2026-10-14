@@ -3282,6 +3282,8 @@ function DemoAdminErrorsPage() {
 
 /* ---------------- Public: legal, refund, contact ---------------- */
 const LEGAL_LAST_UPDATED = "October 5, 2026";
+// Terms, Privacy and Refund were revised for the web-only, PayPal-only scope.
+const LEGAL_REVISED_2026_10_14 = "October 14, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
 const ABUSE_EMAIL = "abuse@savestream.online";
@@ -3328,17 +3330,19 @@ export function LegalPage({
   title,
   intro,
   sections,
+  lastUpdated = LEGAL_LAST_UPDATED,
 }: {
   title: string;
   intro: ReactNode;
   sections: LegalSection[];
+  lastUpdated?: string;
 }) {
   const { t } = usePreferences();
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <p className="text-xs text-muted-foreground">Last updated {LEGAL_LAST_UPDATED}</p>
+        <p className="text-xs text-muted-foreground">Last updated {lastUpdated}</p>
         <h1 className="mt-2 text-3xl font-semibold">{title}</h1>
         <div className="mt-3 text-muted-foreground">{intro}</div>
         <div className="mt-10 space-y-8">
@@ -3360,10 +3364,10 @@ export function LegalPage({
 const authorized =
   "You may only add and record livestreams from TikTok channels that you own, manage, or have explicit permission from the rights holder to record and archive.";
 export function TermsPage() {
-  const { t } = usePreferences();
   return (
     <LegalPage
       title="Terms of Use"
+      lastUpdated={LEGAL_REVISED_2026_10_14}
       intro={
         <p>
           These Terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a software and cloud
@@ -3423,7 +3427,9 @@ export function TermsPage() {
           h: "Your account",
           p: (
             <p>
-              You are responsible for your account, credentials, activity, and the sources you add.
+              You must be at least 18 years old, the minimum age TikTok requires to host a LIVE, to
+              create an account or use SaveStream. You are responsible for your account,
+              credentials, activity, and the sources you add.
               Keep your credentials secure and contact <MailLink email={SUPPORT_EMAIL} /> if you
               believe your account has been compromised.
             </p>
@@ -3441,20 +3447,9 @@ export function TermsPage() {
               </p>
               <p>
                 Purchasing credits does not grant intellectual-property rights in content processed
-                or stored through SaveStream. Web checkout may be processed by a third-party payment
-                provider or Merchant of Record identified at checkout. Mobile purchases are
-                processed by the App Store or Google Play.
+                or stored through SaveStream. Purchases are processed by PayPal.
               </p>
             </>
-          ),
-        },
-        {
-          h: t("Free mobile advertising"),
-          p: (
-            <p>
-              The Free mobile app may show banner and rewarded ads. Advertising supports the local
-              app experience and does not grant rights to any third-party content.
-            </p>
           ),
         },
         {
@@ -3493,8 +3488,8 @@ export function TermsPage() {
           h: "Availability and third-party services",
           p: (
             <p>
-              SaveStream depends on networks, hosting providers, app stores, payment providers, and
-              third-party platforms we do not control. We do not guarantee that every source will
+              SaveStream depends on networks, hosting providers, payment providers, and third-party
+              platforms we do not control. We do not guarantee that every source will
               remain technically available or that every recording request will complete without
               interruption.
             </p>
@@ -3533,14 +3528,14 @@ export function TermsPage() {
   );
 }
 export function PrivacyPage() {
-  const { t } = usePreferences();
   return (
     <LegalPage
       title="Privacy Policy"
+      lastUpdated={LEGAL_REVISED_2026_10_14}
       intro={
         <p>
           This Privacy Policy explains how SaveStream processes personal information across our
-          website, mobile apps, API, recording workers, and cloud storage services. Contact{" "}
+          website, API, recording workers, and cloud storage services. Contact{" "}
           <MailLink email={PRIVACY_EMAIL} /> with privacy questions or requests.
         </p>
       }
@@ -3561,14 +3556,17 @@ export function PrivacyPage() {
                 media files.
               </li>
               <li>
-                Billing records, purchased credits, order references, and app-store transaction
+                Billing records, purchased credits, order references, and PayPal transaction
                 references.
               </li>
               <li>
-                Device, browser, IP address, push token, locale, diagnostics, security logs, and
-                audit events.
+                Device, browser, IP address, locale, diagnostics, security logs, and audit events.
               </li>
               <li>Support, abuse, privacy, and copyright communications you send to us.</li>
+              <li>
+                Partner Program applications, including your name, email, TikTok handle, other
+                channel links, niche, story, photo or logo, and consent records.
+              </li>
             </ul>
           ),
         },
@@ -3608,45 +3606,17 @@ export function PrivacyPage() {
           p: (
             <p>
               We may share the minimum necessary information with providers that help operate
-              SaveStream, including Cloudflare for website infrastructure and object storage, VNPT
-              for server infrastructure, Brevo for transactional email, Apple App Store or Google
-              Play for mobile purchases, and the web payment provider or Merchant of Record
-              identified at checkout. We may also disclose information when required by law, to
-              protect rights or safety, or to investigate abuse, fraud, or infringement.
-              Payment-card details are processed by the applicable payment provider and are not
-              stored by SaveStream in full.
+              SaveStream, including Cloudflare for website infrastructure and object storage, server
+              hosting providers, Brevo for transactional email, and PayPal for payments. We may also
+              disclose information when required by law, to protect rights or safety, or to
+              investigate abuse, fraud, or infringement. Payment-card details are processed by
+              PayPal and are not stored by SaveStream in full.
             </p>
           ),
         },
         {
-          h: "Cookies, device data, and advertising",
-          p: (
-            <p>
-              The website uses essential session and preference storage. Mobile devices may register
-              a push token, platform, and locale so SaveStream can deliver notifications and open
-              the correct screen.
-            </p>
-          ),
-        },
-        {
-          h: t("Advertising in the Free mobile app"),
-          p: (
-            <p>
-              The Free mobile app may use advertising services for banner and rewarded ads. Those
-              services may receive device or advertising identifiers needed to deliver and verify
-              ads, subject to device settings and applicable law.
-            </p>
-          ),
-        },
-        {
-          h: "App-store purchases",
-          p: (
-            <p>
-              Apple App Store or Google Play may process one-time mobile purchases, transaction
-              identifiers, and store-managed refunds. SaveStream does not receive your full payment
-              card number from those stores.
-            </p>
-          ),
+          h: "Cookies and device data",
+          p: <p>The website uses essential session and preference storage.</p>,
         },
         {
           h: "Retention and deletion",
@@ -3684,7 +3654,22 @@ export function PrivacyPage() {
           h: "Children",
           p: (
             <p>
-              SaveStream is not intended for children and we do not knowingly collect their data.
+              SaveStream is intended only for people who are at least 18 years old, the minimum age
+              TikTok requires to host a LIVE. We do not knowingly collect personal information from
+              anyone under 18. If we learn that we have, we will delete it.
+            </p>
+          ),
+        },
+        {
+          h: "Creator stories and Partner Program",
+          p: (
+            <p>
+              If you apply to the SaveStream Partner Program, we process the information you submit
+              to review your application and contact you. With your written consent, we may publish
+              your name, handle, image, story, and selected clips from your own recordings on the
+              SaveStream website. We keep a record of that consent. You can withdraw consent at any
+              time by emailing <MailLink email={PRIVACY_EMAIL} />. We will then remove your story
+              from our website, but we cannot recall copies that others made before removal.
             </p>
           ),
         },
@@ -3897,15 +3882,15 @@ export function RefundPage() {
   return (
     <LegalPage
       title="Refund Policy"
+      lastUpdated={LEGAL_REVISED_2026_10_14}
       intro={<p>This policy explains how to request a refund for a SaveStream credit purchase.</p>}
       sections={[
         {
           h: "Who processes payments",
           p: (
             <p>
-              Credit purchases are processed by our authorized Merchant of Record (MoR). Your order
-              receipt is issued by the applicable authorized MoR, and the provider terms presented
-              at checkout also apply to your purchase.
+              Web credit purchases are processed by PayPal. Your payment receipt is issued by
+              PayPal, and PayPal&apos;s terms also apply to your payment.
             </p>
           ),
         },
@@ -3918,7 +3903,7 @@ export function RefundPage() {
               </p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>the email address of your SaveStream account;</li>
-                <li>the order number from your authorized Merchant of Record (MoR) receipt;</li>
+                <li>the PayPal transaction ID from your receipt;</li>
                 <li>the reason for your request.</li>
               </ul>
             </>
@@ -3929,8 +3914,8 @@ export function RefundPage() {
           p: (
             <p>
               We review every request individually and reply by email. Refunds are not issued
-              automatically. When a refund is approved, it is issued through our authorized Merchant
-              of Record (MoR) to your original payment method, and the credits from that purchase
+              automatically. When a refund is approved, it is issued through PayPal to your original
+              payment method, and the credits from that purchase
               are removed from your balance. Credits that have already been used for recordings may
               reduce or rule out a refund.
             </p>

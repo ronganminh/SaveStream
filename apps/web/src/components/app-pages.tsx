@@ -861,7 +861,11 @@ export function AuthPage({
     email?: string | undefined;
     password?: string | undefined;
     confirm?: string | undefined;
+    agree?: string | undefined;
   }>({});
+  // Sign-up requires confirming age (18+, TikTok's LIVE minimum) and the legal terms.
+  const [agreed, setAgreed] = useState(false);
+  const agreementError = "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
@@ -891,6 +895,10 @@ export function AuthPage({
   }[mode];
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
+    if (mode === "sign-up" && !agreed) {
+      setFieldErrors((current) => ({ ...current, agree: agreementError }));
+      return;
+    }
     if (isDemoMode) {
       toast("Social sign-in isn't connected in this prototype.");
       return;
@@ -924,6 +932,9 @@ export function AuthPage({
     }
     if (mode === "reset" && pw !== pw2) {
       nextErrors.confirm = "Passwords don’t match.";
+    }
+    if (mode === "sign-up" && !agreed) {
+      nextErrors.agree = agreementError;
     }
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -1160,6 +1171,45 @@ export function AuthPage({
             </Link>
           </div>
         )}
+        {mode === "sign-up" && (
+          <div>
+            <label className="flex items-start gap-2 text-sm leading-5">
+              <input
+                type="checkbox"
+                className={cn(
+                  "mt-0.5 size-4 shrink-0 accent-primary",
+                  fieldErrors.agree && "outline outline-1 outline-destructive",
+                )}
+                checked={agreed}
+                required
+                aria-invalid={fieldErrors.agree ? true : undefined}
+                aria-describedby={fieldErrors.agree ? "agree-error" : undefined}
+                onChange={(event) => {
+                  setAgreed(event.target.checked);
+                  if (event.target.checked) {
+                    setFieldErrors((current) => ({ ...current, agree: undefined }));
+                  }
+                }}
+              />
+              <span>
+                I am at least 18 and agree to the{" "}
+                <Link to="/terms" className="underline underline-offset-4">
+                  Terms of Use
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="underline underline-offset-4">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+            {fieldErrors.agree && (
+              <p id="agree-error" className="mt-1.5 text-xs text-destructive">
+                {fieldErrors.agree}
+              </p>
+            )}
+          </div>
+        )}
         {err && (
           <p role="alert" className="text-sm text-destructive">
             {err}
@@ -1171,24 +1221,7 @@ export function AuthPage({
           )}
           {t(copy[2] ?? "")}
         </Button>
-        {mode === "sign-up" && (
-          <p className="text-xs leading-5 text-muted-foreground">
-            {t("By creating an account you agree to the")}{" "}
-            <Link to="/terms" className="underline underline-offset-4">
-              {t("Terms")}
-            </Link>
-            ,{" "}
-            <Link to="/privacy" className="underline underline-offset-4">
-              {t("Privacy Policy")}
-            </Link>
-            , and{" "}
-            <Link to="/acceptable-use" className="underline underline-offset-4">
-              {t("Acceptable Use Policy")}
-            </Link>
-            .
-          </p>
-        )}
-      </form>
+</form>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "sign-in" ? (
           <>
@@ -3682,15 +3715,6 @@ function DemoBillingPage() {
         </div>
       </section>
 
-      <div className="mt-8">
-        <StateBanner
-          tone="info"
-          title={t("Mobile purchases")}
-          body={t(
-            "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.",
-          )}
-        />
-      </div>
     </AppShell>
   );
 }
@@ -3932,20 +3956,6 @@ const includedInEveryPackage = [
   "Credits never expire",
 ];
 
-/** Only advertise store channels the backend currently has enabled. */
-function storePurchaseSentence(appStore: boolean, googlePlay: boolean): string | null {
-  if (appStore && googlePlay) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.";
-  }
-  if (googlePlay) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.";
-  }
-  if (appStore) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.";
-  }
-  return null;
-}
-
 function CreditPricingPage() {
   const { language, t } = usePreferences();
   const { status } = useAuth();
@@ -3956,7 +3966,6 @@ function CreditPricingPage() {
   const rateLine = rateSentence(rate, language);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
   const channels = useCheckoutChannels();
-  const storeLine = storePurchaseSentence(channels.appStore, channels.googlePlay);
 
   return (
     <>
@@ -4050,11 +4059,6 @@ function CreditPricingPage() {
             {t("Online checkout is not open yet. Your free trial credits work as usual.")}
           </p>
         ) : null}
-        {storeLine && (
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
-            {t(storeLine)}
-          </p>
-        )}
 
         {pricing && pricing.signup_credits > 0 && (
           <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">

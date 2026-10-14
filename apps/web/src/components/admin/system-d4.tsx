@@ -200,6 +200,20 @@ function SettingActionDialog({
   );
 }
 
+// SaveStream is web-only with PayPal checkout for now. These settings only
+// affect the (paused) mobile apps and store purchases, so the web admin hides
+// them; the backend keeps them so the mobile source can be resumed later.
+const MOBILE_ONLY_SETTING_KEYS = new Set([
+  "app_min_supported_android",
+  "app_min_supported_ios",
+  "pro_local_recording",
+  "free_local_daily_minutes",
+  "reward_daily_cap",
+  "reward_minutes",
+  "payment_app_store_enabled",
+  "payment_google_play_enabled",
+]);
+
 export function AdminSystemD4Page() {
   const { identity } = useAuth();
   const isOwner = identity.role === "owner" || identity.role === "admin";
@@ -218,7 +232,9 @@ export function AdminSystemD4Page() {
           : Promise.resolve({ items: [] as AdminRuntimeSetting[] }),
       ]);
       setStatus(systemStatus);
-      setSettings(settingsResult.items);
+      setSettings(
+        settingsResult.items.filter((item) => !MOBILE_ONLY_SETTING_KEYS.has(item.key)),
+      );
     } catch (error) {
       toast.error("Could not load System", { description: authErrorMessage(error) });
     } finally {

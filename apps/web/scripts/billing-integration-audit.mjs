@@ -149,10 +149,11 @@ for (const text of [
   "formatApproxHours",
   "One-time cloud-hour purchases",
   "10 trial credits",
-  "App Store or Google Play",
 ]) {
   must("src/components/app-pages.tsx", text);
 }
+// Web-only, PayPal-only scope (legal draft 2026-10-14): no store purchase copy.
+forbid("src/components/app-pages.tsx", "App Store or Google Play");
 for (const text of [
   "Manage subscription",
   "Cancel subscription",
@@ -162,10 +163,19 @@ for (const text of [
   forbid("src/components/app-pages.tsx", text);
 }
 for (const text of [
-  'h: t("Free mobile advertising")',
-  'h: t("Advertising in the Free mobile app")',
+  "Free mobile advertising",
+  "Advertising in the Free mobile app",
   "App Store or Google Play",
   "push token",
+  "Merchant of Record",
+]) {
+  forbid("src/components/app-pages-more.tsx", text);
+}
+for (const text of [
+  "Purchases are processed by PayPal.",
+  "Web credit purchases are processed by PayPal.",
+  "the PayPal transaction ID from your receipt",
+  "You must be at least 18 years old",
 ]) {
   must("src/components/app-pages-more.tsx", text);
 }
