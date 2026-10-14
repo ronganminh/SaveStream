@@ -1,12 +1,21 @@
 import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, RefreshCw } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
-import { AppShell, PageHeader } from "@/components/app-components";
-import { AdminDataTable, AdminMfaGate, AdminMetricCard } from "@/components/admin/foundation";
+import { AppShell, AvatarCircle, PageHeader } from "@/components/app-components";
+import {
+  AdminBadge,
+  AdminCard,
+  AdminDataTable,
+  AdminMfaGate,
+  AdminMetricCard,
+  AdminUserStatusBadge,
+} from "@/components/admin/foundation";
+import { initials } from "@/repositories/mappers/channel";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +26,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { adminD9Api, type AdminOverview, type AdminSupportReport } from "@/repositories/admin-api";
+import {
+  adminD9Api,
+  adminFoundationApi,
+  type AdminDailyMetric,
+  type AdminOverview,
+  type AdminSupportReport,
+  type AdminUser,
+} from "@/repositories/admin-api";
 
 function usd(minor: number) {
   return new Intl.NumberFormat("en-US", {
@@ -44,10 +60,157 @@ function downloadCsv(filename: string, content: string) {
 
 function PermissionPanel({ children }: { children: string }) {
   return (
-    <div className="rounded-lg border bg-background p-6">
+    <div className="rounded-[16px] border bg-surface p-6">
       <h2 className="font-medium">Permission required</h2>
       <p className="mt-2 text-sm text-muted-foreground">{children}</p>
     </div>
+  );
+}
+
+type OverviewRange = 7 | 14 | 30;
+
+type OverviewAlert = {
+  key: string;
+  tone: "danger" | "warning" | "info";
+  title: string;
+  message: string;
+  href: string;
+  action: string;
+};
+
+const alertTileTones: Record<OverviewAlert["tone"], string> = {
+  danger: "bg-destructive/10 text-destructive",
+  warning: "bg-warning-subtle text-warning-foreground",
+  info: "bg-info-subtle text-info",
+};
+
+function sumBy(rows: readonly AdminDailyMetric[], pick: (row: AdminDailyMetric) => number) {
+  return rows.reduce((total, row) => total + pick(row), 0);
+}
+
+function shortDay(day: string) {
+  const date = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return day;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function RevenueBars({ rows }: { rows: readonly AdminDailyMetric[] }) {
+  const peak = rows.reduce((max, row) => Math.max(max, row.revenue_web_usd_minor), 0);
+  const peakRow = rows.find((row) => row.revenue_web_usd_minor === peak && peak > 0);
+  if (!rows.length) {
+    return (
+      <p className="py-10 text-center text-sm text-muted-foreground">
+        No aggregate snapshots have been computed yet.
+      </p>
+    );
+  }
+  return (
+    <>
+      <div
+        className="flex h-[150px] items-end gap-1.5 border-b"
+        role="img"
+        aria-label={
+          peakRow
+            ? `Daily web revenue, peak ${usd(peak)} on ${shortDay(peakRow.day)}`
+            : "Daily web revenue, no revenue in this range"
+        }
+      >
+        {rows.map((row) => {
+          const height = peak > 0 ? Math.max(3, (row.revenue_web_usd_minor / peak) * 100) : 3;
+          return (
+            <span
+              key={row.day}
+              title={`${shortDay(row.day)}: ${usd(row.revenue_web_usd_minor)}`}
+              className={`flex-1 rounded-t-[6px] ${
+                row === peakRow ? "bg-primary" : "bg-primary/35"
+              }`}
+              style={{ height: `${height}%` }}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+        <span>{shortDay(rows[0]!.day)}</span>
+        <span>{shortDay(rows.at(-1)!.day)}</span>
+      </div>
+    </>
+  );
+}
+
+function LatestSignUps() {
+  const [users, setUsers] = useState<AdminUser[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminFoundationApi
+      .listUsers({ sortBy: "created_at", sortOrder: "desc" })
+      .then((result) => {
+        if (!cancelled) setUsers(result.items.slice(0, 5));
+      })
+      // Roles without user search simply don't see this section.
+      .catch(() => {
+        if (!cancelled) setUsers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!users?.length) return null;
+
+  return (
+    <section className="mt-6" aria-labelledby="admin-latest-signups">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 id="admin-latest-signups" className="text-[17px] font-bold tracking-[-.01em]">
+          Latest sign-ups
+        </h2>
+        <Link to="/admin/users" className="text-sm font-bold text-accent-ink hover:underline">
+          All users →
+        </Link>
+      </div>
+      <AdminDataTable>
+        <thead>
+          <tr className="border-b">
+            <th className="px-4 py-3">User</th>
+            <th className="px-4 py-3">Signed up</th>
+            <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3 text-right">Balance</th>
+            <th className="px-4 py-3">Latest purchase</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id} className="border-b last:border-0">
+              <td className="px-4 py-3">
+                <Link
+                  to="/admin/users/$id"
+                  params={{ id: user.id }}
+                  className="flex items-center gap-2.5"
+                >
+                  <AvatarCircle initials={initials(user.display_name || user.email)} size="sm" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">
+                      {user.display_name || user.email}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {user.email}
+                    </span>
+                  </span>
+                </Link>
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">{dateTime(user.created_at)}</td>
+              <td className="px-4 py-3">
+                <AdminUserStatusBadge user={user} />
+              </td>
+              <td className="px-4 py-3 text-right font-mono">
+                {user.cloud_minutes_available ?? 0} min
+              </td>
+              <td className="px-4 py-3">{user.latest_purchase_provider ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </AdminDataTable>
+    </section>
   );
 }
 
@@ -56,6 +219,7 @@ function OverviewBody() {
   const allowed = ["owner", "admin", "finance"].includes(identity.role);
   const [data, setData] = useState<AdminOverview | null>(null);
   const [busy, setBusy] = useState(false);
+  const [range, setRange] = useState<OverviewRange>(7);
 
   const load = async () => {
     if (!allowed) return;
@@ -86,11 +250,14 @@ function OverviewBody() {
   }
 
   const latest = data?.latest;
+  const series = data?.series ?? [];
+  const rangeRows = series.slice(-range);
+  const previousRows = series.slice(-range * 2, -range);
   // Web-only product: PayPal web checkout is the only revenue channel shown.
-  const gross = latest?.revenue_web_usd_minor ?? 0;
+  const rangeRevenue = sumBy(rangeRows, (row) => row.revenue_web_usd_minor);
+  const previousRevenue = sumBy(previousRows, (row) => row.revenue_web_usd_minor);
+  const rangeNewUsers = sumBy(rangeRows, (row) => row.new_users);
   const accountTotal = (latest?.free_users ?? 0) + (latest?.pro_users ?? 0);
-  const freePercent =
-    latest && accountTotal > 0 ? Math.round((latest.free_users / accountTotal) * 100) : 0;
   const proPercent =
     latest && accountTotal > 0 ? Math.round((latest.pro_users / accountTotal) * 100) : 0;
   const monthGross = data ? data.month_revenue_web_usd_minor : 0;
@@ -98,7 +265,7 @@ function OverviewBody() {
     latest && latest.recording_capacity_limit
       ? latest.recording_running / latest.recording_capacity_limit
       : 0;
-  const previous = data?.series.at(-2);
+  const previous = series.at(-2);
   const errorRate =
     latest && latest.recording_total_24h > 0
       ? latest.recording_errors_24h / latest.recording_total_24h
@@ -107,6 +274,10 @@ function OverviewBody() {
     previous && previous.recording_total_24h > 0
       ? previous.recording_errors_24h / previous.recording_total_24h
       : 0;
+  const revenueChange =
+    previousRows.length === range && previousRevenue > 0
+      ? (rangeRevenue - previousRevenue) / previousRevenue
+      : null;
 
   const exportReport = async (kind: "revenue" | "new-users" | "cloud-usage" | "recordings") => {
     try {
@@ -119,105 +290,225 @@ function OverviewBody() {
     }
   };
 
-  const alerts = [
-    capacity >= 0.8 ? `Recording capacity is at ${Math.round(capacity * 100)}%.` : null,
-    latest && latest.recording_errors_24h > 0 && errorRate > previousErrorRate + 0.05
-      ? `Recording error rate increased to ${Math.round(errorRate * 100)}% in the last 24 hours.`
-      : null,
-    latest && latest.stuck_orders > 0
-      ? `${latest.stuck_orders} payment ${latest.stuck_orders === 1 ? "order is" : "orders are"} stuck.`
-      : null,
-    latest && latest.open_complaints > 0
-      ? `${latest.open_complaints} complaint cases are still open.`
-      : null,
-  ].filter((item): item is string => item !== null);
+  const alerts: OverviewAlert[] = [];
+  if (latest && latest.stuck_orders > 0) {
+    alerts.push({
+      key: "stuck",
+      tone: "danger",
+      title: `${latest.stuck_orders} payment ${latest.stuck_orders === 1 ? "order is" : "orders are"} stuck.`,
+      message: "Paid in PayPal but credits not granted yet. Reconcile from Payments.",
+      href: "/admin/payments",
+      action: "Resolve",
+    });
+  }
+  if (capacity >= 0.8) {
+    alerts.push({
+      key: "capacity",
+      tone: "warning",
+      title: `Recording capacity is at ${Math.round(capacity * 100)}%.`,
+      message: `${latest?.recording_running ?? 0} running of ${latest?.recording_capacity_limit ?? 0} slots · ${latest?.recording_waiting ?? 0} waiting.`,
+      href: "/admin/jobs",
+      action: "View",
+    });
+  }
+  if (latest && latest.recording_errors_24h > 0 && errorRate > previousErrorRate + 0.05) {
+    alerts.push({
+      key: "errors",
+      tone: "warning",
+      title: `Recording error rate increased to ${Math.round(errorRate * 100)}% in the last 24 hours.`,
+      message: `${latest.recording_errors_24h} of ${latest.recording_total_24h} recordings failed.`,
+      href: "/admin/jobs",
+      action: "Jobs",
+    });
+  }
+  if (latest && latest.open_complaints > 0) {
+    alerts.push({
+      key: "complaints",
+      tone: "info",
+      title: `${latest.open_complaints} complaint cases are still open.`,
+      message: "Copyright and abuse reports waiting for review.",
+      href: "/admin/safety",
+      action: "Safety",
+    });
+  }
 
   return (
     <>
       <PageHeader
-        title="Overview"
-        subtitle="Precomputed daily business and operations snapshots."
+        title="Admin overview"
+        subtitle={
+          latest
+            ? `Snapshot computed ${dateTime(latest.computed_at)} · UTC days, refreshed hourly`
+            : "Precomputed daily business and operations snapshots."
+        }
         action={
-          <Button variant="outline" disabled={busy} onClick={() => void load()}>
-            <RefreshCw className="mr-2 size-4" />
-            Refresh
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="inline-flex rounded-[12px] border bg-surface p-1"
+              role="group"
+              aria-label="Range"
+            >
+              {([7, 14, 30] as const).map((days) => (
+                <button
+                  key={days}
+                  type="button"
+                  aria-pressed={range === days}
+                  onClick={() => setRange(days)}
+                  className={`h-8 rounded-[9px] px-3 text-sm font-bold transition-colors ${
+                    range === days
+                      ? "bg-primary-subtle text-accent-ink"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {days} d
+                </button>
+              ))}
+            </div>
+            <Button variant="outline" disabled={busy} onClick={() => void load()}>
+              <RefreshCw className="size-4" />
+              Refresh
+            </Button>
+          </div>
         }
       />
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AdminMetricCard label="New users" value={latest?.new_users ?? "—"} />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <AdminMetricCard
-          label="DAU / WAU / MAU"
-          value={
+          label="Active users (7 d)"
+          value={latest ? latest.active_users_weekly.toLocaleString("en-US") : "—"}
+          detail={
             latest
-              ? `${latest.active_users_daily} / ${latest.active_users_weekly} / ${latest.active_users_monthly}`
-              : "—"
-          }
-          detail="Customer accounts only (admin, support and owner excluded). UTC day, refreshed hourly."
-        />
-        <AdminMetricCard
-          label="Free / Pro ratio"
-          value={
-            latest
-              ? `${freePercent}% / ${proPercent}% (${latest.free_users} / ${latest.pro_users})`
-              : "—"
+              ? `DAU ${latest.active_users_daily} · MAU ${latest.active_users_monthly} · customer accounts only`
+              : "Customer accounts only (admin, support and owner excluded)."
           }
         />
-        <AdminMetricCard label="Free → Pro (7d)" value={latest?.free_to_pro_weekly ?? "—"} />
-        <AdminMetricCard label="Web revenue (PayPal)" value={latest ? usd(gross) : "—"} />
         <AdminMetricCard
-          label="Running / waiting"
+          label={`Web (PayPal) revenue (${range} d)`}
+          value={data ? usd(rangeRevenue) : "—"}
+          detail={
+            revenueChange === null
+              ? `Month to date ${usd(monthGross)}`
+              : `${revenueChange >= 0 ? "↑" : "↓"} ${Math.abs(Math.round(revenueChange * 1000) / 10)}% vs previous ${range} d`
+          }
+          tone={revenueChange === null ? undefined : revenueChange >= 0 ? "up" : "down"}
+        />
+        <AdminMetricCard
+          label={`New users (${range} d)`}
+          value={data ? rangeNewUsers.toLocaleString("en-US") : "—"}
+          detail={latest ? `${latest.new_users} today` : undefined}
+        />
+        <AdminMetricCard
+          label="Recording now"
           value={latest ? `${latest.recording_running} / ${latest.recording_waiting}` : "—"}
+          detail={
+            latest
+              ? `running / waiting · ${Math.round(capacity * 100)}% of ${latest.recording_capacity_limit} slots`
+              : undefined
+          }
+          tone={capacity >= 0.8 ? "down" : undefined}
         />
         <AdminMetricCard
-          label="Recording errors (24h)"
-          value={latest?.recording_errors_24h ?? "—"}
-          detail="Rolling 24h at snapshot time. Workers shows a live short window."
+          label="Failed recordings (24 h)"
+          value={latest ? `${Math.round(errorRate * 1000) / 10}%` : "—"}
+          detail={
+            latest
+              ? `${latest.recording_errors_24h} of ${latest.recording_total_24h} · rolling 24 h at snapshot time`
+              : undefined
+          }
+          tone={latest && errorRate > previousErrorRate + 0.05 ? "down" : undefined}
         />
-        <AdminMetricCard label="Computed" value={dateTime(latest?.computed_at)} />
+        <AdminMetricCard
+          label="Accounts with purchases"
+          value={latest ? latest.pro_users.toLocaleString("en-US") : "—"}
+          detail={
+            latest
+              ? `${proPercent}% of ${accountTotal.toLocaleString("en-US")} accounts · ${latest.free_to_pro_weekly} first purchases (7 d)`
+              : undefined
+          }
+        />
       </div>
 
-      <section className="mt-6 rounded-lg border bg-background p-5">
-        <h2 className="font-medium">Alerts</h2>
-        <div className="mt-3 space-y-2 text-sm">
-          {alerts.map((alert) => (
-            <div key={alert} className="rounded-md border p-3">
-              {alert}
-            </div>
-          ))}
-          {!alerts.length && (
-            <p className="text-muted-foreground">
+      <div className="mt-6 flex flex-wrap items-start gap-5">
+        <AdminCard
+          className="min-w-0 flex-[1_1_420px]"
+          bodyClassName=""
+          title={
+            <span className="flex items-center gap-2">
+              Alerts
+              {alerts.length ? <AdminBadge tone="danger">{alerts.length} open</AdminBadge> : null}
+            </span>
+          }
+          action={
+            <Link to="/admin/system" className="text-sm font-bold text-accent-ink hover:underline">
+              System →
+            </Link>
+          }
+        >
+          {alerts.length ? (
+            <ul>
+              {alerts.map((alert) => (
+                <li
+                  key={alert.key}
+                  className="flex items-start gap-3 border-b px-5 py-4 last:border-0"
+                >
+                  <span
+                    className={`grid size-[34px] shrink-0 place-items-center rounded-[10px] ${alertTileTones[alert.tone]}`}
+                  >
+                    <AlertTriangle className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{alert.title}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {alert.message}
+                    </span>
+                  </span>
+                  <Button size="sm" variant="outline" asChild>
+                    <a href={alert.href}>{alert.action}</a>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-3 px-5 py-6 text-sm text-muted-foreground">
+              <span className="grid size-[34px] place-items-center rounded-[10px] bg-success-subtle text-success">
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              </span>
               No dashboard alert thresholds are currently exceeded.
-            </p>
+            </div>
           )}
-        </div>
-      </section>
+        </AdminCard>
 
-      <section className="mt-6 rounded-lg border bg-background">
-        <div className="border-b p-5">
-          <h2 className="font-medium">Revenue</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Web (PayPal) gross USD before PayPal fees.
-          </p>
-        </div>
-        <div className="grid gap-3 p-5 md:grid-cols-2">
-          <AdminMetricCard
-            label="Today · Web (PayPal)"
-            value={latest ? usd(latest.revenue_web_usd_minor) : "—"}
-          />
-          <AdminMetricCard
-            label="Month · Web (PayPal)"
-            value={data ? usd(monthGross) : "—"}
-          />
-        </div>
-      </section>
+        <AdminCard
+          className="min-w-0 flex-[1_1_420px]"
+          title={`Revenue · Web (PayPal) · last ${range} days`}
+          description="Gross USD before PayPal fees."
+          action={
+            <span className="font-mono text-lg font-bold">{data ? usd(rangeRevenue) : "—"}</span>
+          }
+        >
+          <RevenueBars rows={rangeRows} />
+          <dl className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Today</dt>
+              <dd className="font-mono font-bold">
+                {latest ? usd(latest.revenue_web_usd_minor) : "—"}
+              </dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="text-muted-foreground">Month to date</dt>
+              <dd className="font-mono font-bold">{data ? usd(monthGross) : "—"}</dd>
+            </div>
+          </dl>
+        </AdminCard>
+      </div>
 
-      <section className="mt-6 rounded-lg border bg-background p-5">
-        <h2 className="font-medium">CSV reports</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Exports default to the latest 30 days and are bounded to 366 days.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
+      <LatestSignUps />
+
+      <AdminCard
+        className="mt-6"
+        title="CSV reports"
+        description="Exports default to the latest 30 days and are bounded to 366 days."
+      >
+        <div className="flex flex-wrap gap-2">
           {(
             [
               ["revenue", "Revenue"],
@@ -227,40 +518,40 @@ function OverviewBody() {
             ] as const
           ).map(([kind, label]) => (
             <Button key={kind} variant="outline" onClick={() => void exportReport(kind)}>
-              <Download className="mr-2 size-4" />
+              <Download className="size-4" />
               {label}
             </Button>
           ))}
         </div>
-      </section>
+      </AdminCard>
 
-      <section className="mt-6 rounded-lg border bg-background">
-        <div className="border-b p-5">
-          <h2 className="font-medium">30-day snapshots</h2>
-        </div>
+      <section className="mt-6" aria-labelledby="admin-snapshots">
+        <h2 id="admin-snapshots" className="mb-3 text-[17px] font-bold tracking-[-.01em]">
+          30-day snapshots
+        </h2>
         <AdminDataTable>
-          <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-            <tr>
+          <thead>
+            <tr className="border-b">
               <th className="px-4 py-3">Day</th>
-              <th className="px-4 py-3">New users</th>
-              <th className="px-4 py-3" title="Customer accounts only">DAU (customers)</th>
-              <th className="px-4 py-3">Pro</th>
-              <th className="px-4 py-3">Web revenue (PayPal)</th>
+              <th className="px-4 py-3 text-right">New users</th>
+              <th className="px-4 py-3 text-right" title="Customer accounts only">
+                DAU (customers)
+              </th>
+              <th className="px-4 py-3 text-right">With purchases</th>
+              <th className="px-4 py-3 text-right">Web revenue (PayPal)</th>
             </tr>
           </thead>
           <tbody>
-            {(data?.series ?? []).map((row) => (
+            {[...series].reverse().map((row) => (
               <tr key={row.day} className="border-b last:border-0">
                 <td className="px-4 py-3">{row.day}</td>
-                <td className="px-4 py-3">{row.new_users}</td>
-                <td className="px-4 py-3">{row.active_users_daily}</td>
-                <td className="px-4 py-3">{row.pro_users}</td>
-                <td className="px-4 py-3">
-                  {usd(row.revenue_web_usd_minor)}
-                </td>
+                <td className="px-4 py-3 text-right font-mono">{row.new_users}</td>
+                <td className="px-4 py-3 text-right font-mono">{row.active_users_daily}</td>
+                <td className="px-4 py-3 text-right font-mono">{row.pro_users}</td>
+                <td className="px-4 py-3 text-right font-mono">{usd(row.revenue_web_usd_minor)}</td>
               </tr>
             ))}
-            {!data?.series.length && (
+            {!series.length && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
                   {busy ? "Loading snapshots…" : "No aggregate snapshots have been computed yet."}
@@ -473,7 +764,7 @@ function ReportsBody() {
           </Button>
         }
       />
-      <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-5">
+      <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-5">
         <Input
           placeholder="Search email or description"
           value={query}

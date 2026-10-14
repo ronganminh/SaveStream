@@ -296,7 +296,7 @@ export function AdminFinancePage() {
         />
 
         {!canManageMoney && (
-          <section className="mb-5 rounded-lg border bg-background p-4">
+          <section className="mb-5 rounded-[16px] border bg-surface p-4">
             <p className="text-sm font-medium">Support access is read-only.</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Support can inspect orders for customer support, but cannot refund, reconcile, export
@@ -325,7 +325,7 @@ export function AdminFinancePage() {
           </div>
 
           <TabsContent value="orders" className="space-y-4">
-            <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-4">
+            <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-4">
               <Input
                 placeholder="Email, package, transaction ID"
                 value={paymentFilters.query ?? ""}
@@ -471,7 +471,7 @@ export function AdminFinancePage() {
           </TabsContent>
 
           <TabsContent value="stuck" className="space-y-4">
-            <section className="rounded-lg border bg-background p-4">
+            <section className="rounded-[16px] border bg-surface p-4">
               <h2 className="font-medium">Orders needing attention</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Paid orders missing their idempotent credit grant, or web orders pending for more
@@ -543,7 +543,7 @@ export function AdminFinancePage() {
 
           {canManageMoney && (
             <TabsContent value="ledger" className="space-y-4">
-              <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-5">
+              <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-5">
                 <Input
                   placeholder="User ID"
                   value={ledgerFilters.userId ?? ""}
@@ -637,7 +637,7 @@ export function AdminFinancePage() {
 
           {canManageMoney && (
             <TabsContent value="adjust">
-              <section className="max-w-2xl space-y-4 rounded-lg border bg-background p-5">
+              <section className="max-w-2xl space-y-4 rounded-[16px] border bg-surface p-5">
                 <div>
                   <h2 className="font-medium">Manual cloud-minute adjustment</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -715,7 +715,7 @@ export function AdminFinancePage() {
 
           {canManageMoney && (
             <TabsContent value="holds" className="space-y-4">
-              <section className="rounded-lg border bg-background p-4">
+              <section className="rounded-[16px] border bg-surface p-4">
                 <h2 className="font-medium">Stuck credit holds</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Only active reservations whose recording is already terminal are shown. Release
