@@ -79,7 +79,7 @@ forbid("src/routes/status.tsx", "redirect(");
 
 // Footer links core product, support, status, and policy pages.
 const pages = read("src/components/app-pages.tsx");
-const footer = between(pages, "export function PublicFooter()", "export function AuthLayout");
+const footer = between(pages, "export function PublicFooter()", "const channelStates = [");
 for (const link of [
   '"/refund"',
   '"/contact"',

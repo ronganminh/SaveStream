@@ -21,7 +21,7 @@ must("src/lib/firebase-social-login.ts", "signInWithPopup");
 must("src/lib/firebase-social-login.ts", "inMemoryPersistence");
 must("src/components/app-pages.tsx", "Continue with Google");
 must("src/components/app-pages.tsx", "Continue with Apple");
-must("src/components/app-pages.tsx", 'placeholder="you@gmail.com"');
+must("src/components/app-pages.tsx", 'placeholder="you@example.com"');
 must("src/components/app-components.tsx", 'placeholder="Password"');
 forbid("src/lib/firebase-social-login.ts", "localStorage");
 

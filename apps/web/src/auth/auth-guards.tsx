@@ -3,6 +3,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 
 import { useAuth } from "@/auth/auth-context";
 import { canAccessRoute, getRouteAccess } from "@/lib/app-config";
+import { RestoringSessionScreen } from "@/components/system/system-pages";
 
 function SessionGate({ message }: { message: string }) {
   return (
@@ -31,7 +32,7 @@ export function AuthRouteGuard({ children }: { children: ReactNode }) {
     });
   }, [allowed, checkingProtectedRoute, identity.authenticated, navigate]);
 
-  if (checkingProtectedRoute) return <SessionGate message="Restoring your session…" />;
+  if (checkingProtectedRoute) return <RestoringSessionScreen />;
   if (!allowed) {
     return (
       <SessionGate

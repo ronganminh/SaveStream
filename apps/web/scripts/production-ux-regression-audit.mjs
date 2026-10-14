@@ -32,7 +32,7 @@ for (const key of [
 must("src/components/public/contact-status.tsx", "does not currently publish a public live incident feed");
 forbid(preferences, "const vi:");
 must(pages, '{t(copy[0] ?? "")}');
-must(pages, '{t("Continue with Apple")}');
+must(pages, 't("Continue with Apple")');
 
 // UX-03: disabled checkout copy must not invite users to pay.
 must(pages, "Review credit packages and your balance. Online checkout is not open yet.");

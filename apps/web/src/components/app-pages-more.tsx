@@ -5,12 +5,14 @@ import {
   PublicStatusPage,
   type ContactChannel,
 } from "@/components/public/contact-status";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Link, useNavigate, useParams, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowLeft,
   Bell,
+  Check,
   CheckCircle2,
   ChevronRight,
   CircleHelp,
@@ -20,6 +22,7 @@ import {
   Download,
   FileVideo,
   Gauge,
+  Gift,
   KeyRound,
   LifeBuoy,
   Link2Off,
@@ -86,7 +89,15 @@ import {
   NotificationItem,
   AdminHealthBadge,
 } from "@/components/app-components";
-import { AuthLayout, PublicFooter, PublicHeader, SectionTitle } from "@/components/app-pages";
+import { PublicFooter, PublicHeader, SectionTitle } from "@/components/app-pages";
+import {
+  AuthCardLayout,
+  IconTile,
+  ONE_TIME_LINK_MINUTES,
+  SocialButton,
+  trialMinutes,
+  useTrialMinutesLabel,
+} from "@/components/auth/auth-ui";
 import {
   jobList,
   publicServices,
@@ -147,6 +158,7 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
   const [email, setEmail] = useState(isDemoMode ? user.email : "");
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(Boolean(token && !isDemoMode));
+  const [sent, setSent] = useState(false);
   const verificationStarted = useRef(false);
 
   useEffect(() => {
@@ -189,174 +201,280 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
 
   if (verifying) {
     return (
-      <AuthLayout>
-        <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
-          <span className="size-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        </span>
-        <h1 className="mt-6 text-2xl font-semibold">{t("Verifying your email")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("Please keep this page open while we activate your account.")}
-        </p>
-      </AuthLayout>
+      <AuthCardLayout width="lg">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <IconTile>
+            <span className="size-7 animate-spin rounded-full border-[3px] border-current border-t-transparent" />
+          </IconTile>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t("Verifying your email")}</h1>
+          <p className="text-muted-foreground">
+            {t("Please keep this page open while we activate your account.")}
+          </p>
+        </div>
+      </AuthCardLayout>
     );
   }
 
   return (
-    <AuthLayout>
-      <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
-        <Mail className="size-5" />
-      </span>
-      <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {t(
-          "We sent a verification link to your email. Open it to activate your account. The link expires in 24 hours.",
-        )}
-        {email && (
-          <>
-            {" "}
-            <b className="font-medium text-foreground">{email}</b>
-          </>
-        )}
-      </p>
-      {error && (
-        <p role="alert" className="mt-4 text-sm text-destructive">
-          {error}
-        </p>
-      )}
-      <div className="mt-8 space-y-2">
-        <Button
-          className="w-full"
-          variant="outline"
-          disabled={cooldown > 0 || (!isDemoMode && !email)}
-          onClick={() => {
-            if (isDemoMode) {
-              setCooldown(30);
-              toast.success(t("Verification email sent"), { description: user.email });
-              return;
-            }
-            if (!email) return;
-            setError(null);
-            void authApi
-              .resendVerification(email)
-              .then(() => {
-                setCooldown(30);
-                toast.success(t("Verification email sent"), { description: email });
-              })
-              .catch((resendError) => setError(authErrorMessage(resendError)));
-          }}
-        >
-          {cooldown > 0 ? (
-            <>
-              {t("Resend available in")} <span className="font-mono">{cooldown}s</span>
-            </>
-          ) : (
-            t("Resend verification email")
-          )}
-        </Button>
-        <Button className="w-full" variant="ghost" asChild>
-          <Link to="/sign-up">{t("Change email")}</Link>
-        </Button>
-      </div>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link to="/sign-in" className="font-medium text-primary">
+    <AuthCardLayout
+      width="lg"
+      topRight={
+        <Link to="/sign-in" className="text-sm font-semibold text-accent-ink">
           {t("Back to sign in")}
         </Link>
-      </p>
-      {isDemoMode && (
-        <div className="mt-8 rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-          Prototype:{" "}
-          <Link to="/verify-email/success" className="text-primary underline underline-offset-4">
-            open verification link
-          </Link>{" "}
-          ·{" "}
-          <Link to="/auth/error" className="text-primary underline underline-offset-4">
-            open expired link
-          </Link>
+      }
+    >
+      <div className="flex flex-col items-center gap-[22px] text-center">
+        <IconTile>
+          <Mail className="size-7" />
+        </IconTile>
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t("Check your inbox")}</h1>
+          <p className="text-muted-foreground">
+            We sent a verification link to{" "}
+            {email ? <b className="text-foreground">{email}</b> : "your email"}. Open it on this
+            device to activate your account.{" "}
+            <Link to="/sign-up" className="font-semibold text-accent-ink">
+              {t("Wrong email?")}
+            </Link>
+          </p>
         </div>
-      )}
-    </AuthLayout>
+        {error && (
+          <p role="alert" className="w-full rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-left text-sm text-destructive">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-col items-center gap-1 text-sm">
+          <span className="text-muted-foreground">{t("Didn’t get it? Check spam, or")}</span>
+          <span className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-accent-ink"
+              disabled={cooldown > 0 || (!isDemoMode && !email)}
+              onClick={() => {
+                if (isDemoMode) {
+                  setCooldown(30);
+                  setSent(true);
+                  return;
+                }
+                if (!email) return;
+                setError(null);
+                void authApi
+                  .resendVerification(email)
+                  .then(() => {
+                    setCooldown(30);
+                    setSent(true);
+                  })
+                  .catch((resendError) => setError(authErrorMessage(resendError)));
+              }}
+            >
+              {t("Resend link")}
+            </Button>
+            {cooldown > 0 && (
+              <span className="font-mono text-xs text-muted-foreground">
+                available in 0:{String(cooldown).padStart(2, "0")}
+              </span>
+            )}
+          </span>
+        </div>
+        {sent && (
+          <div className="flex w-full items-center gap-2.5 rounded-xl border border-success/25 bg-success-subtle px-4 py-3 text-left text-sm">
+            <Check className="size-4 shrink-0 text-success" />
+            New link sent. It expires in {ONE_TIME_LINK_MINUTES} minutes.
+          </div>
+        )}
+        {isDemoMode && (
+          <div className="w-full rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+            Prototype:{" "}
+            <Link to="/verify-email/success" className="text-primary underline underline-offset-4">
+              open verification link
+            </Link>{" "}
+            ·{" "}
+            <Link to="/auth/error" className="text-primary underline underline-offset-4">
+              open expired link
+            </Link>
+          </div>
+        )}
+      </div>
+    </AuthCardLayout>
   );
 }
 
 export function VerifyEmailSuccessPage() {
   const { t } = usePreferences();
+  const { status } = useAuth();
+  const trialLabel = useTrialMinutesLabel();
+  const { query } = usePublicPricingData();
+  const minutes = trialMinutes(query.data);
+  const signedIn = isDemoMode || status === "authenticated";
   return (
-    <AuthLayout>
-      <SuccessState
-        title="Email verified"
-        body="Your account is active. Sign in to continue to SaveStream."
-        action={
-          isDemoMode ? (
-            <>
-              <Button asChild>
-                <Link to="/onboarding">Continue to setup</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/overview">Go to dashboard</Link>
-              </Button>
-            </>
-          ) : (
-            <Button asChild className="w-full">
-              <Link to="/sign-in">{t("Sign in")}</Link>
+    <AuthCardLayout width="lg">
+      <div className="flex flex-col items-center gap-[22px] text-center">
+        <IconTile tone="ok" size="xl">
+          <Check className="size-8" />
+        </IconTile>
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t("Email verified")}</h1>
+          <p className="text-muted-foreground">{t("Your email is confirmed and your account is ready.")}</p>
+        </div>
+        {trialLabel && (
+          <div className="flex w-full items-center gap-3.5 rounded-2xl border bg-surface-2 px-[18px] py-4 text-left">
+            <IconTile size="md">
+              <Gift className="size-5" />
+            </IconTile>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <b>{trialLabel} added</b>
+              <span className="text-sm text-muted-foreground">
+                Free trial credits for your account. No card needed.
+              </span>
+            </div>
+            {minutes && (
+              <b className="whitespace-nowrap font-mono text-xl text-accent-ink">+{minutes} min</b>
+            )}
+          </div>
+        )}
+        {signedIn ? (
+          <>
+            <Button size="lg" className="w-full" asChild>
+              <Link to="/onboarding">{t("Add your first channel")}</Link>
             </Button>
-          )
-        }
-      />
-    </AuthLayout>
+            <Link to="/overview" className="text-sm font-semibold text-accent-ink">
+              {t("Go to dashboard instead")}
+            </Link>
+          </>
+        ) : (
+          <>
+            <Button size="lg" className="w-full" asChild>
+              <Link to="/sign-in">{t("Sign in to add your first channel")}</Link>
+            </Button>
+          </>
+        )}
+      </div>
+    </AuthCardLayout>
   );
 }
 
-const authErrors = {
+const linkErrors = {
   expired: [
     "This link has expired",
-    "Verification and reset links expire for your security. Request a new one to continue.",
+    `Verification and reset links work for ${ONE_TIME_LINK_MINUTES} minutes and only once. Request a new one to continue.`,
+    "LINK_EXPIRED",
   ],
   invalid: [
     "This link isn’t valid",
     "The link may have been used already or copied incorrectly. Request a new link or sign in.",
-  ],
-  failed: [
-    "We couldn’t verify your email",
-    "Something went wrong on our side. Try again in a moment — if it keeps happening, request a new link.",
+    "LINK_INVALID",
   ],
 } as const;
+
+type SocialReason = "cancelled" | "failed" | "email_in_use";
+
+function socialError(provider: "google" | "apple", reason: SocialReason) {
+  const name = provider === "apple" ? "Apple" : "Google";
+  return {
+    cancelled: [
+      "Sign-in was cancelled",
+      `You closed the ${name} window before finishing. Nothing was changed — try again or use your email.`,
+      "OAUTH_CANCELLED",
+    ],
+    failed: [
+      `We couldn’t sign you in with ${name}`,
+      `${name} didn’t confirm your account. This is usually temporary — try again in a moment.`,
+      "OAUTH_PROVIDER_ERROR",
+    ],
+    email_in_use: [
+      "This email already has a password",
+      `The email on your ${name} account is registered with email and password. Sign in with your password instead.`,
+      "OAUTH_EMAIL_CONFLICT",
+    ],
+  }[reason];
+}
+
+/**
+ * /auth/error — Google/Apple sign-in errors (`?provider=google|apple&reason=
+ * cancelled|failed|email_in_use`) and expired or invalid email links
+ * (`?reason=expired|invalid`, the default).
+ */
 export function AuthErrorPage() {
   const { t } = usePreferences();
-  const [kind, setKind] = useState<keyof typeof authErrors>("expired");
-  const [errorTitle, errorBody] = authErrors[kind];
+  const search = useRouterState({ select: (state) => state.location.search }) as Record<
+    string,
+    unknown
+  >;
+  const [demoKind, setDemoKind] = useState<keyof typeof linkErrors>("expired");
+  const provider =
+    search["provider"] === "apple" ? "apple" : search["provider"] === "google" ? "google" : null;
+  const reasonParam = String(search["reason"] ?? "");
+  const social =
+    provider && ["cancelled", "failed", "email_in_use"].includes(reasonParam)
+      ? (reasonParam as SocialReason)
+      : provider
+        ? "failed"
+        : null;
+  const linkKind: keyof typeof linkErrors = isDemoMode
+    ? demoKind
+    : reasonParam === "invalid"
+      ? "invalid"
+      : "expired";
+  const [title, body, code] = provider && social ? socialError(provider, social) : linkErrors[linkKind];
+
   return (
-    <AuthLayout>
-      <PrototypeStateBar
-        value={kind}
-        onChange={setKind}
-        options={[
-          { value: "expired", label: "Expired" },
-          { value: "invalid", label: "Invalid" },
-          { value: "failed", label: "Failed" },
-        ]}
-      />
-      <span className="grid size-11 place-items-center rounded-full bg-recording-subtle text-destructive">
-        <Link2Off className="size-5" />
-      </span>
-      <h1 className="mt-6 text-2xl font-semibold">{t(errorTitle)}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{t(errorBody)}</p>
-      <div className="mt-8 space-y-2">
-        {kind === "failed" && (
-          <Button className="w-full" onClick={() => toast("Retrying verification…")}>
-            <RotateCcw />
-            {t("Try again")}
+    <AuthCardLayout
+      width="lg"
+      topRight={
+        <Link to="/sign-in" className="text-sm font-semibold text-accent-ink">
+          {t("Sign in")}
+        </Link>
+      }
+    >
+      {isDemoMode && !provider && (
+        <PrototypeStateBar
+          value={demoKind}
+          onChange={setDemoKind}
+          options={[
+            { value: "expired", label: "Expired" },
+            { value: "invalid", label: "Invalid" },
+          ]}
+        />
+      )}
+      <div className="flex flex-col items-center gap-[22px] text-center">
+        <IconTile tone="err" size="xl">
+          {provider ? <AlertCircle className="size-8" /> : <Link2Off className="size-8" />}
+        </IconTile>
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t(title)}</h1>
+          <p className="text-muted-foreground">{t(body)}</p>
+        </div>
+        {provider && social !== "email_in_use" ? (
+          <SocialButton
+            provider={provider}
+            label={`Try ${provider === "apple" ? "Apple" : "Google"} again`}
+            onClick={() => {
+              window.location.assign("/sign-in");
+            }}
+            className="w-full"
+          />
+        ) : null}
+        {provider ? (
+          <Button size="lg" variant={social === "email_in_use" ? "default" : "outline"} className="w-full" asChild>
+            <Link to="/sign-in">{t("Use email instead")}</Link>
           </Button>
+        ) : (
+          <>
+            <Button size="lg" className="w-full" asChild>
+              <Link to="/forgot-password">{t("Reset your password")}</Link>
+            </Button>
+            <Button size="lg" variant="outline" className="w-full" asChild>
+              <Link to="/verify-email" search={{ token: "" }}>
+                {t("Request a new verification link")}
+              </Link>
+            </Button>
+          </>
         )}
-        <Button className="w-full" variant={kind === "failed" ? "outline" : "default"} asChild>
-          <Link to="/verify-email" search={{ token: "" }}>
-            {t("Request a new link")}
-          </Link>
-        </Button>
-        <Button className="w-full" variant="ghost" asChild>
-          <Link to="/sign-in">{t("Back to sign in")}</Link>
-        </Button>
+        <span className="font-mono text-xs text-muted-foreground">Error code: {code}</span>
       </div>
-    </AuthLayout>
+    </AuthCardLayout>
   );
 }
 

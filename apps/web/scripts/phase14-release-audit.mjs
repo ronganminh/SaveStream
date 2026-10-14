@@ -42,7 +42,7 @@ must("src/api/client.ts", 'credentials = "include"');
 // production after *all* public Firebase web config fields are populated.
 // Demo mode keeps its prototype path and cannot exchange real credentials.
 must("src/components/app-pages.tsx", "firebaseSocialConfigured");
-must("src/components/app-pages.tsx", '(isDemoMode || firebaseSocialConfigured)');
+must("src/components/app-pages.tsx", 'isDemoMode || firebaseSocialConfigured');
 must("src/components/app-pages.tsx", "Continue with Google");
 must("src/components/app-pages.tsx", "Continue with Apple");
 must("src/lib/firebase-social-login.ts", "inMemoryPersistence");

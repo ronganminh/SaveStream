@@ -25,6 +25,7 @@ import {
 } from "react";
 import {
   Activity,
+  AlertCircle,
   AlertTriangle,
   Apple,
   ArrowLeft,
@@ -59,6 +60,7 @@ import {
   Plus,
   Radio,
   Search,
+  Send,
   Server,
   Settings,
   ShieldCheck,
@@ -111,6 +113,7 @@ import {
   Logo,
   PageHeader,
   PasswordField,
+  PasswordInput,
   PlanCard,
   PlatformBadge,
   PrototypeStateBar,
@@ -148,7 +151,18 @@ import {
   retentionFeature,
   retentionSentence,
 } from "@/lib/plan-facts";
-import { authApi, authErrorMessage } from "@/api/auth";
+import { authApi, authErrorMessage, isExpiredLinkError } from "@/api/auth";
+import {
+  AuthCardLayout,
+  AuthSplitLayout,
+  IconTile,
+  ONE_TIME_LINK_MINUTES,
+  OrDivider,
+  PasswordChecklist,
+  SocialButton,
+  useTrialMinutesLabel,
+} from "@/components/auth/auth-ui";
+import { RestoringSessionScreen } from "@/components/system/system-pages";
 import { ApiError } from "@/api/errors";
 import {
   firebaseSocialConfigured,
@@ -895,6 +909,8 @@ export function AuthPage({
   }>({});
   // Sign-up requires confirming age (18+, TikTok's LIVE minimum) and the legal terms.
   const [agreed, setAgreed] = useState(false);
+  const [linkExpired, setLinkExpired] = useState(false);
+  const trialLabel = useTrialMinutesLabel();
   const agreementError = "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
@@ -910,18 +926,14 @@ export function AuthPage({
     !isDemoMode && (mode === "sign-in" || mode === "sign-up") && status !== "guest";
 
   const copy = {
-    "sign-in": ["Welcome back", "Sign in to manage your recordings.", "Sign in"],
-    "sign-up": [
-      "Create your account",
-      "Start monitoring your first TikTok channel.",
-      "Create account",
-    ],
+    "sign-in": ["Welcome back", "Sign in to see your channels and recordings.", "Sign in"],
+    "sign-up": ["Create your account", "No credit card required.", "Create account"],
     forgot: [
       "Reset your password",
       "Enter your email and we’ll send you a reset link.",
       "Send reset link",
     ],
-    reset: ["Choose a new password", "Use at least 8 characters.", "Reset password"],
+    reset: ["Set a new password", "Use at least 8 characters.", "Update password"],
   }[mode];
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
@@ -996,7 +1008,7 @@ export function AuthPage({
       return;
     }
     if (mode === "reset" && !token) {
-      setErr("This password reset link is missing or invalid.");
+      setLinkExpired(true);
       return;
     }
 
@@ -1035,6 +1047,10 @@ export function AuthPage({
         setDone(true);
       }
     } catch (error) {
+      if (mode === "reset" && isExpiredLinkError(error)) {
+        setLinkExpired(true);
+        return;
+      }
       setErr(authErrorMessage(error));
     } finally {
       setBusy(false);
@@ -1042,194 +1058,302 @@ export function AuthPage({
   };
   if (restoringExistingSession) {
     return (
-      <AuthLayout>
-        <div className="text-center">
-          <span className="mx-auto block size-7 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <h1 className="mt-5 text-xl font-semibold">
-            {t(
-              status === "authenticated"
-                ? "Returning to your workspace…"
-                : "Restoring your session…",
-            )}
-          </h1>
-        </div>
-      </AuthLayout>
+      <RestoringSessionScreen
+        message={
+          status === "authenticated" ? "Returning to your workspace…" : "Restoring your session…"
+        }
+      />
     );
   }
 
-  if (done && mode === "forgot")
+  const errorAlert = err && (
+    <p role="alert" className="flex items-start gap-2 text-sm text-destructive">
+      <AlertCircle className="mt-0.5 size-4 shrink-0" />
+      {err}
+    </p>
+  );
+  const submitButton = (
+    <Button className="w-full" size="lg" type="submit" disabled={busy}>
+      {busy && (
+        <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      )}
+      {t(copy[2] ?? "")}
+    </Button>
+  );
+
+  if (mode === "forgot") {
     return (
-      <AuthLayout>
-        <span className="grid size-11 place-items-center rounded-full bg-primary-subtle text-primary">
-          <Mail className="size-5" />
-        </span>
-        <h1 className="mt-6 text-2xl font-semibold">{t("Check your email")}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("If an account exists, we sent a password reset link to")}{" "}
-          <b className="font-medium text-foreground">{email}</b>. {t("It expires in 60 minutes.")}
-        </p>
-        <div className="mt-8 space-y-2">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              if (isDemoMode) {
-                toast.success("Reset link sent again");
-                return;
-              }
-              void authApi
-                .forgotPassword(email)
-                .then(() => toast.success("Reset link sent again"))
-                .catch((error) => toast.error(authErrorMessage(error)));
-            }}
-          >
-            {t("Resend link")}
-          </Button>
-          <Button variant="ghost" className="w-full" asChild>
-            <Link to="/sign-in">{t("Back to sign in")}</Link>
-          </Button>
-        </div>
-        {isDemoMode && (
-          <p className="mt-6 text-xs text-muted-foreground">
-            Prototype:{" "}
-            <Link
-              to="/reset-password"
-              search={{ token: "" }}
-              className="text-primary underline underline-offset-4"
-            >
-              open the reset link
-            </Link>
-          </p>
-        )}
-      </AuthLayout>
-    );
-  if (done && mode === "reset")
-    return (
-      <AuthLayout>
-        <SuccessState
-          title={t("Password updated")}
-          body={t(
-            "Your password has been changed. Other sessions were signed out for your security.",
-          )}
-          action={
-            <Button asChild className="w-full">
+      <AuthCardLayout>
+        {done ? (
+          <div className="flex flex-col items-center gap-[18px] text-center">
+            <IconTile tone="ok">
+              <Send className="size-7" />
+            </IconTile>
+            <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">{t("Check your email")}</h1>
+            <p className="text-muted-foreground">
+              {t("If an account exists for")} <b className="text-foreground">{email}</b>,{" "}
+              {t("a reset link is on its way.")} It’s valid for {ONE_TIME_LINK_MINUTES} minutes.
+            </p>
+            <Button variant="outline" className="w-full" asChild>
               <Link to="/sign-in">{t("Back to sign in")}</Link>
             </Button>
-          }
-        />
-      </AuthLayout>
-    );
-  return (
-    <AuthLayout>
-      <h1 className="text-2xl font-semibold">{t(copy[0] ?? "")}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">{t(copy[1] ?? "")}</p>
-      {(mode === "sign-in" || mode === "sign-up") && (isDemoMode || firebaseSocialConfigured) && (
-        <div className="mt-8 space-y-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-3"
-            disabled={busy}
-            onClick={() => void startSocial("google")}
-          >
-            <span aria-hidden="true" className="font-semibold">
-              G
+            <span className="text-sm text-muted-foreground">
+              {t("Nothing after 5 minutes?")}{" "}
+              <button
+                type="button"
+                className="font-semibold text-accent-ink hover:underline"
+                onClick={() => {
+                  if (isDemoMode) {
+                    toast.success("Reset link sent again");
+                    return;
+                  }
+                  void authApi
+                    .forgotPassword(email)
+                    .then(() => toast.success("Reset link sent again"))
+                    .catch((error) => toast.error(authErrorMessage(error)));
+                }}
+              >
+                {t("Send again")}
+              </button>
             </span>
-            {t("Continue with Google")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-3"
-            disabled={busy}
-            onClick={() => void startSocial("apple")}
-          >
-            <Apple aria-hidden="true" className="size-4" />
-            {t("Continue with Apple")}
-          </Button>
-          <div className="flex items-center gap-3 py-2 text-xs text-muted-foreground">
-            <span className="h-px flex-1 bg-border" />
-            {t("or continue with email")}
-            <span className="h-px flex-1 bg-border" />
+            {isDemoMode && (
+              <Link
+                to="/reset-password"
+                search={{ token: "" }}
+                className="text-xs text-accent-ink underline underline-offset-4"
+              >
+                Prototype: open the reset link
+              </Link>
+            )}
           </div>
-        </div>
+        ) : (
+          <>
+            <Link to="/sign-in" className="self-start text-sm font-semibold text-accent-ink">
+              ← {t("Back to sign in")}
+            </Link>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-[30px] font-extrabold leading-tight tracking-[-0.03em]">
+                {t("Forgot your password?")}
+              </h1>
+              <p className="text-muted-foreground">
+                {t("Enter the email you signed up with and we’ll send a reset link.")}
+              </p>
+            </div>
+            <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
+              <Field
+                label="Email"
+                placeholder="you@example.com"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((c) => ({ ...c, email: undefined }));
+                }}
+                autoComplete="email"
+                error={fieldErrors.email}
+              />
+              {errorAlert}
+              {submitButton}
+            </form>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                "Signed up with Google or Apple? Use that button on the sign-in page instead — no password needed.",
+              )}
+            </p>
+          </>
+        )}
+      </AuthCardLayout>
+    );
+  }
+
+  if (mode === "reset") {
+    return (
+      <AuthCardLayout>
+        {done ? (
+          <div className="flex flex-col items-center gap-3.5 text-center">
+            <IconTile tone="ok" size="md">
+              <Check className="size-6" />
+            </IconTile>
+            <h1 className="text-2xl font-bold">{t("Password updated")}</h1>
+            <p className="text-sm text-muted-foreground">
+              {t("Your password has been changed. Other sessions were signed out for your security.")}
+            </p>
+            <Button asChild className="w-full">
+              <Link to="/sign-in">{t("Sign in")}</Link>
+            </Button>
+          </div>
+        ) : linkExpired ? (
+          <div className="flex flex-col items-center gap-3.5 text-center">
+            <IconTile tone="warn" size="md">
+              <Clock3 className="size-6" />
+            </IconTile>
+            <h1 className="text-2xl font-bold">{t("This link has expired")}</h1>
+            <p className="text-sm text-muted-foreground">
+              Reset links work for {ONE_TIME_LINK_MINUTES} minutes and only once.
+            </p>
+            <Button variant="outline" asChild className="w-full">
+              <Link to="/forgot-password">{t("Send a new link")}</Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-[30px] font-extrabold leading-tight tracking-[-0.03em]">
+                {t("Set a new password")}
+              </h1>
+              <p className="text-muted-foreground">{t("Use at least 8 characters.")}</p>
+            </div>
+            <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
+              <div className="flex flex-col gap-2">
+                <PasswordField
+                  id="pw"
+                  label="New password"
+                  value={pw}
+                  onChange={(value) => {
+                    setPw(value);
+                    if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+                  }}
+                  showStrength
+                  error={fieldErrors.password}
+                />
+              </div>
+              <PasswordField
+                id="pw2"
+                label="Confirm new password"
+                value={pw2}
+                onChange={(value) => {
+                  setPw2(value);
+                  if (fieldErrors.confirm) setFieldErrors((c) => ({ ...c, confirm: undefined }));
+                }}
+                error={fieldErrors.confirm}
+              />
+              {errorAlert}
+              {submitButton}
+            </form>
+          </>
+        )}
+      </AuthCardLayout>
+    );
+  }
+
+  const signUp = mode === "sign-up";
+  const showSocial = isDemoMode || firebaseSocialConfigured;
+  return (
+    <AuthSplitLayout
+      variant={signUp ? "sign-up" : "sign-in"}
+      topRight={
+        signUp ? (
+          <span className="text-sm text-muted-foreground">
+            {t("Have an account?")}{" "}
+            <Link to="/sign-in" className="font-semibold text-accent-ink">
+              {t("Sign in")}
+            </Link>
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-2">
+        {signUp && trialLabel && (
+          <span className="inline-flex h-7 items-center gap-1.5 self-start rounded-full bg-success-subtle px-3 text-xs font-bold text-success">
+            <span className="size-1.5 rounded-full bg-current" />
+            Includes {trialLabel}
+          </span>
+        )}
+        <h1 className="text-[32px] font-extrabold leading-tight tracking-[-0.03em]">
+          {t(copy[0] ?? "")}
+        </h1>
+        <p className="text-muted-foreground">{t(copy[1] ?? "")}</p>
+      </div>
+      {showSocial && (
+        <>
+          <div className={cn("flex gap-2.5", signUp ? "flex-row" : "flex-col")}>
+            <SocialButton
+              provider="google"
+              label={signUp ? "Google" : t("Continue with Google")}
+              disabled={busy}
+              onClick={() => void startSocial("google")}
+              className={signUp ? "flex-1" : undefined}
+            />
+            <SocialButton
+              provider="apple"
+              label={signUp ? "Apple" : t("Continue with Apple")}
+              disabled={busy}
+              onClick={() => void startSocial("apple")}
+              className={signUp ? "flex-1" : undefined}
+            />
+          </div>
+          <OrDivider />
+        </>
       )}
-      <form
-        className={cn("space-y-4", (mode === "forgot" || mode === "reset") && "mt-8")}
-        onSubmit={submit}
-        noValidate
-      >
-        {mode === "sign-up" && (
+      <form className="flex flex-col gap-4" onSubmit={submit} noValidate>
+        {signUp && (
           <Field
-            label="Full name"
+            label="Your name"
             placeholder="Alex Nguyen"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoComplete="name"
           />
         )}
-        {mode !== "reset" && (
-          <Field
-            label="Email"
-            placeholder="you@gmail.com"
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (fieldErrors.email) setFieldErrors((c) => ({ ...c, email: undefined }));
-            }}
-            autoComplete="email"
-            error={fieldErrors.email}
-          />
-        )}
-        {mode === "sign-in" && (
-          <PasswordField
-            id="password"
-            label="Password"
-            value={pw}
-            onChange={(value) => {
-              setPw(value);
-              if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
-            }}
-            autoComplete="current-password"
-            error={fieldErrors.password}
-          />
-        )}
-        {(mode === "sign-up" || mode === "reset") && (
-          <PasswordField
-            id="pw"
-            label={mode === "reset" ? "New password" : "Password"}
-            value={pw}
-            onChange={(value) => {
-              setPw(value);
-              if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
-            }}
-            showStrength
-            error={fieldErrors.password}
-          />
-        )}
-        {mode === "reset" && (
-          <PasswordField
-            id="pw2"
-            label="Confirm password"
-            value={pw2}
-            onChange={(value) => {
-              setPw2(value);
-              if (fieldErrors.confirm) setFieldErrors((c) => ({ ...c, confirm: undefined }));
-            }}
-            error={fieldErrors.confirm}
-          />
-        )}
-        {mode === "sign-in" && (
-          <div className="text-right">
-            <Link to="/forgot-password" className="text-xs font-medium text-primary">
-              {t("Forgot password?")}
-            </Link>
+        <Field
+          label="Email"
+          placeholder="you@example.com"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (fieldErrors.email) setFieldErrors((c) => ({ ...c, email: undefined }));
+          }}
+          autoComplete="email"
+          error={fieldErrors.email}
+        />
+        {signUp ? (
+          <div className="flex flex-col gap-2">
+            <PasswordField
+              id="pw"
+              label="Password"
+              value={pw}
+              onChange={(value) => {
+                setPw(value);
+                if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+              }}
+              error={fieldErrors.password}
+            />
+            <PasswordChecklist value={pw} />
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="password" className="text-sm font-medium">
+                {t("Password")}
+              </label>
+              <Link to="/forgot-password" className="text-sm font-semibold text-accent-ink">
+                {t("Forgot password?")}
+              </Link>
+            </div>
+            <PasswordInput
+              id="password"
+              className="mt-2"
+              value={pw}
+              onChange={(e) => {
+                setPw(e.target.value);
+                if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+              }}
+              placeholder="Password"
+              autoComplete="current-password"
+              aria-invalid={fieldErrors.password ? true : undefined}
+              aria-describedby={fieldErrors.password ? "password-error" : undefined}
+            />
+            {fieldErrors.password && (
+              <p id="password-error" className="mt-1.5 text-xs text-destructive">
+                {t(fieldErrors.password)}
+              </p>
+            )}
           </div>
         )}
-        {mode === "sign-up" && (
+        {signUp && (
           <div>
-            <label className="flex items-start gap-2 text-sm leading-5">
+            <label className="flex items-start gap-2.5 text-sm leading-5">
               <input
                 type="checkbox"
                 className={cn(
@@ -1249,34 +1373,25 @@ export function AuthPage({
               />
               <span>
                 I am at least 18 and agree to the{" "}
-                <Link to="/terms" className="underline underline-offset-4">
+                <Link to="/terms" className="font-semibold text-accent-ink underline-offset-4 hover:underline">
                   Terms of Use
                 </Link>{" "}
                 and{" "}
-                <Link to="/privacy" className="underline underline-offset-4">
+                <Link to="/privacy" className="font-semibold text-accent-ink underline-offset-4 hover:underline">
                   Privacy Policy
                 </Link>
                 .
               </span>
             </label>
             {fieldErrors.agree && (
-              <p id="agree-error" className="mt-1.5 text-xs text-destructive">
+              <p id="agree-error" className="mt-1.5 flex items-start gap-1.5 pl-[26px] text-xs text-destructive">
                 {fieldErrors.agree}
               </p>
             )}
           </div>
         )}
-        {err && (
-          <p role="alert" className="text-sm text-destructive">
-            {err}
-          </p>
-        )}
-        <Button className="w-full" type="submit" disabled={busy}>
-          {busy && (
-            <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          )}
-          {t(copy[2] ?? "")}
-        </Button>
+        {errorAlert}
+        {submitButton}
       </form>
       <Dialog
         open={socialConsentOpen}
@@ -1333,28 +1448,15 @@ export function AuthPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        {mode === "sign-in" ? (
-          <>
-            {t("New to SaveStream?")}{" "}
-            <Link to="/sign-up" className="font-medium text-primary">
-              {t("Create account")}
-            </Link>
-          </>
-        ) : mode === "sign-up" ? (
-          <>
-            {t("Already have an account?")}{" "}
-            <Link to="/sign-in" className="font-medium text-primary">
-              {t("Sign in")}
-            </Link>
-          </>
-        ) : (
-          <Link to="/sign-in" className="font-medium text-primary">
-            Back to sign in
+      {!signUp && (
+        <p className="text-center text-sm text-muted-foreground">
+          {t("New to SaveStream?")}{" "}
+          <Link to="/sign-up" className="font-semibold text-accent-ink">
+            {trialLabel ? `Create an account — ${trialLabel}` : t("Create account")}
           </Link>
-        )}
-      </p>
-    </AuthLayout>
+        </p>
+      )}
+    </AuthSplitLayout>
   );
 }
 function Field({
@@ -4623,29 +4725,6 @@ export function PublicFooter() {
         <span>{t("SaveStream is not affiliated with TikTok.")}</span>
       </div>
     </footer>
-  );
-}
-export function AuthLayout({ children }: { children: ReactNode }) {
-  const { t } = usePreferences();
-  return (
-    <div className="grid min-h-screen bg-surface-subtle lg:grid-cols-[1fr_1.1fr]">
-      <div className="flex flex-col bg-background p-6 sm:p-10">
-        <Logo />
-        <div className="m-auto w-full max-w-sm py-12">{children}</div>
-      </div>
-      <div className="hidden place-items-center overflow-hidden bg-auth lg:grid">
-        <div className="max-w-lg px-10">
-          <Cloud className="size-10 text-primary" />
-          <p className="mt-8 text-3xl font-medium leading-tight">
-            {t("“We monitor. We record. You can close the browser.”")}
-          </p>
-          <div className="mt-8 flex items-center gap-3 text-sm text-muted-foreground">
-            <span className="size-2 animate-pulse rounded-full bg-recording" />
-            Recording @linastudio · 01:42:18
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 const channelStates = [
