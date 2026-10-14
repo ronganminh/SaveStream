@@ -2270,6 +2270,67 @@ function adminSourceLabel(recording: RecordingResponse) {
   return recording.creator?.display_name || recording.creator?.username || recording.source.value;
 }
 
+type AdminJobStep = {
+  label: string;
+  state: "done" | "current" | "failed" | "todo";
+  at: string | null;
+};
+
+const adminJobStages = ["Queued", "Resolving", "Recording", "Processing", "Uploading"] as const;
+
+/** Timeline of a recording job, from the status and the timestamps the API returns. */
+function adminJobTimeline(item: RecordingResponse): AdminJobStep[] {
+  const stageOf: Partial<Record<RecordingStatusValue, number>> = {
+    queued: 0,
+    waiting_for_cloud_slot: 0,
+    resolving: 1,
+    waiting_live: 1,
+    recording: 2,
+    stop_requested: 2,
+    processing: 3,
+    uploading: 4,
+  };
+  const terminal = ["completed", "failed", "stopped", "missed_no_cloud_slot"].includes(item.status);
+  const failed = item.status === "failed" || item.status === "missed_no_cloud_slot";
+  // A failed job only shows the stages it really reached.
+  const reached = !terminal
+    ? (stageOf[item.status] ?? 0)
+    : !failed
+      ? adminJobStages.length
+      : item.duration_seconds > 0
+        ? 3
+        : item.started_at
+          ? 2
+          : 1;
+  const time = (value: string | null | undefined) =>
+    value
+      ? new Date(value).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      : null;
+  const steps: AdminJobStep[] = adminJobStages.map((label, index) => ({
+    label,
+    state: index < reached ? "done" : index === reached && !terminal ? "current" : "todo",
+    at: index === 0 ? time(item.created_at) : index === 2 ? time(item.started_at) : null,
+  }));
+  const lastLabel =
+    item.status === "completed"
+      ? "Completed"
+      : item.status === "stopped"
+        ? "Stopped"
+        : item.status === "missed_no_cloud_slot"
+          ? "Missed"
+          : "Failed";
+  steps.push({
+    label: terminal ? lastLabel : "Completed",
+    state: terminal ? (failed ? "failed" : "done") : "todo",
+    at: terminal ? time(item.ended_at ?? item.updated_at) : null,
+  });
+  return steps;
+}
+
 function AdminRecordingStatusPill({ status }: { status: RecordingStatusValue }) {
   const className =
     status === "completed"
@@ -2283,7 +2344,12 @@ function AdminRecordingStatusPill({ status }: { status: RecordingStatusValue }) 
             : "bg-warning-subtle text-warning-foreground";
 
   return (
-    <span className={cn("inline-flex rounded-md px-2 py-1 text-xs font-medium", className)}>
+    <span
+      className={cn(
+        "inline-flex h-6 items-center whitespace-nowrap rounded-full px-[9px] text-xs font-bold",
+        className,
+      )}
+    >
       {status.replaceAll("_", " ")}
     </span>
   );
@@ -3134,53 +3200,96 @@ function ProductionAdminJobDetailPage() {
       );
   };
 
+  const steps = adminJobTimeline(item);
+
   return (
     <AppShell>
-      <Link
-        to="/admin/jobs"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      <nav
+        className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"
+        aria-label="Breadcrumb"
       >
-        <ArrowLeft className="size-4" />
-        Jobs
-      </Link>
-
-      <PageHeader
-        title={item.id}
-        subtitle={adminSourceLabel(item)}
-        action={
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              disabled={recording.isFetching}
-              onClick={() => void recording.refetch()}
-            >
-              <RotateCcw />
-              Refresh
-            </Button>
-            {item.actions.can_retry && (
-              <Button
-                variant="outline"
-                disabled={retry.isPending}
-                onClick={() => setConfirmRetry(true)}
-              >
-                <RotateCcw />
-                Retry recording
-              </Button>
-            )}
-          </div>
-        }
-      />
-
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <AdminRecordingStatusPill status={item.status} />
-        <span className="text-xs text-muted-foreground">
-          Active records refresh every 5 seconds.
+        <Link to="/admin/jobs" className="hover:text-foreground">
+          Jobs &amp; LIVE
+        </Link>
+        <span aria-hidden="true">/</span>
+        <span className="truncate font-mono text-foreground" aria-current="page">
+          {item.id}
         </span>
-      </div>
+      </nav>
+
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="break-all font-mono text-[22px] font-bold tracking-[-.02em]">
+              {item.id}
+            </h1>
+            <AdminRecordingStatusPill status={item.status} />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {adminSourceLabel(item)} · {item.source.type}{" "}
+            <span className="font-mono">{item.source.value}</span>
+            {item.started_at ? ` · started ${new Date(item.started_at).toLocaleString()}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Active records refresh every 5 seconds.
+          </p>
+        </div>
+        <div className="flex flex-none gap-2">
+          <Button
+            variant="outline"
+            disabled={recording.isFetching}
+            onClick={() => void recording.refetch()}
+          >
+            <RotateCcw />
+            Refresh
+          </Button>
+          {item.actions.can_retry && (
+            <Button disabled={retry.isPending} onClick={() => setConfirmRetry(true)}>
+              <RotateCcw />
+              Retry recording
+            </Button>
+          )}
+        </div>
+      </header>
+
+      <section className="mb-6 rounded-[18px] border bg-surface p-6" aria-labelledby="job-timeline">
+        <h2 id="job-timeline" className="text-[17px] font-bold tracking-[-.01em]">
+          Timeline
+        </h2>
+        <ol className="mt-5 grid gap-5 sm:grid-cols-3 lg:grid-cols-6 lg:gap-0">
+          {steps.map((step, index) => (
+            <li key={step.label} className="flex flex-col gap-2">
+              <div className="flex items-center">
+                <span
+                  className={cn(
+                    "grid size-7 flex-none place-items-center rounded-full font-mono text-xs font-bold shadow-[0_0_0_4px_var(--surface)]",
+                    step.state === "done" && "bg-success text-white",
+                    step.state === "failed" && "bg-destructive text-white",
+                    step.state === "current" && "bg-primary text-primary-foreground",
+                    step.state === "todo" && "bg-surface-2 text-muted-foreground",
+                  )}
+                >
+                  {step.state === "done" ? "✓" : step.state === "failed" ? "!" : index + 1}
+                </span>
+                {index < steps.length - 1 && (
+                  <span
+                    className={cn(
+                      "mx-1.5 hidden h-[3px] flex-1 rounded-full lg:block",
+                      step.state === "done" ? "bg-success" : "bg-surface-2",
+                    )}
+                  />
+                )}
+              </div>
+              <b className="text-sm">{step.label}</b>
+              <span className="font-mono text-xs text-muted-foreground">{step.at ?? "—"}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {item.error && (
-        <div className="mb-6 rounded-lg border border-destructive/30 bg-recording-subtle p-4">
-          <p className="text-sm font-medium text-destructive">{item.error.code}</p>
+        <div className="mb-6 rounded-[16px] border border-destructive/30 bg-recording-subtle p-4">
+          <p className="font-mono text-sm font-bold text-destructive">{item.error.code}</p>
           <p className="mt-2 text-sm">{item.error.message}</p>
           <p className="mt-2 text-xs text-muted-foreground">
             Retryable: {item.error.retryable ? "yes" : "no"}
@@ -3188,32 +3297,38 @@ function ProductionAdminJobDetailPage() {
         </div>
       )}
 
-      <section className="rounded-lg border bg-surface p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-medium">Backend recording state</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Only fields returned by the admin recording API are shown.
-            </p>
-          </div>
-        </div>
-        <dl className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fields.map(([label, value]) => (
-            <div key={label} className="min-w-0">
-              <dt className="text-xs text-muted-foreground">{label}</dt>
-              <dd className="mt-1 break-words font-mono text-xs">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <div className="grid items-start gap-5 xl:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-[18px] border bg-surface p-5">
+          <h2 className="text-[17px] font-bold tracking-[-.01em]">Backend recording state</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Only fields returned by the admin recording API are shown.
+          </p>
+          <dl className="mt-5 grid grid-cols-[170px_1fr] gap-x-4 gap-y-2.5 text-sm">
+            {fields.map(([label, value]) => (
+              <Fragment key={label}>
+                <dt className="text-muted-foreground">{label}</dt>
+                <dd className="min-w-0 break-words font-mono text-xs leading-5">{value}</dd>
+              </Fragment>
+            ))}
+          </dl>
+        </section>
 
-      <section className="mt-6 rounded-lg border bg-surface p-5">
-        <h2 className="font-medium">Actions exposed by backend</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Retry is available only when the recording response says can_retry. The admin API does not
-          expose a browser action to mark a job failed, kill a worker, or edit hidden job state.
-        </p>
-      </section>
+        <section className="rounded-[18px] border bg-surface p-5">
+          <h2 className="text-[17px] font-bold tracking-[-.01em]">Actions exposed by backend</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Retry is available only when the recording response says can_retry. The admin API does
+            not expose a browser action to mark a job failed, kill a worker, or edit hidden job
+            state.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Stop, retention, playback and delete are on the{" "}
+            <Link to="/admin/jobs" className="font-bold text-accent-ink hover:underline">
+              Jobs &amp; LIVE
+            </Link>{" "}
+            list, each with a reason stored in the audit log.
+          </p>
+        </section>
+      </div>
 
       <ConfirmDialog
         open={confirmRetry}
