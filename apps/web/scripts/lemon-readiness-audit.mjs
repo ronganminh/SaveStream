@@ -65,7 +65,7 @@ for (const p of PUBLIC_PATHS) {
 for (const route of [
   "refund",
   "contact",
-  "help",
+  "help.index",
   "pricing",
   "terms",
   "privacy",
@@ -101,7 +101,12 @@ const legal = between(
   "/* ---------------- Public: legal, refund, contact",
   "export function StatusPage()",
 );
-const help = between(more, "const productionHelpTopics", "function DemoHelpPage()");
+const helpDir = path.join(root, "src/content/help");
+const help = fs
+  .readdirSync(helpDir)
+  .filter((name) => name.endsWith(".md"))
+  .map((name) => fs.readFileSync(path.join(helpDir, name), "utf8"))
+  .join("\n");
 const forbiddenCopy = [
   "placeholder",
   "Draft",

@@ -26,7 +26,8 @@ function block(file, start, end) {
     failures.push(`${file}: could not locate block ${start}`);
     return "";
   }
-  return source.slice(from, to);
+  // Collapse whitespace so JSX text wrapped by Prettier still matches.
+  return source.slice(from, to).replace(/\s+/g, " ");
 }
 
 function mustIn(label, source, text) {
@@ -92,7 +93,7 @@ const pricing = block(
 for (const text of [
   "Simple, pay-as-you-go pricing",
   "usePublicPricingData()",
-  "pricing.packages.map",
+  "pricing!.packages.map",
 ]) {
   mustIn("CreditPricingPage", pricing, text);
 }
@@ -117,9 +118,9 @@ for (const text of ["usageStates", "useUsageData", "Recording quota reached"]) {
 }
 
 const status = block(
-  "src/components/app-pages-more.tsx",
-  "function ProductionStatusPage()",
-  "function DemoStatusPage()",
+  "src/components/public/contact-status.tsx",
+  "export function PublicStatusPage()",
+  "export function PublicNotFoundPage()",
 );
 for (const text of [
   "does not currently publish a public live incident feed",
@@ -131,28 +132,33 @@ for (const text of ["publicServices", "Demo data", "Illustrative service state"]
   forbidIn("ProductionStatusPage", status, text);
 }
 
-const productionHelp = block(
-  "src/components/app-pages-more.tsx",
-  "const productionHelpTopics",
-  "export function HelpPage()",
-);
-for (const text of [
-  'title: "Credits"',
-  "bought once and never expiring",
-]) {
-  mustIn("productionHelpTopics", productionHelp, text);
+// Help center: Markdown articles in src/content/help (see src/lib/help-content.ts).
+const helpDir = path.join(process.cwd(), "src/content/help");
+const productionHelp = fs
+  .readdirSync(helpDir)
+  .filter((name) => name.endsWith(".md"))
+  .map((name) => fs.readFileSync(path.join(helpDir, name), "utf8"))
+  .join("\n");
+for (const text of ["never expire", "{{paid_retention}}", "{{signup_credits}}"]) {
+  mustIn("help articles", productionHelp, text);
 }
-forbidIn("productionHelpTopics", productionHelp, "stored for 30 days");
-// Retention comes from the Admin runtime settings, never a fixed number.
-must("src/components/app-pages-more.tsx", "retentionSentence(publicPricingQuery.data)");
+// Numbers that change in Admin come from {{tokens}}, never fixed copy.
 for (const text of [
+  "stored for 30 days",
+  "10 free",
   "future API",
-  "current frontend values come from one plan catalog",
   "This frontend demo does not connect to a real recorder",
   "Free/Pro",
   "backend-authoritative",
+  "Retry button",
 ]) {
-  forbidIn("productionHelpTopics", productionHelp, text);
+  forbidIn("help articles", productionHelp, text);
+}
+// Every help article is listed in the sitemap.
+const sitemap = fs.readFileSync(path.join(process.cwd(), "public/sitemap.xml"), "utf8");
+for (const name of fs.readdirSync(helpDir).filter((file) => file.endsWith(".md"))) {
+  const url = `https://savestream.online/help/${name.replace(/\.md$/, "")}`;
+  if (!sitemap.includes(url)) failures.push(`public/sitemap.xml: missing ${url}`);
 }
 
 must("src/components/app-pages.tsx", "Pay as you go with credits.");

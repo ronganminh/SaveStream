@@ -1,4 +1,9 @@
 import { LEGAL_REVISION_LABEL } from "@/lib/legal";
+import {
+  PublicContactPage,
+  PublicStatusPage,
+  type ContactChannel,
+} from "@/components/public/contact-status";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -3323,6 +3328,18 @@ function InlineLink({
 }
 
 type LegalSection = { h: string; p: ReactNode };
+const legalDocuments = [
+  { to: "/terms", label: "Terms of Use" },
+  { to: "/privacy", label: "Privacy Policy" },
+  { to: "/acceptable-use", label: "Acceptable Use Policy" },
+  { to: "/copyright", label: "Copyright & Takedown Policy" },
+  { to: "/refund", label: "Refund Policy" },
+] as const;
+
+function legalAnchor(index: number) {
+  return `section-${index + 1}`;
+}
+
 export function LegalPage({
   title,
   intro,
@@ -3338,22 +3355,65 @@ export function LegalPage({
   return (
     <div className="min-h-screen bg-background">
       <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <p className="text-xs text-muted-foreground">Last updated {lastUpdated}</p>
-        <h1 className="mt-2 text-3xl font-semibold">{title}</h1>
-        <div className="mt-3 text-muted-foreground">{intro}</div>
-        <div className="mt-10 space-y-8">
-          {sections.map((s, i) => (
-            <section key={s.h}>
-              <h2 className="text-lg font-semibold">
-                <span className="mr-2 font-mono text-sm text-muted-foreground">{i + 1}.</span>
-                {t(s.h)}
+      <section className="border-b bg-surface-3 pt-[72px]">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-3 px-6 pb-10 pt-14">
+          <span className="text-xs font-bold uppercase tracking-[.08em] text-accent-ink">
+            {t("Legal")}
+          </span>
+          <h1 className="text-[44px] font-extrabold leading-[1.05] tracking-[-.035em]">{title}</h1>
+          <p className="text-sm text-muted-foreground">Last updated {lastUpdated}.</p>
+        </div>
+      </section>
+      <div className="mx-auto flex max-w-[1100px] flex-wrap items-start gap-12 px-6 pb-4 pt-12">
+        <aside className="flex w-full flex-col gap-6 md:sticky md:top-24 md:w-[260px] md:flex-none">
+          <nav
+            aria-label={t("Legal documents")}
+            className="flex flex-col gap-1 rounded-2xl border bg-surface p-3.5"
+          >
+            <span className="px-3 pb-2 pt-1 text-xs font-bold uppercase tracking-[.08em] text-accent-ink">
+              {t("Legal")}
+            </span>
+            {legalDocuments.map((doc) => (
+              <Link
+                key={doc.to}
+                to={doc.to}
+                className="flex min-h-10 items-center rounded-[10px] px-3 text-sm font-semibold text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+                activeProps={{
+                  className: "bg-primary-subtle text-accent-ink",
+                  "aria-current": "page",
+                }}
+              >
+                {t(doc.label)}
+              </Link>
+            ))}
+          </nav>
+          {sections.length > 3 && (
+            <nav aria-label={t("On this page")} className="hidden flex-col gap-2 px-1 text-sm md:flex">
+              <b>{t("On this page")}</b>
+              {sections.map((section, index) => (
+                <a
+                  key={section.h}
+                  href={`#${legalAnchor(index)}`}
+                  className="border-l-2 border-border pl-2.5 text-muted-foreground hover:border-primary hover:text-accent-ink"
+                >
+                  {index + 1}. {t(section.h)}
+                </a>
+              ))}
+            </nav>
+          )}
+        </aside>
+        <article className="help-prose min-w-0 max-w-[720px] flex-[999_1_560px]">
+          <div className="text-muted-foreground">{intro}</div>
+          {sections.map((section, index) => (
+            <section key={section.h} id={legalAnchor(index)} className="scroll-mt-24">
+              <h2>
+                {index + 1}. {t(section.h)}
               </h2>
-              <div className="mt-2 space-y-2 text-sm leading-7 text-muted-foreground">{s.p}</div>
+              <div className="space-y-3 text-[15px] leading-7 text-foreground/85">{section.p}</div>
             </section>
           ))}
-        </div>
-      </main>
+        </article>
+      </div>
       <PublicFooter />
     </div>
   );
@@ -3949,19 +4009,10 @@ export function ContactPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <ProductionContactContent />
-      </main>
-      <PublicFooter />
-    </div>
-  );
+  return <PublicContactPage contacts={contactChannels} />;
 }
 
-function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {
-  const contacts: { title: string; email: string; body: string }[] = [
+const contactChannels: ContactChannel[] = [
     {
       title: "Support",
       email: SUPPORT_EMAIL,
@@ -3982,8 +4033,10 @@ function ProductionContactContent({ embedded = false }: { embedded?: boolean }) 
       email: ABUSE_EMAIL,
       body: "Tell us the channel name and why you believe it is being recorded without permission.",
     },
-  ];
+];
 
+function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {
+  const contacts = contactChannels;
   return (
     <>
       {embedded ? (
@@ -4022,37 +4075,7 @@ export function StatusPage() {
 }
 
 function ProductionStatusPage() {
-  const { t } = usePreferences();
-  return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">{t("System status")}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {t("Current information about SaveStream service availability and incident reporting.")}
-        </p>
-        <div className="mt-6">
-          <StateBanner
-            tone="info"
-            icon={ShieldCheck}
-            title={t("Service status information")}
-            body={t(
-              "SaveStream does not currently publish a public live incident feed and does not display illustrative service health on the production site. We will post confirmed service notices here when public incident reporting is available.",
-            )}
-          />
-        </div>
-        <section className="mt-8 rounded-lg border bg-surface p-5">
-          <h2 className="font-medium">{t("What is available")}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {t(
-              "Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.",
-            )}
-          </p>
-        </section>
-      </main>
-      <PublicFooter />
-    </div>
-  );
+  return <PublicStatusPage />;
 }
 
 function DemoStatusPage() {
@@ -4117,331 +4140,5 @@ function DemoStatusPage() {
       </main>
       <PublicFooter />
     </div>
-  );
-}
-
-/* ---------------- Help ---------------- */
-const demoHelpTopics: { id: string; icon: typeof Cloud; title: string; body: string }[] = [
-  {
-    id: "getting-started",
-    icon: Radio,
-    title: "Getting started",
-    body: "Create an account, add an authorized TikTok channel, and leave monitoring enabled. Recording starts automatically when the channel goes live.",
-  },
-  {
-    id: "cloud-monitoring",
-    icon: Cloud,
-    title: "How cloud monitoring works",
-    body: "SaveStream checks enabled channels from cloud infrastructure. Nothing needs to keep running in your browser.",
-  },
-  {
-    id: "browser-closed",
-    icon: Monitor,
-    title: "What happens if I close my browser or computer?",
-    body: "In the product flow, monitoring and recording continue in the cloud. This frontend demo does not connect to a real recorder.",
-  },
-  {
-    id: "lifecycle",
-    icon: FileVideo,
-    title: "Recording lifecycle",
-    body: "The UI models waiting, recording, processing, ready, partial, failed, expiring, and expired states so the future API can map to clear user feedback.",
-  },
-  {
-    id: "quotas",
-    icon: Gauge,
-    title: "Quotas",
-    body: "Monthly limits include recording time, monitored channels, simultaneous recordings, download bandwidth, and retention. The current frontend values come from one plan catalog.",
-  },
-  {
-    id: "retention",
-    icon: Clock3,
-    title: "Retention",
-    body: "Recordings are shown with an expiry state based on the selected plan. Download anything you are authorized to keep before its retention period ends.",
-  },
-  {
-    id: "troubleshooting",
-    icon: AlertTriangle,
-    title: "Failed recording troubleshooting",
-    body: "Failed and partial recordings should explain what was kept, whether retry is available, and what the user can do next.",
-  },
-  {
-    id: "authorized",
-    icon: ShieldCheck,
-    title: "Authorized recording policy",
-    body: "Only add channels you own, manage, or have explicit permission to record and archive.",
-  },
-];
-
-const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; body: ReactNode }[] = [
-  {
-    id: "getting-started",
-    icon: Radio,
-    title: "Getting started",
-    body: "Create an account, verify your email, and add a TikTok channel you own, manage, or have permission to record. SaveStream starts watching it right away.",
-  },
-  {
-    id: "cloud-monitoring",
-    icon: Cloud,
-    title: "How monitoring works",
-    body: "SaveStream checks your channels from the cloud. When one goes live, recording starts automatically, so you can close your browser or turn off your computer.",
-  },
-  {
-    id: "recordings",
-    icon: FileVideo,
-    title: "Watching and downloading recordings",
-    body: "When a livestream ends, the recording is processed and appears in Recordings, ready to watch in the browser or download. You can also stop a recording early.",
-  },
-  {
-    id: "credits",
-    icon: Gauge,
-    title: "Credits",
-    body: (
-      <>
-        Recording time is paid with credits, bought once and never expiring. New accounts get free
-        trial credits after verifying their email. A recording runs until the livestream ends or
-        your credits run out. See{" "}
-        <Link to="/pricing" className="text-primary underline underline-offset-4">
-          Pricing
-        </Link>{" "}
-        for packages and the current rate.
-      </>
-    ),
-  },
-  {
-    id: "retention",
-    icon: Clock3,
-    title: "How long are recordings kept?",
-    // Filled from the public pricing settings in ProductionHelpContent.
-    body: "",
-  },
-  {
-    id: "troubleshooting",
-    icon: AlertTriangle,
-    title: "If a recording fails",
-    body: "Open the recording to see what happened. When it can be retried, you will see a Retry button. Failed recordings do not use your credits.",
-  },
-  {
-    id: "authorized",
-    icon: ShieldCheck,
-    title: "Authorized recording policy",
-    body: "Only add channels you own, manage, or have explicit permission to record and archive.",
-  },
-];
-
-export function HelpPage() {
-  const { status } = useAuth();
-
-  if (isDemoMode) return <DemoHelpPage />;
-  if (status === "authenticated") {
-    return (
-      <AppShell>
-        <ProductionHelpContent embedded />
-      </AppShell>
-    );
-  }
-  return <PublicHelpPage />;
-}
-
-function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
-  const { t } = usePreferences();
-  const { query: publicPricingQuery } = usePublicPricingData();
-  return (
-    <>
-      {embedded ? (
-        <PageHeader
-          title="Help"
-          subtitle="Guidance for monitoring and recording authorized TikTok channels."
-        />
-      ) : (
-        <>
-          <h1 className="text-3xl font-semibold">{t("Help")}</h1>
-          <p className="mt-3 text-muted-foreground">
-            {t("Guidance for monitoring and recording authorized TikTok channels.")}
-          </p>
-        </>
-      )}
-      <div className={embedded ? "grid gap-4 lg:grid-cols-2" : "mt-10 grid gap-4 lg:grid-cols-2"}>
-        {productionHelpTopics.map((topic) => {
-          const I = topic.icon;
-          return (
-            <section
-              key={topic.id}
-              id={topic.id}
-              className="scroll-mt-24 rounded-lg border bg-surface p-5"
-            >
-              <div className="flex items-center gap-2">
-                <I className="size-4 text-primary" />
-                <h2 className="font-medium">{t(topic.title)}</h2>
-              </div>
-              <div className="mt-3 text-sm leading-6 text-muted-foreground">
-                {embedded && topic.id === "credits" ? (
-                  <>
-                    Recording time is paid with credits, bought once and never expiring. New
-                    accounts get free trial credits after verifying their email. A recording runs
-                    until the livestream ends or your credits run out. See{" "}
-                    <Link to="/billing" className="text-primary underline underline-offset-4">
-                      Billing
-                    </Link>{" "}
-                    to buy credits and review your current balance.
-                  </>
-                ) : topic.id === "retention" ? (
-                  `${retentionSentence(publicPricingQuery.data)}, then deleted automatically. Each recording shows its expiry date. Download anything you want to keep longer.`
-                ) : typeof topic.body === "string" ? (
-                  t(topic.body)
-                ) : (
-                  topic.body
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-      <section
-        id="contact"
-        className="mt-8 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-      >
-        <CircleHelp className="size-5 text-primary" />
-        <div className="flex-1">
-          <h2 className="font-medium">{t("Still need help?")}</h2>
-          <p className="text-sm text-muted-foreground">
-            Email <MailLink email={SUPPORT_EMAIL} /> and we will get back to you.
-          </p>
-        </div>
-        <Button variant="outline" asChild>
-          <Link to="/contact">{t("Contact support")}</Link>
-        </Button>
-      </section>
-    </>
-  );
-}
-
-function PublicHelpPage() {
-  return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-5xl px-4 pb-20 pt-28 sm:px-6">
-        <ProductionHelpContent />
-      </main>
-      <PublicFooter />
-    </div>
-  );
-}
-
-function DemoHelpPage() {
-  const { t } = usePreferences();
-  const [contact, setContact] = useState(false);
-  const [msg, setMsg] = useState("");
-  const helpTopics = demoHelpTopics;
-  return (
-    <AppShell>
-      <PageHeader
-        title="Help"
-        subtitle="Guidance for monitoring and recording authorized TikTok channels."
-        action={
-          <Button variant="outline" onClick={() => setContact(true)}>
-            <LifeBuoy />
-            {t("Contact support")}
-          </Button>
-        }
-      />
-      <nav aria-label={t("Help topics")} className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        {helpTopics.map((topic) => (
-          <a
-            key={topic.id}
-            href={`#${topic.id}`}
-            className="shrink-0 rounded-md border bg-surface px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-          >
-            {t(
-              topic.title === "What happens if I close my browser or computer?"
-                ? "Browser closed"
-                : topic.title,
-            )}
-          </a>
-        ))}
-      </nav>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {helpTopics.map((topic) => {
-          const I = topic.icon;
-          return (
-            <section
-              key={topic.id}
-              id={topic.id}
-              className="scroll-mt-24 rounded-lg border bg-surface p-5"
-            >
-              <div className="flex items-center gap-2">
-                <I className="size-4 text-primary" />
-                <h2 className="font-medium">{t(topic.title)}</h2>
-              </div>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                {t(topic.body)}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-      <section
-        id="contact"
-        className="mt-8 scroll-mt-24 flex flex-col gap-4 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center"
-      >
-        <CircleHelp className="size-5 text-primary" />
-        <div className="flex-1">
-          <h2 className="font-medium">{t("Still need help?")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {t("This demo does not send support messages.")}
-          </p>
-        </div>
-        <Button onClick={() => setContact(true)}>{t("Contact support")}</Button>
-      </section>
-      <Dialog open={contact} onOpenChange={setContact}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Contact support")}</DialogTitle>
-            <DialogDescription>{t("This demo does not send support messages.")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="sup-subject" className="text-sm font-medium">
-                {t("Subject")}
-              </label>
-              <Input
-                id="sup-subject"
-                className="mt-2"
-                placeholder={t("e.g. Recording failed for @norashop")}
-              />
-            </div>
-            <div>
-              <label htmlFor="sup-msg" className="text-sm font-medium">
-                {t("Message")}
-              </label>
-              <Textarea
-                id="sup-msg"
-                className="mt-2"
-                rows={5}
-                value={msg}
-                onChange={(e) => setMsg(e.target.value)}
-                placeholder={t("What happened, and when?")}
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setContact(false)}>
-              {t("Cancel")}
-            </Button>
-            <Button
-              disabled={!msg.trim()}
-              onClick={() => {
-                setContact(false);
-                setMsg("");
-                toast.success(t("Demo function"), {
-                  description: t("This demo does not send support messages."),
-                });
-              }}
-            >
-              {t("Send message")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </AppShell>
   );
 }

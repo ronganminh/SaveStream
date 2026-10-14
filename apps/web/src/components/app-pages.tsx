@@ -36,6 +36,7 @@ import {
   Calendar,
   Check,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock3,
   Cloud,
@@ -102,6 +103,7 @@ import {
   ConfirmDeleteDialog,
   ConfirmDialog,
   CreatorAvatar,
+  Pill,
   RecordingCreatorAvatar,
   EmptyState,
   ErrorState,
@@ -137,7 +139,15 @@ import {
 } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { isAdminRole, isDemoMode } from "@/lib/app-config";
-import { freeWebSentence, retentionFeature, retentionSentence } from "@/lib/plan-facts";
+import { ProductionLanding } from "@/components/public/landing";
+import {
+  freeWebSentence,
+  packHours,
+  packPricePerHour,
+  recommendPack,
+  retentionFeature,
+  retentionSentence,
+} from "@/lib/plan-facts";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { ApiError } from "@/api/errors";
 import {
@@ -212,24 +222,31 @@ const publicLinks = [
   { href: "/#how", label: "How it works" },
   { href: "/#examples", label: "Examples" },
   { to: "/pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
+  { to: "/help", label: "Help" },
 ] as const;
+const navLinkClass =
+  "rounded-[10px] px-2.5 py-2 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground";
 export function PublicHeader() {
   const { t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
   return (
-    <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
+    <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/85 backdrop-blur-md backdrop-saturate-150">
+      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-2 px-4 sm:px-6">
         <Logo />
-        <nav className="ml-8 hidden items-center gap-5 text-sm text-muted-foreground lg:flex">
+        <nav aria-label={t("Main")} className="ml-6 hidden items-center gap-0.5 lg:flex">
           {publicLinks.map((link) =>
             "to" in link ? (
-              <Link key={link.label} to={link.to}>
+              <Link
+                key={link.label}
+                to={link.to}
+                className={navLinkClass}
+                activeProps={{ className: "font-semibold text-foreground", "aria-current": "page" }}
+              >
                 {t(link.label)}
               </Link>
             ) : (
-              <a key={link.label} href={link.href}>
+              <a key={link.label} href={link.href} className={navLinkClass}>
                 {t(link.label)}
               </a>
             ),
@@ -254,7 +271,7 @@ export function PublicHeader() {
               <Button variant="ghost" asChild className="hidden md:inline-flex">
                 <Link to="/sign-in">{t("Sign in")}</Link>
               </Button>
-              <Button asChild className="hidden md:inline-flex">
+              <Button asChild className="hidden sm:inline-flex">
                 <Link to="/sign-up">{t("Sign up")}</Link>
               </Button>
             </>
@@ -329,7 +346,7 @@ function formatSampleDuration(seconds?: number) {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${remaining}s`;
 }
 
-function RecordingExamples() {
+export function RecordingExamples() {
   const { t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
@@ -500,6 +517,11 @@ function RecordingPreviewCard() {
 }
 
 export function LandingPage() {
+  if (!isDemoMode) return <ProductionLanding />;
+  return <DemoLandingPage />;
+}
+
+function DemoLandingPage() {
   const { t, language } = usePreferences();
   const { query: publicPricingQuery } = usePublicPricingData();
   const publicPricing = publicPricingQuery.data;
@@ -2775,7 +2797,7 @@ export function UsagePage() {
   return isDemoMode ? <DemoUsagePage /> : <CreditsUsagePage />;
 }
 
-function formatMoneyValue(money: Money, language: string) {
+export function formatMoneyValue(money: Money, language: string) {
   try {
     const formatter = new Intl.NumberFormat(language, {
       style: "currency",
@@ -4002,7 +4024,7 @@ function minutesPerCredit(rate: PublicRecordingRate) {
   return rate.unit_seconds / 60 / rate.credits_per_unit;
 }
 
-function formatRecordingTime(minutes: number, _language: Language = "en") {
+export function formatRecordingTime(minutes: number, _language: Language = "en") {
   if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
   return pluralize(minutes, "minute");
@@ -4047,6 +4069,46 @@ const includedInEveryPackage = [
   "Credits never expire",
 ];
 
+const paymentFaqs = [
+  {
+    q: "Who processes my payment?",
+    a: "PayPal processes every purchase. SaveStream does not see or store your full card details.",
+  },
+  {
+    q: "Is this a subscription?",
+    a: "No. Each pack is a one-time purchase. Nothing renews and you are never charged again unless you buy another pack.",
+  },
+  {
+    q: "Do credits expire?",
+    a: "No. Unused credits stay in your balance until you use them.",
+  },
+  {
+    q: "My payment shows as pending. What now?",
+    a: "Some PayPal payments take a few minutes to confirm. Credits are added automatically as soon as PayPal confirms the payment. A payment PayPal never completes is closed after 24 hours without charging credits. If you were charged and see no credits, contact support with your PayPal transaction ID.",
+  },
+  {
+    q: "Who issues my receipt?",
+    a: "PayPal issues your receipt. Keep the PayPal transaction ID from it — you need it for any billing request.",
+  },
+  {
+    q: "Can I get a refund?",
+    a: "Email support@savestream.online with your account email, the PayPal transaction ID and the reason. We review each request individually; refunds are not automatic. Credits already used for recordings may reduce or rule out a refund, and free trial credits can’t be refunded.",
+  },
+] as const;
+
+function formatPerHour(value: number, currency: string, language: string) {
+  try {
+    return new Intl.NumberFormat(language, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    return value.toFixed(2);
+  }
+}
+
 function CreditPricingPage() {
   const { language, t } = usePreferences();
   const { status } = useAuth();
@@ -4057,163 +4119,383 @@ function CreditPricingPage() {
   const rateLine = rateSentence(rate, language);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
   const channels = useCheckoutChannels();
+  const [hoursPerWeek, setHoursPerWeek] = useState(8);
+  const [openFaq, setOpenFaq] = useState(0);
+  const packages = pricing?.packages ?? [];
+  const recommended = recommendPack(packages, hoursPerWeek);
+  const recommendedPack = recommended >= 0 ? packages[recommended] : undefined;
+  const recommendedHours = recommendedPack ? packHours(recommendedPack) : null;
+  const basePerHour = packages[0] ? packPricePerHour(packages[0]) : null;
+  const bestPerHour = Math.min(
+    ...packages.map((item) => packPricePerHour(item) ?? Number.POSITIVE_INFINITY),
+  );
+  const trialMinutes =
+    pricing && rate && rate.credits_per_unit > 0 && pricing.signup_credits > 0
+      ? pricing.signup_credits * minutesPerCredit(rate)
+      : null;
+  const hourRange = packages
+    .map(packHours)
+    .filter((value): value is number => value !== null);
+
+  const comparison: [string, string, string][] = [
+    [
+      "Recording time",
+      pricing?.signup_credits
+        ? `${pricing.signup_credits} credits${trialMinutes ? ` (${formatRecordingTime(trialMinutes)})` : ""}`
+        : "—",
+      hourRange.length
+        ? `${Math.round(Math.min(...hourRange))}–${Math.round(Math.max(...hourRange))} hours per pack`
+        : "Depends on the pack",
+    ],
+    ["Automatic cloud recording", "After your first purchase", "Included"],
+    ["Payment needed", "No", "PayPal, one time"],
+    [
+      "Channels monitored",
+      pricing?.free_max_channels_per_user ? `Up to ${pricing.free_max_channels_per_user}` : "Limited",
+      pricing?.max_channels_per_user ? `Up to ${pricing.max_channels_per_user}` : "More",
+    ],
+    [
+      "Recordings at the same time",
+      "—",
+      pricing?.max_concurrent_recordings_per_user
+        ? `Up to ${pricing.max_concurrent_recordings_per_user}`
+        : "Several",
+    ],
+    [
+      "Storage",
+      pricing?.trial_recording_retention_days
+        ? pluralize(pricing.trial_recording_retention_days, "day")
+        : "Limited",
+      pricing?.recording_retention_days
+        ? pluralize(pricing.recording_retention_days, "day")
+        : "Limited",
+    ],
+    ["Checking offline channels", "Free", "Free"],
+    ["Playback & download", "Included", "Included"],
+    ["Credit expiry", "Never", "Never"],
+  ];
 
   return (
     <>
       <PublicHeader />
-      <main className="mx-auto max-w-5xl px-4 pb-20 pt-32">
-        <div className="text-center">
-          <h1 className="text-4xl font-semibold">{t("Simple, pay-as-you-go pricing")}</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-            {t(
-              "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.",
-            )}
-          </p>
-          {rateLine && <p className="mt-3 text-sm font-medium">{rateLine}</p>}
-        </div>
+      <main className="pt-[72px]">
+        <section className="relative overflow-hidden">
+          <div aria-hidden className="hero-glow" />
+          <div className="relative mx-auto flex max-w-[1200px] flex-col items-center gap-[18px] px-6 pb-14 pt-20 text-center">
+            <span className="text-xs font-bold uppercase tracking-[.08em] text-accent-ink">
+              {t("Pricing")}
+            </span>
+            <h1 className="max-w-[820px] text-[clamp(36px,4.4vw,56px)] font-extrabold leading-[1.05] tracking-[-.035em]">
+              {t("Simple, pay-as-you-go pricing")}
+            </h1>
+            <p className="max-w-[600px] text-lg leading-relaxed text-muted-foreground">
+              {t(
+                "Buy credit packs once and use them whenever your channels go live. No subscription and no monthly reset.",
+              )}
+            </p>
+            <div className="mt-1.5 flex flex-wrap justify-center gap-2.5">
+              {pricing && pricing.signup_credits > 0 && (
+                <Pill tone="success">{`${pricing.signup_credits} free trial credits`}</Pill>
+              )}
+              <Pill tone="info">{t("No payment to sign up")}</Pill>
+              <Pill>{t("Prices in USD · paid with PayPal")}</Pill>
+            </div>
+            {rateLine && <p className="text-sm font-medium">{rateLine}</p>}
+          </div>
+        </section>
 
-        {state.kind === "error" ? (
-          <div className="mx-auto mt-10 max-w-3xl">
-            <StateBanner
-              tone="warning"
-              title={t("Pricing could not be loaded")}
-              body={t("Please refresh the page in a moment.")}
-              action={
-                <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
-                  {t("Retry")}
-                </Button>
-              }
-            />
-          </div>
-        ) : state.kind === "loading" ? (
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-72 animate-pulse rounded-lg border bg-muted" />
-            ))}
-          </div>
-        ) : !pricing?.packages.length ? (
-          <div className="mt-12">
+        <section className="mx-auto max-w-[1200px] px-6" aria-label={t("Credit packs")}>
+          {state.kind === "error" ? (
+            <div className="mx-auto max-w-3xl">
+              <StateBanner
+                tone="warning"
+                title={t("Pricing could not be loaded")}
+                body={t("Please refresh the page in a moment.")}
+                action={
+                  <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+                    {t("Retry")}
+                  </Button>
+                }
+              />
+            </div>
+          ) : state.kind === "loading" ? (
+            <div className="grid gap-6 md:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-80 animate-pulse rounded-2xl border bg-muted" />
+              ))}
+            </div>
+          ) : !packages.length ? (
             <EmptyState
               icon={CreditCard}
               title={t("Credit packages are not available right now")}
               body={t("Please check back soon.")}
             />
-          </div>
-        ) : (
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {pricing.packages.map((item) => (
-              <section key={item.id} className="flex flex-col rounded-lg border bg-surface p-6">
-                <h2 className="text-lg font-semibold">{item.name}</h2>
-                <p className="mt-4 font-mono text-4xl font-semibold">
-                  {formatMoneyValue(item.price, language)}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">{t("One-time purchase")}</p>
-                <dl className="mt-6 space-y-3 text-sm">
-                  <div className="flex items-center justify-between gap-3 border-t pt-3">
-                    <dt className="text-muted-foreground">{t("Credits")}</dt>
-                    <dd className="font-medium">
-                      {item.credits.toLocaleString(language)}
-                      {formatApproxHours(item.recording_minutes, language)
-                        ? ` · ${formatApproxHours(item.recording_minutes, language)}`
-                        : ""}
-                    </dd>
-                  </div>
-                  {item.recording_minutes !== null && (
-                    <div className="flex items-center justify-between gap-3 border-t pt-3">
-                      <dt className="text-muted-foreground">{t("Recording time")}</dt>
-                      <dd className="font-medium">
-                        {formatRecordingTime(item.recording_minutes, language)}
-                      </dd>
+          ) : (
+            <div className="grid items-stretch gap-6 md:grid-cols-3">
+              {pricing!.packages.map((item, index) => {
+                const hours = packHours(item);
+                const perHour = packPricePerHour(item);
+                const saving =
+                  perHour !== null && basePerHour && perHour < basePerHour
+                    ? Math.round((1 - perHour / basePerHour) * 100)
+                    : 0;
+                const isRecommended = index === recommended;
+                const isBest = perHour !== null && perHour === bestPerHour && packages.length > 1;
+                return (
+                  <article
+                    key={item.id}
+                    className={cn(
+                      "relative flex flex-col gap-5 rounded-2xl border bg-surface p-8 shadow-card",
+                      isRecommended && "outline outline-2 -outline-offset-1 outline-primary",
+                    )}
+                  >
+                    {isBest && (
+                      <span className="absolute -top-3 left-8 inline-flex h-[26px] items-center rounded-full bg-primary px-3 text-xs font-bold text-primary-foreground shadow-glow">
+                        {t("Best value")}
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between gap-2">
+                      <h2 className="text-[21px] font-bold">{item.name}</h2>
+                      {isRecommended && <Pill tone="success">{t("Fits your schedule")}</Pill>}
                     </div>
-                  )}
-                </dl>
-                {channels.web ? (
-                  <Button className="mt-6 w-full" asChild>
-                    <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
-                  </Button>
-                ) : authenticated ? (
-                  <Button className="mt-6 w-full" disabled>
-                    {t("Coming soon")}
-                  </Button>
-                ) : (
-                  <Button className="mt-6 w-full" variant="outline" asChild>
-                    <Link to="/sign-up">{t("Create free account")}</Link>
-                  </Button>
-                )}
-              </section>
-            ))}
-          </div>
-        )}
-
-        {!channels.web && !channels.loading && pricing?.packages.length ? (
-          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
-            {t("Online checkout is not open yet. Your free trial credits work as usual.")}
-          </p>
-        ) : null}
-
-        {pricing && pricing.signup_credits > 0 && (
-          <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="font-medium">{t("Free trial")}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Get {pricing.signup_credits} free credits
-                {rate && rate.credits_per_unit > 0
-                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate), language)} ${t("of recording")})`
-                  : ""}{" "}
-                {t("when you create an account and verify your email.")}
-              </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[52px] font-extrabold tracking-[-.04em]">
+                        {formatMoneyValue(item.price, language)}
+                      </span>
+                      <span className="text-muted-foreground">{t("One-time purchase")}</span>
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl bg-surface-2 px-4 py-3.5">
+                      <span className="text-lg font-bold">
+                        {hours !== null
+                          ? formatRecordingTime(Math.round(hours * 60))
+                          : `${item.credits.toLocaleString(language)} credits`}
+                      </span>
+                      {perHour !== null && (
+                        <span className="flex flex-col items-end gap-0.5">
+                          <span className="font-mono font-bold text-accent-ink">
+                            {formatPerHour(perHour, item.price.currency, language)} / hour
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {saving > 0 ? `Save ${saving}% vs ${packages[0]!.name}` : "Base rate"}
+                          </span>
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {item.credits.toLocaleString(language)} credits
+                    </p>
+                    <div className="mt-auto">
+                      {channels.web ? (
+                        <Button size="lg" className="w-full" variant={isRecommended ? "default" : "outline"} asChild>
+                          <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
+                        </Button>
+                      ) : authenticated ? (
+                        <Button size="lg" className="w-full" disabled>
+                          {t("Coming soon")}
+                        </Button>
+                      ) : (
+                        <Button size="lg" className="w-full" variant="outline" asChild>
+                          <Link to="/sign-up">{t("Create free account")}</Link>
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
             </div>
-            {!authenticated && (
-              <Button variant="outline" asChild>
-                <Link to="/sign-up">{t("Create free account")}</Link>
-              </Button>
-            )}
+          )}
+          {!channels.web && !channels.loading && packages.length ? (
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+              {t("Online checkout is not open yet. Your free trial credits work as usual.")}
+            </p>
+          ) : null}
+        </section>
+
+        {recommendedPack && recommendedHours !== null && (
+          <section className="mx-auto max-w-[1200px] px-6 pt-8" aria-label={t("Credit calculator")}>
+            <div className="grid items-center gap-9 rounded-[20px] border bg-gradient-to-br from-surface to-surface-2 p-8 shadow-card md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <label htmlFor="pricing-hours" className="text-[21px] font-bold">
+                  {t("How many hours do you stream per week?")}
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="pricing-hours"
+                    type="range"
+                    min={1}
+                    max={60}
+                    step={1}
+                    value={hoursPerWeek}
+                    onChange={(event) => setHoursPerWeek(Number(event.target.value))}
+                    className="h-7 w-full cursor-pointer accent-primary"
+                  />
+                  <span className="min-w-24 text-right font-mono text-[22px] font-semibold">
+                    {hoursPerWeek} h/wk
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2.5 rounded-2xl border bg-surface p-6" aria-live="polite">
+                <span className="text-sm font-bold text-muted-foreground">{t("We recommend")}</span>
+                <div className="flex flex-wrap items-baseline gap-2.5">
+                  <span className="text-[30px] font-extrabold tracking-[-.02em] text-accent-ink">
+                    {recommendedPack.name}
+                  </span>
+                  <span className="font-bold">
+                    {formatMoneyValue(recommendedPack.price, language)} ·{" "}
+                    {formatRecordingTime(Math.round(recommendedHours * 60))}
+                  </span>
+                </div>
+                <p className="text-muted-foreground">
+                  About <b className="text-foreground">{Math.round(hoursPerWeek * 4.33)} h</b> of
+                  LIVE a month — this pack lasts roughly{" "}
+                  <b className="text-foreground">
+                    {Math.max(1, Math.round(recommendedHours / hoursPerWeek))} weeks
+                  </b>{" "}
+                  at your pace. Leftover credits never expire.
+                </p>
+              </div>
+            </div>
           </section>
         )}
 
-        <section className="mt-8 grid gap-8 rounded-lg border bg-surface p-6 md:grid-cols-2">
-          <div>
-            <h2 className="font-medium">{t("Included with every package")}</h2>
-            <ul className="mt-4 space-y-3 text-sm">
-              {[...packageLimits(pricing, language), ...includedInEveryPackage.map(t)].map(
-                (line) => (
-                  <li key={line} className="flex gap-2">
-                    <Check className="mt-0.5 size-4 shrink-0 text-primary" />
-                    <span>{line}</span>
-                  </li>
-                ),
-              )}
-            </ul>
+        <section className="mx-auto grid max-w-[1200px] items-start gap-12 px-6 pt-24 lg:grid-cols-2">
+          <div className="flex flex-col gap-3.5">
+            <span className="text-xs font-bold uppercase tracking-[.08em] text-accent-ink">
+              {t("Free trial")}
+            </span>
+            <h2 className="text-4xl font-extrabold tracking-[-.025em]">
+              {t("Try it before you buy.")}
+            </h2>
+            <p className="text-lg leading-relaxed text-muted-foreground">
+              {pricing && pricing.signup_credits > 0
+                ? `New accounts get ${pricing.signup_credits} free credits after verifying their email. Automatic cloud recording unlocks with your first purchase.`
+                : t("Create a free account to add channels. Automatic cloud recording unlocks with your first purchase.")}
+            </p>
+            {!authenticated && (
+              <Button size="lg" className="mt-2 self-start" asChild>
+                <Link to="/sign-up">{t("Create free account")}</Link>
+              </Button>
+            )}
           </div>
-          <div className="space-y-4 text-sm text-muted-foreground">
+          <div className="overflow-x-auto rounded-2xl border bg-surface">
+            <table className="w-full text-[15px]">
+              <caption className="sr-only">{t("Free trial compared with paid packs")}</caption>
+              <thead>
+                <tr className="border-b text-left text-sm">
+                  <th scope="col" className="px-4 py-3" />
+                  <th scope="col" className="px-4 py-3 font-semibold">
+                    {t("Free trial")}
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-accent-ink">
+                    {t("Any paid pack")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparison.map(([label, trial, paid]) => (
+                  <tr key={label} className="border-b last:border-0">
+                    <th scope="row" className="px-4 py-3.5 text-left font-semibold">
+                      {t(label)}
+                    </th>
+                    <td className="px-4 py-3.5 text-muted-foreground">{t(trial)}</td>
+                    <td className="px-4 py-3.5 font-medium">{t(paid)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-[1200px] px-6 pt-12">
+          <div className="grid gap-8 rounded-2xl border bg-surface p-6 shadow-card md:grid-cols-2">
             <div>
-              <h3 className="font-medium text-foreground">{t("How credits are used")}</h3>
-              <p className="mt-1 leading-6">
-                {`Credits are used only while a livestream is being recorded, rounded up to the next minute${
-                      rate && rate.minimum_credits > 0
-                        ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
-                        : ""
-                    }. Monitoring a channel while it is offline is free.`}
-              </p>
+              <h2 className="font-bold">{t("Included with every package")}</h2>
+              <ul className="mt-4 space-y-3 text-sm">
+                {[...packageLimits(pricing, language), ...includedInEveryPackage.map(t)].map(
+                  (line) => (
+                    <li key={line} className="flex gap-2">
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary" />
+                      <span>{line}</span>
+                    </li>
+                  ),
+                )}
+              </ul>
             </div>
-            <div>
-              <h3 className="font-medium text-foreground">{t("Payments and refunds")}</h3>
-              <p className="mt-1 leading-6">
-                {t(
-                  "Payments are processed by PayPal. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
-                )}{" "}
-                <Link to="/refund" className="text-primary underline underline-offset-4">
-                  {t("refund policy")}
-                </Link>
-                .
-              </p>
+            <div className="space-y-4 text-sm text-muted-foreground">
+              <div>
+                <h3 className="font-bold text-foreground">{t("How credits are used")}</h3>
+                <p className="mt-1 leading-6">{creditUsageSentence(rate)}</p>
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">{t("Payments and refunds")}</h3>
+                <p className="mt-1 leading-6">
+                  {t(
+                    "Payments are processed by PayPal. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
+                  )}{" "}
+                  <Link to="/refund" className="text-accent-ink underline underline-offset-4">
+                    {t("refund policy")}
+                  </Link>
+                  .
+                </p>
+              </div>
             </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-[860px] px-6 pt-24" aria-labelledby="payment-faq">
+          <div className="mb-8 flex flex-col items-center gap-3 text-center">
+            <span className="text-xs font-bold uppercase tracking-[.08em] text-accent-ink">
+              {t("Payments")}
+            </span>
+            <h2 id="payment-faq" className="text-4xl font-extrabold tracking-[-.025em]">
+              {t("Payment questions")}
+            </h2>
+          </div>
+          <div className="flex flex-col gap-3">
+            {paymentFaqs.map((faq, index) => {
+              const open = openFaq === index;
+              return (
+                <div key={faq.q} className="rounded-2xl border bg-surface">
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => setOpenFaq(open ? -1 : index)}
+                    className="flex min-h-16 w-full items-center justify-between gap-4 px-[22px] py-[18px] text-left text-[17px] font-semibold"
+                  >
+                    <span>{t(faq.q)}</span>
+                    <ChevronDown
+                      className={cn("size-5 flex-none transition-transform", open && "rotate-180")}
+                    />
+                  </button>
+                  {open && (
+                    <p className="px-[22px] pb-[22px] leading-relaxed text-muted-foreground">
+                      {t(faq.a)}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       </main>
       <PublicFooter />
     </>
   );
+}
+
+function creditUsageSentence(rate: PublicRecordingRate | null) {
+  if (!rate || rate.credits_per_unit === 0) {
+    return "Credits are used only while a livestream is being recorded. Monitoring a channel while it is offline is free.";
+  }
+  const unit =
+    rate.unit_seconds % 60 === 0
+      ? pluralize(rate.unit_seconds / 60, "minute")
+      : pluralize(rate.unit_seconds, "second");
+  const minimum =
+    rate.minimum_credits > 0
+      ? `, with a minimum of ${pluralize(rate.minimum_credits, "credit")} per recording`
+      : "";
+  return `Credits are used only while a livestream is being recorded, counted in blocks of ${unit} and rounded up${minimum}. Failed recordings are not charged, and monitoring a channel while it is offline is free.`;
 }
 
 function DemoPricingPage() {
@@ -4273,28 +4555,14 @@ function DemoPricingPage() {
 
 export function PublicFooter() {
   const { t } = usePreferences();
-  const { status } = useAuth();
-  const accountLinks: [string, string][] =
-    status === "authenticated"
-      ? [
-          ["/overview", "Overview"],
-          ["/billing", "Buy credits"],
-          ["/settings/account", "Account settings"],
-        ]
-      : status === "guest"
-        ? [
-            ["/sign-in", "Sign in"],
-            ["/sign-up", "Create account"],
-          ]
-        : [];
   const cols: [string, [string, string][]][] = [
     [
       "Product",
       [
+        ["/#features", "Features"],
+        ["/#how", "How it works"],
+        ["/#examples", "Examples"],
         ["/pricing", "Pricing"],
-        ["/status", "Status"],
-        ["/help", "Help"],
-        ["/contact", "Contact"],
       ],
     ],
     [
@@ -4304,43 +4572,58 @@ export function PublicFooter() {
         ["/privacy", "Privacy Policy"],
         ["/acceptable-use", "Acceptable Use Policy"],
         ["/copyright", "Copyright & Takedown"],
-        ["/refund", "Refund policy"],
+        ["/refund", "Refund Policy"],
       ],
     ],
-    ["Account", accountLinks],
+    [
+      "Help",
+      [
+        ["/help", "Help center"],
+        ["/#faq", "FAQ"],
+        ["/contact", "Contact support"],
+        ["/status", "System status"],
+      ],
+    ],
   ];
   return (
-    <footer className="border-t py-12">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+    <footer className="mt-24 border-t">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-6 py-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div>
           <Logo />
-          <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
-            Cloud recording, processing, and private storage infrastructure for content you own or
-            are authorized to record.
+          <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
+            {t("Automatic cloud recording for TikTok LIVE.")}
           </p>
         </div>
         {cols.map(([h, links]) => (
-          <div key={h}>
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{t(h)}</p>
-            <ul className="mt-3 space-y-2 text-sm">
+          <nav key={h} aria-label={t(h)}>
+            <p className="text-xs font-bold uppercase tracking-[.08em] text-muted-foreground">
+              {t(h)}
+            </p>
+            <ul className="mt-3 space-y-2 text-[15px]">
               {links.map(([to, l]) => (
                 <li key={to}>
-                  <Link
-                    to={to as "/pricing"}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {t(l)}
-                  </Link>
+                  {to.startsWith("/#") ? (
+                    <a href={to} className="text-muted-foreground hover:text-foreground">
+                      {t(l)}
+                    </a>
+                  ) : (
+                    <Link
+                      to={to as "/pricing"}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {t(l)}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
         ))}
       </div>
-      <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-muted-foreground sm:px-6">
-        © 2026 SaveStream. We provide recording and storage infrastructure — not a public content
-        catalog.
-      </p>
+      <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 border-t px-6 py-6 text-sm text-muted-foreground">
+        <span>© 2026 SaveStream · savestream.online</span>
+        <span>{t("SaveStream is not affiliated with TikTok.")}</span>
+      </div>
     </footer>
   );
 }

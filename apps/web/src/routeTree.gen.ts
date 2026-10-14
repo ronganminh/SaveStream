@@ -16,7 +16,6 @@ import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CopyrightRouteImport } from './routes/copyright'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as HelpRouteImport } from './routes/help'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OverviewRouteImport } from './routes/overview'
@@ -50,6 +49,8 @@ import { Route as BillingCanceledRouteImport } from './routes/billing.canceled'
 import { Route as BillingSuccessRouteImport } from './routes/billing.success'
 import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
 import { Route as ChannelsIdRouteImport } from './routes/channels.$id'
+import { Route as HelpIndexRouteImport } from './routes/help.index'
+import { Route as HelpArticleRouteImport } from './routes/help.$article'
 import { Route as RecordingsIndexRouteImport } from './routes/recordings.index'
 import { Route as RecordingsIdRouteImport } from './routes/recordings.$id'
 import { Route as RecordingsActiveRouteImport } from './routes/recordings.active'
@@ -99,11 +100,6 @@ const CopyrightRoute = CopyrightRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -271,6 +267,16 @@ const ChannelsIdRoute = ChannelsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ChannelsRoute,
 } as any)
+const HelpIndexRoute = HelpIndexRouteImport.update({
+  id: '/help/',
+  path: '/help/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpArticleRoute = HelpArticleRouteImport.update({
+  id: '/help/$article',
+  path: '/help/$article',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordingsIndexRoute = RecordingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -355,7 +361,6 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -386,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/help/$article': typeof HelpArticleRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -397,6 +403,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
+  '/help/': typeof HelpIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
@@ -411,7 +418,6 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -437,6 +443,7 @@ export interface FileRoutesByTo {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/help/$article': typeof HelpArticleRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/billing': typeof BillingIndexRoute
   '/channels': typeof ChannelsIndexRoute
+  '/help': typeof HelpIndexRoute
   '/recordings': typeof RecordingsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/verify-email': typeof VerifyEmailIndexRoute
@@ -465,7 +473,6 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/help': typeof HelpRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -496,6 +503,7 @@ export interface FileRoutesById {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/help/$article': typeof HelpArticleRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -507,6 +515,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
+  '/help/': typeof HelpIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/verify-email/': typeof VerifyEmailIndexRoute
@@ -525,7 +534,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/copyright'
     | '/forgot-password'
-    | '/help'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -556,6 +564,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/help/$article'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -567,6 +576,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/billing/'
     | '/channels/'
+    | '/help/'
     | '/recordings/'
     | '/settings/'
     | '/verify-email/'
@@ -581,7 +591,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/copyright'
     | '/forgot-password'
-    | '/help'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -607,6 +616,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/help/$article'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -618,6 +628,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/billing'
     | '/channels'
+    | '/help'
     | '/recordings'
     | '/settings'
     | '/verify-email'
@@ -634,7 +645,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/copyright'
     | '/forgot-password'
-    | '/help'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -665,6 +675,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/help/$article'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -676,6 +687,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/billing/'
     | '/channels/'
+    | '/help/'
     | '/recordings/'
     | '/settings/'
     | '/verify-email/'
@@ -693,7 +705,6 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   CopyrightRoute: typeof CopyrightRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
-  HelpRoute: typeof HelpRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   OverviewRoute: typeof OverviewRoute
@@ -721,7 +732,9 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
+  HelpArticleRoute: typeof HelpArticleRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  HelpIndexRoute: typeof HelpIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -773,13 +786,6 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -1013,6 +1019,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChannelsIdRouteImport
       parentRoute: typeof ChannelsRoute
     }
+    '/help/': {
+      id: '/help/'
+      path: '/help'
+      fullPath: '/help/'
+      preLoaderRoute: typeof HelpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help/$article': {
+      id: '/help/$article'
+      path: '/help/$article'
+      fullPath: '/help/$article'
+      preLoaderRoute: typeof HelpArticleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recordings/': {
       id: '/recordings/'
       path: '/'
@@ -1238,7 +1258,6 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   CopyrightRoute: CopyrightRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
-  HelpRoute: HelpRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   OverviewRoute: OverviewRoute,
@@ -1266,7 +1285,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
+  HelpArticleRoute: HelpArticleRoute,
   AdminIndexRoute: AdminIndexRoute,
+  HelpIndexRoute: HelpIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

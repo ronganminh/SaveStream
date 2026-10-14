@@ -4,20 +4,33 @@ export const PUBLIC_SITE_URL = (
   import.meta.env["VITE_PUBLIC_SITE_URL"] || "https://savestream.online"
 ).replace(/\/$/, "");
 
-const socialImage = `${PUBLIC_SITE_URL}/savestream-mark.svg`;
+/** 1200×630 share images in public/og (see docs/redesign). */
+export type SocialImage = "home" | "pricing" | "help";
 
-const baseMeta = (title: string, description: string) => [
-  { title: `${title} — SaveStream` },
-  { name: "description", content: description },
-  { property: "og:title", content: `${title} — SaveStream` },
-  { property: "og:description", content: description },
-  { property: "og:type", content: "website" },
-  { property: "og:image", content: socialImage },
-  { name: "twitter:card", content: "summary" },
-  { name: "twitter:title", content: `${title} — SaveStream` },
-  { name: "twitter:description", content: description },
-  { name: "twitter:image", content: socialImage },
-];
+/** "Pricing — …" style titles get the brand as a suffix; the home page passes a full title. */
+function fullTitle(title: string) {
+  return title.includes("SaveStream") ? title : `${title} | SaveStream`;
+}
+
+const baseMeta = (title: string, description: string, image: SocialImage = "home") => {
+  const heading = fullTitle(title);
+  const imageUrl = `${PUBLIC_SITE_URL}/og/${image}.png`;
+  return [
+    { title: heading },
+    { name: "description", content: description },
+    { property: "og:title", content: heading },
+    { property: "og:description", content: description },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "SaveStream" },
+    { property: "og:image", content: imageUrl },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: heading },
+    { name: "twitter:description", content: description },
+    { name: "twitter:image", content: imageUrl },
+  ];
+};
 
 export function meta(title: string, description: string) {
   return {
@@ -28,12 +41,17 @@ export function meta(title: string, description: string) {
   };
 }
 
-export function publicMeta(pathname: string, title: string, description: string) {
+export function publicMeta(
+  pathname: string,
+  title: string,
+  description: string,
+  image: SocialImage = "home",
+) {
   const canonical = `${PUBLIC_SITE_URL}${pathname === "/" ? "/" : pathname}`;
   const access = getRouteAccess(pathname);
   return {
     meta: [
-      ...baseMeta(title, description),
+      ...baseMeta(title, description, image),
       { name: "robots", content: access.indexable ? "index,follow" : "noindex,nofollow" },
       { property: "og:url", content: canonical },
     ],

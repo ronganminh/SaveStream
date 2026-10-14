@@ -4,10 +4,6 @@ import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/privacy")({
   head: () =>
-    publicMeta(
-      "/privacy",
-      "Privacy Policy",
-      "What personal information SaveStream collects, how it is used, and your choices.",
-    ),
+    publicMeta("/privacy", "Privacy Policy", "What SaveStream collects, why, who processes it, and the choices you have."),
   component: () => <PrivacyPage />,
 });

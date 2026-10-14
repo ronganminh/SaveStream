@@ -3,6 +3,6 @@ import { LandingPage } from "@/components/app-pages";
 import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/")({
-  head: () => publicMeta("/", "Automatic TikTok livestream recording", "Monitor authorized TikTok channel workflows and preview automatic cloud recording with SaveStream."),
+  head: () => publicMeta("/", "SaveStream — Never miss a TikTok LIVE", "Automatically record the TikTok LIVEs of channels you own or are authorized to record. Cloud recording, no computer left running."),
   component: LandingPage,
 });
