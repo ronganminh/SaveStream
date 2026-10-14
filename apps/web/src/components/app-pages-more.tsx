@@ -6,7 +6,7 @@ import {
   type ContactChannel,
 } from "@/components/public/contact-status";
 import { Link, useNavigate, useParams, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -89,7 +89,7 @@ import {
   NotificationItem,
   AdminHealthBadge,
 } from "@/components/app-components";
-import { PublicFooter, PublicHeader, SectionTitle } from "@/components/app-pages";
+import { PublicFooter, PublicHeader, SectionTitle, formatMoneyValue } from "@/components/app-pages";
 import {
   AuthCardLayout,
   IconTile,
@@ -117,13 +117,20 @@ import { pluralize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
-import type { AuditLogResponse, RecordingResponse, RecordingStatusValue } from "@/api/types";
+import type {
+  AuditLogResponse,
+  PaymentOrderResponse,
+  PaymentStatusValue,
+  RecordingResponse,
+  RecordingStatusValue,
+} from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
 import {
   useCurrentUserData,
   usePublicPricingData,
   useSessionsData,
+  useCreditBalanceData,
 } from "@/hooks/use-domain-data";
 import { retentionSentence } from "@/lib/plan-facts";
 import {
@@ -206,7 +213,9 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
           <IconTile>
             <span className="size-7 animate-spin rounded-full border-[3px] border-current border-t-transparent" />
           </IconTile>
-          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t("Verifying your email")}</h1>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">
+            {t("Verifying your email")}
+          </h1>
           <p className="text-muted-foreground">
             {t("Please keep this page open while we activate your account.")}
           </p>
@@ -240,7 +249,10 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
           </p>
         </div>
         {error && (
-          <p role="alert" className="w-full rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-left text-sm text-destructive">
+          <p
+            role="alert"
+            className="w-full rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-left text-sm text-destructive"
+          >
             {error}
           </p>
         )}
@@ -316,7 +328,9 @@ export function VerifyEmailSuccessPage() {
         </IconTile>
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-[30px] font-extrabold tracking-[-0.03em]">{t("Email verified")}</h1>
-          <p className="text-muted-foreground">{t("Your email is confirmed and your account is ready.")}</p>
+          <p className="text-muted-foreground">
+            {t("Your email is confirmed and your account is ready.")}
+          </p>
         </div>
         {trialLabel && (
           <div className="flex w-full items-center gap-3.5 rounded-2xl border bg-surface-2 px-[18px] py-4 text-left">
@@ -417,7 +431,8 @@ export function AuthErrorPage() {
     : reasonParam === "invalid"
       ? "invalid"
       : "expired";
-  const [title, body, code] = provider && social ? socialError(provider, social) : linkErrors[linkKind];
+  const [title, body, code] =
+    provider && social ? socialError(provider, social) : linkErrors[linkKind];
 
   return (
     <AuthCardLayout
@@ -457,7 +472,12 @@ export function AuthErrorPage() {
           />
         ) : null}
         {provider ? (
-          <Button size="lg" variant={social === "email_in_use" ? "default" : "outline"} className="w-full" asChild>
+          <Button
+            size="lg"
+            variant={social === "email_in_use" ? "default" : "outline"}
+            className="w-full"
+            asChild
+          >
             <Link to="/sign-in">{t("Use email instead")}</Link>
           </Button>
         ) : (
@@ -693,10 +713,7 @@ function ProductionAccountSettings() {
             }
           />
         )}
-        <Button
-          onClick={save}
-          disabled={!dirty || updateProfile.isPending}
-        >
+        <Button onClick={save} disabled={!dirty || updateProfile.isPending}>
           {updateProfile.isPending ? "Saving…" : t("Save changes")}
         </Button>
       </Section>
@@ -1545,139 +1562,236 @@ export function NotificationsPage() {
 }
 
 /* ---------------- Billing return pages ---------------- */
+function PaymentResultCard({
+  icon,
+  tone,
+  title,
+  body,
+  children,
+}: {
+  icon: ReactNode;
+  tone: "ok" | "warn" | "err" | "muted" | "spin";
+  title: string;
+  body: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <AppShell>
+      <div className="flex justify-center py-6 sm:py-12">
+        <section className="flex w-full max-w-[560px] flex-col items-center gap-5 rounded-[24px] border bg-surface px-6 py-10 text-center sm:px-10">
+          {tone === "spin" ? (
+            <span
+              aria-hidden="true"
+              className="size-16 animate-spin rounded-full border-[5px] border-primary-subtle border-t-primary"
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              className={cn(
+                "grid size-[72px] place-items-center rounded-[22px]",
+                tone === "ok" && "bg-success-subtle text-success",
+                tone === "warn" && "bg-warning-subtle text-warning",
+                tone === "err" && "bg-destructive/10 text-destructive",
+                tone === "muted" && "bg-surface-2 text-muted-foreground",
+              )}
+            >
+              {icon}
+            </span>
+          )}
+          <div className="space-y-2">
+            <h1 className="text-[28px] font-extrabold tracking-tight">{title}</h1>
+            <div className="text-muted-foreground">{body}</div>
+          </div>
+          {children}
+        </section>
+      </div>
+    </AppShell>
+  );
+}
+
+function OrderFacts({
+  order,
+  extra,
+}: {
+  order: PaymentOrderResponse;
+  extra?: [string, ReactNode][];
+}) {
+  const rows: [string, ReactNode][] = [
+    ["Credits", pluralize(order.credits, "credit")],
+    ["Amount", <span className="font-mono">{formatMoneyValue(order.amount, "en")}</span>],
+    ...(order.provider_reference
+      ? ([
+          [
+            "PayPal order ID",
+            <span className="break-all font-mono text-xs">{order.provider_reference}</span>,
+          ],
+        ] as [string, ReactNode][])
+      : []),
+    [
+      "Started",
+      new Date(order.created_at).toLocaleString("en", { dateStyle: "medium", timeStyle: "short" }),
+    ],
+    ...(extra ?? []),
+  ];
+  return (
+    <dl className="grid w-full grid-cols-[auto_1fr] gap-x-6 gap-y-2.5 rounded-[16px] bg-surface-2 px-5 py-4 text-left text-sm">
+      {rows.map(([label, value]) => (
+        <Fragment key={label}>
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="min-w-0 text-right">{value}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
+}
+
 export function BillingSuccessPage({ orderId = "" }: { orderId?: string }) {
   const { query, state } = useBillingReturnOrder(orderId);
+  const { query: balanceQuery } = useCreditBalanceData();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   if (!orderId) {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <EmptyState
-            icon={CreditCard}
-            title="Payment order missing"
-            body="The checkout return URL did not include a payment order. Open Billing to check your recent orders."
-            action={
-              <Button asChild>
-                <Link to="/billing">View billing</Link>
-              </Button>
-            }
-          />
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="muted"
+        icon={<CreditCard className="size-8" />}
+        title="Payment order missing"
+        body="The checkout return URL did not include a payment order. Open Billing to check your recent orders."
+      >
+        <Button asChild size="lg" className="w-full">
+          <Link to="/billing">View billing</Link>
+        </Button>
+      </PaymentResultCard>
     );
   }
 
   if (state.kind === "loading") {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
-            <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <h1 className="mt-5 text-xl font-semibold">Checking payment status…</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We’re confirming your payment with the payment provider.
-            </p>
-          </div>
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="spin"
+        icon={null}
+        title="Checking payment status…"
+        body="We’re confirming your payment with PayPal."
+      />
     );
   }
 
   if (state.kind === "error" || !query.data) {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <ErrorState
-            title="Could not confirm payment"
-            body="We couldn’t confirm your payment yet. Please try again; if you were charged, your credits will be added once the payment is confirmed."
-            onRetry={() => query.refetch()}
-          />
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="err"
+        icon={<XCircle className="size-8" />}
+        title="Could not confirm payment"
+        body="We couldn’t confirm your payment yet. Please try again; if you were charged, your credits will be added once the payment is confirmed."
+      >
+        <Button size="lg" className="w-full" onClick={() => void query.refetch()}>
+          <RotateCcw />
+          Try again
+        </Button>
+      </PaymentResultCard>
     );
   }
 
   const order = query.data;
 
   if (isAwaitingPaymentConfirmation(order.status)) {
+    const waitedMinutes = (now - new Date(order.created_at).getTime()) / 60_000;
     return (
-      <AppShell>
-        <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
-          <div className="w-full space-y-5">
-            <StateBanner
-              tone="info"
-              icon={Clock3}
-              title="Payment is being confirmed"
-              body="Your payment is still being confirmed. Credits are added as soon as the payment provider confirms it, usually within a minute."
-              action={
-                <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
-                  <RotateCcw />
-                  Check now
-                </Button>
-              }
-            />
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button asChild>
-                <Link to="/billing">View billing</Link>
-              </Button>
-              <Button variant="outline" asChild>
-                <a href={`/billing/canceled?order_id=${encodeURIComponent(order.id)}`}>
-                  I left checkout
-                </a>
-              </Button>
-            </div>
-          </div>
+      <PaymentResultCard
+        tone="spin"
+        icon={null}
+        title="Waiting for PayPal confirmation"
+        body={`PayPal is confirming your ${formatMoneyValue(order.amount, "en")} payment. Credits are added automatically as soon as it clears.`}
+      >
+        <p
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 rounded-[12px] bg-surface-2 px-4 py-2.5 text-sm"
+        >
+          <RotateCcw className="size-4" />
+          Checking again automatically every few seconds
+        </p>
+        <OrderFacts order={order} />
+        {waitedMinutes >= 10 && (
+          <p className="w-full rounded-[12px] border px-4 py-3 text-left text-sm">
+            Still waiting after 10 minutes?{" "}
+            <Link to="/contact" className="font-semibold text-accent-ink hover:underline">
+              Contact support
+            </Link>{" "}
+            with the PayPal order ID above. You won’t be charged twice.
+          </p>
+        )}
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            <RotateCcw />
+            Check now
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/billing">Back to Billing — we’ll keep checking</Link>
+          </Button>
         </div>
-      </AppShell>
+      </PaymentResultCard>
     );
   }
 
   if (order.status === "paid") {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <SuccessState
-            title={`${pluralize(order.credits, "credit")} added`}
-            body="Your payment is confirmed and the credits are in your balance."
-            action={
-              <>
-                <Button asChild>
-                  <Link to="/usage">View credits</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/billing">View billing</Link>
-                </Button>
-              </>
-            }
-          />
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="ok"
+        icon={<Check className="size-9" strokeWidth={2.4} />}
+        title="Payment successful"
+        body={`${pluralize(order.credits, "credit")} added to your balance. Thanks for your purchase!`}
+      >
+        <OrderFacts
+          order={order}
+          extra={
+            balanceQuery.data
+              ? [
+                  [
+                    "New balance",
+                    <b className="font-mono text-accent-ink">
+                      {pluralize(balanceQuery.data.available, "credit")}
+                    </b>,
+                  ],
+                ]
+              : []
+          }
+        />
+        <Button asChild size="lg" className="w-full">
+          <Link to="/channels">Go to Channels</Link>
+        </Button>
+        <Link
+          to="/billing/$id"
+          params={{ id: order.id }}
+          className="text-sm font-bold text-accent-ink hover:underline"
+        >
+          View order
+        </Link>
+      </PaymentResultCard>
     );
   }
 
   const refunded = order.status === "partially_refunded" || order.status === "refunded";
   return (
-    <AppShell>
-      <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
-        <div className="w-full space-y-5">
-          <StateBanner
-            tone={refunded ? "info" : "error"}
-            icon={refunded ? CreditCard : XCircle}
-            title={refunded ? "Payment has a refund status" : "Payment was not completed"}
-            body={
-              refunded
-                ? `This purchase is ${paymentReturnStatusLabel(order.status)}. Your current balance is shown in Usage.`
-                : `This purchase is ${paymentReturnStatusLabel(order.status)}. No credits were added.`
-            }
-          />
-          <div className="flex justify-center">
-            <Button asChild>
-              <Link to="/billing">Back to billing</Link>
-            </Button>
-          </div>
-        </div>
-      </div>
-    </AppShell>
+    <PaymentResultCard
+      tone={refunded ? "muted" : "err"}
+      icon={refunded ? <CreditCard className="size-8" /> : <XCircle className="size-8" />}
+      title={refunded ? "Payment has a refund status" : "Payment was not completed"}
+      body={
+        refunded
+          ? `This purchase is ${paymentReturnStatusLabel(order.status)}. Your current balance is shown in Usage.`
+          : `This purchase is ${paymentReturnStatusLabel(order.status)}. No credits were added.`
+      }
+    >
+      <OrderFacts order={order} />
+      <Button asChild size="lg" className="w-full">
+        <Link to="/billing">Back to billing</Link>
+      </Button>
+    </PaymentResultCard>
   );
 }
 
@@ -1690,91 +1804,286 @@ export function BillingCanceledPage({ orderId = "" }: { orderId?: string }) {
 
   if (!orderId) {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center text-center">
-          <div>
-            <span className="mx-auto grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
-              <XCircle className="size-6" />
-            </span>
-            <h1 className="mt-5 text-2xl font-semibold">Checkout closed</h1>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              You left checkout before completing a purchase. No payment was taken.
-            </p>
-            <Button className="mt-7" asChild>
-              <Link to="/billing">Back to billing</Link>
-            </Button>
-          </div>
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="muted"
+        icon={<XCircle className="size-8" />}
+        title="Payment cancelled"
+        body="You left checkout before completing a purchase. No payment was taken and your balance hasn’t changed."
+      >
+        <Button asChild size="lg" className="w-full">
+          <Link to="/billing">Back to billing</Link>
+        </Button>
+        <span className="text-xs text-muted-foreground">
+          Having trouble paying?{" "}
+          <Link to="/contact" className="font-semibold text-accent-ink hover:underline">
+            Contact support
+          </Link>
+        </span>
+      </PaymentResultCard>
     );
   }
 
   if (state.kind === "loading") {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <div className="w-full max-w-md rounded-lg border bg-surface p-6 text-center">
-            <span className="mx-auto block size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="mt-4 text-sm text-muted-foreground">Checking your payment status…</p>
-          </div>
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="spin"
+        icon={null}
+        title="Checking your payment status…"
+        body="One moment."
+      />
     );
   }
 
   if (state.kind === "error" || !query.data) {
     return (
-      <AppShell>
-        <div className="grid min-h-[60vh] place-items-center">
-          <ErrorState
-            title="Could not check payment order"
-            body="Open Billing to review the order again. SaveStream will not infer cancellation or payment from this page alone."
-            onRetry={() => query.refetch()}
-          />
-        </div>
-      </AppShell>
+      <PaymentResultCard
+        tone="err"
+        icon={<XCircle className="size-8" />}
+        title="Could not check payment order"
+        body="Open Billing to review the order again. SaveStream will not infer cancellation or payment from this page alone."
+      >
+        <Button size="lg" className="w-full" onClick={() => void query.refetch()}>
+          <RotateCcw />
+          Try again
+        </Button>
+      </PaymentResultCard>
     );
   }
 
   const order = query.data;
   const paid = order.status === "paid";
+  const awaiting = isAwaitingPaymentConfirmation(order.status);
 
   return (
+    <PaymentResultCard
+      tone={paid ? "ok" : awaiting ? "warn" : "muted"}
+      icon={paid ? <CheckCircle2 className="size-8" /> : <XCircle className="size-8" />}
+      title={
+        paid
+          ? "Payment was already confirmed"
+          : awaiting
+            ? "Checkout left before confirmation"
+            : "Payment cancelled"
+      }
+      body={
+        paid
+          ? "This purchase was paid. The credits are in your balance."
+          : awaiting
+            ? "This purchase is still pending. If you completed payment, the credits will be added once it is confirmed; check Billing again in a minute."
+            : `This purchase is ${paymentReturnStatusLabel(order.status)}. No credits were added and your balance hasn’t changed.`
+      }
+    >
+      <OrderFacts order={order} />
+      <div className="flex w-full flex-col gap-2">
+        <Button asChild size="lg" className="w-full">
+          <Link to="/billing">Back to billing</Link>
+        </Button>
+        {awaiting && (
+          <Button variant="outline" onClick={() => void query.refetch()}>
+            <RotateCcw />
+            Check status
+          </Button>
+        )}
+      </div>
+    </PaymentResultCard>
+  );
+}
+
+const orderTimelineLabel: Partial<Record<PaymentStatusValue, string>> = {
+  paid: "Payment captured and credits added",
+  failed: "Payment failed — no credits added",
+  cancelled: "Checkout cancelled",
+  expired: "Checkout expired",
+  refunded: "Refunded",
+  partially_refunded: "Partially refunded",
+};
+
+export function BillingOrderPage({ orderId }: { orderId: string }) {
+  const { query, state } = useBillingReturnOrder(orderId);
+  const { user } = useAuth();
+
+  if (state.kind === "loading") {
+    return (
+      <AppShell>
+        <PageHeader title="Order" subtitle="Loading order…" />
+        <div className="h-48 animate-pulse rounded-[20px] border bg-surface-2" aria-busy="true" />
+      </AppShell>
+    );
+  }
+  if (state.kind === "error" || !query.data) {
+    return (
+      <AppShell>
+        <PageHeader title="Order" />
+        <ErrorState
+          title="Could not load this order"
+          body="It may not exist or belong to another account."
+          onRetry={() => void query.refetch()}
+        />
+      </AppShell>
+    );
+  }
+  const order = query.data;
+  const awaiting = isAwaitingPaymentConfirmation(order.status);
+  const steps: { title: string; at: string | null; done: boolean }[] = [
+    { title: "Order created", at: order.created_at, done: true },
+    ...(awaiting
+      ? [{ title: "Waiting for PayPal to confirm the payment", at: null, done: false }]
+      : [
+          {
+            title: orderTimelineLabel[order.status] ?? paymentReturnStatusLabel(order.status),
+            at: order.updated_at,
+            done: true,
+          },
+        ]),
+  ];
+  const dateTime = (value: string) =>
+    new Date(value).toLocaleString("en", { dateStyle: "medium", timeStyle: "short" });
+  return (
     <AppShell>
-      <div className="mx-auto grid min-h-[60vh] max-w-xl place-items-center">
-        <div className="w-full space-y-5">
-          <StateBanner
-            tone={
-              paid ? "success" : isAwaitingPaymentConfirmation(order.status) ? "warning" : "info"
-            }
-            icon={paid ? CheckCircle2 : XCircle}
-            title={
-              paid
-                ? "Payment was already confirmed"
-                : isAwaitingPaymentConfirmation(order.status)
-                  ? "Checkout left before confirmation"
-                  : "Checkout is not active"
-            }
-            body={
-              paid
-                ? "This purchase was paid. The credits are in your balance."
-                : isAwaitingPaymentConfirmation(order.status)
-                  ? "This purchase is still pending. If you completed payment, the credits will be added once it is confirmed; check Billing again in a minute."
-                  : `This purchase is ${paymentReturnStatusLabel(order.status)}.`
-            }
-          />
-          <div className="flex justify-center gap-2">
-            <Button asChild>
-              <Link to="/billing">Back to billing</Link>
-            </Button>
-            {isAwaitingPaymentConfirmation(order.status) && (
-              <Button variant="outline" onClick={() => void query.refetch()}>
-                <RotateCcw />
-                Check status
-              </Button>
-            )}
-          </div>
+      <div className="flex flex-col gap-5">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+        >
+          <Link to="/billing" className="font-semibold text-accent-ink hover:underline">
+            Billing
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page" className="font-mono text-foreground">
+            {order.id.slice(0, 8)}
+          </span>
+        </nav>
+        <PageHeader
+          title={`${pluralize(order.credits, "credit")} · ${formatMoneyValue(order.amount, "en")}`}
+          subtitle={`Order ${order.id} · ${dateTime(order.created_at)}`}
+          action={
+            <span
+              className={cn(
+                "rounded-full px-3 py-1 text-sm font-bold",
+                order.status === "paid"
+                  ? "bg-success-subtle text-success"
+                  : awaiting
+                    ? "bg-warning-subtle text-warning-foreground"
+                    : "bg-surface-2 text-muted-foreground",
+              )}
+            >
+              {paymentReturnStatusLabel(order.status).replace(/^./, (c) => c.toUpperCase())}
+            </span>
+          }
+        />
+        <div className="flex flex-wrap items-start gap-5">
+          <section
+            aria-labelledby="receipt"
+            className="flex min-w-0 flex-[3_1_480px] flex-col gap-4 rounded-[20px] border bg-surface p-6"
+          >
+            <h2 id="receipt" className="text-[17px] font-bold">
+              Receipt
+            </h2>
+            <dl className="grid grid-cols-[minmax(140px,auto)_1fr] gap-x-6 gap-y-2.5 text-sm">
+              <dt className="text-muted-foreground">Credits</dt>
+              <dd className="font-mono">{order.credits.toLocaleString("en")}</dd>
+              <dt className="text-muted-foreground">Amount</dt>
+              <dd className="font-mono">
+                {formatMoneyValue(order.amount, "en")} {order.amount.currency}
+              </dd>
+              <dt className="text-muted-foreground">Paid with</dt>
+              <dd>{order.provider === "paypal" ? "PayPal" : (order.provider ?? "—")}</dd>
+              {order.provider_reference && (
+                <>
+                  <dt className="text-muted-foreground">PayPal order ID</dt>
+                  <dd className="flex flex-wrap items-center gap-2 font-mono">
+                    <span className="break-all">{order.provider_reference}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        void navigator.clipboard?.writeText(order.provider_reference ?? "");
+                        toast.success("Copied");
+                      }}
+                    >
+                      Copy
+                    </Button>
+                  </dd>
+                </>
+              )}
+              <dt className="text-muted-foreground">Date</dt>
+              <dd>{dateTime(order.created_at)}</dd>
+              {user && (
+                <>
+                  <dt className="text-muted-foreground">Account</dt>
+                  <dd>{user.email}</dd>
+                </>
+              )}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Your payment receipt is issued by PayPal. This page is SaveStream’s order record.
+            </p>
+          </section>
+          <section
+            aria-labelledby="timeline"
+            className="flex flex-[2_1_320px] flex-col gap-4 rounded-[20px] border bg-surface p-6"
+          >
+            <h2 id="timeline" className="text-[17px] font-bold">
+              Status
+            </h2>
+            <ol className="flex flex-col">
+              {steps.map((step, index) => (
+                <li key={step.title} className="flex gap-3.5">
+                  <div className="flex flex-col items-center">
+                    <span
+                      className={cn(
+                        "grid size-6 shrink-0 place-items-center rounded-full",
+                        step.done ? "bg-success text-white" : "border-2 border-primary",
+                      )}
+                    >
+                      {step.done ? (
+                        <Check className="size-3.5" />
+                      ) : (
+                        <span className="size-2 animate-pulse rounded-full bg-primary" />
+                      )}
+                    </span>
+                    {index < steps.length - 1 && (
+                      <span className="min-h-5 w-0.5 flex-1 bg-success" />
+                    )}
+                  </div>
+                  <div className="pb-4">
+                    <b className="block text-sm">{step.title}</b>
+                    {step.at && (
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {dateTime(step.at)}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
         </div>
+        {order.status === "paid" && (
+          <section
+            aria-label="Refunds"
+            className="flex flex-wrap items-center gap-4 rounded-[20px] border bg-surface p-5"
+          >
+            <span className="grid size-10 place-items-center rounded-[12px] bg-primary-subtle text-accent-ink">
+              <CreditCard className="size-5" />
+            </span>
+            <div className="min-w-[240px] flex-1">
+              <b className="block">Need a refund?</b>
+              <span className="text-sm text-muted-foreground">
+                Requests are reviewed under our Refund Policy. Credits already used for recordings
+                may reduce or rule out a refund.
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button asChild variant="outline">
+                <Link to="/refund">Refund Policy</Link>
+              </Button>
+              <Button asChild>
+                <Link to="/contact">Request a refund</Link>
+              </Button>
+            </div>
+          </section>
+        )}
       </div>
     </AppShell>
   );
@@ -3507,7 +3816,10 @@ export function LegalPage({
             ))}
           </nav>
           {sections.length > 3 && (
-            <nav aria-label={t("On this page")} className="hidden flex-col gap-2 px-1 text-sm md:flex">
+            <nav
+              aria-label={t("On this page")}
+              className="hidden flex-col gap-2 px-1 text-sm md:flex"
+            >
               <b>{t("On this page")}</b>
               {sections.map((section, index) => (
                 <a
@@ -3605,9 +3917,9 @@ export function TermsPage() {
             <p>
               You must be at least 18 years old, the minimum age TikTok requires to host a LIVE, to
               create an account or use SaveStream. You are responsible for your account,
-              credentials, activity, and the sources you add.
-              Keep your credentials secure and contact <MailLink email={SUPPORT_EMAIL} /> if you
-              believe your account has been compromised.
+              credentials, activity, and the sources you add. Keep your credentials secure and
+              contact <MailLink email={SUPPORT_EMAIL} /> if you believe your account has been
+              compromised.
             </p>
           ),
         },
@@ -3665,8 +3977,8 @@ export function TermsPage() {
           p: (
             <p>
               SaveStream depends on networks, hosting providers, payment providers, and third-party
-              platforms we do not control. We do not guarantee that every source will
-              remain technically available or that every recording request will complete without
+              platforms we do not control. We do not guarantee that every source will remain
+              technically available or that every recording request will complete without
               interruption.
             </p>
           ),
@@ -4091,9 +4403,8 @@ export function RefundPage() {
             <p>
               We review every request individually and reply by email. Refunds are not issued
               automatically. When a refund is approved, it is issued through PayPal to your original
-              payment method, and the credits from that purchase
-              are removed from your balance. Credits that have already been used for recordings may
-              reduce or rule out a refund.
+              payment method, and the credits from that purchase are removed from your balance.
+              Credits that have already been used for recordings may reduce or rule out a refund.
             </p>
           ),
         },
@@ -4132,26 +4443,26 @@ export function ContactPage() {
 }
 
 const contactChannels: ContactChannel[] = [
-    {
-      title: "Support",
-      email: SUPPORT_EMAIL,
-      body: "Questions about your account, channels, recordings, or credits. Include your account email and, for a recording, the channel name and time.",
-    },
-    {
-      title: "Billing and refunds",
-      email: SUPPORT_EMAIL,
-      body: "Include the PayPal transaction ID from your receipt.",
-    },
-    {
-      title: "Privacy",
-      email: PRIVACY_EMAIL,
-      body: "Requests to access, correct, or delete your personal information.",
-    },
-    {
-      title: "Report unauthorized recording",
-      email: ABUSE_EMAIL,
-      body: "Tell us the channel name and why you believe it is being recorded without permission.",
-    },
+  {
+    title: "Support",
+    email: SUPPORT_EMAIL,
+    body: "Questions about your account, channels, recordings, or credits. Include your account email and, for a recording, the channel name and time.",
+  },
+  {
+    title: "Billing and refunds",
+    email: SUPPORT_EMAIL,
+    body: "Include the PayPal transaction ID from your receipt.",
+  },
+  {
+    title: "Privacy",
+    email: PRIVACY_EMAIL,
+    body: "Requests to access, correct, or delete your personal information.",
+  },
+  {
+    title: "Report unauthorized recording",
+    email: ABUSE_EMAIL,
+    body: "Tell us the channel name and why you believe it is being recorded without permission.",
+  },
 ];
 
 function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {

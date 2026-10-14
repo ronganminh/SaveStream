@@ -45,6 +45,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminWorkersRouteImport } from './routes/admin/workers'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as BillingIndexRouteImport } from './routes/billing.index'
+import { Route as BillingIdRouteImport } from './routes/billing.$id'
 import { Route as BillingCanceledRouteImport } from './routes/billing.canceled'
 import { Route as BillingSuccessRouteImport } from './routes/billing.success'
 import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
@@ -247,6 +248,11 @@ const BillingIndexRoute = BillingIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BillingRoute,
 } as any)
+const BillingIdRoute = BillingIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => BillingRoute,
+} as any)
 const BillingCanceledRoute = BillingCanceledRouteImport.update({
   id: '/canceled',
   path: '/canceled',
@@ -388,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
+  '/billing/$id': typeof BillingIdRoute
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
@@ -440,6 +447,7 @@ export interface FileRoutesByTo {
   '/admin/system': typeof AdminSystemRoute
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
+  '/billing/$id': typeof BillingIdRoute
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/admin/workers': typeof AdminWorkersRoute
   '/auth/error': typeof AuthErrorRoute
+  '/billing/$id': typeof BillingIdRoute
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
@@ -561,6 +570,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/workers'
     | '/auth/error'
+    | '/billing/$id'
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
@@ -613,6 +623,7 @@ export interface FileRouteTypes {
     | '/admin/system'
     | '/admin/workers'
     | '/auth/error'
+    | '/billing/$id'
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
@@ -672,6 +683,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/workers'
     | '/auth/error'
+    | '/billing/$id'
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
@@ -991,6 +1003,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BillingIndexRouteImport
       parentRoute: typeof BillingRoute
     }
+    '/billing/$id': {
+      id: '/billing/$id'
+      path: '/$id'
+      fullPath: '/billing/$id'
+      preLoaderRoute: typeof BillingIdRouteImport
+      parentRoute: typeof BillingRoute
+    }
     '/billing/canceled': {
       id: '/billing/canceled'
       path: '/canceled'
@@ -1142,12 +1161,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface BillingRouteChildren {
+  BillingIdRoute: typeof BillingIdRoute
   BillingCanceledRoute: typeof BillingCanceledRoute
   BillingSuccessRoute: typeof BillingSuccessRoute
   BillingIndexRoute: typeof BillingIndexRoute
 }
 
 const BillingRouteChildren: BillingRouteChildren = {
+  BillingIdRoute: BillingIdRoute,
   BillingCanceledRoute: BillingCanceledRoute,
   BillingSuccessRoute: BillingSuccessRoute,
   BillingIndexRoute: BillingIndexRoute,
