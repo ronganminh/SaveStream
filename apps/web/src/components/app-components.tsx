@@ -113,8 +113,10 @@ import {
   useActiveRecordingData,
   useChannelsData,
   useEntitlementData,
+  usePublicPricingData,
   useRecordingsData,
 } from "@/hooks/use-domain-data";
+import { freeWebSentence } from "@/lib/plan-facts";
 import {
   channelActionErrorMessage,
   existingWatchId,
@@ -1275,6 +1277,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const name = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
   const channelItems = channelsQuery.data ?? [];
   const entitlement = entitlementQuery.data;
+  const { query: publicPricingQuery } = usePublicPricingData();
   const isFree = isDemoMode || entitlement?.plan === "free";
 
   useEffect(() => {
@@ -1397,7 +1400,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogDescription className="mt-2">
               {handle} is now monitored.{" "}
               {isFree
-                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
+                ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
                 : "Recording starts automatically on our servers when the channel goes live."}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">

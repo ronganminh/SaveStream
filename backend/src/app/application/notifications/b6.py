@@ -10,9 +10,9 @@ from app.application.notifications.service import (
     ensure_recording_expiring_notification,
 )
 from app.application.recordings.retention import (
+    effective_retention_days,
     expires_at,
     paid_customer_clause,
-    retention_days,
 )
 from app.application.recordings.service import utcnow
 from app.infrastructure.db.recording_models import (
@@ -49,7 +49,9 @@ class B6NotificationService:
         paid_users = paid_customer_clause()
 
         for paid in (True, False):
-            days = retention_days(self.settings, paid=paid)
+            days = await effective_retention_days(
+                self.session, self.settings, paid=paid
+            )
             if days <= 0:
                 continue
             owner = (

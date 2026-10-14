@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.application.recordings.retention import paid_customer_clause, retention_days
+from app.application.recordings.retention import effective_retention_days, paid_customer_clause
 from app.infrastructure.db.admin_models import AdminEmailLog
 from app.application.recordings.service import utcnow
 from app.infrastructure.db.billing_models import PaymentOrder, Refund
@@ -275,8 +275,8 @@ class PrivacyService:
         }
 
     async def apply_recording_retention(self, settings: AppSettings) -> int:
-        paid_days = retention_days(settings, paid=True)
-        free_days = retention_days(settings, paid=False)
+        paid_days = await effective_retention_days(self.session, settings, paid=True)
+        free_days = await effective_retention_days(self.session, settings, paid=False)
         rows: list[Recording] = []
         for days, paid in ((paid_days, True), (free_days, False)):
             if days <= 0:

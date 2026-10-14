@@ -420,6 +420,7 @@ export const demoRepositories: SaveStreamRepositories = {
         recording_rate: { unit_seconds: 60, credits_per_unit: 1, minimum_credits: 1 },
         signup_credits: 10,
         max_channels_per_user: 3,
+        free_max_channels_per_user: 3,
         max_concurrent_recordings_per_user: 2,
         recording_retention_days: 30,
         trial_recording_retention_days: 7,

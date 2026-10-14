@@ -10386,7 +10386,15 @@
               "null"
             ],
             "minimum": 1,
-            "description": "Per-user monitored channel limit; null when not limited."
+            "description": "Monitored channel limit for accounts with a purchase (Pro); null when not limited."
+          },
+          "free_max_channels_per_user": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Monitored channel limit for accounts without a purchase; null when not limited."
           },
           "max_concurrent_recordings_per_user": {
             "type": [

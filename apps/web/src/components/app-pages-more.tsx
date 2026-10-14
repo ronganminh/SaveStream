@@ -103,7 +103,12 @@ import { authApi, authErrorMessage } from "@/api/auth";
 import type { AuditLogResponse, RecordingResponse, RecordingStatusValue } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
-import { useCurrentUserData, useSessionsData } from "@/hooks/use-domain-data";
+import {
+  useCurrentUserData,
+  usePublicPricingData,
+  useSessionsData,
+} from "@/hooks/use-domain-data";
+import { retentionSentence } from "@/lib/plan-facts";
 import {
   useNotificationPreferencesData,
   useUpdateNotificationPreferencesMutation,
@@ -4206,7 +4211,8 @@ const productionHelpTopics: { id: string; icon: typeof Cloud; title: string; bod
     id: "retention",
     icon: Clock3,
     title: "How long are recordings kept?",
-    body: "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial, then deleted automatically. Each recording shows its expiry date. Download anything you want to keep longer.",
+    // Filled from the public pricing settings in ProductionHelpContent.
+    body: "",
   },
   {
     id: "troubleshooting",
@@ -4238,6 +4244,7 @@ export function HelpPage() {
 
 function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
   const { t } = usePreferences();
+  const { query: publicPricingQuery } = usePublicPricingData();
   return (
     <>
       {embedded ? (
@@ -4277,6 +4284,8 @@ function ProductionHelpContent({ embedded = false }: { embedded?: boolean }) {
                     </Link>{" "}
                     to buy credits and review your current balance.
                   </>
+                ) : topic.id === "retention" ? (
+                  `${retentionSentence(publicPricingQuery.data)}, then deleted automatically. Each recording shows its expiry date. Download anything you want to keep longer.`
                 ) : typeof topic.body === "string" ? (
                   t(topic.body)
                 ) : (

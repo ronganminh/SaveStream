@@ -15,7 +15,7 @@ from app.api.schemas.billing import (
 )
 from app.application.billing.service import BillingService
 from app.application.pricing.service import PricingService
-from app.application.recordings.retention import retention_days
+from app.application.recordings.retention import effective_retention_days
 from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.payments.disabled import DisabledPaymentProvider
@@ -94,6 +94,9 @@ async def get_public_pricing(
     ).packages()
     response.headers["Cache-Control"] = "public, max-age=60"
     settings = request.app.state.settings
+    # Limits come from the Admin runtime settings that entitlements enforce,
+    # so changing them in Admin updates the pricing page too.
+    runtime = RuntimeSettingsService(session, settings)
     return PublicPricingResponse(
         packages=[
             PublicCreditPackage(
@@ -107,13 +110,17 @@ async def get_public_pricing(
             for package in packages
         ],
         recording_rate=rate,
-        signup_credits=settings.signup_credits,
-        max_channels_per_user=_limit(settings.quota_max_watches_per_user),
+        signup_credits=await runtime.integer("signup_credits"),
+        max_channels_per_user=_limit(await runtime.integer("pro_max_watches")),
+        free_max_channels_per_user=_limit(await runtime.integer("free_max_watches")),
         max_concurrent_recordings_per_user=_limit(
-            settings.quota_max_active_recordings_per_user,
-            settings.watch_max_concurrent_recordings_per_user,
+            await runtime.integer("pro_max_concurrent_cloud_recordings")
         ),
-        recording_retention_days=retention_days(settings, paid=True) or None,
-        trial_recording_retention_days=retention_days(settings, paid=False) or None,
+        recording_retention_days=(
+            await effective_retention_days(session, settings, paid=True) or None
+        ),
+        trial_recording_retention_days=(
+            await effective_retention_days(session, settings, paid=False) or None
+        ),
         checkout=await _checkout_channels(session, settings),
     )

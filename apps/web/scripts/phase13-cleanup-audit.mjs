@@ -139,10 +139,12 @@ const productionHelp = block(
 for (const text of [
   'title: "Credits"',
   "bought once and never expiring",
-  "Finished recordings are stored for 30 days after you buy credits",
 ]) {
   mustIn("productionHelpTopics", productionHelp, text);
 }
+forbidIn("productionHelpTopics", productionHelp, "stored for 30 days");
+// Retention comes from the Admin runtime settings, never a fixed number.
+must("src/components/app-pages-more.tsx", "retentionSentence(publicPricingQuery.data)");
 for (const text of [
   "future API",
   "current frontend values come from one plan catalog",
