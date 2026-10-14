@@ -1,0 +1,36 @@
+# Miniature of docker-compose.production.yml's recorder setup for
+# run.sh. The legacy `recorder` service exists to test the first rollout.
+name: drain-test
+
+x-recorder: &recorder
+  build: .
+  restart: unless-stopped
+  environment:
+    BROKER_URL: redis://redis:6379/0
+    RELEASE: ${RELEASE:-1}
+  volumes:
+    - ${DATA_DIR}:/data
+  depends_on: [redis]
+
+services:
+  redis:
+    image: public.ecr.aws/docker/library/redis:7.4-alpine
+
+  recorder:
+    <<: *recorder
+    command: celery -A tasks:app worker --loglevel=INFO --queues=recordings --concurrency=2 --hostname=recorder@%h
+
+  recorder-blue:
+    <<: *recorder
+    profiles: ["recorder"]
+    command: celery -A tasks:app worker --loglevel=INFO --queues=recordings --concurrency=2 --hostname=recorder-blue@%h
+
+  recorder-green:
+    <<: *recorder
+    profiles: ["recorder"]
+    command: celery -A tasks:app worker --loglevel=INFO --queues=recordings --concurrency=2 --hostname=recorder-green@%h
+
+  client:
+    <<: *recorder
+    profiles: ["tools"]
+    restart: "no"

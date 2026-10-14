@@ -80,7 +80,7 @@ x-app-env: &app-env
   SAVESTREAM_WATCH_OFFLINE_CHECK_SECONDS: "20"
 
   SAVESTREAM_RECORDING_SOURCE_BACKEND: tiktok
-  # Recordings run on the dedicated `recorder` service (see below).
+  # Recordings run on the dedicated recorder-blue/green services (see below).
   SAVESTREAM_RECORDING_QUEUE: recordings
   # Finished recordings are deleted after 30 days for accounts that bought
   # credits and after 7 days for trial-only accounts.
@@ -163,11 +163,17 @@ services:
       api:
         condition: service_healthy
 
-  # Runs only recordings. Its concurrency is the system-wide cap on simultaneous
-  # cloud recordings; raise SAVESTREAM_RECORDING_CONCURRENCY as VPS metrics allow.
-  recorder:
+  # Run only recordings, as two interchangeable "colors" so a deploy never cuts a
+  # recording: deploy/vps/recorder-rollout.sh starts the idle color on the new
+  # image, then tells the running one to finish its recordings and exit (Celery
+  # warm shutdown; it stops taking new jobs at once). Both are in the
+  # `recorder` profile, so a plain `docker compose up -d` never touches them;
+  # use the rollout script. Concurrency is the cap per color; while one color
+  # drains, both may be recording.
+  recorder-blue: &recorder
     build:
       context: ../../backend
+    profiles: ["recorder"]
     restart: unless-stopped
     command:
       - celery
@@ -177,6 +183,7 @@ services:
       - --loglevel=INFO
       - --queues=recordings
       - --concurrency=${SAVESTREAM_RECORDING_CONCURRENCY:-6}
+      - --hostname=recorder-blue@%h
     environment: *app-env
     secrets: *app-secrets
     networks:
@@ -184,6 +191,18 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  recorder-green:
+    <<: *recorder
+    command:
+      - celery
+      - -A
+      - app.infrastructure.queue.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --queues=recordings
+      - --concurrency=${SAVESTREAM_RECORDING_CONCURRENCY:-6}
+      - --hostname=recorder-green@%h
 
   scheduler:
     build:
