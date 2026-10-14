@@ -39,6 +39,7 @@ import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
 import { Route as AdminJobsRouteImport } from './routes/admin/jobs'
 import { Route as AdminOperationsRouteImport } from './routes/admin/operations'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
+import { Route as AdminPartnersRouteImport } from './routes/admin/partners'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminReportsRouteImport } from './routes/admin/reports'
 import { Route as AdminSafetyRouteImport } from './routes/admin/safety'
@@ -54,6 +55,7 @@ import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
 import { Route as ChannelsIdRouteImport } from './routes/channels.$id'
 import { Route as HelpIndexRouteImport } from './routes/help.index'
 import { Route as HelpArticleRouteImport } from './routes/help.$article'
+import { Route as PartnersApplyRouteImport } from './routes/partners.apply'
 import { Route as RecordingsIndexRouteImport } from './routes/recordings.index'
 import { Route as RecordingsIdRouteImport } from './routes/recordings.$id'
 import { Route as RecordingsActiveRouteImport } from './routes/recordings.active'
@@ -220,6 +222,11 @@ const AdminOverviewRoute = AdminOverviewRouteImport.update({
   path: '/admin/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPartnersRoute = AdminPartnersRouteImport.update({
+  id: '/admin/partners',
+  path: '/admin/partners',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
   id: '/admin/payments',
   path: '/admin/payments',
@@ -293,6 +300,11 @@ const HelpIndexRoute = HelpIndexRouteImport.update({
 const HelpArticleRoute = HelpArticleRouteImport.update({
   id: '/help/$article',
   path: '/help/$article',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartnersApplyRoute = PartnersApplyRouteImport.update({
+  id: '/partners/apply',
+  path: '/partners/apply',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecordingsIndexRoute = RecordingsIndexRouteImport.update({
@@ -401,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/partners': typeof AdminPartnersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
@@ -413,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
   '/help/$article': typeof HelpArticleRoute
+  '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -457,6 +471,7 @@ export interface FileRoutesByTo {
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/partners': typeof AdminPartnersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
@@ -468,6 +483,7 @@ export interface FileRoutesByTo {
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
   '/help/$article': typeof HelpArticleRoute
+  '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -519,6 +535,7 @@ export interface FileRoutesById {
   '/admin/jobs': typeof AdminJobsRouteWithChildren
   '/admin/operations': typeof AdminOperationsRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/partners': typeof AdminPartnersRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/safety': typeof AdminSafetyRoute
@@ -531,6 +548,7 @@ export interface FileRoutesById {
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
   '/help/$article': typeof HelpArticleRoute
+  '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
   '/recordings/active': typeof RecordingsActiveRoute
   '/recordings/failed': typeof RecordingsFailedRoute
@@ -583,6 +601,7 @@ export interface FileRouteTypes {
     | '/admin/jobs'
     | '/admin/operations'
     | '/admin/overview'
+    | '/admin/partners'
     | '/admin/payments'
     | '/admin/reports'
     | '/admin/safety'
@@ -595,6 +614,7 @@ export interface FileRouteTypes {
     | '/billing/success'
     | '/channels/$id'
     | '/help/$article'
+    | '/partners/apply'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -639,6 +659,7 @@ export interface FileRouteTypes {
     | '/admin/errors'
     | '/admin/operations'
     | '/admin/overview'
+    | '/admin/partners'
     | '/admin/payments'
     | '/admin/reports'
     | '/admin/safety'
@@ -650,6 +671,7 @@ export interface FileRouteTypes {
     | '/billing/success'
     | '/channels/$id'
     | '/help/$article'
+    | '/partners/apply'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -700,6 +722,7 @@ export interface FileRouteTypes {
     | '/admin/jobs'
     | '/admin/operations'
     | '/admin/overview'
+    | '/admin/partners'
     | '/admin/payments'
     | '/admin/reports'
     | '/admin/safety'
@@ -712,6 +735,7 @@ export interface FileRouteTypes {
     | '/billing/success'
     | '/channels/$id'
     | '/help/$article'
+    | '/partners/apply'
     | '/recordings/$id'
     | '/recordings/active'
     | '/recordings/failed'
@@ -763,6 +787,7 @@ export interface RootRouteChildren {
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
   AdminOperationsRoute: typeof AdminOperationsRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
+  AdminPartnersRoute: typeof AdminPartnersRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminSafetyRoute: typeof AdminSafetyRoute
@@ -771,6 +796,7 @@ export interface RootRouteChildren {
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
   HelpArticleRoute: typeof HelpArticleRoute
+  PartnersApplyRoute: typeof PartnersApplyRoute
   AdminIndexRoute: typeof AdminIndexRoute
   HelpIndexRoute: typeof HelpIndexRoute
 }
@@ -987,6 +1013,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/partners': {
+      id: '/admin/partners'
+      path: '/admin/partners'
+      fullPath: '/admin/partners'
+      preLoaderRoute: typeof AdminPartnersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/payments': {
       id: '/admin/payments'
       path: '/admin/payments'
@@ -1090,6 +1123,13 @@ declare module '@tanstack/react-router' {
       path: '/help/$article'
       fullPath: '/help/$article'
       preLoaderRoute: typeof HelpArticleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partners/apply': {
+      id: '/partners/apply'
+      path: '/partners/apply'
+      fullPath: '/partners/apply'
+      preLoaderRoute: typeof PartnersApplyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recordings/': {
@@ -1341,6 +1381,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminJobsRoute: AdminJobsRouteWithChildren,
   AdminOperationsRoute: AdminOperationsRoute,
   AdminOverviewRoute: AdminOverviewRoute,
+  AdminPartnersRoute: AdminPartnersRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSafetyRoute: AdminSafetyRoute,
@@ -1349,6 +1390,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
   HelpArticleRoute: HelpArticleRoute,
+  PartnersApplyRoute: PartnersApplyRoute,
   AdminIndexRoute: AdminIndexRoute,
   HelpIndexRoute: HelpIndexRoute,
 }

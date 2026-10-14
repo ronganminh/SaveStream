@@ -7824,6 +7824,59 @@
         }
       }
     },
+    "/public/partner-applications": {
+      "post": {
+        "tags": [
+          "Partners"
+        ],
+        "summary": "Apply to the Partner Program",
+        "description": "Anonymous form behind /partners/apply. Stores the exact confirmation texts the applicant checked, the current Terms and Privacy versions, the time, IP and user agent (Privacy Policy section 10). Rate limited per IP; requires a Cloudflare Turnstile token when the server has a Turnstile secret configured. Reviewed in Admin → Partners.",
+        "operationId": "createPartnerApplication",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PartnerApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Application received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerApplicationReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or Turnstile verification failed (CAPTCHA_FAILED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many submissions from this IP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/support/reports": {
       "post": {
         "tags": [
@@ -14787,6 +14840,102 @@
               "copyright",
               "abuse"
             ]
+          }
+        }
+      },
+      "PartnerApplicationRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "email",
+          "tiktok_handle",
+          "niche",
+          "story",
+          "consent_owns_account",
+          "consent_display"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 320
+          },
+          "tiktok_handle": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 64
+          },
+          "other_channel_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048
+          },
+          "niche": {
+            "type": "string",
+            "enum": [
+              "Fitness",
+              "Gaming",
+              "Music",
+              "Beauty & fashion",
+              "Food & cooking",
+              "Education",
+              "Shopping / live selling",
+              "Other"
+            ]
+          },
+          "story": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 600
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional PNG or JPG as a data URL, 5 MB or smaller"
+          },
+          "consent_owns_account": {
+            "type": "boolean",
+            "description": "Must be true: \"I own or manage this TikTok account.\""
+          },
+          "consent_display": {
+            "type": "boolean",
+            "description": "Must be true: \"I consent to SaveStream displaying my name, handle, image and clips on its website (revocable anytime by emailing support).\""
+          },
+          "turnstile_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Honeypot; leave empty"
+          }
+        }
+      },
+      "PartnerApplicationReceipt": {
+        "type": "object",
+        "required": [
+          "reference"
+        ],
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Short reference shown to the applicant, e.g. PA-3F9A21C4"
           }
         }
       },

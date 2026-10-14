@@ -1564,3 +1564,57 @@ export const adminD9Api = {
     );
   },
 };
+
+export type AdminPartnerStatus = "pending" | "approved" | "rejected" | "published" | "withdrawn";
+export type AdminPartnerAction = "approve" | "reject" | "publish" | "unpublish";
+
+export type AdminPartnerApplication = {
+  id: string;
+  reference: string;
+  name: string;
+  email: string;
+  tiktok_handle: string;
+  other_channel_url: string | null;
+  niche: string;
+  story: string;
+  has_photo: boolean;
+  status: AdminPartnerStatus;
+  /** The exact confirmation texts the applicant checked. */
+  consent_texts: string[];
+  terms_version: string;
+  privacy_version: string;
+  consent_ip: string | null;
+  consent_user_agent: string | null;
+  consent_withdrawn_at: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const adminPartnersApi = {
+  list(filters: { status?: AdminPartnerStatus | ""; query?: string } = {}) {
+    const query = new URLSearchParams();
+    if (filters.status) query.set("status", filters.status);
+    if (filters.query?.trim()) query.set("query", filters.query.trim());
+    return apiClient.get<{
+      items: AdminPartnerApplication[];
+      counts: Partial<Record<AdminPartnerStatus, number>>;
+    }>(`/v1/admin/partners?${query.toString()}`);
+  },
+
+  /** Applicant photo as an object URL (served privately, never cached). */
+  async photoUrl(applicationId: string) {
+    const response = await apiClient.get<Response>(
+      `/v1/admin/partners/${encodeURIComponent(applicationId)}/photo`,
+      { responseMode: "response" },
+    );
+    return URL.createObjectURL(await response.blob());
+  },
+
+  act(applicationId: string, action: AdminPartnerAction, reason: string) {
+    return apiClient.post<AdminPartnerApplication>(
+      `/v1/admin/partners/${encodeURIComponent(applicationId)}/actions`,
+      { json: { action, reason } },
+    );
+  },
+};

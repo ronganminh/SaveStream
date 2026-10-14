@@ -30,6 +30,8 @@ _SUPPORT_SCOPES = {
     "admin:complaints:write",
     "admin:support_reports:read",
     "admin:support_reports:write",
+    "admin:partners:read",
+    "admin:partners:write",
     "admin:payments:read",
     "admin:audit:read",
     "admin:operations:read",
