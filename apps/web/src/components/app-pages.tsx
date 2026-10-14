@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Fragment,
   useEffect,
   useState,
   type ComponentProps,
@@ -83,8 +84,10 @@ import {
   Wifi,
   XCircle,
   Zap,
+  Flag,
   Gift,
   Info,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -3766,6 +3769,9 @@ export function RecordingDetailPage({
   const [quota, setQuota] = useState<"normal" | "low">("normal");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [stopConfirm, setStopConfirm] = useState(false);
+  const { query: publicPricingQuery } = usePublicPricingData();
 
   const rec = forced
     ? (recordingsQuery.data ?? []).find((item) => recordingMatchesForcedState(item, forced))
@@ -3854,308 +3860,379 @@ export function RecordingDetailPage({
 
     void downloadRecording.start(rec, { onError: () => void artifactsQuery.refetch() });
   };
-  const actions =
-    state === "active" ? (
-      <Button
-        variant="outline"
-        disabled={!rec.actions.can_stop || stopRecording.isPending}
-        onClick={() => {
-          void stopRecording
-            .mutateAsync(rec.id)
-            .then(() => toast.success("Stop requested", { description: rec.handle }))
-            .catch((error) =>
-              toast.error("Could not stop recording", {
-                description: recordingActionErrorMessage(error),
-              }),
-            );
-        }}
-      >
-        <Pause />
-        {stopRecording.isPending ? "Stopping…" : "Stop recording"}
-      </Button>
-    ) : state === "ready" ? (
-      <div className="flex gap-2">
-        <Button
-          onClick={download}
-          disabled={
-            downloadRecording.isPreparing ||
-            (!isDemoMode && (artifactsState.kind === "loading" || !artifact))
-          }
-        >
-          <Download />
-          {downloadRecording.isPreparing ? "Preparing…" : "Download video"}
-        </Button>
-        <Button
-          variant="outline"
-          disabled={!rec.actions.can_delete || deleteRecording.isPending}
-          onClick={() => setDel(true)}
-        >
-          <Trash2 />
-          Delete
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="More actions">
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onSelect={() => {
-                void navigator.clipboard?.writeText(window.location.href);
-                toast.success("Link copied");
-              }}
-            >
-              Copy link
-            </DropdownMenuItem>
-            {channel && (
-              <DropdownMenuItem
-                onSelect={() => navigate({ to: "/channels/$id", params: { id: channel.id } })}
-              >
-                View channel
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ) : state === "failed" ? (
-      <div className="flex flex-wrap gap-2">
-        {(isDemoMode || artifact) && (
-          <Button variant="outline" disabled={downloadRecording.isPreparing} onClick={download}>
-            <Download />
-            {downloadRecording.isPreparing ? "Preparing…" : "Download partial"}
-          </Button>
-        )}
-        {rec.actions.can_delete && (
-          <Button
-            variant="outline"
-            disabled={deleteRecording.isPending}
-            onClick={() => setDel(true)}
-          >
-            <Trash2 />
-            Delete partial file
-          </Button>
-        )}
-      </div>
-    ) : state === "processing" ? (
-      <Button disabled>
-        <Download />
-        Download available after processing
-      </Button>
-    ) : null;
+  const retentionDays = publicPricingQuery.data?.recording_retention_days ?? null;
+  const expiryDate = rec.expires.match(/\(([^)]+)\)/)?.[1] ?? null;
+  const daysLeft = rec.expiresDays;
+  const quality =
+    artifact?.width && artifact.height ? `${artifact.width} × ${artifact.height}` : rec.resolution;
+  const portrait = !(artifact?.width && artifact.height && artifact.width > artifact.height);
+  const reportContext = { recordingId: rec.id, title: rec.title, handle: rec.handle };
 
   return (
     <AppShell>
-      {channel && (
-        <Link
-          to="/channels/$id"
-          params={{ id: channel.id }}
-          className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      <div className="flex flex-col gap-5">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-sm text-muted-foreground"
         >
-          <ArrowLeft className="size-4" />
-          {channel.name}
-        </Link>
-      )}
-      {state === "ready" && isDemoMode && (
-        <PrototypeStateBar
-          label="Download quota"
-          value={quota}
-          options={
-            [
-              { value: "normal", label: "Available" },
-              { value: "low", label: "Not enough" },
-            ] as const
-          }
-          onChange={setQuota}
-        />
-      )}
-      <PageHeader
-        leading={<RecordingCreatorAvatar recording={rec} size="md" />}
-        title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
-        subtitle={`TikTok · ${state === "active" ? "Started" : rec.date} at ${rec.time}`}
-        action={actions}
-      />
-      {!isDemoMode && (state === "active" || state === "processing") && (
-        <RecordingRealtimeNotice state={realtime.state} lastEventAt={realtime.lastEventAt} />
-      )}
-      {!isDemoMode &&
-        (state === "ready" || state === "failed") &&
-        artifactsState.kind === "error" && (
-          <div className="mb-4">
+          <Link to="/recordings" className="font-semibold text-accent-ink hover:underline">
+            Recordings
+          </Link>
+          <span aria-hidden="true">/</span>
+          <span className="truncate">
+            {state === "active" ? `${rec.handle} — live now` : rec.title}
+          </span>
+        </nav>
+        {state === "ready" && isDemoMode && (
+          <PrototypeStateBar
+            label="Download quota"
+            value={quota}
+            options={
+              [
+                { value: "normal", label: "Available" },
+                { value: "low", label: "Not enough" },
+              ] as const
+            }
+            onChange={setQuota}
+          />
+        )}
+        {!isDemoMode && (state === "active" || state === "processing") && (
+          <RecordingRealtimeNotice state={realtime.state} lastEventAt={realtime.lastEventAt} />
+        )}
+        {!isDemoMode &&
+          (state === "ready" || state === "failed") &&
+          artifactsState.kind === "error" && (
             <StateBanner
               tone="warning"
               icon={AlertTriangle}
               title="Could not load the recording file"
-              body="The recording exists, but SaveStream could not confirm its stored artifact."
+              body="The recording exists, but SaveStream could not confirm its stored file."
               action={
                 <Button size="sm" variant="outline" onClick={() => void artifactsQuery.refetch()}>
                   Retry
                 </Button>
               }
             />
-          </div>
-        )}
-      {!isDemoMode &&
-        (state === "ready" || state === "failed") &&
-        artifactsState.kind === "empty" && (
-          <div className="mb-4">
+          )}
+        {!isDemoMode &&
+          (state === "ready" || state === "failed") &&
+          artifactsState.kind === "empty" && (
             <StateBanner
               tone="warning"
               icon={AlertTriangle}
               title="Recording file unavailable"
               body="The stored file is no longer available. It may have expired or already been cleaned up."
             />
-          </div>
-        )}
-      {expiringSoon && (
-        <div className="mb-4">
-          <StateBanner
-            tone={rec.expireTone === "critical" ? "error" : "warning"}
-            icon={Clock3}
-            title={
-              rec.expireTone === "critical"
-                ? "This recording expires tomorrow"
-                : `This recording expires in ${rec.expires}`
-            }
-            body={
-              isDemoMode
-                ? `It will be removed from cloud storage when your ${usage.retentionDays}-day retention period ends. Download it to keep a copy.`
-                : "It will be removed from cloud storage when its storage period ends. Download it to keep a copy."
-            }
-            action={
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={downloadRecording.isPreparing}
-                onClick={download}
-              >
-                {downloadRecording.isPreparing ? "Preparing…" : "Download"}
-              </Button>
-            }
-          />
-        </div>
-      )}
-      <VideoPlayerShell
-        state={state}
-        {...(isDemoMode
-          ? {}
-          : {
-              elapsed: rec.duration,
-              failedDetail: rec.partialDuration
-                ? `${rec.partialDuration} was saved before the recording stopped.`
-                : (rec.error ?? "No video was saved for this recording."),
-              ...(artifact
-                ? {
-                    loadSource: () =>
-                      playbackLink
-                        .mutateAsync(rec.id)
-                        .then(({ download: signed }) => signed.url)
-                        .catch((error: unknown) => {
-                          throw new Error(artifactActionErrorMessage(error));
-                        }),
-                  }
-                : {}),
-            })}
-      />
-      {state === "active" && (
-        <div className="mt-4 flex items-center gap-3 rounded-lg border border-success/30 bg-success-subtle p-4 text-sm">
-          <Cloud className="size-5 shrink-0 text-success" />
-          <div>
-            <p className="font-medium">
-              Recording runs on our servers. You can safely close this page.
-            </p>
-            <p className="text-muted-foreground">
-              Playback will be available after the livestream ends.
-            </p>
-          </div>
-        </div>
-      )}
-      {state === "processing" && <ProcessingTimeline status={rec.backendStatus} />}
-      {state === "failed" && (
-        <div className="mt-4 space-y-3">
-          <StateBanner
-            tone={
-              rec.backendStatus === "stopped" || rec.backendStatus === "missed_no_cloud_slot"
-                ? "info"
-                : "error"
-            }
-            title={
-              rec.backendStatus === "stopped"
-                ? "Recording stopped"
-                : rec.backendStatus === "missed_no_cloud_slot"
-                  ? t("Recording missed")
-                  : "Recording couldn’t be completed"
-            }
-            body={
-              rec.backendStatus === "stopped"
-                ? "The recording was stopped before it completed."
-                : rec.backendStatus === "missed_no_cloud_slot"
-                  ? t(
-                      "The livestream ended before a cloud recording slot became available. No credits were charged.",
-                    )
-                  : rec.error || "Something went wrong while recording this livestream."
-            }
-            action={
-              isDemoMode ? (
-                <div className="flex gap-2">
+          )}
+        <div className="flex flex-wrap items-start gap-8">
+          <section
+            aria-label="Video player"
+            className={cn(
+              "w-full",
+              portrait ? "max-w-[400px] flex-[0_0_400px]" : "flex-[1_1_560px]",
+            )}
+          >
+            <VideoPlayerShell
+              state={state}
+              portrait={portrait}
+              {...(isDemoMode
+                ? {}
+                : {
+                    elapsed: rec.duration,
+                    failedDetail: rec.partialDuration
+                      ? `${rec.partialDuration} was saved before the recording stopped.`
+                      : (rec.error ?? "No video was saved for this recording."),
+                    ...(artifact
+                      ? {
+                          loadSource: () =>
+                            playbackLink
+                              .mutateAsync(rec.id)
+                              .then(({ download: signed }) => signed.url)
+                              .catch((error: unknown) => {
+                                throw new Error(artifactActionErrorMessage(error));
+                              }),
+                        }
+                      : {}),
+                  })}
+            />
+          </section>
+          <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge status={rec.status} pulse={state === "active"} />
+                {quality !== "—" && (
+                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 font-mono text-xs font-semibold">
+                    {quality}
+                  </span>
+                )}
+                {state !== "active" && rec.size !== "0 MB" && (
+                  <span className="rounded-full bg-surface-2 px-2.5 py-0.5 font-mono text-xs font-semibold">
+                    MP4 · {rec.size}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-[32px] font-extrabold leading-tight tracking-tight">
+                {state === "active" ? `${rec.handle} — live now` : rec.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2.5 text-sm text-muted-foreground">
+                <RecordingCreatorAvatar recording={rec} size="sm" />
+                {channel ? (
+                  <Link
+                    to="/channels/$id"
+                    params={{ id: channel.id }}
+                    className="font-bold text-accent-ink hover:underline"
+                  >
+                    {rec.handle}
+                  </Link>
+                ) : (
+                  <b className="text-foreground">{rec.handle}</b>
+                )}
+                <span aria-hidden="true">·</span>
+                <span>
+                  {rec.date} · {state === "active" ? `started ${rec.time}` : rec.time}
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {state === "ready" && (
+                <>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      toast.success("Processing queued", {
-                        description: "We’ll notify you when the partial recording is ready.",
-                      })
+                    size="lg"
+                    onClick={download}
+                    disabled={
+                      downloadRecording.isPreparing ||
+                      (!isDemoMode && (artifactsState.kind === "loading" || !artifact))
                     }
                   >
-                    <RotateCcw />
-                    Retry processing
+                    <Download />
+                    {downloadRecording.isPreparing ? "Preparing…" : "Download MP4"}
                   </Button>
-                  <Button size="sm" variant="ghost" asChild>
-                    <Link to="/help" hash="contact">
-                      Contact support
-                    </Link>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(window.location.href);
+                      toast.success("Link copied", {
+                        description: "Only you can open it while signed in.",
+                      });
+                    }}
+                  >
+                    <Link2 />
+                    Copy link
                   </Button>
-                </div>
-              ) : (
-                <Button size="sm" variant="ghost" asChild>
-                  <Link to="/help" hash="contact">
-                    Contact support
-                  </Link>
+                </>
+              )}
+              {state === "active" && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  disabled={!rec.actions.can_stop || stopRecording.isPending}
+                  onClick={() => setStopConfirm(true)}
+                >
+                  <Pause />
+                  {stopRecording.isPending ? "Stopping…" : "Stop recording"}
                 </Button>
-              )
-            }
-          />
-        </div>
-      )}
-      <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-3 lg:grid-cols-6">
-        {[
-          ["Platform", "TikTok"],
-          ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
-          ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
-          [state === "active" ? "Written" : "File size", rec.size],
-          [
-            "Resolution",
-            artifact?.width && artifact.height
-              ? `${artifact.width}×${artifact.height}`
-              : rec.resolution,
-          ],
-          [
-            "Stored until",
-            state === "active" || state === "processing"
-              ? "After processing"
-              : rec.expireTone === "critical"
-                ? "Tomorrow"
-                : rec.expiresDays === null
-                  ? "—"
-                  : `${rec.expires} left`,
-          ],
-        ].map(([a, b]) => (
-          <div key={a} className="bg-surface p-4">
-            <p className="text-xs text-muted-foreground">{a}</p>
-            <p className="mt-2 font-mono text-sm font-medium">{b}</p>
+              )}
+              {state === "processing" && (
+                <Button size="lg" disabled>
+                  <Download />
+                  Download available after processing
+                </Button>
+              )}
+              {state === "failed" && (isDemoMode || artifact) && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  disabled={downloadRecording.isPreparing}
+                  onClick={download}
+                >
+                  <Download />
+                  {downloadRecording.isPreparing ? "Preparing…" : "Download partial"}
+                </Button>
+              )}
+              <Button size="lg" variant="ghost" onClick={() => setReportOpen(true)}>
+                <Flag />
+                Report a problem
+              </Button>
+            </div>
+            {state === "active" && (
+              <div className="flex items-center gap-3 rounded-[14px] border border-success/30 bg-success-subtle p-4 text-sm">
+                <Cloud className="size-5 shrink-0 text-success" />
+                <div>
+                  <p className="font-semibold">
+                    Recording runs on our servers. You can safely close this page.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Playback will be available after the livestream ends.
+                  </p>
+                </div>
+              </div>
+            )}
+            {state === "processing" && <ProcessingTimeline status={rec.backendStatus} />}
+            {state === "failed" && (
+              <StateBanner
+                tone={
+                  rec.backendStatus === "stopped" || rec.backendStatus === "missed_no_cloud_slot"
+                    ? "info"
+                    : "error"
+                }
+                title={
+                  rec.backendStatus === "stopped"
+                    ? "Recording stopped"
+                    : rec.backendStatus === "missed_no_cloud_slot"
+                      ? t("Recording missed")
+                      : "Recording couldn’t be completed"
+                }
+                body={
+                  rec.backendStatus === "stopped"
+                    ? "The recording was stopped before it completed."
+                    : rec.backendStatus === "missed_no_cloud_slot"
+                      ? t(
+                          "The livestream ended before a cloud recording slot became available. No credits were charged.",
+                        )
+                      : rec.error || "Something went wrong while recording this livestream."
+                }
+              />
+            )}
+            {state === "ready" && daysLeft !== null && (
+              <section
+                aria-labelledby="retention-title"
+                className="flex flex-col gap-3 rounded-[18px] border bg-surface p-5"
+              >
+                <div className="flex items-center justify-between">
+                  <h2 id="retention-title" className="text-[17px] font-bold">
+                    Retention
+                  </h2>
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-bold",
+                      expiringSoon
+                        ? "bg-warning-subtle text-warning-foreground"
+                        : "bg-success-subtle text-success",
+                    )}
+                  >
+                    {daysLeft <= 0 ? "Expires today" : `${pluralize(daysLeft, "day")} left`}
+                  </span>
+                </div>
+                {retentionDays && (
+                  <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+                    <span
+                      className={cn(
+                        "block h-full rounded-full",
+                        expiringSoon ? "bg-warning" : "bg-success",
+                      )}
+                      style={{
+                        width: `${Math.max(4, Math.min(100, (daysLeft / retentionDays) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  This recording is deleted automatically
+                  {expiryDate ? (
+                    <>
+                      {" "}
+                      on <b className="text-foreground">{expiryDate}</b>
+                    </>
+                  ) : null}
+                  . Download it to keep a permanent copy.
+                </p>
+              </section>
+            )}
+            <section
+              aria-labelledby="details-title"
+              className="rounded-[18px] border bg-surface p-5"
+            >
+              <h2 id="details-title" className="mb-3.5 text-[17px] font-bold">
+                Details
+              </h2>
+              <dl className="grid grid-cols-[minmax(110px,auto)_1fr] gap-x-6 gap-y-2.5 text-sm">
+                {(
+                  [
+                    [
+                      "Duration",
+                      state === "failed" && rec.partialDuration
+                        ? `${rec.duration} (partial)`
+                        : rec.duration,
+                      true,
+                    ],
+                    ["Started", `${rec.date} · ${rec.time}`, false],
+                    ["Quality", quality, true],
+                    [state === "active" ? "Written so far" : "File size", rec.size, true],
+                    [
+                      "Credits used",
+                      rec.creditsUsed !== null && rec.creditsUsed !== undefined
+                        ? String(rec.creditsUsed)
+                        : "—",
+                      true,
+                    ],
+                    ["Recording ID", rec.id, true],
+                  ] as const
+                ).map(([label, value, mono]) => (
+                  <Fragment key={label}>
+                    <dt className="text-muted-foreground">{label}</dt>
+                    <dd
+                      className={cn(
+                        "min-w-0 break-all",
+                        mono && "font-mono",
+                        label === "Recording ID" && "text-xs",
+                      )}
+                    >
+                      {value}
+                    </dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </section>
+            {rec.actions.can_delete && state !== "active" && (
+              <section className="flex flex-wrap items-center gap-4 rounded-[18px] border border-destructive/30 bg-surface p-5">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <b className="block text-sm">Delete recording</b>
+                  <span className="text-xs text-muted-foreground">
+                    Permanently removes the video from cloud storage.
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  disabled={deleteRecording.isPending}
+                  onClick={() => setDel(true)}
+                >
+                  <Trash2 />
+                  Delete
+                </Button>
+              </section>
+            )}
           </div>
-        ))}
+        </div>
       </div>
+      <ReportProblemDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        recording={reportContext}
+      />
+      <ConfirmDialog
+        destructive
+        open={stopConfirm}
+        onOpenChange={setStopConfirm}
+        title="Stop this recording?"
+        body="We’ll stop now and save everything recorded so far. You’re only charged for the minutes actually recorded."
+        confirmLabel="Stop recording"
+        confirmDisabled={stopRecording.isPending}
+        onConfirm={() => {
+          void stopRecording
+            .mutateAsync(rec.id)
+            .then(() => {
+              setStopConfirm(false);
+              toast.success("Stop requested", { description: rec.handle });
+            })
+            .catch((error) =>
+              toast.error("Could not stop recording", {
+                description: recordingActionErrorMessage(error),
+              }),
+            );
+        }}
+      />
       {isDemoMode ? (
         <>
           <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} fileSize={rec.size} />
@@ -4171,8 +4248,8 @@ export function RecordingDetailPage({
           destructive
           open={del}
           onOpenChange={setDel}
-          title="Delete recording?"
-          body="This recording will disappear from your library and its stored artifact will be scheduled for cleanup. This action cannot be undone."
+          title={`Delete “${rec.title}”?`}
+          body={`This can’t be undone. The ${rec.duration} recording will be removed from your library and cloud storage.`}
           confirmLabel="Delete recording"
           confirmDisabled={deleteRecording.isPending}
           onConfirm={() => {

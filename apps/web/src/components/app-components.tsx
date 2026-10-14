@@ -1413,8 +1413,11 @@ export function VideoPlayerShell({
   loadSource,
   elapsed,
   failedDetail,
+  portrait = false,
 }: {
   state?: "ready" | "active" | "processing" | "failed";
+  /** TikTok LIVEs are vertical: a 9:16 frame instead of 16:9. */
+  portrait?: boolean;
   /** Resolves a playable URL; errors should carry a user-facing message. */
   loadSource?: () => Promise<string>;
   elapsed?: string;
@@ -1440,9 +1443,14 @@ export function VideoPlayerShell({
 
   if (src) {
     return (
-      <div className="w-full overflow-hidden rounded-lg bg-black">
+      <div
+        className={cn(
+          "w-full overflow-hidden bg-black",
+          portrait ? "aspect-[9/16] rounded-[20px]" : "rounded-lg",
+        )}
+      >
         <video
-          className="mx-auto max-h-[620px] w-full object-contain"
+          className={cn("mx-auto w-full object-contain", portrait ? "h-full" : "max-h-[620px]")}
           src={src}
           controls
           autoPlay
@@ -1458,7 +1466,12 @@ export function VideoPlayerShell({
   }
 
   return (
-    <div className="relative grid aspect-video max-h-[620px] w-full place-items-center overflow-hidden rounded-lg bg-player text-player-foreground">
+    <div
+      className={cn(
+        "relative grid w-full place-items-center overflow-hidden bg-player text-player-foreground",
+        portrait ? "aspect-[9/16] rounded-[20px]" : "aspect-video max-h-[620px] rounded-lg",
+      )}
+    >
       <div className="absolute inset-0 bg-player-grid" />
       {state === "ready" && (
         <div className="relative text-center">
