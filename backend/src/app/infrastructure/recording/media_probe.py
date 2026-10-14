@@ -40,7 +40,7 @@ def _rotation(stream: dict) -> int:
     return 0
 
 
-def probe_media(path: Path, *, timeout_seconds: float = 60) -> MediaInfo:
+def probe_media(path: Path | str, *, timeout_seconds: float = 60) -> MediaInfo:
     """Read the real duration and frame size of a finished file with ffprobe.
 
     The job's wall clock includes connection and finalize time, so it is

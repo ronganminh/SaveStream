@@ -1,0 +1,62 @@
+name: Backfill Media Info
+
+# Runs backend/src/app/infrastructure/recording/backfill_media.py on the VPS
+# (inside the worker container, which has ffprobe): reads the real duration
+# and frame size of artifacts recorded before ffprobe was used and stores
+# them. Credits are never changed. Without "apply" it is a dry run that only
+# prints what would change. Uses the same VPS_* secrets as Deploy Backend.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the probed values (unchecked = dry run)"
+        type: boolean
+        default: false
+      limit:
+        description: "Maximum artifacts to process"
+        default: "500"
+
+concurrency:
+  group: backfill-media
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    env:
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_APP_DIR: ${{ vars.VPS_APP_DIR || '/home/nduythanh/SaveStream' }}
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Run backfill on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          APPLY: ${{ inputs.apply && '--apply' || '' }}
+          LIMIT: ${{ inputs.limit }}
+        run: |
+          [[ "$LIMIT" =~ ^[0-9]+$ ]] || { echo "limit must be a number"; exit 1; }
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            "cd '$VPS_APP_DIR' && docker compose --env-file deploy/vps/production.env \
+              -f deploy/vps/docker-compose.production.yml exec -T worker \
+              python -m app.infrastructure.recording.backfill_media $APPLY --limit $LIMIT"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
