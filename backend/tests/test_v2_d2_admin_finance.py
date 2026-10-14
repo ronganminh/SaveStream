@@ -5,6 +5,7 @@ import uuid
 from datetime import timedelta
 
 from app.application.admin.payments_d2 import AdminFinanceService, utcnow
+from app.application.admin.service import AdminService
 from app.infrastructure.db.billing_models import CreditPackage, PaymentOrder
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.session import Database
@@ -38,6 +39,16 @@ def test_d2_payment_queries_stuck_detection_and_repair(tmp_path) -> None:
                 )
                 session.add_all([user, package])
                 await session.flush()
+
+                admin_service = AdminService(session, settings)
+                assert (
+                    await admin_service.resolve_user_reference(str(user.id))
+                ).id == user.id
+                assert (
+                    await admin_service.resolve_user_reference(
+                        " FINANCE-TARGET@EXAMPLE.COM "
+                    )
+                ).id == user.id
 
                 paid = PaymentOrder(
                     user_id=user.id,

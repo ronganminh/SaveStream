@@ -552,7 +552,7 @@ export function AdminFinancePage() {
             <TabsContent value="ledger" className="space-y-4">
               <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-5">
                 <Input
-                  placeholder="User ID"
+                  placeholder="User ID or email"
                   value={ledgerFilters.userId ?? ""}
                   onChange={(event) =>
                     setLedgerFilters((current) => ({ ...current, userId: event.target.value }))

@@ -145,6 +145,8 @@ export function authErrorMessage(error: unknown): string {
       return "Too many attempts. Please wait a moment and try again.";
     case "VALIDATION_ERROR":
       return "Check the information you entered and try again.";
+    case "RESOURCE_NOT_FOUND":
+      return error.serverMessage ?? "The requested item was not found.";
     case "FORBIDDEN":
       return "You do not have permission to perform this action.";
     default:

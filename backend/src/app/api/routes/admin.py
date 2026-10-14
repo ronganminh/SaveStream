@@ -1540,12 +1540,11 @@ async def adjust_admin_credit(
         request=request,
         token=step_up_token,
     )
-    try:
-        user_id = uuid.UUID(payload.user_id)
-    except ValueError as exc:
-        raise ApplicationError("RESOURCE_NOT_FOUND", "User not found", status_code=404) from exc
+    user = await AdminService(session, request.app.state.settings).resolve_user_reference(
+        payload.user_id
+    )
     transaction = await CreditAdminService(session).adjust(
-        user_id=user_id,
+        user_id=user.id,
         amount=payload.amount,
         idempotency_key=idempotency_key,
         reason=payload.reason,
@@ -1557,7 +1556,7 @@ async def adjust_admin_credit(
         actor_role=principal.role,
         action="admin.credit.adjusted",
         resource_type="user",
-        resource_id=str(user_id),
+        resource_id=str(user.id),
         context=_context(request),
         reason=payload.reason,
         after_state={

@@ -313,6 +313,20 @@ class AdminService:
             raise self._user_not_found()
         return user
 
+    async def resolve_user_reference(self, reference: str) -> User:
+        value = reference.strip()
+        try:
+            parsed = uuid.UUID(value)
+        except ValueError:
+            user = await self.session.scalar(
+                select(User).where(User.normalized_email == value.casefold())
+            )
+        else:
+            user = await self.session.get(User, parsed)
+        if user is None:
+            raise self._user_not_found()
+        return user
+
     async def update_user(
         self,
         *,
