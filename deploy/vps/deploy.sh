@@ -2,20 +2,21 @@
 # Production backend deploy, run ON the VPS from the repository root after
 # `git pull --ff-only origin main` (the Deploy Backend workflow does both).
 #
-#   bash deploy/vps/deploy.sh [--allow-active-recordings] [--skip-backup]
+#   bash deploy/vps/deploy.sh [--skip-backup]
 #
-# Steps: refuse while cloud recordings are running (restarting the recorder
-# would cut them), take a pg_dump backup, validate Compose, rebuild and start
-# every service (the api container runs `alembic upgrade head` on start),
-# wait for health, then check migrations, health endpoints and admin CORS.
+# Steps: take a pg_dump backup, validate Compose, build images, restart every
+# service except the recorder (the api container runs `alembic upgrade head`
+# on start), wait for health, roll the recorder over without cutting running
+# recordings (deploy/vps/recorder-rollout.sh), then check migrations, health
+# endpoints and admin CORS. Deploys no longer wait for recordings to finish.
 # Never runs `docker compose down -v`.
 set -Eeuo pipefail
 
-ALLOW_ACTIVE_RECORDINGS=false
 SKIP_BACKUP=false
 for arg in "$@"; do
   case "$arg" in
-    --allow-active-recordings) ALLOW_ACTIVE_RECORDINGS=true ;;
+    # Obsolete: the recorder now drains instead of being restarted.
+    --allow-active-recordings) echo "--allow-active-recordings is no longer needed; ignoring it." ;;
     --skip-backup) SKIP_BACKUP=true ;;
     *) echo "Unknown argument: $arg" >&2; exit 2 ;;
   esac
@@ -37,17 +38,11 @@ log() { printf '\n==> %s\n' "$*"; }
 
 log "Revision $(git rev-parse --short HEAD) on $(git branch --show-current)"
 
-log "Checking for in-flight cloud recordings"
-active_recordings="$(compose exec -T postgres psql -U savestream -d savestream -tAc \
+log "In-flight cloud recordings (they keep running; the recorder drains)"
+compose exec -T postgres psql -U savestream -d savestream -tAc \
   "select count(*) from recordings where deleted_at is null and status in \
    ('resolving','waiting_live','recording','stop_requested','processing','uploading')" \
-  | tr -d '[:space:]' || echo "unknown")"
-echo "Active recordings: ${active_recordings}"
-if [[ "$active_recordings" != "0" && "$ALLOW_ACTIVE_RECORDINGS" != "true" ]]; then
-  echo "Refusing to restart the recorder while recordings are running." >&2
-  echo "Re-run later, or pass --allow-active-recordings to accept cutting them." >&2
-  exit 3
-fi
+  || true
 
 if [[ "$SKIP_BACKUP" != "true" ]]; then
   log "Backing up PostgreSQL"
@@ -61,8 +56,15 @@ fi
 log "Validating Compose configuration"
 compose config --quiet
 
-log "Building and starting services"
-compose up -d --build --remove-orphans
+log "Building images (recorder included)"
+COMPOSE_PROFILES=recorder compose build
+
+# Everything but the recorder restarts in place. Without the "recorder"
+# profile, `config --services` leaves recorder-blue/green out, and no
+# --remove-orphans: that would kill the legacy `recorder` container mid-recording.
+log "Starting services (recorder excluded)"
+mapfile -t services < <(compose config --services)
+compose up -d --no-build "${services[@]}"
 
 log "Waiting for the api container to become healthy"
 api_container="$(compose ps -q api)"
@@ -77,7 +79,10 @@ if [[ "$health" != "healthy" ]]; then
   exit 1
 fi
 
-compose ps
+log "Rolling the recorder over (running recordings finish on the old one)"
+ENV_FILE="$ENV_FILE" COMPOSE_FILE="$COMPOSE_FILE" bash deploy/vps/recorder-rollout.sh
+
+COMPOSE_PROFILES=recorder compose ps
 
 log "Alembic revision"
 compose exec -T api alembic current

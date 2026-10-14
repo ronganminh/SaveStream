@@ -108,10 +108,26 @@ Usage limits are the same for every account and are not tied to packages:
 - 2 simultaneous recordings per user (`SAVESTREAM_QUOTA_MAX_ACTIVE_RECORDINGS_PER_USER`,
   `SAVESTREAM_WATCH_MAX_CONCURRENT_RECORDINGS_PER_USER`);
 - 6 simultaneous recordings across the whole system at launch: recordings run on the
-  dedicated `recorder` service (`SAVESTREAM_RECORDING_QUEUE=recordings`) whose Celery
-  concurrency is `SAVESTREAM_RECORDING_CONCURRENCY` in `production.env`. Raise it as VPS
-  CPU, bandwidth, and disk metrics allow, then `up -d recorder`. Recordings beyond the cap
-  wait in the queue; watch checks keep running on the shared `worker`.
+  dedicated recorder (`SAVESTREAM_RECORDING_QUEUE=recordings`) whose Celery concurrency is
+  `SAVESTREAM_RECORDING_CONCURRENCY` in `production.env`. Raise it as VPS CPU, bandwidth,
+  and disk metrics allow, then run `bash deploy/vps/recorder-rollout.sh`. Recordings beyond
+  the cap wait in the queue; watch checks keep running on the shared `worker`.
+
+### Recorder rollout (no cut recordings)
+
+The recorder runs as `recorder-blue` or `recorder-green` (Compose profile `recorder`;
+a plain `docker compose up -d` leaves them alone). `deploy.sh` calls
+`recorder-rollout.sh`, which starts the idle color on the new image, waits until it is
+ready, then sends the running color SIGTERM with its restart policy set to `no`:
+Celery stops taking jobs, finishes the recordings it has, and exits. Unstarted jobs go
+back to the queue for the new color. Drained containers are removed on the next
+rollout; if one is still draining, the rollout is skipped and the recorder keeps its
+current image until a later deploy. While a color drains, up to twice the concurrency
+can record at once.
+
+Because the previous release keeps recording until it exits, database migrations must
+stay backward compatible for one release (add columns/tables; drop or rename only in a
+later release).
 
 After the stack is running, create them once (they are not idempotent; check
 `GET /v1/public/pricing` first):
