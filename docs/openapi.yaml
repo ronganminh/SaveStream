@@ -1072,6 +1072,32 @@
             "schema": {
               "$ref": "#/components/schemas/OpaqueId"
             }
+          },
+          {
+            "name": "disposition",
+            "in": "query",
+            "required": false,
+            "description": "attachment signs a Content-Disposition so the browser saves the file under a readable name (creator_YYYY-MM-DD_HHMM.mp4) instead of playing it.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "inline",
+                "attachment"
+              ],
+              "default": "inline"
+            }
+          },
+          {
+            "name": "tz_offset_minutes",
+            "in": "query",
+            "required": false,
+            "description": "Viewer's UTC offset in minutes, used for the time in the file name.",
+            "schema": {
+              "type": "integer",
+              "minimum": -840,
+              "maximum": 840,
+              "default": 0
+            }
           }
         ],
         "responses": {
@@ -9484,6 +9510,30 @@
           "checksum_sha256": {
             "type": "string"
           },
+          "duration_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Media duration from ffprobe; null for older artifacts or when probing failed."
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Display width in pixels from ffprobe (rotation applied)."
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Display height in pixels from ffprobe (rotation applied)."
+          },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"
           }
@@ -9759,6 +9809,14 @@
               "string",
               "null"
             ]
+          },
+          "released_credits": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "For a release entry, credits returned from the recording hold (the entry amount is 0 because held credits never left the balance)."
           },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"

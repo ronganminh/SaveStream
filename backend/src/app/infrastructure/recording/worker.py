@@ -35,6 +35,7 @@ from app.infrastructure.db.recording_models import (
     RecordingArtifact,
 )
 from app.infrastructure.db.session import Database
+from app.infrastructure.recording.media_probe import probe_media
 from app.infrastructure.recording.runtime import (
     AtomicFFmpegMediaProcessor,
     build_recording_runtime,
@@ -251,6 +252,11 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 storage_key = f"users/{recording.user_id}/recordings/{recording.id}/{artifact_id}.mp4"
                 checksum = await asyncio.to_thread(_checksum, result.artifact_path)
                 size_bytes = result.artifact_path.stat().st_size
+                # Real media length and frame size; the job's wall clock also counts
+                # connecting and finalizing, so it overstates the video.
+                media = await asyncio.to_thread(probe_media, result.artifact_path)
+                if media.duration_seconds is not None:
+                    recording.duration_seconds = media.duration_seconds
                 try:
                     await asyncio.to_thread(
                         storage.upload_file,
@@ -276,6 +282,9 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                         storage_key=storage_key,
                         size_bytes=size_bytes,
                         checksum_sha256=checksum,
+                        duration_ms=media.duration_ms,
+                        width=media.width,
+                        height=media.height,
                     )
                 )
                 credit_service = CreditService(session)

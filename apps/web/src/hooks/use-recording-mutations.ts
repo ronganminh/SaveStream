@@ -51,9 +51,15 @@ function downloadUrlIsFresh(expiresAt: string) {
   return Number.isFinite(expires) && expires - Date.now() > DOWNLOAD_EXPIRY_SAFETY_MS;
 }
 
+/**
+ * Signed URL for a recording's video. `saveAs: true` asks for an attachment
+ * (readable file name) for the Download button; playback uses the default.
+ */
 export function useRecordingDownloadMutation() {
   return useMutation({
-    mutationFn: async (recordingId: string) => {
+    mutationFn: async (input: string | { recordingId: string; saveAs?: boolean }) => {
+      const { recordingId, saveAs = false } =
+        typeof input === "string" ? { recordingId: input } : input;
       const artifacts = await repositories.recordings.listArtifacts(recordingId);
       const artifact = artifacts.find(
         (item) => item.kind === "video" && item.container === "mp4",
@@ -62,9 +68,13 @@ export function useRecordingDownloadMutation() {
         throw new Error("The recording artifact is unavailable.");
       }
 
-      let result = await repositories.recordings.createArtifactDownloadUrl(artifact.id);
+      let result = await repositories.recordings.createArtifactDownloadUrl(artifact.id, {
+        saveAs,
+      });
       if (!downloadUrlIsFresh(result.expires_at)) {
-        result = await repositories.recordings.createArtifactDownloadUrl(artifact.id);
+        result = await repositories.recordings.createArtifactDownloadUrl(artifact.id, {
+          saveAs,
+        });
       }
       if (!downloadUrlIsFresh(result.expires_at)) {
         throw new Error("The download link expired before it could be used.");
@@ -72,6 +82,22 @@ export function useRecordingDownloadMutation() {
       return { artifact, download: result };
     },
   });
+}
+
+/**
+ * Start a file download without leaving the app. The URL carries an
+ * attachment Content-Disposition, so the browser saves it instead of
+ * navigating; a detached anchor click never replaces the current page.
+ */
+export function saveSignedFile(url: string) {
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.rel = "noopener";
+  anchor.download = "";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
 }
 
 export function artifactActionErrorMessage(error: unknown): string {

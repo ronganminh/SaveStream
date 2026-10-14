@@ -86,5 +86,8 @@ def artifact_response(artifact: RecordingArtifact) -> ArtifactResponse:
         container="mp4",
         size_bytes=artifact.size_bytes,
         checksum_sha256=artifact.checksum_sha256,
+        duration_ms=artifact.duration_ms,
+        width=artifact.width,
+        height=artifact.height,
         created_at=artifact.created_at,
     )

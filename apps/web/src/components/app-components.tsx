@@ -135,6 +135,7 @@ import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
   useRecordingDownloadMutation,
+  saveSignedFile,
 } from "@/hooks/use-recording-mutations";
 
 export { meta, publicMeta };
@@ -1082,8 +1083,8 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
     }
 
     void downloadRecording
-      .mutateAsync(recording.id)
-      .then(({ download: signed }) => window.location.assign(signed.url))
+      .mutateAsync({ recordingId: recording.id, saveAs: true })
+      .then(({ download: signed }) => saveSignedFile(signed.url))
       .catch((error) =>
         toast.error("Download unavailable", {
           description: artifactActionErrorMessage(error),

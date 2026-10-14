@@ -170,7 +170,11 @@ export interface RecordingRepository {
   }>;
   getRecording(id: string): Promise<RecordingResponse>;
   listArtifacts(id: string): Promise<ArtifactResponse[]>;
-  createArtifactDownloadUrl(artifactId: string): Promise<DownloadUrlResponse>;
+  /** `saveAs` signs an attachment disposition with a readable file name. */
+  createArtifactDownloadUrl(
+    artifactId: string,
+    options?: { saveAs?: boolean },
+  ): Promise<DownloadUrlResponse>;
   getLiveStatus(source: Source): Promise<LiveStatusResponse>;
   create(input: CreateRecordingRequest, idempotencyKey: string): Promise<RecordingResponse>;
   stop(id: string): Promise<RecordingResponse>;
