@@ -69,9 +69,18 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
           bucket="$(env_value SAVESTREAM_R2_BUCKET)"
+          endpoint="$(env_value SAVESTREAM_R2_ENDPOINT)"
+          # The Worker's R2 binding only sees buckets in the account it is
+          # deployed to; compare without printing either id.
+          endpoint_account="$(printf '%s' "$endpoint" | sed -E 's#^https?://([0-9a-f]{32})\..*#\1#')"
+          if [[ "$endpoint_account" != "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "::error::The R2 bucket '$bucket' belongs to a different Cloudflare account than CLOUDFLARE_ACCOUNT_ID. Deploy the media Worker to the R2 account (set CLOUDFLARE_ACCOUNT_ID / a token for it), or move the bucket."
+            exit 1
+          fi
           secrets_dir="$(env_value SAVESTREAM_SECRETS_DIR)"
           [[ -n "$bucket" && -n "$secrets_dir" ]] || { echo "bucket or secrets dir missing"; exit 1; }
           secret="$(bash ~/vps.sh "cat '$secrets_dir/media_signing_secret' 2>/dev/null || true")"

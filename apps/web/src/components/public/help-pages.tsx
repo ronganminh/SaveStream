@@ -206,7 +206,7 @@ function StillStuck() {
       <div className="flex min-w-[220px] flex-1 flex-col gap-1">
         <b className="text-lg">Still stuck?</b>
         <span className="text-muted-foreground">
-          Email us and include your channel name and the time of the LIVE. We usually reply within
+          Email us and include your channel name and the time of the LIVE. We usually reply within{" "}
           {SUPPORT_RESPONSE_TIME}.
         </span>
       </div>

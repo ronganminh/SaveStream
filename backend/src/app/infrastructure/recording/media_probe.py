@@ -76,6 +76,7 @@ def probe_media(path: Path | str, *, timeout_seconds: float = 60) -> MediaInfo:
         pass
 
     width = height = None
+    rotation = 0
     for stream in data.get("streams", []):
         if stream.get("codec_type") == "video":
             width = _positive_int(stream.get("width"))
@@ -88,5 +89,67 @@ def probe_media(path: Path | str, *, timeout_seconds: float = 60) -> MediaInfo:
                     duration_ms = round(seconds * 1000) if seconds > 0 else None
                 except (TypeError, ValueError):
                     pass
+            rotation = _rotation(stream)
             break
+    if width and height and duration_ms:
+        # TikTok switches resolution mid-stream (adaptive bitrate); the stream
+        # header only describes the start. Report the largest frame size seen.
+        for sample_width, sample_height in _sample_frame_sizes(
+            path, duration_ms / 1000, rotation, timeout_seconds=timeout_seconds
+        ):
+            if sample_width * sample_height > width * height:
+                width, height = sample_width, sample_height
     return MediaInfo(duration_ms=duration_ms, width=width, height=height)
+
+
+FRAME_SAMPLES = 24
+# Packets read after each seek; enough to reach the next keyframe even when
+# the container cannot seek exactly onto one.
+PACKETS_PER_SAMPLE = 20
+
+
+def _sample_frame_sizes(
+    path: Path | str,
+    duration_seconds: float,
+    rotation: int,
+    *,
+    timeout_seconds: float,
+) -> list[tuple[int, int]]:
+    """Decoded size of one keyframe at evenly spaced points of the file.
+
+    Seeks rather than reading everything, so it is cheap over a signed URL.
+    """
+    points = [duration_seconds * i / FRAME_SAMPLES for i in range(FRAME_SAMPLES)]
+    intervals = ",".join(f"{point:.3f}%+#{PACKETS_PER_SAMPLE}" for point in points)
+    try:
+        completed = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-skip_frame",
+                "nokey",
+                "-read_intervals",
+                intervals,
+                "-show_entries",
+                "frame=width,height",
+                "-print_format",
+                "json",
+                str(path),
+            ],
+            capture_output=True,
+            check=True,
+            timeout=timeout_seconds * 3,
+        )
+        frames = json.loads(completed.stdout or b"{}").get("frames", [])
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return []
+    sizes: list[tuple[int, int]] = []
+    for frame in frames:
+        width = _positive_int(frame.get("width"))
+        height = _positive_int(frame.get("height"))
+        if width and height:
+            sizes.append((height, width) if rotation in (90, 270) else (width, height))
+    return sizes
