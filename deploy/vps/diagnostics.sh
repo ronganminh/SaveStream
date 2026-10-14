@@ -66,6 +66,18 @@ sql "select id, status, coalesce(resolved_username, source_value) as creator,
                       'processing', 'uploading', 'stop_requested')
      order by created_at;"
 
+section "Recent recordings: status timeline and artifacts"
+sql "select r.id, coalesce(r.resolved_username, r.source_value) as creator, r.status,
+            r.duration_seconds, r.bytes_recorded / 1048576 as mib,
+            (select count(*) from artifacts a
+              where a.recording_id = r.id and a.deleted_at is null) as artifacts,
+            (select string_agg(to_char(e.created_at, 'HH24:MI') || ' ' || e.event_type, ', '
+                               order by e.sequence)
+               from recording_events e where e.recording_id = r.id) as timeline_utc
+     from recordings r
+     where r.created_at >= now() - interval '${DAYS} days'
+     order by r.created_at desc limit 15;"
+
 for service in recorder recorder-blue recorder-green; do
   id="$(compose ps -q "$service" 2>/dev/null || true)"
   [[ -n "$id" ]] || continue
