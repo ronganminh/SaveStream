@@ -179,8 +179,7 @@ for (const text of [
 ]) {
   must("src/components/app-pages-more.tsx", text);
 }
-must("src/lib/preferences.tsx", 'useState<Language>("en")');
-must("src/lib/preferences.tsx", '"The same Starter, Standard, and Premium hour packs');
+must("src/lib/preferences.tsx", 'language: "en"');
 
 const deployDocs = read("../../deploy/vps/EXTERNAL_PROVIDERS.md");
 for (const text of [

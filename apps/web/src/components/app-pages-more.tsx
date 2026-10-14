@@ -1,3 +1,4 @@
+import { LEGAL_REVISION_LABEL } from "@/lib/legal";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -432,14 +433,12 @@ function ProductionAccountSettings() {
   const deleteAccount = useDeleteAccountMutation();
   const resendVerification = useResendVerificationMutation();
   const [name, setName] = useState("");
-  const [locale, setLocale] = useState("en");
   const [del, setDel] = useState(false);
   const [confirmText, setConfirmText] = useState("");
 
   useEffect(() => {
     if (!query.data) return;
     setName(query.data.display_name ?? "");
-    setLocale(query.data.locale);
   }, [query.data]);
 
   if (state.kind === "loading") {
@@ -457,7 +456,7 @@ function ProductionAccountSettings() {
   }
 
   const profile = query.data;
-  const dirty = name !== (profile.display_name ?? "") || locale !== profile.locale;
+  const dirty = name !== (profile.display_name ?? "");
   const initials = (profile.display_name || profile.email)
     .split(/[\s@._-]+/)
     .filter(Boolean)
@@ -468,8 +467,8 @@ function ProductionAccountSettings() {
   const save = () => {
     void updateProfile
       .mutateAsync({
+        // English-only product: the stored locale is no longer edited.
         display_name: name.trim() || null,
-        locale: locale.trim(),
       })
       .then(async () => {
         await refreshSession();
@@ -529,14 +528,6 @@ function ProductionAccountSettings() {
             maxLength={160}
             onChange={(event) => setName(event.target.value)}
           />
-          <LabeledInput
-            id="acc-locale"
-            label="Locale"
-            value={locale}
-            minLength={2}
-            maxLength={16}
-            onChange={(event) => setLocale(event.target.value)}
-          />
         </div>
         <LabeledInput
           id="acc-email"
@@ -575,7 +566,7 @@ function ProductionAccountSettings() {
         )}
         <Button
           onClick={save}
-          disabled={!dirty || updateProfile.isPending || locale.trim().length < 2}
+          disabled={!dirty || updateProfile.isPending}
         >
           {updateProfile.isPending ? "Saving…" : t("Save changes")}
         </Button>
@@ -3282,8 +3273,9 @@ function DemoAdminErrorsPage() {
 
 /* ---------------- Public: legal, refund, contact ---------------- */
 const LEGAL_LAST_UPDATED = "October 5, 2026";
-// Terms, Privacy and Refund were revised for the web-only, PayPal-only scope.
-const LEGAL_REVISED_2026_10_14 = "October 14, 2026";
+// Terms, Privacy and Refund were revised for the web-only, PayPal-only scope;
+// sign-up consent records the same revision (lib/legal.ts).
+const LEGAL_REVISED_2026_10_14 = LEGAL_REVISION_LABEL;
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
 const ABUSE_EMAIL = "abuse@savestream.online";
@@ -3973,7 +3965,7 @@ function ProductionContactContent({ embedded = false }: { embedded?: boolean }) 
     {
       title: "Billing and refunds",
       email: SUPPORT_EMAIL,
-      body: "Include the order number from your payment receipt.",
+      body: "Include the PayPal transaction ID from your receipt.",
     },
     {
       title: "Privacy",

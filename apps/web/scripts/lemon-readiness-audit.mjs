@@ -191,9 +191,10 @@ if (
 }
 must("src/routes/__root.tsx", '"Page not found — SaveStream"');
 
-// English is the default UI language; Vietnamese is opt-in, never browser-detected.
+// English is the only UI language.
 forbid("src/lib/preferences.tsx", "navigator.language");
-must("src/lib/preferences.tsx", "if(l!=='vi')l='en';");
+forbid("src/lib/preferences.tsx", "languageInitScript");
+must("src/lib/preferences.tsx", 'export type Language = "en";');
 
 if (failures.length) {
   console.error("Lemon readiness audit failed:");

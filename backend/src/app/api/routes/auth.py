@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.api.dependencies import get_current_principal, get_identity_service
+from app.api.middleware import client_ip as trusted_client_ip
 from app.api.schemas.identity import (
     AuthMessage,
     EmailRequest,
@@ -15,6 +16,7 @@ from app.api.schemas.identity import (
     TokenResponse,
     VerifyEmailRequest,
 )
+from app.application.identity.legal import ConsentInput
 from app.application.identity.service import IdentityService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
@@ -27,7 +29,20 @@ def _request_id(request: Request) -> str | None:
 
 
 def _client_ip(request: Request) -> str:
-    return request.client.host if request.client else "unknown"
+    # Behind nginx the socket peer is the proxy; trust X-Forwarded-For only
+    # from the configured proxy networks (same rule as rate limiting).
+    return trusted_client_ip(request, request.app.state.settings.trusted_proxy_cidrs)
+
+
+def _consent(payload: object) -> ConsentInput | None:
+    consent = getattr(payload, "consent", None)
+    if consent is None:
+        return None
+    return ConsentInput(
+        terms_version=consent.terms_version,
+        privacy_version=consent.privacy_version,
+        age_confirmed=consent.age_confirmed,
+    )
 
 
 def _set_refresh_cookie(response: Response, request: Request, token: str) -> None:
@@ -70,6 +85,9 @@ async def register(
         display_name=payload.display_name,
         client_ip=_client_ip(request),
         request_id=_request_id(request),
+        consent=_consent(payload),
+        consent_required=payload.client_type == "web",
+        user_agent=request.headers.get("user-agent"),
     )
     return AuthMessage(message=message)
 
@@ -145,6 +163,7 @@ async def social_login(
         client_ip=_client_ip(request),
         user_agent=request.headers.get("user-agent"),
         request_id=_request_id(request),
+        consent=_consent(payload),
     )
     refresh_token: str | None = result.refresh_token
     if payload.client_type == "web":

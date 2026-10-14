@@ -1,5 +1,5 @@
 import { formatAdminDateTime } from "@/lib/formatters";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
@@ -131,8 +131,6 @@ type PackageDraft = {
   amountMinor: string;
   displayOrder: string;
   active: boolean;
-  appStoreProductId: string;
-  googlePlayProductId: string;
   webVariantId: string;
 };
 
@@ -143,8 +141,6 @@ function draftFromPackage(item: AdminCatalogPackage): PackageDraft {
     amountMinor: String(item.amount_minor),
     displayOrder: String(item.display_order),
     active: item.active,
-    appStoreProductId: item.app_store_product_id ?? "",
-    googlePlayProductId: item.google_play_product_id ?? "",
     webVariantId: item.web_variant_id ?? "",
   };
 }
@@ -163,8 +159,6 @@ export function AdminCatalogPage() {
     credits: "",
     amountMinor: "",
     displayOrder: "0",
-    appStoreProductId: "",
-    googlePlayProductId: "",
     webVariantId: "",
   });
 
@@ -196,15 +190,6 @@ export function AdminCatalogPage() {
   const [danger, setDanger] = useState<DangerousAction | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const webPriceChanged = useMemo(
-    () =>
-      Boolean(
-        selectedPackage &&
-          packageDraft &&
-          Number(packageDraft.amountMinor) !== selectedPackage.amount_minor,
-      ),
-    [packageDraft, selectedPackage],
-  );
 
   const load = async () => {
     if (!canManage) return;
@@ -318,7 +303,7 @@ export function AdminCatalogPage() {
             <section className="rounded-lg border bg-background p-5">
               <h2 className="font-medium">Create package</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Web prices are USD. App prices are not edited here; only App Store and Google Play product IDs are stored.
+                Prices are USD and charged through PayPal web checkout.
               </p>
               <div className="mt-4 grid gap-3 md:grid-cols-4">
                 <Input placeholder="Code" value={newPackage.code} onChange={(event) => setNewPackage((current) => ({ ...current, code: event.target.value }))} />
@@ -326,8 +311,6 @@ export function AdminCatalogPage() {
                 <Input type="number" placeholder="Cloud minutes" value={newPackage.credits} onChange={(event) => setNewPackage((current) => ({ ...current, credits: event.target.value }))} />
                 <Input type="number" placeholder="Web price (USD cents)" value={newPackage.amountMinor} onChange={(event) => setNewPackage((current) => ({ ...current, amountMinor: event.target.value }))} />
                 <Input type="number" placeholder="Display order" value={newPackage.displayOrder} onChange={(event) => setNewPackage((current) => ({ ...current, displayOrder: event.target.value }))} />
-                <Input placeholder="App Store product ID" value={newPackage.appStoreProductId} onChange={(event) => setNewPackage((current) => ({ ...current, appStoreProductId: event.target.value }))} />
-                <Input placeholder="Google Play product ID" value={newPackage.googlePlayProductId} onChange={(event) => setNewPackage((current) => ({ ...current, googlePlayProductId: event.target.value }))} />
                 <Input placeholder="Web provider variant ID" value={newPackage.webVariantId} onChange={(event) => setNewPackage((current) => ({ ...current, webVariantId: event.target.value }))} />
               </div>
               <Button
@@ -350,8 +333,6 @@ export function AdminCatalogPage() {
                           credits: Number(newPackage.credits),
                           amount_minor: Number(newPackage.amountMinor),
                           display_order: Number(newPackage.displayOrder) || 0,
-                          app_store_product_id: newPackage.appStoreProductId || null,
-                          google_play_product_id: newPackage.googlePlayProductId || null,
                           web_variant_id: newPackage.webVariantId || null,
                         },
                         reason,
@@ -363,8 +344,6 @@ export function AdminCatalogPage() {
                         credits: "",
                         amountMinor: "",
                         displayOrder: "0",
-                        appStoreProductId: "",
-                        googlePlayProductId: "",
                         webVariantId: "",
                       });
                       toast.success("Package created");
@@ -415,18 +394,11 @@ export function AdminCatalogPage() {
                   <Input type="number" value={packageDraft.credits} onChange={(event) => setPackageDraft((current) => current ? { ...current, credits: event.target.value } : current)} />
                   <Input type="number" value={packageDraft.amountMinor} onChange={(event) => setPackageDraft((current) => current ? { ...current, amountMinor: event.target.value } : current)} />
                   <Input type="number" value={packageDraft.displayOrder} onChange={(event) => setPackageDraft((current) => current ? { ...current, displayOrder: event.target.value } : current)} />
-                  <Input placeholder="App Store product ID" value={packageDraft.appStoreProductId} onChange={(event) => setPackageDraft((current) => current ? { ...current, appStoreProductId: event.target.value } : current)} />
-                  <Input placeholder="Google Play product ID" value={packageDraft.googlePlayProductId} onChange={(event) => setPackageDraft((current) => current ? { ...current, googlePlayProductId: event.target.value } : current)} />
                   <Input placeholder="Web provider variant ID" value={packageDraft.webVariantId} onChange={(event) => setPackageDraft((current) => current ? { ...current, webVariantId: event.target.value } : current)} />
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={packageDraft.active} onChange={(event) => setPackageDraft((current) => current ? { ...current, active: event.target.checked } : current)} />Available for sale</label>
                 </div>
-                {webPriceChanged && (
-                  <p className="rounded border p-3 text-sm font-medium">
-                    Update the price in App Store Connect and Google Play Console as well
-                  </p>
-                )}
                 <p className="text-sm text-muted-foreground">
-                  App prices are not edited here. SaveStream only stores the store product IDs and the web payment variant ID.
+                  The price is charged through PayPal web checkout.
                 </p>
                 <Button
                   onClick={() =>
@@ -442,11 +414,7 @@ export function AdminCatalogPage() {
                             amount_minor: Number(packageDraft.amountMinor),
                             display_order: Number(packageDraft.displayOrder) || 0,
                             active: packageDraft.active,
-                            app_store_product_id: packageDraft.appStoreProductId || null,
-                            google_play_product_id: packageDraft.googlePlayProductId || null,
                             web_variant_id: packageDraft.webVariantId || null,
-                            clear_app_store_product_id: !packageDraft.appStoreProductId,
-                            clear_google_play_product_id: !packageDraft.googlePlayProductId,
                             clear_web_variant_id: !packageDraft.webVariantId,
                           },
                           reason,

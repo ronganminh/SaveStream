@@ -1,3 +1,4 @@
+import type { LegalConsent } from "@/lib/legal";
 import { ApiError } from "@/api/errors";
 import { apiClient } from "@/api/client";
 
@@ -27,9 +28,14 @@ type TokenResponse = {
 };
 
 export const authApi = {
-  register(input: { email: string; password: string; display_name?: string | null }) {
+  register(input: {
+    email: string;
+    password: string;
+    display_name?: string | null;
+    consent: LegalConsent;
+  }) {
     return apiClient.post<AuthMessage>("/v1/auth/register", {
-      json: input,
+      json: { ...input, client_type: "web" },
       skipAuth: true,
       skipAuthRefresh: true,
     });
@@ -59,9 +65,9 @@ export const authApi = {
     });
   },
 
-  socialLogin(idToken: string) {
+  socialLogin(idToken: string, consent?: LegalConsent) {
     return apiClient.post<TokenResponse>("/v1/auth/social", {
-      json: { id_token: idToken, client_type: "web" },
+      json: { id_token: idToken, client_type: "web", ...(consent ? { consent } : {}) },
       skipAuth: true,
       skipAuthRefresh: true,
     });
@@ -129,6 +135,10 @@ export function authErrorMessage(error: unknown): string {
       return "Your provider must share a verified email for first sign-in.";
     case "SOCIAL_AUTH_NOT_CONFIGURED":
       return "Google and Apple sign-in are not enabled yet.";
+    case "LEGAL_CONSENT_REQUIRED":
+      return "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
+    case "LEGAL_VERSION_OUTDATED":
+      return "Our Terms of Use or Privacy Policy changed. Reload the page and review them again.";
     case "AUTH_SOCIAL_ALREADY_LINKED":
       return "This Google or Apple account is already linked to another account.";
     case "AUTH_SESSION_REVOKED":

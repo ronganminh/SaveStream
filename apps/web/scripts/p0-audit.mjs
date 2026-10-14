@@ -39,8 +39,10 @@ requireText("src/mocks/demo-plan-catalog.ts", 'priceYearlyUsd: null');
 requireText("src/mocks/demo-plan-catalog.ts", 'monitoredChannels: 20');
 requireText("src/mocks/demo-plan-catalog.ts", 'simultaneousRecordings: 3');
 requireText("src/mocks/fixtures.ts", "planCatalog.pro.quotas.recordingHours");
-requireText("src/lib/preferences.tsx", '"Demo — illustrative data"');
-requireText("src/lib/preferences.tsx", '"Bản demo — dữ liệu minh họa"');
+requireText("src/components/app-components.tsx", "Demo — illustrative data");
+// English-only product: no Vietnamese dictionary or language switcher.
+forbidText("src/lib/preferences.tsx", "Bản demo — dữ liệu minh họa");
+forbidText("src/lib/preferences.tsx", '"vi"');
 
 requireText("src/lib/app-config.ts", 'VITE_API_BASE_URL');
 requireText("src/lib/app-config.ts", "apiConfigured");

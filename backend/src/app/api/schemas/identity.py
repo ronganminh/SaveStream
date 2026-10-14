@@ -20,10 +20,22 @@ def _validate_email(value: str) -> str:
     return normalized
 
 
+class LegalConsentRequest(StrictModel):
+    """The user ticked "I am at least 18 and agree to the Terms and Privacy Policy"."""
+
+    age_confirmed: Literal[True]
+    terms_version: str = Field(min_length=1, max_length=32)
+    privacy_version: str = Field(min_length=1, max_length=32)
+
+
 class RegisterRequest(StrictModel):
     email: str
     password: str = Field(min_length=8, max_length=128)
     display_name: str | None = Field(default=None, max_length=160)
+    # Web sign-up must send consent. The paused mobile app predates this
+    # and registers as "mobile" without it until it gets the same step.
+    client_type: Literal["web", "mobile"] = "mobile"
+    consent: LegalConsentRequest | None = None
 
     _email = field_validator("email")(_validate_email)
 
@@ -53,6 +65,8 @@ class LoginRequest(StrictModel):
 class SocialLoginRequest(StrictModel):
     id_token: str = Field(min_length=20, max_length=16384)
     client_type: Literal["web", "mobile"]
+    # Required when a web social sign-in would create a new account.
+    consent: LegalConsentRequest | None = None
 
 
 class SocialLinkRequest(StrictModel):

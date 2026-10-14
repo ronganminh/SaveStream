@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
+from app.application.identity.legal import ConsentInput, record_consent, validate_consent
 from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
@@ -165,8 +166,13 @@ class IdentityService:
         display_name: str | None,
         client_ip: str,
         request_id: str | None,
+        consent: ConsentInput | None = None,
+        consent_required: bool = False,
+        user_agent: str | None = None,
     ) -> str:
         normalized = self.normalize_email(email)
+        if consent_required or consent is not None:
+            consent = validate_consent(consent)
         await self._rate_limit_auth_write("register", f"{client_ip}|{normalized}")
         try:
             password_hash = self.passwords.hash(password)
@@ -191,6 +197,15 @@ class IdentityService:
         self.session.add(
             PasswordCredential(user_id=user.id, password_hash=password_hash)
         )
+        if consent is not None:
+            record_consent(
+                self.session,
+                user_id=user.id,
+                consent=consent,
+                method="email_signup",
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
         await self._issue_one_time_token(user, "verify_email")
         await self._audit(
             action="identity.registered",
@@ -390,6 +405,7 @@ class IdentityService:
         client_ip: str,
         user_agent: str | None,
         request_id: str | None,
+        consent: ConsentInput | None = None,
     ) -> LoginResult:
         await self.rate_limiter.hit(
             scope="social_login",
@@ -435,6 +451,12 @@ class IdentityService:
                 status_code=409,
             )
 
+        # A first web sign-in creates an account, so it needs the same 18+ and
+        # Terms/Privacy acceptance as email sign-up. The client shows the
+        # consent step on LEGAL_CONSENT_REQUIRED and retries with it.
+        if client_type == "web" or consent is not None:
+            consent = validate_consent(consent)
+
         user = User(
             email=external.email,
             normalized_email=normalized,
@@ -453,6 +475,15 @@ class IdentityService:
                     provider=external.provider,
                 )
             )
+            if consent is not None:
+                record_consent(
+                    self.session,
+                    user_id=user.id,
+                    consent=consent,
+                    method=f"social_signup:{external.provider}"[:32],
+                    ip_address=client_ip,
+                    user_agent=user_agent,
+                )
             await self.session.flush()
             signup_credits = await RuntimeSettingsService(
                 self.session, self.settings
