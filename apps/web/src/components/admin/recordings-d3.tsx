@@ -378,6 +378,7 @@ export function AdminRecordingOperationsPage() {
               <tr>
                 <th className="px-4 py-3">Channel</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">Queue</th>
                 <th className="px-4 py-3">Charged</th>
                 <th className="px-4 py-3">Expires</th>
@@ -393,6 +394,18 @@ export function AdminRecordingOperationsPage() {
                     <p className="text-xs text-muted-foreground">{recording.id}</p>
                   </td>
                   <td className="px-4 py-3">{recording.status}</td>
+                  <td className="max-w-xs px-4 py-3 text-xs">
+                    {recording.error ? (
+                      <span title={recording.error.message}>
+                        <span className="font-mono">{recording.error.code}</span>
+                        <span className="block truncate text-muted-foreground">
+                          {recording.error.message}
+                        </span>
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
                   <td className="px-4 py-3">{recording.queue_position ?? "—"}</td>
                   <td className="px-4 py-3">{recording.minutes_charged} min</td>
                   <td className="px-4 py-3 text-xs">{dateTime(recording.expires_at)}</td>
