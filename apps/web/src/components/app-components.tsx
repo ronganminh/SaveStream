@@ -132,12 +132,10 @@ import {
   parseTikTokSource,
 } from "@/lib/tiktok-source";
 import {
-  artifactActionErrorMessage,
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
-  useRecordingDownloadMutation,
-  saveSignedFile,
 } from "@/hooks/use-recording-mutations";
+import { useRecordingDownload } from "@/hooks/use-recording-download";
 
 export { meta, publicMeta };
 const mainNav = [
@@ -1162,7 +1160,7 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
   const navigate = useNavigate();
   const [del, setDel] = useState(false);
   const { t } = usePreferences();
-  const downloadRecording = useRecordingDownloadMutation();
+  const downloadRecording = useRecordingDownload();
   const deleteRecording = useDeleteRecordingMutation();
 
   const download = () => {
@@ -1173,14 +1171,7 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
       return;
     }
 
-    void downloadRecording
-      .mutateAsync({ recordingId: recording.id, saveAs: true })
-      .then(({ download: signed }) => saveSignedFile(signed.url))
-      .catch((error) =>
-        toast.error("Download unavailable", {
-          description: artifactActionErrorMessage(error),
-        }),
-      );
+    void downloadRecording.start(recording);
   };
 
   return (
@@ -1203,11 +1194,11 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
             {t("View recording")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            disabled={recording.status !== "Ready" || downloadRecording.isPending}
+            disabled={recording.status !== "Ready" || downloadRecording.isPreparing}
             onSelect={download}
           >
             <Download />
-            {downloadRecording.isPending ? t("Preparing…") : t("Download")}
+            {downloadRecording.isPreparing ? t("Preparing…") : t("Download")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

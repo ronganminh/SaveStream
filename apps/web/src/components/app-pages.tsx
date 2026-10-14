@@ -202,9 +202,9 @@ import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
   useRecordingDownloadMutation,
-  saveSignedFile,
   useStopRecordingMutation,
 } from "@/hooks/use-recording-mutations";
+import { useRecordingDownload } from "@/hooks/use-recording-download";
 import { useRecordingRealtime, type RecordingRealtimeState } from "@/hooks/use-recording-realtime";
 import { useAdminOperationalSnapshotData } from "@/hooks/use-admin-data";
 import {
@@ -2302,7 +2302,8 @@ export function RecordingDetailPage({
   const { query: channelsQuery } = useChannelsData();
   const stopRecording = useStopRecordingMutation();
   const deleteRecording = useDeleteRecordingMutation();
-  const downloadRecording = useRecordingDownloadMutation();
+  const downloadRecording = useRecordingDownload();
+  const playbackLink = useRecordingDownloadMutation();
   const [quota, setQuota] = useState<"normal" | "low">("normal");
   const [upgrade, setUpgrade] = useState(false);
   const [del, setDel] = useState(false);
@@ -2392,15 +2393,7 @@ export function RecordingDetailPage({
       return;
     }
 
-    void downloadRecording
-      .mutateAsync({ recordingId: rec.id, saveAs: true })
-      .then(({ download: signed }) => saveSignedFile(signed.url))
-      .catch((error) => {
-        toast.error("Download unavailable", {
-          description: artifactActionErrorMessage(error),
-        });
-        void artifactsQuery.refetch();
-      });
+    void downloadRecording.start(rec, { onError: () => void artifactsQuery.refetch() });
   };
   const actions =
     state === "active" ? (
@@ -2426,12 +2419,12 @@ export function RecordingDetailPage({
         <Button
           onClick={download}
           disabled={
-            downloadRecording.isPending ||
+            downloadRecording.isPreparing ||
             (!isDemoMode && (artifactsState.kind === "loading" || !artifact))
           }
         >
           <Download />
-          {downloadRecording.isPending ? "Preparing…" : "Download video"}
+          {downloadRecording.isPreparing ? "Preparing…" : "Download video"}
         </Button>
         <Button
           variant="outline"
@@ -2469,9 +2462,9 @@ export function RecordingDetailPage({
     ) : state === "failed" ? (
       <div className="flex flex-wrap gap-2">
         {(isDemoMode || artifact) && (
-          <Button variant="outline" disabled={downloadRecording.isPending} onClick={download}>
+          <Button variant="outline" disabled={downloadRecording.isPreparing} onClick={download}>
             <Download />
-            {downloadRecording.isPending ? "Preparing…" : "Download partial"}
+            {downloadRecording.isPreparing ? "Preparing…" : "Download partial"}
           </Button>
         )}
         {rec.actions.can_delete && (
@@ -2571,8 +2564,13 @@ export function RecordingDetailPage({
                 : "It will be removed from cloud storage when its storage period ends. Download it to keep a copy."
             }
             action={
-              <Button size="sm" variant="outline" onClick={download}>
-                Download
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={downloadRecording.isPreparing}
+                onClick={download}
+              >
+                {downloadRecording.isPreparing ? "Preparing…" : "Download"}
               </Button>
             }
           />
@@ -2590,7 +2588,7 @@ export function RecordingDetailPage({
               ...(artifact
                 ? {
                     loadSource: () =>
-                      downloadRecording
+                      playbackLink
                         .mutateAsync(rec.id)
                         .then(({ download: signed }) => signed.url)
                         .catch((error: unknown) => {
