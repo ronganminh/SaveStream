@@ -26,7 +26,8 @@ function block(file, start, end) {
     failures.push(`${file}: could not locate block ${start}`);
     return "";
   }
-  return source.slice(from, to);
+  // Collapse whitespace so JSX text wrapped by Prettier still matches.
+  return source.slice(from, to).replace(/\s+/g, " ");
 }
 
 function mustIn(label, source, text) {
