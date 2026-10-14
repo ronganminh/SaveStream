@@ -6434,6 +6434,7 @@ export function PublicFooter() {
         ["/#how", "How it works"],
         ["/#examples", "Examples"],
         ["/pricing", "Pricing"],
+        ["/partners/apply", "Partner Program"],
       ],
     ],
     [

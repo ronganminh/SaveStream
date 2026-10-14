@@ -58,10 +58,17 @@ export function AdminMetricCard({
 }
 
 /** Admin tables share the app table look: tinted header, quiet row hover. */
-export function AdminDataTable({ children }: { children: ReactNode }) {
+export function AdminDataTable({
+  children,
+  tableClassName = "min-w-[720px]",
+}: {
+  children: ReactNode;
+  /** Overrides the table's minimum width (default 720 px) for narrow layouts. */
+  tableClassName?: string;
+}) {
   return (
     <div className="relative overflow-x-auto rounded-[16px] border bg-surface [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-surface-2/60 [&_thead_th]:text-[11px] [&_thead_th]:font-bold [&_thead_th]:tracking-[.06em] [&_thead_th]:text-muted-foreground [&_thead_th]:uppercase [&_thead_tr]:bg-surface-2">
-      <table className="w-full min-w-[720px] text-left text-sm">{children}</table>
+      <table className={`w-full text-left text-sm ${tableClassName}`}>{children}</table>
     </div>
   );
 }

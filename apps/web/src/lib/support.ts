@@ -13,3 +13,6 @@ export const COPYRIGHT_EMAIL = "copyright@savestream.online";
 
 /** Abuse and unauthorized-recording reports (Acceptable Use Policy). */
 export const ABUSE_EMAIL = "abuse@savestream.online";
+
+/** Privacy requests, including withdrawing Partner Program consent (Privacy Policy §10). */
+export const PRIVACY_EMAIL = "privacy@savestream.online";
