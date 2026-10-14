@@ -81,7 +81,8 @@ sql "select provider, status, count(*) as orders, min(created_at) as oldest
 for service in recorder worker scheduler; do
   section "${service}: error lines (last 24h, newest 80)"
   compose logs --no-color --since 24h "$service" 2>&1 \
-    | grep -Ei 'error|exception|traceback|failed|denied|403|429' \
+    | grep -Ev '\] (INFO|DEBUG)/' \
+    | grep -Ei '\b(error|exception|traceback|failed|denied|forbidden)\b|\b(403|429|5[0-9]{2})\b' \
     | grep -Eiv 'password|secret|token|authorization' \
     | tail -n 80 || true
 done
