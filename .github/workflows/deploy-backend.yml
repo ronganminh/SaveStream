@@ -1,0 +1,96 @@
+name: Deploy Backend
+
+# Deploys origin/main to the production VPS over SSH and runs
+# deploy/vps/deploy.sh there (backup, rebuild, migrate, health + CORS checks).
+#
+# Run manually (Actions tab or API). It also runs after Backend CI succeeds on
+# main when the repository variable AUTO_DEPLOY_BACKEND is "true".
+#
+# Secrets (repository or the "production" environment):
+#   VPS_HOST         VPS hostname or IP
+#   VPS_USER         SSH user (e.g. nduythanh)
+#   VPS_SSH_KEY      private key whose public half is in ~/.ssh/authorized_keys
+#   VPS_KNOWN_HOSTS  output of `ssh-keyscan -p <port> <host>` (pins the host key)
+# Optional variables: VPS_PORT (default 22), VPS_APP_DIR (default
+# /home/nduythanh/SaveStream).
+
+on:
+  workflow_dispatch:
+    inputs:
+      allow_active_recordings:
+        description: "Deploy even while cloud recordings are running (they will be cut)"
+        type: boolean
+        default: false
+      skip_backup:
+        description: "Skip the pre-deploy pg_dump backup"
+        type: boolean
+        default: false
+  workflow_run:
+    workflows: ["Backend CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.AUTO_DEPLOY_BACKEND == 'true' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 45
+    env:
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_APP_DIR: ${{ vars.VPS_APP_DIR || '/home/nduythanh/SaveStream' }}
+    steps:
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          test -n "$VPS_SSH_KEY" || { echo "VPS_SSH_KEY secret is missing"; exit 1; }
+          test -n "$VPS_KNOWN_HOSTS" || { echo "VPS_KNOWN_HOSTS secret is missing"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Deploy on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          DEPLOY_ARGS: >-
+            ${{ inputs.allow_active_recordings && '--allow-active-recordings' || '' }}
+            ${{ inputs.skip_backup && '--skip-backup' || '' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            bash -s -- "$VPS_APP_DIR" $DEPLOY_ARGS <<'REMOTE'
+          set -Eeuo pipefail
+          app_dir="$1"; shift
+          cd "$app_dir"
+          branch="$(git branch --show-current)"
+          if [[ "$branch" != "main" ]]; then
+            echo "VPS checkout is on '$branch', expected main" >&2; exit 1
+          fi
+          # Untracked files (backups/, *.bak) are fine; tracked edits are not.
+          if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+            echo "VPS has uncommitted changes to tracked files:" >&2
+            git status --short --untracked-files=no >&2
+            exit 1
+          fi
+          echo "Before: $(git rev-parse --short HEAD)"
+          git fetch origin main
+          git log --oneline HEAD..origin/main
+          git pull --ff-only origin main
+          bash deploy/vps/deploy.sh "$@" < /dev/null
+          REMOTE
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
