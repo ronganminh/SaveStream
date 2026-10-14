@@ -14,7 +14,7 @@ x-recorder: &recorder
 
 services:
   redis:
-    image: public.ecr.aws/docker/library/redis:7.4-alpine
+    image: mirror.gcr.io/library/redis:7.4-alpine
 
   recorder:
     <<: *recorder
