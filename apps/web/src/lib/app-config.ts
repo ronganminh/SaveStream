@@ -107,6 +107,7 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/acceptable-use",
   "/copyright",
   "/refund",
+  "/report",
 ];
 
 export function getRouteAccess(pathname: string): RouteAccess {

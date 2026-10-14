@@ -24,6 +24,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RecordingsRouteImport } from './routes/recordings'
 import { Route as RefundRouteImport } from './routes/refund'
+import { Route as ReportRouteImport } from './routes/report'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignInRouteImport } from './routes/sign-in'
@@ -142,6 +143,11 @@ const RecordingsRoute = RecordingsRouteImport.update({
 const RefundRoute = RefundRouteImport.update({
   id: '/refund',
   path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportRoute = ReportRouteImport.update({
+  id: '/report',
+  path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -381,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
   '/refund': typeof RefundRoute
+  '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sign-in': typeof SignInRoute
@@ -439,6 +446,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
@@ -497,6 +505,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/recordings': typeof RecordingsRouteWithChildren
   '/refund': typeof RefundRoute
+  '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRouteWithChildren
   '/sign-in': typeof SignInRoute
@@ -560,6 +569,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/recordings'
     | '/refund'
+    | '/report'
     | '/reset-password'
     | '/settings'
     | '/sign-in'
@@ -618,6 +628,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/privacy'
     | '/refund'
+    | '/report'
     | '/reset-password'
     | '/sign-in'
     | '/sign-up'
@@ -675,6 +686,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/recordings'
     | '/refund'
+    | '/report'
     | '/reset-password'
     | '/settings'
     | '/sign-in'
@@ -737,6 +749,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RecordingsRoute: typeof RecordingsRouteWithChildren
   RefundRoute: typeof RefundRoute
+  ReportRoute: typeof ReportRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRouteWithChildren
   SignInRoute: typeof SignInRoute
@@ -867,6 +880,13 @@ declare module '@tanstack/react-router' {
       path: '/refund'
       fullPath: '/refund'
       preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/report': {
+      id: '/report'
+      path: '/report'
+      fullPath: '/report'
+      preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -1307,6 +1327,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RecordingsRoute: RecordingsRouteWithChildren,
   RefundRoute: RefundRoute,
+  ReportRoute: ReportRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRouteWithChildren,
   SignInRoute: SignInRoute,

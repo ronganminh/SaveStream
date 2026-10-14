@@ -155,6 +155,11 @@ class AppSettings:
     login_rate_window_seconds: int = 60
     auth_write_rate_limit: int = 5
     auth_write_rate_window_seconds: int = 3600
+    # Public /report form: per-IP limit, plus Cloudflare Turnstile when a
+    # secret is configured (verification is skipped while it is empty).
+    public_report_rate_limit: int = 5
+    public_report_rate_window_seconds: int = 3600
+    turnstile_secret_key: str = field(default="", repr=False)
     recording_temp_dir: str = "/tmp/savestream-recordings"
     recording_max_duration_seconds: int = 14_400
     recording_heartbeat_seconds: int = 10
@@ -644,6 +649,9 @@ class AppSettings:
             login_rate_window_seconds=_int_env("LOGIN_RATE_WINDOW_SECONDS", 60),
             auth_write_rate_limit=_int_env("AUTH_WRITE_RATE_LIMIT", 5),
             auth_write_rate_window_seconds=_int_env("AUTH_WRITE_RATE_WINDOW_SECONDS", 3600),
+            public_report_rate_limit=_int_env("PUBLIC_REPORT_RATE_LIMIT", 5),
+            public_report_rate_window_seconds=_int_env("PUBLIC_REPORT_RATE_WINDOW_SECONDS", 3600),
+            turnstile_secret_key=_env("TURNSTILE_SECRET_KEY", ""),
             recording_temp_dir=_env("RECORDING_TEMP_DIR", "/tmp/savestream-recordings"),
             recording_max_duration_seconds=_int_env("RECORDING_MAX_DURATION_SECONDS", 14_400),
             recording_heartbeat_seconds=_int_env("RECORDING_HEARTBEAT_SECONDS", 10),
