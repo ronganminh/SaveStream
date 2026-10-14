@@ -45,6 +45,8 @@ class AvatarStorage(Protocol):
         cache_control: str | None = None,
     ) -> None: ...
 
+    def remove(self, storage_key: str) -> None: ...
+
 
 AvatarFetcher = Callable[[str], "tuple[bytes, str] | None"]
 
@@ -71,6 +73,27 @@ class CreatorAvatarCache:
         self.storage = storage
         self.fetch = fetch
         self.lookup = lookup
+
+    async def remove_deleted(self) -> int:
+        """Delete the stored copy of avatars whose channel was deleted."""
+        watches = list(
+            (
+                await self.session.scalars(
+                    select(Watch)
+                    .where(
+                        Watch.deleted_at.is_not(None),
+                        Watch.creator_avatar_key.is_not(None),
+                    )
+                    .limit(self.settings.creator_avatar_batch_size)
+                )
+            ).all()
+        )
+        removed = 0
+        for watch in watches:
+            if await remove_avatar_copy(self.storage, watch):
+                removed += 1
+        await self.session.commit()
+        return removed
 
     async def refresh_due(self, *, now: datetime | None = None) -> int:
         """Copy or refresh a batch of avatars that are missing or stale."""
@@ -162,6 +185,24 @@ class CreatorAvatarCache:
         except Exception:
             logger.info("Creator avatar download failed", exc_info=True)
             return None
+
+
+async def remove_avatar_copy(storage: AvatarStorage, watch: Watch) -> bool:
+    """Remove a watch's stored avatar and forget it; the caller commits.
+
+    Keeps the fields when storage fails so the periodic cleanup retries.
+    """
+    if not watch.creator_avatar_key:
+        return False
+    try:
+        await asyncio.to_thread(storage.remove, watch.creator_avatar_key)
+    except Exception:
+        logger.warning("Creator avatar removal failed", exc_info=True)
+        return False
+    watch.creator_avatar_key = None
+    watch.creator_avatar_cached_url = None
+    watch.creator_avatar_refreshed_at = None
+    return True
 
 
 async def recording_avatar_urls(

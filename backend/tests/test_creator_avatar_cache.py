@@ -43,6 +43,9 @@ class _Storage:
     def get_bytes(self, storage_key, *, max_bytes):
         return self.objects.get(storage_key)
 
+    def remove(self, storage_key) -> None:
+        self.objects.pop(storage_key, None)
+
     async def ping(self) -> bool:
         return True
 
@@ -246,3 +249,32 @@ def test_recordings_get_the_avatar_of_their_owners_watch(tmp_path) -> None:
     assert list(asyncio.run(run()).values()) == [
         "https://api.savestream.test/v1/public/creator-avatars/x"
     ]
+
+
+def test_deleting_a_channel_removes_its_avatar_copy(tmp_path) -> None:
+    settings = _settings(tmp_path)
+    _, watch_id = asyncio.run(_seed(settings))
+    storage = _Storage()
+
+    async def run() -> Watch:
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                cache = CreatorAvatarCache(
+                    session, settings, storage, lambda url: (b"jpeg", "image/jpeg")
+                )
+                await cache.refresh_due(now=NOW)
+                watch = await session.get(Watch, watch_id)
+                assert watch is not None and watch.creator_avatar_key in storage.objects
+                watch.deleted_at = NOW  # any deletion path (user, account, admin)
+                await session.commit()
+                assert await cache.remove_deleted() == 1
+                await session.refresh(watch)
+                return watch
+        finally:
+            await database.close()
+
+    watch = asyncio.run(run())
+    assert storage.objects == {}
+    assert watch.creator_avatar_key is None
+    assert watch.creator_avatar_cached_url is None

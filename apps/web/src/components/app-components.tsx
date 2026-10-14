@@ -1395,7 +1395,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       setPhase("success");
       toast.success(`Monitoring ${parsed.handle}`, {
         description: isFree
-          ? "Free accounts monitor up to 3 channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
+          ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
           : "We’ll record automatically when this channel goes live.",
       });
     } catch (error) {
@@ -1497,7 +1497,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
               <DialogDescription>
                 Add a TikTok creator to your account. SaveStream will monitor it automatically.
                 {isFree
-                  ? " Free web accounts can monitor up to 3 channels; automatic cloud recording starts after a one-time hour purchase."
+                  ? ` ${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording starts after you buy credits.`
                   : " Automatic cloud recording starts when configured to do so."}
               </DialogDescription>
             </DialogHeader>

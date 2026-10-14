@@ -18,13 +18,16 @@ async def _refresh(settings: AppSettings) -> int:
     database = Database(settings.database_url)
     try:
         async with database.session() as session:
-            return await CreatorAvatarCache(
+            cache = CreatorAvatarCache(
                 session,
                 settings,
                 MinioStorageClient(settings),
                 download_avatar,
                 lookup,
-            ).refresh_due()
+            )
+            # Copies of deleted channels go first (also covers account deletion).
+            await cache.remove_deleted()
+            return await cache.refresh_due()
     finally:
         await database.close()
 
