@@ -385,6 +385,7 @@ export function PublicReportPage({ type }: { type: ReportType }) {
   const [result, setResult] = useState<PublicReportResponse | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [resetKey, setResetKey] = useState(0);
+  const [website, setWebsite] = useState("");
   const captcha: Captcha = { token, setToken, resetKey };
 
   const pick = (next: ReportType) => {
@@ -396,7 +397,7 @@ export function PublicReportPage({ type }: { type: ReportType }) {
     setBusy(true);
     setError(null);
     try {
-      setResult(await submitPublicReport({ ...payload, turnstile_token: token }));
+      setResult(await submitPublicReport({ ...payload, turnstile_token: token, website }));
     } catch (requestError) {
       setError(authErrorMessage(requestError));
       // A Turnstile token is single-use: ask for a fresh challenge.
@@ -489,6 +490,21 @@ export function PublicReportPage({ type }: { type: ReportType }) {
                     {error}
                   </p>
                 ) : null}
+                {/* Honeypot: hidden from people and screen readers; bots fill it in. */}
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] h-px w-px overflow-hidden"
+                >
+                  <label>
+                    Website
+                    <input
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                    />
+                  </label>
+                </div>
                 {type === "copyright" ? (
                   <CopyrightForm
                     busy={busy}

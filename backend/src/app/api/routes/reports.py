@@ -60,17 +60,20 @@ async def create_public_report(
     session: AsyncSession = Depends(get_db_session),
 ) -> PublicReportResponse:
     settings = request.app.state.settings
+    service = PublicReportService(session, settings, request.app.state.rate_limiter)
+    client_ip = trusted_client_ip(request, settings.trusted_proxy_cidrs)
+    if (payload.website or "").strip():
+        fake_id = await service.reject_honeypot(client_ip=client_ip)
+        return PublicReportResponse(reference=report_reference(fake_id), kind=payload.kind)
     name, target_text, summary, body = _report_text(payload)
-    case = await PublicReportService(
-        session, settings, request.app.state.rate_limiter
-    ).submit(
+    case = await service.submit(
         kind=payload.kind,
         name=name,
         email=payload.email,
         target_text=target_text,
         summary=summary,
         body=body,
-        client_ip=trusted_client_ip(request, settings.trusted_proxy_cidrs),
+        client_ip=client_ip,
         turnstile_token=payload.turnstile_token,
     )
     await session.commit()

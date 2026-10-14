@@ -25,6 +25,8 @@ class PublicReportRequest(BaseModel):
     reporter_role: Literal["self", "other", "on_behalf"] | None = None
     description: str | None = Field(default=None, max_length=10_000)
     turnstile_token: str | None = Field(default=None, max_length=4_096)
+    # Honeypot: a hidden "website" input people never see; bots fill it in.
+    website: str | None = Field(default=None, max_length=2_048)
 
     @model_validator(mode="after")
     def validate_kind_fields(self):

@@ -22,9 +22,12 @@ export type PublicReportRequest =
       turnstile_token?: string | null;
     };
 
+/** Sent with every report; `website` is the honeypot and must stay empty. */
+export type PublicReportExtras = { turnstile_token?: string | null; website?: string };
+
 export type PublicReportResponse = { reference: string; kind: "copyright" | "abuse" };
 
 /** POST /v1/public/reports — anonymous; becomes a case in Admin → Safety. */
-export function submitPublicReport(payload: PublicReportRequest) {
+export function submitPublicReport(payload: PublicReportRequest & PublicReportExtras) {
   return apiClient.post<PublicReportResponse>("/v1/public/reports", { json: payload });
 }

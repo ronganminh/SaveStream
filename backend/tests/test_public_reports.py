@@ -156,3 +156,16 @@ def test_turnstile_is_required_when_a_secret_is_configured(tmp_path, monkeypatch
     assert good.status_code == 201
     assert seen == ["bad", "good-token"]
     assert len(_cases(database_url)) == 1
+
+
+def test_filled_honeypot_looks_successful_but_stores_nothing(tmp_path) -> None:
+    app, database_url = _app(tmp_path)
+    with TestClient(app, base_url="https://testserver") as client:
+        app.state.rate_limiter = InMemoryRateLimiter()
+        response = client.post(
+            "/v1/public/reports", json={**ABUSE, "website": "https://spam.example"}
+        )
+
+    assert response.status_code == 201
+    assert response.json()["reference"].startswith("SR-")
+    assert _cases(database_url) == []

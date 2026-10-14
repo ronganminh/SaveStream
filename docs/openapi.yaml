@@ -14759,6 +14759,14 @@
               "null"
             ],
             "maxLength": 4096
+          },
+          "website": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048,
+            "description": "Honeypot. Left empty by people; a filled value gets a normal-looking reply and nothing is stored."
           }
         }
       },

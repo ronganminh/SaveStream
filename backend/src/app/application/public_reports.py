@@ -109,6 +109,17 @@ class PublicReportService:
                 status_code=400,
             )
 
+    async def reject_honeypot(self, *, client_ip: str) -> uuid.UUID:
+        """A filled honeypot: count it against the rate limit, store nothing,
+        and return a throwaway ID so the bot sees the normal success reply."""
+        await self.rate_limiter.hit(
+            scope="public_report",
+            identifier=client_ip,
+            limit=self.settings.public_report_rate_limit,
+            window_seconds=self.settings.public_report_rate_window_seconds,
+        )
+        return uuid.uuid4()
+
     async def submit(
         self,
         *,
