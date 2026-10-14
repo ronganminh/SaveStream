@@ -92,7 +92,7 @@ const pricing = block(
 for (const text of [
   "Simple, pay-as-you-go pricing",
   "usePublicPricingData()",
-  "pricing.packages.map",
+  "pricing!.packages.map",
 ]) {
   mustIn("CreditPricingPage", pricing, text);
 }
@@ -117,9 +117,9 @@ for (const text of ["usageStates", "useUsageData", "Recording quota reached"]) {
 }
 
 const status = block(
-  "src/components/app-pages-more.tsx",
-  "function ProductionStatusPage()",
-  "function DemoStatusPage()",
+  "src/components/public/contact-status.tsx",
+  "export function PublicStatusPage()",
+  "export function PublicNotFoundPage()",
 );
 for (const text of [
   "does not currently publish a public live incident feed",
@@ -152,6 +152,12 @@ for (const text of [
   "Retry button",
 ]) {
   forbidIn("help articles", productionHelp, text);
+}
+// Every help article is listed in the sitemap.
+const sitemap = fs.readFileSync(path.join(process.cwd(), "public/sitemap.xml"), "utf8");
+for (const name of fs.readdirSync(helpDir).filter((file) => file.endsWith(".md"))) {
+  const url = `https://savestream.online/help/${name.replace(/\.md$/, "")}`;
+  if (!sitemap.includes(url)) failures.push(`public/sitemap.xml: missing ${url}`);
 }
 
 must("src/components/app-pages.tsx", "Pay as you go with credits.");

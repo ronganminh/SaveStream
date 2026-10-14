@@ -301,6 +301,31 @@ const statusStyles: Record<Status, string> = {
   Paused: "bg-warning-subtle text-warning-foreground",
   Error: "bg-recording-subtle text-destructive",
 };
+const pillTones = {
+  neutral: "bg-surface-2 text-muted-foreground",
+  success: "bg-success-subtle text-success",
+  info: "bg-info-subtle text-info",
+  accent: "bg-primary-subtle text-accent-ink",
+} as const;
+/** Rounded label for public pages (design `.badge`), not tied to a status. */
+export function Pill({
+  tone = "neutral",
+  children,
+}: {
+  tone?: keyof typeof pillTones;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-[30px] items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[13px] font-bold",
+        pillTones[tone],
+      )}
+    >
+      {children}
+    </span>
+  );
+}
 export function StatusBadge({ status, pulse = false }: { status: Status; pulse?: boolean }) {
   const { t } = usePreferences();
   const icon =

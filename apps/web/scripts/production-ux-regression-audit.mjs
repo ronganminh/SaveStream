@@ -29,7 +29,7 @@ for (const key of [
 ]) {
   must(pages, key);
 }
-must("src/components/app-pages-more.tsx", "Service status information");
+must("src/components/public/contact-status.tsx", "does not currently publish a public live incident feed");
 forbid(preferences, "const vi:");
 must(pages, '{t(copy[0] ?? "")}');
 must(pages, '{t("Continue with Apple")}');

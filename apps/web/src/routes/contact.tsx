@@ -4,10 +4,6 @@ import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/contact")({
   head: () =>
-    publicMeta(
-      "/contact",
-      "Contact",
-      "Contact SaveStream support, billing, privacy, and abuse reporting.",
-    ),
+    publicMeta("/contact", "Contact support", "Questions about a recording, a payment or your account? Email support@savestream.online."),
   component: () => <ContactPage />,
 });

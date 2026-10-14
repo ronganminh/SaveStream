@@ -1,4 +1,9 @@
 import { LEGAL_REVISION_LABEL } from "@/lib/legal";
+import {
+  PublicContactPage,
+  PublicStatusPage,
+  type ContactChannel,
+} from "@/components/public/contact-status";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
@@ -4004,19 +4009,10 @@ export function ContactPage() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <ProductionContactContent />
-      </main>
-      <PublicFooter />
-    </div>
-  );
+  return <PublicContactPage contacts={contactChannels} />;
 }
 
-function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {
-  const contacts: { title: string; email: string; body: string }[] = [
+const contactChannels: ContactChannel[] = [
     {
       title: "Support",
       email: SUPPORT_EMAIL,
@@ -4037,8 +4033,10 @@ function ProductionContactContent({ embedded = false }: { embedded?: boolean }) 
       email: ABUSE_EMAIL,
       body: "Tell us the channel name and why you believe it is being recorded without permission.",
     },
-  ];
+];
 
+function ProductionContactContent({ embedded = false }: { embedded?: boolean }) {
+  const contacts = contactChannels;
   return (
     <>
       {embedded ? (
@@ -4077,37 +4075,7 @@ export function StatusPage() {
 }
 
 function ProductionStatusPage() {
-  const { t } = usePreferences();
-  return (
-    <div className="min-h-screen bg-background">
-      <PublicHeader />
-      <main className="mx-auto max-w-3xl px-4 pb-20 pt-28 sm:px-6">
-        <h1 className="text-3xl font-semibold">{t("System status")}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {t("Current information about SaveStream service availability and incident reporting.")}
-        </p>
-        <div className="mt-6">
-          <StateBanner
-            tone="info"
-            icon={ShieldCheck}
-            title={t("Service status information")}
-            body={t(
-              "SaveStream does not currently publish a public live incident feed and does not display illustrative service health on the production site. We will post confirmed service notices here when public incident reporting is available.",
-            )}
-          />
-        </div>
-        <section className="mt-8 rounded-lg border bg-surface p-5">
-          <h2 className="font-medium">{t("What is available")}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {t(
-              "Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.",
-            )}
-          </p>
-        </section>
-      </main>
-      <PublicFooter />
-    </div>
-  );
+  return <PublicStatusPage />;
 }
 
 function DemoStatusPage() {

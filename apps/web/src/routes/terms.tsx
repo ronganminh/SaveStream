@@ -4,10 +4,6 @@ import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/terms")({
   head: () =>
-    publicMeta(
-      "/terms",
-      "Terms of Service",
-      "Terms for using SaveStream cloud livestream recording, credits, and payments.",
-    ),
+    publicMeta("/terms", "Terms of Use", "The terms that govern your use of SaveStream’s website and recording service."),
   component: () => <TermsPage />,
 });

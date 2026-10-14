@@ -4,10 +4,6 @@ import { HelpCenterPage } from "@/components/public/help-pages";
 
 export const Route = createFileRoute("/help/")({
   head: () =>
-    publicMeta(
-      "/help",
-      "Help center",
-      "Guides for adding channels, recording LIVEs, downloads, credits and your account.",
-    ),
+    publicMeta("/help", "Help center", "Guides for adding channels, recording LIVEs, downloads, credits and your account.", "help"),
   component: HelpCenterPage,
 });

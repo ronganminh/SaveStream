@@ -4,10 +4,6 @@ import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/copyright")({
   head: () =>
-    publicMeta(
-      "/copyright",
-      "Copyright & Takedown Policy",
-      "How rights holders can report alleged infringement involving SaveStream processing or storage.",
-    ),
+    publicMeta("/copyright", "Copyright & Takedown Policy", "How rights holders report infringement and how SaveStream reviews notices."),
   component: () => <CopyrightPage />,
 });

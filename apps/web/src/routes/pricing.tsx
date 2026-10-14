@@ -4,10 +4,6 @@ import { publicMeta } from "@/components/app-pages";
 
 export const Route = createFileRoute("/pricing")({
   head: () =>
-    publicMeta(
-      "/pricing",
-      "Pricing",
-      "Pay-as-you-go credit packages for cloud TikTok livestream recording. One-time purchase, credits never expire.",
-    ),
+    publicMeta("/pricing", "Pricing — Pay only for what you record", "One-time credit packs paid with PayPal. No subscription, and credits never expire. Start with free trial credits.", "pricing"),
   component: PricingPage,
 });
