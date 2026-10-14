@@ -5,6 +5,13 @@ from app.api.schemas.credits import (
 from app.infrastructure.db.credit_models import CreditLedgerEntry, CreditReservation
 
 
+def _released_credits(entry: CreditLedgerEntry) -> int | None:
+    if entry.entry_type != "release":
+        return None
+    value = (entry.details or {}).get("released_reservation")
+    return value if isinstance(value, int) and value >= 0 else None
+
+
 def transaction_response(entry: CreditLedgerEntry) -> CreditTransactionResponse:
     return CreditTransactionResponse.model_validate(
         {
@@ -14,6 +21,7 @@ def transaction_response(entry: CreditLedgerEntry) -> CreditTransactionResponse:
             "balance_after": entry.balance_after,
             "reference_type": entry.reference_type,
             "reference_id": entry.reference_id,
+            "released_credits": _released_credits(entry),
             "created_at": entry.created_at,
         }
     )

@@ -157,6 +157,10 @@ export type ArtifactResponse = {
   container: "mp4";
   size_bytes: number;
   checksum_sha256: string;
+  /** Probed from the finished file; null for older artifacts. */
+  duration_ms?: number | null;
+  width?: number | null;
+  height?: number | null;
   created_at: string;
 };
 
@@ -203,6 +207,8 @@ export type CreditTransactionResponse = {
   balance_after: number;
   reference_type: string;
   reference_id: string | null;
+  /** For a `release` entry: credits returned from the recording hold. */
+  released_credits?: number | null;
   created_at: string;
 };
 

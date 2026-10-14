@@ -190,6 +190,7 @@ import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
   useRecordingDownloadMutation,
+  saveSignedFile,
   useStopRecordingMutation,
 } from "@/hooks/use-recording-mutations";
 import { useRecordingRealtime, type RecordingRealtimeState } from "@/hooks/use-recording-realtime";
@@ -2363,10 +2364,8 @@ export function RecordingDetailPage({
     }
 
     void downloadRecording
-      .mutateAsync(rec.id)
-      .then(({ download: signed }) => {
-        window.location.assign(signed.url);
-      })
+      .mutateAsync({ recordingId: rec.id, saveAs: true })
+      .then(({ download: signed }) => saveSignedFile(signed.url))
       .catch((error) => {
         toast.error("Download unavailable", {
           description: artifactActionErrorMessage(error),
@@ -2647,7 +2646,12 @@ export function RecordingDetailPage({
           ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
           ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
           [state === "active" ? "Written" : "File size", rec.size],
-          ["Resolution", rec.resolution],
+          [
+            "Resolution",
+            artifact?.width && artifact.height
+              ? `${artifact.width}×${artifact.height}`
+              : rec.resolution,
+          ],
           [
             "Stored until",
             state === "active" || state === "processing"
@@ -2818,7 +2822,13 @@ function creditTransactionTitle(transaction: CreditTransactionResponse) {
   if (transaction.type === "grant") return "Credits purchased";
   if (transaction.type === "refund") return "Refund";
   if (transaction.type === "adjustment") return "Credit adjustment";
-  if (transaction.type === "release") return "Unused credits returned";
+  if (transaction.type === "release") {
+    // Held credits never left the balance, so the entry amount is 0; say how
+    // many were released instead of showing a confusing "0".
+    return transaction.released_credits
+      ? `Released ${pluralize(transaction.released_credits, "held credit")}`
+      : "Credit hold released";
+  }
   return "Credit change";
 }
 
@@ -2829,7 +2839,12 @@ const reservationStatusLabel: Record<CreditReservationResponse["status"], string
 };
 
 function CreditTransactionRow({ transaction }: { transaction: CreditTransactionResponse }) {
-  const amount = transaction.amount > 0 ? `+${transaction.amount}` : String(transaction.amount);
+  const amount =
+    transaction.type === "release" && transaction.amount === 0
+      ? "—"
+      : transaction.amount > 0
+        ? `+${transaction.amount}`
+        : String(transaction.amount);
   return (
     <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-[1.5fr_.8fr_.8fr_auto] sm:items-center">
       <div>

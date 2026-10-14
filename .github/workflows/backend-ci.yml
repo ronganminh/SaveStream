@@ -26,6 +26,8 @@ jobs:
         run: ruff check src tests
       - name: Type check backend boundaries
         run: mypy src/config.py src/engine src/adapters src/app src/http_utils/http_client.py src/utils/logger_manager.py src/utils/dependencies.py
+      - name: Install ffmpeg (media probe tests)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Test
         run: pytest
       - name: Alembic migration smoke

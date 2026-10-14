@@ -42,11 +42,28 @@ class MinioStorageClient:
             content_type=content_type,
         )
 
-    def presigned_get_url(self, storage_key: str) -> str:
+    def presigned_get_url(
+        self,
+        storage_key: str,
+        *,
+        content_disposition: str | None = None,
+    ) -> str:
+        """Signed GET URL. A `content_disposition` (e.g. attachment) is signed
+        into the URL as `response-content-disposition`, so the browser saves
+        the file instead of playing it."""
+        response_headers: dict[str, str | list[str] | tuple[str]] | None = (
+            {
+                "response-content-disposition": content_disposition,
+                "response-content-type": "video/mp4",
+            }
+            if content_disposition
+            else None
+        )
         return self.client.presigned_get_object(
             self.settings.minio_bucket,
             storage_key,
             expires=timedelta(seconds=self.settings.artifact_presign_seconds),
+            response_headers=response_headers,
         )
 
     def remove(self, storage_key: str) -> None:

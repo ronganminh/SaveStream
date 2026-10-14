@@ -278,8 +278,16 @@ export const apiRepositories: SaveStreamRepositories = {
       return response.items;
     },
 
-    createArtifactDownloadUrl(artifactId: string) {
-      return apiClient.post<DownloadUrlResponse>(`/v1/artifacts/${artifactId}/download-url`);
+    createArtifactDownloadUrl(artifactId: string, options: { saveAs?: boolean } = {}) {
+      const query = options.saveAs
+        ? `?${new URLSearchParams({
+            disposition: "attachment",
+            tz_offset_minutes: String(-new Date().getTimezoneOffset()),
+          })}`
+        : "";
+      return apiClient.post<DownloadUrlResponse>(
+        `/v1/artifacts/${artifactId}/download-url${query}`,
+      );
     },
 
     getLiveStatus(source: Source) {
