@@ -45,7 +45,6 @@ export const apiBaseUrl = resolveApiBaseUrl(import.meta.env["VITE_API_BASE_URL"]
 export const apiConfigured = apiBaseUrl.length > 0;
 export const productionBackendConnected = isProductionMode && apiConfigured;
 
-
 const requestedBillingCheckout = import.meta.env["VITE_BILLING_CHECKOUT_ENABLED"];
 /**
  * Deployment kill switch from the production release checklist. Checkout is
@@ -93,6 +92,7 @@ const protectedPrefixes = [
   "/notifications",
   "/settings",
   "/onboarding",
+  "/account",
 ] as const;
 
 /** Public, indexable marketing and policy pages (also listed in public/sitemap.xml). */
