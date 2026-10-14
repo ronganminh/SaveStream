@@ -88,6 +88,7 @@ import {
   Gift,
   Info,
   Link2,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5099,31 +5100,51 @@ function PaymentOrderRow({
   checkoutOpen: boolean;
 }) {
   return (
-    <div className="grid gap-3 border-t px-5 py-4 text-sm sm:grid-cols-[1.3fr_.7fr_.7fr_auto] sm:items-center">
-      <div>
-        <p className="font-medium">{pluralize(order.credits, "credit")}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {new Date(order.created_at).toLocaleString()}
-        </p>
-      </div>
-      <span className="font-mono">{formatMoneyValue(order.amount, language)}</span>
-      <span
-        className={cn(
-          "w-fit rounded-md px-2 py-1 text-xs font-medium",
-          paymentStatusClass(order.status),
+    <tr className="border-b last:border-b-0">
+      <td className="px-4 py-3 font-mono text-xs">{order.provider_reference ?? "—"}</td>
+      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+        {new Date(order.created_at).toLocaleString("en", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })}
+      </td>
+      <td className="px-4 py-3">{pluralize(order.credits, "credit")}</td>
+      <td className="px-4 py-3 text-muted-foreground">
+        {order.provider === "paypal" ? "PayPal" : (order.provider ?? "—")}
+      </td>
+      <td className="px-4 py-3 text-right font-mono">{formatMoneyValue(order.amount, language)}</td>
+      <td className="px-4 py-3">
+        <span
+          className={cn(
+            "w-fit rounded-full px-2.5 py-0.5 text-xs font-bold",
+            paymentStatusClass(order.status),
+          )}
+        >
+          {paymentStatusLabel(order.status)}
+        </span>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-right">
+        {checkoutOpen && isAwaitingPaymentConfirmation(order.status) && (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={() => onContinue(order.id)}
+          >
+            <ExternalLink />
+            Open checkout
+          </Button>
         )}
-      >
-        {paymentStatusLabel(order.status)}
-      </span>
-      {checkoutOpen && isAwaitingPaymentConfirmation(order.status) ? (
-        <Button size="sm" variant="outline" disabled={pending} onClick={() => onContinue(order.id)}>
-          <ExternalLink />
-          Open checkout
+        <Button asChild size="sm" variant="ghost">
+          <Link to="/billing/$id" params={{ id: order.id }}>
+            View
+          </Link>
         </Button>
-      ) : (
-        <span />
-      )}
-    </div>
+      </td>
+    </tr>
   );
 }
 
@@ -5135,6 +5156,7 @@ function CreditBillingPage() {
   const checkout = useBillingCheckoutMutation();
   const capture = usePayPalCaptureMutation();
   const billingCheckoutEnabled = useCheckoutChannels().web;
+  const credits = useCreditSummary();
   const [activePurchase, setActivePurchase] = useState<string | null>(null);
   const [paypalCheckout, setPayPalCheckout] = useState<{
     paymentOrderId: string;
@@ -5195,144 +5217,250 @@ function CreditBillingPage() {
   const balance = balanceQuery.data;
   const packages = packagesQuery.data?.items ?? [];
   const orders = ordersQuery.data?.items ?? [];
+  const awaiting = orders.find((order) => isAwaitingPaymentConfirmation(order.status));
+  const perHour = (item: CreditPackageResponse) =>
+    item.cloud_minutes && item.cloud_minutes > 0
+      ? item.price.amount_minor / (item.cloud_minutes / 60)
+      : null;
+  const rates = packages.map(perHour).filter((rate): rate is number => rate !== null);
+  const baseRate = rates.length ? Math.max(...rates) : null;
+  const bestRate = rates.length > 1 ? Math.min(...rates) : null;
+  const selectedPackage = paypalCheckout
+    ? packages.find((item) => item.credits === paypalCheckout.credits)
+    : undefined;
 
   return (
     <AppShell>
-      <PageHeader
-        title="Billing"
-        subtitle={
-          billingCheckoutEnabled
-            ? "Buy credits for cloud recording. One-time purchase, no subscription."
-            : "Review credit packages and your balance. Online checkout is not open yet."
-        }
-        action={
-          <Button variant="outline" asChild>
-            <Link to="/usage">View credits & usage</Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-col gap-5">
+        <PageHeader
+          title="Billing"
+          subtitle={
+            billingCheckoutEnabled
+              ? "One-time credit packs paid with PayPal. Credits never expire."
+              : "Review credit packages and your balance. Online checkout is not open yet."
+          }
+          action={
+            <Button variant="outline" asChild>
+              <Link to="/usage">Usage & credit ledger</Link>
+            </Button>
+          }
+        />
 
-      {!billingCheckoutEnabled && (
-        <div className="mb-6">
+        {!billingCheckoutEnabled && (
           <StateBanner
             tone="info"
             icon={ShieldCheck}
             title="Credit purchases are coming soon"
             body="Online checkout is not open yet. Your free trial credits work as usual, and you can contact support@savestream.online with any questions."
           />
-        </div>
-      )}
+        )}
 
-      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-3">
-        <StatCard
-          label="Available credits"
-          value={String(balance.available)}
-          detail="Ready to use for recordings"
-          icon={Zap}
-        />
-        <StatCard
-          label="Total balance"
-          value={String(balance.posted)}
-          detail="Including credits on hold"
-          icon={CreditCard}
-        />
-        <StatCard
-          label="On hold"
-          value={String(balance.reserved)}
-          detail="For recordings in progress"
-          icon={Clock3}
-        />
-      </div>
-
-      <section className="mt-8">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Credit packages</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {billingCheckoutEnabled
-              ? "Choose a package and pay securely with PayPal. Credits never expire."
-              : "Preview the available packages. Checkout will become available after payment readiness checks are complete."}
-          </p>
-        </div>
-
-        {packagesState.kind === "error" ? (
-          <StateBanner
-            tone="warning"
-            title="Packages unavailable"
-            body="SaveStream could not load the current credit packages."
-            action={
-              <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
-                Retry
-              </Button>
-            }
-          />
-        ) : packages.length ? (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {packages.map((item) => {
-              const loading = checkout.isPending && activePurchase === item.id;
-              return (
-                <div key={item.id} className="rounded-lg border bg-surface p-6">
-                  <p className="text-lg font-semibold">{item.name}</p>
-                  <p className="mt-3 font-mono text-3xl font-semibold">
-                    {formatCreditMoney(item, language)}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {pluralize(item.credits, "credit")}
-                    {formatApproxHours(item.cloud_minutes, language)
-                      ? ` · ${formatApproxHours(item.cloud_minutes, language)}`
-                      : ""}
-                  </p>
-                  <Button
-                    className="mt-6 w-full"
-                    disabled={!billingCheckoutEnabled || checkout.isPending}
-                    onClick={() =>
-                      void redirectToCheckout({ kind: "package", packageId: item.id }, item.id)
-                    }
-                  >
-                    <CreditCard />
-                    {loading
-                      ? "Opening checkout…"
-                      : billingCheckoutEnabled
-                        ? "Buy credits"
-                        : "Coming soon"}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        ) : packagesState.kind === "empty" ? (
-          <EmptyState
-            icon={CreditCard}
-            title="No packages available"
-            body="Credit packages are not available right now. Please check back soon."
-          />
-        ) : (
-          <div className="grid gap-5 md:grid-cols-2">
-            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
-            <div className="h-44 animate-pulse rounded-lg border bg-muted" />
+        {awaiting && (
+          <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-warning/30 bg-warning-subtle px-4 py-3 text-sm">
+            <Clock3 className="size-5 shrink-0 text-warning" />
+            <span className="min-w-0 flex-1">
+              <b>Payment pending</b> — {pluralize(awaiting.credits, "credit")} (
+              {formatMoneyValue(awaiting.amount, language)}). Credits are added automatically once
+              PayPal confirms it.
+            </span>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/billing/$id" params={{ id: awaiting.id }}>
+                Check status
+              </Link>
+            </Button>
           </div>
         )}
-      </section>
 
-      <section className="mt-8 overflow-hidden rounded-lg border bg-surface">
-        <div className="flex items-start justify-between gap-4 p-5">
+        <div className="flex flex-wrap gap-5">
+          <section
+            aria-label="Balance"
+            className="flex min-w-0 flex-[2_1_460px] flex-col gap-4 rounded-[20px] border bg-gradient-to-br from-surface to-surface-2 p-6"
+          >
+            <span className="text-sm font-bold text-muted-foreground">Available credits</span>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="font-mono text-[52px] font-semibold leading-none tracking-tight">
+                {credits.label}
+              </span>
+              <span className="text-muted-foreground">
+                {balance.available.toLocaleString("en")} credits
+              </span>
+            </div>
+            <div className="h-2.5 overflow-hidden rounded-full bg-surface-3">
+              <span
+                className="block h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                style={{ width: `${credits.percent}%` }}
+              />
+            </div>
+            <div className="flex flex-wrap gap-5 text-sm">
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-primary" />
+                Total balance {balance.posted.toLocaleString("en")}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-warning" />
+                On hold {balance.reserved.toLocaleString("en")}
+              </span>
+            </div>
+          </section>
+          {balance.reserved > 0 && (
+            <section
+              aria-label="On hold"
+              className="flex flex-[1_1_260px] flex-col gap-2.5 rounded-[20px] border bg-surface p-5"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-10 place-items-center rounded-[12px] bg-warning-subtle text-warning">
+                  <Lock className="size-5" />
+                </span>
+                <b>{pluralize(balance.reserved, "credit")} on hold</b>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Reserved for recordings in progress. Unused hold is returned when they end.
+              </p>
+              <Link
+                to="/recordings/active"
+                className="text-sm font-bold text-accent-ink hover:underline"
+              >
+                View active recordings →
+              </Link>
+            </section>
+          )}
+        </div>
+
+        <section aria-labelledby="packs" className="flex flex-col gap-4">
           <div>
-            <h2 className="font-medium">Purchase history</h2>
+            <h2 id="packs" className="text-xl font-extrabold">
+              Buy credits
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your credit purchases and their payment status.
+              {billingCheckoutEnabled
+                ? "Credit packages are one-time purchases paid securely with PayPal. Credits never expire."
+                : "Preview the available packages. Checkout will become available after payment readiness checks are complete."}
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={ordersQuery.isFetching}
-            onClick={() => void ordersQuery.refetch()}
-          >
-            <RotateCcw />
-            Refresh
-          </Button>
-        </div>
-        {ordersState.kind === "error" ? (
-          <div className="border-t p-5">
+          {packagesState.kind === "error" ? (
+            <StateBanner
+              tone="warning"
+              title="Packages unavailable"
+              body="SaveStream could not load the current credit packages."
+              action={
+                <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
+                  Retry
+                </Button>
+              }
+            />
+          ) : packages.length ? (
+            <div className="grid gap-5 pt-3 [grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))]">
+              {packages.map((item) => {
+                const loading = checkout.isPending && activePurchase === item.id;
+                const rate = perHour(item);
+                const best = rate !== null && bestRate !== null && rate === bestRate;
+                const saving =
+                  rate !== null && baseRate ? Math.round((1 - rate / baseRate) * 100) : 0;
+                const hours = formatApproxHours(item.cloud_minutes, language);
+                return (
+                  <article
+                    key={item.id}
+                    className={cn(
+                      "relative flex flex-col gap-3.5 rounded-[20px] border bg-surface p-6 transition-shadow hover:shadow-md",
+                      best &&
+                        "border-primary shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-primary)_20%,transparent)]",
+                    )}
+                  >
+                    {best && (
+                      <span className="absolute -top-3 left-5 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+                        Best value
+                      </span>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <b className="text-[17px]">{item.name}</b>
+                      {rate !== null && (
+                        <span className="font-mono text-sm font-semibold text-accent-ink">
+                          {formatMoneyValue(
+                            { amount_minor: Math.round(rate), currency: item.price.currency },
+                            language,
+                          )}
+                          /h
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <span className="text-[34px] font-extrabold tracking-tight">
+                        {formatCreditMoney(item, language)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {pluralize(item.credits, "credit")}
+                        {hours ? ` · ${hours}` : ""}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {saving > 0 ? `Save ${saving}% per hour vs. the smallest pack` : "Base rate"}
+                    </span>
+                    <Button
+                      className="mt-auto w-full"
+                      variant={best ? "default" : "outline"}
+                      disabled={!billingCheckoutEnabled || checkout.isPending}
+                      onClick={() =>
+                        void redirectToCheckout({ kind: "package", packageId: item.id }, item.id)
+                      }
+                    >
+                      <CreditCard />
+                      {loading
+                        ? "Opening checkout…"
+                        : billingCheckoutEnabled
+                          ? `Buy ${item.name}`
+                          : "Coming soon"}
+                    </Button>
+                  </article>
+                );
+              })}
+            </div>
+          ) : packagesState.kind === "empty" ? (
+            <EmptyState
+              icon={CreditCard}
+              title="No packages available"
+              body="Credit packages are not available right now. Please check back soon."
+            />
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-52 animate-pulse rounded-[20px] border bg-surface-2" />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <Link
+          to="/usage"
+          className="flex items-center gap-3.5 rounded-[18px] border bg-surface p-5 transition-shadow hover:shadow-md"
+        >
+          <span className="grid size-10 place-items-center rounded-[12px] bg-primary-subtle text-accent-ink">
+            <Gauge className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <b className="block">Usage history & credit ledger</b>
+            <span className="text-sm text-muted-foreground">
+              Every credit change, exportable as CSV
+            </span>
+          </span>
+          <span className="text-sm font-bold text-accent-ink">Open Usage →</span>
+        </Link>
+
+        <section aria-labelledby="purchases" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <h2 id="purchases" className="text-[17px] font-bold">
+              Purchase history
+            </h2>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={ordersQuery.isFetching}
+              onClick={() => void ordersQuery.refetch()}
+            >
+              <RotateCcw />
+              Refresh
+            </Button>
+          </div>
+          {ordersState.kind === "error" ? (
             <StateBanner
               tone="warning"
               title="Payment history unavailable"
@@ -5343,29 +5471,61 @@ function CreditBillingPage() {
                 </Button>
               }
             />
-          </div>
-        ) : orders.length ? (
-          orders.map((order) => (
-            <PaymentOrderRow
-              key={order.id}
-              order={order}
-              language={language}
-              pending={checkout.isPending}
-              checkoutOpen={billingCheckoutEnabled}
-              onContinue={(orderId) => void redirectToCheckout({ kind: "order", orderId }, orderId)}
-            />
-          ))
-        ) : (
-          <p className="border-t p-5 text-sm text-muted-foreground">No purchases yet.</p>
-        )}
-      </section>
-
-      <div className="mt-8">
-        <StateBanner
-          tone="info"
-          title="When do credits arrive?"
-          body="Credits are added immediately after SaveStream securely captures the approved PayPal order. Refresh this page if a purchase still shows as pending."
-        />
+          ) : orders.length ? (
+            <div className="overflow-x-auto rounded-[16px] border bg-surface">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                    <th scope="col" className="px-4 py-3">
+                      PayPal order ID
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Date
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Credits
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Method
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      Amount
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <PaymentOrderRow
+                      key={order.id}
+                      order={order}
+                      language={language}
+                      pending={checkout.isPending}
+                      checkoutOpen={billingCheckoutEnabled}
+                      onContinue={(orderId) =>
+                        void redirectToCheckout({ kind: "order", orderId }, orderId)
+                      }
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="rounded-[16px] border bg-surface p-5 text-sm text-muted-foreground">
+              No purchases yet.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            <b>When do credits arrive?</b> Right after SaveStream captures the approved PayPal
+            payment — refresh if a purchase still shows as pending. Your receipt is issued by
+            PayPal.
+          </p>
+        </section>
       </div>
 
       <Dialog
@@ -5374,41 +5534,77 @@ function CreditBillingPage() {
           if (!open && !capture.isPending) setPayPalCheckout(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="gap-5 rounded-[20px] p-7 sm:max-w-[520px]">
           <DialogHeader>
-            <DialogTitle>Pay securely with PayPal</DialogTitle>
+            <DialogTitle className="text-xl font-extrabold">Checkout</DialogTitle>
             <DialogDescription>
-              {paypalCheckout
-                ? `${pluralize(paypalCheckout.credits, "credit")} · ${formatMoneyValue(
-                    paypalCheckout.amount,
-                    language,
-                  )}`
-                : "Complete your one-time credit purchase."}
+              One-time payment, no subscription. Credits never expire.
             </DialogDescription>
           </DialogHeader>
           {paypalCheckout ? (
-            <PayPalCheckoutButtons
-              providerOrderId={paypalCheckout.providerOrderId}
-              onApprove={async (providerOrderId) => {
-                const order = await capture.mutateAsync({
-                  paymentOrderId: paypalCheckout.paymentOrderId,
-                  providerOrderId,
-                });
-                toast.success("Payment captured", {
-                  description: `${pluralize(order.credits, "credit")} added to your SaveStream account.`,
-                });
-                setPayPalCheckout(null);
-              }}
-              onCancel={() => {
-                setPayPalCheckout(null);
-                toast("PayPal checkout cancelled. No credits were charged.");
-              }}
-              onError={(error) => {
-                toast.error("PayPal checkout could not be completed", {
-                  description: billingActionErrorMessage(error),
-                });
-              }}
-            />
+            <>
+              <div className="flex items-center gap-3.5 rounded-[14px] bg-surface-2 p-4">
+                <span className="grid size-10 place-items-center rounded-[12px] bg-primary-subtle text-accent-ink">
+                  <Clock3 className="size-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block">
+                    {selectedPackage ? `${selectedPackage.name} · ` : ""}
+                    {pluralize(paypalCheckout.credits, "credit")}
+                  </b>
+                  {selectedPackage &&
+                    formatApproxHours(selectedPackage.cloud_minutes, language) && (
+                      <span className="text-xs text-muted-foreground">
+                        {formatApproxHours(selectedPackage.cloud_minutes, language)} of recording
+                      </span>
+                    )}
+                </span>
+                <b className="font-mono text-lg">
+                  {formatMoneyValue(paypalCheckout.amount, language)}
+                </b>
+              </div>
+              <div className="space-y-1.5 border-t pt-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment</span>
+                  <span>PayPal</span>
+                </div>
+                <div className="flex justify-between">
+                  <b>Total</b>
+                  <b className="font-mono text-lg">
+                    {formatMoneyValue(paypalCheckout.amount, language)}
+                  </b>
+                </div>
+              </div>
+              <PayPalCheckoutButtons
+                providerOrderId={paypalCheckout.providerOrderId}
+                onApprove={async (providerOrderId) => {
+                  const order = await capture.mutateAsync({
+                    paymentOrderId: paypalCheckout.paymentOrderId,
+                    providerOrderId,
+                  });
+                  toast.success("Payment captured", {
+                    description: `${pluralize(order.credits, "credit")} added to your SaveStream account.`,
+                  });
+                  setPayPalCheckout(null);
+                }}
+                onCancel={() => {
+                  setPayPalCheckout(null);
+                  toast("PayPal checkout cancelled. No credits were charged.");
+                }}
+                onError={(error) => {
+                  toast.error("PayPal checkout could not be completed", {
+                    description: billingActionErrorMessage(error),
+                  });
+                }}
+              />
+              <p className="text-center text-xs text-muted-foreground">
+                Processed by PayPal, which issues your receipt. Refunds follow the{" "}
+                <Link to="/refund" className="font-semibold text-accent-ink hover:underline">
+                  Refund Policy
+                </Link>
+                .
+              </p>
+            </>
           ) : null}
           {capture.isPending ? (
             <p className="text-sm text-muted-foreground">Confirming payment and adding credits…</p>
