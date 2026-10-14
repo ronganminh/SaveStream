@@ -102,6 +102,33 @@ for id in $(docker ps -q --filter "label=com.docker.compose.project=savestream-p
     | tail -n 40 || true
 done
 
+section "Creator avatars: cached copy status and latency (3 tries each)"
+# The cached URLs are public (served by /v1/public/creator-avatars).
+sql "select coalesce(resolved_username, source_value) as creator,
+            creator_avatar_cached_url is not null as cached,
+            creator_avatar_refreshed_at
+     from watches where deleted_at is null order by updated_at desc limit 20;"
+compose exec -T postgres psql -X -U savestream -d savestream -tA \
+  -c "select creator_avatar_cached_url from watches
+      where deleted_at is null and creator_avatar_cached_url is not null
+      order by updated_at desc limit 8;" < /dev/null \
+  | while read -r url; do
+      [[ -n "$url" ]] || continue
+      for _ in 1 2 3; do
+        curl -s -o /dev/null -m 30 -w "%{http_code} %{time_total}s %{size_download}B  " "$url" || true
+      done
+      printf ' %s\n' "${url##*/}"
+    done
+
+section "Object storage (R2 S3 endpoint) errors in api/worker/recorder logs (24h)"
+for id in $(docker ps -q --filter "label=com.docker.compose.project=savestream-production"); do
+  service="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$id")"
+  docker logs --since 24h "$id" 2>&1 \
+    | grep -Ei 'r2\.cloudflarestorage|S3Error|ServiceUnavailable|SlowDown|\b503\b|MaxRetryError|creator-avatars/[0-9a-f]+ HTTP/1\.1" 5' \
+    | grep -Eiv 'password|secret|token|authorization|X-Amz-Signature' \
+    | tail -n 15 | sed "s/^/${service}: /" || true
+done
+
 section "Watch checks: failures by error (last 24h)"
 sql "select left(coalesce(error, '-'), 160) as error, count(*) as checks
      from admin_watch_check_metrics

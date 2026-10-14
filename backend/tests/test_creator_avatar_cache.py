@@ -171,8 +171,9 @@ def test_failed_copy_keeps_raw_url_and_retries_within_the_hour(tmp_path) -> None
 
     watch = asyncio.run(run())
     assert watch.creator_avatar_key is None
-    # Clients still get the raw URL and fall back to initials if it is dead.
-    assert watch_response(watch).creator.avatar_url == OLD_CDN
+    # OLD_CDN has expired (x-expires=1), so clients get no URL and show
+    # initials instead of a broken image; a still-valid raw URL is passed on.
+    assert watch_response(watch).creator.avatar_url is None
     refreshed = watch.creator_avatar_refreshed_at
     assert refreshed is not None
     retry_at = refreshed.replace(tzinfo=timezone.utc) + timedelta(

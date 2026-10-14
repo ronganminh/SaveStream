@@ -25,6 +25,7 @@ from app.api.schemas.recordings import Source
 from app.application.watches.service import CreatorMetadataLookup
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
+from app.infrastructure.storage.media_urls import media_avatar_url, media_delivery_enabled
 from app.settings import AppSettings
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,10 @@ def avatar_key(avatar_id: str) -> str:
 
 
 def avatar_public_url(settings: AppSettings, avatar_id: str) -> str:
+    """Public URL of a cached avatar: the media Worker's edge-cached `/a/<id>`
+    when it is configured, else the API route (both stay valid)."""
+    if media_delivery_enabled(settings):
+        return media_avatar_url(settings, avatar_id)
     return f"{settings.public_api_base_url.rstrip('/')}{AVATAR_PUBLIC_PATH}{avatar_id}"
 
 
@@ -100,6 +105,7 @@ class CreatorAvatarCache:
         if not self.settings.public_api_base_url:
             return 0
         current = now or datetime.now(timezone.utc)
+        await self._retarget_cached_urls()
         stale_before = current - timedelta(hours=self.settings.creator_avatar_refresh_hours)
         watches = list(
             (
@@ -127,6 +133,29 @@ class CreatorAvatarCache:
                 stored += 1
             await self.session.commit()
         return stored
+
+    async def _retarget_cached_urls(self) -> None:
+        """Point already-cached avatars at the current public URL (e.g. the
+        media Worker once it is enabled) without downloading them again."""
+        rows = (
+            await self.session.scalars(
+                select(Watch).where(
+                    Watch.creator_avatar_key.is_not(None),
+                    Watch.creator_avatar_cached_url.is_not(None),
+                )
+            )
+        ).all()
+        changed = False
+        for watch in rows:
+            assert watch.creator_avatar_key is not None
+            url = avatar_public_url(
+                self.settings, watch.creator_avatar_key.removeprefix(AVATAR_KEY_PREFIX)
+            )
+            if watch.creator_avatar_cached_url != url:
+                watch.creator_avatar_cached_url = url
+                changed = True
+        if changed:
+            await self.session.commit()
 
     async def refresh_watch(self, watch: Watch, *, now: datetime) -> bool:
         image = await self._download(watch.creator_avatar_url)

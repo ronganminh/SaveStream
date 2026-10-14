@@ -1,0 +1,163 @@
+name: Deploy Media
+
+# Deploys the media delivery Worker (services/media-worker) to
+# media.savestream.online and, when asked, switches the backend's recording
+# and avatar links to it. See services/media-worker/README.md.
+#
+#   mode = deploy   deploy the Worker, copy the signing secret, smoke-test it
+#   mode = enable   the same, then set SAVESTREAM_MEDIA_BASE_URL on the VPS and
+#                   restart the API services (recordings are not touched)
+#   mode = disable  remove SAVESTREAM_MEDIA_BASE_URL and restart the API
+#                   services: links go back to the R2 S3 endpoint
+#
+# The bucket name (SAVESTREAM_R2_BUCKET) and the signing secret
+# (secrets dir/media_signing_secret, created by deploy.sh) are read from the
+# VPS over SSH; the secret is masked and only piped to `wrangler secret put`.
+#
+# Secrets: VPS_* (as Deploy Backend), CLOUDFLARE_API_TOKEN (needs Workers
+# Scripts: Edit, Workers R2 Storage: Read and Workers Custom Domains /
+# Zone DNS: Edit on savestream.online), CLOUDFLARE_ACCOUNT_ID.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "deploy | enable | disable"
+        type: choice
+        options: [deploy, enable, disable]
+        default: deploy
+
+concurrency:
+  group: deploy-media-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  media:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_APP_DIR: ${{ vars.VPS_APP_DIR || '/home/nduythanh/SaveStream' }}
+      MEDIA_ORIGIN: https://media.savestream.online
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          cat > ~/vps.sh <<'EOF'
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "cd '$VPS_APP_DIR' && $1"
+          EOF
+
+      - name: Read bucket, signing secret and sample objects from the VPS
+        if: inputs.mode != 'disable'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
+          bucket="$(env_value SAVESTREAM_R2_BUCKET)"
+          secrets_dir="$(env_value SAVESTREAM_SECRETS_DIR)"
+          [[ -n "$bucket" && -n "$secrets_dir" ]] || { echo "bucket or secrets dir missing"; exit 1; }
+          secret="$(bash ~/vps.sh "cat '$secrets_dir/media_signing_secret' 2>/dev/null || true")"
+          [[ ${#secret} -ge 32 ]] || { echo "media_signing_secret missing: run Deploy Backend first"; exit 1; }
+          echo "::add-mask::$secret"
+          psql() {
+            bash ~/vps.sh "docker compose --env-file deploy/vps/production.env -f deploy/vps/docker-compose.production.yml \
+              exec -T postgres psql -X -U savestream -d savestream -tA -c \"$1\" < /dev/null"
+          }
+          artifact_key="$(psql "select storage_key from artifacts where deleted_at is null order by created_at desc limit 1")"
+          avatar_key="$(psql "select creator_avatar_key from watches where creator_avatar_key is not null limit 1")"
+          {
+            echo "R2_BUCKET=$bucket"
+            echo "MEDIA_SIGNING_SECRET=$secret"
+            echo "SAMPLE_ARTIFACT_KEY=$artifact_key"
+            echo "SAMPLE_AVATAR_ID=${avatar_key#creator-avatars/}"
+          } >> "$GITHUB_ENV"
+
+      - run: npm install --no-audit --no-fund
+        if: inputs.mode != 'disable'
+
+      - name: Test the Worker
+        if: inputs.mode != 'disable'
+        run: npm --workspace services/media-worker test
+
+      - name: Deploy the Worker
+        if: inputs.mode != 'disable'
+        working-directory: services/media-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          sed -i "s/__R2_BUCKET__/${R2_BUCKET}/" wrangler.jsonc
+          npx wrangler deploy
+          printf '%s' "$MEDIA_SIGNING_SECRET" | npx wrangler secret put MEDIA_SIGNING_SECRET
+
+      - name: Smoke-test media.savestream.online
+        if: inputs.mode != 'disable'
+        run: |
+          for _ in $(seq 1 30); do
+            [[ "$(curl -s -o /dev/null -w '%{http_code}' "$MEDIA_ORIGIN/healthz")" == 200 ]] && break
+            sleep 5
+          done
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$MEDIA_ORIGIN/healthz")" = 200
+          if [[ -n "$SAMPLE_AVATAR_ID" ]]; then
+            code="$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$MEDIA_ORIGIN/a/$SAMPLE_AVATAR_ID")"
+            echo "avatar -> $code"; [[ "$code" == "200 image/"* ]]
+          fi
+          if [[ -n "$SAMPLE_ARTIFACT_KEY" ]]; then
+            url="$(python3 - <<'PY'
+          import base64, hashlib, hmac, os, time
+          from urllib.parse import quote, urlencode
+          key = os.environ["SAMPLE_ARTIFACT_KEY"]
+          path = "/o/" + quote(key, safe="/")
+          expires = int(time.time()) + 300
+          mac = hmac.new(os.environ["MEDIA_SIGNING_SECRET"].encode(),
+                         f"{path}\n{expires}\n".encode(), hashlib.sha256).digest()
+          sig = base64.urlsafe_b64encode(mac).rstrip(b"=").decode()
+          print(f"{os.environ['MEDIA_ORIGIN']}{path}?{urlencode({'e': expires, 's': sig})}")
+          PY
+          )"
+            code="$(curl -s -o /dev/null -w '%{http_code} %{content_type}' -H 'Range: bytes=0-1023' "$url")"
+            echo "recording range -> $code"; [[ "$code" == "206 video/mp4"* ]]
+            code="$(curl -s -o /dev/null -w '%{http_code}' "${url%%&s=*}&s=bad")"
+            echo "bad signature -> $code"; [[ "$code" == 403 ]]
+          fi
+
+      - name: Switch backend links
+        if: inputs.mode != 'deploy'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          if [[ "$MODE" == enable ]]; then line="SAVESTREAM_MEDIA_BASE_URL=$MEDIA_ORIGIN"; else line=""; fi
+          # Rewrite the one line in production.env (untracked), then restart the
+          # non-recorder services; running recordings are not affected.
+          bash ~/vps.sh "set -e
+            f=deploy/vps/production.env
+            grep -v '^SAVESTREAM_MEDIA_BASE_URL=' \"\$f\" > \"\$f.tmp\" || true
+            [ -n '$line' ] && echo '$line' >> \"\$f.tmp\"
+            cat \"\$f.tmp\" > \"\$f\" && rm -f \"\$f.tmp\"
+            c='docker compose --env-file deploy/vps/production.env -f deploy/vps/docker-compose.production.yml'
+            \$c up -d --no-build \$(\$c config --services)
+            \$c exec -T api python -c 'from app.settings import get_app_settings as s; print(\"media_base_url =\", repr(s().media_base_url))'"
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key ~/vps.sh
