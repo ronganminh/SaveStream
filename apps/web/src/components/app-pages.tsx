@@ -210,7 +210,7 @@ import {
   useUpdateChannelMutation,
   useResumeChannelMutation,
 } from "@/hooks/use-channel-mutations";
-import type { ChannelModel, ChannelStatus, RecordingModel } from "@/repositories";
+import type { ChannelModel, ChannelStatus, RecordingModel, Status } from "@/repositories";
 import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
 import { currentLegalConsent } from "@/lib/legal";
 import {
@@ -4874,6 +4874,115 @@ const channelStates = [
   { value: "Paused", label: "Paused" },
   { value: "Error", label: "Error" },
 ] as const;
+function formatClock(totalSeconds: number) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${Math.floor(s / 3600)}:${pad(Math.floor((s % 3600) / 60))}:${pad(s % 60)}`;
+}
+
+function formatShortDuration(totalSeconds: number) {
+  const minutes = Math.round(totalSeconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+}
+
+/** Seconds recorded, ticking locally between the 5 s polls. */
+function useElapsedSeconds(base: number | undefined, running: boolean) {
+  const [since, setSince] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    setSince(Date.now());
+    setNow(Date.now());
+  }, [base]);
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  if (base === undefined) return undefined;
+  return base + (running ? Math.max(0, (now - since) / 1000) : 0);
+}
+
+type ChannelBannerTone = "rec" | "warn" | "info" | "err";
+
+function ChannelStatusBanner({
+  tone,
+  icon,
+  title,
+  description,
+  detail,
+  elapsed,
+  actions,
+}: {
+  tone: ChannelBannerTone;
+  icon: ReactNode;
+  title: string;
+  description: ReactNode;
+  detail?: string | null;
+  elapsed?: string | null;
+  actions?: ReactNode;
+}) {
+  return (
+    <section
+      aria-label="Channel status"
+      className={cn(
+        "flex flex-col gap-4 rounded-[18px] border px-6 py-5 md:flex-row md:items-center",
+        tone === "rec" && "border-recording/25 bg-recording-subtle",
+        tone === "warn" && "border-warning/30 bg-warning-subtle",
+        tone === "info" && "border-info/25 bg-info-subtle",
+        tone === "err" && "border-destructive/30 bg-destructive/10",
+      )}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-[52px] shrink-0 place-items-center rounded-[16px] bg-surface",
+          tone === "rec" && "text-recording",
+          tone === "warn" && "text-warning",
+          tone === "info" && "text-info",
+          tone === "err" && "text-destructive",
+        )}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0 flex-1 space-y-1">
+        <b className="block text-lg">{title}</b>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {detail && (
+          <code className="mt-1.5 block w-fit rounded-lg border bg-surface px-2.5 py-2 font-mono text-xs text-destructive">
+            {detail}
+          </code>
+        )}
+      </div>
+      {elapsed && (
+        <div className="flex flex-col md:items-end">
+          <span className="text-xs text-muted-foreground">Elapsed</span>
+          <span className="font-mono text-3xl font-semibold">{elapsed}</span>
+        </div>
+      )}
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+    </section>
+  );
+}
+
+function ChannelHistoryAction({ recording }: { recording: RecordingModel }) {
+  const label =
+    recording.status === "Recording"
+      ? "Watch live"
+      : recording.status === "Ready"
+        ? "Play"
+        : recording.status === "Error" || recording.status === "Missed"
+          ? "Why?"
+          : "Details";
+  return (
+    <Button asChild variant="ghost" size="sm">
+      <Link to="/recordings/$id" params={{ id: recording.id }}>
+        {label}
+      </Link>
+    </Button>
+  );
+}
+
 function ChannelDetail({
   channel,
   history,
@@ -4883,16 +4992,16 @@ function ChannelDetail({
   history: RecordingModel[];
   onRefresh: () => Promise<unknown>;
 }) {
-  const { t } = usePreferences();
   const navigate = useNavigate();
   const pauseChannel = usePauseChannelMutation();
   const updateChannel = useUpdateChannelMutation();
+  const stopRecording = useStopRecordingMutation();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
   const resumeChannel = useResumeChannelMutation();
   const deleteChannel = useDeleteChannelMutation();
   const [previewState, setPreviewState] = useState<ChannelStatus>(channel.status);
-  const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
+  const [dialog, setDialog] = useState<null | "pause" | "remove" | "stop">(null);
   const state = isDemoMode ? previewState : channel.status;
   const monitoring = isDemoMode ? state !== "Paused" : channel.backendStatus === "active";
   const pending =
@@ -4900,6 +5009,16 @@ function ChannelDetail({
     resumeChannel.isPending ||
     deleteChannel.isPending ||
     updateChannel.isPending;
+  const activeRecording = channel.activeRecordingId
+    ? history.find((recording) => recording.id === channel.activeRecordingId)
+    : history.find((recording) => recording.status === "Recording");
+  const elapsed = useElapsedSeconds(activeRecording?.durationSeconds, state === "Recording");
+  const finished = history.filter((r) => r.status === "Ready" && (r.durationSeconds ?? 0) > 0);
+  const averageSeconds = finished.length
+    ? finished.reduce((sum, r) => sum + (r.durationSeconds ?? 0), 0) / finished.length
+    : null;
+  const creditsUsed = history.reduce((sum, r) => sum + (r.creditsUsed ?? 0), 0);
+  const tiktokUrl = `https://www.tiktok.com/${channel.handle}`;
 
   const setAutoRecord = async (value: boolean) => {
     try {
@@ -4941,212 +5060,257 @@ function ChannelDetail({
     }
   };
 
-  const card = {
-    Recording: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Recording" />
-        </div>
-        <p className="mt-6 text-sm font-medium text-recording">Recording now</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          SaveStream is recording this livestream on the server.
-        </p>
-        <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
-          <Cloud className="size-4 text-success" />
-          You can safely close this page.
-        </p>
-        <Button className="mt-5" asChild>
-          {channel.activeRecordingId ? (
-            <Link to="/recordings/$id" params={{ id: channel.activeRecordingId }}>
-              View active recording
-            </Link>
-          ) : (
-            <Link to="/recordings/active">View active recording</Link>
-          )}
-        </Button>
-      </>
-    ),
-    Live: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Live" pulse />
-        </div>
-        <p className="mt-6 font-medium">{channel.handle} is LIVE – not recording</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {channel.liveReason ?? "SaveStream is not recording this livestream."}
-        </p>
-        {!channel.activeRecordingId && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {canAutoRecord
-              ? channel.autoRecord
-                ? "Recording will start as soon as a cloud slot and enough cloud minutes are available."
-                : "Turn on Auto-record above to record this channel’s livestreams automatically."
-              : "Automatic cloud recording requires a purchased cloud-minute package. Manually granted trial minutes do not unlock it."}
-          </p>
-        )}
-        <Button
-          className="mt-5"
-          variant="outline"
-          onClick={() =>
-            window.open(`https://www.tiktok.com/${channel.handle}/live`, "_blank", "noopener")
+  const live = state === "Recording" || state === "Live";
+  const badges: Status[] =
+    state === "Recording" ? ["Recording"] : state === "Live" ? ["Live"] : [state];
+
+  let banner: ReactNode;
+  if (state === "Recording") {
+    banner = (
+      <ChannelStatusBanner
+        tone="rec"
+        icon={<Radio className="size-6" />}
+        title="LIVE — recording"
+        description="Recording on our servers. You can safely close this page — we’ll email you when it’s ready."
+        elapsed={elapsed !== undefined ? formatClock(elapsed) : null}
+        actions={
+          <>
+            {activeRecording?.actions.can_stop && (
+              <Button variant="outline" onClick={() => setDialog("stop")}>
+                Stop recording
+              </Button>
+            )}
+            <Button asChild>
+              {channel.activeRecordingId ? (
+                <Link to="/recordings/$id" params={{ id: channel.activeRecordingId }}>
+                  View recording
+                </Link>
+              ) : (
+                <Link to="/recordings/active">View recording</Link>
+              )}
+            </Button>
+          </>
+        }
+      />
+    );
+  } else if (state === "Live") {
+    const reason = channel.autoRecordState;
+    if (reason === "paused_no_cloud_minutes" || (!canAutoRecord && channel.autoRecord)) {
+      banner = (
+        <ChannelStatusBanner
+          tone="warn"
+          icon={<CreditCard className="size-6" />}
+          title="LIVE — not recording: out of credits"
+          description={
+            canAutoRecord
+              ? "No recording was started because your balance is empty. Add credits and recording starts at the next check — while the channel is still live."
+              : "Automatic recording unlocks after you buy credits. Buy any pack and turn on Auto-record for this channel."
           }
-        >
-          <ExternalLink />
-          Watch on TikTok
-        </Button>
-      </>
-    ),
-    Waiting: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Waiting" />
-        </div>
-        <p className="mt-6 font-medium">Waiting for the next livestream</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {channel.autoRecord
-            ? `Monitoring is on. Recording starts automatically when ${channel.handle} goes live.`
-            : `Monitoring is on. You’ll be notified when ${channel.handle} goes live; automatic recording is off.`}
-        </p>
-        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("Last checked")}</dt>
-            <dd className="mt-1 font-mono">{channel.checked}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Last live</dt>
-            <dd className="mt-1">{channel.live}</dd>
-          </div>
-        </dl>
-      </>
-    ),
-    Offline: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Offline" />
-        </div>
-        <p className="mt-6 font-medium">Channel is offline</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Monitoring is on. SaveStream will check again automatically.
-        </p>
-        <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <dt className="text-xs text-muted-foreground">{t("Last checked")}</dt>
-            <dd className="mt-1 font-mono">{channel.checked}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">Last live</dt>
-            <dd className="mt-1">{channel.live}</dd>
-          </div>
-        </dl>
-      </>
-    ),
-    Paused: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Paused" />
-        </div>
-        <p className="mt-6 font-medium">Monitoring is paused</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Future livestreams from {channel.handle} will not be recorded until you resume monitoring.
-          Existing recordings are not affected.
-        </p>
-        <Button className="mt-5" disabled={pending} onClick={() => void resume()}>
-          <Radio />
-          Resume monitoring
-        </Button>
-      </>
-    ),
-    Error: (
-      <>
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Live status</p>
-          <StatusBadge status="Error" />
-        </div>
-        <p className="mt-6 font-medium">We couldn’t check live status</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The last live-status check failed. SaveStream will try again automatically.
-        </p>
-        <Button
-          className="mt-5"
-          variant="outline"
-          onClick={() => {
-            toast("Refreshing channel status…");
-            void onRefresh();
-          }}
-        >
-          Refresh status
-        </Button>
-      </>
-    ),
-  }[state];
+          actions={
+            <Button asChild>
+              <Link to="/billing">Buy credits</Link>
+            </Button>
+          }
+        />
+      );
+    } else if (reason === "waiting_for_cloud_slot") {
+      banner = (
+        <ChannelStatusBanner
+          tone="warn"
+          icon={<AlertTriangle className="size-6" />}
+          title="LIVE — not recording yet: no recorder slot available"
+          description="All recorders are busy right now. We retry automatically, and no credits are used until a recording starts."
+          actions={
+            <Button asChild variant="outline">
+              <Link to="/status">Check status</Link>
+            </Button>
+          }
+        />
+      );
+    } else if (reason === "active") {
+      banner = (
+        <ChannelStatusBanner
+          tone="rec"
+          icon={<Radio className="size-6" />}
+          title="LIVE — starting the recording…"
+          description="We detected the LIVE and are starting a recording on our servers. This usually takes under a minute."
+        />
+      );
+    } else {
+      banner = (
+        <ChannelStatusBanner
+          tone="warn"
+          icon={<AlertTriangle className="size-6" />}
+          title="LIVE — not recording: auto-record is off"
+          description="We detected the LIVE but didn’t start a recording because auto-record is off for this channel."
+          actions={
+            <>
+              <Button asChild variant="outline">
+                <a href={`${tiktokUrl}/live`} target="_blank" rel="noopener noreferrer">
+                  Watch on TikTok
+                </a>
+              </Button>
+              {canAutoRecord && (
+                <Button disabled={pending} onClick={() => void setAutoRecord(true)}>
+                  Turn on auto-record
+                </Button>
+              )}
+            </>
+          }
+        />
+      );
+    }
+  } else if (state === "Paused") {
+    banner = (
+      <ChannelStatusBanner
+        tone="warn"
+        icon={<Pause className="size-6" />}
+        title="Monitoring is paused"
+        description="We aren’t checking this channel, so new LIVEs won’t be recorded. Existing recordings aren’t affected."
+        actions={
+          <Button disabled={pending} onClick={() => void resume()}>
+            Resume monitoring
+          </Button>
+        }
+      />
+    );
+  } else if (state === "Error") {
+    banner = (
+      <ChannelStatusBanner
+        tone="err"
+        icon={<AlertCircle className="size-6" />}
+        title="We can’t reach this channel"
+        description="The last checks failed. The username may have changed, or the account is private or restricted. We keep retrying automatically."
+        actions={
+          <>
+            <Button asChild variant="outline">
+              <a href={tiktokUrl} target="_blank" rel="noopener noreferrer">
+                Open on TikTok
+              </a>
+            </Button>
+            <Button
+              onClick={() => {
+                toast("Refreshing channel status…");
+                void onRefresh();
+              }}
+            >
+              Refresh status
+            </Button>
+          </>
+        }
+      />
+    );
+  } else {
+    banner = (
+      <ChannelStatusBanner
+        tone="info"
+        icon={<Clock3 className="size-6" />}
+        title={
+          state === "Offline" ? "Offline — watching for the next LIVE" : "Waiting for the next LIVE"
+        }
+        description={`Last checked ${channel.checked}. Last LIVE ${channel.live}. ${
+          channel.autoRecord && canAutoRecord
+            ? "Recording starts automatically when the channel goes live."
+            : "Auto-record is off, so LIVEs are detected but not recorded."
+        } Monitoring is free.`}
+        actions={
+          <Button variant="outline" disabled={pending} onClick={() => setDialog("pause")}>
+            Pause monitoring
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
     <AppShell>
-      <Link
-        to="/channels"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        Channels
-      </Link>
-      {isDemoMode && (
-        <PrototypeStateBar
-          label="Preview channel state"
-          value={previewState}
-          options={channelStates}
-          onChange={setPreviewState}
-        />
-      )}
-      <div className="mb-6 flex flex-col gap-4 border-y bg-surface px-5 py-4 sm:flex-row sm:items-center">
-        <div className="flex items-center gap-4">
-          <CreatorAvatar channel={channel} size="lg" />
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{channel.name}</h1>
-              <PlatformBadge />
-            </div>
-            <p className="text-sm text-muted-foreground">{channel.handle}</p>
+      <div className="flex flex-col gap-6">
+        <Link
+          to="/channels"
+          className="inline-flex w-fit items-center gap-1 text-sm font-bold text-accent-ink hover:underline"
+        >
+          <ArrowLeft className="size-4" />
+          All channels
+        </Link>
+        {isDemoMode && (
+          <PrototypeStateBar
+            label="Preview channel state"
+            value={previewState}
+            options={channelStates}
+            onChange={setPreviewState}
+          />
+        )}
+        <header className="flex flex-wrap items-center gap-5 rounded-[20px] border bg-surface p-6 md:p-7">
+          <div
+            className={cn(
+              "rounded-full",
+              live && "ring-[3px] ring-recording ring-offset-[3px] ring-offset-surface",
+            )}
+          >
+            <CreatorAvatar channel={channel} size="xl" />
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 text-sm sm:ml-auto">
-          <label htmlFor="detail-monitoring">{t("Monitoring")}</label>
-          <Switch
-            id="detail-monitoring"
-            checked={monitoring}
-            disabled={pending}
-            onCheckedChange={toggle}
-          />
-          <label htmlFor="detail-auto-record" className="ml-2">
-            Auto-record
-          </label>
-          <Switch
-            id="detail-auto-record"
-            checked={channel.autoRecord && canAutoRecord}
-            disabled={pending || !canAutoRecord}
-            title={
-              canAutoRecord
-                ? undefined
-                : "Automatic cloud recording requires a purchased cloud-minute package"
-            }
-            onCheckedChange={(value) => void setAutoRecord(value)}
-          />
+          <div className="min-w-0 flex-[1_1_280px] space-y-1.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-[28px] font-extrabold tracking-tight">
+                {channel.handle}
+              </h1>
+              {live && (
+                <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-recording px-2.5 text-xs font-bold text-white">
+                  <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                  LIVE
+                </span>
+              )}
+              {badges.map((badge) => (
+                <StatusBadge key={badge} status={badge} pulse={badge === "Recording"} />
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {channel.name} ·{" "}
+              <a
+                href={tiktokUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-accent-ink hover:underline"
+              >
+                View on TikTok ↗
+              </a>
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <label className="flex items-center gap-2.5 text-sm font-bold">
+              <Switch
+                checked={monitoring}
+                disabled={pending}
+                onCheckedChange={toggle}
+                aria-label="Monitoring"
+              />
+              <span className="min-w-[120px]">Monitoring {monitoring ? "on" : "paused"}</span>
+            </label>
+            <label
+              className="flex items-center gap-2.5 text-sm font-bold"
+              title={
+                canAutoRecord ? undefined : "Automatic recording unlocks after you buy credits"
+              }
+            >
+              <Switch
+                checked={channel.autoRecord && canAutoRecord}
+                disabled={pending || !canAutoRecord}
+                onCheckedChange={(value) => void setAutoRecord(value)}
+                aria-label="Auto-record"
+              />
+              <span className="min-w-[120px]">
+                Auto-record {channel.autoRecord && canAutoRecord ? "on" : "off"}
+              </span>
+            </label>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="More channel actions">
+              <Button variant="outline" size="icon" aria-label="More channel actions">
                 <MoreHorizontal />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={() =>
-                  window.open(`https://www.tiktok.com/${channel.handle}`, "_blank", "noopener")
-                }
-              >
+              <DropdownMenuItem onSelect={() => window.open(tiktokUrl, "_blank", "noopener")}>
                 <ExternalLink />
                 Open on TikTok
               </DropdownMenuItem>
@@ -5168,78 +5332,155 @@ function ChannelDetail({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </header>
+
+        {banner}
+
+        <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr))]">
+          {[
+            { label: "Recordings", value: String(channel.recordings), note: "in your library" },
+            {
+              label: "Hours recorded",
+              value: channel.recordedHours,
+              note:
+                creditsUsed > 0
+                  ? `${creditsUsed.toLocaleString("en")} credits used`
+                  : "all recordings",
+            },
+            {
+              label: "Average LIVE",
+              value: averageSeconds ? formatShortDuration(averageSeconds) : "—",
+              note: finished.length
+                ? `across ${pluralize(finished.length, "recording")}`
+                : "no finished recordings yet",
+            },
+            {
+              label: "Storage used",
+              value: channel.storage,
+              note: `${pluralize(history.length, "file")}`,
+            },
+          ].map((kpi) => (
+            <div
+              key={kpi.label}
+              className="flex flex-col gap-1 rounded-[16px] border bg-surface p-5"
+            >
+              <span className="text-sm font-semibold text-muted-foreground">{kpi.label}</span>
+              <span className="font-mono text-[28px] font-semibold leading-tight">{kpi.value}</span>
+              <span className="text-xs text-muted-foreground">{kpi.note}</span>
+            </div>
+          ))}
         </div>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
-        <section
-          className={cn(
-            "rounded-lg border bg-surface p-5",
-            (state === "Recording" || state === "Live") && "border-recording/30",
-            state === "Error" && "border-destructive/30",
+
+        <section aria-labelledby="channel-history" className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 id="channel-history" className="text-[17px] font-bold">
+              Recording history
+            </h2>
+            <Link to="/recordings" className="text-sm font-bold text-accent-ink hover:underline">
+              Open in library →
+            </Link>
+          </div>
+          {history.length ? (
+            <>
+              <div className="hidden overflow-x-auto rounded-[16px] border bg-surface md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                      <th scope="col" className="px-4 py-3">
+                        Recording
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Started
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Duration
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Status
+                      </th>
+                      <th scope="col" className="px-4 py-3 text-right">
+                        Credits
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Expires
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {history.map((recording) => (
+                      <tr key={recording.id} className="border-b last:border-b-0">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <span
+                              aria-hidden="true"
+                              className={cn("h-14 w-8 shrink-0 rounded-md", recording.color)}
+                            />
+                            <b className="font-semibold">{recording.title}</b>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {recording.date}, {recording.time}
+                        </td>
+                        <td className="px-4 py-3 font-mono">
+                          {recording.status === "Recording" ? "In progress" : recording.duration}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusBadge status={recording.status} />
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {recording.creditsUsed ?? "—"}
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {recording.status === "Ready" ? recording.expires : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <ChannelHistoryAction recording={recording} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="grid gap-3 md:hidden">
+                {history.map((recording) => (
+                  <RecordingCard key={recording.id} recording={recording} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <EmptyState
+              title="No recordings yet"
+              body="The next LIVE from this channel will appear here automatically."
+            />
           )}
-        >
-          {card}
         </section>
-        <div className="grid grid-cols-2 overflow-hidden rounded-lg border">
-          <StatCard
-            label="Total recordings"
-            value={String(channel.recordings)}
-            detail="All time"
-            icon={FileVideo}
-          />
-          <StatCard
-            label="Recorded hours"
-            value={channel.recordedHours}
-            detail="All time"
-            icon={Clock3}
-          />
-          <StatCard
-            label="Last livestream"
-            value={
-              state === "Recording" || state === "Live"
-                ? "Now"
-                : (channel.live.split(",")[0] ?? "—")
-            }
-            detail={
-              state === "Recording"
-                ? "Currently recording"
-                : state === "Live"
-                  ? "Live – not recording"
-                  : channel.live
-            }
-            icon={Radio}
-          />
-          <StatCard
-            label="Storage used"
-            value={channel.storage}
-            detail={`${pluralize(history.length, "stored file")}`}
-            icon={HardDrive}
-          />
-        </div>
       </div>
-      <section className="mt-8">
-        <SectionTitle title="Recording history" />
-        {history.length ? (
-          <>
-            <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
-              <RecordingHeader />
-              {history.map((recording) => (
-                <RecordingRow key={recording.id} recording={recording} />
-              ))}
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:hidden">
-              {history.map((recording) => (
-                <RecordingCard key={recording.id} recording={recording} />
-              ))}
-            </div>
-          </>
-        ) : (
-          <EmptyState
-            title="No recordings yet"
-            body="The next livestream from this channel will appear here automatically."
-          />
-        )}
-      </section>
+      <ConfirmDialog
+        open={dialog === "stop"}
+        onOpenChange={(open) => !open && setDialog(null)}
+        title="Stop this recording?"
+        body="We’ll stop recording now and process what was captured so far. Credits are charged only for the time recorded."
+        confirmLabel="Stop recording"
+        destructive
+        confirmDisabled={stopRecording.isPending}
+        onConfirm={() => {
+          if (!activeRecording) return;
+          void stopRecording
+            .mutateAsync(activeRecording.id)
+            .then(() => {
+              setDialog(null);
+              toast.success("Stopping the recording…");
+            })
+            .catch((error) => {
+              toast.error("Could not stop the recording", {
+                description: channelActionErrorMessage(error),
+              });
+            });
+        }}
+      />
       <ConfirmDialog
         open={dialog === "pause"}
         onOpenChange={(open) => !open && setDialog(null)}

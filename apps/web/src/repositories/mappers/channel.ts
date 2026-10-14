@@ -8,7 +8,8 @@ function displayName(watch: WatchResponse): string {
 }
 
 function handle(watch: WatchResponse): string {
-  const username = watch.creator?.username ?? (watch.source.type === "username" ? watch.source.value : "");
+  const username =
+    watch.creator?.username ?? (watch.source.type === "username" ? watch.source.value : "");
   return username ? `@${username.replace(/^@/, "")}` : watch.source.value;
 }
 
@@ -122,5 +123,6 @@ export function mapWatchToChannel(
     autoRecord: watch.auto_record,
     activeRecordingId: watch.active_recording_id ?? null,
     liveReason: liveReasonFor(watch),
+    autoRecordState: watch.auto_record_state ?? null,
   };
 }

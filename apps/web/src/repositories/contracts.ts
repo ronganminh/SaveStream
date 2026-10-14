@@ -66,6 +66,8 @@ export type ChannelModel = {
   activeRecordingId?: string | null;
   /** Why a live channel is not being recorded (status "Live"). */
   liveReason?: string | null;
+  /** Backend auto-record state, used to pick the fix for "LIVE · not recording". */
+  autoRecordState?: "off" | "active" | "paused_no_cloud_minutes" | "waiting_for_cloud_slot" | null;
 };
 
 export type RecordingModel = {
@@ -93,6 +95,10 @@ export type RecordingModel = {
   backendStatus: RecordingStatusValue;
   source: Source;
   actions: RecordingActions;
+  /** Seconds recorded so far (live) or in total. */
+  durationSeconds?: number;
+  /** Credits charged, or held so far while recording; null when unknown. */
+  creditsUsed?: number | null;
 };
 
 export type UsageSummary = {
