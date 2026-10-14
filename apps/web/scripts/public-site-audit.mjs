@@ -78,6 +78,10 @@ for (const p of PUBLIC_PATHS) {
   }
 }
 
+// Text around config values must keep its spaces ("within 2 business days").
+const helpText = visibleText(await (await fetch(`${origin}/help`)).text());
+if (!/reply within \d+ business days/.test(helpText)) fail("/help: response time sentence is malformed");
+
 const notFound = await fetch(`${origin}/this-page-does-not-exist-${Date.now()}`);
 const notFoundHtml = await notFound.text();
 if (!notFoundHtml.includes("<title>Page not found | SaveStream</title>"))

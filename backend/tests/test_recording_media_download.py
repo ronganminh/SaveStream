@@ -269,3 +269,32 @@ def test_download_url_endpoint_requests_attachment_with_readable_name(tmp_path) 
     assert signed[0][1] is None
     assert signed[1][1] == 'attachment; filename="p.c.dat25_2026-10-14_2106.mp4"'
     assert Path(signed[1][0]).suffix == ".mp4"
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is not installed")
+def test_probe_reports_the_largest_size_when_the_stream_switches_resolution(tmp_path) -> None:
+    """QA 2026-10-14: f9d4ebc5 starts at 640x1280 and switches to 720x1280
+    (TikTok adaptive bitrate); the MP4 header only shows the first size."""
+    parts = []
+    for index, size in enumerate(("640x1280", "720x1280")):
+        part = tmp_path / f"part{index}.ts"
+        subprocess.run(
+            [
+                "ffmpeg", "-v", "error", "-f", "lavfi", "-i", f"testsrc=size={size}:rate=15",
+                "-t", "4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-g", "15",
+                "-output_ts_offset", str(4 * index), "-f", "mpegts", str(part),
+            ],
+            check=True,
+        )
+        parts.append(part.read_bytes())
+    joined = tmp_path / "switching.ts"
+    joined.write_bytes(b"".join(parts))
+    path = tmp_path / "switching.mp4"
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(joined), "-c", "copy", str(path)], check=True
+    )
+
+    info = probe_media(path)
+
+    assert (info.width, info.height) == (720, 1280)
+    assert info.duration_ms is not None and abs(info.duration_ms - 8000) < 600
