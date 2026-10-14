@@ -14,6 +14,7 @@ import {
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CreatorStories } from "@/components/public/creator-stories";
 import {
   PublicFooter,
   PublicHeader,
@@ -211,6 +212,7 @@ export function ProductionLanding() {
         </section>
 
         <RecordingExamples />
+        <CreatorStories />
 
         {/* Why SaveStream */}
         <section id="why" className="border-b py-24">

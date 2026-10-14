@@ -7877,6 +7877,68 @@
         }
       }
     },
+    "/public/partner-stories": {
+      "get": {
+        "tags": [
+          "Partners"
+        ],
+        "summary": "List published creator stories",
+        "description": "Partner stories shown on the home page: only applications that were approved and published and whose consent has not been withdrawn (Privacy Policy section 10). Returns an empty list when there are none.",
+        "operationId": "listPartnerStories",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Published stories, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnerStoryListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/partner-stories/{application_id}/photo": {
+      "get": {
+        "tags": [
+          "Partners"
+        ],
+        "summary": "Photo of a published creator story",
+        "operationId": "getPartnerStoryPhoto",
+        "security": [],
+        "parameters": [
+          {
+            "name": "application_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG or JPG image",
+            "content": {
+              "image/png": {},
+              "image/jpeg": {}
+            }
+          },
+          "404": {
+            "description": "Not published, consent withdrawn, or no photo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/support/reports": {
       "post": {
         "tags": [
@@ -14936,6 +14998,59 @@
           "reference": {
             "type": "string",
             "description": "Short reference shown to the applicant, e.g. PA-3F9A21C4"
+          }
+        }
+      },
+      "PartnerStory": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "tiktok_handle",
+          "niche",
+          "story",
+          "has_photo",
+          "published_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tiktok_handle": {
+            "type": "string"
+          },
+          "niche": {
+            "type": "string"
+          },
+          "story": {
+            "type": "string"
+          },
+          "has_photo": {
+            "type": "boolean"
+          },
+          "published_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "PartnerStoryListResponse": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PartnerStory"
+            }
           }
         }
       },
