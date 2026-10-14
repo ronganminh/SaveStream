@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:savestream_mobile/app/app_settings_controller.dart';
 import 'package:savestream_mobile/app/router/app_routes.dart';
 import 'package:savestream_mobile/app/savestream_app.dart';
 import 'package:savestream_mobile/app/theme/ss_tokens.dart';
@@ -160,7 +159,7 @@ void main() {
   });
 
   testWidgets(
-    'Pro add creator covers lookup failure then success without checkbox',
+    'Pro add creator requires the rights confirmation checkbox before adding',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         SaveStreamApp(
@@ -192,9 +191,25 @@ void main() {
 
       expect(find.text('Found'), findsOneWidget);
       expect(find.text('Use recordings responsibly'), findsOneWidget);
-      expect(find.byType(Checkbox), findsNothing);
 
+      // 5.2.3 gate: a mandatory rights-confirmation checkbox is shown and
+      // "Add & follow" stays disabled until the user affirms authorization.
+      final Finder checkbox = find.byType(Checkbox);
+      expect(checkbox, findsOneWidget);
       final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
+      await tester.ensureVisible(add);
+      expect(tester.widget<FilledButton>(add).onPressed, isNull);
+
+      // Tapping while unconfirmed must not navigate away.
+      await tester.tap(add);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Found'), findsOneWidget);
+
+      // Confirm authorization, then the add succeeds.
+      await tester.tap(checkbox);
+      await tester.pump();
+      expect(tester.widget<FilledButton>(add).onPressed, isNotNull);
+
       await tester.ensureVisible(add);
       await tester.tap(add);
       await tester.pump(const Duration(milliseconds: 200));
@@ -243,22 +258,4 @@ void main() {
     expect(find.text('Livestream ended'), findsOneWidget);
   });
 
-  testWidgets('Vietnamese locale contains A2 Home and Watching copy', (
-    WidgetTester tester,
-  ) async {
-    final AppSettingsController settings = AppSettingsController(
-      locale: const Locale('vi'),
-    );
-    addTearDown(settings.dispose);
-
-    await tester.pumpWidget(
-      SaveStreamApp(config: config(), settings: settings),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-
-    expect(find.text('Phút Free hôm nay'), findsOneWidget);
-    expect(find.text('Theo dõi'), findsWidgets);
-    expect(find.textContaining('credit', findRichText: true), findsNothing);
-  });
 }

@@ -191,11 +191,6 @@
 }
 a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* Avoid briefly painting English SSR copy before a saved/browser Vietnamese preference hydrates. */
-.language-preload body {
-  visibility: hidden;
-}
-
 #main-content:focus {
   outline: none;
 }

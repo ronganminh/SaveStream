@@ -31,6 +31,7 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
   _LookupState _lookupState = _LookupState.idle;
   CreatorLookupResult? _lookupResult;
   bool _submitting = false;
+  bool _permissionConfirmed = false;
   Object? _error;
 
   @override
@@ -116,7 +117,11 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
   }
 
   Future<void> _create(Entitlement entitlement) async {
-    if (_lookupState != _LookupState.found || _submitting) return;
+    if (_lookupState != _LookupState.found ||
+        _submitting ||
+        !_permissionConfirmed) {
+      return;
+    }
     setState(() {
       _submitting = true;
       _error = null;
@@ -153,6 +158,7 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
       _lookupState = _LookupState.idle;
       _lookupResult = null;
       _error = null;
+      _permissionConfirmed = false;
     });
   }
 
@@ -327,11 +333,34 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
             message: l10n.responsibleUseReminderBody,
             tone: SsInlineAlertTone.info,
           ),
+          const SizedBox(height: SsSpacing.md),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _permissionConfirmed,
+            onChanged: _submitting
+                ? null
+                : (bool? value) => setState(
+                    () => _permissionConfirmed = value ?? false,
+                  ),
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(l10n.channelPermissionConfirmation),
+          ),
+          if (!_permissionConfirmed) ...<Widget>[
+            const SizedBox(height: SsSpacing.xs),
+            Text(
+              l10n.channelPermissionRequired,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           const SizedBox(height: SsSpacing.lg),
           SsPrimaryButton(
             label: l10n.addAndFollowAction,
             isLoading: _submitting,
-            onPressed: () => _create(entitlement),
+            onPressed: _permissionConfirmed
+                ? () => _create(entitlement)
+                : null,
           ),
         ],
       ),

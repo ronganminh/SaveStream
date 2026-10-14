@@ -40,7 +40,6 @@ import '../../features/settings/presentation/delete_account_screen.dart';
 import '../../features/settings/presentation/device_storage_screen.dart';
 import '../../features/settings/presentation/help_screen.dart';
 import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
-import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
 import '../../features/settings/presentation/legal_privacy_screen.dart';
 import '../../features/settings/presentation/notification_settings_screen.dart';
@@ -491,12 +490,6 @@ GoRouter createAppRouter({
                     path: 'profile',
                     builder: (BuildContext context, GoRouterState state) {
                       return const ProfileScreen();
-                    },
-                  ),
-                  GoRoute(
-                    path: 'language',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return LanguageScreen(settings: settings);
                     },
                   ),
                   GoRoute(

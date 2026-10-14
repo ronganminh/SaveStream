@@ -30,7 +30,6 @@ abstract final class AppRoutes {
 
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
-  static const String language = '/settings/language';
   static const String theme = '/settings/theme';
   static const String notifications = '/settings/notifications';
   static const String securityAccount = '/settings/security';

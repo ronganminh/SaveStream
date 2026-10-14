@@ -36,76 +36,34 @@ class NoopPushSender:
         del push_token, message
 
 
-def _locale_family(locale: str) -> str:
-    return "vi" if locale.strip().lower().startswith("vi") else "en"
-
-
 def _copy(
     kind: str,
     *,
-    locale: str,
     handle: str,
     fallback_title: str,
     fallback_body: str,
 ) -> tuple[str, str]:
-    vi = _locale_family(locale) == "vi"
     if kind == "creator_live":
-        return (
-            ("Kênh đang LIVE", f"{handle} đang LIVE.")
-            if vi
-            else ("Creator is LIVE", f"{handle} is LIVE now.")
-        )
+        return ("Creator is LIVE", f"{handle} is LIVE now.")
     if kind == "recording_started":
-        return (
-            ("Đã bắt đầu ghi", f"Đã bắt đầu ghi {handle}.")
-            if vi
-            else ("Recording started", f"Recording {handle} has started.")
-        )
+        return ("Recording started", f"Recording {handle} has started.")
     if kind == "recording_ready":
-        return (
-            ("Bản ghi đã sẵn sàng", f"Bản ghi {handle} đã sẵn sàng.")
-            if vi
-            else ("Recording ready", f"The {handle} recording is ready.")
-        )
+        return ("Recording ready", f"The {handle} recording is ready.")
     if kind == "recording_failed":
-        return (
-            ("Ghi không thành công", f"Bản ghi {handle} không hoàn tất.")
-            if vi
-            else ("Recording failed", f"The {handle} recording did not complete.")
-        )
+        return ("Recording failed", f"The {handle} recording did not complete.")
     if kind == "recording_missed":
         return (
-            ("Đã bỏ lỡ bản ghi", f"{handle} đã kết thúc trước khi có slot cloud.")
-            if vi
-            else (
-                "Recording missed",
-                f"{handle} ended before a cloud recording slot became available.",
-            )
+            "Recording missed",
+            f"{handle} ended before a cloud recording slot became available.",
         )
     if kind == "recording_expiring":
-        return (
-            ("Bản ghi sắp hết hạn", fallback_body)
-            if vi
-            else ("Recording expiring", fallback_body)
-        )
+        return ("Recording expiring", fallback_body)
     if kind == "cloud_minutes_exhausted":
-        return (
-            ("Đã hết phút cloud", fallback_body)
-            if vi
-            else ("Cloud minutes exhausted", fallback_body)
-        )
+        return ("Cloud minutes exhausted", fallback_body)
     if kind == "free_minutes_low":
-        return (
-            ("Phút Free sắp hết", fallback_body)
-            if vi
-            else ("Free minutes running low", fallback_body)
-        )
+        return ("Free minutes running low", fallback_body)
     if kind == "purchase_completed":
-        return (
-            ("Mua giờ thành công", fallback_body)
-            if vi
-            else ("Purchase completed", fallback_body)
-        )
+        return ("Purchase completed", fallback_body)
     return fallback_title, fallback_body
 
 
@@ -163,7 +121,6 @@ class PushDeliveryService:
                 continue
             title, body = _copy(
                 notification.kind,
-                locale=device.locale,
                 handle=handle,
                 fallback_title=notification.title,
                 fallback_body=notification.body,

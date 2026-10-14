@@ -105,7 +105,6 @@ import {
   EmptyState,
   ErrorState,
   FilterBar,
-  LanguageMenu,
   Logo,
   PageHeader,
   PasswordField,
@@ -231,7 +230,6 @@ export function PublicHeader() {
           )}
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
-          <LanguageMenu />
           <ThemeMenu />
           {authenticated ? (
             <>
@@ -2592,7 +2590,7 @@ function formatApproxHours(minutes: number | null | undefined, language: string)
   const value = new Intl.NumberFormat(language, {
     maximumFractionDigits: hours < 10 ? 1 : 0,
   }).format(hours);
-  const unit = language.toLowerCase().startsWith("vi") ? "giờ" : hours === 1 ? "hour" : "hours";
+  const unit = hours === 1 ? "hour" : "hours";
   return `≈ ${value} ${unit}`;
 }
 
@@ -3790,55 +3788,39 @@ function minutesPerCredit(rate: PublicRecordingRate) {
   return rate.unit_seconds / 60 / rate.credits_per_unit;
 }
 
-function formatRecordingTime(minutes: number, language: "en" | "vi" = "en") {
-  if (language === "vi") {
-    if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} giờ`;
-    if (minutes >= 60) return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
-    return `${minutes} phút`;
-  }
+function formatRecordingTime(minutes: number) {
   if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
   return pluralize(minutes, "minute");
 }
 
-function rateSentence(rate: PublicRecordingRate | null, language: "en" | "vi") {
+function rateSentence(rate: PublicRecordingRate | null) {
   if (!rate || rate.credits_per_unit === 0) return null;
   const minutes = minutesPerCredit(rate);
-  if (language === "vi") return `1 credit = ${minutes} phút ghi hình đám mây`;
   return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
 }
 
-function packageLimits(pricing: PublicPricingResponse | undefined, language: "en" | "vi") {
+function packageLimits(pricing: PublicPricingResponse | undefined) {
   const lines: string[] = [];
   const channels = pricing?.max_channels_per_user;
   const parallel = pricing?.max_concurrent_recordings_per_user;
   if (channels) {
-    lines.push(
-      language === "vi" ? `Theo dõi tối đa ${channels} kênh` : `Monitor up to ${channels} channels`,
-    );
+    lines.push(`Monitor up to ${channels} channels`);
   }
   if (parallel) {
     lines.push(
-      language === "vi"
-        ? parallel === 1
-          ? "Ghi 1 livestream tại một thời điểm"
-          : `Ghi tối đa ${parallel} livestream cùng lúc`
-        : parallel === 1
-          ? "Record 1 livestream at a time"
-          : `Record up to ${parallel} livestreams at the same time`,
+      parallel === 1
+        ? "Record 1 livestream at a time"
+        : `Record up to ${parallel} livestreams at the same time`,
     );
   }
   const paidDays = pricing?.recording_retention_days;
   const trialDays = pricing?.trial_recording_retention_days;
   if (paidDays) {
     lines.push(
-      language === "vi"
-        ? trialDays && trialDays !== paidDays
-          ? `Lưu bản ghi ${paidDays} ngày (${trialDays} ngày với gói dùng thử)`
-          : `Lưu bản ghi ${paidDays} ngày`
-        : trialDays && trialDays !== paidDays
-          ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
-          : `Recordings stored for ${pluralize(paidDays, "day")}`,
+      trialDays && trialDays !== paidDays
+        ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
+        : `Recordings stored for ${pluralize(paidDays, "day")}`,
     );
   }
   return lines;
@@ -3858,7 +3840,7 @@ function CreditPricingPage() {
   const { query, state } = usePublicPricingData();
   const pricing = query.data;
   const rate = pricing?.recording_rate ?? null;
-  const rateLine = rateSentence(rate, language);
+  const rateLine = rateSentence(rate);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
 
   return (
@@ -3925,7 +3907,7 @@ function CreditPricingPage() {
                     <div className="flex items-center justify-between gap-3 border-t pt-3">
                       <dt className="text-muted-foreground">{t("Recording time")}</dt>
                       <dd className="font-medium">
-                        {formatRecordingTime(item.recording_minutes, language)}
+                        {formatRecordingTime(item.recording_minutes)}
                       </dd>
                     </div>
                   )}
@@ -3949,10 +3931,9 @@ function CreditPricingPage() {
             <div>
               <h2 className="font-medium">{t("Free trial")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {language === "vi" ? "Nhận" : "Get"} {pricing.signup_credits}{" "}
-                {language === "vi" ? "credit miễn phí" : "free credits"}
+                {t("Get")} {pricing.signup_credits} {t("free credits")}
                 {rate && rate.credits_per_unit > 0
-                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate), language)} ${t("of recording")})`
+                  ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate))} ${t("of recording")})`
                   : ""}{" "}
                 {t("when you create an account and verify your email.")}
               </p>
@@ -3969,7 +3950,7 @@ function CreditPricingPage() {
           <div>
             <h2 className="font-medium">{t("Included with every package")}</h2>
             <ul className="mt-4 space-y-3 text-sm">
-              {[...packageLimits(pricing, language), ...includedInEveryPackage.map(t)].map(
+              {[...packageLimits(pricing), ...includedInEveryPackage.map(t)].map(
                 (line) => (
                   <li key={line} className="flex gap-2">
                     <Check className="mt-0.5 size-4 shrink-0 text-primary" />
@@ -3983,17 +3964,11 @@ function CreditPricingPage() {
             <div>
               <h3 className="font-medium text-foreground">{t("How credits are used")}</h3>
               <p className="mt-1 leading-6">
-                {language === "vi"
-                  ? `Credit chỉ được dùng khi livestream đang được ghi và được làm tròn lên phút tiếp theo${
-                      rate && rate.minimum_credits > 0
-                        ? `, tối thiểu ${rate.minimum_credits} credit cho mỗi bản ghi`
-                        : ""
-                    }. Theo dõi kênh khi ngoại tuyến là miễn phí.`
-                  : `Credits are used only while a livestream is being recorded, rounded up to the next minute${
-                      rate && rate.minimum_credits > 0
-                        ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
-                        : ""
-                    }. Monitoring a channel while it is offline is free.`}
+                {`Credits are used only while a livestream is being recorded, rounded up to the next minute${
+                  rate && rate.minimum_credits > 0
+                    ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
+                    : ""
+                }. Monitoring a channel while it is offline is free.`}
               </p>
             </div>
             <div>

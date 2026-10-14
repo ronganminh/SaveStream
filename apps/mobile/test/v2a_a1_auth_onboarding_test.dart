@@ -151,8 +151,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add your first creator'), findsOneWidget);
-    expect(find.byType(Checkbox), findsNothing);
+
+    // 5.2.3 gate: the first creator can only be added after the user
+    // confirms they are authorized to record it.
     final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
+    await tester.ensureVisible(add);
+    expect(tester.widget<FilledButton>(add).onPressed, isNull);
+    final Finder consent = find.byType(Checkbox);
+    expect(consent, findsOneWidget);
+    await tester.ensureVisible(consent);
+    await tester.tap(consent);
+    await tester.pump();
+
     await tester.ensureVisible(add);
     await tester.tap(add);
     await tester.pump(const Duration(milliseconds: 200));

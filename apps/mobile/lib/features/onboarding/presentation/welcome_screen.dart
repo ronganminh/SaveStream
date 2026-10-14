@@ -29,14 +29,6 @@ class WelcomeScreen extends StatelessWidget {
     context.go(route);
   }
 
-  void _toggleLanguage() {
-    settings.setLocale(
-      settings.locale.languageCode == 'vi'
-          ? const Locale('en')
-          : const Locale('vi'),
-    );
-  }
-
   void _cycleTheme() {
     settings.setThemeMode(switch (settings.themeMode) {
       ThemeMode.system => ThemeMode.light,
@@ -125,25 +117,12 @@ class WelcomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: SsSpacing.sm),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: SsSpacing.sm,
-                    children: <Widget>[
-                      TextButton.icon(
-                        onPressed: _toggleLanguage,
-                        icon: const Icon(Icons.language_rounded, size: 18),
-                        label: Text(
-                          settings.locale.languageCode == 'vi'
-                              ? l10n.languageVietnamese
-                              : l10n.languageEnglish,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _cycleTheme,
-                        icon: const Icon(Icons.contrast_rounded, size: 18),
-                        label: Text(l10n.welcomeThemeLabel(themeName)),
-                      ),
-                    ],
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: _cycleTheme,
+                      icon: const Icon(Icons.contrast_rounded, size: 18),
+                      label: Text(l10n.welcomeThemeLabel(themeName)),
+                    ),
                   ),
                 ],
               ),

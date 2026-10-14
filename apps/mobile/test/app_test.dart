@@ -153,15 +153,6 @@ void main() {
     expect(find.text('Never miss a LIVE.'), findsOneWidget);
     expect(find.text('Theme: System'), findsOneWidget);
 
-    // Language can be switched before signing in.
-    await tester.ensureVisible(find.text('English'));
-    await tester.tap(find.text('English'));
-    await tester.pumpAndSettle();
-    expect(find.text('Không bỏ lỡ LIVE nào.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Tiếng Việt'));
-    await tester.tap(find.text('Tiếng Việt'));
-    await tester.pumpAndSettle();
-
     final Finder createAccount = find.widgetWithText(
       FilledButton,
       'Create account',
@@ -646,7 +637,7 @@ void main() {
       final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
       final AppSettingsController first = AppSettingsController(store: store);
 
-      first.setLocale(const Locale('vi'));
+      first.setSystemLocale();
       first.setThemeMode(ThemeMode.dark);
       await Future<void>.delayed(Duration.zero);
 
@@ -655,7 +646,9 @@ void main() {
       );
       await restored.initialize();
 
-      expect(restored.locale.languageCode, 'vi');
+      // The app is English-only; the locale always resolves to en.
+      expect(restored.useSystemLocale, isTrue);
+      expect(restored.locale.languageCode, 'en');
       expect(restored.themeMode, ThemeMode.dark);
 
       first.dispose();
@@ -682,7 +675,7 @@ void main() {
     expect(find.text('Email verified'), findsOneWidget);
   });
 
-  testWidgets('changes language and theme through Phase 8 settings UI', (
+  testWidgets('changes theme through Phase 8 settings UI', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -697,26 +690,9 @@ void main() {
     final BuildContext settingsContext = tester.element(
       find.text('Settings').first,
     );
-    GoRouter.of(settingsContext).push(AppRoutes.language);
+    GoRouter.of(settingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Vietnamese'));
-    await tester.pumpAndSettle();
-
-    expect(settings.locale.languageCode, 'vi');
-    expect(find.text('Ngôn ngữ'), findsWidgets);
-
-    final BuildContext languageContext = tester.element(
-      find.text('Ngôn ngữ').first,
-    );
-    GoRouter.of(languageContext).pop();
-    await tester.pumpAndSettle();
-
-    final BuildContext localizedSettingsContext = tester.element(
-      find.text('Cài đặt').first,
-    );
-    GoRouter.of(localizedSettingsContext).push(AppRoutes.theme);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Tối'));
+    await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
 
     expect(settings.themeMode, ThemeMode.dark);
@@ -807,9 +783,7 @@ void main() {
     expect(find.text('Add a creator to get started'), findsOneWidget);
   });
 
-  testWidgets('switches locale and theme at runtime', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('switches theme at runtime', (WidgetTester tester) async {
     final AppSettingsController settings = AppSettingsController();
 
     await tester.pumpWidget(
@@ -817,13 +791,12 @@ void main() {
     );
     await tester.pump();
 
-    settings.setLocale(const Locale('vi'));
     settings.setThemeMode(ThemeMode.dark);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Trang chủ'), findsOneWidget);
-    expect(find.text('Theo dõi'), findsWidgets);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Watching'), findsWidgets);
 
     final MaterialApp app = tester.widget<MaterialApp>(
       find.byType(MaterialApp),

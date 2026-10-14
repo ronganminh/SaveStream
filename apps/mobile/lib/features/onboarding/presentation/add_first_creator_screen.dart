@@ -24,6 +24,7 @@ class _AddFirstCreatorScreenState extends ConsumerState<AddFirstCreatorScreen> {
     text: '@linastudio',
   );
   bool _submitting = false;
+  bool _permissionConfirmed = false;
   Object? _error;
 
   @override
@@ -57,6 +58,7 @@ class _AddFirstCreatorScreenState extends ConsumerState<AddFirstCreatorScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
+    if (!_permissionConfirmed) return;
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _submitting = true;
@@ -196,11 +198,23 @@ class _AddFirstCreatorScreenState extends ConsumerState<AddFirstCreatorScreen> {
                       message: l10n.responsibleUseReminderBody,
                       tone: SsInlineAlertTone.info,
                     ),
+                    const SizedBox(height: SsSpacing.md),
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _permissionConfirmed,
+                      onChanged: _submitting
+                          ? null
+                          : (bool? value) => setState(
+                              () => _permissionConfirmed = value ?? false,
+                            ),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text(l10n.onboardingConsentCheckbox),
+                    ),
                     const SizedBox(height: SsSpacing.xl),
                     SsPrimaryButton(
                       label: l10n.addAndFollowAction,
                       isLoading: _submitting,
-                      onPressed: _submit,
+                      onPressed: _permissionConfirmed ? _submit : null,
                     ),
                   ],
                 ),
