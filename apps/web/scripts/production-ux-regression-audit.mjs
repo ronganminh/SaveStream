@@ -18,17 +18,19 @@ const preferences = "src/lib/preferences.tsx";
 must(pages, "max-w-[calc(100%-4.5rem)] truncate");
 must(pages, "h-auto max-w-full whitespace-normal");
 
-// UX-02: high-visibility production landing, pricing, status, and auth copy is localized.
+// UX-02: high-visibility production landing, pricing, status, and auth copy
+// stays in place (English only; no translation dictionary).
 for (const key of [
   "SaveStream watches the TikTok channels you are authorized to record",
   "Pay as you go with credits.",
   "Simple, pay-as-you-go pricing",
   "Continue with Apple",
   "New to SaveStream?",
-  "Service status information",
 ]) {
-  must(preferences, key);
+  must(pages, key);
 }
+must("src/components/app-pages-more.tsx", "Service status information");
+forbid(preferences, "const vi:");
 must(pages, '{t(copy[0] ?? "")}');
 must(pages, '{t("Continue with Apple")}');
 

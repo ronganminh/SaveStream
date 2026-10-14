@@ -105,7 +105,6 @@ import {
   EmptyState,
   ErrorState,
   FilterBar,
-  LanguageMenu,
   Logo,
   PageHeader,
   PasswordField,
@@ -127,7 +126,7 @@ import {
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
 import { cn } from "@/lib/utils";
-import { usePreferences } from "@/lib/preferences";
+import { usePreferences, type Language } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import {
   planCatalog,
@@ -185,6 +184,7 @@ import {
 } from "@/hooks/use-channel-mutations";
 import type { ChannelModel, ChannelStatus, RecordingModel } from "@/repositories";
 import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
+import { currentLegalConsent } from "@/lib/legal";
 import {
   artifactActionErrorMessage,
   recordingActionErrorMessage,
@@ -233,7 +233,6 @@ export function PublicHeader() {
           )}
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
-          <LanguageMenu />
           <ThemeMenu />
           {authenticated ? (
             <>
@@ -849,7 +848,11 @@ export function AuthPage({
 }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
-  const { signIn, signInWithSocial, status, user: authUser } = useAuth();
+  const { signIn, signInWithSocial, completeSocialSignUp, status, user: authUser } = useAuth();
+  // Shown when a Google/Apple sign-in would create a new account without consent.
+  const [socialConsentOpen, setSocialConsentOpen] = useState(false);
+  const [socialConsentChecked, setSocialConsentChecked] = useState(false);
+  const [socialConsentError, setSocialConsentError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -861,7 +864,11 @@ export function AuthPage({
     email?: string | undefined;
     password?: string | undefined;
     confirm?: string | undefined;
+    agree?: string | undefined;
   }>({});
+  // Sign-up requires confirming age (18+, TikTok's LIVE minimum) and the legal terms.
+  const [agreed, setAgreed] = useState(false);
+  const agreementError = "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
@@ -891,16 +898,45 @@ export function AuthPage({
   }[mode];
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
+    if (mode === "sign-up" && !agreed) {
+      setFieldErrors((current) => ({ ...current, agree: agreementError }));
+      return;
+    }
     if (isDemoMode) {
       toast("Social sign-in isn't connected in this prototype.");
       return;
     }
     setBusy(true);
     try {
-      const currentUser = await signInWithSocial(provider);
+      // On sign-up the checkbox above already captured consent.
+      const currentUser = await signInWithSocial(
+        provider,
+        mode === "sign-up" ? currentLegalConsent() : undefined,
+      );
       await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
     } catch (error) {
+      if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
+        setSocialConsentChecked(false);
+        setSocialConsentError(null);
+        setSocialConsentOpen(true);
+        return;
+      }
       setErr(
+        error instanceof ApiError ? authErrorMessage(error) : socialProviderErrorMessage(error),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+  const finishSocialSignUp = async () => {
+    setSocialConsentError(null);
+    setBusy(true);
+    try {
+      const currentUser = await completeSocialSignUp(currentLegalConsent());
+      setSocialConsentOpen(false);
+      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
+    } catch (error) {
+      setSocialConsentError(
         error instanceof ApiError ? authErrorMessage(error) : socialProviderErrorMessage(error),
       );
     } finally {
@@ -924,6 +960,9 @@ export function AuthPage({
     }
     if (mode === "reset" && pw !== pw2) {
       nextErrors.confirm = "Passwords don’t match.";
+    }
+    if (mode === "sign-up" && !agreed) {
+      nextErrors.agree = agreementError;
     }
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -955,6 +994,7 @@ export function AuthPage({
           email,
           password: pw,
           display_name: name.trim() || null,
+          consent: currentLegalConsent(),
         });
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("savestream:pending-verification-email", email);
@@ -1160,6 +1200,45 @@ export function AuthPage({
             </Link>
           </div>
         )}
+        {mode === "sign-up" && (
+          <div>
+            <label className="flex items-start gap-2 text-sm leading-5">
+              <input
+                type="checkbox"
+                className={cn(
+                  "mt-0.5 size-4 shrink-0 accent-primary",
+                  fieldErrors.agree && "outline outline-1 outline-destructive",
+                )}
+                checked={agreed}
+                required
+                aria-invalid={fieldErrors.agree ? true : undefined}
+                aria-describedby={fieldErrors.agree ? "agree-error" : undefined}
+                onChange={(event) => {
+                  setAgreed(event.target.checked);
+                  if (event.target.checked) {
+                    setFieldErrors((current) => ({ ...current, agree: undefined }));
+                  }
+                }}
+              />
+              <span>
+                I am at least 18 and agree to the{" "}
+                <Link to="/terms" className="underline underline-offset-4">
+                  Terms of Use
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="underline underline-offset-4">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+            {fieldErrors.agree && (
+              <p id="agree-error" className="mt-1.5 text-xs text-destructive">
+                {fieldErrors.agree}
+              </p>
+            )}
+          </div>
+        )}
         {err && (
           <p role="alert" className="text-sm text-destructive">
             {err}
@@ -1171,24 +1250,62 @@ export function AuthPage({
           )}
           {t(copy[2] ?? "")}
         </Button>
-        {mode === "sign-up" && (
-          <p className="text-xs leading-5 text-muted-foreground">
-            {t("By creating an account you agree to the")}{" "}
-            <Link to="/terms" className="underline underline-offset-4">
-              {t("Terms")}
-            </Link>
-            ,{" "}
-            <Link to="/privacy" className="underline underline-offset-4">
-              {t("Privacy Policy")}
-            </Link>
-            , and{" "}
-            <Link to="/acceptable-use" className="underline underline-offset-4">
-              {t("Acceptable Use Policy")}
-            </Link>
-            .
-          </p>
-        )}
       </form>
+      <Dialog
+        open={socialConsentOpen}
+        onOpenChange={(open) => {
+          if (!busy) setSocialConsentOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create your SaveStream account</DialogTitle>
+            <DialogDescription>
+              This Google or Apple account is new to SaveStream. Confirm the following to finish
+              creating your account.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex items-start gap-2 text-sm leading-5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 accent-primary"
+              checked={socialConsentChecked}
+              onChange={(event) => setSocialConsentChecked(event.target.checked)}
+            />
+            <span>
+              I am at least 18 and agree to the{" "}
+              <Link to="/terms" target="_blank" className="underline underline-offset-4">
+                Terms of Use
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" target="_blank" className="underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+          {socialConsentError && (
+            <p role="alert" className="text-sm text-destructive">
+              {socialConsentError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => setSocialConsentOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={busy || !socialConsentChecked}
+              onClick={() => void finishSocialSignUp()}
+            >
+              Create account
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "sign-in" ? (
           <>
@@ -2669,7 +2786,7 @@ function formatApproxHours(minutes: number | null | undefined, language: string)
   const value = new Intl.NumberFormat(language, {
     maximumFractionDigits: hours < 10 ? 1 : 0,
   }).format(hours);
-  const unit = language.toLowerCase().startsWith("vi") ? "giờ" : hours === 1 ? "hour" : "hours";
+  const unit = hours === 1 ? "hour" : "hours";
   return `≈ ${value} ${unit}`;
 }
 
@@ -3682,15 +3799,6 @@ function DemoBillingPage() {
         </div>
       </section>
 
-      <div className="mt-8">
-        <StateBanner
-          tone="info"
-          title={t("Mobile purchases")}
-          body={t(
-            "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.",
-          )}
-        />
-      </div>
     </AppShell>
   );
 }
@@ -3871,55 +3979,39 @@ function minutesPerCredit(rate: PublicRecordingRate) {
   return rate.unit_seconds / 60 / rate.credits_per_unit;
 }
 
-function formatRecordingTime(minutes: number, language: "en" | "vi" = "en") {
-  if (language === "vi") {
-    if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} giờ`;
-    if (minutes >= 60) return `${Math.floor(minutes / 60)} giờ ${minutes % 60} phút`;
-    return `${minutes} phút`;
-  }
+function formatRecordingTime(minutes: number, _language: Language = "en") {
   if (minutes >= 120 && minutes % 60 === 0) return `${minutes / 60} hours`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
   return pluralize(minutes, "minute");
 }
 
-function rateSentence(rate: PublicRecordingRate | null, language: "en" | "vi") {
+function rateSentence(rate: PublicRecordingRate | null, _language: Language) {
   if (!rate || rate.credits_per_unit === 0) return null;
   const minutes = minutesPerCredit(rate);
-  if (language === "vi") return `1 credit = ${minutes} phút ghi hình đám mây`;
   return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
 }
 
-function packageLimits(pricing: PublicPricingResponse | undefined, language: "en" | "vi") {
+function packageLimits(pricing: PublicPricingResponse | undefined, _language: Language) {
   const lines: string[] = [];
   const channels = pricing?.max_channels_per_user;
   const parallel = pricing?.max_concurrent_recordings_per_user;
   if (channels) {
-    lines.push(
-      language === "vi" ? `Theo dõi tối đa ${channels} kênh` : `Monitor up to ${channels} channels`,
-    );
+    lines.push(`Monitor up to ${channels} channels`);
   }
   if (parallel) {
     lines.push(
-      language === "vi"
-        ? parallel === 1
-          ? "Ghi 1 livestream tại một thời điểm"
-          : `Ghi tối đa ${parallel} livestream cùng lúc`
-        : parallel === 1
-          ? "Record 1 livestream at a time"
-          : `Record up to ${parallel} livestreams at the same time`,
+      parallel === 1
+        ? "Record 1 livestream at a time"
+        : `Record up to ${parallel} livestreams at the same time`,
     );
   }
   const paidDays = pricing?.recording_retention_days;
   const trialDays = pricing?.trial_recording_retention_days;
   if (paidDays) {
     lines.push(
-      language === "vi"
-        ? trialDays && trialDays !== paidDays
-          ? `Lưu bản ghi ${paidDays} ngày (${trialDays} ngày với gói dùng thử)`
-          : `Lưu bản ghi ${paidDays} ngày`
-        : trialDays && trialDays !== paidDays
-          ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
-          : `Recordings stored for ${pluralize(paidDays, "day")}`,
+      trialDays && trialDays !== paidDays
+        ? `Recordings stored for ${pluralize(paidDays, "day")} (${pluralize(trialDays, "day")} on the free trial)`
+        : `Recordings stored for ${pluralize(paidDays, "day")}`,
     );
   }
   return lines;
@@ -3932,20 +4024,6 @@ const includedInEveryPackage = [
   "Credits never expire",
 ];
 
-/** Only advertise store channels the backend currently has enabled. */
-function storePurchaseSentence(appStore: boolean, googlePlay: boolean): string | null {
-  if (appStore && googlePlay) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.";
-  }
-  if (googlePlay) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.";
-  }
-  if (appStore) {
-    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.";
-  }
-  return null;
-}
-
 function CreditPricingPage() {
   const { language, t } = usePreferences();
   const { status } = useAuth();
@@ -3956,7 +4034,6 @@ function CreditPricingPage() {
   const rateLine = rateSentence(rate, language);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
   const channels = useCheckoutChannels();
-  const storeLine = storePurchaseSentence(channels.appStore, channels.googlePlay);
 
   return (
     <>
@@ -4050,19 +4127,13 @@ function CreditPricingPage() {
             {t("Online checkout is not open yet. Your free trial credits work as usual.")}
           </p>
         ) : null}
-        {storeLine && (
-          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
-            {t(storeLine)}
-          </p>
-        )}
 
         {pricing && pricing.signup_credits > 0 && (
           <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-medium">{t("Free trial")}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {language === "vi" ? "Nhận" : "Get"} {pricing.signup_credits}{" "}
-                {language === "vi" ? "credit miễn phí" : "free credits"}
+                Get {pricing.signup_credits} free credits
                 {rate && rate.credits_per_unit > 0
                   ? ` (${formatRecordingTime(pricing.signup_credits * minutesPerCredit(rate), language)} ${t("of recording")})`
                   : ""}{" "}
@@ -4095,13 +4166,7 @@ function CreditPricingPage() {
             <div>
               <h3 className="font-medium text-foreground">{t("How credits are used")}</h3>
               <p className="mt-1 leading-6">
-                {language === "vi"
-                  ? `Credit chỉ được dùng khi livestream đang được ghi và được làm tròn lên phút tiếp theo${
-                      rate && rate.minimum_credits > 0
-                        ? `, tối thiểu ${rate.minimum_credits} credit cho mỗi bản ghi`
-                        : ""
-                    }. Theo dõi kênh khi ngoại tuyến là miễn phí.`
-                  : `Credits are used only while a livestream is being recorded, rounded up to the next minute${
+                {`Credits are used only while a livestream is being recorded, rounded up to the next minute${
                       rate && rate.minimum_credits > 0
                         ? `, with a minimum of ${rate.minimum_credits} credit${rate.minimum_credits === 1 ? "" : "s"} per recording`
                         : ""

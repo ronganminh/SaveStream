@@ -8841,6 +8841,17 @@
         },
         "additionalProperties": false
       },
+      "LegalConsentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["age_confirmed", "terms_version", "privacy_version"],
+        "description": "The user confirmed they are at least 18 and accepted the Terms of Use and Privacy Policy. Versions must equal the current revision dates (409 LEGAL_VERSION_OUTDATED otherwise). Stored with time, IP and user agent.",
+        "properties": {
+          "age_confirmed": {"type": "boolean", "const": true},
+          "terms_version": {"type": "string", "maxLength": 32, "example": "2026-10-14"},
+          "privacy_version": {"type": "string", "maxLength": 32, "example": "2026-10-14"}
+        }
+      },
       "RegisterRequest": {
         "type": "object",
         "required": [
@@ -8861,6 +8872,15 @@
               "string",
               "null"
             ]
+          },
+          "client_type": {
+            "type": "string",
+            "enum": ["web", "mobile"],
+            "default": "mobile",
+            "description": "Web sign-up must include consent (428 LEGAL_CONSENT_REQUIRED otherwise). The paused mobile app registers without it."
+          },
+          "consent": {
+            "$ref": "#/components/schemas/LegalConsentRequest"
           }
         },
         "additionalProperties": false
@@ -14895,6 +14915,10 @@
               "web",
               "mobile"
             ]
+          },
+          "consent": {
+            "$ref": "#/components/schemas/LegalConsentRequest",
+            "description": "Required when a web sign-in would create a new account (428 LEGAL_CONSENT_REQUIRED otherwise)."
           }
         }
       },

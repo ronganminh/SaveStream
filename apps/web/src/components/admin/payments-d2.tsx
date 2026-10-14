@@ -367,9 +367,7 @@ export function AdminFinancePage() {
                 }
               >
                 <option value="">All channels</option>
-                <option value="web">Web</option>
-                <option value="app_store">App Store</option>
-                <option value="google_play">Google Play</option>
+                <option value="web">Web (PayPal)</option>
               </select>
               <Input
                 placeholder="Package ID"
@@ -423,7 +421,6 @@ export function AdminFinancePage() {
                   <th className="px-4 py-3">Channel</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Gross USD</th>
-                  <th className="px-4 py-3">Estimated store fee</th>
                   <th className="px-4 py-3">Cloud minutes</th>
                   <th className="px-4 py-3">Created</th>
                   <th className="px-4 py-3 text-right">Actions</th>
@@ -439,11 +436,6 @@ export function AdminFinancePage() {
                     <td className="px-4 py-3">{order.purchase_channel}</td>
                     <td className="px-4 py-3">{order.status}</td>
                     <td className="px-4 py-3">{usd(order.gross_usd_minor)}</td>
-                    <td className="px-4 py-3">
-                      {order.estimated_store_fee_minor === null
-                        ? "—"
-                        : `${usd(order.estimated_store_fee_minor)} (est. ${(order.estimated_store_fee_rate_bps ?? 0) / 100}%)`}
-                    </td>
                     <td className="px-4 py-3">{minutes(order.credits)}</td>
                     <td className="px-4 py-3 text-xs">{dateTime(order.created_at)}</td>
                     <td className="px-4 py-3 text-right">

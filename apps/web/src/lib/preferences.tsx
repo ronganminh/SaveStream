@@ -8,13 +8,14 @@ import {
   type ReactNode,
 } from "react";
 
-export type Language = "en" | "vi";
+// SaveStream's web product is English only.
+export type Language = "en";
 export type ThemePreference = "light" | "dark" | "system";
 
-const LANGUAGE_STORAGE_KEY = "savestream:ui:language";
 const THEME_STORAGE_KEY = "savestream:ui:theme";
-const LEGACY_LANGUAGE_STORAGE_KEY = "savestream-language";
 const LEGACY_THEME_STORAGE_KEY = "savestream-theme";
+// Keys of the removed language switcher; cleared once so they don't linger.
+const RETIRED_LANGUAGE_STORAGE_KEYS = ["savestream:ui:language", "savestream-language"];
 
 function readUiPreference(primaryKey: string, legacyKey: string) {
   if (typeof window === "undefined") return null;
@@ -34,699 +35,23 @@ function writeUiPreference(primaryKey: string, legacyKey: string, value: string)
   }
 }
 
-const vi: Record<string, string> = {
-  Features: "Tính năng",
-  "How it works": "Cách hoạt động",
-  Examples: "Bản ghi mẫu",
-  Pricing: "Bảng giá",
-  FAQ: "Hỏi đáp",
-  "Sign in": "Đăng nhập",
-  "Sign up": "Đăng ký",
-  "Create account": "Tạo tài khoản",
-  "Sign out": "Đăng xuất",
-  "Go home": "Về trang chủ",
-  Overview: "Tổng quan",
-  Channels: "Kênh",
-  Recordings: "Bản ghi",
-  "Usage & Billing": "Sử dụng & Thanh toán",
-  Usage: "Mức sử dụng",
-  Billing: "Thanh toán",
-  Workspace: "Không gian làm việc",
-  Notifications: "Thông báo",
-  Settings: "Cài đặt",
-  Help: "Trợ giúp",
-  Admin: "Quản trị",
-  System: "Hệ thống",
-  Workers: "Tiến trình",
-  Jobs: "Tác vụ",
-  Errors: "Lỗi",
-  "Search channels or recordings": "Tìm kênh hoặc bản ghi",
-  "Search channels or recordings…": "Tìm kênh hoặc bản ghi…",
-  Search: "Tìm kiếm",
-  Account: "Tài khoản",
-  "View all notifications": "Xem tất cả thông báo",
-  "Mark all read": "Đánh dấu đã đọc",
-  Light: "Sáng",
-  Dark: "Tối",
-  "System theme": "Hệ thống",
-  Theme: "Giao diện",
-  Language: "Ngôn ngữ",
-  English: "English",
-  "Tiếng Việt": "Tiếng Việt",
-  "Automatic TikTok livestream recording in the cloud.":
-    "Tự động ghi livestream TikTok trên đám mây.",
-  "Add a channel once. We monitor it 24/7 and automatically record every livestream — even when your computer is offline.":
-    "Chỉ cần thêm kênh một lần. Chúng tôi theo dõi 24/7 và tự động ghi mọi livestream — kể cả khi máy tính của bạn đang tắt.",
-  "Start recording free": "Ghi hình miễn phí",
-  "See how it works": "Xem cách hoạt động",
-  "No credit card required.": "Không cần thẻ thanh toán.",
-  "Set it once. We handle the rest.": "Thiết lập một lần. Chúng tôi lo phần còn lại.",
-  "Add a channel": "Thêm kênh",
-  "We monitor it": "Chúng tôi theo dõi",
-  "Recording starts": "Bắt đầu ghi hình",
-  "Watch later": "Xem lại sau",
-  "Cloud by design": "Được xây dựng cho đám mây",
-  "Automatic live detection": "Tự động phát hiện livestream",
-  "Cloud recording": "Ghi hình đám mây",
-  "Multiple monitored channels": "Theo dõi nhiều kênh",
-  "Recording library": "Thư viện bản ghi",
-  "Browser playback": "Phát trong trình duyệt",
-  "Fast downloads": "Tải xuống nhanh",
-  "Usage tracking": "Theo dõi mức sử dụng",
-  "Retention cleanup": "Tự động dọn theo thời hạn",
-  "Completed recordings": "Bản ghi đã hoàn tất",
-  "Recording Examples": "Bản ghi mẫu",
-  "Show password": "Hiện mật khẩu",
-  "Hide password": "Ẩn mật khẩu",
-  "Start recording your own livestreams": "Bắt đầu ghi livestream của bạn",
-  "Demo preview": "Bản xem thử",
-  SAMPLE: "BẢN MẪU",
-  "Simple plans, clear limits.": "Gói đơn giản, giới hạn rõ ràng.",
-  "Frequently asked questions": "Câu hỏi thường gặp",
-  Product: "Sản phẩm",
-  Legal: "Pháp lý",
-  Status: "Trạng thái",
-  Privacy: "Quyền riêng tư",
-  Terms: "Điều khoản",
-  "Acceptable use": "Sử dụng chấp nhận được",
-  "Welcome back": "Chào mừng bạn trở lại",
-  "Sign in to manage your recordings.": "Đăng nhập để quản lý các bản ghi.",
-  "Create your account": "Tạo tài khoản",
-  "Start monitoring your first TikTok channel.": "Bắt đầu theo dõi kênh TikTok đầu tiên.",
-  "Reset your password": "Đặt lại mật khẩu",
-  "Choose a new password": "Chọn mật khẩu mới",
-  Email: "Email",
-  Password: "Mật khẩu",
-  "Full name": "Họ và tên",
-  "Confirm password": "Xác nhận mật khẩu",
-  "Forgot password?": "Quên mật khẩu?",
-  "Continue with Google": "Tiếp tục với Google",
-  "Continue with Apple": "Tiếp tục với Apple",
-  "or continue with email": "hoặc tiếp tục bằng email",
-  "Let’s record your first livestream.": "Hãy ghi livestream đầu tiên của bạn.",
-  "Add my first channel": "Thêm kênh đầu tiên",
-  Available: "Khả dụng",
-  "Resolving creator…": "Đang tìm nhà sáng tạo…",
-  "Add & start monitoring": "Thêm & bắt đầu theo dõi",
-  "Monitoring on": "Đang theo dõi",
-  "Go to dashboard": "Đi tới bảng điều khiển",
-  "Active channels": "Kênh đang hoạt động",
-  "Stored recordings": "Bản ghi đã lưu",
-  "Recording hours": "Giờ ghi hình",
-  "Download usage": "Lưu lượng tải xuống",
-  "Channel monitoring": "Theo dõi kênh",
-  "Recent recordings": "Bản ghi gần đây",
-  "View all": "Xem tất cả",
-  "View library": "Xem thư viện",
-  Creator: "Nhà sáng tạo",
-  Platform: "Nền tảng",
-  Monitoring: "Theo dõi",
-  "Last checked": "Kiểm tra gần nhất",
-  Processing: "Đang xử lý",
-  Ready: "Sẵn sàng",
-  Waiting: "Đang chờ",
-  Missed: "Bỏ lỡ",
-  "Recording missed": "Đã bỏ lỡ bản ghi",
-  "Waiting for a cloud recording slot": "Đang chờ ô ghi đám mây",
-  "The livestream ended before a cloud recording slot became available. No credits were charged.":
-    "Livestream đã kết thúc trước khi có ô ghi đám mây. Không bị trừ credit.",
-  "This page updates automatically as your recording is processed.":
-    "Trang này tự động cập nhật khi bản ghi được xử lý.",
-  "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.":
-    "Mua giờ đám mây một lần và dùng khi các kênh phát trực tiếp. Không thuê bao, không phí định kỳ.",
-  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.":
-    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng Android qua Google Play.",
-  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.":
-    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng iOS qua App Store.",
-  "Online checkout is not open yet. Your free trial credits work as usual.":
-    "Thanh toán trực tuyến chưa mở. Credit dùng thử miễn phí của bạn vẫn hoạt động bình thường.",
-  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.":
-    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng qua App Store hoặc Google Play.",
-  "Free web accounts get 10 trial credits after email verification and can monitor up to 3 channels.":
-    "Tài khoản web Free nhận 10 credit dùng thử sau khi xác minh email và có thể theo dõi tối đa 3 kênh.",
-  "The Free mobile app may show banner and rewarded ads. Rewarded ads can grant additional local-recording time after server-side verification.":
-    "Ứng dụng mobile Free có thể hiển thị quảng cáo banner và quảng cáo thưởng. Quảng cáo thưởng có thể cấp thêm thời gian ghi trên máy sau khi máy chủ xác minh.",
-  "Mobile purchases are one-time purchases processed by the App Store or Google Play; web purchases are processed by Lemon Squeezy.":
-    "Mua trên mobile là mua một lần qua App Store hoặc Google Play; mua trên web được xử lý bởi Lemon Squeezy.",
-  "Mobile devices may register a device identifier, push token, platform, and locale so SaveStream can deliver notifications and open the correct screen.":
-    "Thiết bị mobile có thể đăng ký mã thiết bị, push token, nền tảng và ngôn ngữ để SaveStream gửi thông báo và mở đúng màn hình.",
-  "The Free mobile app uses advertising services for banner and rewarded ads. Those services may receive device or advertising identifiers needed to deliver and verify ads.":
-    "Ứng dụng mobile Free dùng dịch vụ quảng cáo cho banner và quảng cáo thưởng. Các dịch vụ này có thể nhận mã thiết bị hoặc mã quảng cáo cần thiết để phân phối và xác minh quảng cáo.",
-  "Free mobile advertising": "Quảng cáo trên ứng dụng mobile Free",
-  "Advertising in the Free mobile app": "Quảng cáo trong ứng dụng mobile Free",
-  "Apple App Store and Google Play — processing one-time mobile purchases and store-managed refunds.":
-    "Apple App Store và Google Play — xử lý giao dịch mua một lần trên mobile và hoàn tiền do cửa hàng quản lý.",
-  "Google services — rewarded-ad verification in the Free mobile app and push notification delivery.":
-    "Dịch vụ Google — xác minh quảng cáo thưởng trong ứng dụng mobile Free và gửi thông báo đẩy.",
-  "One-time cloud-hour purchases. No subscription and nothing renews automatically.":
-    "Mua giờ đám mây một lần. Không thuê bao và không tự động gia hạn.",
-  "Free web trial": "Dùng thử Free trên web",
-  "No recurring fee": "Không phí định kỳ",
-  "Trial credits": "Credit dùng thử",
-  "10 minutes of cloud recording": "10 phút ghi đám mây",
-  "Free web limit": "Giới hạn web Free",
-  "One-time hour packs": "Gói giờ mua một lần",
-  "Credits never expire. Buy more whenever you need additional cloud recording time.":
-    "Credit không hết hạn. Mua thêm khi bạn cần thêm thời gian ghi đám mây.",
-  "Buy once": "Mua một lần",
-  "Mobile purchases": "Mua trên mobile",
-  Offline: "Ngoại tuyến",
-  Paused: "Tạm dừng",
-  Error: "Lỗi",
-  New: "Mới",
-  "No channels found": "Không tìm thấy kênh",
-  View: "Xem",
-  "View channel": "Xem kênh",
-  "Pause monitoring": "Tạm dừng theo dõi",
-  "Resume monitoring": "Tiếp tục theo dõi",
-  "Remove channel": "Xóa kênh",
-  Cancel: "Hủy",
-  "Upgrade plan": "Nâng cấp gói",
-  "Watch and download your completed livestream recordings.":
-    "Xem và tải xuống các bản ghi livestream đã hoàn tất.",
-  "Search recordings": "Tìm bản ghi",
-  "All streamers": "Tất cả kênh",
-  "All statuses": "Tất cả trạng thái",
-  "All time": "Mọi thời điểm",
-  Duration: "Thời lượng",
-  Size: "Dung lượng",
-  Download: "Tải xuống",
-  Delete: "Xóa",
-  "Download video": "Tải video",
-  "Delete recording": "Xóa bản ghi",
-  "Finalizing your recording": "Đang hoàn thiện bản ghi",
-  Yearly: "Hàng năm",
-  "No invoices yet.": "Chưa có hóa đơn.",
-  "Manage your account, notifications, and security.": "Quản lý tài khoản, thông báo và bảo mật.",
-  Security: "Bảo mật",
-  "Sign-in methods": "Phương thức đăng nhập",
-  Connected: "Đã kết nối",
-  "Not connected": "Chưa kết nối",
-  Connect: "Kết nối",
-  "Recording activity, failures, and quota alerts.": "Hoạt động ghi hình, lỗi và cảnh báo hạn mức.",
-  "Mark all as read": "Đánh dấu tất cả đã đọc",
-  "All systems operational": "Tất cả hệ thống hoạt động bình thường",
-  "Some systems are degraded": "Một số hệ thống đang suy giảm",
-  "Recent incidents": "Sự cố gần đây",
-  Operational: "Hoạt động",
-  Degraded: "Suy giảm",
-  Today: "Hôm nay",
-  "Terms of Service": "Điều khoản dịch vụ",
-  "Privacy Policy": "Chính sách quyền riêng tư",
-  "Acceptable Use Policy": "Chính sách sử dụng chấp nhận được",
-  "Last updated September 27, 2026": "Cập nhật lần cuối ngày 27 tháng 9, 2026",
-  "The service": "Dịch vụ",
-  "Your responsibility for content": "Trách nhiệm của bạn với nội dung",
-  "Retention and deletion": "Lưu giữ và xóa",
-  Availability: "Khả dụng",
-  Termination: "Chấm dứt",
-  Contact: "Liên hệ",
-  Allowed: "Được phép",
-  "Not allowed": "Không được phép",
-  Enforcement: "Thực thi",
-  Reporting: "Báo cáo",
-  Online: "Trực tuyến",
-  Idle: "Rảnh",
-  "Service health": "Tình trạng dịch vụ",
-  "Recording jobs": "Tác vụ ghi hình",
-  "Job ID": "Mã tác vụ",
-  Worker: "Tiến trình",
-  Started: "Bắt đầu",
-  Retries: "Số lần thử",
-  Heartbeat: "Nhịp hoạt động",
-  Stuck: "Bị kẹt",
-  "Errors & events": "Lỗi & sự kiện",
-  Severity: "Mức độ",
-  Service: "Dịch vụ",
-  State: "Trạng thái",
-  Open: "Đang mở",
-  Resolved: "Đã xử lý",
-  Retrying: "Đang thử lại",
-  Timeline: "Dòng thời gian",
-  "Job context": "Ngữ cảnh tác vụ",
-  Loading: "Đang tải",
-  "More actions": "Thao tác khác",
-  "Do I need to keep my computer on?": "Tôi có cần bật máy tính không?",
-  "Which channels can I add?": "Tôi có thể thêm những kênh nào?",
-  "How long are recordings kept?": "Bản ghi được lưu trong bao lâu?",
-  "What happens if I reach my quota?": "Điều gì xảy ra khi tôi đạt hạn mức?",
-  "Plans that scale with your livestreams.": "Các gói linh hoạt theo livestream của bạn.",
-  "Channel details": "Chi tiết kênh",
-  "Channel not found": "Không tìm thấy kênh",
-  "Recording details": "Chi tiết bản ghi",
-  "Active recording": "Bản ghi đang chạy",
-  "Failed recording": "Bản ghi thất bại",
-  "Processing recording": "Đang xử lý bản ghi",
-  "Recording not found": "Không tìm thấy bản ghi",
-  "Current period": "Kỳ hiện tại",
-  "Concurrent limit": "Giới hạn đồng thời",
-  "Download bandwidth": "Băng thông tải xuống",
-  "Daily recording hours": "Giờ ghi hình hằng ngày",
-  "Usage by recording": "Mức sử dụng theo bản ghi",
-  "Manage your plan, payment method, and invoices.":
-    "Quản lý gói, phương thức thanh toán và hóa đơn.",
-  Free: "Miễn phí",
-  "Update payment method": "Cập nhật thanh toán",
-  "Pay now": "Thanh toán ngay",
-  "Resume subscription": "Tiếp tục đăng ký",
-  "Request a new link": "Yêu cầu liên kết mới",
-  "This link has expired": "Liên kết đã hết hạn",
-  "This link isn’t valid": "Liên kết không hợp lệ",
-  "We couldn’t verify your email": "Không thể xác minh email của bạn",
-  "Recording ready": "Bản ghi đã sẵn sàng",
-  "Authorized recording only": "Chỉ ghi hình khi được phép",
-  "Information we collect": "Thông tin chúng tôi thu thập",
-  "How we use it": "Cách chúng tôi sử dụng",
-  "Your choices": "Lựa chọn của bạn",
-  "Service providers": "Nhà cung cấp dịch vụ",
-  "Your responsibility": "Trách nhiệm của bạn",
-  "Plans, quotas, and billing": "Gói, hạn mức và thanh toán",
-  "Live operational health across recording infrastructure.":
-    "Tình trạng vận hành trực tiếp của hạ tầng ghi hình.",
-  "Active workers": "Tiến trình hoạt động",
-  "Active recordings": "Bản ghi đang chạy",
-  "Queue depth": "Độ dài hàng đợi",
-  "Failed jobs · 24h": "Tác vụ lỗi · 24 giờ",
-  "Storage used": "Dung lượng đã dùng",
-  "API errors · 1h": "Lỗi API · 1 giờ",
-  "Updated just now": "Vừa cập nhật",
-  "Recorder and processor worker health.": "Tình trạng các tiến trình ghi và xử lý.",
-  "Current job": "Tác vụ hiện tại",
-  Memory: "Bộ nhớ",
-  Version: "Phiên bản",
-  "Drain worker": "Ngừng nhận tác vụ",
-  "View details & logs": "Xem chi tiết & nhật ký",
-  Inspect: "Kiểm tra",
-  "Retry job": "Thử lại tác vụ",
-  "Mark as failed": "Đánh dấu thất bại",
-  "System events across monitoring, workers, processing, and storage.":
-    "Sự kiện hệ thống trong theo dõi, tiến trình, xử lý và lưu trữ.",
-  "All severities": "Mọi mức độ",
-  "All states": "Mọi trạng thái",
-  "No events match": "Không có sự kiện phù hợp",
-  "Details / stack (placeholder)": "Chi tiết / ngăn xếp (mẫu)",
-  "Open menu": "Mở menu",
-  "Close menu": "Đóng menu",
-  "Main navigation": "Điều hướng chính",
-  "Public navigation": "Điều hướng công khai",
-  "Account menu": "Menu tài khoản",
-  "Your recording workspace": "Không gian ghi hình của bạn",
-  "Sunday, September 27": "Chủ nhật, ngày 27 tháng 9",
-  "25% used": "Đã dùng 25%",
-  "25% used · resets Oct 1": "Đã dùng 25% · đặt lại ngày 1 tháng 10",
-  "3 currently monitoring": "Đang theo dõi 3 kênh",
-  "4 recordings": "4 bản ghi",
-  "25% used this month": "Đã dùng 25% tháng này",
-  "Cloud recording for TikTok channels you own, manage, or have permission to record.":
-    "Ghi hình đám mây cho các kênh TikTok bạn sở hữu, quản lý hoặc được phép ghi.",
-  "Record only channels you’re authorized to manage.": "Chỉ ghi các kênh bạn được phép quản lý.",
-  "Enter a TikTok username or profile URL.": "Nhập tên người dùng hoặc URL hồ sơ TikTok.",
-  "Live status is checked continuously.": "Trạng thái trực tiếp được kiểm tra liên tục.",
-  "Cloud servers record automatically.": "Máy chủ đám mây tự động ghi hình.",
-  "Play or download when it’s ready.": "Phát hoặc tải xuống khi bản ghi sẵn sàng.",
-  "This is a sample recording preview built from mock data, not public user content.":
-    "Đây là bản xem thử dùng dữ liệu mô phỏng, không phải nội dung công khai của người dùng.",
-  Date: "Ngày",
-  Resolution: "Độ phân giải",
-  "Start recording your own": "Bắt đầu ghi livestream của bạn",
-  "No. Monitoring and recording run on our cloud servers. You can close your browser or turn off your computer.":
-    "Không. Việc theo dõi và ghi hình chạy trên máy chủ đám mây. Bạn có thể đóng trình duyệt hoặc tắt máy tính.",
-  "Only TikTok channels you own, manage, or have permission to record. Douyin support is coming soon.":
-    "Chỉ các kênh TikTok bạn sở hữu, quản lý hoặc được phép ghi. Douyin sẽ sớm được hỗ trợ.",
-  "Recordings are kept for your plan’s retention period — 3 days on Free, 30 days on Pro — then deleted automatically.":
-    "Bản ghi được giữ theo thời hạn của gói — 3 ngày với Free, 30 ngày với Pro — rồi tự động xóa.",
-  "Automatic recording pauses until your quota resets or you upgrade. Existing recordings stay available.":
-    "Ghi hình tự động sẽ tạm dừng đến khi hạn mức được đặt lại hoặc bạn nâng cấp. Bản ghi hiện có vẫn khả dụng.",
-  "Channels are monitored automatically. Recording begins when an enabled channel goes live.":
-    "Các kênh được theo dõi tự động. Ghi hình bắt đầu khi một kênh đã bật phát trực tiếp.",
-  "Search channels": "Tìm kênh",
-  "Try another search or clear the current filter.": "Thử tìm kiếm khác hoặc xóa bộ lọc hiện tại.",
-  Streamer: "Kênh",
-  "Date range": "Khoảng ngày",
-  "Last 7 days": "7 ngày qua",
-  "Last 30 days": "30 ngày qua",
-  "No recordings match these filters": "Không có bản ghi phù hợp với bộ lọc",
-  "Try a different streamer, status, or date range.": "Thử kênh, trạng thái hoặc khoảng ngày khác.",
-  "Nothing to show.": "Không có nội dung để hiển thị.",
-  "View channels": "Xem kênh",
-  "Recording runs on our servers. You can safely close this page.":
-    "Ghi hình chạy trên máy chủ của chúng tôi. Bạn có thể đóng trang này.",
-  Elapsed: "Đã ghi",
-  Written: "Đã lưu",
-  "View recording": "Xem bản ghi",
-  "No active recordings": "Không có bản ghi đang chạy",
-  "We’re monitoring your enabled channels. Recording will start automatically when one goes live.":
-    "Chúng tôi đang theo dõi các kênh đã bật. Ghi hình sẽ tự động bắt đầu khi có kênh phát trực tiếp.",
-  "TikTok username or URL": "Tên người dùng hoặc URL TikTok",
-  "Looking up creator…": "Đang tìm nhà sáng tạo…",
-  "Add TikTok channel": "Thêm kênh TikTok",
-  "Add another": "Thêm kênh khác",
-  "Go to channels": "Đi tới Kênh",
-  "Monitoring started": "Đã bắt đầu theo dõi",
-  Adding: "Đang thêm",
-  "No results found": "Không tìm thấy kết quả",
-  "Try a creator name, @handle, or recording date.":
-    "Thử tên nhà sáng tạo, @tên_kênh hoặc ngày ghi.",
-  Healthy: "Ổn định",
-  Sample: "Bản mẫu",
-  "Watch sample recording": "Xem bản ghi mẫu",
-  "See what a completed cloud recording looks like. These are preserved SaveStream sample videos.":
-    "Xem một bản ghi đám mây hoàn chỉnh trông như thế nào. Đây là các video mẫu SaveStream được giữ lại.",
-  "Preserved sample media from the previous SaveStream frontend.":
-    "Video mẫu được giữ lại từ giao diện SaveStream trước đó.",
-  "Demo — illustrative data": "Bản demo — dữ liệu minh họa",
-  Demo: "Bản demo",
-  "Demo controls": "Điều khiển bản demo",
-  "Demo function": "Chức năng demo",
-  "This action only changes local demo state.": "Thao tác này chỉ thay đổi trạng thái demo cục bộ.",
-  "Backend not connected": "Backend chưa được kết nối",
-  "This screen is unavailable in production until authentication and API services are connected.":
-    "Màn hình này chưa khả dụng ở chế độ production cho đến khi xác thực và API được kết nối.",
-  "Back to sign in": "Quay lại đăng nhập",
-  "Coming soon": "Sắp ra mắt",
-  "Email is required.": "Vui lòng nhập email.",
-  "Password is required.": "Vui lòng nhập mật khẩu.",
-  "You have no channels yet. Add a TikTok channel to start monitoring.": "Bạn chưa có kênh nào. Thêm một kênh TikTok để bắt đầu theo dõi.",
-  "Monitoring is paused for all your channels. Resume a channel to get LIVE alerts.": "Tất cả kênh đang tạm dừng theo dõi. Tiếp tục theo dõi một kênh để nhận thông báo LIVE.",
-  "We’re monitoring your channels and will notify you when one goes live. Automatic recording is off.": "Chúng tôi đang theo dõi các kênh của bạn và sẽ báo khi có kênh phát trực tiếp. Tự động ghi đang tắt.",
-  "No channels yet": "Chưa có kênh nào",
-  "Add a TikTok channel and SaveStream will notify you when it goes live.": "Thêm một kênh TikTok và SaveStream sẽ báo cho bạn khi kênh phát trực tiếp.",
-  "Original resolution": "Độ phân giải gốc",
-  "Preview clip": "Đoạn xem trước",
-  "Full recording": "Bản ghi đầy đủ",
-  "Preview": "Xem trước",
-  "Saved channels": "Kênh đã lưu",
-  "Monitored channels": "Kênh được theo dõi",
-  "Simultaneous recordings": "Bản ghi đồng thời",
-  "Profiles stored in your SaveStream workspace.":
-    "Các hồ sơ được lưu trong không gian làm việc SaveStream.",
-  "Channels that SaveStream is actively checking for live status.":
-    "Các kênh SaveStream đang chủ động kiểm tra trạng thái phát trực tiếp.",
-  "Livestreams that can be recorded at the same time.": "Số livestream có thể được ghi cùng lúc.",
-  "Saved channels: not specified": "Kênh đã lưu: chưa xác định",
-  "Download bandwidth: not specified": "Băng thông tải xuống: chưa xác định",
-  "Not specified": "Chưa xác định",
-  "10 minutes recording / month": "10 phút ghi hình / tháng",
-  "50 recording hours / month": "50 giờ ghi hình / tháng",
-  "1 monitored channel": "1 kênh được theo dõi",
-  "5 monitored channels": "5 kênh được theo dõi",
-  "1 simultaneous recording": "1 bản ghi đồng thời",
-  "2 simultaneous recordings": "2 bản ghi đồng thời",
-  "100 GB downloads / month": "100 GB tải xuống / tháng",
-  "3-day retention": "Lưu trữ 3 ngày",
-  "30-day retention": "Lưu trữ 30 ngày",
-  "Video size and download usage vary with stream bitrate, resolution, and duration.":
-    "Kích thước video và dung lượng tải xuống thay đổi theo bitrate, độ phân giải và thời lượng livestream.",
-  Monthly: "Hàng tháng",
-  "Current subscription": "Gói hiện tại",
-  "Manage subscription": "Quản lý gói",
-  "Cancel subscription": "Hủy gói",
-  "Upgrade to Pro": "Nâng cấp lên Pro",
-  "Downgrade to Free": "Hạ xuống Free",
-  "Switching Oct 1": "Chuyển gói ngày 1 tháng 10",
-  "Payment method": "Phương thức thanh toán",
-  "Billing history": "Lịch sử thanh toán",
-  "No payment method on file.": "Chưa có phương thức thanh toán.",
-  "Used for your Pro subscription.": "Dùng cho gói Pro của bạn.",
-  "Manage plan": "Quản lý gói",
-  "Choose plan": "Chọn gói",
-  "Current plan": "Gói hiện tại",
-  "/ month": "/ tháng",
-  "Upgrade to Pro?": "Nâng cấp lên Pro?",
-  "Continue to checkout": "Tiếp tục đến thanh toán",
-  "Secure checkout is not connected in this frontend demo.":
-    "Thanh toán bảo mật chưa được kết nối trong bản demo frontend này.",
-  "Cancel Pro subscription?": "Hủy gói Pro?",
-  "Subscription canceled": "Đã hủy gói",
-  "Subscription resumed": "Đã tiếp tục gói",
-  "Opens the secure billing portal": "Mở cổng quản lý thanh toán",
-  "Payment provider isn’t connected in this prototype.":
-    "Nhà cung cấp thanh toán chưa được kết nối trong bản prototype này.",
-  "Payment failed": "Thanh toán thất bại",
-  "Past due": "Quá hạn thanh toán",
-  Active: "Đang hoạt động",
-  Paid: "Đã thanh toán",
-  Failed: "Thất bại",
-  "Download invoice": "Tải hóa đơn",
-  "Invoice download is mocked": "Tải hóa đơn là thao tác demo",
-  Recording: "Bản ghi",
-  Expires: "Hết hạn",
-  "Newest first": "Mới nhất trước",
-  "Oldest first": "Cũ nhất trước",
-  "List view": "Dạng danh sách",
-  "Grid view": "Dạng lưới",
-  "No recordings yet": "Chưa có bản ghi",
-  "Once one of your monitored channels goes live, the recording will automatically appear here.":
-    "Khi một trong các kênh được theo dõi phát trực tiếp, bản ghi sẽ tự động xuất hiện tại đây.",
-  "We’re having trouble loading your library": "Không thể tải thư viện lúc này",
-  "Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe.":
-    "Đang hiển thị dữ liệu bản ghi từ 2 phút trước. Hệ thống sẽ tự thử lại — các bản ghi của bạn vẫn an toàn.",
-  "recordings expire soon": "bản ghi sắp hết hạn",
-  "Recordings are removed automatically when your plan’s retention period ends. Download any you want to keep.":
-    "Bản ghi sẽ tự động bị xóa khi hết thời hạn lưu trữ của gói. Hãy tải xuống những bản bạn muốn giữ.",
-  "Clear search": "Xóa tìm kiếm",
-  "Clear filters": "Xóa bộ lọc",
-  "No results for": "Không có kết quả cho",
-  "Check the spelling or search by @handle or date.":
-    "Kiểm tra chính tả hoặc tìm theo @tên_kênh hay ngày.",
-  Plans: "Các gói",
-  "Start with Pro": "Bắt đầu với Pro",
-  "Start free. Upgrade when you need more recording time.":
-    "Bắt đầu miễn phí. Nâng cấp khi bạn cần thêm thời gian ghi hình.",
-  "Simple plans with one monthly source of truth.":
-    "Các gói đơn giản với hạn mức hàng tháng nhất quán.",
-  "Plan limits": "Giới hạn gói",
-  "Illustrative admin metrics for the frontend demo.":
-    "Số liệu quản trị minh họa cho bản demo frontend.",
-  "Demo fixture": "Dữ liệu demo",
-  "Demo data": "Dữ liệu minh họa",
-  "This status page is a frontend preview. It is not connected to live monitoring or incident data.":
-    "Trang trạng thái này là bản xem trước frontend. Trang chưa được kết nối với dữ liệu giám sát hoặc sự cố trực tiếp.",
-  "Illustrative service state": "Trạng thái dịch vụ minh họa",
-  "Incident history preview": "Bản xem thử lịch sử sự cố",
-  "No live incident source is connected.": "Chưa kết nối nguồn dữ liệu sự cố trực tiếp.",
-  "All values below are illustrative demo data.": "Tất cả giá trị bên dưới là dữ liệu minh họa.",
-  Close: "Đóng",
-  "Close dialog": "Đóng hộp thoại",
-  "Close drawer": "Đóng ngăn điều hướng",
-  Primary: "Điều hướng chính",
-  All: "Tất cả",
-  Unread: "Chưa đọc",
-  "Filter notifications": "Lọc thông báo",
-  "No unread notifications": "Không có thông báo chưa đọc",
-  "No notifications yet": "Chưa có thông báo",
-  "You’re all caught up.": "Bạn đã xem hết thông báo.",
-  "We’ll notify you when recordings start, finish, or need attention.":
-    "Chúng tôi sẽ thông báo khi bản ghi bắt đầu, hoàn tất hoặc cần bạn chú ý.",
-  "notification settings": "cài đặt thông báo",
-  "All notifications marked as read": "Đã đánh dấu tất cả thông báo là đã đọc",
-  "Email notifications": "Thông báo email",
-  "Save preferences": "Lưu tùy chọn",
-  Saved: "Đã lưu",
-  "Unsaved changes": "Thay đổi chưa lưu",
-  "Recording started": "Đã bắt đầu ghi hình",
-  "Recording completed": "Đã hoàn tất ghi hình",
-  "Recording failed": "Ghi hình thất bại",
-  "Quota warning": "Cảnh báo hạn mức",
-  "Retention / expiration warning": "Cảnh báo thời hạn lưu trữ",
-  "When a monitored channel goes live and recording begins.":
-    "Khi kênh được theo dõi phát trực tiếp và bắt đầu ghi hình.",
-  "When a recording is processed and ready to watch.": "Khi bản ghi xử lý xong và sẵn sàng để xem.",
-  "When a recording stops unexpectedly or can’t be processed.":
-    "Khi bản ghi dừng bất ngờ hoặc không thể xử lý.",
-  "At 80% and 100% of your monthly recording hours or downloads.":
-    "Khi dùng 80% và 100% giờ ghi hình hoặc dung lượng tải xuống hàng tháng.",
-  "Before a recording is removed at the end of its retention period.":
-    "Trước khi bản ghi bị xóa khi hết thời hạn lưu trữ.",
-  "Notification preferences saved": "Đã lưu tùy chọn thông báo",
-  Profile: "Hồ sơ",
-  "Your name and email are used for sign in and notifications.":
-    "Tên và email được dùng để đăng nhập và nhận thông báo.",
-  "Change image": "Đổi ảnh",
-  Remove: "Xóa",
-  Name: "Tên",
-  "Save changes": "Lưu thay đổi",
-  "Export your data": "Xuất dữ liệu của bạn",
-  "Request data export": "Yêu cầu xuất dữ liệu",
-  "Delete account": "Xóa tài khoản",
-  "Delete your account?": "Xóa tài khoản của bạn?",
-  "Type DELETE to confirm": "Nhập DELETE để xác nhận",
-  "Verification email sent": "Đã gửi email xác minh",
-  "Changes saved": "Đã lưu thay đổi",
-  "Export requested": "Đã yêu cầu xuất dữ liệu",
-  "Account deleted": "Đã xóa tài khoản",
-  "Change password": "Đổi mật khẩu",
-  "Current password": "Mật khẩu hiện tại",
-  "New password": "Mật khẩu mới",
-  "Confirm new password": "Xác nhận mật khẩu mới",
-  "Passwords don’t match.": "Mật khẩu không khớp.",
-  "Update password": "Cập nhật mật khẩu",
-  "Active sessions": "Phiên đăng nhập đang hoạt động",
-  "Password updated": "Đã cập nhật mật khẩu",
-  "Check your email": "Kiểm tra email",
-  "Resend verification email": "Gửi lại email xác minh",
-  "Change email": "Đổi email",
-  "Resend available in": "Có thể gửi lại sau",
-  "Email verified": "Đã xác minh email",
-  "Continue to setup": "Tiếp tục thiết lập",
-  "Page not found": "Không tìm thấy trang",
-  "The page you're looking for doesn't exist or has been moved.":
-    "Trang bạn đang tìm không tồn tại hoặc đã được di chuyển.",
-  "This page didn't load": "Không thể tải trang",
-  "Something went wrong on our end. You can try refreshing or head back home.":
-    "Đã xảy ra lỗi. Bạn có thể thử tải lại hoặc quay về trang chủ.",
-  "Try again": "Thử lại",
-  "System status": "Trạng thái hệ thống",
-  "Preview only — not live status": "Chỉ là bản xem trước — không phải trạng thái trực tiếp",
-  "Help topics": "Chủ đề trợ giúp",
-  "Browser closed": "Đóng trình duyệt",
-  "Getting started": "Bắt đầu",
-  "How cloud monitoring works": "Cách theo dõi đám mây hoạt động",
-  "What happens if I close my browser or computer?":
-    "Điều gì xảy ra nếu tôi đóng trình duyệt hoặc máy tính?",
-  "Recording lifecycle": "Vòng đời bản ghi",
-  Quotas: "Hạn mức",
-  Retention: "Thời hạn lưu trữ",
-  "Failed recording troubleshooting": "Xử lý sự cố bản ghi thất bại",
-  "Authorized recording policy": "Chính sách ghi hình được ủy quyền",
-  "Still need help?": "Vẫn cần trợ giúp?",
-  "Contact support": "Liên hệ hỗ trợ",
-  Subject: "Chủ đề",
-  Message: "Tin nhắn",
-  "Send message": "Gửi tin nhắn",
-  "Service issues? Check the status page.": "Có sự cố dịch vụ? Hãy xem trang trạng thái.",
-  "This demo does not send support messages.": "Bản demo này không gửi tin nhắn hỗ trợ.",
-  "Support will reply by email.": "Bộ phận hỗ trợ sẽ phản hồi qua email.",
-  "Automatic cloud recording": "Tự động ghi hình trên đám mây",
-  "Start for free": "Bắt đầu miễn phí",
-  "Add channel": "Thêm kênh",
-  Stored: "Dung lượng đã lưu",
-  "Close your laptop. Recording continues.": "Đóng máy tính. Việc ghi hình vẫn tiếp tục.",
-  "Monitoring and recording run on our servers, not in your browser.":
-    "Theo dõi và ghi hình chạy trên máy chủ của chúng tôi, không phải trong trình duyệt của bạn.",
-  "Skip to content": "Bỏ qua để đến nội dung",
-  Progress: "Tiến trình",
-  "Sign in required": "Cần đăng nhập",
-  "This route requires an authenticated account with the appropriate role.":
-    "Tuyến đường này yêu cầu tài khoản đã xác thực với vai trò phù hợp.",
-  "Product preview — backend recording services are not connected.":
-    "Bản xem trước sản phẩm — dịch vụ ghi hình backend chưa được kết nối.",
-  "SaveStream is designed to monitor authorized channels and automate cloud recording. This public build is a frontend demo; backend recording services are not connected.":
-    "SaveStream được thiết kế để theo dõi các kênh được ủy quyền và tự động hóa ghi hình đám mây. Bản công khai này là demo frontend; dịch vụ ghi hình backend chưa được kết nối.",
-  "Backend monitoring is designed to check live status automatically.":
-    "Hệ thống theo dõi backend được thiết kế để tự động kiểm tra trạng thái phát trực tiếp.",
-  "Recording workers are designed to start automatically when backend services are connected.":
-    "Tiến trình ghi hình được thiết kế để tự động bắt đầu khi dịch vụ backend được kết nối.",
-  "Production monitoring and recording are designed to run on backend services rather than in your browser.":
-    "Theo dõi và ghi hình ở môi trường production được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
-  "In the production product, monitoring and recording are designed to run in backend services rather than in your browser.":
-    "Trong sản phẩm production, theo dõi và ghi hình được thiết kế để chạy trên dịch vụ backend thay vì trong trình duyệt.",
-  "SaveStream watches the TikTok channels you are authorized to record and saves every livestream in the cloud. No computer or browser needs to stay open.":
-    "SaveStream theo dõi các kênh TikTok bạn được phép ghi và lưu mọi livestream trên đám mây. Bạn không cần mở máy tính hoặc trình duyệt.",
-  "Open dashboard": "Mở bảng điều khiển",
-  "Continue in your SaveStream workspace.":
-    "Tiếp tục trong không gian làm việc SaveStream của bạn.",
-  "Channels monitored": "Kênh được theo dõi",
-  "Checked automatically": "Được kiểm tra tự động",
-  "Credits available": "Credit khả dụng",
-  "About 41 hours of recording": "Khoảng 41 giờ ghi hình",
-  "Ready to watch or download": "Sẵn sàng xem hoặc tải xuống",
-  "SaveStream checks the channel’s live status from the cloud, around the clock.":
-    "SaveStream kiểm tra trạng thái phát trực tiếp của kênh trên đám mây liên tục.",
-  "Recording starts automatically when the channel goes live.":
-    "Ghi hình tự động bắt đầu khi kênh phát trực tiếp.",
-  "Monitoring and recording run in the cloud, not in your browser, so nothing on your side needs to stay on.":
-    "Theo dõi và ghi hình chạy trên đám mây, không phải trong trình duyệt, nên thiết bị của bạn không cần duy trì hoạt động.",
-  "Credit usage history": "Lịch sử sử dụng credit",
-  "Stored for up to 30 days": "Lưu trữ tối đa 30 ngày",
-  "Pay as you go with credits.": "Thanh toán theo mức dùng bằng credit.",
-  "Buy a credit package once and use it whenever your channels go live.":
-    "Mua gói credit một lần và dùng bất cứ khi nào kênh của bạn phát trực tiếp.",
-  "No subscription": "Không thuê bao",
-  "One-time credit packages. Nothing renews automatically, and credits never expire.":
-    "Gói credit mua một lần. Không tự động gia hạn và credit không hết hạn.",
-  "Pay for recording time": "Thanh toán theo thời gian ghi",
-  "Credits are used only while a livestream is being recorded. Monitoring offline channels is free.":
-    "Credit chỉ được dùng khi livestream đang được ghi. Theo dõi kênh ngoại tuyến hoàn toàn miễn phí.",
-  "Free trial": "Dùng thử miễn phí",
-  "New accounts get free credits after verifying their email, so you can try a real recording first.":
-    "Tài khoản mới nhận credit miễn phí sau khi xác minh email để bạn có thể thử một bản ghi thật.",
-  "See pricing": "Xem bảng giá",
-  "How does pricing work?": "Giá được tính như thế nào?",
-  "You buy credits once and they are used while livestreams are recorded. Credits never expire. See the pricing page for packages and the current rate.":
-    "Bạn mua credit một lần và credit được dùng khi livestream đang được ghi. Credit không hết hạn. Xem trang bảng giá để biết các gói và mức giá hiện tại.",
-  "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial. Watch them in the browser or download any recording you want to keep longer.":
-    "Bản ghi hoàn tất được lưu 30 ngày sau khi bạn mua credit, hoặc 7 ngày với gói dùng thử. Bạn có thể xem trên trình duyệt hoặc tải xuống để lưu lâu hơn.",
-  "What happens if I run out of credits?": "Điều gì xảy ra nếu tôi hết credit?",
-  "A recording continues until the livestream ends or your credits run out, and everything recorded up to that point is saved. Add credits from Billing to keep recording.":
-    "Bản ghi tiếp tục đến khi livestream kết thúc hoặc credit hết; mọi nội dung đã ghi đến thời điểm đó vẫn được lưu. Hãy thêm credit trong mục Thanh toán để tiếp tục ghi.",
-  "“We monitor. We record. You can close the browser.”":
-    "“Chúng tôi theo dõi và ghi hình. Bạn có thể đóng trình duyệt.”",
-  "Enter your email and we’ll send you a reset link.":
-    "Nhập email và chúng tôi sẽ gửi liên kết đặt lại mật khẩu.",
-  "Send reset link": "Gửi liên kết đặt lại",
-  "Use at least 8 characters.": "Sử dụng ít nhất 8 ký tự.",
-  "Reset password": "Đặt lại mật khẩu",
-  "Restoring your session…": "Đang khôi phục phiên đăng nhập…",
-  "Returning to your workspace…": "Đang quay lại không gian làm việc…",
-  "If an account exists, we sent a password reset link to":
-    "Nếu tài khoản tồn tại, chúng tôi đã gửi liên kết đặt lại mật khẩu đến",
-  "It expires in 60 minutes.": "Liên kết hết hạn sau 60 phút.",
-  "Resend link": "Gửi lại liên kết",
-  "Your password has been changed. Other sessions were signed out for your security.":
-    "Mật khẩu đã được thay đổi. Các phiên khác đã đăng xuất để bảo vệ tài khoản của bạn.",
-  "New to SaveStream?": "Bạn mới dùng SaveStream?",
-  "Already have an account?": "Bạn đã có tài khoản?",
-  "By creating an account you agree to the": "Khi tạo tài khoản, bạn đồng ý với",
-  "Simple, pay-as-you-go pricing": "Bảng giá đơn giản, thanh toán theo mức dùng",
-  "Pricing could not be loaded": "Không thể tải bảng giá",
-  "Please refresh the page in a moment.": "Vui lòng tải lại trang sau ít phút.",
-  Retry: "Thử lại",
-  "Credit packages are not available right now": "Các gói credit hiện chưa khả dụng",
-  "Please check back soon.": "Vui lòng quay lại sau.",
-  "One-time purchase": "Mua một lần",
-  Credits: "Credit",
-  "Recording time": "Thời gian ghi",
-  "Get started": "Bắt đầu",
-  "of recording": "ghi hình",
-  "when you create an account and verify your email.": "khi bạn tạo tài khoản và xác minh email.",
-  "Create free account": "Tạo tài khoản miễn phí",
-  "Included with every package": "Có trong mọi gói",
-  "How credits are used": "Cách sử dụng credit",
-  "Payments and refunds": "Thanh toán và hoàn tiền",
-  "Payments are processed by the payment provider shown at checkout. Prices are shown in USD; applicable taxes are calculated at checkout. See our":
-    "Thanh toán được xử lý bởi nhà cung cấp hiển thị tại bước thanh toán. Giá được niêm yết bằng USD; thuế áp dụng được tính tại bước thanh toán. Xem",
-  "refund policy": "chính sách hoàn tiền",
-  "Automatic live detection for every channel you add":
-    "Tự động phát hiện livestream cho mọi kênh bạn thêm",
-  "Cloud recording — no computer or browser needs to stay open":
-    "Ghi hình đám mây — không cần mở máy tính hoặc trình duyệt",
-  "Watch in the browser or download the video file": "Xem trên trình duyệt hoặc tải tệp video",
-  "Credits never expire": "Credit không hết hạn",
-  "Current information about SaveStream service availability and incident reporting.":
-    "Thông tin hiện tại về tính khả dụng của dịch vụ SaveStream và báo cáo sự cố.",
-  "Service status information": "Thông tin trạng thái dịch vụ",
-  "SaveStream does not currently publish a public live incident feed and does not display illustrative service health on the production site. We will post confirmed service notices here when public incident reporting is available.":
-    "SaveStream hiện chưa công bố luồng sự cố trực tiếp và không hiển thị trạng thái dịch vụ minh họa trên trang production. Các thông báo dịch vụ đã xác nhận sẽ được đăng tại đây khi hệ thống báo cáo sự cố công khai sẵn sàng.",
-  "What is available": "Thông tin hiện có",
-  "Authenticated product pages report request errors directly from the SaveStream API. Admin operational data remains restricted to authorized admin accounts.":
-    "Các trang sản phẩm đã đăng nhập hiển thị lỗi yêu cầu trực tiếp từ API SaveStream. Dữ liệu vận hành Admin chỉ dành cho tài khoản quản trị được cấp quyền.",
-};
+function clearRetiredLanguagePreference() {
+  try {
+    for (const key of RETIRED_LANGUAGE_STORAGE_KEYS) window.localStorage.removeItem(key);
+  } catch {
+    // Best-effort cleanup.
+  }
+}
 
 type Preferences = {
   language: Language;
-  setLanguage: (language: Language) => void;
   theme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
+  /** Copy is English-only; kept as a pass-through so call sites stay stable. */
   t: (text: string) => string;
 };
 
 const Context = createContext<Preferences | null>(null);
-
-function translate(text: string, language: Language) {
-  if (language === "en") return text;
-  return vi[text] ?? text;
-}
 
 function applyTheme(theme: ThemePreference) {
   const dark =
@@ -738,25 +63,16 @@ function applyTheme(theme: ThemePreference) {
 }
 
 export function PreferencesProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("en");
   const [theme, setThemeState] = useState<ThemePreference>("system");
   useEffect(() => {
-    const savedLanguage = readUiPreference(LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY);
-    // English is the default; Vietnamese is opt-in from the language menu.
-    const nextLanguage: Language = savedLanguage === "vi" ? "vi" : "en";
+    clearRetiredLanguagePreference();
     const savedTheme = readUiPreference(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY);
     const nextTheme: ThemePreference =
       savedTheme === "light" || savedTheme === "dark" || savedTheme === "system"
         ? savedTheme
         : "system";
-    setLanguageState(nextLanguage);
     setThemeState(nextTheme);
     applyTheme(nextTheme);
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        document.documentElement.classList.remove("language-preload");
-      });
-    });
   }, []);
   useEffect(() => {
     applyTheme(theme);
@@ -765,18 +81,10 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, [theme]);
-  useEffect(() => {
-    document.documentElement.lang = language;
-    document.documentElement.dataset["language"] = language;
-  }, [language]);
-  const t = useCallback((text: string) => translate(text, language), [language]);
+  const t = useCallback((text: string) => text, []);
   const value = useMemo<Preferences>(
     () => ({
-      language,
-      setLanguage: (next) => {
-        writeUiPreference(LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY, next);
-        setLanguageState(next);
-      },
+      language: "en",
       theme,
       setTheme: (next) => {
         writeUiPreference(THEME_STORAGE_KEY, LEGACY_THEME_STORAGE_KEY, next);
@@ -784,7 +92,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       },
       t,
     }),
-    [language, theme, t],
+    [theme, t],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
@@ -796,4 +104,3 @@ export function usePreferences() {
 }
 
 export const themeInitScript = `(function(){try{var t=localStorage.getItem('savestream:ui:theme')||localStorage.getItem('savestream-theme')||'system';var d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`;
-export const languageInitScript = `(function(){try{var l=localStorage.getItem('savestream:ui:language')||localStorage.getItem('savestream-language');if(l!=='vi')l='en';document.documentElement.lang=l;document.documentElement.dataset.language=l;if(l==='vi')document.documentElement.classList.add('language-preload');setTimeout(function(){document.documentElement.classList.remove('language-preload')},3000)}catch(e){}})()`;

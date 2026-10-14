@@ -14,7 +14,6 @@ import { AuthProvider } from "@/auth/auth-context";
 import { AuthRouteGuard } from "@/auth/auth-guards";
 import {
   PreferencesProvider,
-  languageInitScript,
   themeInitScript,
   usePreferences,
 } from "@/lib/preferences";
@@ -119,7 +118,7 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `${themeInitScript};${languageInitScript}` }} />
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <HeadContent />
       </head>
       <body>

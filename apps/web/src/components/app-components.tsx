@@ -24,9 +24,7 @@ import {
   ExternalLink,
   FileVideo,
   Gauge,
-  Globe2,
   HardDrive,
-  Languages,
   LayoutDashboard,
   Menu,
   Monitor,
@@ -394,39 +392,6 @@ export function ThemeMenu({ full = false }: { full?: boolean }) {
     </DropdownMenu>
   );
 }
-export function LanguageMenu({ full = false }: { full?: boolean }) {
-  const { language, setLanguage, t } = usePreferences();
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size={full ? "default" : "icon"}
-          className={cn(full && "w-full justify-start")}
-          aria-label={`${t("Language")}: ${language.toUpperCase()}`}
-        >
-          <Languages />
-          {full && <span>{language.toUpperCase()}</span>}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel>{t("Language")}</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => setLanguage("en")}>
-          <Globe2 />
-          <span className="flex-1">English</span>
-          <span className="text-xs text-muted-foreground">EN</span>
-          {language === "en" && <Check className="size-4" />}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setLanguage("vi")}>
-          <Globe2 />
-          <span className="flex-1">Tiếng Việt</span>
-          <span className="text-xs text-muted-foreground">VI</span>
-          {language === "vi" && <Check className="size-4" />}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
@@ -516,7 +481,6 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         </nav>
         <div className="border-t p-3">
           <div className="mb-2 grid grid-cols-2 gap-1 lg:hidden">
-            <LanguageMenu full />
             <ThemeMenu full />
           </div>
           <Link
@@ -603,7 +567,6 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             <span className="hidden sm:inline">{t("Buy credits")}</span>
           </Link>
         </Button>
-        <LanguageMenu />
         <ThemeMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

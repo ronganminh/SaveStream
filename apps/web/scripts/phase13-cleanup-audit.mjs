@@ -185,14 +185,12 @@ if (unexpectedStorageUsers.length) {
   );
 }
 
-for (const text of [
-  "savestream:ui:language",
-  "savestream:ui:theme",
-  "LEGACY_LANGUAGE_STORAGE_KEY",
-  "LEGACY_THEME_STORAGE_KEY",
-]) {
+for (const text of ["savestream:ui:theme", "LEGACY_THEME_STORAGE_KEY"]) {
   must("src/lib/preferences.tsx", text);
 }
+// The language switcher was removed (English only); its keys are only cleared.
+must("src/lib/preferences.tsx", "RETIRED_LANGUAGE_STORAGE_KEYS");
+forbid("src/lib/preferences.tsx", "LANGUAGE_STORAGE_KEY =");
 
 if (failures.length) {
   console.error("Phase 13 cleanup audit failed:\n- " + failures.join("\n- "));

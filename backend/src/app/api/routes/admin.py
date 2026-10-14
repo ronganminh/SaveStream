@@ -3969,35 +3969,13 @@ async def export_admin_revenue_report(
     )
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "day",
-        "web_gross_usd",
-        "app_store_gross_usd",
-        "google_play_gross_usd",
-        "total_gross_usd",
-        "app_store_estimated_fee_usd",
-        "google_play_estimated_fee_usd",
-        "total_estimated_store_fee_usd",
-    ])
+    # Web-only product: PayPal web checkout is the only revenue channel, so
+    # the export carries no app-store revenue or store-fee columns.
+    writer.writerow(["day", "web_paypal_gross_usd"])
     for row in rows:
-        total = (
-            row.revenue_web_usd_minor
-            + row.revenue_app_store_usd_minor
-            + row.revenue_google_play_usd_minor
-        )
-        fee = (
-            row.estimated_store_fee_app_store_usd_minor
-            + row.estimated_store_fee_google_play_usd_minor
-        )
         writer.writerow([
             row.day.isoformat(),
             f"{row.revenue_web_usd_minor / 100:.2f}",
-            f"{row.revenue_app_store_usd_minor / 100:.2f}",
-            f"{row.revenue_google_play_usd_minor / 100:.2f}",
-            f"{total / 100:.2f}",
-            f"{row.estimated_store_fee_app_store_usd_minor / 100:.2f}",
-            f"{row.estimated_store_fee_google_play_usd_minor / 100:.2f}",
-            f"{fee / 100:.2f}",
         ])
     await _audit_d9_report_export(
         session=session,

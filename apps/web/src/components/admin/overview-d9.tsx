@@ -86,20 +86,14 @@ function OverviewBody() {
   }
 
   const latest = data?.latest;
-  const gross =
-    (latest?.revenue_web_usd_minor ?? 0) +
-    (latest?.revenue_app_store_usd_minor ?? 0) +
-    (latest?.revenue_google_play_usd_minor ?? 0);
+  // Web-only product: PayPal web checkout is the only revenue channel shown.
+  const gross = latest?.revenue_web_usd_minor ?? 0;
   const accountTotal = (latest?.free_users ?? 0) + (latest?.pro_users ?? 0);
   const freePercent =
     latest && accountTotal > 0 ? Math.round((latest.free_users / accountTotal) * 100) : 0;
   const proPercent =
     latest && accountTotal > 0 ? Math.round((latest.pro_users / accountTotal) * 100) : 0;
-  const monthGross = data
-    ? data.month_revenue_web_usd_minor +
-      data.month_revenue_app_store_usd_minor +
-      data.month_revenue_google_play_usd_minor
-    : 0;
+  const monthGross = data ? data.month_revenue_web_usd_minor : 0;
   const capacity =
     latest && latest.recording_capacity_limit
       ? latest.recording_running / latest.recording_capacity_limit
@@ -170,7 +164,7 @@ function OverviewBody() {
           }
         />
         <AdminMetricCard label="Free → Pro (7d)" value={latest?.free_to_pro_weekly ?? "—"} />
-        <AdminMetricCard label="Gross revenue" value={latest ? usd(gross) : "—"} />
+        <AdminMetricCard label="Web revenue (PayPal)" value={latest ? usd(gross) : "—"} />
         <AdminMetricCard
           label="Running / waiting"
           value={latest ? `${latest.recording_running} / ${latest.recording_waiting}` : "—"}
@@ -201,50 +195,19 @@ function OverviewBody() {
 
       <section className="mt-6 rounded-lg border bg-background">
         <div className="border-b p-5">
-          <h2 className="font-medium">Revenue by channel</h2>
+          <h2 className="font-medium">Revenue</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gross USD before fees. Store fees are estimated at 30% and shown separately.
+            Web (PayPal) gross USD before PayPal fees.
           </p>
         </div>
-        <div className="grid gap-3 p-5 md:grid-cols-4">
-          <AdminMetricCard label="Web" value={latest ? usd(latest.revenue_web_usd_minor) : "—"} />
+        <div className="grid gap-3 p-5 md:grid-cols-2">
           <AdminMetricCard
-            label="App Store"
-            value={latest ? usd(latest.revenue_app_store_usd_minor) : "—"}
+            label="Today · Web (PayPal)"
+            value={latest ? usd(latest.revenue_web_usd_minor) : "—"}
           />
           <AdminMetricCard
-            label="Google Play"
-            value={latest ? usd(latest.revenue_google_play_usd_minor) : "—"}
-          />
-          <AdminMetricCard
-            label="Estimated store fees today"
-            value={
-              latest
-                ? usd(
-                    latest.estimated_store_fee_app_store_usd_minor +
-                      latest.estimated_store_fee_google_play_usd_minor,
-                  )
-                : "—"
-            }
-          />
-        </div>
-        <div className="grid gap-3 border-t p-5 md:grid-cols-5">
-          <AdminMetricCard label="Month · Gross total" value={data ? usd(monthGross) : "—"} />
-          <AdminMetricCard
-            label="Month · Web"
-            value={data ? usd(data.month_revenue_web_usd_minor) : "—"}
-          />
-          <AdminMetricCard
-            label="Month · App Store"
-            value={data ? usd(data.month_revenue_app_store_usd_minor) : "—"}
-          />
-          <AdminMetricCard
-            label="Month · Google Play"
-            value={data ? usd(data.month_revenue_google_play_usd_minor) : "—"}
-          />
-          <AdminMetricCard
-            label="Month · Est. store fees"
-            value={data ? usd(data.month_estimated_store_fee_usd_minor) : "—"}
+            label="Month · Web (PayPal)"
+            value={data ? usd(monthGross) : "—"}
           />
         </div>
       </section>
@@ -282,7 +245,7 @@ function OverviewBody() {
               <th className="px-4 py-3">New users</th>
               <th className="px-4 py-3" title="Customer accounts only">DAU (customers)</th>
               <th className="px-4 py-3">Pro</th>
-              <th className="px-4 py-3">Gross revenue</th>
+              <th className="px-4 py-3">Web revenue (PayPal)</th>
             </tr>
           </thead>
           <tbody>
@@ -293,11 +256,7 @@ function OverviewBody() {
                 <td className="px-4 py-3">{row.active_users_daily}</td>
                 <td className="px-4 py-3">{row.pro_users}</td>
                 <td className="px-4 py-3">
-                  {usd(
-                    row.revenue_web_usd_minor +
-                      row.revenue_app_store_usd_minor +
-                      row.revenue_google_play_usd_minor,
-                  )}
+                  {usd(row.revenue_web_usd_minor)}
                 </td>
               </tr>
             ))}

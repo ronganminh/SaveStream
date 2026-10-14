@@ -70,6 +70,31 @@ class SocialIdentity(Base):
     )
 
 
+class LegalConsent(Base):
+    """Evidence that a user accepted the Terms and Privacy Policy (18+).
+
+    One row per acceptance; the versions are the legal documents' revision
+    dates at the time, so a later revision can be re-accepted as a new row.
+    """
+
+    __tablename__ = "legal_consents"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    privacy_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    age_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    method: Mapped[str] = mapped_column(String(32), nullable=False)
+    ip_address: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    accepted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class PasswordCredential(Base):
     __tablename__ = "password_credentials"
 
