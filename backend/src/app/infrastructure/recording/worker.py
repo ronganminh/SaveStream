@@ -129,6 +129,9 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
 
             latest_bytes = 0
             started_monotonic = time.monotonic()
+            # Set once the capture ends; afterwards the heartbeat only keeps the
+            # lease alive and no longer grows duration_seconds.
+            capture_done = False
 
             def on_engine_event(event: EngineEvent) -> None:
                 nonlocal latest_bytes
@@ -143,173 +146,183 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                     return False
 
             async def heartbeat_loop() -> None:
-                while True:
-                    await asyncio.sleep(settings.recording_heartbeat_seconds)
-                    current = await session.get(Recording, recording_id)
-                    if current is not None:
-                        await session.refresh(current)
-                    if current is None or current.worker_lease_id != lease_id:
-                        stop_event.set()
-                        return
-                    if current.status == RecordingStatus.STOP_REQUESTED.value:
-                        stop_event.set()
-                    elapsed = int(time.monotonic() - started_monotonic)
-                    await store.heartbeat(
-                        recording_id,
-                        lease_id,
-                        bytes_recorded=latest_bytes,
-                        duration_seconds=max(elapsed, 0),
-                        event_type="recording.progress",
-                    )
+                # Own session: the job keeps using `session` for status changes
+                # while this loop runs. The heartbeat must also cover
+                # processing, checksum and upload, which take minutes for a
+                # long livestream; otherwise recover_stale re-enqueues the job,
+                # a second attempt finds the creator offline and marks a
+                # complete recording as failed (BUG-3, QA 2026-10-14).
+                async with database.session() as heartbeat_session:
+                    heartbeat_store = RecordingStateStore(heartbeat_session, settings)
+                    while True:
+                        await asyncio.sleep(settings.recording_heartbeat_seconds)
+                        current = await heartbeat_session.get(Recording, recording_id)
+                        if current is not None:
+                            await heartbeat_session.refresh(current)
+                        if current is None or current.worker_lease_id != lease_id:
+                            stop_event.set()
+                            return
+                        if current.status == RecordingStatus.STOP_REQUESTED.value:
+                            stop_event.set()
+                        if capture_done:
+                            await heartbeat_store.heartbeat(recording_id, lease_id)
+                            continue
+                        elapsed = int(time.monotonic() - started_monotonic)
+                        await heartbeat_store.heartbeat(
+                            recording_id,
+                            lease_id,
+                            bytes_recorded=latest_bytes,
+                            duration_seconds=max(elapsed, 0),
+                            event_type="recording.progress",
+                        )
 
             heartbeat_task = asyncio.create_task(heartbeat_loop())
-            engine = RecordingEngine(
-                runtime.gateway,
-                AtomicFFmpegMediaProcessor(),
-            )
             try:
-                result = await asyncio.to_thread(
-                    engine.record,
-                    RecordingRequest(
-                        username=resolved.username,
-                        room_id=resolved.room_id,
-                        output_dir=temp_dir,
-                        duration_seconds=recording.max_duration_seconds,
-                    ),
-                    should_stop=should_stop,
-                    on_event=on_engine_event,
+                engine = RecordingEngine(
+                    runtime.gateway,
+                    AtomicFFmpegMediaProcessor(),
                 )
-            except Exception as exc:
+                try:
+                    result = await asyncio.to_thread(
+                        engine.record,
+                        RecordingRequest(
+                            username=resolved.username,
+                            room_id=resolved.room_id,
+                            output_dir=temp_dir,
+                            duration_seconds=recording.max_duration_seconds,
+                        ),
+                        should_stop=should_stop,
+                        on_event=on_engine_event,
+                    )
+                except Exception as exc:
+                    await store.fail(
+                        recording,
+                        code="STREAM_UNAVAILABLE",
+                        message=str(exc) or "Recording failed",
+                        retryable=True,
+                    )
+                    return
+                capture_done = True
+
+                # The stop endpoint updates this row in a different session while
+                # the recorder is blocked in the capture thread.  Refresh before
+                # deciding the terminal transition; otherwise this session can
+                # still hold `recording` and incorrectly attempt
+                # `recording -> stopped`, rolling back the uploaded artifact.
+                await session.refresh(recording)
+                recording.bytes_recorded = result.bytes_recorded
+                recording.duration_seconds = max(
+                    recording.duration_seconds,
+                    int(time.monotonic() - started_monotonic),
+                )
+                if result.discarded or result.artifact_path is None:
+                    await store.fail(
+                        recording,
+                        code="STREAM_UNAVAILABLE",
+                        message=result.error or "Recording produced no valid media",
+                        retryable=True,
+                    )
+                    return
+
+                stopped_by_request = (
+                    result.stop_reason is StopReason.USER_REQUESTED
+                    or recording.status == RecordingStatus.STOP_REQUESTED.value
+                )
+                if stopped_by_request:
+                    if _ensure_stop_requested_transition(recording):
+                        await append_event(
+                            session,
+                            recording,
+                            "recording.stop_requested",
+                        )
+                else:
+                    await store.set_status(
+                        recording,
+                        RecordingStatus.PROCESSING,
+                        "recording.processing",
+                    )
+                    await store.set_status(
+                        recording,
+                        RecordingStatus.UPLOADING,
+                        "recording.uploading",
+                    )
+
+                artifact_id = uuid.uuid4()
+                storage_key = f"users/{recording.user_id}/recordings/{recording.id}/{artifact_id}.mp4"
+                checksum = await asyncio.to_thread(_checksum, result.artifact_path)
+                size_bytes = result.artifact_path.stat().st_size
+                try:
+                    await asyncio.to_thread(
+                        storage.upload_file,
+                        result.artifact_path,
+                        storage_key,
+                        content_type="video/mp4",
+                    )
+                except Exception as exc:
+                    await store.fail(
+                        recording,
+                        code="SERVICE_UNAVAILABLE",
+                        message=f"Artifact upload failed: {exc}",
+                        retryable=True,
+                    )
+                    return
+
+                session.add(
+                    RecordingArtifact(
+                        id=artifact_id,
+                        recording_id=recording.id,
+                        kind="video",
+                        container="mp4",
+                        storage_key=storage_key,
+                        size_bytes=size_bytes,
+                        checksum_sha256=checksum,
+                    )
+                )
+                credit_service = CreditService(session)
+                actual_cost = await credit_service.settle_recording(
+                    recording_id=recording.id,
+                    duration_seconds=recording.duration_seconds,
+                    bytes_recorded=recording.bytes_recorded,
+                )
+                if actual_cost > 0:
+                    balance = await credit_service.balance(recording.user_id)
+                    if balance.posted == 0:
+                        await ensure_cloud_minutes_exhausted_notification(
+                            session,
+                            user_id=recording.user_id,
+                            recording_id=recording.id,
+                        )
+                target = RecordingStatus.STOPPED if stopped_by_request else RecordingStatus.COMPLETED
+                recording.status = transition(
+                    RecordingStatus(recording.status),
+                    target,
+                ).value
+                recording.actual_cost = actual_cost
+                recording.ended_at = utcnow()
+                recording.active_dedupe_key = None
+                recording.worker_lease_id = None
+                recording.heartbeat_at = utcnow()
+                await append_event(
+                    session,
+                    recording,
+                    "recording.stopped" if target is RecordingStatus.STOPPED else "recording.completed",
+                )
+                await session.commit()
+                from app.application.recordings.cloud_slots import CloudSlotQueueService
+
+                await CloudSlotQueueService(
+                    session,
+                    settings,
+                ).wake_next(recording.user_id)
+                result.artifact_path.unlink(missing_ok=True)
+                result.source_path.unlink(missing_ok=True)
+                try:
+                    sync_redis.delete(f"{_CANCEL_PREFIX}{recording_id}")
+                except Exception:
+                    pass
+            finally:
                 heartbeat_task.cancel()
                 await asyncio.gather(heartbeat_task, return_exceptions=True)
-                await store.fail(
-                    recording,
-                    code="STREAM_UNAVAILABLE",
-                    message=str(exc) or "Recording failed",
-                    retryable=True,
-                )
-                return
-            finally:
-                if not heartbeat_task.done():
-                    heartbeat_task.cancel()
-                    await asyncio.gather(heartbeat_task, return_exceptions=True)
-
-            # The stop endpoint updates this row in a different session while
-            # the recorder is blocked in the capture thread.  Refresh before
-            # deciding the terminal transition; otherwise this session can
-            # still hold `recording` and incorrectly attempt
-            # `recording -> stopped`, rolling back the uploaded artifact.
-            await session.refresh(recording)
-            recording.bytes_recorded = result.bytes_recorded
-            recording.duration_seconds = max(
-                recording.duration_seconds,
-                int(time.monotonic() - started_monotonic),
-            )
-            if result.discarded or result.artifact_path is None:
-                await store.fail(
-                    recording,
-                    code="STREAM_UNAVAILABLE",
-                    message=result.error or "Recording produced no valid media",
-                    retryable=True,
-                )
-                return
-
-            stopped_by_request = (
-                result.stop_reason is StopReason.USER_REQUESTED
-                or recording.status == RecordingStatus.STOP_REQUESTED.value
-            )
-            if stopped_by_request:
-                if _ensure_stop_requested_transition(recording):
-                    await append_event(
-                        session,
-                        recording,
-                        "recording.stop_requested",
-                    )
-            else:
-                await store.set_status(
-                    recording,
-                    RecordingStatus.PROCESSING,
-                    "recording.processing",
-                )
-                await store.set_status(
-                    recording,
-                    RecordingStatus.UPLOADING,
-                    "recording.uploading",
-                )
-
-            artifact_id = uuid.uuid4()
-            storage_key = f"users/{recording.user_id}/recordings/{recording.id}/{artifact_id}.mp4"
-            checksum = await asyncio.to_thread(_checksum, result.artifact_path)
-            size_bytes = result.artifact_path.stat().st_size
-            try:
-                await asyncio.to_thread(
-                    storage.upload_file,
-                    result.artifact_path,
-                    storage_key,
-                    content_type="video/mp4",
-                )
-            except Exception as exc:
-                await store.fail(
-                    recording,
-                    code="SERVICE_UNAVAILABLE",
-                    message=f"Artifact upload failed: {exc}",
-                    retryable=True,
-                )
-                return
-
-            session.add(
-                RecordingArtifact(
-                    id=artifact_id,
-                    recording_id=recording.id,
-                    kind="video",
-                    container="mp4",
-                    storage_key=storage_key,
-                    size_bytes=size_bytes,
-                    checksum_sha256=checksum,
-                )
-            )
-            credit_service = CreditService(session)
-            actual_cost = await credit_service.settle_recording(
-                recording_id=recording.id,
-                duration_seconds=recording.duration_seconds,
-                bytes_recorded=recording.bytes_recorded,
-            )
-            if actual_cost > 0:
-                balance = await credit_service.balance(recording.user_id)
-                if balance.posted == 0:
-                    await ensure_cloud_minutes_exhausted_notification(
-                        session,
-                        user_id=recording.user_id,
-                        recording_id=recording.id,
-                    )
-            target = RecordingStatus.STOPPED if stopped_by_request else RecordingStatus.COMPLETED
-            recording.status = transition(
-                RecordingStatus(recording.status),
-                target,
-            ).value
-            recording.actual_cost = actual_cost
-            recording.ended_at = utcnow()
-            recording.active_dedupe_key = None
-            recording.worker_lease_id = None
-            recording.heartbeat_at = utcnow()
-            await append_event(
-                session,
-                recording,
-                "recording.stopped" if target is RecordingStatus.STOPPED else "recording.completed",
-            )
-            await session.commit()
-            from app.application.recordings.cloud_slots import CloudSlotQueueService
-
-            await CloudSlotQueueService(
-                session,
-                settings,
-            ).wake_next(recording.user_id)
-            result.artifact_path.unlink(missing_ok=True)
-            result.source_path.unlink(missing_ok=True)
-            try:
-                sync_redis.delete(f"{_CANCEL_PREFIX}{recording_id}")
-            except Exception:
-                pass
     finally:
         sync_redis.close()
         await database.close()
