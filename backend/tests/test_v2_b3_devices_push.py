@@ -228,7 +228,7 @@ def test_v2_b3_creator_live_dedupe_and_switches(tmp_path) -> None:
             "/v1/watches",
             headers=_auth(token),
             json={
-                "source": {"type": "username", "value": "creator-live"},
+                "source": {"type": "username", "value": "creator_live"},
                 "auto_record": False,
                 "notify_on_live": True,
             },

@@ -177,3 +177,30 @@ def test_admin_manual_grant_resumes_credit_paused_watches(tmp_path) -> None:
             await database.close()
 
     asyncio.run(verify())
+
+
+def test_watch_sources_are_validated_like_the_web_form() -> None:
+    import pytest
+
+    from app.api.schemas.recordings import Source
+    from app.application.watches.service import validate_tiktok_source
+    from app.domain.common.errors import ApplicationError
+
+    assert validate_tiktok_source(Source(type="username", value="@P.C.Dat25")) == Source(
+        type="username", value="p.c.dat25"
+    )
+    assert validate_tiktok_source(
+        Source(type="url", value="https://www.tiktok.com/@v_nenee/live")
+    ) == Source(type="username", value="v_nenee")
+    assert validate_tiktok_source(Source(type="room_id", value="7123456789")).type == "room_id"
+
+    for bad in (
+        Source(type="username", value="reviewer.pro@savestream.online"),
+        Source(type="username", value="a"),
+        Source(type="username", value="has space"),
+        Source(type="url", value="reviewer.pro@savestream.online"),
+        Source(type="room_id", value="owner@savestream.online"),
+    ):
+        with pytest.raises(ApplicationError) as error:
+            validate_tiktok_source(bad)
+        assert error.value.code == "VALIDATION_ERROR"

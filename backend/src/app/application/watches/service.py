@@ -4,6 +4,7 @@ import base64
 import hashlib
 import json
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -45,6 +46,46 @@ def normalize_source(source: Source) -> str:
     if source.type == "username":
         value = value.lstrip("@").casefold()
     return value
+
+
+# Same rule as the web Add-channel form (apps/web/src/lib/tiktok-source.ts).
+TIKTOK_USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9._]{2,24}$")
+TIKTOK_PROFILE_URL_PATTERN = re.compile(
+    r"^(?:https?://)?(?:www\.)?tiktok\.com/@([A-Za-z0-9._]{2,24})(?:[/?#].*)?$",
+    re.IGNORECASE,
+)
+# Room ids and stream URLs come from clients/tools; only reject values that
+# can never be one (whitespace, email addresses).
+_SOURCE_TOKEN_PATTERN = re.compile(r"^[^\s@]+$")
+_STREAM_URL_PATTERN = re.compile(r"^https?://[^\s]+$", re.IGNORECASE)
+
+
+def validate_tiktok_source(source: Source) -> Source:
+    """Reject channel sources the web form would reject (emails, free text...).
+
+    Profile URLs are stored as the username so the same creator dedupes
+    whether it was added by handle or by link.
+    """
+    value = source.value.strip()
+    if source.type == "username":
+        username = value.lstrip("@")
+        if TIKTOK_USERNAME_PATTERN.match(username):
+            return Source(type="username", value=username.casefold())
+    elif source.type == "url":
+        match = TIKTOK_PROFILE_URL_PATTERN.match(value)
+        if match is not None:
+            return Source(type="username", value=match.group(1).casefold())
+        if _STREAM_URL_PATTERN.match(value):
+            return Source(type="url", value=value)
+    elif _SOURCE_TOKEN_PATTERN.match(value):
+        return Source(type="room_id", value=value)
+    raise ApplicationError(
+        "VALIDATION_ERROR",
+        "Enter a TikTok username (2-24 letters, numbers, periods or underscores) "
+        "or a tiktok.com/@username profile link",
+        status_code=400,
+        details={"field": "source.value"},
+    )
 
 
 def watch_dedupe_key(user_id: uuid.UUID, source: Source) -> str:
@@ -141,10 +182,7 @@ class WatchService:
         principal: AuthPrincipal,
         payload: CreateWatchRequest,
     ) -> Watch:
-        source = Source(
-            type=payload.source.type,
-            value=normalize_source(payload.source),
-        )
+        source = validate_tiktok_source(payload.source)
         await ensure_creator_not_blocked(
             self.session,
             source_type=source.type,
