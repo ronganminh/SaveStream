@@ -651,7 +651,7 @@ export function GlobalSearch() {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
+          className="min-w-0 flex-1 text-ellipsis bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
         />
         <kbd className="rounded-md border border-line-strong bg-surface px-1.5 py-0.5 font-mono text-[11px] font-semibold">
           {showPanel ? "Esc" : "⌘K"}
