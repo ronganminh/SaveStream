@@ -1115,10 +1115,20 @@ export type AdminCapacityHourly = {
   limit: number;
 };
 
+export type AdminStuckUpload = {
+  recording_id: string;
+  channel: string;
+  status: string;
+  since: string;
+  bytes_recorded: number;
+};
+
 export type AdminCapacity = {
   current_in_use: number;
   global_limit: number;
   hourly: AdminCapacityHourly[];
+  stuck_upload_after_seconds: number;
+  stuck_uploads: AdminStuckUpload[];
 };
 
 function adminRecordingQuery(filters: AdminRecordingFilters = {}) {

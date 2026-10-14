@@ -152,6 +152,15 @@ class AppSettings:
     recording_stale_after_seconds: int = 60
     recording_queue: str = "celery"
     recording_max_attempts: int = 3
+    # Whole-file upload attempts after a recording ends (each attempt also has
+    # the storage client's own per-request retries and socket timeouts).
+    recording_upload_attempts: int = 3
+    recording_upload_retry_seconds: int = 15
+    # A recording in processing/uploading longer than this is reported as stuck
+    # (admin Recordings page and the ops alert email).
+    recording_stuck_upload_seconds: int = 2_700
+    storage_connect_timeout_seconds: int = 15
+    storage_read_timeout_seconds: int = 120
     artifact_presign_seconds: int = 900
     sse_poll_seconds: float = 1.0
     idempotency_ttl_seconds: int = 86_400
@@ -628,6 +637,11 @@ class AppSettings:
             recording_stale_after_seconds=_int_env("RECORDING_STALE_AFTER_SECONDS", 60),
             recording_queue=_env("RECORDING_QUEUE", "celery").strip() or "celery",
             recording_max_attempts=_int_env("RECORDING_MAX_ATTEMPTS", 3),
+            recording_upload_attempts=max(1, _int_env("RECORDING_UPLOAD_ATTEMPTS", 3)),
+            recording_upload_retry_seconds=_int_env("RECORDING_UPLOAD_RETRY_SECONDS", 15),
+            recording_stuck_upload_seconds=_int_env("RECORDING_STUCK_UPLOAD_SECONDS", 2_700),
+            storage_connect_timeout_seconds=_int_env("STORAGE_CONNECT_TIMEOUT_SECONDS", 15),
+            storage_read_timeout_seconds=_int_env("STORAGE_READ_TIMEOUT_SECONDS", 120),
             artifact_presign_seconds=_int_env("ARTIFACT_PRESIGN_SECONDS", 900),
             sse_poll_seconds=_float_env("SSE_POLL_SECONDS", 1.0),
             idempotency_ttl_seconds=_int_env("IDEMPOTENCY_TTL_SECONDS", 86_400),

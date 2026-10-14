@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import io
+import os
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
+import certifi
+import urllib3
 from minio import Minio
 from minio.error import S3Error
+from urllib3.util import Retry, Timeout
 
 from app.settings import AppSettings
 
@@ -23,6 +27,22 @@ class MinioStorageClient:
             access_key=settings.minio_access_key,
             secret_key=settings.minio_secret_key,
             secure=secure,
+            # Same pool as Minio's default, with shorter socket timeouts (its
+            # default is 5 minutes) so a stalled upload fails and is retried.
+            http_client=urllib3.PoolManager(
+                timeout=Timeout(
+                    connect=settings.storage_connect_timeout_seconds,
+                    read=settings.storage_read_timeout_seconds,
+                ),
+                maxsize=10,
+                cert_reqs="CERT_REQUIRED",
+                ca_certs=os.environ.get("SSL_CERT_FILE") or certifi.where(),
+                retries=Retry(
+                    total=5,
+                    backoff_factor=0.2,
+                    status_forcelist=[500, 502, 503, 504],
+                ),
+            ),
         )
 
     def ensure_bucket(self) -> None:
