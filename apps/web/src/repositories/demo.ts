@@ -681,6 +681,12 @@ export const demoRepositories: SaveStreamRepositories = {
     },
   },
 
+  support: {
+    async createReport() {
+      return { report_id: "2208d0c4-0000-4000-8000-000000000000" };
+    },
+  },
+
   notifications: {
     async list() {
       return notificationState.map((item) => ({ ...item }));

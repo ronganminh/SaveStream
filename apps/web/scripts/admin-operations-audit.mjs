@@ -255,7 +255,7 @@ const auditPage = block(
   forbidIn("ProductionAdminErrorsPage", auditPage, text),
 );
 
-must("src/components/app-components.tsx", 'label: isDemoMode ? "Errors" : "Audit"');
+must("src/components/app-components.tsx", 'label: isDemoMode ? "Errors" : "Audit & error log"');
 
 const d0Backend = read("../../backend/src/app/api/routes/admin.py");
 [

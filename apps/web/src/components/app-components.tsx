@@ -47,6 +47,7 @@ import {
   X,
   Eye,
   EyeOff,
+  LogOut,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -127,35 +128,43 @@ import {
   useResumeChannelMutation,
   watchQuotaLimit,
 } from "@/hooks/use-channel-mutations";
-import {
-  displayNameFromTikTokUsername,
-  parseTikTokSource,
-} from "@/lib/tiktok-source";
+import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
 import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
 } from "@/hooks/use-recording-mutations";
 import { useRecordingDownload } from "@/hooks/use-recording-download";
+import {
+  GlobalBanners,
+  GlobalSearch,
+  HelpMenu,
+  useCreditSummary,
+} from "@/components/app/shell-extras";
 
 export { meta, publicMeta };
 const mainNav = [
   { to: "/overview", label: "Overview", icon: LayoutDashboard },
   { to: "/channels", label: "Channels", icon: Radio },
   { to: "/recordings", label: "Recordings", icon: FileVideo },
-  { to: "/usage", label: "Usage & Billing", icon: Gauge },
+  { to: "/usage", label: "Usage", icon: Gauge },
+  { to: "/billing", label: "Billing", icon: CreditCard },
+  { to: "/notifications", label: "Notifications", icon: Bell },
+  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/help", label: "Help", icon: CircleHelp },
 ] as const;
+const mobileNav = mainNav.slice(0, 3);
 const adminNav = [
-  { to: "/admin/overview", label: "Overview", icon: LayoutDashboard },
+  { to: "/admin/overview", label: "Admin overview", icon: LayoutDashboard },
   { to: "/admin/users", label: "Users", icon: Users },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/catalog", label: "Catalog", icon: Sparkles },
+  { to: "/admin/jobs", label: "Jobs & LIVE", icon: FileVideo },
+  { to: "/admin/safety", label: "Safety", icon: ShieldAlert },
+  { to: "/admin/reports", label: "Problem reports", icon: AlertTriangle },
   { to: "/admin/operations", label: "Operations", icon: HardDrive },
   { to: "/admin/system", label: "System", icon: Activity },
-  { to: "/admin/workers", label: "Workers", icon: MonitorCog },
-  { to: "/admin/jobs", label: "Recordings", icon: FileVideo },
-  { to: "/admin/safety", label: "Safety", icon: ShieldAlert },
-  { to: "/admin/reports", label: "App Reports", icon: AlertTriangle },
-  { to: "/admin/errors", label: isDemoMode ? "Errors" : "Audit", icon: AlertTriangle },
+  { to: "/admin/workers", label: "Workers & queues", icon: MonitorCog },
+  { to: "/admin/errors", label: isDemoMode ? "Errors" : "Audit & error log", icon: AlertTriangle },
 ] as const;
 
 function useShellAccount() {
@@ -170,18 +179,23 @@ function useShellAccount() {
   }
 
   const name = authUser.display_name?.trim() || authUser.email.split("@")[0] || authUser.email;
-  const initials = name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("") || authUser.email[0]?.toUpperCase() || "U";
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") ||
+    authUser.email[0]?.toUpperCase() ||
+    "U";
 
   return {
     name,
     email: authUser.email,
     initials,
-    subLabel: isAdminRole(authUser.role) ? `${authUser.role === "admin" ? "Owner" : authUser.role[0]!.toUpperCase() + authUser.role.slice(1)} admin` : "Account",
+    subLabel: isAdminRole(authUser.role)
+      ? `${authUser.role === "admin" ? "Owner" : authUser.role[0]!.toUpperCase() + authUser.role.slice(1)} admin`
+      : "Account",
   };
 }
 export function Logo({
@@ -261,7 +275,12 @@ export function CreatorAvatar({
   size?: "xs" | "sm" | "md" | "lg";
 }) {
   return (
-    <AvatarCircle src={channel.avatarUrl} initials={channel.initials} tone={channel.tone} size={size} />
+    <AvatarCircle
+      src={channel.avatarUrl}
+      initials={channel.initials}
+      tone={channel.tone}
+      size={size}
+    />
   );
 }
 export function RecordingCreatorAvatar({
@@ -435,8 +454,12 @@ export function PageHeader({
       <div className="flex items-start gap-3">
         {leading}
         <div>
-          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-.025em]">{t(title)}</h1>
-          {subtitle && <p className="mt-1 max-w-2xl text-[15px] text-muted-foreground">{t(subtitle)}</p>}
+          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-.025em]">
+            {t(title)}
+          </h1>
+          {subtitle && (
+            <p className="mt-1 max-w-2xl text-[15px] text-muted-foreground">{t(subtitle)}</p>
+          )}
         </div>
       </div>
       {action}
@@ -480,11 +503,53 @@ export function ThemeMenu({ full = false }: { full?: boolean }) {
     </DropdownMenu>
   );
 }
+function isNavActive(path: string, to: string) {
+  return path === to || path.startsWith(to + "/");
+}
+
+function SidebarCredits({ onNavigate }: { onNavigate: () => void }) {
+  const credits = useCreditSummary();
+  if (!credits.loaded) return null;
+  return (
+    <div className="flex flex-col gap-2.5 rounded-[14px] border bg-surface-2 p-4">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-muted-foreground">Credits</span>
+        <span className="font-mono text-sm font-semibold">{credits.label}</span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-surface-3"
+        role="meter"
+        aria-label="Credits left"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={credits.percent}
+      >
+        <span
+          className={cn(
+            "block h-full rounded-full",
+            credits.state === "out"
+              ? "bg-destructive"
+              : credits.state === "low"
+                ? "bg-warning"
+                : "bg-gradient-to-r from-primary to-accent",
+          )}
+          style={{ width: `${Math.max(credits.percent, credits.minutes > 0 ? 4 : 0)}%` }}
+        />
+      </div>
+      <Button asChild variant="outline" size="sm" className="w-full">
+        <Link to="/billing" onClick={onNavigate}>
+          Buy credits
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
 export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
   const { identity } = useAuth();
-  const account = useShellAccount();
+  const unread = useNotifications().filter((n) => !n.read).length;
   const canSeeAdmin = isAdminRole(identity.role);
   const visibleAdminNav = adminNav.filter((entry) => {
     if (entry.to === "/admin/overview") {
@@ -495,28 +560,31 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
     }
     return true;
   });
-  const item = (
-    it:
-      | (typeof mainNav)[number]
-      | (typeof adminNav)[number]
-      | { to: "/notifications" | "/settings" | "/help"; label: string; icon: ElementType },
-  ) => (
-    <Link
-      key={it.to}
-      to={it.to}
-      onClick={onClose}
-      className={cn(
-        "flex min-h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25",
-        (path === it.to ||
-          path.startsWith(it.to + "/") ||
-          (it.to === "/usage" && path.startsWith("/billing"))) &&
-          "bg-primary-subtle text-accent-ink hover:bg-primary-subtle hover:text-accent-ink",
-      )}
-    >
-      <it.icon className="size-5" />
-      <span>{it.to.startsWith("/admin/") ? it.label : t(it.label)}</span>
-    </Link>
-  );
+  const item = (it: (typeof mainNav)[number] | (typeof adminNav)[number]) => {
+    const active = isNavActive(path, it.to);
+    const badge = it.to === "/notifications" && unread > 0 ? unread : null;
+    return (
+      <Link
+        key={it.to}
+        to={it.to}
+        onClick={onClose}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex min-h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25",
+          active &&
+            "bg-primary-subtle text-accent-ink hover:bg-primary-subtle hover:text-accent-ink",
+        )}
+      >
+        <it.icon className="size-5" />
+        <span className="flex-1">{it.to.startsWith("/admin/") ? it.label : t(it.label)}</span>
+        {badge !== null && (
+          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 font-mono text-[11px] font-semibold text-primary-foreground">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        )}
+      </Link>
+    );
+  };
   return (
     <>
       <button
@@ -529,9 +597,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
         )}
       />
       <aside
-        aria-label={t("Main navigation")}
+        aria-label={t("App navigation")}
         className={cn(
-          "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-64 flex-col border-r bg-surface transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-[252px] flex-col border-r bg-surface transition-transform lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -547,18 +615,10 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <X />
           </Button>
         </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3.5 py-3">
+        <nav aria-label={t("Workspace")} className="flex-1 overflow-y-auto px-3.5 py-2">
           <div className="space-y-0.5">{mainNav.map(item)}</div>
-          <div className="space-y-0.5">
-            <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground">
-              {t("Workspace")}
-            </p>
-            {item({ to: "/notifications", label: "Notifications", icon: Bell })}
-            {item({ to: "/settings", label: "Settings", icon: Settings })}
-            {item({ to: "/help", label: "Help", icon: CircleHelp })}
-          </div>
           {canSeeAdmin && (
-            <div className="border-t pt-5">
+            <div className="mt-5 space-y-0.5 border-t pt-4">
               <p className="mb-1.5 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground">
                 <ShieldCheck className="size-3.5" />
                 Admin
@@ -567,49 +627,29 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             </div>
           )}
         </nav>
-        <div className="border-t p-3">
-          <div className="mb-2 grid grid-cols-2 gap-1 lg:hidden">
+        <div className="space-y-2 p-3.5 pt-4">
+          <div className="grid grid-cols-2 gap-1 lg:hidden">
             <ThemeMenu full />
           </div>
-          <Link
-            to="/settings/account"
-            onClick={onClose}
-            className="flex items-center gap-3 rounded-[12px] p-2 hover:bg-surface-2"
-          >
-            <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-avatar-one to-avatar-one-end text-[13px] font-extrabold text-avatar-foreground">
-              {account.initials}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{account.name}</p>
-              <p className="text-xs text-muted-foreground">{account.subLabel}</p>
-            </div>
-            <ChevronRight className="size-4 text-muted-foreground" />
-          </Link>
+          <SidebarCredits onNavigate={onClose} />
         </div>
       </aside>
     </>
   );
 }
+
 export function AppTopbar({ onMenu }: { onMenu: () => void }) {
   const [cmd, setCmd] = useState(false);
   const navigate = useNavigate();
+  const path = useRouterState({ select: (s) => s.location.pathname });
   const { t } = usePreferences();
   const { signOut } = useAuth();
   const account = useShellAccount();
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setCmd((o) => !o);
-      }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
-  }, []);
+  const credits = useCreditSummary();
   const list = useNotifications();
   const unread = list.filter((n) => !n.read).length;
   return (
-    <div className="sticky top-0 z-[var(--z-sticky)] flex h-[68px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:px-4 lg:px-7">
+    <div className="sticky top-0 z-[var(--z-sticky)] flex h-[68px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:gap-3 sm:px-4 lg:px-8">
       <Button
         variant="ghost"
         size="icon"
@@ -619,18 +659,14 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
       >
         <Menu />
       </Button>
-      <button
-        type="button"
-        onClick={() => setCmd(true)}
-        className="relative hidden h-[42px] max-w-[420px] flex-1 items-center rounded-[12px] border bg-surface-2 pl-10 pr-14 text-left text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25 md:flex"
-      >
-        <Search className="absolute left-3 top-[13px] size-4" />
-        {t("Search channels or recordings")}
-        <kbd className="absolute right-2.5 top-2.5 rounded-md border border-line-strong bg-surface px-1.5 py-0.5 font-mono text-[11px] font-semibold">
-          ⌘ K
-        </kbd>
-      </button>
-      <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
+      <GlobalSearch />
+      {path.startsWith("/admin") && (
+        <span className="hidden h-[26px] items-center gap-1.5 rounded-full bg-primary-subtle px-2.5 text-xs font-bold text-accent-ink sm:inline-flex">
+          <ShieldCheck className="size-3" />
+          Admin mode
+        </span>
+      )}
+      <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
         {isDemoMode && (
           <span
             className="mr-0.5 inline-flex shrink-0 items-center rounded-md border border-warning/30 bg-warning-subtle px-1.5 py-1 text-[10px] font-semibold text-warning-foreground sm:px-2"
@@ -649,13 +685,34 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
         >
           <Search />
         </Button>
+        {credits.loaded && (
+          <Link
+            to="/billing"
+            aria-label={`${credits.label} of credits left`}
+            className="hidden h-10 items-center gap-2 rounded-[10px] border px-3 text-sm font-semibold hover:bg-surface-2 xl:inline-flex"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-2 rounded-full",
+                credits.state === "out"
+                  ? "bg-destructive"
+                  : credits.state === "low"
+                    ? "bg-warning"
+                    : "bg-success",
+              )}
+            />
+            <span className="font-mono">{credits.label}</span>
+            <span className="font-medium text-muted-foreground">left</span>
+          </Link>
+        )}
         <Button asChild size="sm" className="h-9 shrink-0 px-2 sm:px-3">
           <Link to="/billing" aria-label={t("Buy credits")}>
-            <CreditCard />
+            <Plus />
             <span className="hidden sm:inline">{t("Buy credits")}</span>
           </Link>
         </Button>
-        <ThemeMenu />
+        <HelpMenu />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -666,22 +723,18 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             >
               <Bell />
               {unread > 0 && (
-                <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-destructive px-1 font-mono text-[9px] font-semibold text-destructive-foreground">
-                  {unread}
-                </span>
+                <span className="absolute right-2 top-2 size-2 rounded-full bg-destructive ring-2 ring-surface" />
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[min(360px,calc(100vw-2rem))] p-0">
             <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <p className="font-medium">{t("Notifications")}</p>
-              </div>
+              <p className="font-semibold">{t("Notifications")}</p>
               <button
                 type="button"
                 disabled={!unread}
                 onClick={() => void notificationStore.markAllRead()}
-                className="text-xs font-medium text-primary disabled:text-muted-foreground"
+                className="text-xs font-semibold text-accent-ink disabled:text-muted-foreground"
               >
                 {t("Mark all read")}
               </button>
@@ -699,7 +752,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             )}
             <Link
               to="/notifications"
-              className="block border-t p-3 text-center text-xs font-medium text-primary"
+              className="block border-t p-3 text-center text-xs font-semibold text-accent-ink"
             >
               {t("View all notifications")}
             </Link>
@@ -707,16 +760,20 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
         </DropdownMenu>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="ml-0.5 h-9 px-1.5 sm:ml-1 sm:px-2"
-              aria-label={t("Account menu")}
+            <button
+              type="button"
+              className="flex items-center gap-2.5 rounded-[12px] p-1 text-left hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25"
+              aria-label={`${t("Account menu")}: ${account.name}`}
             >
-              <span className="grid size-7 place-items-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+              <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-avatar-one to-avatar-one-end text-[13px] font-extrabold text-avatar-foreground">
                 {account.initials}
               </span>
-              <ChevronDown className="hidden size-3 sm:block" />
-            </Button>
+              <span className="hidden flex-col leading-tight lg:flex">
+                <b className="max-w-[140px] truncate text-sm">{account.name}</b>
+                <span className="text-xs text-muted-foreground">{account.subLabel}</span>
+              </span>
+              <ChevronDown className="hidden size-4 text-muted-foreground lg:block" />
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel className="font-normal">
@@ -726,16 +783,19 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => navigate({ to: "/settings/account" })}>
               <UserRound />
-              {t("Account")}
+              {t("Account settings")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate({ to: "/billing" })}>
               <CreditCard />
               {t("Billing")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate({ to: "/notifications" })}>
-              <Bell />
-              {t("Notifications")}
+            <DropdownMenuItem onSelect={() => navigate({ to: "/usage" })}>
+              <Gauge />
+              {t("Usage")}
             </DropdownMenuItem>
+            <div className="hidden px-1 py-1 lg:block">
+              <ThemeMenu full />
+            </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={(event) => {
@@ -743,6 +803,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
                 void signOut().finally(() => navigate({ to: "/sign-in" }));
               }}
             >
+              <LogOut />
               {t("Sign out")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -761,10 +822,14 @@ export function AppShell({ children }: { children: ReactNode }) {
     return (
       <div className="grid min-h-screen place-items-center bg-background px-4">
         <div className="max-w-lg rounded-xl border bg-surface p-8 text-center shadow-dashboard">
-          <div className="mx-auto w-fit"><Logo /></div>
+          <div className="mx-auto w-fit">
+            <Logo />
+          </div>
           <h1 className="mt-6 text-2xl font-semibold">{t("Backend not connected")}</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            {t("This screen is unavailable in production until authentication and API services are connected.")}
+            {t(
+              "This screen is unavailable in production until authentication and API services are connected.",
+            )}
           </p>
           <Button asChild className="mt-6">
             <Link to="/sign-in">{t("Back to sign in")}</Link>
@@ -778,14 +843,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <AppSidebar open={open} onClose={() => setOpen(false)} />
-        <div className="lg:pl-64">
+        <div className="lg:pl-[252px]">
           <AppTopbar onMenu={() => setOpen(true)} />
-          <main className="mx-auto min-w-0 max-w-[1440px] overflow-x-clip p-4 pb-24 sm:p-6 lg:p-8">{children}</main>
+          <GlobalBanners />
+          <main className="mx-auto min-w-0 max-w-[1440px] overflow-x-clip p-4 pb-24 sm:p-6 lg:p-8">
+            {children}
+          </main>
           <nav
             aria-label={t("Primary")}
             className="fixed inset-x-0 bottom-0 z-[var(--z-sticky)] grid grid-cols-3 border-t bg-background px-1 pt-1 pb-[max(.25rem,env(safe-area-inset-bottom))] lg:hidden"
           >
-            {mainNav.slice(0, 3).map((i) => (
+            {mobileNav.map((i) => (
               <Link
                 key={i.to}
                 to={i.to}
@@ -1641,7 +1709,10 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
               <Button variant="outline" onClick={() => setOpen(false)}>
                 {t("Cancel")}
               </Button>
-              <Button onClick={() => void submit()} disabled={state !== "found" || phase === "submitting"}>
+              <Button
+                onClick={() => void submit()}
+                disabled={state !== "found" || phase === "submitting"}
+              >
                 {phase === "submitting" ? (
                   <>
                     <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -1682,8 +1753,9 @@ export function UpgradeDialog({
           <DialogTitle>{t("Not enough download quota")}</DialogTitle>
           <DialogDescription>
             {t("This demo file is larger than the remaining monthly download quota.")}{" "}
-            <span className="font-mono">{fileSize}</span> / <span className="font-mono">{remaining}</span>.
-            {" "}{t("Quota resets on")} {formatDate(usage.resetsOn, language)}.
+            <span className="font-mono">{fileSize}</span> /{" "}
+            <span className="font-mono">{remaining}</span>. {t("Quota resets on")}{" "}
+            {formatDate(usage.resetsOn, language)}.
           </DialogDescription>
         </DialogHeader>
         <div className="rounded-md border bg-surface-subtle p-3">
@@ -1995,8 +2067,7 @@ export function useChannelControls(channel: ChannelModel) {
   const [demoOn, setDemoOn] = useState(channel.monitoring && channel.status !== "Paused");
   const [demoRemoved, setDemoRemoved] = useState(false);
   const on = isDemoMode ? demoOn : channel.backendStatus === "active";
-  const pending =
-    pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+  const pending = pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
 
   const resume = async () => {
     try {
@@ -2188,7 +2259,10 @@ export function StateBanner({
   return (
     <div
       role={tone === "error" || tone === "warning" ? "alert" : "status"}
-      className={cn("flex flex-col gap-3.5 rounded-[14px] border px-[18px] py-3.5 sm:flex-row sm:items-start", styles)}
+      className={cn(
+        "flex flex-col gap-3.5 rounded-[14px] border px-[18px] py-3.5 sm:flex-row sm:items-start",
+        styles,
+      )}
     >
       <I className="size-4 shrink-0 sm:mt-0.5" />
       <div className="flex-1">
