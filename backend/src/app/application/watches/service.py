@@ -378,7 +378,7 @@ class WatchService:
         await self.session.refresh(watch)
         return watch
 
-    async def delete(self, principal: AuthPrincipal, watch_id: str) -> None:
+    async def delete(self, principal: AuthPrincipal, watch_id: str) -> Watch:
         watch = await self.get(principal, watch_id)
         watch.deleted_at = utcnow()
         watch.status = WatchStatus.DISABLED.value
@@ -387,6 +387,7 @@ class WatchService:
         watch.scheduler_lease_id = None
         watch.scheduler_lease_expires_at = None
         await self.session.commit()
+        return watch
 
     async def resume(self, principal: AuthPrincipal, watch_id: str) -> Watch:
         watch = await self.get(principal, watch_id)

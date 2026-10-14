@@ -5,7 +5,8 @@ import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import type { RecordingResponse } from "@/api/types";
-import { AppShell, PageHeader } from "@/components/app-components";
+import { AppShell, AvatarCircle, PageHeader } from "@/components/app-components";
+import { initials } from "@/repositories/mappers/channel";
 import { AdminDataTable, AdminMetricCard } from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
@@ -390,8 +391,17 @@ export function AdminRecordingOperationsPage() {
               {recordings.map((recording) => (
                 <tr key={recording.id} className="border-b last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{channelLabel(recording)}</p>
-                    <p className="text-xs text-muted-foreground">{recording.id}</p>
+                    <div className="flex items-center gap-3">
+                      <AvatarCircle
+                        src={recording.creator?.avatar_url}
+                        initials={initials(channelLabel(recording).replace(/^@/, ""))}
+                        size="sm"
+                      />
+                      <div className="min-w-0">
+                        <p className="font-medium">{channelLabel(recording)}</p>
+                        <p className="text-xs text-muted-foreground">{recording.id}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3">{recording.status}</td>
                   <td className="max-w-xs px-4 py-3 text-xs">

@@ -11,6 +11,11 @@ from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 
 
+def creator_avatar_url(watch: Watch) -> str | None:
+    """Stable cached copy when available, else the raw (expiring) TikTok URL."""
+    return watch.creator_avatar_cached_url or watch.creator_avatar_url
+
+
 def active_recording_for(
     watch: Watch,
     recordings: list[Recording],
@@ -42,7 +47,7 @@ def watch_response(
         creator = Creator(
             username=watch.resolved_username,
             display_name=watch.creator_display_name or watch.resolved_username,
-            avatar_url=watch.creator_avatar_url,
+            avatar_url=creator_avatar_url(watch),
         )
     if not watch.auto_record:
         auto_record_state: AutoRecordStateValue = "off"

@@ -4,6 +4,7 @@ import type {
   WatchResponse,
 } from "@/api/types";
 import type { RecordingModel, RecordingStatus } from "@/repositories/contracts";
+import { initials, toneFor } from "@/repositories/mappers/channel";
 
 const KB = 1024;
 const MB = 1024 ** 2;
@@ -130,6 +131,13 @@ export function mapRecordingToModel(
     ...expiry(recording.expires_at),
     status: uiStatus(recording.status),
     color: colorFor(recording.id),
+    avatarUrl: recording.creator?.avatar_url ?? matchedWatch?.creator?.avatar_url ?? null,
+    initials: initials(
+      matchedWatch?.creator?.display_name ||
+        recording.creator?.display_name ||
+        displayHandle.replace(/^@/, ""),
+    ),
+    tone: toneFor(matchedWatch?.id ?? recording.id),
     ...(recording.error ? { error: recording.error.message } : {}),
     ...(recording.error && recording.duration_seconds > 0
       ? { partialDuration: formatDuration(recording.duration_seconds) }

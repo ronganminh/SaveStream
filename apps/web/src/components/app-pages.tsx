@@ -102,6 +102,7 @@ import {
   ConfirmDeleteDialog,
   ConfirmDialog,
   CreatorAvatar,
+  RecordingCreatorAvatar,
   EmptyState,
   ErrorState,
   FilterBar,
@@ -1689,6 +1690,7 @@ function ProductionOverviewPage() {
                   className="flex items-center gap-3 p-3"
                 >
                   <div className={cn("aspect-video w-20 rounded", recording.color)} />
+                  <RecordingCreatorAvatar recording={recording} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{recording.handle}</p>
                     <p className="text-xs text-muted-foreground">
@@ -1789,6 +1791,7 @@ function DemoOverviewPage() {
                 className="flex items-center gap-3 p-3"
               >
                 <div className={cn("aspect-video w-20 rounded", r.color)} />
+                <RecordingCreatorAvatar recording={r} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{r.handle}</p>
                   <p className="text-xs text-muted-foreground">
@@ -2493,6 +2496,7 @@ export function RecordingDetailPage({
         />
       )}
       <PageHeader
+        leading={<RecordingCreatorAvatar recording={rec} size="md" />}
         title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
         subtitle={`TikTok · ${state === "active" ? "Started" : rec.date} at ${rec.time}`}
         action={actions}

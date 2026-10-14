@@ -73,6 +73,7 @@ function demoChannel(channel: (typeof channels)[number]): ChannelModel {
   const watch = demoWatchFromChannel(channel);
   return {
     ...channel,
+    avatarUrl: watch.creator?.avatar_url ?? null,
     backendStatus: watch.status,
     liveStatus: watch.live_status,
     source: watch.source,
@@ -99,7 +100,7 @@ function demoRecordingFromFixture(item: (typeof recordings)[number]): RecordingR
       platform: "tiktok",
       username,
       display_name: channel?.name ?? username,
-      avatar_url: null,
+      avatar_url: channel ? (demoWatchFromChannel(channel).creator?.avatar_url ?? null) : null,
     },
     status,
     started_at: new Date(`${item.date} ${item.time}`).toISOString(),
@@ -124,8 +125,11 @@ function demoRecordingFromFixture(item: (typeof recordings)[number]): RecordingR
 
 function demoRecording(item: (typeof recordings)[number]): RecordingModel {
   const raw = demoRecordingFromFixture(item);
+  const channel = channels.find((candidate) => candidate.id === item.channelId);
   return {
     ...item,
+    avatarUrl: raw.creator?.avatar_url ?? null,
+    ...(channel ? { initials: channel.initials, tone: channel.tone } : {}),
     backendStatus: raw.status,
     source: raw.source,
     actions: raw.actions,

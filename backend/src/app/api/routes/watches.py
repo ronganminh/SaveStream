@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.api.dependencies import get_watch_service, require_scopes
 from app.api.schemas.recordings import Pagination
@@ -11,6 +11,7 @@ from app.api.schemas.watches import (
     WatchResponse,
 )
 from app.api.serializers.watches import active_recording_for, watch_response
+from app.application.creators.avatar_cache import remove_avatar_copy
 from app.application.watches.service import WatchService
 from app.domain.identity.types import AuthPrincipal
 
@@ -144,10 +145,15 @@ async def update_watch(
 )
 async def delete_watch(
     watch_id: str,
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> None:
-    await service.delete(principal, watch_id)
+    watch = await service.delete(principal, watch_id)
+    # Drop the channel's avatar copy now; the periodic avatar task retries
+    # if storage is unavailable (and covers other deletion paths).
+    if await remove_avatar_copy(request.app.state.minio, watch):
+        await service.session.commit()
 
 
 @router.post(

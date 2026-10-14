@@ -39,6 +39,10 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.watch.scheduler_tick",
                 "schedule": float(cfg.watch_scheduler_tick_seconds),
             },
+            "creator-avatar-refresh": {
+                "task": "savestream.creators.avatar_refresh",
+                "schedule": 600.0,
+            },
             "credit-reconciliation": {
                 "task": "savestream.credits.reconcile",
                 "schedule": 3600.0,
