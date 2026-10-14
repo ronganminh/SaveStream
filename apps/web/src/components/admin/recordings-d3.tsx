@@ -1,6 +1,14 @@
 import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
-import { Download, ExternalLink, RefreshCw, RotateCcw, Square, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Download,
+  ExternalLink,
+  RefreshCw,
+  RotateCcw,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
@@ -298,6 +306,34 @@ export function AdminRecordingOperationsPage() {
           </Button>
         }
       />
+
+      {!!capacity?.stuck_uploads.length && (
+        <div
+          role="alert"
+          className="mb-5 flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm"
+        >
+          <AlertTriangle className="mt-0.5 size-4 flex-none text-warning" />
+          <div className="space-y-1">
+            <p className="font-semibold">
+              {capacity.stuck_uploads.length === 1
+                ? "1 recording is"
+                : `${capacity.stuck_uploads.length} recordings are`}{" "}
+              stuck processing or uploading (over{" "}
+              {Math.round(capacity.stuck_upload_after_seconds / 60)} minutes).
+            </p>
+            <ul className="space-y-0.5 text-muted-foreground">
+              {capacity.stuck_uploads.map((item) => (
+                <li key={item.recording_id}>
+                  @{item.channel.replace(/^@/, "")} · {item.status} since{" "}
+                  {formatAdminDateTime(item.since)} ·{" "}
+                  {Math.round(item.bytes_recorded / 1048576)} MiB ·{" "}
+                  <span className="font-mono text-xs">{item.recording_id}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="recordings" className="space-y-5">
         <TabsList className="flex flex-wrap">

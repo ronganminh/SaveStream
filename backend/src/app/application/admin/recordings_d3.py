@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.identity.service import utcnow
 from app.application.recordings.service import RecordingService, append_event
+from app.application.recordings.stuck import find_stuck_uploads
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import (
     RecordingStatus,
@@ -452,10 +453,25 @@ class AdminRecordingService:
                 }
             )
 
+        stuck = await find_stuck_uploads(
+            self.session,
+            older_than_seconds=self.settings.recording_stuck_upload_seconds,
+        )
         return {
             "current_in_use": current_in_use,
             "global_limit": GLOBAL_RECORDING_STREAM_LIMIT,
             "hourly": hourly,
+            "stuck_upload_after_seconds": self.settings.recording_stuck_upload_seconds,
+            "stuck_uploads": [
+                {
+                    "recording_id": str(item.recording.id),
+                    "channel": item.recording.resolved_username or item.recording.source_value,
+                    "status": item.recording.status,
+                    "since": _aware(item.since),
+                    "bytes_recorded": item.recording.bytes_recorded,
+                }
+                for item in stuck
+            ],
         }
 
     async def stop_recording(self, recording_id: str) -> tuple[Recording, RecordingStatus]:

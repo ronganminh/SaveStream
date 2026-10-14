@@ -79,7 +79,17 @@ class AdminCapacityHourlyResponse(StrictModel):
     limit: int = Field(gt=0)
 
 
+class AdminStuckUploadResponse(StrictModel):
+    recording_id: str
+    channel: str
+    status: str
+    since: datetime
+    bytes_recorded: int = Field(ge=0)
+
+
 class AdminCapacityResponse(StrictModel):
     current_in_use: int = Field(ge=0)
     global_limit: int = Field(gt=0)
     hourly: list[AdminCapacityHourlyResponse]
+    stuck_upload_after_seconds: int = Field(gt=0)
+    stuck_uploads: list[AdminStuckUploadResponse]

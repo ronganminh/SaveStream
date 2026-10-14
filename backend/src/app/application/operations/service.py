@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.recordings.service import utcnow
+from app.application.recordings.stuck import find_stuck_uploads
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
 from app.infrastructure.db.billing_models import PaymentEvent, PaymentOrder
 from app.infrastructure.db.local_recording_models import LocalRecordingSession, RewardIntent
@@ -29,6 +30,7 @@ class OperationalSnapshot:
     local_recording_sessions: int = 0
     reward_validity_ratio: float = 0.0
     store_transactions: int = 0
+    stuck_upload_recordings: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +172,12 @@ class OperationsService:
             )
             or 0
         )
+        stuck_upload_recordings = len(
+            await find_stuck_uploads(
+                self.session,
+                older_than_seconds=self.settings.recording_stuck_upload_seconds,
+            )
+        )
         return OperationalSnapshot(
             active_recordings=active_recordings,
             failed_recordings_recent=failed_recordings_recent,
@@ -182,6 +190,7 @@ class OperationsService:
             local_recording_sessions=local_recording_sessions,
             reward_validity_ratio=reward_validity_ratio,
             store_transactions=store_transactions,
+            stuck_upload_recordings=stuck_upload_recordings,
         )
 
 
@@ -213,6 +222,13 @@ def evaluate_alerts(
             snapshot.paused_error_watches,
             settings.ops_paused_watch_alert_threshold,
             "Watches paused by repeated errors are above threshold",
+        ),
+        (
+            "recordings_stuck_uploading",
+            snapshot.stuck_upload_recordings,
+            1,
+            "Recordings have been processing/uploading for longer than "
+            f"{settings.recording_stuck_upload_seconds // 60} minutes",
         ),
     ]
     alerts: list[OperationalAlert] = []

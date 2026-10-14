@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import shutil
 import threading
 import time
@@ -46,6 +47,8 @@ from engine import EngineEvent, RecordingEngine, RecordingRequest, StopReason
 
 _CANCEL_PREFIX = "savestream:recording:stop:"
 
+logger = logging.getLogger("savestream.recording.worker")
+
 
 def _checksum(path: Path) -> str:
     digest = hashlib.sha256()
@@ -70,6 +73,41 @@ def _ensure_stop_requested_transition(recording: Recording) -> bool:
         RecordingStatus.STOP_REQUESTED,
     ).value
     return True
+
+
+async def _upload_with_retry(
+    storage: MinioStorageClient,
+    path: Path,
+    storage_key: str,
+    *,
+    attempts: int,
+    retry_seconds: int,
+) -> None:
+    """Upload the finished file, retrying the whole upload on failure.
+
+    The heartbeat keeps the lease alive meanwhile, so the recording stays in
+    `uploading` instead of being recovered (and re-recorded) by another worker.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            await asyncio.to_thread(
+                storage.upload_file,
+                path,
+                storage_key,
+                content_type="video/mp4",
+            )
+            return
+        except Exception:
+            if attempt >= attempts:
+                raise
+            logger.warning(
+                "artifact upload failed, retrying key=%s attempt=%s/%s",
+                storage_key,
+                attempt,
+                attempts,
+                exc_info=True,
+            )
+            await asyncio.sleep(retry_seconds * attempt)
 
 
 async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> None:
@@ -258,11 +296,12 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 if media.duration_seconds is not None:
                     recording.duration_seconds = media.duration_seconds
                 try:
-                    await asyncio.to_thread(
-                        storage.upload_file,
+                    await _upload_with_retry(
+                        storage,
                         result.artifact_path,
                         storage_key,
-                        content_type="video/mp4",
+                        attempts=settings.recording_upload_attempts,
+                        retry_seconds=settings.recording_upload_retry_seconds,
                     )
                 except Exception as exc:
                     await store.fail(

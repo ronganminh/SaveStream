@@ -241,7 +241,7 @@ def test_no_trial_credits_when_disabled(tmp_path) -> None:
     assert _ledger_for(settings, "plain@example.com") == (0, [])
 
 
-def test_public_pricing_checkout_follows_runtime_flags(tmp_path) -> None:
+def test_public_pricing_never_offers_store_checkout(tmp_path) -> None:
     from dataclasses import replace
 
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-checkout.db'}"
@@ -261,5 +261,5 @@ def test_public_pricing_checkout_follows_runtime_flags(tmp_path) -> None:
     assert response.json()["checkout"] == {
         "web": False,
         "app_store": False,
-        "google_play": True,
+        "google_play": False,
     }
