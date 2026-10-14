@@ -14,6 +14,7 @@ import {
   AdminMfaGate,
   AdminMetricCard,
   AdminUserStatusBadge,
+  type AdminBadgeTone,
 } from "@/components/admin/foundation";
 import { initials } from "@/repositories/mappers/channel";
 import { Button } from "@/components/ui/button";
@@ -649,7 +650,7 @@ function ReportDialog({
                 <p>Retained until: {dateTime(report.expires_at)}</p>
               </div>
             </div>
-            <pre className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-3 text-xs">
+            <pre className="max-h-64 overflow-auto rounded-[12px] bg-[#15122B] p-3.5 font-mono text-xs leading-[1.65] text-[#D9D4F2]">
               {JSON.stringify(report.diagnostic_log, null, 2)}
             </pre>
             <div className="grid gap-3 sm:grid-cols-3">
@@ -687,6 +688,13 @@ function ReportDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function reportTone(status: AdminSupportReport["status"]): AdminBadgeTone {
+  if (status === "new") return "danger";
+  if (status === "reviewing") return "warning";
+  if (status === "resolved") return "success";
+  return "neutral";
 }
 
 function ReportsBody() {
@@ -755,7 +763,7 @@ function ReportsBody() {
   return (
     <>
       <PageHeader
-        title="App reports"
+        title="Problem reports"
         subtitle="In-app bug reports and diagnostics retained for 180 days. Video payloads are rejected."
         action={
           <Button variant="outline" disabled={busy} onClick={() => void load()}>
@@ -764,7 +772,7 @@ function ReportsBody() {
           </Button>
         }
       />
-      <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-5">
+      <div className="mb-4 grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-5">
         <Input
           placeholder="Search email or description"
           value={query}
@@ -798,8 +806,8 @@ function ReportsBody() {
 
       <div className="mt-4">
         <AdminDataTable>
-          <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-            <tr>
+          <thead>
+            <tr className="border-b">
               <th className="px-4 py-3">User</th>
               <th className="px-4 py-3">Description</th>
               <th className="px-4 py-3">Recording</th>
@@ -811,15 +819,33 @@ function ReportsBody() {
           <tbody>
             {reports.map((report) => (
               <tr key={report.id} className="border-b last:border-0">
-                <td className="px-4 py-3 text-sm">{report.user_email}</td>
+                <td className="px-4 py-3">
+                  <p className="font-bold">{report.user_email}</p>
+                  <p className="text-xs text-muted-foreground">{dateTime(report.created_at)}</p>
+                </td>
                 <td className="max-w-md truncate px-4 py-3 text-sm">{report.description}</td>
-                <td className="px-4 py-3 text-xs">{report.recording_id ?? "—"}</td>
-                <td className="px-4 py-3 text-xs">
+                <td className="px-4 py-3 font-mono text-xs">
+                  {report.recording_id ? (
+                    <a
+                      className="text-accent-ink hover:underline"
+                      href={`/admin/jobs/${report.recording_id}`}
+                    >
+                      {report.recording_id.slice(0, 8)}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs text-muted-foreground">
                   {report.platform ?? "—"} {report.app_version ?? ""}
                 </td>
-                <td className="px-4 py-3 text-sm">{report.status}</td>
+                <td className="px-4 py-3">
+                  <AdminBadge tone={reportTone(report.status)} dot>
+                    {report.status}
+                  </AdminBadge>
+                </td>
                 <td className="px-4 py-3 text-right">
-                  <Button size="sm" variant="outline" onClick={() => setSelected(report)}>
+                  <Button size="sm" onClick={() => setSelected(report)}>
                     Review
                   </Button>
                 </td>

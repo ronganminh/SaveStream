@@ -1,20 +1,19 @@
 import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Download,
-  ExternalLink,
-  Plus,
-  RefreshCw,
-  ShieldAlert,
-  Trash2,
-  Unlock,
-} from "lucide-react";
+import { Download, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2, Unlock } from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, PageHeader } from "@/components/app-components";
-import { AdminDataTable, AdminMetricCard } from "@/components/admin/foundation";
+import {
+  AdminBadge,
+  AdminDataTable,
+  AdminMetricCard,
+  AdminTabsList,
+  AdminTabsTrigger,
+  type AdminBadgeTone,
+} from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
   adminSafetyApi,
@@ -132,9 +131,21 @@ function CreateComplaintDialog({
             <option value="copyright">Copyright</option>
             <option value="abuse">Abuse</option>
           </select>
-          <Input placeholder="Complainant name" value={name} onChange={(event) => setName(event.target.value)} />
-          <Input placeholder="Complainant email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          <Input placeholder="Recording ID (optional)" value={recordingId} onChange={(event) => setRecordingId(event.target.value)} />
+          <Input
+            placeholder="Complainant name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+          />
+          <Input
+            placeholder="Complainant email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+          <Input
+            placeholder="Recording ID (optional)"
+            value={recordingId}
+            onChange={(event) => setRecordingId(event.target.value)}
+          />
           <select
             className="h-9 rounded-md border bg-background px-3 text-sm"
             value={sourceType}
@@ -146,8 +157,17 @@ function CreateComplaintDialog({
             <option value="room_id">Room ID</option>
             <option value="url">URL</option>
           </select>
-          <Input placeholder="Channel / source value" value={sourceValue} onChange={(event) => setSourceValue(event.target.value)} />
-          <Input className="sm:col-span-2" placeholder="Summary" value={summary} onChange={(event) => setSummary(event.target.value)} />
+          <Input
+            placeholder="Channel / source value"
+            value={sourceValue}
+            onChange={(event) => setSourceValue(event.target.value)}
+          />
+          <Input
+            className="sm:col-span-2"
+            placeholder="Summary"
+            value={summary}
+            onChange={(event) => setSummary(event.target.value)}
+          />
           <textarea
             className="min-h-28 rounded-md border bg-background px-3 py-2 text-sm sm:col-span-2"
             placeholder="Complaint details"
@@ -156,7 +176,9 @@ function CreateComplaintDialog({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
           <Button onClick={() => void submit()} disabled={!valid || busy}>
             {busy ? "Creating…" : "Create case"}
           </Button>
@@ -233,7 +255,9 @@ function ComplaintDetailDialog({
         <DialogHeader>
           <DialogTitle>{full?.summary ?? "Complaint case"}</DialogTitle>
           <DialogDescription>
-            {full ? `${full.kind} · ${full.complainant_email} · ${dateTime(full.created_at)}` : "Loading…"}
+            {full
+              ? `${full.kind} · ${full.complainant_email} · ${dateTime(full.created_at)}`
+              : "Loading…"}
           </DialogDescription>
         </DialogHeader>
 
@@ -251,9 +275,7 @@ function ComplaintDetailDialog({
               <select
                 className="h-9 rounded-md border bg-background px-3 text-sm"
                 value={status}
-                onChange={(event) =>
-                  setStatus(event.target.value as AdminComplaint["status"])
-                }
+                onChange={(event) => setStatus(event.target.value as AdminComplaint["status"])}
               >
                 <option value="new">New</option>
                 <option value="reviewing">Reviewing</option>
@@ -282,7 +304,9 @@ function ComplaintDetailDialog({
                   <div key={event.id} className="rounded-md border p-3 text-sm">
                     <div className="flex justify-between gap-3">
                       <span className="font-medium">{event.action}</span>
-                      <span className="text-xs text-muted-foreground">{dateTime(event.created_at)}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {dateTime(event.created_at)}
+                      </span>
                     </div>
                     {event.note && <p className="mt-1 text-muted-foreground">{event.note}</p>}
                   </div>
@@ -393,7 +417,8 @@ function SafetyActionDialog({
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            This dangerous action requires password re-entry, an authenticator code, a reason, and is permanently audited.
+            This dangerous action requires password re-entry, an authenticator code, a reason, and
+            is permanently audited.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
@@ -417,12 +442,29 @@ function SafetyActionDialog({
               />
             </>
           )}
-          <Input placeholder="Reason" value={reason} onChange={(event) => setReason(event.target.value)} />
-          <Input type="password" placeholder="Password" value={password} onChange={(event) => setPassword(event.target.value)} />
-          <Input inputMode="numeric" maxLength={6} placeholder="Authenticator code" value={totp} onChange={(event) => setTotp(event.target.value)} />
+          <Input
+            placeholder="Reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <Input
+            inputMode="numeric"
+            maxLength={6}
+            placeholder="Authenticator code"
+            value={totp}
+            onChange={(event) => setTotp(event.target.value)}
+          />
         </div>
         <DialogFooter>
-          <Button variant="outline" disabled={busy} onClick={onClose}>Cancel</Button>
+          <Button variant="outline" disabled={busy} onClick={onClose}>
+            Cancel
+          </Button>
           <Button disabled={!valid || busy} onClick={() => void submit()}>
             {busy ? "Confirming…" : "Confirm"}
           </Button>
@@ -430,6 +472,13 @@ function SafetyActionDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function caseTone(status: string): AdminBadgeTone {
+  if (status === "new") return "danger";
+  if (status === "reviewing") return "warning";
+  if (status === "resolved") return "success";
+  return "neutral";
 }
 
 export function AdminSafetyD8Page() {
@@ -488,7 +537,8 @@ export function AdminSafetyD8Page() {
 
   const counts = useMemo(
     () => ({
-      open: complaints.filter((item) => item.status === "new" || item.status === "reviewing").length,
+      open: complaints.filter((item) => item.status === "new" || item.status === "reviewing")
+        .length,
       blocks: blocks.length,
       suspicious: suspicious.length,
     }),
@@ -507,10 +557,7 @@ export function AdminSafetyD8Page() {
   if (!canUseSafety) {
     return (
       <AppShell>
-        <PageHeader
-          title="Safety"
-          subtitle="Complaint and creator-safety operations."
-        />
+        <PageHeader title="Safety" subtitle="Complaint and creator-safety operations." />
         <div className="rounded-[16px] border bg-surface p-6">
           <h2 className="font-medium">Permission required</h2>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -529,11 +576,11 @@ export function AdminSafetyD8Page() {
         action={
           <div className="flex gap-2">
             <Button variant="outline" disabled={busy} onClick={() => void load()}>
-              <RefreshCw className="mr-2 size-4" />
+              <RefreshCw className="size-4" />
               Refresh
             </Button>
             <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-2 size-4" />
+              <Plus className="size-4" />
               Create complaint
             </Button>
           </div>
@@ -547,11 +594,17 @@ export function AdminSafetyD8Page() {
       </div>
 
       <Tabs defaultValue="complaints" className="mt-6 space-y-5">
-        <TabsList>
-          <TabsTrigger value="complaints">Complaints</TabsTrigger>
-          <TabsTrigger value="blocks">Creator blocks</TabsTrigger>
-          <TabsTrigger value="suspicious">Suspicious accounts</TabsTrigger>
-        </TabsList>
+        <AdminTabsList label="Safety sections">
+          <AdminTabsTrigger value="complaints" count={counts.open}>
+            Complaints
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="blocks" count={counts.blocks}>
+            Creator blocks
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="suspicious" count={counts.suspicious}>
+            Suspicious accounts
+          </AdminTabsTrigger>
+        </AdminTabsList>
 
         <TabsContent value="complaints" className="space-y-4">
           <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-4">
@@ -589,15 +642,15 @@ export function AdminSafetyD8Page() {
             <div className="flex gap-2">
               <Button onClick={() => void loadComplaints(null)}>Apply</Button>
               <Button variant="outline" onClick={() => void exportCsv()}>
-                <Download className="mr-1 size-4" />
+                <Download className="size-4" />
                 CSV
               </Button>
             </div>
           </div>
 
           <AdminDataTable>
-            <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
+            <thead>
+              <tr className="border-b">
                 <th className="px-4 py-3">Case</th>
                 <th className="px-4 py-3">Target</th>
                 <th className="px-4 py-3">Complainant</th>
@@ -610,22 +663,37 @@ export function AdminSafetyD8Page() {
               {complaints.map((item) => (
                 <tr key={item.id} className="border-b last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{item.summary}</p>
-                    <p className="text-xs text-muted-foreground">{item.kind} · {item.id}</p>
+                    <p className="font-bold">{item.summary}</p>
+                    <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                      <AdminBadge tone={item.kind === "copyright" ? "accent" : "danger"}>
+                        {item.kind}
+                      </AdminBadge>
+                      <span className="font-mono">{item.id}</span>
+                    </p>
                   </td>
-                  <td className="px-4 py-3 text-sm">{item.channel_source_value ?? item.recording_id ?? "—"}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {item.channel_source_value ?? item.recording_id ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-sm">{item.complainant_email}</td>
-                  <td className="px-4 py-3 text-sm">{item.status}</td>
+                  <td className="px-4 py-3">
+                    <AdminBadge tone={caseTone(item.status)} dot>
+                      {item.status}
+                    </AdminBadge>
+                  </td>
                   <td className="px-4 py-3 text-xs">{dateTime(item.created_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setSelectedComplaint(item)}>
-                        <ExternalLink className="mr-1 size-3" />
+                      <Button size="sm" onClick={() => setSelectedComplaint(item)}>
+                        <ExternalLink className="size-3" />
                         Review
                       </Button>
                       {item.channel_source_value && (
-                        <Button size="sm" variant="outline" onClick={() => setAction({ mode: "block", complaint: item })}>
-                          <ShieldAlert className="mr-1 size-3" />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setAction({ mode: "block", complaint: item })}
+                        >
+                          <ShieldAlert className="size-3" />
                           Block
                         </Button>
                       )}
@@ -652,13 +720,13 @@ export function AdminSafetyD8Page() {
         <TabsContent value="blocks" className="space-y-4">
           <div className="flex justify-end">
             <Button onClick={() => setAction({ mode: "block", complaint: null })}>
-              <ShieldAlert className="mr-2 size-4" />
+              <ShieldAlert className="size-4" />
               Block creator
             </Button>
           </div>
           <AdminDataTable>
-            <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
+            <thead>
+              <tr className="border-b">
                 <th className="px-4 py-3">Creator</th>
                 <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">Complaint</th>
@@ -670,7 +738,7 @@ export function AdminSafetyD8Page() {
               {blocks.map((block) => (
                 <tr key={block.id} className="border-b last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{block.source_value}</p>
+                    <p className="font-bold">{block.source_value}</p>
                     <p className="text-xs text-muted-foreground">{block.source_type}</p>
                   </td>
                   <td className="max-w-sm truncate px-4 py-3 text-sm">{block.reason}</td>
@@ -678,12 +746,20 @@ export function AdminSafetyD8Page() {
                   <td className="px-4 py-3 text-xs">{dateTime(block.created_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => setAction({ mode: "delete", block })}>
-                        <Trash2 className="mr-1 size-3" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAction({ mode: "delete", block })}
+                      >
+                        <Trash2 className="size-3" />
                         Delete recordings
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => setAction({ mode: "unblock", block })}>
-                        <Unlock className="mr-1 size-3" />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setAction({ mode: "unblock", block })}
+                      >
+                        <Unlock className="size-3" />
                         Unblock
                       </Button>
                     </div>
@@ -700,14 +776,15 @@ export function AdminSafetyD8Page() {
             </tbody>
           </AdminDataTable>
           <p className="text-xs text-muted-foreground">
-            Deleting locked recordings never issues an automatic credit refund. Use Payments for any manual refund or credit adjustment.
+            Deleting locked recordings never issues an automatic credit refund. Use Payments for any
+            manual refund or credit adjustment.
           </p>
         </TabsContent>
 
         <TabsContent value="suspicious">
           <AdminDataTable>
-            <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
+            <thead>
+              <tr className="border-b">
                 <th className="px-4 py-3">Account</th>
                 <th className="px-4 py-3">Signals</th>
                 <th className="px-4 py-3">Rate limits (24h)</th>
@@ -720,10 +797,18 @@ export function AdminSafetyD8Page() {
               {suspicious.map((item) => (
                 <tr key={item.user_id} className="border-b last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-medium">{item.email}</p>
+                    <p className="font-bold">{item.email}</p>
                     <p className="text-xs text-muted-foreground">{item.user_id}</p>
                   </td>
-                  <td className="px-4 py-3 text-xs">{item.reasons.join(", ")}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {item.reasons.map((reason) => (
+                        <AdminBadge key={reason} tone="warning">
+                          {reason.replaceAll("_", " ")}
+                        </AdminBadge>
+                      ))}
+                    </div>
+                  </td>
                   <td className="px-4 py-3">{item.rate_limit_hits_24h}</td>
                   <td className="px-4 py-3">{item.shared_signup_ip_accounts_7d}</td>
                   <td className="px-4 py-3">
@@ -761,11 +846,7 @@ export function AdminSafetyD8Page() {
           setSelectedComplaint(updated);
         }}
       />
-      <SafetyActionDialog
-        action={action}
-        onClose={() => setAction(null)}
-        onDone={load}
-      />
+      <SafetyActionDialog action={action} onClose={() => setAction(null)} onDone={load} />
     </AppShell>
   );
 }
