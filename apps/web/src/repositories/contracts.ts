@@ -99,6 +99,8 @@ export type RecordingModel = {
   durationSeconds?: number;
   /** Credits charged, or held so far while recording; null when unknown. */
   creditsUsed?: number | null;
+  /** Backend error code of a failed recording, e.g. "UPLOAD_TIMEOUT". */
+  errorCode?: string | null;
 };
 
 export type UsageSummary = {
