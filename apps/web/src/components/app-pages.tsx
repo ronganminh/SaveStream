@@ -137,6 +137,7 @@ import {
 } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { isAdminRole, isDemoMode } from "@/lib/app-config";
+import { freeWebSentence, retentionFeature, retentionSentence } from "@/lib/plan-facts";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { ApiError } from "@/api/errors";
 import {
@@ -500,6 +501,8 @@ function RecordingPreviewCard() {
 
 export function LandingPage() {
   const { t, language } = usePreferences();
+  const { query: publicPricingQuery } = usePublicPricingData();
+  const publicPricing = publicPricingQuery.data;
   const { status } = useAuth();
   const authenticated = status === "authenticated";
   const structuredData = {
@@ -709,7 +712,7 @@ export function LandingPage() {
                 "Browser playback",
                 "Fast downloads",
                 "Credit usage history",
-                "Stored for up to 30 days",
+                retentionFeature(publicPricing),
               ].map((x, i) => (
                 <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
                   <Check className="size-4 text-success" />
@@ -820,7 +823,7 @@ export function LandingPage() {
                   ],
                   [
                     "How long are recordings kept?",
-                    "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial. Watch them in the browser or download any recording you want to keep longer.",
+                    `${retentionSentence(publicPricing)}. Watch them in the browser or download any recording you want to keep longer.`,
                   ],
                   [
                     "What happens if I run out of credits?",
@@ -1821,6 +1824,7 @@ export function ChannelsPage() {
   const channelItems = channelsQuery.data ?? [];
   const entitlement = entitlementQuery.data;
   const channelLimit = entitlement?.limits.max_watches ?? (isDemoMode ? 3 : null);
+  const { query: publicPricingQuery } = usePublicPricingData();
   const channelCount = entitlement?.watch_count ?? channelItems.length;
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
@@ -1835,7 +1839,7 @@ export function ChannelsPage() {
         title="Channels"
         subtitle={
           entitlement?.plan === "free"
-            ? "Free web includes 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page."
+            ? `${freeWebSentence(publicPricingQuery.data, channelLimit)} Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page.`
             : "Channels are monitored automatically. Recording begins when an enabled channel goes live."
         }
         action={
@@ -4196,7 +4200,7 @@ function CreditPricingPage() {
               <h3 className="font-medium text-foreground">{t("Payments and refunds")}</h3>
               <p className="mt-1 leading-6">
                 {t(
-                  "Payments are processed by the payment provider shown at checkout. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
+                  "Payments are processed by PayPal. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
                 )}{" "}
                 <Link to="/refund" className="text-primary underline underline-offset-4">
                   {t("refund policy")}

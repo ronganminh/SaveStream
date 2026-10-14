@@ -274,6 +274,7 @@ export type PublicPricingResponse = {
   recording_rate: PublicRecordingRate | null;
   signup_credits: number;
   max_channels_per_user: number | null;
+  free_max_channels_per_user?: number | null;
   max_concurrent_recordings_per_user: number | null;
   recording_retention_days: number | null;
   trial_recording_retention_days: number | null;
