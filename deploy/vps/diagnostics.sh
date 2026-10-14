@@ -82,9 +82,11 @@ sql "select r.id, coalesce(r.resolved_username, r.source_value) as creator, r.st
      where r.created_at >= now() - interval '${DAYS} days'
      order by r.created_at desc limit 15;"
 
-for service in recorder recorder-blue recorder-green; do
-  id="$(compose ps -q "$service" 2>/dev/null || true)"
-  [[ -n "$id" ]] || continue
+# Every running recorder container, including the legacy `recorder` and a
+# draining color, which `compose ps` no longer lists by service.
+for id in $(docker ps -q --filter "label=com.docker.compose.project=savestream-production"); do
+  service="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$id")"
+  [[ "$service" == recorder* ]] || continue
   section "${service}: local recording files and upload connections"
   docker exec "$id" sh -c '
     dir="${SAVESTREAM_RECORDING_TEMP_DIR:-/tmp/savestream-recordings}"
@@ -94,7 +96,7 @@ for service in recorder recorder-blue recorder-green; do
       /proc/net/tcp /proc/net/tcp6 2>/dev/null || true
   ' || true
   section "${service}: upload log lines (last 24h, newest 40)"
-  compose logs --no-color --since 24h "$service" 2>&1 \
+  docker logs --since 24h "$id" 2>&1 \
     | grep -Ei 'upload|retry|timeout|reset|broken pipe|stalled' \
     | grep -Eiv 'password|secret|token|authorization' \
     | tail -n 40 || true
