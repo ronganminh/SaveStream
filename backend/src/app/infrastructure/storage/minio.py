@@ -13,6 +13,7 @@ from minio import Minio
 from minio.error import S3Error
 from urllib3.util import Retry, Timeout
 
+from app.infrastructure.storage.media_urls import media_delivery_enabled, signed_media_url
 from app.settings import AppSettings
 
 
@@ -72,7 +73,15 @@ class MinioStorageClient:
     ) -> str:
         """Signed GET URL. A `content_disposition` (e.g. attachment) is signed
         into the URL as `response-content-disposition`, so the browser saves
-        the file instead of playing it."""
+        the file instead of playing it.
+
+        When the media delivery Worker is configured, the link points at it
+        (R2 binding + edge cache) instead of the R2 S3 API endpoint.
+        """
+        if media_delivery_enabled(self.settings):
+            return signed_media_url(
+                self.settings, storage_key, content_disposition=content_disposition
+            )
         response_headers: dict[str, str | list[str] | tuple[str]] | None = (
             {
                 "response-content-disposition": content_disposition,

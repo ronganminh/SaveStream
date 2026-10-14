@@ -83,6 +83,15 @@ def _secret_env(name: str, default: str) -> str:
     return direct.strip() if direct is not None else default
 
 
+def _optional_secret_env(name: str) -> str:
+    """Like _secret_env, but an empty or missing secret file means "not set"."""
+    file_path = os.getenv(f"SAVESTREAM_{name}_FILE", "").strip()
+    if file_path:
+        path = Path(file_path)
+        return path.read_text(encoding="utf-8").strip() if path.is_file() else ""
+    return os.getenv(f"SAVESTREAM_{name}", "").strip()
+
+
 def _csv_env(name: str, default: str) -> tuple[str, ...]:
     return tuple(item.strip() for item in _env(name, default).split(",") if item.strip())
 
@@ -162,6 +171,10 @@ class AppSettings:
     storage_connect_timeout_seconds: int = 15
     storage_read_timeout_seconds: int = 120
     artifact_presign_seconds: int = 900
+    # Media delivery Worker (services/media-worker). When both are set, links
+    # to recordings and creator avatars point at it instead of the R2 S3 API.
+    media_base_url: str = ""
+    media_signing_secret: str = field(default="", repr=False)
     sse_poll_seconds: float = 1.0
     idempotency_ttl_seconds: int = 86_400
     watch_scheduler_tick_seconds: int = 15
@@ -643,6 +656,12 @@ class AppSettings:
             storage_connect_timeout_seconds=_int_env("STORAGE_CONNECT_TIMEOUT_SECONDS", 15),
             storage_read_timeout_seconds=_int_env("STORAGE_READ_TIMEOUT_SECONDS", 120),
             artifact_presign_seconds=_int_env("ARTIFACT_PRESIGN_SECONDS", 900),
+            media_base_url=(
+                _exact_origin(media_base_url, "SAVESTREAM_MEDIA_BASE_URL")
+                if (media_base_url := _env("MEDIA_BASE_URL", ""))
+                else ""
+            ),
+            media_signing_secret=_optional_secret_env("MEDIA_SIGNING_SECRET"),
             sse_poll_seconds=_float_env("SSE_POLL_SECONDS", 1.0),
             idempotency_ttl_seconds=_int_env("IDEMPOTENCY_TTL_SECONDS", 86_400),
             watch_scheduler_tick_seconds=_int_env("WATCH_SCHEDULER_TICK_SECONDS", 15),

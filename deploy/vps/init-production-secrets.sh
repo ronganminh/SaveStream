@@ -108,6 +108,7 @@ ensure_prompted smtp_password 'Brevo SMTP key' hidden
 ensure_random postgres_password
 ensure_random redis_password
 ensure_random jwt_secret
+ensure_random media_signing_secret
 ensure_random metrics_token
 
 PAYMENT_PROVIDER="$(ask 'Payment provider (disabled, paypal, or lemonsqueezy)' "$(env_default SAVESTREAM_PAYMENT_PROVIDER disabled)")"

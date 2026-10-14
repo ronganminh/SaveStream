@@ -36,6 +36,14 @@ log() { printf '\n==> %s\n' "$*"; }
 [[ -f "$ENV_FILE" ]] || { echo "Missing $ENV_FILE" >&2; exit 1; }
 [[ -f "$COMPOSE_FILE" ]] || { echo "Missing $COMPOSE_FILE" >&2; exit 1; }
 
+# Signing key shared with the media delivery Worker (Deploy Media workflow
+# copies it there). Created once; never printed.
+secrets_dir="$(sed -n 's/^SAVESTREAM_SECRETS_DIR=//p' "$ENV_FILE" | tail -n 1)"
+if [[ -n "$secrets_dir" && ! -s "$secrets_dir/media_signing_secret" ]]; then
+  log "Creating media_signing_secret"
+  (umask 077; openssl rand -hex 32 > "$secrets_dir/media_signing_secret")
+fi
+
 log "Revision $(git rev-parse --short HEAD) on $(git branch --show-current)"
 
 log "In-flight cloud recordings (they keep running; the recorder drains)"

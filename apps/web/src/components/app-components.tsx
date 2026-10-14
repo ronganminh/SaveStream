@@ -242,7 +242,9 @@ export function AvatarCircle({
         <img
           src={image}
           alt=""
-          loading="lazy"
+          // Small and above the fold in lists; lazy loading only left them
+          // blank (naturalWidth 0) until scrolled into view.
+          decoding="async"
           referrerPolicy="no-referrer"
           className="size-full object-cover"
           onError={() => setFailed(true)}

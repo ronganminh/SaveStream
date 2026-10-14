@@ -1,4 +1,6 @@
+import time
 from typing import cast
+from urllib.parse import parse_qs, urlparse
 
 from app.api.schemas.recordings import Creator, Source
 from app.api.schemas.watches import (
@@ -12,8 +14,24 @@ from app.infrastructure.db.watch_models import Watch
 
 
 def creator_avatar_url(watch: Watch) -> str | None:
-    """Stable cached copy when available, else the raw (expiring) TikTok URL."""
-    return watch.creator_avatar_cached_url or watch.creator_avatar_url
+    """Stable cached copy when available, else the raw TikTok URL while it is
+    still valid (it is signed and expires; an expired one only fails to load)."""
+    if watch.creator_avatar_cached_url:
+        return watch.creator_avatar_cached_url
+    if watch.creator_avatar_url and not tiktok_url_expired(watch.creator_avatar_url):
+        return watch.creator_avatar_url
+    return None
+
+
+def tiktok_url_expired(url: str, *, now: float | None = None) -> bool:
+    """TikTok CDN URLs carry their expiry as `x-expires` (unix seconds)."""
+    values = parse_qs(urlparse(url).query).get("x-expires")
+    if not values:
+        return False
+    try:
+        return int(values[0]) <= (now if now is not None else time.time())
+    except ValueError:
+        return False
 
 
 def active_recording_for(

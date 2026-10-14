@@ -23,6 +23,12 @@ x-app-env: &app-env
   SAVESTREAM_FRONTEND_BASE_URL: ${SAVESTREAM_FRONTEND_ORIGIN:-https://savestream.online}
   # Stable URLs for cached creator avatars (/v1/public/creator-avatars/...).
   SAVESTREAM_PUBLIC_API_BASE_URL: ${SAVESTREAM_PUBLIC_API_ORIGIN:-https://api.savestream.online}
+  # Media delivery Worker (services/media-worker, media.savestream.online).
+  # Empty keeps links on the R2 S3 endpoint; the Deploy Media workflow sets it
+  # in production.env once the Worker is live. The signing secret is created by
+  # deploy.sh and copied to the Worker by that workflow.
+  SAVESTREAM_MEDIA_BASE_URL: ${SAVESTREAM_MEDIA_BASE_URL:-}
+  SAVESTREAM_MEDIA_SIGNING_SECRET_FILE: /run/secrets/media_signing_secret
   SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:-https://savestream.online,https://www.savestream.online}
 
   SAVESTREAM_SMTP_HOST: smtp-relay.brevo.com
@@ -98,6 +104,7 @@ x-app-secrets: &app-secrets
   - r2_access_key
   - r2_secret_key
   - jwt_secret
+  - media_signing_secret
   - smtp_username
   - smtp_password
   - payment_api_key
@@ -301,6 +308,8 @@ secrets:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/r2_secret_key
   jwt_secret:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/jwt_secret
+  media_signing_secret:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/media_signing_secret
   smtp_username:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/smtp_username
   smtp_password:
