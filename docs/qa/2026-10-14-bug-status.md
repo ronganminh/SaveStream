@@ -42,8 +42,8 @@ marked, so the account stayed Free. That rule is kept. The changes:
   refreshed hourly. Workers is a live window, default 15 min. Both are labeled, and
   Workers now ignores deleted rows.
 - *Failed jobs*, root cause found with Production Diagnostics on 2026-10-14:
-  - 4 of the 5 failed `v_nenee` jobs had actually recorded 11 min – 2.6 h
-    (`duration_seconds` 687–9338). They ended as `STREAM_OFFLINE` on their second
+  - 4 of the 5 failed `v_nenee` jobs had actually recorded 11 min – 1.6 h
+    (`duration_seconds` 687–5935). They ended as `STREAM_OFFLINE` on their second
     worker attempt (`worker_attempts = 2`).
   - Cause: the recorder stopped heartbeating as soon as the capture ended. Checksum
     and upload of a multi-GB file then took longer than
