@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
 import { Download, Eye, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -38,7 +39,7 @@ function accountStatus(user: AdminUser) {
 
 function dateTime(value: string | null | undefined) {
   if (!value) return "—";
-  return new Date(value).toLocaleString("en-US");
+  return formatAdminDateTime(value);
 }
 
 function downloadText(filename: string, content: string, type: string) {

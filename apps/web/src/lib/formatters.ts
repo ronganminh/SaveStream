@@ -60,3 +60,13 @@ export function formatDurationMinutes(minutes: number, language: Language) {
 export function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count.toLocaleString("en")} ${count === 1 ? singular : plural}`;
 }
+
+/**
+ * Unambiguous admin timestamp ("Oct 11, 2026, 08:50 PM"). Numeric
+ * "10/11/2026" reads as 10 November to day-first readers, which made
+ * admin CREATED/EXPIRES columns look a month apart.
+ */
+export function formatAdminDateTime(value: string | Date | null | undefined) {
+  if (!value) return "—";
+  return formatDateTime(value, "en");
+}

@@ -10,7 +10,7 @@ from app.api.schemas.watches import (
     WatchListResponse,
     WatchResponse,
 )
-from app.api.serializers.watches import watch_response
+from app.api.serializers.watches import active_recording_for, watch_response
 from app.application.watches.service import WatchService
 from app.domain.identity.types import AuthPrincipal
 
@@ -31,6 +31,7 @@ async def create_watch(
     watch = await service.create(principal, payload)
     entitlement = await service.entitlement_for(principal.user_id)
     waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
@@ -39,6 +40,7 @@ async def create_watch(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
         ),
+        active_recording=active_recording_for(watch, active_recordings),
     )
 
 
@@ -62,6 +64,7 @@ async def list_watches(
     )
     entitlement = await service.entitlement_for(principal.user_id)
     waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
     return WatchListResponse(
         items=[
             watch_response(
@@ -72,6 +75,7 @@ async def list_watches(
                     item.resolved_room_id is not None
                     and item.resolved_room_id in waiting_room_ids
                 ),
+                active_recording=active_recording_for(item, active_recordings),
             )
             for item in page.items
         ],
@@ -92,6 +96,7 @@ async def get_watch(
     watch = await service.get(principal, watch_id)
     entitlement = await service.entitlement_for(principal.user_id)
     waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
@@ -100,6 +105,7 @@ async def get_watch(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
         ),
+        active_recording=active_recording_for(watch, active_recordings),
     )
 
 
@@ -117,6 +123,7 @@ async def update_watch(
     watch = await service.update(principal, watch_id, payload)
     entitlement = await service.entitlement_for(principal.user_id)
     waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
@@ -125,6 +132,7 @@ async def update_watch(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
         ),
+        active_recording=active_recording_for(watch, active_recordings),
     )
 
 
@@ -155,6 +163,7 @@ async def resume_watch(
     watch = await service.resume(principal, watch_id)
     entitlement = await service.entitlement_for(principal.user_id)
     waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
         is_pro=entitlement.is_pro,
@@ -163,4 +172,5 @@ async def resume_watch(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
         ),
+        active_recording=active_recording_for(watch, active_recordings),
     )

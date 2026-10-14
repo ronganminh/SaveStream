@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useState } from "react";
 import { RefreshCw, RotateCcw, Settings2 } from "lucide-react";
 import { toast } from "sonner";
@@ -263,7 +264,7 @@ export function AdminSystemD4Page() {
         <AdminMetricCard label="Backend version" value={status?.backend_version ?? "—"} />
         <AdminMetricCard
           label="Started at"
-          value={status?.started_at ? new Date(status.started_at).toLocaleString("en-US") : "—"}
+          value={formatAdminDateTime(status?.started_at)}
         />
       </div>
 
@@ -340,9 +341,7 @@ export function AdminSystemD4Page() {
                   </td>
                   <td className="px-4 py-3 text-sm">{setting.source}</td>
                   <td className="px-4 py-3 text-xs">
-                    {setting.updated_at
-                      ? new Date(setting.updated_at).toLocaleString("en-US")
-                      : "—"}
+                    {formatAdminDateTime(setting.updated_at)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">

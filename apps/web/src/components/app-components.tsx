@@ -237,6 +237,7 @@ export function PlatformBadge({ soon = false }: { soon?: boolean }) {
 }
 const statusStyles: Record<Status, string> = {
   Recording: "border-recording/20 bg-recording-subtle text-recording",
+  Live: "border-recording/20 bg-surface text-recording",
   Processing: "border-info/20 bg-info-subtle text-info",
   Ready: "border-success/20 bg-success-subtle text-success",
   Waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
@@ -1322,7 +1323,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       setPhase("success");
       toast.success(`Monitoring ${parsed.handle}`, {
         description: isFree
-          ? "Free accounts monitor up to 3 channels. Buy hours to enable automatic cloud recording."
+          ? "Free accounts monitor up to 3 channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
           : "We’ll record automatically when this channel goes live.",
       });
     } catch (error) {
@@ -1396,7 +1397,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogDescription className="mt-2">
               {handle} is now monitored.{" "}
               {isFree
-                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Buy hours to enable automatic cloud recording."
+                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
                 : "Recording starts automatically on our servers when the channel goes live."}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">

@@ -9603,6 +9603,16 @@
             "$ref": "#/components/schemas/AutoRecordState",
             "default": "off",
             "description": "Derived V2 state. B1 implements off/active/paused_no_cloud_minutes; B2 implements waiting_for_cloud_slot."
+          },
+          "active_recording_id": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "ID of the in-flight Recording job for this channel. Null when no recording job exists, even if live_status is live."
+          },
+          "active_recording_status": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "Status of the in-flight Recording job (queued, resolving, waiting_live, recording, processing, uploading, stop_requested)."
           }
         },
         "additionalProperties": false

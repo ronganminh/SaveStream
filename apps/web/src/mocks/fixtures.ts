@@ -4,7 +4,7 @@
  */
 
 // ---------- Status enums ----------
-export type ChannelStatus = "Recording" | "Waiting" | "Offline" | "Paused" | "Error";
+export type ChannelStatus = "Recording" | "Live" | "Waiting" | "Offline" | "Paused" | "Error";
 export type RecordingStatus = "Recording" | "Processing" | "Waiting" | "Missed" | "Ready" | "Error";
 /** Union used by the shared StatusBadge. */
 export type Status = ChannelStatus | RecordingStatus;

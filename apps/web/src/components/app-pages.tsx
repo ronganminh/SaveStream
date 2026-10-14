@@ -179,6 +179,7 @@ import {
   useCreateChannelMutation,
   useDeleteChannelMutation,
   usePauseChannelMutation,
+  useUpdateChannelMutation,
   useResumeChannelMutation,
 } from "@/hooks/use-channel-mutations";
 import type { ChannelModel, ChannelStatus, RecordingModel } from "@/repositories";
@@ -1655,7 +1656,7 @@ export function ChannelsPage() {
         title="Channels"
         subtitle={
           entitlement?.plan === "free"
-            ? "Free web includes 10 trial credits and up to 3 monitored channels. Buy hours once to enable automatic cloud recording."
+            ? "Free web includes 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page."
             : "Channels are monitored automatically. Recording begins when an enabled channel goes live."
         }
         action={
@@ -1672,7 +1673,7 @@ export function ChannelsPage() {
       <FilterBar>
         <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
         <div className="flex gap-1 overflow-x-auto">
-          {["All", "Recording", "Waiting", "Offline", "Paused", "Error"].map((f) => (
+          {["All", "Recording", "Live", "Waiting", "Offline", "Paused", "Error"].map((f) => (
             <Button
               key={f}
               size="sm"
@@ -4169,6 +4170,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
 }
 const channelStates = [
   { value: "Recording", label: "Recording" },
+  { value: "Live", label: "Live" },
   { value: "Waiting", label: "Waiting" },
   { value: "Offline", label: "Offline" },
   { value: "Paused", label: "Paused" },
@@ -4186,13 +4188,35 @@ function ChannelDetail({
   const { t } = usePreferences();
   const navigate = useNavigate();
   const pauseChannel = usePauseChannelMutation();
+  const updateChannel = useUpdateChannelMutation();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
   const resumeChannel = useResumeChannelMutation();
   const deleteChannel = useDeleteChannelMutation();
   const [previewState, setPreviewState] = useState<ChannelStatus>(channel.status);
   const [dialog, setDialog] = useState<null | "pause" | "remove">(null);
   const state = isDemoMode ? previewState : channel.status;
   const monitoring = isDemoMode ? state !== "Paused" : channel.backendStatus === "active";
-  const pending = pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+  const pending =
+    pauseChannel.isPending ||
+    resumeChannel.isPending ||
+    deleteChannel.isPending ||
+    updateChannel.isPending;
+
+  const setAutoRecord = async (value: boolean) => {
+    try {
+      await updateChannel.mutateAsync({ id: channel.id, input: { auto_record: value } });
+      toast.success(
+        value
+          ? `Automatic recording turned on for ${channel.handle}`
+          : `Automatic recording turned off for ${channel.handle}`,
+      );
+    } catch (error) {
+      toast.error("Could not change automatic recording", {
+        description: channelActionErrorMessage(error),
+      });
+    }
+  };
 
   useEffect(() => {
     setPreviewState(channel.status);
@@ -4235,7 +4259,44 @@ function ChannelDetail({
           You can safely close this page.
         </p>
         <Button className="mt-5" asChild>
-          <Link to="/recordings/active">View active recording</Link>
+          {channel.activeRecordingId ? (
+            <Link to="/recordings/$id" params={{ id: channel.activeRecordingId }}>
+              View active recording
+            </Link>
+          ) : (
+            <Link to="/recordings/active">View active recording</Link>
+          )}
+        </Button>
+      </>
+    ),
+    Live: (
+      <>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium">Live status</p>
+          <StatusBadge status="Live" pulse />
+        </div>
+        <p className="mt-6 font-medium">{channel.handle} is LIVE – not recording</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {channel.liveReason ?? "SaveStream is not recording this livestream."}
+        </p>
+        {!channel.activeRecordingId && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            {canAutoRecord
+              ? channel.autoRecord
+                ? "Recording will start as soon as a cloud slot and enough cloud minutes are available."
+                : "Turn on Auto-record above to record this channel’s livestreams automatically."
+              : "Automatic cloud recording requires a purchased cloud-minute package. Manually granted trial minutes do not unlock it."}
+          </p>
+        )}
+        <Button
+          className="mt-5"
+          variant="outline"
+          onClick={() =>
+            window.open(`https://www.tiktok.com/${channel.handle}/live`, "_blank", "noopener")
+          }
+        >
+          <ExternalLink />
+          Watch on TikTok
         </Button>
       </>
     ),
@@ -4247,7 +4308,9 @@ function ChannelDetail({
         </div>
         <p className="mt-6 font-medium">Waiting for the next livestream</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Monitoring is on. Recording starts automatically when {channel.handle} goes live.
+          {channel.autoRecord
+            ? `Monitoring is on. Recording starts automatically when ${channel.handle} goes live.`
+            : `Monitoring is on. You’ll be notified when ${channel.handle} goes live; automatic recording is off.`}
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -4352,13 +4415,27 @@ function ChannelDetail({
             <p className="text-sm text-muted-foreground">{channel.handle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 text-sm sm:ml-auto">
+        <div className="flex flex-wrap items-center gap-3 text-sm sm:ml-auto">
           <label htmlFor="detail-monitoring">{t("Monitoring")}</label>
           <Switch
             id="detail-monitoring"
             checked={monitoring}
             disabled={pending}
             onCheckedChange={toggle}
+          />
+          <label htmlFor="detail-auto-record" className="ml-2">
+            Auto-record
+          </label>
+          <Switch
+            id="detail-auto-record"
+            checked={channel.autoRecord && canAutoRecord}
+            disabled={pending || !canAutoRecord}
+            title={
+              canAutoRecord
+                ? undefined
+                : "Automatic cloud recording requires a purchased cloud-minute package"
+            }
+            onCheckedChange={(value) => void setAutoRecord(value)}
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -4399,7 +4476,7 @@ function ChannelDetail({
         <section
           className={cn(
             "rounded-lg border bg-surface p-5",
-            state === "Recording" && "border-recording/30",
+            (state === "Recording" || state === "Live") && "border-recording/30",
             state === "Error" && "border-destructive/30",
           )}
         >
@@ -4420,8 +4497,16 @@ function ChannelDetail({
           />
           <StatCard
             label="Last livestream"
-            value={state === "Recording" ? "Now" : (channel.live.split(",")[0] ?? "—")}
-            detail={state === "Recording" ? "Currently recording" : channel.live}
+            value={
+              state === "Recording" || state === "Live" ? "Now" : (channel.live.split(",")[0] ?? "—")
+            }
+            detail={
+              state === "Recording"
+                ? "Currently recording"
+                : state === "Live"
+                  ? "Live – not recording"
+                  : channel.live
+            }
             icon={Radio}
           />
           <StatCard

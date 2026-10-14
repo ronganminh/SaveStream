@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -29,7 +30,7 @@ import {
 } from "@/repositories/admin-api";
 
 function dateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString("en-US") : "—";
+  return formatAdminDateTime(value);
 }
 
 function minutes(value: number) {

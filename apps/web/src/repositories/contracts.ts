@@ -38,7 +38,7 @@ import type {
   LiveStatusValue,
 } from "@/api/types";
 
-export type ChannelStatus = "Recording" | "Waiting" | "Offline" | "Paused" | "Error";
+export type ChannelStatus = "Recording" | "Live" | "Waiting" | "Offline" | "Paused" | "Error";
 export type RecordingStatus = "Recording" | "Processing" | "Waiting" | "Missed" | "Ready" | "Error";
 export type Status = ChannelStatus | RecordingStatus;
 
@@ -60,6 +60,10 @@ export type ChannelModel = {
   liveStatus: LiveStatusValue;
   source: Source;
   autoRecord: boolean;
+  /** Set only while a recording job for this channel actually exists. */
+  activeRecordingId?: string | null;
+  /** Why a live channel is not being recorded (status "Live"). */
+  liveReason?: string | null;
 };
 
 export type RecordingModel = {

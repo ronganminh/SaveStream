@@ -21,6 +21,7 @@ from app.application.entitlements.service import EntitlementService, Entitlement
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
+from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
 from app.domain.watches.state import WatchStatus, can_resume, validate_user_status
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
@@ -115,6 +116,25 @@ class WatchService:
             )
         )
         return set(rows.all())
+
+    async def active_recordings(self, user_id: uuid.UUID) -> list[Recording]:
+        """Recording jobs that are actually in flight for this user.
+
+        Channel cards must only claim "Recording" when one of these exists;
+        a live creator alone does not mean SaveStream is recording.
+        """
+        rows = await self.session.scalars(
+            select(Recording)
+            .where(
+                Recording.user_id == user_id,
+                Recording.deleted_at.is_(None),
+                Recording.status.in_(
+                    [status.value for status in ACTIVE_RECORDING_STATUSES]
+                ),
+            )
+            .order_by(Recording.created_at.desc())
+        )
+        return list(rows.all())
 
     async def create(
         self,

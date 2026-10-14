@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
 import {
   Download,
@@ -35,7 +36,7 @@ import {
 } from "@/repositories/admin-api";
 
 function dateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString("en-US") : "—";
+  return formatAdminDateTime(value);
 }
 
 function downloadCsv(filename: string, content: string) {

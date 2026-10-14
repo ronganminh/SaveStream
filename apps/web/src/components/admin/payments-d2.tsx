@@ -1,3 +1,4 @@
+import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useState } from "react";
 import { Download, RefreshCw, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ import {
 } from "@/repositories/admin-api";
 
 function dateTime(value: string | null | undefined) {
-  return value ? new Date(value).toLocaleString("en-US") : "—";
+  return formatAdminDateTime(value);
 }
 
 function usd(minor: number | null | undefined) {
@@ -679,8 +680,13 @@ export function AdminFinancePage() {
                     disabled={Number(adjustMinutes) <= 0}
                     onChange={(event) => setCountsAsPurchase(event.target.checked)}
                   />
-                  Counts as purchase
+                  Counts as purchase (unlocks Pro: automatic cloud recording, more channels)
                 </label>
+                <p className="text-xs text-muted-foreground">
+                  Leave unchecked for goodwill or trial minutes: the account stays on Free and its
+                  channels cannot auto-record. Existing channels keep their Auto-record setting;
+                  the user turns it on per channel.
+                </p>
                 <Button
                   disabled={
                     !adjustUserId ||

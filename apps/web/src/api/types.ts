@@ -31,6 +31,9 @@ export type WatchResponse = {
   status: WatchStatusValue;
   live_status: LiveStatusValue;
   auto_record: boolean;
+  auto_record_state?: "off" | "active" | "paused_no_cloud_minutes" | "waiting_for_cloud_slot";
+  active_recording_id?: string | null;
+  active_recording_status?: string | null;
   last_checked_at: string | null;
   next_check_at: string | null;
   last_live_at: string | null;

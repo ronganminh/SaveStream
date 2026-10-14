@@ -36,6 +36,9 @@ class WatchResponse(StrictModel):
     live_status: LiveStatusValue
     auto_record: bool
     auto_record_state: AutoRecordStateValue = "off"
+    # Set only while a Recording job for this channel is actually in flight.
+    active_recording_id: str | None = None
+    active_recording_status: str | None = None
     notify_on_live: bool = True
     last_checked_at: datetime | None
     next_check_at: datetime | None
