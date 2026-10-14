@@ -379,7 +379,7 @@ export function MaintenanceGate({ children }: { children: ReactNode }) {
     retry: false,
     staleTime: 30_000,
   });
-  if (query.data?.maintenance.active && !bypassesMaintenance(path)) {
+  if (query.data?.maintenance?.active && !bypassesMaintenance(path)) {
     return (
       <MaintenanceScreen
         eta={query.data.maintenance.eta}

@@ -495,6 +495,12 @@ export const apiRepositories: SaveStreamRepositories = {
     },
   },
 
+  support: {
+    createReport(input) {
+      return apiClient.post<{ report_id: string }>("/v1/support/reports", { json: input });
+    },
+  },
+
   notifications: {
     async list() {
       const response = await apiClient.get<NotificationListResponse>(

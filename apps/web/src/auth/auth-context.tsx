@@ -41,6 +41,13 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
   signOutEverywhere: () => Promise<void>;
   refreshSession: () => Promise<AuthUser | null>;
+  /**
+   * True after a signed-in session was rejected by the API (refresh token
+   * expired or revoked elsewhere). App routes show the "Your session
+   * expired" dialog instead of silently jumping to /sign-in.
+   */
+  sessionExpired: boolean;
+  acknowledgeSessionExpired: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -76,6 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pendingSocialLinkRef = useRef<string | null>(null);
   const pendingSocialSignUpRef = useRef<string | null>(null);
   const refreshInFlightRef = useRef<Promise<string | null> | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
   const clearSession = useCallback(() => {
     accessTokenRef.current = null;
@@ -111,10 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     configureApiSession({
       getAccessToken: () => accessTokenRef.current,
       refreshAccessToken,
-      onAuthExpired: clearSession,
+      onAuthExpired: () => {
+        if (statusRef.current === "authenticated") setSessionExpired(true);
+        clearSession();
+      },
     });
     return () => configureApiSession(null);
   }, [clearSession, refreshAccessToken]);
+
+  const acknowledgeSessionExpired = useCallback(() => setSessionExpired(false), []);
 
   const loadCurrentUser = useCallback(async (accessToken: string): Promise<AuthUser> => {
     const currentUser = await authApi.getCurrentUser(accessToken);
@@ -122,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeSessionHint(true);
     setUser(currentUser);
     setStatus("authenticated");
+    setSessionExpired(false);
     return currentUser;
   }, []);
 
@@ -304,8 +320,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       signOutEverywhere,
       refreshSession,
+      sessionExpired,
+      acknowledgeSessionExpired,
     }),
     [
+      acknowledgeSessionExpired,
       completeSocialSignUp,
       identity,
       refreshSession,
@@ -313,6 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithSocial,
       signOut,
       signOutEverywhere,
+      sessionExpired,
       status,
       user,
     ],

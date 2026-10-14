@@ -27,6 +27,20 @@ export function configureApiSession(hooks: ApiSessionHooks | null) {
   apiSessionHooks = hooks;
 }
 
+// Request IDs of the last few failed calls, attached to "Report a problem"
+// diagnostics so support can find the matching server log lines.
+const FAILED_REQUEST_ID_LIMIT = 5;
+const failedRequestIds: string[] = [];
+
+function rememberFailedRequest(requestId: string) {
+  failedRequestIds.push(requestId);
+  if (failedRequestIds.length > FAILED_REQUEST_ID_LIMIT) failedRequestIds.shift();
+}
+
+export function recentFailedRequestIds(): string[] {
+  return [...failedRequestIds].reverse();
+}
+
 function createRequestId(): string {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -95,6 +109,7 @@ export class ApiClient {
     } catch (error) {
       if (requestInit.signal?.aborted) throw error;
       if (error instanceof ApiError) throw error;
+      rememberFailedRequest(requestId);
       throw apiNetworkError(error, requestId);
     }
 
@@ -123,6 +138,7 @@ export class ApiClient {
     }
 
     if (!response.ok) {
+      rememberFailedRequest(response.headers.get(REQUEST_ID_HEADER) ?? requestId);
       throw await apiErrorFromResponse(response, requestId);
     }
 

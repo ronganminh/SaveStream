@@ -113,14 +113,10 @@ export type UsageData = {
 };
 
 export type NotificationType =
-  | "recording_started"
-  | "recording_ready"
-  | "recording_failed"
-  | "quota_warning";
+  "recording_started" | "recording_ready" | "recording_failed" | "quota_warning";
 
 export type NotificationLink =
-  | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
-  | { to: "/usage" };
+  { to: "/recordings/$id" | "/channels/$id"; params: { id: string } } | { to: "/usage" };
 
 export type NotificationModel = {
   id: string;
@@ -278,6 +274,17 @@ export interface NotificationRepository {
   ): Promise<NotificationPreferenceModel>;
 }
 
+export type SupportReportInput = {
+  message: string;
+  recording_id?: string | null;
+  diagnostics?: Record<string, unknown>;
+};
+
+export interface SupportRepository {
+  /** POST /v1/support/reports — shows up in /admin/reports. */
+  createReport(input: SupportReportInput): Promise<{ report_id: string }>;
+}
+
 export interface SaveStreamRepositories {
   channels: ChannelRepository;
   recordings: RecordingRepository;
@@ -288,6 +295,7 @@ export interface SaveStreamRepositories {
   admin: AdminRepository;
   usage: UsageRepository;
   notifications: NotificationRepository;
+  support: SupportRepository;
 }
 
 export type { SessionResponse };
