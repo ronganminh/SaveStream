@@ -25,6 +25,9 @@ class CreditTransactionResponse(StrictModel):
     balance_after: int
     reference_type: str
     reference_id: str | None
+    # For a `release` entry: credits returned from the recording hold. The
+    # entry's own amount is 0 because held credits never left the balance.
+    released_credits: int | None = None
     created_at: datetime
 
 

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+import asyncio
+import re
+
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,10 +17,12 @@ from app.api.schemas.billing import (
     PublicRecordingRate,
 )
 from app.application.billing.service import BillingService
+from app.application.creators.avatar_cache import avatar_key
 from app.application.pricing.service import PricingService
-from app.application.recordings.retention import retention_days
+from app.application.recordings.retention import effective_retention_days
 from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
+from app.infrastructure.creators.avatar_fetch import ALLOWED_AVATAR_TYPES, MAX_AVATAR_BYTES
 from app.infrastructure.payments.disabled import DisabledPaymentProvider
 from app.settings import AppSettings, store_purchase_platform_enabled
 
@@ -94,6 +99,9 @@ async def get_public_pricing(
     ).packages()
     response.headers["Cache-Control"] = "public, max-age=60"
     settings = request.app.state.settings
+    # Limits come from the Admin runtime settings that entitlements enforce,
+    # so changing them in Admin updates the pricing page too.
+    runtime = RuntimeSettingsService(session, settings)
     return PublicPricingResponse(
         packages=[
             PublicCreditPackage(
@@ -107,13 +115,52 @@ async def get_public_pricing(
             for package in packages
         ],
         recording_rate=rate,
-        signup_credits=settings.signup_credits,
-        max_channels_per_user=_limit(settings.quota_max_watches_per_user),
+        signup_credits=await runtime.integer("signup_credits"),
+        max_channels_per_user=_limit(await runtime.integer("pro_max_watches")),
+        free_max_channels_per_user=_limit(await runtime.integer("free_max_watches")),
         max_concurrent_recordings_per_user=_limit(
-            settings.quota_max_active_recordings_per_user,
-            settings.watch_max_concurrent_recordings_per_user,
+            await runtime.integer("pro_max_concurrent_cloud_recordings")
         ),
-        recording_retention_days=retention_days(settings, paid=True) or None,
-        trial_recording_retention_days=retention_days(settings, paid=False) or None,
+        recording_retention_days=(
+            await effective_retention_days(session, settings, paid=True) or None
+        ),
+        trial_recording_retention_days=(
+            await effective_retention_days(session, settings, paid=False) or None
+        ),
         checkout=await _checkout_channels(session, settings),
+    )
+
+
+_AVATAR_ID = re.compile(r"^[0-9a-f]{32}$")
+
+
+@router.get(
+    "/creator-avatars/{avatar_id}",
+    operation_id="getCreatorAvatar",
+    response_class=Response,
+    responses={200: {"content": {"image/jpeg": {}, "image/webp": {}, "image/png": {}}}},
+)
+async def get_creator_avatar(avatar_id: str, request: Request) -> Response:
+    """Cached copy of a channel's TikTok avatar (stable URL; TikTok's own expire).
+
+    Only ids issued by the avatar cache (random 32-hex) resolve, and only
+    raster image types are served.
+    """
+    if not _AVATAR_ID.fullmatch(avatar_id):
+        raise ApplicationError("RESOURCE_NOT_FOUND", "Avatar not found", status_code=404)
+    found = await asyncio.to_thread(
+        request.app.state.minio.get_bytes,
+        avatar_key(avatar_id),
+        max_bytes=MAX_AVATAR_BYTES,
+    )
+    if found is None:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "Avatar not found", status_code=404)
+    data, content_type = found
+    content_type = content_type.split(";")[0].strip().lower()
+    if content_type not in ALLOWED_AVATAR_TYPES:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "Avatar not found", status_code=404)
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
     )

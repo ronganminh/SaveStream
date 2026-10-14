@@ -66,5 +66,18 @@ def retention_days(settings: AppSettings, *, paid: bool) -> int:
     return settings.recording_retention_days_free or settings.recording_retention_days
 
 
+async def effective_retention_days(
+    session: AsyncSession, settings: AppSettings, *, paid: bool
+) -> int:
+    """Like `retention_days`, but honours the Admin runtime overrides."""
+    from app.application.runtime_settings import RuntimeSettingsService
+
+    runtime = RuntimeSettingsService(session, settings)
+    paid_days = await runtime.integer("recording_retention_days")
+    if paid:
+        return paid_days
+    return await runtime.integer("recording_retention_days_free") or paid_days
+
+
 def expires_at(created_at: datetime, days: int) -> datetime | None:
     return created_at + timedelta(days=days) if days > 0 else None

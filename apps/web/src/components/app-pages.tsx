@@ -102,6 +102,7 @@ import {
   ConfirmDeleteDialog,
   ConfirmDialog,
   CreatorAvatar,
+  RecordingCreatorAvatar,
   EmptyState,
   ErrorState,
   FilterBar,
@@ -136,6 +137,7 @@ import {
 } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { isAdminRole, isDemoMode } from "@/lib/app-config";
+import { freeWebSentence, retentionFeature, retentionSentence } from "@/lib/plan-facts";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { ApiError } from "@/api/errors";
 import {
@@ -190,6 +192,7 @@ import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
   useRecordingDownloadMutation,
+  saveSignedFile,
   useStopRecordingMutation,
 } from "@/hooks/use-recording-mutations";
 import { useRecordingRealtime, type RecordingRealtimeState } from "@/hooks/use-recording-realtime";
@@ -498,6 +501,8 @@ function RecordingPreviewCard() {
 
 export function LandingPage() {
   const { t, language } = usePreferences();
+  const { query: publicPricingQuery } = usePublicPricingData();
+  const publicPricing = publicPricingQuery.data;
   const { status } = useAuth();
   const authenticated = status === "authenticated";
   const structuredData = {
@@ -707,7 +712,7 @@ export function LandingPage() {
                 "Browser playback",
                 "Fast downloads",
                 "Credit usage history",
-                "Stored for up to 30 days",
+                retentionFeature(publicPricing),
               ].map((x, i) => (
                 <div key={x} className="flex items-center gap-3 bg-background p-4 text-sm">
                   <Check className="size-4 text-success" />
@@ -818,7 +823,7 @@ export function LandingPage() {
                   ],
                   [
                     "How long are recordings kept?",
-                    "Finished recordings are stored for 30 days after you buy credits, or 7 days on the free trial. Watch them in the browser or download any recording you want to keep longer.",
+                    `${retentionSentence(publicPricing)}. Watch them in the browser or download any recording you want to keep longer.`,
                   ],
                   [
                     "What happens if I run out of credits?",
@@ -1685,6 +1690,7 @@ function ProductionOverviewPage() {
                   className="flex items-center gap-3 p-3"
                 >
                   <div className={cn("aspect-video w-20 rounded", recording.color)} />
+                  <RecordingCreatorAvatar recording={recording} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{recording.handle}</p>
                     <p className="text-xs text-muted-foreground">
@@ -1785,6 +1791,7 @@ function DemoOverviewPage() {
                 className="flex items-center gap-3 p-3"
               >
                 <div className={cn("aspect-video w-20 rounded", r.color)} />
+                <RecordingCreatorAvatar recording={r} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{r.handle}</p>
                   <p className="text-xs text-muted-foreground">
@@ -1817,6 +1824,7 @@ export function ChannelsPage() {
   const channelItems = channelsQuery.data ?? [];
   const entitlement = entitlementQuery.data;
   const channelLimit = entitlement?.limits.max_watches ?? (isDemoMode ? 3 : null);
+  const { query: publicPricingQuery } = usePublicPricingData();
   const channelCount = entitlement?.watch_count ?? channelItems.length;
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState("All");
@@ -1831,7 +1839,7 @@ export function ChannelsPage() {
         title="Channels"
         subtitle={
           entitlement?.plan === "free"
-            ? "Free web includes 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page."
+            ? `${freeWebSentence(publicPricingQuery.data, channelLimit)} Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page.`
             : "Channels are monitored automatically. Recording begins when an enabled channel goes live."
         }
         action={
@@ -2363,10 +2371,8 @@ export function RecordingDetailPage({
     }
 
     void downloadRecording
-      .mutateAsync(rec.id)
-      .then(({ download: signed }) => {
-        window.location.assign(signed.url);
-      })
+      .mutateAsync({ recordingId: rec.id, saveAs: true })
+      .then(({ download: signed }) => saveSignedFile(signed.url))
       .catch((error) => {
         toast.error("Download unavailable", {
           description: artifactActionErrorMessage(error),
@@ -2490,6 +2496,7 @@ export function RecordingDetailPage({
         />
       )}
       <PageHeader
+        leading={<RecordingCreatorAvatar recording={rec} size="md" />}
         title={state === "active" ? `${rec.handle} — Live now` : `${rec.handle} — ${rec.title}`}
         subtitle={`TikTok · ${state === "active" ? "Started" : rec.date} at ${rec.time}`}
         action={actions}
@@ -2647,7 +2654,12 @@ export function RecordingDetailPage({
           ["Started", `${rec.date.replace(", 2026", "")} · ${rec.time}`],
           ["Duration", state === "failed" ? `${rec.duration} (partial)` : rec.duration],
           [state === "active" ? "Written" : "File size", rec.size],
-          ["Resolution", rec.resolution],
+          [
+            "Resolution",
+            artifact?.width && artifact.height
+              ? `${artifact.width}×${artifact.height}`
+              : rec.resolution,
+          ],
           [
             "Stored until",
             state === "active" || state === "processing"
@@ -2818,7 +2830,13 @@ function creditTransactionTitle(transaction: CreditTransactionResponse) {
   if (transaction.type === "grant") return "Credits purchased";
   if (transaction.type === "refund") return "Refund";
   if (transaction.type === "adjustment") return "Credit adjustment";
-  if (transaction.type === "release") return "Unused credits returned";
+  if (transaction.type === "release") {
+    // Held credits never left the balance, so the entry amount is 0; say how
+    // many were released instead of showing a confusing "0".
+    return transaction.released_credits
+      ? `Released ${pluralize(transaction.released_credits, "held credit")}`
+      : "Credit hold released";
+  }
   return "Credit change";
 }
 
@@ -2829,7 +2847,12 @@ const reservationStatusLabel: Record<CreditReservationResponse["status"], string
 };
 
 function CreditTransactionRow({ transaction }: { transaction: CreditTransactionResponse }) {
-  const amount = transaction.amount > 0 ? `+${transaction.amount}` : String(transaction.amount);
+  const amount =
+    transaction.type === "release" && transaction.amount === 0
+      ? "—"
+      : transaction.amount > 0
+        ? `+${transaction.amount}`
+        : String(transaction.amount);
   return (
     <div className="grid gap-2 border-t px-4 py-3 text-sm sm:grid-cols-[1.5fr_.8fr_.8fr_auto] sm:items-center">
       <div>
@@ -4177,7 +4200,7 @@ function CreditPricingPage() {
               <h3 className="font-medium text-foreground">{t("Payments and refunds")}</h3>
               <p className="mt-1 leading-6">
                 {t(
-                  "Payments are processed by the payment provider shown at checkout. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
+                  "Payments are processed by PayPal. Prices are shown in USD; applicable taxes are calculated at checkout. See our",
                 )}{" "}
                 <Link to="/refund" className="text-primary underline underline-offset-4">
                   {t("refund policy")}

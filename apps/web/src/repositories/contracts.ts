@@ -56,6 +56,8 @@ export type ChannelModel = {
   recordedHours: string;
   storage: string;
   tone: string;
+  /** Creator avatar (cached copy or TikTok URL); render initials when null or broken. */
+  avatarUrl?: string | null;
   backendStatus: WatchStatusValue;
   liveStatus: LiveStatusValue;
   source: Source;
@@ -82,6 +84,10 @@ export type RecordingModel = {
   expireTone?: "warning" | "critical";
   status: RecordingStatus;
   color: string;
+  /** Creator avatar from the recording or its channel; initials/tone are the fallback. */
+  avatarUrl?: string | null;
+  initials?: string;
+  tone?: string;
   error?: string;
   partialDuration?: string;
   backendStatus: RecordingStatusValue;
@@ -170,7 +176,11 @@ export interface RecordingRepository {
   }>;
   getRecording(id: string): Promise<RecordingResponse>;
   listArtifacts(id: string): Promise<ArtifactResponse[]>;
-  createArtifactDownloadUrl(artifactId: string): Promise<DownloadUrlResponse>;
+  /** `saveAs` signs an attachment disposition with a readable file name. */
+  createArtifactDownloadUrl(
+    artifactId: string,
+    options?: { saveAs?: boolean },
+  ): Promise<DownloadUrlResponse>;
   getLiveStatus(source: Source): Promise<LiveStatusResponse>;
   create(input: CreateRecordingRequest, idempotencyKey: string): Promise<RecordingResponse>;
   stop(id: string): Promise<RecordingResponse>;

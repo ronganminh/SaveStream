@@ -124,6 +124,10 @@ class ArtifactResponse(StrictModel):
     container: Literal["mp4"] = "mp4"
     size_bytes: int = Field(ge=0)
     checksum_sha256: str
+    # Probed from the finished file; null for older artifacts or when probing failed.
+    duration_ms: int | None = Field(default=None, ge=0)
+    width: int | None = Field(default=None, ge=1)
+    height: int | None = Field(default=None, ge=1)
     created_at: datetime
 
 

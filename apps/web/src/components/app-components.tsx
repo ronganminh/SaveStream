@@ -112,9 +112,12 @@ import type { ChannelModel, RecordingModel } from "@/repositories";
 import {
   useActiveRecordingData,
   useChannelsData,
+  useCreatorPreview,
   useEntitlementData,
+  usePublicPricingData,
   useRecordingsData,
 } from "@/hooks/use-domain-data";
+import { freeWebSentence } from "@/lib/plan-facts";
 import {
   channelActionErrorMessage,
   existingWatchId,
@@ -133,6 +136,7 @@ import {
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
   useRecordingDownloadMutation,
+  saveSignedFile,
 } from "@/hooks/use-recording-mutations";
 
 export { meta, publicMeta };
@@ -201,27 +205,79 @@ export function Logo({
     </Link>
   );
 }
+/**
+ * Creator avatar: the channel's TikTok picture (served by the API from a
+ * cached copy, the same `creator.avatar_url` the mobile app shows), falling
+ * back to initials when there is none or the image fails to load.
+ */
+export function AvatarCircle({
+  src,
+  initials,
+  tone,
+  size = "md",
+}: {
+  src?: string | null | undefined;
+  initials: string;
+  tone?: string | undefined;
+  size?: "xs" | "sm" | "md" | "lg";
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const image = src && /^https?:\/\//.test(src) && !failed ? src : null;
+  return (
+    <div
+      className={cn(
+        "grid shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br font-semibold text-avatar-foreground",
+        tone ?? "from-avatar-one to-avatar-one-end",
+        size === "xs"
+          ? "size-6 text-[9px]"
+          : size === "sm"
+            ? "size-8 text-[10px]"
+            : size === "lg"
+              ? "size-14 text-sm"
+              : "size-10 text-xs",
+      )}
+    >
+      {image ? (
+        <img
+          src={image}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="size-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initials
+      )}
+    </div>
+  );
+}
 export function CreatorAvatar({
   channel,
   size = "md",
 }: {
-  channel: ChannelModel;
-  size?: "sm" | "md" | "lg";
+  channel: Pick<ChannelModel, "initials" | "tone" | "avatarUrl">;
+  size?: "xs" | "sm" | "md" | "lg";
 }) {
   return (
-    <div
-      className={cn(
-        "grid shrink-0 place-items-center rounded-full bg-gradient-to-br font-semibold text-avatar-foreground",
-        channel.tone,
-        size === "sm"
-          ? "size-8 text-[10px]"
-          : size === "lg"
-            ? "size-14 text-sm"
-            : "size-10 text-xs",
-      )}
-    >
-      {channel.initials}
-    </div>
+    <AvatarCircle src={channel.avatarUrl} initials={channel.initials} tone={channel.tone} size={size} />
+  );
+}
+export function RecordingCreatorAvatar({
+  recording,
+  size = "xs",
+}: {
+  recording: RecordingModel;
+  size?: "xs" | "sm" | "md" | "lg";
+}) {
+  return (
+    <AvatarCircle
+      src={recording.avatarUrl}
+      initials={recording.initials ?? recording.handle.replace(/^@/, "").slice(0, 2).toUpperCase()}
+      tone={recording.tone}
+      size={size}
+    />
   );
 }
 export function PlatformBadge({ soon = false }: { soon?: boolean }) {
@@ -340,17 +396,23 @@ export function PageHeader({
   title,
   subtitle,
   action,
+  leading,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
+  /** Shown before the title, e.g. a creator avatar. */
+  leading?: ReactNode;
 }) {
   const { t } = usePreferences();
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-.025em]">{t(title)}</h1>
-        {subtitle && <p className="mt-1 max-w-2xl text-[15px] text-muted-foreground">{t(subtitle)}</p>}
+      <div className="flex items-start gap-3">
+        {leading}
+        <div>
+          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-.025em]">{t(title)}</h1>
+          {subtitle && <p className="mt-1 max-w-2xl text-[15px] text-muted-foreground">{t(subtitle)}</p>}
+        </div>
       </div>
       {action}
     </header>
@@ -1015,8 +1077,13 @@ export function RecordingRow({ recording }: { recording: RecordingModel }) {
           </small>
         </span>
       </Link>
-      <Link to="/channels/$id" params={{ id: recording.channelId }} className="hover:underline">
-        {recording.handle}
+      <Link
+        to="/channels/$id"
+        params={{ id: recording.channelId }}
+        className="flex min-w-0 items-center gap-2 hover:underline"
+      >
+        <RecordingCreatorAvatar recording={recording} />
+        <span className="truncate">{recording.handle}</span>
       </Link>
       <span className="font-mono">{recording.duration}</span>
       <span className="font-mono">{recording.size}</span>
@@ -1045,7 +1112,8 @@ export function RecordingCard({ recording }: { recording: RecordingModel }) {
         </div>
       </Link>
       <div className="p-4">
-        <div className="flex">
+        <div className="flex items-start gap-2">
+          <RecordingCreatorAvatar recording={recording} size="sm" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {recording.handle} — {recording.title}
@@ -1081,8 +1149,8 @@ function RecordingActions({ recording }: { recording: RecordingModel }) {
     }
 
     void downloadRecording
-      .mutateAsync(recording.id)
-      .then(({ download: signed }) => window.location.assign(signed.url))
+      .mutateAsync({ recordingId: recording.id, saveAs: true })
+      .then(({ download: signed }) => saveSignedFile(signed.url))
       .catch((error) =>
         toast.error("Download unavailable", {
           description: artifactActionErrorMessage(error),
@@ -1276,7 +1344,11 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const name = parsed ? displayNameFromTikTokUsername(parsed.username) : "";
   const channelItems = channelsQuery.data ?? [];
   const entitlement = entitlementQuery.data;
+  const { query: publicPricingQuery } = usePublicPricingData();
   const isFree = isDemoMode || entitlement?.plan === "free";
+  const preview = useCreatorPreview(open && parsed ? parsed.source : null);
+  const previewCreator =
+    preview.data && parsed && preview.data.creator ? preview.data.creator : null;
 
   useEffect(() => {
     setErrorText(null);
@@ -1324,7 +1396,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       setPhase("success");
       toast.success(`Monitoring ${parsed.handle}`, {
         description: isFree
-          ? "Free accounts monitor up to 3 channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
+          ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
           : "We’ll record automatically when this channel goes live.",
       });
     } catch (error) {
@@ -1398,7 +1470,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
             <DialogDescription className="mt-2">
               {handle} is now monitored.{" "}
               {isFree
-                ? "Free web accounts get 10 trial credits and up to 3 monitored channels. Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page."
+                ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
                 : "Recording starts automatically on our servers when the channel goes live."}
             </DialogDescription>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
@@ -1426,7 +1498,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
               <DialogDescription>
                 Add a TikTok creator to your account. SaveStream will monitor it automatically.
                 {isFree
-                  ? " Free web accounts can monitor up to 3 channels; automatic cloud recording starts after a one-time hour purchase."
+                  ? ` ${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording starts after you buy credits.`
                   : " Automatic cloud recording starts when configured to do so."}
               </DialogDescription>
             </DialogHeader>
@@ -1458,15 +1530,20 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
               </div>
               {state === "found" && parsed && (
                 <div className="flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
-                  <div className="grid size-10 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                    {name
+                  <AvatarCircle
+                    src={previewCreator?.avatar_url}
+                    initials={name
                       .split(" ")
                       .map((word) => word[0])
                       .join("")
-                      .slice(0, 2)}
-                  </div>
+                      .slice(0, 2)
+                      .toUpperCase()}
+                    tone="from-primary to-primary"
+                  />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{name}</p>
+                    <p className="truncate text-sm font-medium">
+                      {previewCreator?.display_name || name}
+                    </p>
                     <p className="text-xs text-muted-foreground">{parsed.handle}</p>
                   </div>
                   <div className="ml-auto">

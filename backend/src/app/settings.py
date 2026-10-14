@@ -131,6 +131,11 @@ class AppSettings:
     refresh_cookie_name: str = "savestream_refresh"
     firebase_auth_project_id: str = ""
     frontend_base_url: str = "http://localhost:5173"
+    # Public origin of this API (e.g. https://api.savestream.online). Used for
+    # stable URLs of cached creator avatars; empty keeps the raw TikTok URLs.
+    public_api_base_url: str = ""
+    creator_avatar_refresh_hours: int = 72
+    creator_avatar_batch_size: int = 25
     smtp_host: str = "localhost"
     smtp_port: int = 1025
     smtp_username: str = field(default="", repr=False)
@@ -600,6 +605,13 @@ class AppSettings:
             refresh_cookie_name=_env("REFRESH_COOKIE_NAME", "savestream_refresh"),
             firebase_auth_project_id=_env("FIREBASE_AUTH_PROJECT_ID", ""),
             frontend_base_url=frontend_base_url,
+            public_api_base_url=(
+                _exact_origin(public_api_base_url, "SAVESTREAM_PUBLIC_API_BASE_URL")
+                if (public_api_base_url := _env("PUBLIC_API_BASE_URL", ""))
+                else ""
+            ),
+            creator_avatar_refresh_hours=_int_env("CREATOR_AVATAR_REFRESH_HOURS", 72),
+            creator_avatar_batch_size=_int_env("CREATOR_AVATAR_BATCH_SIZE", 25),
             smtp_host=smtp_host,
             smtp_port=smtp_port,
             smtp_username=smtp_username,

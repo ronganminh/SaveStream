@@ -31,7 +31,10 @@ const forbidIn = (label, source, text) => {
 must("src/api/types.ts", "ArtifactResponse");
 must("src/api/types.ts", "DownloadUrlResponse");
 must("src/repositories/contracts.ts", "listArtifacts(id: string)");
-must("src/repositories/contracts.ts", "createArtifactDownloadUrl(artifactId: string)");
+must("src/repositories/contracts.ts", "createArtifactDownloadUrl(");
+// QA 2026-10-14: Download must save a named file, not play it in the app tab.
+must("src/repositories/api.ts", 'disposition: "attachment"');
+must("src/hooks/use-recording-mutations.ts", "export function saveSignedFile");
 must("src/repositories/api.ts", "/artifacts");
 must("src/repositories/api.ts", "/download-url");
 must("src/hooks/use-domain-data.ts", "recordingArtifacts");
@@ -50,10 +53,12 @@ const detail = block(
 mustIn("RecordingDetailPage", detail, "useRecordingArtifactsData");
 mustIn("RecordingDetailPage", detail, "useRecordingDownloadMutation");
 mustIn("RecordingDetailPage", detail, "useDeleteRecordingMutation");
-mustIn("RecordingDetailPage", detail, "window.location.assign");
+mustIn("RecordingDetailPage", detail, "saveSignedFile(signed.url)");
+forbidIn("RecordingDetailPage", detail, "window.location.assign");
+mustIn("RecordingDetailPage", detail, "artifact.width");
 mustIn("RecordingDetailPage", detail, "Recording file unavailable");
 mustIn("RecordingDetailPage", detail, 'artifactsState.kind === "empty"');
-mustIn("RecordingDetailPage", detail, ".mutateAsync(rec.id)");
+mustIn("RecordingDetailPage", detail, "{ recordingId: rec.id, saveAs: true }");
 forbidIn("RecordingDetailPage", detail, "if (!isDemoMode) return;");
 
 const actions = block(
@@ -63,7 +68,8 @@ const actions = block(
 );
 mustIn("RecordingActions", actions, "useRecordingDownloadMutation");
 mustIn("RecordingActions", actions, "useDeleteRecordingMutation");
-mustIn("RecordingActions", actions, "window.location.assign");
+mustIn("RecordingActions", actions, "saveSignedFile(signed.url)");
+forbidIn("RecordingActions", actions, "window.location.assign");
 mustIn("RecordingActions", actions, "recording.actions.can_delete");
 
 forbid("src/repositories/api.ts", "@/mocks/fixtures");

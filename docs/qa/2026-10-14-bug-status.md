@@ -8,7 +8,7 @@ deployed to production on 2026-10-14 (backend 09:41 UTC, web 09:44 UTC).
 | --- | --- | --- | --- | --- |
 | BUG-1 "Recording" without a job | P0 | Fixed, deployed | #171 | — |
 | BUG-2 Auto-record off despite credits | P0 | Fixed, deployed | #171 | Owner: re-grant with "Counts as purchase" to test auto-record |
-| BUG-3 Failed jobs + CREATED date | P0 | Partly fixed | #171, this PR | Root cause of the failed `v_nenee` jobs: run Production Diagnostics |
+| BUG-3 Failed jobs + CREATED date | P0 | Fixed (pending deploy) | #171, #173, BUG-3 PR | Deploy the worker fix |
 | BUG-4 Checkout state / stuck order | P1 | Fixed, deployed | #171 | Confirm the stuck order expired (diagnostics) |
 | BUG-5 App Store copy on /pricing | P1 | Fixed, deployed | #171; store copy removed entirely in #172 | — |
 | BUG-6 Invalid handle stored | P1 | Fixed, deployed | #171 (migration 0022 ran) | Confirm the row is disabled (diagnostics) |
@@ -41,11 +41,20 @@ marked, so the account stayed Free. That rule is kept. The changes:
 - *Error counters*: they use different windows. Overview is a rolling 24h snapshot
   refreshed hourly. Workers is a live window, default 15 min. Both are labeled, and
   Workers now ignores deleted rows.
-- *Failed jobs*: still open. The failure reason was never shown in the UI.
-  - This PR adds a Reason column (error code and message) to Admin → Jobs → Recordings.
-  - It also adds a read-only **Production Diagnostics** workflow that prints failure
-    reasons, recorder/worker error lines and cleanup checks.
-  - The fix depends on what it reports.
+- *Failed jobs*, root cause found with Production Diagnostics on 2026-10-14:
+  - 4 of the 5 failed `v_nenee` jobs had actually recorded 11 min – 1.6 h
+    (`duration_seconds` 687–5935). They ended as `STREAM_OFFLINE` on their second
+    worker attempt (`worker_attempts = 2`).
+  - Cause: the recorder stopped heartbeating as soon as the capture ended. Checksum
+    and upload of a multi-GB file then took longer than
+    `RECORDING_STALE_AFTER_SECONDS` (60 s).
+  - `recover_stale` therefore re-enqueued the job. The second attempt found the
+    creator offline and failed it with 0 minutes charged, and the first attempt's
+    upload was never linked to the recording.
+  - The fifth job is a real ffmpeg error (`STREAM_UNAVAILABLE`, 1 attempt).
+  - Fix: the heartbeat runs on its own DB session until the job finishes (capture,
+    processing, upload). After the capture it only renews the lease, so upload time
+    is not billed. A regression test reproduces the stale re-run.
 
 **BUG-4.**
 - `/v1/public/pricing` returns `checkout.{web,app_store,google_play}`; `/billing` and

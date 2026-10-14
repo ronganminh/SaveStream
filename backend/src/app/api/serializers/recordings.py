@@ -23,6 +23,7 @@ def recording_response(
     retention_days: int = 0,
     queue_position: int | None = None,
     artifact_ready: bool = False,
+    avatar_url: str | None = None,
 ) -> RecordingResponse:
     """retention_days > 0 adds expires_at for finished recordings."""
     status = RecordingStatus(recording.status)
@@ -32,7 +33,7 @@ def recording_response(
         creator = Creator(
             username=recording.resolved_username,
             display_name=recording.resolved_username,
-            avatar_url=None,
+            avatar_url=avatar_url,
         )
     error = None
     if recording.error_code and recording.error_message:
@@ -86,5 +87,8 @@ def artifact_response(artifact: RecordingArtifact) -> ArtifactResponse:
         container="mp4",
         size_bytes=artifact.size_bytes,
         checksum_sha256=artifact.checksum_sha256,
+        duration_ms=artifact.duration_ms,
+        width=artifact.width,
+        height=artifact.height,
         created_at=artifact.created_at,
     )

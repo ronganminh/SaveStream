@@ -20,6 +20,7 @@ from app.api.schemas.recordings import (
     RecordingResponse,
 )
 from app.api.serializers.recordings import recording_response
+from app.application.creators.avatar_cache import recording_avatar_urls
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
@@ -134,6 +135,7 @@ async def list_recordings(
     days = await service.retention_days_for(principal.user_id)
     positions = await service.queue_positions(page.items)
     artifact_recording_ids = await service.artifact_recording_ids(page.items)
+    avatars = await recording_avatar_urls(service.session, page.items)
     return RecordingListResponse(
         items=[
             recording_response(
@@ -141,6 +143,7 @@ async def list_recordings(
                 retention_days=days,
                 queue_position=positions.get(item.id),
                 artifact_ready=item.id in artifact_recording_ids,
+                avatar_url=avatars.get(item.id),
             )
             for item in page.items
         ],
@@ -162,11 +165,13 @@ async def get_recording(
     days = await service.retention_days_for(principal.user_id)
     queue_position = await service.queue_position(recording)
     artifact_recording_ids = await service.artifact_recording_ids([recording])
+    avatars = await recording_avatar_urls(service.session, [recording])
     return recording_response(
         recording,
         retention_days=days,
         queue_position=queue_position,
         artifact_ready=recording.id in artifact_recording_ids,
+        avatar_url=avatars.get(recording.id),
     )
 
 
