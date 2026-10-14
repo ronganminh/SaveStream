@@ -29,7 +29,10 @@ services:
   worker:
     environment: *apple-store-env
     secrets: *apple-store-secrets
-  recorder:
+  recorder-blue:
+    environment: *apple-store-env
+    secrets: *apple-store-secrets
+  recorder-green:
     environment: *apple-store-env
     secrets: *apple-store-secrets
   scheduler:

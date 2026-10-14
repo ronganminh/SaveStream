@@ -17,10 +17,6 @@ name: Deploy Backend
 on:
   workflow_dispatch:
     inputs:
-      allow_active_recordings:
-        description: "Deploy even while cloud recordings are running (they will be cut)"
-        type: boolean
-        default: false
       skip_backup:
         description: "Skip the pre-deploy pg_dump backup"
         type: boolean
@@ -64,8 +60,9 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
+          # Running recordings are never cut: the recorder drains (see
+          # deploy/vps/recorder-rollout.sh), so deploys need not wait for them.
           DEPLOY_ARGS: >-
-            ${{ inputs.allow_active_recordings && '--allow-active-recordings' || '' }}
             ${{ inputs.skip_backup && '--skip-backup' || '' }}
         run: |
           ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \

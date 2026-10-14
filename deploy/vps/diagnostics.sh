@@ -16,7 +16,8 @@ ENV_FILE="deploy/vps/production.env"
 COMPOSE_FILE="deploy/vps/docker-compose.production.yml"
 
 compose() {
-  docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
+  # The "recorder" profile includes recorder-blue/green (see recorder-rollout.sh).
+  COMPOSE_PROFILES=recorder docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
 }
 
 sql() {
@@ -29,6 +30,9 @@ section() { printf '\n==> %s\n' "$*"; }
 
 section "Revision $(git rev-parse --short HEAD), last ${DAYS} day(s)"
 compose ps
+echo "Recorder containers (a running one with restart policy \"no\" is draining):"
+docker ps -a --filter label=com.docker.compose.project=savestream-production \
+  --format '{{.Names}} {{.Status}}' | grep -i recorder || echo "none"
 
 section "Recordings by status"
 sql "select status, count(*) as jobs, sum(duration_seconds)/60 as minutes
@@ -78,7 +82,7 @@ sql "select provider, status, count(*) as orders, min(created_at) as oldest
      where status in ('created', 'pending')
      group by provider, status;"
 
-for service in recorder worker scheduler; do
+for service in recorder-blue recorder-green worker scheduler; do
   section "${service}: error lines (last 24h, newest 80)"
   compose logs --no-color --since 24h "$service" 2>&1 \
     | grep -Ev '\] (INFO|DEBUG)/' \

@@ -136,3 +136,18 @@ jobs:
           docker compose -f deploy/vps/docker-compose.production.yml config --quiet
           SAVESTREAM_PAYMENT_PROVIDER=disabled SAVESTREAM_LEMON_SQUEEZY_STORE_ID= SAVESTREAM_LEMON_SQUEEZY_VARIANT_ID= \
             docker compose -f deploy/vps/docker-compose.production.yml config --quiet
+          COMPOSE_PROFILES=recorder docker compose -f deploy/vps/docker-compose.production.yml config --quiet
+          for script in deploy/vps/deploy.sh deploy/vps/recorder-rollout.sh deploy/vps/diagnostics.sh; do bash -n "$script"; done
+
+  # Deploys must never cut a running recording: roll the recorder over with
+  # real Docker and check a long job finishes on the old worker.
+  recorder-drain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Recorder rollout drains instead of cutting
+        run: bash deploy/vps/tests/recorder-drain/run.sh
