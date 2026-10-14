@@ -663,9 +663,13 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
       </Button>
       <GlobalSearch />
       {path.startsWith("/admin") && (
-        <span className="hidden h-[26px] items-center gap-1.5 rounded-full bg-primary-subtle px-2.5 text-xs font-bold text-accent-ink sm:inline-flex">
-          <ShieldCheck className="size-3" />
-          Admin mode
+        <span
+          className="hidden h-[26px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-primary-subtle px-2 text-xs font-bold text-accent-ink sm:inline-flex xl:px-2.5"
+          title="Admin mode"
+        >
+          <ShieldCheck className="size-3" aria-hidden="true" />
+          {/* Icon only until there is room, so the search placeholder isn't cut. */}
+          <span className="sr-only xl:not-sr-only">Admin mode</span>
         </span>
       )}
       <div className="ml-auto flex min-w-0 items-center gap-1 sm:gap-2">
@@ -772,7 +776,9 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
               </span>
               <span className="hidden flex-col leading-tight lg:flex">
                 <b className="max-w-[140px] truncate text-sm">{account.name}</b>
-                <span className="text-xs text-muted-foreground">{account.subLabel}</span>
+                <span className="whitespace-nowrap text-xs text-muted-foreground">
+                  {account.subLabel}
+                </span>
               </span>
               <ChevronDown className="hidden size-4 text-muted-foreground lg:block" />
             </button>
