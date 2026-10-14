@@ -29,7 +29,10 @@ for (const key of [
 ]) {
   must(pages, key);
 }
-must("src/components/public/contact-status.tsx", "does not currently publish a public live incident feed");
+must(
+  "src/components/public/contact-status.tsx",
+  "does not currently publish a public live incident feed",
+);
 forbid(preferences, "const vi:");
 must(pages, '{t(copy[0] ?? "")}');
 must(pages, 't("Continue with Apple")');
@@ -41,9 +44,9 @@ must(
   "Preview the available packages. Checkout will become available after payment readiness checks are complete.",
 );
 
-// UX-04: mobile payment tabs expose horizontal scrolling and an explicit hint.
-must("src/components/admin/payments-d2.tsx", "overflow-x-auto");
-must("src/components/admin/payments-d2.tsx", "Swipe horizontally to see all payment sections.");
+// UX-04: every payment tab stays reachable on mobile: the admin tab bar wraps.
+must("src/components/admin/payments-d2.tsx", "<AdminTabsList");
+must("src/components/admin/foundation.tsx", "h-auto w-full flex-wrap justify-start");
 
 // UX-05: status is a real public route with canonical metadata and navigation.
 must("src/routes/status.tsx", "publicMeta(");

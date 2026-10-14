@@ -6,7 +6,14 @@ import { toast } from "sonner";
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, PageHeader } from "@/components/app-components";
-import { AdminDataTable, AdminMfaGate, AdminMetricCard } from "@/components/admin/foundation";
+import {
+  AdminBadge,
+  AdminDataTable,
+  AdminMetricCard,
+  AdminMfaGate,
+  AdminTabsList,
+  AdminTabsTrigger,
+} from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminCatalogApi,
   adminFoundationApi,
@@ -266,7 +273,7 @@ export function AdminCatalogPage() {
             <div className="flex gap-3">
               <ShieldAlert className="mt-0.5 size-5" />
               <div>
-                <h2 className="font-medium">Finance access required</h2>
+                <h2 className="text-[16px] font-bold">Finance access required</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Support cannot change packages, promotions, prices, or cloud-minute grants.
                 </p>
@@ -293,15 +300,19 @@ export function AdminCatalogPage() {
         />
 
         <Tabs defaultValue="packages" className="space-y-5">
-          <TabsList>
-            <TabsTrigger value="packages">Packages</TabsTrigger>
-            <TabsTrigger value="promotions">Promotions</TabsTrigger>
-            <TabsTrigger value="bulk">Bulk grants</TabsTrigger>
-          </TabsList>
+          <AdminTabsList label="Catalog sections">
+            <AdminTabsTrigger value="packages" count={packages.length}>
+              Packages
+            </AdminTabsTrigger>
+            <AdminTabsTrigger value="promotions" count={promotions.length}>
+              Promotions
+            </AdminTabsTrigger>
+            <AdminTabsTrigger value="bulk">Bulk grants</AdminTabsTrigger>
+          </AdminTabsList>
 
           <TabsContent value="packages" className="space-y-5">
             <section className="rounded-[16px] border bg-surface p-5">
-              <h2 className="font-medium">Create package</h2>
+              <h2 className="text-[16px] font-bold">Create package</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Prices are USD and charged through PayPal web checkout.
               </p>
@@ -357,7 +368,7 @@ export function AdminCatalogPage() {
             </section>
 
             <AdminDataTable>
-              <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+              <thead>
                 <tr>
                   <th className="px-4 py-3">Package</th>
                   <th className="px-4 py-3">Minutes</th>
@@ -370,11 +381,11 @@ export function AdminCatalogPage() {
               <tbody>
                 {packages.map((item) => (
                   <tr key={item.id} className="border-b last:border-0">
-                    <td className="px-4 py-3"><p className="font-medium">{item.name}</p><p className="text-xs text-muted-foreground">{item.code}</p></td>
+                    <td className="px-4 py-3"><p className="font-bold">{item.name}</p><p className="text-xs text-muted-foreground">{item.code}</p></td>
                     <td className="px-4 py-3">{minutes(item.credits)}</td>
                     <td className="px-4 py-3">{usd(item.amount_minor)}</td>
                     <td className="px-4 py-3">{item.order_count}</td>
-                    <td className="px-4 py-3">{item.active ? "Active" : "Hidden"}</td>
+                    <td className="px-4 py-3"><AdminBadge tone={item.active ? "success" : "neutral"} dot>{item.active ? "Active" : "Hidden"}</AdminBadge></td>
                     <td className="px-4 py-3 text-right"><Button size="sm" variant="outline" onClick={() => openPackage(item)}>Edit</Button></td>
                   </tr>
                 ))}
@@ -384,7 +395,7 @@ export function AdminCatalogPage() {
             {selectedPackage && packageDraft && (
               <section className="space-y-4 rounded-[16px] border bg-surface p-5">
                 <div>
-                  <h2 className="font-medium">Edit {selectedPackage.name}</h2>
+                  <h2 className="text-[16px] font-bold">Edit {selectedPackage.name}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Packages with orders are never deleted; turn off sale to hide them.
                   </p>
@@ -434,7 +445,7 @@ export function AdminCatalogPage() {
 
           <TabsContent value="promotions" className="space-y-5">
             <section className="rounded-[16px] border bg-surface p-5">
-              <h2 className="font-medium">Create promotion code</h2>
+              <h2 className="text-[16px] font-bold">Create promotion code</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Every code is one redemption per account. Gifts remain Free unless Counts as purchase is explicitly enabled.
               </p>
@@ -479,7 +490,7 @@ export function AdminCatalogPage() {
             </section>
 
             <AdminDataTable>
-              <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+              <thead>
                 <tr>
                   <th className="px-4 py-3">Code</th>
                   <th className="px-4 py-3">Minutes</th>
@@ -498,7 +509,7 @@ export function AdminCatalogPage() {
                     <td className="px-4 py-3">{item.redemption_count}{item.max_redemptions ? ` / ${item.max_redemptions}` : ""}</td>
                     <td className="px-4 py-3 text-xs">{dateTime(item.expires_at)}</td>
                     <td className="px-4 py-3">{item.counts_as_purchase ? "Yes" : "No"}</td>
-                    <td className="px-4 py-3">{item.active ? "Active" : "Disabled"}</td>
+                    <td className="px-4 py-3"><AdminBadge tone={item.active ? "success" : "neutral"} dot>{item.active ? "Active" : "Disabled"}</AdminBadge></td>
                     <td className="px-4 py-3 text-right">
                       <Button size="sm" variant="outline" onClick={() => void openPromotion(item)}>Usage</Button>
                       <Button
@@ -527,13 +538,13 @@ export function AdminCatalogPage() {
 
             {selectedPromotion && (
               <section className="rounded-[16px] border bg-surface p-5">
-                <h2 className="font-medium">Redemptions — {selectedPromotion.code}</h2>
+                <h2 className="text-[16px] font-bold">Redemptions — {selectedPromotion.code}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   One account can redeem this code only once.
                 </p>
                 <div className="mt-4">
                   <AdminDataTable>
-                    <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+                    <thead>
                       <tr><th className="px-4 py-3">User</th><th className="px-4 py-3">Redeemed</th></tr>
                     </thead>
                     <tbody>
@@ -555,7 +566,7 @@ export function AdminCatalogPage() {
 
           <TabsContent value="bulk" className="space-y-5">
             <section className="rounded-[16px] border bg-surface p-5">
-              <h2 className="font-medium">Bulk cloud-minute grant</h2>
+              <h2 className="text-[16px] font-bold">Bulk cloud-minute grant</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Audience uses the D1 customer filters. Preview the user count and total minutes before step-up confirmation.
               </p>
@@ -629,7 +640,7 @@ export function AdminCatalogPage() {
               <section className="space-y-4 rounded-[16px] border bg-surface p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="font-medium">Bulk grant report</h2>
+                    <h2 className="text-[16px] font-bold">Bulk grant report</h2>
                     <p className="mt-1 text-sm text-muted-foreground">Job {bulkJob.id}</p>
                   </div>
                   <Button variant="outline" onClick={() => void refreshBulkReport()}>
@@ -645,7 +656,7 @@ export function AdminCatalogPage() {
                 </div>
                 {bulkJob.error && <p className="text-sm text-destructive">{bulkJob.error}</p>}
                 <AdminDataTable>
-                  <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+                  <thead>
                     <tr><th className="px-4 py-3">User</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Error</th></tr>
                   </thead>
                   <tbody>

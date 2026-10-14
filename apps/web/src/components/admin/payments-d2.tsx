@@ -6,7 +6,15 @@ import { toast } from "sonner";
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, PageHeader } from "@/components/app-components";
-import { AdminDataTable, AdminMfaGate, AdminMetricCard } from "@/components/admin/foundation";
+import {
+  AdminBadge,
+  AdminDataTable,
+  AdminMetricCard,
+  AdminMfaGate,
+  AdminTabsList,
+  AdminTabsTrigger,
+  type AdminBadgeTone,
+} from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFinanceApi,
   adminFoundationApi,
@@ -45,6 +53,22 @@ function minutes(value: number) {
   const mins = Math.abs(value) % 60;
   const sign = value < 0 ? "−" : "";
   return hours ? `${sign}${hours}h ${mins}m` : `${sign}${mins}m`;
+}
+
+function orderTone(status: string): AdminBadgeTone {
+  if (status === "paid") return "success";
+  if (status === "failed") return "danger";
+  if (status === "pending" || status === "created") return "warning";
+  if (status === "refunded" || status === "partially_refunded") return "accent";
+  return "neutral";
+}
+
+function ledgerTone(category: string): AdminBadgeTone {
+  if (category === "purchase") return "success";
+  if (category === "refund") return "accent";
+  if (category === "spend") return "info";
+  if (category === "gift" || category === "adjustment") return "warning";
+  return "neutral";
 }
 
 function downloadText(filename: string, content: string) {
@@ -289,7 +313,7 @@ export function AdminFinancePage() {
           subtitle="Orders, refunds, cloud-minute ledger, reconciliation, and stuck holds."
           action={
             <Button variant="outline" onClick={() => void loadFinance()}>
-              <RefreshCw className="mr-2 size-4" />
+              <RefreshCw className="size-4" />
               Refresh
             </Button>
           }
@@ -305,24 +329,40 @@ export function AdminFinancePage() {
           </section>
         )}
 
-        <Tabs defaultValue="orders" className="space-y-5">
-          <div>
-            <div className="-mx-1 overflow-x-auto px-1 pb-2 [scrollbar-width:thin]">
-              <TabsList
-                className="h-auto min-w-max justify-start"
-                aria-label="Payment administration sections"
-              >
-                <TabsTrigger value="orders">Orders</TabsTrigger>
-                <TabsTrigger value="stuck">Stuck orders</TabsTrigger>
-                {canManageMoney && <TabsTrigger value="ledger">Credit ledger</TabsTrigger>}
-                {canManageMoney && <TabsTrigger value="adjust">Manual minutes</TabsTrigger>}
-                {canManageMoney && <TabsTrigger value="holds">Stuck holds</TabsTrigger>}
-              </TabsList>
+        {stuck.length > 0 && (
+          <section
+            role="alert"
+            className="mb-5 flex flex-wrap items-center gap-3 rounded-[16px] border border-destructive/35 bg-recording-subtle px-5 py-4"
+          >
+            <span className="size-2.5 rounded-full bg-destructive" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">
+                {stuck.length === 1
+                  ? "1 order needs attention"
+                  : `${stuck.length} orders need attention`}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Paid but not credited, or pending in PayPal for more than 15 minutes. Open the Stuck
+                orders tab to reconcile.
+              </p>
             </div>
-            <p className="mt-1 text-xs text-muted-foreground sm:hidden">
-              Swipe horizontally to see all payment sections.
-            </p>
-          </div>
+          </section>
+        )}
+
+        <Tabs defaultValue={stuck.length > 0 ? "stuck" : "orders"} className="space-y-5">
+          <AdminTabsList label="Payment administration sections">
+            <AdminTabsTrigger value="orders">Orders</AdminTabsTrigger>
+            <AdminTabsTrigger value="stuck" count={stuck.length}>
+              Stuck orders
+            </AdminTabsTrigger>
+            {canManageMoney && <AdminTabsTrigger value="ledger">Credit ledger</AdminTabsTrigger>}
+            {canManageMoney && <AdminTabsTrigger value="adjust">Manual minutes</AdminTabsTrigger>}
+            {canManageMoney && (
+              <AdminTabsTrigger value="holds" count={reservations.length}>
+                Stuck holds
+              </AdminTabsTrigger>
+            )}
+          </AdminTabsList>
 
           <TabsContent value="orders" className="space-y-4">
             <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-4">
@@ -407,7 +447,7 @@ export function AdminFinancePage() {
                 <Button onClick={applyPaymentFilters}>Apply</Button>
                 {canManageMoney && (
                   <Button variant="outline" onClick={() => void exportPayments()}>
-                    <Download className="mr-2 size-4" />
+                    <Download className="size-4" />
                     CSV
                   </Button>
                 )}
@@ -415,31 +455,43 @@ export function AdminFinancePage() {
             </div>
 
             <AdminDataTable>
-              <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b">
                   <th className="px-4 py-3">User / package</th>
-                  <th className="px-4 py-3">Channel</th>
+                  <th className="px-4 py-3">Method</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Gross USD</th>
-                  <th className="px-4 py-3">Cloud minutes</th>
+                  <th className="px-4 py-3 text-right">Gross USD</th>
+                  <th className="px-4 py-3 text-right">Cloud minutes</th>
                   <th className="px-4 py-3">Created</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3 text-right">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((order) => (
                   <tr key={order.id} className="border-b last:border-0">
                     <td className="px-4 py-3">
-                      <p className="font-medium">{order.user_email}</p>
-                      <p className="text-xs text-muted-foreground">{order.package_name}</p>
+                      <p className="font-bold">{order.user_email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {order.package_name} · <span className="font-mono">{order.id}</span>
+                      </p>
                     </td>
-                    <td className="px-4 py-3">{order.purchase_channel}</td>
-                    <td className="px-4 py-3">{order.status}</td>
-                    <td className="px-4 py-3">{usd(order.gross_usd_minor)}</td>
-                    <td className="px-4 py-3">{minutes(order.credits)}</td>
-                    <td className="px-4 py-3 text-xs">{dateTime(order.created_at)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {order.purchase_channel === "web" ? "PayPal" : order.purchase_channel}
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminBadge tone={orderTone(order.status)} dot>
+                        {order.status.replaceAll("_", " ")}
+                      </AdminBadge>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">{usd(order.gross_usd_minor)}</td>
+                    <td className="px-4 py-3 text-right font-mono">{minutes(order.credits)}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {dateTime(order.created_at)}
+                    </td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="outline" onClick={() => void openDetail(order.id)}>
+                      <Button size="sm" variant="ghost" onClick={() => void openDetail(order.id)}>
                         Details
                       </Button>
                     </td>
@@ -472,7 +524,7 @@ export function AdminFinancePage() {
 
           <TabsContent value="stuck" className="space-y-4">
             <section className="rounded-[16px] border bg-surface p-4">
-              <h2 className="font-medium">Orders needing attention</h2>
+              <h2 className="text-[16px] font-bold">Orders needing attention</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Paid orders missing their idempotent credit grant, or web orders pending for more
                 than 15 minutes. Store payment state is never changed manually; only verified Apple
@@ -480,8 +532,8 @@ export function AdminFinancePage() {
               </p>
             </section>
             <AdminDataTable>
-              <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b">
                   <th className="px-4 py-3">Order</th>
                   <th className="px-4 py-3">Reason</th>
                   <th className="px-4 py-3">Channel</th>
@@ -492,16 +544,22 @@ export function AdminFinancePage() {
                 {stuck.map((item) => (
                   <tr key={item.order.id} className="border-b last:border-0">
                     <td className="px-4 py-3">
-                      <p className="font-medium">{item.order.user_email}</p>
+                      <p className="font-bold">{item.order.user_email}</p>
                       <p className="font-mono text-xs text-muted-foreground">{item.order.id}</p>
                     </td>
-                    <td className="px-4 py-3">{item.reason}</td>
+                    <td className="px-4 py-3">
+                      <AdminBadge
+                        tone={item.reason === "pending_too_long" ? "warning" : "danger"}
+                        dot
+                      >
+                        {item.reason.replaceAll("_", " ")}
+                      </AdminBadge>
+                    </td>
                     <td className="px-4 py-3">{item.order.purchase_channel}</td>
                     <td className="px-4 py-3 text-right">
                       {canManageMoney ? (
                         <Button
                           size="sm"
-                          variant="outline"
                           disabled={
                             item.reason === "pending_too_long" &&
                             item.order.purchase_channel !== "web"
@@ -585,18 +643,18 @@ export function AdminFinancePage() {
                 <div className="flex gap-2">
                   <Button onClick={() => void applyLedgerFilters()}>Apply</Button>
                   <Button variant="outline" onClick={() => void exportLedger()}>
-                    <Download className="mr-2 size-4" />
+                    <Download className="size-4" />
                     CSV
                   </Button>
                 </div>
               </div>
               <AdminDataTable>
-                <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                  <tr>
+                <thead>
+                  <tr className="border-b">
                     <th className="px-4 py-3">User</th>
                     <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Minutes</th>
-                    <th className="px-4 py-3">Balance</th>
+                    <th className="px-4 py-3 text-right">Minutes</th>
+                    <th className="px-4 py-3 text-right">Balance</th>
                     <th className="px-4 py-3">Reference</th>
                     <th className="px-4 py-3">Counts as purchase</th>
                     <th className="px-4 py-3">Created</th>
@@ -606,12 +664,23 @@ export function AdminFinancePage() {
                   {ledger.map((entry) => (
                     <tr key={entry.id} className="border-b last:border-0">
                       <td className="px-4 py-3">{entry.user_email}</td>
-                      <td className="px-4 py-3">{entry.category}</td>
-                      <td className="px-4 py-3">{minutes(entry.amount)}</td>
-                      <td className="px-4 py-3">{minutes(entry.balance_after)}</td>
-                      <td className="px-4 py-3 text-xs">{entry.reference_type}</td>
+                      <td className="px-4 py-3">
+                        <AdminBadge tone={ledgerTone(entry.category)}>{entry.category}</AdminBadge>
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-right font-mono font-bold ${entry.amount > 0 ? "text-success" : ""}`}
+                      >
+                        {entry.amount > 0 ? "+" : ""}
+                        {minutes(entry.amount)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono">
+                        {minutes(entry.balance_after)}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">{entry.reference_type}</td>
                       <td className="px-4 py-3">{entry.counts_as_purchase ? "Yes" : "No"}</td>
-                      <td className="px-4 py-3 text-xs">{dateTime(entry.created_at)}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {dateTime(entry.created_at)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -639,7 +708,7 @@ export function AdminFinancePage() {
             <TabsContent value="adjust">
               <section className="max-w-2xl space-y-4 rounded-[16px] border bg-surface p-5">
                 <div>
-                  <h2 className="font-medium">Manual cloud-minute adjustment</h2>
+                  <h2 className="text-[16px] font-bold">Manual cloud-minute adjustment</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Enter minutes directly. Negative values subtract minutes but can never make the
                     balance negative. Gifts do not create Pro entitlement unless “Counts as
@@ -676,8 +745,8 @@ export function AdminFinancePage() {
                 </label>
                 <p className="text-xs text-muted-foreground">
                   Leave unchecked for goodwill or trial minutes: the account stays on Free and its
-                  channels cannot auto-record. Existing channels keep their Auto-record setting;
-                  the user turns it on per channel.
+                  channels cannot auto-record. Existing channels keep their Auto-record setting; the
+                  user turns it on per channel.
                 </p>
                 <Button
                   disabled={
@@ -716,15 +785,15 @@ export function AdminFinancePage() {
           {canManageMoney && (
             <TabsContent value="holds" className="space-y-4">
               <section className="rounded-[16px] border bg-surface p-4">
-                <h2 className="font-medium">Stuck credit holds</h2>
+                <h2 className="text-[16px] font-bold">Stuck credit holds</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Only active reservations whose recording is already terminal are shown. Release
                   re-checks the recording state on the backend before changing the reservation.
                 </p>
               </section>
               <AdminDataTable>
-                <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                  <tr>
+                <thead>
+                  <tr className="border-b">
                     <th className="px-4 py-3">Recording</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Held</th>

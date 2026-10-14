@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { isAdminRole, isDemoMode } from "@/lib/app-config";
 import {
   adminFoundationApi,
@@ -59,7 +60,7 @@ export function AdminMetricCard({
 /** Admin tables share the app table look: tinted header, quiet row hover. */
 export function AdminDataTable({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-[16px] border bg-surface [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-surface-2/60 [&_thead_th]:text-[11px] [&_thead_th]:font-bold [&_thead_th]:tracking-[.06em] [&_thead_th]:text-muted-foreground [&_thead_th]:uppercase [&_thead_tr]:bg-surface-2">
+    <div className="relative overflow-x-auto rounded-[16px] border bg-surface [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-surface-2/60 [&_thead_th]:text-[11px] [&_thead_th]:font-bold [&_thead_th]:tracking-[.06em] [&_thead_th]:text-muted-foreground [&_thead_th]:uppercase [&_thead_tr]:bg-surface-2">
       <table className="w-full min-w-[720px] text-left text-sm">{children}</table>
     </div>
   );
@@ -123,6 +124,38 @@ export function AdminUserStatusBadge({ user }: { user: AdminUser }) {
     <AdminBadge tone="success" dot>
       Active
     </AdminBadge>
+  );
+}
+
+/** Underline tab bar shared by admin pages (wraps the Radix tabs). */
+export function AdminTabsList({ children, label }: { children: ReactNode; label?: string }) {
+  return (
+    <TabsList
+      aria-label={label}
+      className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b bg-transparent p-0"
+    >
+      {children}
+    </TabsList>
+  );
+}
+
+export function AdminTabsTrigger({
+  value,
+  children,
+  count,
+}: {
+  value: string;
+  children: ReactNode;
+  count?: number | undefined;
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="-mb-px h-11 flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 font-bold text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none"
+    >
+      {children}
+      {count !== undefined ? ` · ${count}` : ""}
+    </TabsTrigger>
   );
 }
 
