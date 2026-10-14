@@ -1,8 +1,4 @@
-import type {
-  RecordingResponse,
-  RecordingStatusValue,
-  WatchResponse,
-} from "@/api/types";
+import type { RecordingResponse, RecordingStatusValue, WatchResponse } from "@/api/types";
 import type { RecordingModel, RecordingStatus } from "@/repositories/contracts";
 import { initials, toneFor } from "@/repositories/mappers/channel";
 
@@ -43,10 +39,9 @@ export function formatBytes(bytes: number): { label: string; gb: number } {
 
 const DAY_MS = 86_400_000;
 
-function expiry(expiresAt: string | null | undefined): Pick<
-  RecordingModel,
-  "expires" | "expiresDays" | "expireTone"
-> {
+function expiry(
+  expiresAt: string | null | undefined,
+): Pick<RecordingModel, "expires" | "expiresDays" | "expireTone"> {
   const time = expiresAt ? Date.parse(expiresAt) : NaN;
   if (!Number.isFinite(time)) return { expires: "—", expiresDays: null };
   const days = Math.max(0, Math.ceil((time - Date.now()) / DAY_MS));
@@ -56,7 +51,11 @@ function expiry(expiresAt: string | null | undefined): Pick<
   return {
     expires: days <= 1 ? "Tomorrow" : `${days} days (${label})`,
     expiresDays: days,
-    ...(days <= 1 ? { expireTone: "critical" as const } : days <= 3 ? { expireTone: "warning" as const } : {}),
+    ...(days <= 1
+      ? { expireTone: "critical" as const }
+      : days <= 3
+        ? { expireTone: "warning" as const }
+        : {}),
   };
 }
 
@@ -73,7 +72,10 @@ function handle(recording: RecordingResponse): string {
   return username ? `@${username.replace(/^@/, "")}` : recording.source.value;
 }
 
-function matchWatch(recording: RecordingResponse, watches: readonly WatchResponse[]): WatchResponse | undefined {
+function matchWatch(
+  recording: RecordingResponse,
+  watches: readonly WatchResponse[],
+): WatchResponse | undefined {
   const username = recording.creator?.username?.replace(/^@/, "").toLowerCase();
   return watches.find((watch) => {
     const watchUsername = watch.creator?.username?.replace(/^@/, "").toLowerCase();
@@ -145,5 +147,7 @@ export function mapRecordingToModel(
     backendStatus: recording.status,
     source: recording.source,
     actions: recording.actions,
+    durationSeconds: recording.duration_seconds,
+    creditsUsed: recording.minutes_charged ?? recording.actual_cost ?? null,
   };
 }

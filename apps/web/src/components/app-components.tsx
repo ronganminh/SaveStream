@@ -274,7 +274,7 @@ export function CreatorAvatar({
   size = "md",
 }: {
   channel: Pick<ChannelModel, "initials" | "tone" | "avatarUrl">;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
 }) {
   return (
     <AvatarCircle
