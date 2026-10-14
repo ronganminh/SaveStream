@@ -20,6 +20,7 @@ import {
 } from "@/lib/preferences";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { pageTitle } from "@/lib/route-metadata";
 
 function NotFoundComponent() {
   return <PublicNotFoundPage />;
@@ -69,7 +70,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: match.globalNotFound ? "Page not found — SaveStream" : "SaveStream" },
+      ...(match.globalNotFound
+        ? [
+            { title: pageTitle("Page not found") },
+            { property: "og:title", content: pageTitle("Page not found") },
+          ]
+        : [{ title: pageTitle("Automatic TikTok LIVE recording") }]),
       { name: "description", content: "Automatic TikTok livestream recording in the cloud." },
       { name: "author", content: "SaveStream" },
       { name: "theme-color", content: "#6D4AFF" },

@@ -18,7 +18,10 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/acceptable-use",
   "/refund",
+  "/help/first-recording",
 ];
+// A bracketed ALL-CAPS placeholder such as [RESPONSE TIME] must never reach a page.
+const PLACEHOLDER = /\[[A-Z]{2,}(?: [A-Z]{2,})*\]/;
 const FORBIDDEN = [
   "placeholder",
   "Draft —",
@@ -62,6 +65,12 @@ for (const p of PUBLIC_PATHS) {
   if (ogUrl !== expected) fail(`${p}: og:url ${ogUrl} != ${expected}`);
   if (!ogImage?.startsWith(`${CANONICAL}/`)) fail(`${p}: og:image ${ogImage} not on ${CANONICAL}`);
   const text = visibleText(html);
+  const title = html.match(/<title>([^<]*)<\/title>/)?.[1];
+  const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]+)"/)?.[1];
+  if (!title || !/^[^|—]+ \| SaveStream$/.test(title)) fail(`${p}: title ${JSON.stringify(title)} is not "<Page> | SaveStream"`);
+  if (ogTitle !== title) fail(`${p}: og:title ${JSON.stringify(ogTitle)} != title`);
+  const placeholder = text.match(PLACEHOLDER);
+  if (placeholder) fail(`${p}: shows placeholder ${placeholder[0]}`);
   for (const phrase of FORBIDDEN) {
     // Hostnames must not appear anywhere in the HTML; copy only in visible text.
     const found = phrase.includes(".") ? html.includes(phrase) : text.includes(phrase);
@@ -71,8 +80,8 @@ for (const p of PUBLIC_PATHS) {
 
 const notFound = await fetch(`${origin}/this-page-does-not-exist-${Date.now()}`);
 const notFoundHtml = await notFound.text();
-if (!notFoundHtml.includes("<title>Page not found — SaveStream</title>"))
-  fail("404: missing 'Page not found — SaveStream' title");
+if (!notFoundHtml.includes("<title>Page not found | SaveStream</title>"))
+  fail("404: missing 'Page not found | SaveStream' title");
 if (!visibleText(notFoundHtml).includes("Page not found")) fail("404: custom page not rendered");
 
 const favicon = await fetch(`${origin}/favicon.ico`);

@@ -1,4 +1,5 @@
 import { marked, type Tokens } from "marked";
+import { SUPPORT_EMAIL, SUPPORT_RESPONSE_TIME } from "@/lib/support";
 import type { PublicPricingResponse } from "@/api/types";
 import { pluralize } from "@/lib/formatters";
 
@@ -18,8 +19,8 @@ import { pluralize } from "@/lib/formatters";
  * The body is Markdown. `{{token}}` placeholders are filled from the live
  * Admin runtime settings (see helpVariables) so numbers such as trial credits
  * or retention days never go stale; unknown values fall back to wording
- * without a number. Text in [SQUARE BRACKETS] is a deliberate placeholder for
- * facts that are not decided yet.
+ * without a number. Bracketed ALL-CAPS placeholders are not allowed: the
+ * public-placeholder audit fails the build if one reaches a page.
  */
 
 export type HelpCategoryId =
@@ -160,7 +161,8 @@ export function helpVariables(pricing: PublicPricingResponse | null | undefined)
       rate && rate.minimum_credits > 0
         ? `a minimum of ${pluralize(rate.minimum_credits, "credit")} per recording`
         : "no minimum charge",
-    support_email: "support@savestream.online",
+    support_email: SUPPORT_EMAIL,
+    support_response_time: SUPPORT_RESPONSE_TIME,
   } satisfies Record<string, string>;
 }
 

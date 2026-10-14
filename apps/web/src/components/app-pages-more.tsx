@@ -1,4 +1,5 @@
 import { LEGAL_REVISION_LABEL } from "@/lib/legal";
+import { SUPPORT_RESPONSE_TIME } from "@/lib/support";
 import {
   PublicContactPage,
   PublicStatusPage,
@@ -4048,7 +4049,8 @@ function ProductionContactContent({ embedded = false }: { embedded?: boolean }) 
         <>
           <h1 className="text-3xl font-semibold">Contact us</h1>
           <p className="mt-3 text-muted-foreground">
-            Email us and we will get back to you. For answers to common questions, see{" "}
+            Email us and we usually reply within {SUPPORT_RESPONSE_TIME}. For answers to common
+            questions, see{" "}
             <Link to="/help" className="text-primary underline underline-offset-4">
               Help
             </Link>

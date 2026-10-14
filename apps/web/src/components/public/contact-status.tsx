@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { SUPPORT_RESPONSE_TIME } from "@/lib/support";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Clock3, HelpCircle, Mail, RefreshCw, XCircle } from "lucide-react";
 import { PublicFooter, PublicHeader } from "@/components/app-pages";
@@ -48,7 +49,7 @@ export function PublicContactPage({ contacts }: { contacts: ContactChannel[] }) 
                 <div className="flex flex-col">
                   <b className="text-sm">Response time</b>
                   <span className="text-sm text-muted-foreground">
-                    Usually within [RESPONSE TIME]
+                    Usually within {SUPPORT_RESPONSE_TIME}
                   </span>
                 </div>
               </div>

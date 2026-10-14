@@ -7,13 +7,13 @@ export const PUBLIC_SITE_URL = (
 /** 1200×630 share images in public/og (see docs/redesign). */
 export type SocialImage = "home" | "pricing" | "help";
 
-/** "Pricing — …" style titles get the brand as a suffix; the home page passes a full title. */
-function fullTitle(title: string) {
-  return title.includes("SaveStream") ? title : `${title} | SaveStream`;
+/** Every page title is "<Page name> | SaveStream" (the same in og:/twitter:title). */
+export function pageTitle(name: string) {
+  return `${name} | SaveStream`;
 }
 
 const baseMeta = (title: string, description: string, image: SocialImage = "home") => {
-  const heading = fullTitle(title);
+  const heading = pageTitle(title);
   const imageUrl = `${PUBLIC_SITE_URL}/og/${image}.png`;
   return [
     { title: heading },
