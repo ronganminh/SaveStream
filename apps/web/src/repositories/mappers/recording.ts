@@ -149,5 +149,6 @@ export function mapRecordingToModel(
     actions: recording.actions,
     durationSeconds: recording.duration_seconds,
     creditsUsed: recording.minutes_charged ?? recording.actual_cost ?? null,
+    errorCode: recording.error?.code ?? null,
   };
 }

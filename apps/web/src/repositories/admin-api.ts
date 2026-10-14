@@ -225,12 +225,7 @@ export const adminFoundationApi = {
     });
   },
 
-  updateUserStatus(
-    userId: string,
-    isActive: boolean,
-    reason: string,
-    stepUpToken: string,
-  ) {
+  updateUserStatus(userId: string, isActive: boolean, reason: string, stepUpToken: string) {
     return apiClient.patch<AdminUser>(`/v1/admin/users/${userId}`, {
       json: { is_active: isActive, reason },
       headers: stepUpHeaders(stepUpToken),
@@ -280,9 +275,7 @@ export const adminFoundationApi = {
 
   viewAsUser(userId: string, reason: string) {
     const params = new URLSearchParams({ reason });
-    return apiClient.get<AdminViewAsUser>(
-      `/v1/admin/users/${userId}/view?${params.toString()}`,
-    );
+    return apiClient.get<AdminViewAsUser>(`/v1/admin/users/${userId}/view?${params.toString()}`);
   },
 
   getMfaStatus() {
@@ -319,12 +312,7 @@ export const adminFoundationApi = {
     return apiClient.get<AdminListResponse>(`/v1/admin/admins?${query.toString()}`);
   },
 
-  updateAdminRole(
-    userId: string,
-    role: "user" | AdminRole,
-    reason: string,
-    stepUpToken: string,
-  ) {
+  updateAdminRole(userId: string, role: "user" | AdminRole, reason: string, stepUpToken: string) {
     return apiClient.patch<AdminUser>(`/v1/admin/admins/${userId}`, {
       json: { role, reason },
       headers: stepUpHeaders(stepUpToken),
@@ -338,7 +326,6 @@ export const adminFoundationApi = {
     });
   },
 };
-
 
 export type AdminStorageRun = {
   id: string;
@@ -421,7 +408,6 @@ export type AdminBroadcastFilters = {
   status?: string;
   sortOrder?: "asc" | "desc";
 };
-
 
 export type AdminPaymentChannel = "web" | "app_store" | "google_play";
 export type AdminPaymentOrder = {
@@ -668,7 +654,6 @@ export const adminFinanceApi = {
   },
 };
 
-
 export type AdminCatalogPackage = {
   id: string;
   code: string;
@@ -750,18 +735,10 @@ function bulkFiltersPayload(filters: AdminBulkGrantFilters) {
     ...(filters.query ? { query: filters.query } : {}),
     ...(filters.plan ? { plan: filters.plan } : {}),
     ...(filters.account_status ? { account_status: filters.account_status } : {}),
-    ...(filters.email_verified
-      ? { email_verified: filters.email_verified === "true" }
-      : {}),
-    ...(filters.created_from
-      ? { created_from: new Date(filters.created_from).toISOString() }
-      : {}),
-    ...(filters.created_to
-      ? { created_to: new Date(filters.created_to).toISOString() }
-      : {}),
-    ...(filters.purchase_provider
-      ? { purchase_provider: filters.purchase_provider }
-      : {}),
+    ...(filters.email_verified ? { email_verified: filters.email_verified === "true" } : {}),
+    ...(filters.created_from ? { created_from: new Date(filters.created_from).toISOString() } : {}),
+    ...(filters.created_to ? { created_to: new Date(filters.created_to).toISOString() } : {}),
+    ...(filters.purchase_provider ? { purchase_provider: filters.purchase_provider } : {}),
   };
 }
 
@@ -924,10 +901,10 @@ export const adminOperationsApi = {
   },
 
   deleteOrphans(runId: string, reason: string, stepUpToken: string) {
-    return apiClient.post<AdminStorageRun>(
-      `/v1/admin/storage/orphan-scans/${runId}/delete`,
-      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
-    );
+    return apiClient.post<AdminStorageRun>(`/v1/admin/storage/orphan-scans/${runId}/delete`, {
+      json: { reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
   },
 
   listEmailLogs(filters: AdminEmailFilters = {}) {
@@ -981,11 +958,7 @@ export const adminOperationsApi = {
     });
   },
 
-  resetEmailTemplate(
-    key: AdminEmailTemplate["key"],
-    reason: string,
-    stepUpToken: string,
-  ) {
+  resetEmailTemplate(key: AdminEmailTemplate["key"], reason: string, stepUpToken: string) {
     return apiClient.delete<{ message: string }>(`/v1/admin/email/templates/${key}`, {
       json: { reason },
       headers: stepUpHeaders(stepUpToken),
@@ -1047,7 +1020,6 @@ export const adminOperationsApi = {
     });
   },
 };
-
 
 export type AdminRecordingFilters = {
   cursor?: string | null;
@@ -1185,10 +1157,9 @@ export const adminRecordingOpsApi = {
   },
 
   extendRetention(recordingId: string, expiresAt: string, reason: string) {
-    return apiClient.patch<RecordingResponse>(
-      `/v1/admin/recordings/${recordingId}/retention`,
-      { json: { expires_at: new Date(expiresAt).toISOString(), reason } },
-    );
+    return apiClient.patch<RecordingResponse>(`/v1/admin/recordings/${recordingId}/retention`, {
+      json: { expires_at: new Date(expiresAt).toISOString(), reason },
+    });
   },
 
   requestPlayback(recordingId: string, reason: string, stepUpToken: string) {
@@ -1222,7 +1193,6 @@ export const adminRecordingOpsApi = {
     return apiClient.get<AdminCapacity>("/v1/admin/capacity");
   },
 };
-
 
 export type AdminRuntimeSettingKind = "bool" | "int" | "version" | "enum" | "datetime";
 
@@ -1258,14 +1228,11 @@ export const adminRuntimeSettingsApi = {
   },
 
   update(key: string, value: unknown, reason: string, stepUpToken: string) {
-    return apiClient.request<AdminRuntimeSetting>(
-      `/v1/admin/settings/${encodeURIComponent(key)}`,
-      {
-        method: "PUT",
-        json: { value, reason },
-        headers: stepUpHeaders(stepUpToken),
-      },
-    );
+    return apiClient.request<AdminRuntimeSetting>(`/v1/admin/settings/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      json: { value, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
   },
 
   reset(key: string, reason: string, stepUpToken: string) {
@@ -1282,7 +1249,6 @@ export const adminRuntimeSettingsApi = {
     return apiClient.get<AdminSystemStatus>("/v1/admin/system/status");
   },
 };
-
 
 export type AdminComplaintEvent = {
   id: string;
@@ -1376,9 +1342,7 @@ export const adminSafetyApi = {
   },
 
   getComplaint(complaintId: string) {
-    return apiClient.get<AdminComplaint>(
-      `/v1/admin/complaints/${encodeURIComponent(complaintId)}`,
-    );
+    return apiClient.get<AdminComplaint>(`/v1/admin/complaints/${encodeURIComponent(complaintId)}`);
   },
 
   createComplaint(payload: {
@@ -1448,13 +1412,10 @@ export const adminSafetyApi = {
       block_id: string;
       deleted_recording_ids: string[];
       pending_stop_recording_ids: string[];
-    }>(
-      `/v1/admin/creator-blocks/${encodeURIComponent(blockId)}/delete-recordings`,
-      {
-        json: { reason },
-        headers: stepUpHeaders(stepUpToken),
-      },
-    );
+    }>(`/v1/admin/creator-blocks/${encodeURIComponent(blockId)}/delete-recordings`, {
+      json: { reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
   },
 
   suspiciousAccounts(limit = 100) {
@@ -1463,7 +1424,6 @@ export const adminSafetyApi = {
     );
   },
 };
-
 
 export type AdminDailyMetric = {
   day: string;
@@ -1531,19 +1491,20 @@ export const adminD9Api = {
     if (dateFrom) query.set("date_from", dateFrom);
     if (dateTo) query.set("date_to", dateTo);
     const suffix = query.toString();
-    return apiClient.get<string>(
-      `/v1/admin/reports/${kind}.csv${suffix ? `?${suffix}` : ""}`,
-      { responseMode: "text" },
-    );
+    return apiClient.get<string>(`/v1/admin/reports/${kind}.csv${suffix ? `?${suffix}` : ""}`, {
+      responseMode: "text",
+    });
   },
 
-  listSupportReports(filters: {
-    cursor?: string | null | undefined;
-    status?: string | undefined;
-    assignedToUserId?: string | undefined;
-    query?: string | undefined;
-    sortOrder?: "asc" | "desc" | undefined;
-  } = {}) {
+  listSupportReports(
+    filters: {
+      cursor?: string | null | undefined;
+      status?: string | undefined;
+      assignedToUserId?: string | undefined;
+      query?: string | undefined;
+      sortOrder?: "asc" | "desc" | undefined;
+    } = {},
+  ) {
     const query = new URLSearchParams({ limit: "50" });
     if (filters.cursor) query.set("cursor", filters.cursor);
     if (filters.status) query.set("status", filters.status);
@@ -1559,12 +1520,14 @@ export const adminD9Api = {
     }>(`/v1/admin/support-reports?${query.toString()}`);
   },
 
-  exportSupportReports(filters: {
-    status?: string | undefined;
-    assignedToUserId?: string | undefined;
-    query?: string | undefined;
-    sortOrder?: "asc" | "desc" | undefined;
-  } = {}) {
+  exportSupportReports(
+    filters: {
+      status?: string | undefined;
+      assignedToUserId?: string | undefined;
+      query?: string | undefined;
+      sortOrder?: "asc" | "desc" | undefined;
+    } = {},
+  ) {
     const query = new URLSearchParams();
     if (filters.status) query.set("status", filters.status);
     if (filters.assignedToUserId) {
@@ -1572,10 +1535,9 @@ export const adminD9Api = {
     }
     if (filters.query) query.set("query", filters.query);
     query.set("sort_order", filters.sortOrder ?? "desc");
-    return apiClient.get<string>(
-      `/v1/admin/support-reports/export.csv?${query.toString()}`,
-      { responseMode: "text" },
-    );
+    return apiClient.get<string>(`/v1/admin/support-reports/export.csv?${query.toString()}`, {
+      responseMode: "text",
+    });
   },
 
   getSupportReport(reportId: string) {

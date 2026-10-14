@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import {
   formatRecordingTime as formatHoursLeft,
+  ReportProblemDialog,
   useCreditSummary,
 } from "@/components/app/shell-extras";
 import {
@@ -83,6 +84,7 @@ import {
   XCircle,
   Zap,
   Gift,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2925,228 +2927,770 @@ export function ChannelDetailPage() {
     />
   );
 }
+const failedBackendStatuses = new Set(["failed", "missed_no_cloud_slot", "stopped"]);
+
+function recordingSection(recording: RecordingModel): "active" | "processing" | "ready" | "failed" {
+  if (recording.backendStatus === "recording" || recording.backendStatus === "stop_requested")
+    return "active";
+  if (recording.backendStatus === "completed") return "ready";
+  if (failedBackendStatuses.has(recording.backendStatus)) {
+    // A stopped recording that saved video is still a usable recording.
+    return recording.backendStatus === "stopped" && (recording.durationSeconds ?? 0) > 0
+      ? "ready"
+      : "failed";
+  }
+  return "processing";
+}
+
+function RecordingsTabs({
+  current,
+  recordings,
+}: {
+  current: "library" | "active" | "processing" | "failed";
+  recordings: RecordingModel[];
+}) {
+  const count = (section: ReturnType<typeof recordingSection>) =>
+    recordings.filter((recording) => recordingSection(recording) === section).length;
+  const tabs = [
+    { id: "library", label: "Library", to: "/recordings", n: null },
+    { id: "active", label: "Active", to: "/recordings/active", n: count("active") },
+    { id: "processing", label: "Processing", to: "/recordings/processing", n: count("processing") },
+    { id: "failed", label: "Failed", to: "/recordings/failed", n: count("failed") },
+  ] as const;
+  return (
+    <nav aria-label="Recordings sections" className="flex gap-1 overflow-x-auto border-b">
+      {tabs.map((tab) => (
+        <Link
+          key={tab.id}
+          to={tab.to}
+          aria-current={current === tab.id ? "page" : undefined}
+          className={cn(
+            "-mb-px inline-flex h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-bold transition-colors",
+            current === tab.id
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {tab.label}
+          {tab.n !== null && (
+            <span className="font-mono text-xs text-muted-foreground">{tab.n}</span>
+          )}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function RecordingTile({ recording }: { recording: RecordingModel }) {
+  const section = recordingSection(recording);
+  const expiring =
+    section === "ready" && recording.expiresDays !== null && recording.expiresDays <= 3;
+  return (
+    <Link
+      to="/recordings/$id"
+      params={{ id: recording.id }}
+      aria-label={`${recording.handle}, ${recording.date}, ${recording.duration}`}
+      className="group flex flex-col gap-2.5 rounded-[14px] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25"
+    >
+      <div
+        className={cn(
+          "relative flex aspect-[9/16] flex-col justify-between overflow-hidden rounded-[14px] p-2.5 text-white transition-transform group-hover:-translate-y-0.5",
+          recording.color,
+          section === "failed" && "opacity-60",
+        )}
+      >
+        <span
+          className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"
+          aria-hidden="true"
+        />
+        <span className="relative flex items-start justify-between gap-2">
+          {expiring ? (
+            <span className="inline-flex h-6 items-center rounded-full bg-warning-subtle px-2 text-xs font-bold text-warning-foreground">
+              Expires in {recording.expires.split(" (")[0]}
+            </span>
+          ) : (
+            <StatusBadge status={recording.status} pulse={recording.status === "Recording"} />
+          )}
+          {recording.resolution !== "—" && (
+            <span className="rounded-md bg-black/40 px-1.5 py-0.5 font-mono text-[10px]">
+              {recording.resolution}
+            </span>
+          )}
+        </span>
+        {section === "processing" && (
+          <span className="relative mx-auto flex w-full flex-col items-center gap-1.5">
+            <span className="text-xs font-bold">Processing…</span>
+            <span className="h-1.5 w-full overflow-hidden rounded-full bg-white/25">
+              <span className="block h-full w-1/3 animate-[pulse_1.5s_ease-in-out_infinite] rounded-full bg-white" />
+            </span>
+          </span>
+        )}
+        <span className="relative self-end rounded-md bg-black/55 px-1.5 py-0.5 font-mono text-xs">
+          {recording.duration}
+        </span>
+      </div>
+      <span className="min-w-0">
+        <b className="block truncate text-sm">{recording.title}</b>
+        <span className="block truncate text-xs text-muted-foreground">
+          {recording.handle} · {recording.date.replace(/, \d{4}$/, "")}
+        </span>
+      </span>
+    </Link>
+  );
+}
+
+const libraryFilters = [
+  { id: "all", label: "All" },
+  { id: "ready", label: "Ready" },
+  { id: "processing", label: "Processing" },
+  { id: "failed", label: "Failed" },
+  { id: "expiring", label: "Expiring soon" },
+] as const;
+
 export function RecordingsPage() {
-  const { t } = usePreferences();
   const { query: recordingsQuery, state: recordingsState } = useRecordingsData();
   const { query: channelsQuery } = useChannelsData();
+  const { query: pricingQuery } = usePublicPricingData();
   const recordingItems = recordingsQuery.data ?? [];
   const channelItems = channelsQuery.data ?? [];
-  const [mock, setMock] = useState<(typeof libraryStates)[number]["value"]>("populated");
-  const viewState =
-    recordingsState.kind === "loading"
-      ? "loading"
-      : recordingsState.kind === "error"
-        ? "error"
-        : recordingsState.kind === "empty"
-          ? "empty"
-          : isDemoMode
-            ? mock
-            : "populated";
   const [q, setQ] = useState("");
-  const [view, setView] = useState<"list" | "grid">("list");
-  const [status, setStatus] = useState("all");
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [status, setStatus] = useState<(typeof libraryFilters)[number]["id"]>("all");
   const [streamer, setStreamer] = useState("all");
   const [range, setRange] = useState("all");
-  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  // Demo fixtures are dated around Sep 27, 2026.
   const today = isDemoMode ? new Date("Sep 27, 2026").getTime() : Date.now();
-  const list = recordingItems
-    .filter(
-      (r) =>
-        (status === "all" || r.status === status) &&
-        (streamer === "all" || r.channelId === streamer) &&
-        (range === "all" || today - new Date(r.date).getTime() <= Number(range) * 864e5) &&
-        (r.title + r.handle).toLowerCase().includes(q.toLowerCase()),
-    )
-    .sort((a, b) => {
-      const d =
-        new Date(`${a.date} ${a.time}`).getTime() - new Date(`${b.date} ${b.time}`).getTime();
-      return sort === "newest" ? -d : d;
-    });
-  const filtered = status !== "all" || streamer !== "all" || range !== "all";
+  const isExpiring = (r: RecordingModel) =>
+    recordingSection(r) === "ready" && r.expiresDays !== null && r.expiresDays <= 3;
+  const matchesStatus = (r: RecordingModel, id: (typeof libraryFilters)[number]["id"]) =>
+    id === "all"
+      ? recordingSection(r) !== "active"
+      : id === "expiring"
+        ? isExpiring(r)
+        : recordingSection(r) === id;
+  const base = recordingItems.filter(
+    (r) =>
+      (streamer === "all" || r.channelId === streamer) &&
+      (range === "all" ||
+        today - new Date(`${r.date} ${r.time}`).getTime() <= Number(range) * 864e5) &&
+      (r.title + r.handle).toLowerCase().includes(q.toLowerCase()),
+  );
+  const list = base
+    .filter((r) => matchesStatus(r, status))
+    .sort(
+      (a, b) =>
+        new Date(`${b.date} ${b.time}`).getTime() - new Date(`${a.date} ${a.time}`).getTime(),
+    );
+  const expiring = recordingItems.filter(isExpiring);
+  const ready = recordingItems.filter((r) => recordingSection(r) === "ready");
+  const totalSeconds = ready.reduce((sum, r) => sum + (r.durationSeconds ?? 0), 0);
+  const retentionDays = pricingQuery.data?.recording_retention_days;
   const clear = () => {
     setQ("");
     setStatus("all");
     setStreamer("all");
     setRange("all");
   };
-  const expiring = recordingItems.filter(
-    (r) => r.status === "Ready" && r.expiresDays !== null && r.expiresDays <= 3,
-  );
   return (
     <AppShell>
-      <PageHeader
-        title="Recordings"
-        subtitle="Watch and download your completed livestream recordings."
-      />
-      {isDemoMode && <PrototypeStateBar value={mock} options={libraryStates} onChange={setMock} />}
-      {viewState === "empty" ? (
-        <EmptyState
-          title="No recordings yet"
-          body="Once one of your monitored channels goes live, the recording will automatically appear here."
+      <div className="flex flex-col gap-5">
+        <PageHeader
+          title="Recordings"
+          subtitle={
+            recordingsState.kind === "loading"
+              ? "Loading your library…"
+              : `${pluralize(ready.length, "recording")} · ${formatHoursLeft(totalSeconds / 60)}${
+                  retentionDays ? ` · kept up to ${pluralize(retentionDays, "day")} each` : ""
+                }`
+          }
           action={
-            <div className="flex flex-col justify-center gap-2 sm:flex-row">
-              <Button variant="outline" asChild>
-                <Link to="/channels">{t("View channels")}</Link>
-              </Button>
-              <AddChannelDialog />
+            <div
+              role="group"
+              aria-label="View"
+              className="flex rounded-[12px] border bg-surface p-1"
+            >
+              {(
+                [
+                  ["grid", "Grid", Grid2X2],
+                  ["list", "List", List],
+                ] as const
+              ).map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  aria-pressed={view === id}
+                  onClick={() => setView(id)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-sm font-bold text-muted-foreground",
+                    view === id && "bg-primary-subtle text-accent-ink",
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {label}
+                </button>
+              ))}
             </div>
           }
         />
-      ) : (
-        <>
-          {viewState === "error" && (
-            <div className="mb-4">
+        <RecordingsTabs current="library" recordings={recordingItems} />
+        {recordingsState.kind === "empty" ? (
+          <EmptyState
+            title="No recordings yet"
+            body="Once one of your monitored channels goes live, the recording appears here automatically."
+            action={
+              <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                <Button variant="outline" asChild>
+                  <Link to="/channels">View channels</Link>
+                </Button>
+                <AddChannelDialog />
+              </div>
+            }
+          />
+        ) : (
+          <>
+            {recordingsState.kind === "error" && (
               <ErrorState
                 title="We’re having trouble loading your library"
-                body="Showing recordings from 2 minutes ago. We’re retrying automatically — your recordings are safe."
-                onRetry={() => {
-                  void recordingsQuery.refetch();
-                  setMock("populated");
-                }}
+                body="Your recordings are safe. Please try again."
+                onRetry={() => void recordingsQuery.refetch()}
               />
-            </div>
-          )}
-          {viewState === "populated" && expiring.length > 0 && (
-            <div className="mb-4">
-              <StateBanner
-                tone="warning"
-                icon={Clock3}
-                title={`${pluralize(expiring.length, "recording")} ${expiring.length === 1 ? "expires" : "expire"} soon`}
-                body="Recordings are removed automatically when your plan’s retention period ends. Download any you want to keep."
-              />
-            </div>
-          )}
-          <FilterBar>
-            <div className="flex-1">
-              <SearchInput value={q} onChange={setQ} placeholder="Search recordings" />
-            </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex">
+            )}
+            <div className="flex flex-wrap items-center gap-3 rounded-[16px] border bg-surface p-3">
               <Select value={streamer} onValueChange={setStreamer}>
-                <SelectTrigger className="sm:w-36" aria-label="Streamer">
+                <SelectTrigger className="h-10 w-[200px]" aria-label="Channel">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("All streamers")}</SelectItem>
-                  {channelItems.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.handle}
+                  <SelectItem value="all">All channels</SelectItem>
+                  {channelItems.map((channel) => (
+                    <SelectItem key={channel.id} value={channel.id}>
+                      {channel.handle}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="sm:w-32" aria-label="Status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("All statuses")}</SelectItem>
-                  <SelectItem value="Ready">{t("Ready")}</SelectItem>
-                  <SelectItem value="Processing">{t("Processing")}</SelectItem>
-                  <SelectItem value="Error">{t("Failed")}</SelectItem>
-                </SelectContent>
-              </Select>
               <Select value={range} onValueChange={setRange}>
-                <SelectTrigger className="sm:w-36" aria-label="Date range">
+                <SelectTrigger className="h-10 w-[160px]" aria-label="Date range">
                   <Calendar className="size-4" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("All time")}</SelectItem>
-                  <SelectItem value="7">{t("Last 7 days")}</SelectItem>
-                  <SelectItem value="30">{t("Last 30 days")}</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                  <SelectItem value="7">Last 7 days</SelectItem>
+                  <SelectItem value="30">Last 30 days</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                onClick={() => setSort((s) => (s === "newest" ? "oldest" : "newest"))}
-              >
-                <ArrowUpDown />
-                {t(sort === "newest" ? "Newest first" : "Oldest first")}
-              </Button>
+              <span aria-hidden="true" className="hidden h-7 w-px bg-border sm:block" />
+              <div role="group" aria-label="Status" className="flex flex-wrap gap-1.5">
+                {libraryFilters.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={status === f.id}
+                    onClick={() => setStatus(f.id)}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-2 rounded-full border px-3 text-sm font-semibold",
+                      status === f.id
+                        ? "border-primary bg-primary-subtle text-accent-ink"
+                        : "bg-surface text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {f.label}
+                    <span className="font-mono text-xs opacity-70">
+                      {base.filter((r) => matchesStatus(r, f.id)).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="w-full sm:ml-auto sm:w-[220px]">
+                <SearchInput value={q} onChange={setQ} placeholder="Search recordings" />
+              </div>
             </div>
-            <div className="hidden rounded-md border sm:flex">
-              <Button
-                size="icon"
-                variant={view === "list" ? "secondary" : "ghost"}
-                onClick={() => setView("list")}
-                aria-label={t("List view")}
-                aria-pressed={view === "list"}
+            {expiring.length > 0 && status !== "expiring" && (
+              <div className="flex flex-wrap items-center gap-3 rounded-[14px] border border-warning/30 bg-warning-subtle px-4 py-3 text-sm">
+                <Clock3 className="size-[18px] text-warning" />
+                <span className="flex-1">
+                  <b>
+                    {pluralize(expiring.length, "recording")}{" "}
+                    {expiring.length === 1 ? "expires" : "expire"} in the next 3 days.
+                  </b>{" "}
+                  Download {expiring.length === 1 ? "it" : "them"} to keep a copy.
+                </span>
+                <Button size="sm" variant="outline" onClick={() => setStatus("expiring")}>
+                  Show {expiring.length === 1 ? "it" : "them"}
+                </Button>
+              </div>
+            )}
+            {recordingsState.kind === "loading" ? (
+              <div
+                className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(190px,100%),1fr))]"
+                aria-busy="true"
               >
-                <List />
-              </Button>
-              <Button
-                size="icon"
-                variant={view === "grid" ? "secondary" : "ghost"}
-                onClick={() => setView("grid")}
-                aria-label={t("Grid view")}
-                aria-pressed={view === "grid"}
-              >
-                <Grid2X2 />
-              </Button>
-            </div>
-          </FilterBar>
-          {viewState === "loading" ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="animate-pulse overflow-hidden rounded-lg border">
-                  <div className="aspect-video bg-muted" />
-                  <div className="space-y-2 p-4">
-                    <div className="h-3 w-2/3 rounded bg-muted" />
-                    <div className="h-3 w-1/3 rounded bg-muted" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : list.length === 0 ? (
-            q ? (
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-[9/16] animate-pulse rounded-[14px] bg-surface-2"
+                  />
+                ))}
+              </div>
+            ) : list.length === 0 ? (
               <EmptyState
-                icon={Search}
-                title={`No results for “${q}”`}
-                body="Check the spelling or search by @handle or date."
-                action={
-                  <Button variant="outline" onClick={() => setQ("")}>
-                    {t("Clear search")}
-                  </Button>
-                }
-              />
-            ) : (
-              <EmptyState
-                icon={Filter}
-                title="No recordings match these filters"
+                icon={q ? Search : Filter}
+                title={q ? `No results for “${q}”` : "No recordings match"}
                 body={
-                  filtered ? "Try a different streamer, status, or date range." : "Nothing to show."
+                  q
+                    ? "Check the spelling or search by @handle or date."
+                    : "Try another status, channel, or date range."
                 }
                 action={
                   <Button variant="outline" onClick={clear}>
-                    {t("Clear filters")}
+                    Clear filters
                   </Button>
                 }
               />
-            )
-          ) : view === "list" ? (
-            <>
-              <div className="hidden overflow-hidden rounded-lg border bg-surface lg:block">
-                <RecordingHeader />
+            ) : view === "grid" ? (
+              <div className="grid gap-5 [grid-template-columns:repeat(auto-fill,minmax(min(170px,100%),1fr))]">
                 {list.map((r) => (
-                  <RecordingRow key={r.id} recording={r} />
+                  <RecordingTile key={r.id} recording={r} />
                 ))}
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:hidden">
-                {list.map((r) => (
-                  <RecordingCard key={r.id} recording={r} />
-                ))}
+            ) : (
+              <>
+                <div className="hidden overflow-x-auto rounded-[16px] border bg-surface md:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                        <th scope="col" className="px-4 py-3">
+                          Recording
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Channel
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Date
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Duration
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Quality
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Status
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          Expires
+                        </th>
+                        <th scope="col" className="px-4 py-3">
+                          <span className="sr-only">Actions</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {list.map((r) => (
+                        <tr key={r.id} className="border-b last:border-b-0">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <span
+                                aria-hidden="true"
+                                className={cn("h-[54px] w-[30px] shrink-0 rounded-md", r.color)}
+                              />
+                              <b className="font-semibold">{r.title}</b>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">{r.handle}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{r.date}</td>
+                          <td className="px-4 py-3 font-mono">{r.duration}</td>
+                          <td className="px-4 py-3 font-mono">{r.resolution}</td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={r.status} />
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground">
+                            {recordingSection(r) === "ready" ? r.expires : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <ChannelHistoryAction recording={r} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="grid gap-3 md:hidden">
+                  {list.map((r) => (
+                    <RecordingCard key={r.id} recording={r} />
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+function StopRecordingButton({ recording }: { recording: RecordingModel }) {
+  const stopRecording = useStopRecordingMutation();
+  const [confirm, setConfirm] = useState(false);
+  return (
+    <>
+      <Button
+        variant="ghost"
+        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+        disabled={
+          !recording.actions.can_stop ||
+          stopRecording.isPending ||
+          recording.backendStatus === "stop_requested"
+        }
+        onClick={() => setConfirm(true)}
+      >
+        {recording.backendStatus === "stop_requested" ? "Stopping…" : "Stop recording"}
+      </Button>
+      <ConfirmDialog
+        destructive
+        open={confirm}
+        onOpenChange={setConfirm}
+        title="Stop this recording?"
+        body="We’ll stop now and save everything recorded so far. You’re only charged for the minutes actually recorded."
+        confirmLabel="Stop recording"
+        confirmDisabled={stopRecording.isPending}
+        onConfirm={() => {
+          void stopRecording
+            .mutateAsync(recording.id)
+            .then(() => {
+              setConfirm(false);
+              toast.success("Stopping the recording…", { description: recording.handle });
+            })
+            .catch((error) =>
+              toast.error("Could not stop recording", {
+                description: recordingActionErrorMessage(error),
+              }),
+            );
+        }}
+      />
+    </>
+  );
+}
+
+function RecordingsSectionShell({
+  current,
+  subtitle,
+  children,
+}: {
+  current: "active" | "processing" | "failed";
+  subtitle: string;
+  children: (items: RecordingModel[]) => ReactNode;
+}) {
+  const { query, state } = useRecordingsData();
+  const all = query.data ?? [];
+  const items = all
+    .filter((recording) => recordingSection(recording) === current)
+    .sort(
+      (a, b) =>
+        new Date(`${b.date} ${b.time}`).getTime() - new Date(`${a.date} ${a.time}`).getTime(),
+    );
+  return (
+    <AppShell>
+      <div className="flex flex-col gap-5">
+        <PageHeader title="Recordings" subtitle={subtitle} />
+        <RecordingsTabs current={current} recordings={all} />
+        {state.kind === "loading" ? (
+          <div className="flex flex-col gap-3" aria-busy="true">
+            {[0, 1].map((i) => (
+              <div key={i} className="h-36 animate-pulse rounded-[18px] border bg-surface-2" />
+            ))}
+          </div>
+        ) : state.kind === "error" ? (
+          <ErrorState
+            title="Could not load recordings"
+            body="Your recordings are safe. Please try again."
+            onRetry={() => void query.refetch()}
+          />
+        ) : (
+          children(items)
+        )}
+      </div>
+    </AppShell>
+  );
+}
+
+export function RecordingsActivePage() {
+  return (
+    <RecordingsSectionShell
+      current="active"
+      subtitle="Recordings in progress right now. Credits are held while a LIVE is recording and settled when it ends."
+    >
+      {(items) =>
+        items.length === 0 ? (
+          <EmptyState
+            title="Nothing recording right now"
+            body="When a monitored channel goes LIVE and auto-record is on, the recording shows up here within about a minute."
+            action={
+              <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                <Button asChild>
+                  <Link to="/channels">Check your channels</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/recordings">Open library</Link>
+                </Button>
               </div>
-            </>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {list.map((r) => (
-                <RecordingCard key={r.id} recording={r} />
+            }
+          />
+        ) : (
+          <>
+            <div className="flex flex-col gap-3.5">
+              {items.map((recording) => (
+                <article
+                  key={recording.id}
+                  className="flex flex-wrap items-center gap-5 rounded-[18px] border bg-surface p-5"
+                >
+                  <div
+                    className={cn("relative h-32 w-24 shrink-0 rounded-[14px]", recording.color)}
+                  >
+                    <span className="absolute left-2 top-2 rounded-md bg-recording px-1.5 py-0.5 font-mono text-[10px] font-bold text-white">
+                      ● REC
+                    </span>
+                  </div>
+                  <div className="min-w-[240px] flex-1 space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status="Recording" pulse />
+                      <span className="text-xs text-muted-foreground">since {recording.time}</span>
+                    </div>
+                    <b className="block text-lg">{recording.handle}</b>
+                    <div className="flex flex-wrap gap-5 pt-1 text-sm">
+                      <span>
+                        Elapsed <b className="font-mono">{recording.duration}</b>
+                      </span>
+                      <span>
+                        Size <b className="font-mono">{recording.size}</b>
+                      </span>
+                      {recording.creditsUsed !== null && recording.creditsUsed !== undefined && (
+                        <span>
+                          Credits so far <b className="font-mono">{recording.creditsUsed}</b>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline">
+                      <Link to="/recordings/$id" params={{ id: recording.id }}>
+                        View live
+                      </Link>
+                    </Button>
+                    <StopRecordingButton recording={recording} />
+                  </div>
+                </article>
               ))}
             </div>
-          )}
-        </>
-      )}
-    </AppShell>
+            <p className="text-xs text-muted-foreground">
+              Stopping saves everything recorded so far. You’re only charged for the minutes
+              actually recorded.
+            </p>
+          </>
+        )
+      }
+    </RecordingsSectionShell>
+  );
+}
+
+function processingStage(recording: RecordingModel) {
+  switch (recording.backendStatus) {
+    case "waiting_for_cloud_slot":
+      return { label: "Waiting", step: "Waiting for a free recorder slot", progress: 10 };
+    case "queued":
+    case "resolving":
+    case "waiting_live":
+      return { label: "Starting", step: "Preparing the recorder", progress: 15 };
+    case "uploading":
+      return { label: "Uploading", step: "Step 2 of 2 · uploading to your library", progress: 80 };
+    default:
+      return { label: "Processing", step: "Step 1 of 2 · preparing the video file", progress: 45 };
+  }
+}
+
+export function RecordingsProcessingPage() {
+  return (
+    <RecordingsSectionShell
+      current="processing"
+      subtitle="LIVEs that just ended. Files are usually ready within a few minutes."
+    >
+      {(items) =>
+        items.length === 0 ? (
+          <EmptyState
+            title="Nothing is processing"
+            body="Recordings appear here for a few minutes after a LIVE ends, then move to your library."
+            action={
+              <Button asChild variant="outline">
+                <Link to="/recordings">Open library</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-hidden rounded-[18px] border bg-surface">
+              {items.map((recording) => {
+                const stage = processingStage(recording);
+                return (
+                  <Link
+                    key={recording.id}
+                    to="/recordings/$id"
+                    params={{ id: recording.id }}
+                    className="flex items-center gap-4 border-b px-5 py-4 last:border-b-0 hover:bg-surface-2"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn("h-16 w-12 shrink-0 rounded-[10px]", recording.color)}
+                    />
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="min-w-0">
+                          <b className="block truncate">{recording.title}</b>
+                          <span className="text-xs text-muted-foreground">
+                            {recording.handle} · {recording.duration} · started {recording.time}
+                          </span>
+                        </span>
+                        <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-primary-subtle px-2.5 text-xs font-bold text-accent-ink">
+                          <span className="size-3 animate-spin rounded-full border border-current border-t-transparent" />
+                          {stage.label}
+                        </span>
+                      </div>
+                      <div
+                        className="h-2 overflow-hidden rounded-full bg-surface-3"
+                        role="progressbar"
+                        aria-label={stage.step}
+                      >
+                        <span
+                          className="block h-full animate-pulse rounded-full bg-primary"
+                          style={{ width: `${stage.progress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{stage.step}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+            <p className="flex items-center gap-2.5 rounded-[14px] border border-info/25 bg-info-subtle px-4 py-3 text-sm">
+              <Info className="size-[18px] shrink-0 text-info" />
+              We’ll show a notification when each file is ready. You can close this page.
+            </p>
+          </>
+        )
+      }
+    </RecordingsSectionShell>
+  );
+}
+
+function failureCopy(recording: RecordingModel) {
+  if (recording.backendStatus === "missed_no_cloud_slot") {
+    return {
+      why: "The LIVE ended before a recorder slot became available.",
+      todo: "Nothing to retry. No credits were charged.",
+    };
+  }
+  if (recording.backendStatus === "stopped") {
+    return {
+      why: "The recording was stopped before any video was saved.",
+      todo: "Nothing to retry.",
+    };
+  }
+  return {
+    why: recording.error || "Something went wrong while recording this LIVE.",
+    todo: recording.partialDuration
+      ? `${recording.partialDuration} was saved — open the recording to download the partial file.`
+      : "If it keeps happening on this channel, report a problem so we can look into it.",
+  };
+}
+
+export function RecordingsFailedPage() {
+  const [report, setReport] = useState<RecordingModel | null>(null);
+  return (
+    <RecordingsSectionShell
+      current="failed"
+      subtitle="Recordings that couldn’t be saved, with the reason and what you can do."
+    >
+      {(items) =>
+        items.length === 0 ? (
+          <EmptyState
+            title="No failed recordings"
+            body="If a recording can’t be saved, it shows up here with the reason."
+            action={
+              <Button asChild variant="outline">
+                <Link to="/recordings">Open library</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            <p className="flex items-center gap-2.5 rounded-[14px] border border-success/25 bg-success-subtle px-4 py-3 text-sm">
+              <Check className="size-[18px] shrink-0 text-success" />
+              <span>
+                <b>You’re only charged for minutes that were saved.</b> Credits held for a recording
+                that fails are returned to your balance.
+              </span>
+            </p>
+            <div className="flex flex-col gap-3">
+              {items.map((recording) => {
+                const copy = failureCopy(recording);
+                return (
+                  <article
+                    key={recording.id}
+                    className="flex flex-wrap items-start gap-4 rounded-[18px] border bg-surface p-5"
+                  >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-destructive/10 text-destructive">
+                      <AlertCircle className="size-5" />
+                    </span>
+                    <div className="min-w-[260px] flex-1 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <b>{recording.title}</b>
+                        <StatusBadge status={recording.status} />
+                        {recording.errorCode && (
+                          <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                            {recording.errorCode}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {recording.handle} · {recording.date}, {recording.time} ·{" "}
+                        {recording.creditsUsed
+                          ? `${recording.creditsUsed} credits charged`
+                          : "0 credits charged"}
+                      </p>
+                      <p className="pt-1 text-sm">
+                        <b>Why:</b> {copy.why}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <b className="text-foreground">What to do:</b> {copy.todo}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild size="sm" variant="outline">
+                        <Link to="/recordings/$id" params={{ id: recording.id }}>
+                          Details
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setReport(recording)}>
+                        Report a problem
+                      </Button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            <ReportProblemDialog
+              open={report !== null}
+              onOpenChange={(open) => !open && setReport(null)}
+              recording={
+                report
+                  ? { recordingId: report.id, title: report.title, handle: report.handle }
+                  : null
+              }
+            />
+          </>
+        )
+      }
+    </RecordingsSectionShell>
   );
 }
 const processingBackendStatuses = new Set([

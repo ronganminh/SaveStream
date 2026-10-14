@@ -1,3 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RecordingDetailPage, meta } from "@/components/app-pages";
-export const Route = createFileRoute("/recordings/failed")({ head:()=>meta("Failed recording","Review details and partial output from an interrupted recording."), component:()=> <RecordingDetailPage state="failed"/> });
+import { RecordingsFailedPage, meta } from "@/components/app-pages";
+export const Route = createFileRoute("/recordings/failed")({
+  head: () =>
+    meta(
+      "Failed recordings",
+      "Recordings that could not be saved, with the reason and what to do.",
+    ),
+  component: RecordingsFailedPage,
+});
