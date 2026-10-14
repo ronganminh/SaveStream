@@ -118,6 +118,15 @@ export const authApi = {
   },
 };
 
+/** A verification or reset link that is expired, used or mistyped. */
+export function isExpiredLinkError(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.code === "VALIDATION_ERROR" &&
+    /invalid or expired/i.test(error.serverMessage ?? "")
+  );
+}
+
 export function authErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "Something went wrong. Please try again.";
   if (error.status === 0) return "Unable to reach SaveStream. Check your connection and try again.";
