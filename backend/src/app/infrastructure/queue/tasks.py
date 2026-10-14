@@ -84,6 +84,13 @@ def recording_cleanup(recording_id: str) -> None:
     cleanup_recording(recording_id)
 
 
+@celery_app.task(name="savestream.creators.avatar_refresh")
+def creator_avatar_refresh() -> int:
+    from app.infrastructure.creators.avatar_worker import run_creator_avatar_refresh
+
+    return run_creator_avatar_refresh()
+
+
 @celery_app.task(name="savestream.recording.recover_stale")
 def recording_recover_stale() -> int:
     from app.infrastructure.recording.worker import recover_stale_recordings

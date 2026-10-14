@@ -97,6 +97,15 @@ forbidIn("ChannelDetail", detail, "setTimeout(");
 must("src/repositories/demo.ts", "demoChannelState");
 must("src/repositories/demo.ts", "syncDemoChannel");
 
+// Creator avatars: same `creator.avatar_url` as mobile, initials when missing/broken.
+must("src/repositories/mappers/channel.ts", "avatarUrl: watch.creator?.avatar_url ?? null");
+must("src/repositories/mappers/recording.ts", "recording.creator?.avatar_url ?? matchedWatch?.creator?.avatar_url");
+must("src/components/app-components.tsx", "onError={() => setFailed(true)}");
+must("src/components/app-components.tsx", "useCreatorPreview(");
+must("src/hooks/use-domain-data.ts", "repositories.recordings.getLiveStatus");
+must("src/components/admin/recordings-d3.tsx", "recording.creator?.avatar_url");
+must("src/components/admin/user-support.tsx", "item.creator?.avatar_url");
+
 if (failures.length) {
   console.error("Watch integration audit failed:\n- " + failures.join("\n- "));
   process.exit(1);

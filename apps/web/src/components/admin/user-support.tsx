@@ -5,7 +5,8 @@ import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
-import { AppShell, PageHeader } from "@/components/app-components";
+import { AppShell, AvatarCircle, PageHeader } from "@/components/app-components";
+import { initials } from "@/repositories/mappers/channel";
 import {
   AdminDataTable,
   AdminGlobalSearch,
@@ -31,6 +32,21 @@ import {
   type AdminUserFilters,
   type AdminViewAsUser,
 } from "@/repositories/admin-api";
+
+function CreatorCell({
+  username,
+  avatarUrl,
+}: {
+  username: string;
+  avatarUrl?: string | null | undefined;
+}) {
+  return (
+    <span className="flex items-center gap-2">
+      <AvatarCircle src={avatarUrl} initials={initials(username.replace(/^@/, ""))} size="xs" />
+      <span className="truncate">{username}</span>
+    </span>
+  );
+}
 
 function accountStatus(user: AdminUser) {
   if (user.deletion_requested_at) return "Pending deletion";
@@ -738,7 +754,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
           <TabsContent value="channels">
             <AdminDataTable>
               <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Creator</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Live</th><th className="px-4 py-3">Auto record</th></tr></thead>
-              <tbody>{detail.watches.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3">{item.creator?.username ?? item.source.value}</td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{item.live_status}</td><td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td></tr>)}</tbody>
+              <tbody>{detail.watches.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3"><CreatorCell username={item.creator?.username ?? item.source.value} avatarUrl={item.creator?.avatar_url} /></td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{item.live_status}</td><td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td></tr>)}</tbody>
             </AdminDataTable>
           </TabsContent>
 
@@ -748,7 +764,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
             </div>
             <AdminDataTable>
               <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Recording</th><th className="px-4 py-3">Creator</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th></tr></thead>
-              <tbody>{detail.recordings.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3 font-mono text-xs">{item.id}</td><td className="px-4 py-3">{item.creator?.username ?? item.source.value}</td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{dateTime(item.created_at)}</td></tr>)}</tbody>
+              <tbody>{detail.recordings.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3 font-mono text-xs">{item.id}</td><td className="px-4 py-3"><CreatorCell username={item.creator?.username ?? item.source.value} avatarUrl={item.creator?.avatar_url} /></td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{dateTime(item.created_at)}</td></tr>)}</tbody>
             </AdminDataTable>
           </TabsContent>
 

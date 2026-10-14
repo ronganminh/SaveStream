@@ -159,6 +159,7 @@ from app.api.serializers.credits import transaction_response
 from app.api.serializers.recordings import recording_response
 from app.api.serializers.watches import watch_response
 from app.application.admin.bulk_grants_d5 import AdminBulkGrantService
+from app.application.creators.avatar_cache import recording_avatar_urls
 from app.application.admin.catalog_d5 import AdminCatalogService
 from app.application.admin.operations_d7 import AdminOperationsService
 from app.application.admin.overview_d9 import AdminOverviewService
@@ -295,6 +296,7 @@ async def _admin_recording_responses(
     recordings: list[Recording],
 ) -> list[RecordingResponse]:
     positions = await service.queue_positions(recordings)
+    avatars = await recording_avatar_urls(service.session, recordings)
     retention_by_user: dict[uuid.UUID, int] = {}
     responses: list[RecordingResponse] = []
     for recording in recordings:
@@ -307,6 +309,7 @@ async def _admin_recording_responses(
                 recording,
                 retention_days=days,
                 queue_position=positions.get(recording.id),
+                avatar_url=avatars.get(recording.id),
             )
         )
     return responses
@@ -1619,6 +1622,7 @@ async def get_admin_user_detail(
         cloud_minutes_available=data.balance.available,
         latest_purchase_provider=data.latest_purchase_provider,
     )
+    avatars = await recording_avatar_urls(session, data.recordings)
     return AdminUserDetailResponse(
         user=user_response,
         entitlement=_entitlement_response(data.entitlement),
@@ -1635,7 +1639,10 @@ async def get_admin_user_detail(
             )
             for item in data.watches
         ],
-        recordings=[recording_response(item) for item in data.recordings],
+        recordings=[
+            recording_response(item, avatar_url=avatars.get(item.id))
+            for item in data.recordings
+        ],
         payments=[payment_order_response(item) for item in data.payments],
         ledger=[transaction_response(item) for item in data.ledger],
         sessions=[
@@ -2029,6 +2036,7 @@ async def view_as_admin_user(
         details={"read_only": True},
     )
     await session.commit()
+    avatars = await recording_avatar_urls(session, data.recordings)
     return AdminViewAsUserResponse(
         user=admin_user_response(
             data.user,
@@ -2050,7 +2058,10 @@ async def view_as_admin_user(
             )
             for item in data.watches
         ],
-        recordings=[recording_response(item) for item in data.recordings],
+        recordings=[
+            recording_response(item, avatar_url=avatars.get(item.id))
+            for item in data.recordings
+        ],
     )
 
 

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import io
 from datetime import timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
 from minio import Minio
+from minio.error import S3Error
 
 from app.settings import AppSettings
 
@@ -65,6 +67,42 @@ class MinioStorageClient:
             expires=timedelta(seconds=self.settings.artifact_presign_seconds),
             response_headers=response_headers,
         )
+
+    def upload_bytes(
+        self,
+        data: bytes,
+        storage_key: str,
+        *,
+        content_type: str,
+        cache_control: str | None = None,
+    ) -> None:
+        self.ensure_bucket()
+        self.client.put_object(
+            self.settings.minio_bucket,
+            storage_key,
+            io.BytesIO(data),
+            length=len(data),
+            content_type=content_type,
+            metadata={"Cache-Control": cache_control} if cache_control else None,
+        )
+
+    def get_bytes(self, storage_key: str, *, max_bytes: int) -> tuple[bytes, str] | None:
+        """Small object body and content type, or None when it does not exist."""
+        try:
+            response = self.client.get_object(self.settings.minio_bucket, storage_key)
+        except S3Error as exc:
+            if exc.code in {"NoSuchKey", "NoSuchBucket"}:
+                return None
+            raise
+        try:
+            data = response.read(max_bytes + 1)
+            content_type = response.headers.get("Content-Type", "application/octet-stream")
+        finally:
+            response.close()
+            response.release_conn()
+        if len(data) > max_bytes:
+            return None
+        return data, content_type
 
     def remove(self, storage_key: str) -> None:
         self.client.remove_object(self.settings.minio_bucket, storage_key)

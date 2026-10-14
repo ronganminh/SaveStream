@@ -28,8 +28,16 @@ class Watch(Base):
     creator_display_name: Mapped[str | None] = mapped_column(
         String(160), nullable=True
     )
+    # Raw TikTok CDN URL from the profile lookup; it expires after a while.
     creator_avatar_url: Mapped[str | None] = mapped_column(
         String(2048), nullable=True
+    )
+    # Copy kept in object storage and served from a stable public API URL;
+    # see app.application.creators.avatar_cache.
+    creator_avatar_key: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    creator_avatar_cached_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    creator_avatar_refreshed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
     resolved_room_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="active")

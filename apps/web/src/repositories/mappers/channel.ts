@@ -12,7 +12,7 @@ function handle(watch: WatchResponse): string {
   return username ? `@${username.replace(/^@/, "")}` : watch.source.value;
 }
 
-function initials(value: string): string {
+export function initials(value: string): string {
   const parts = value.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   const result = parts.map((part) => part[0]?.toUpperCase() ?? "").join("");
   return result || "SS";
@@ -81,7 +81,7 @@ function matchesWatch(recording: RecordingResponse, watch: WatchResponse): boole
   );
 }
 
-function toneFor(id: string): string {
+export function toneFor(id: string): string {
   const tones = [
     "from-avatar-one to-avatar-one-end",
     "from-avatar-two to-avatar-two-end",
@@ -115,6 +115,7 @@ export function mapWatchToChannel(
     recordedHours: formatHours(totalSeconds),
     storage: formatStorage(totalBytes),
     tone: toneFor(watch.id),
+    avatarUrl: watch.creator?.avatar_url ?? null,
     backendStatus: watch.status,
     liveStatus: watch.live_status,
     source: watch.source,

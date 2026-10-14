@@ -1,4 +1,6 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import type { Source } from "@/api/types";
 import type { AsyncResourceState } from "@/domain/resource-state";
 import { billingCheckoutEnabled, isDemoMode } from "@/lib/app-config";
 import { repositories, type RecordingModel } from "@/repositories";
@@ -251,4 +253,30 @@ export function useUsageData() {
     enabled: signedIn,
   });
   return { query, state: toResourceState(query) };
+}
+
+/**
+ * Creator profile for the Add channel preview, from the same
+ * `POST /v1/live-status` lookup the mobile app uses (display name and avatar).
+ * Debounced so typing does not fire a lookup per keystroke; best-effort, the
+ * preview keeps the parsed handle and initials when it fails.
+ */
+export function useCreatorPreview(source: Source | null, delayMs = 500) {
+  const signedIn = useSignedIn();
+  const [debounced, setDebounced] = useState<Source | null>(null);
+  const key = source ? `${source.type}:${source.value.toLowerCase()}` : "";
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(source), delayMs);
+    return () => window.clearTimeout(timer);
+    // `key` captures every change of `source` that matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, delayMs]);
+  const debouncedKey = debounced ? `${debounced.type}:${debounced.value.toLowerCase()}` : "";
+  return useQuery({
+    queryKey: ["creator-preview", debouncedKey] as const,
+    queryFn: () => repositories.recordings.getLiveStatus(debounced as Source),
+    enabled: signedIn && !isDemoMode && debounced !== null && debouncedKey === key,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 }
