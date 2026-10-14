@@ -53,12 +53,12 @@ const detail = block(
 mustIn("RecordingDetailPage", detail, "useRecordingArtifactsData");
 mustIn("RecordingDetailPage", detail, "useRecordingDownloadMutation");
 mustIn("RecordingDetailPage", detail, "useDeleteRecordingMutation");
-mustIn("RecordingDetailPage", detail, "saveSignedFile(signed.url)");
+mustIn("RecordingDetailPage", detail, "useRecordingDownload()");
+mustIn("RecordingDetailPage", detail, "downloadRecording.start(rec");
 forbidIn("RecordingDetailPage", detail, "window.location.assign");
 mustIn("RecordingDetailPage", detail, "artifact.width");
 mustIn("RecordingDetailPage", detail, "Recording file unavailable");
 mustIn("RecordingDetailPage", detail, 'artifactsState.kind === "empty"');
-mustIn("RecordingDetailPage", detail, "{ recordingId: rec.id, saveAs: true }");
 forbidIn("RecordingDetailPage", detail, "if (!isDemoMode) return;");
 
 const actions = block(
@@ -66,9 +66,25 @@ const actions = block(
   "function RecordingActions",
   "export function VideoPlayerShell",
 );
-mustIn("RecordingActions", actions, "useRecordingDownloadMutation");
+mustIn("RecordingActions", actions, "useRecordingDownload()");
 mustIn("RecordingActions", actions, "useDeleteRecordingMutation");
-mustIn("RecordingActions", actions, "saveSignedFile(signed.url)");
+mustIn("RecordingActions", actions, "downloadRecording.start(recording)");
+
+// QA 2026-10-14: Download gave no feedback. The shared hook asks for an
+// attachment link, checks storage first, saves without navigating, and shows
+// preparing / started / failed-with-retry.
+const downloadHook = "src/hooks/use-recording-download.ts";
+for (const text of [
+  "saveAs: true",
+  "checkSignedFile(url)",
+  "saveSignedFile(url)",
+  '"Preparing download…"',
+  '"Download started"',
+  '"Download failed"',
+  'label: "Try again"',
+]) {
+  must(downloadHook, text);
+}
 forbidIn("RecordingActions", actions, "window.location.assign");
 mustIn("RecordingActions", actions, "recording.actions.can_delete");
 
