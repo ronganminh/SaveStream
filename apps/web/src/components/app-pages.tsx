@@ -6444,6 +6444,7 @@ export function PublicFooter() {
         ["/acceptable-use", "Acceptable Use Policy"],
         ["/copyright", "Copyright & Takedown"],
         ["/refund", "Refund Policy"],
+        ["/report", "Report content"],
       ],
     ],
     [

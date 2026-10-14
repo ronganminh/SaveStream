@@ -7771,6 +7771,59 @@
         }
       }
     },
+    "/public/reports": {
+      "post": {
+        "tags": [
+          "Safety"
+        ],
+        "summary": "Submit a public copyright notice or abuse report",
+        "description": "Anonymous form behind /report. Rate limited per IP; requires a Cloudflare Turnstile token when the server has a Turnstile secret configured. Creates a complaint case reviewed in Admin → Safety.",
+        "operationId": "createPublicReport",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed, or Turnstile verification failed (CAPTCHA_FAILED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many reports from this IP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/support/reports": {
       "post": {
         "tags": [
@@ -14606,6 +14659,128 @@
           }
         },
         "additionalProperties": false
+      },
+      "PublicReportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "email"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "copyright",
+              "abuse"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 320
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "rights_holder",
+              "agent",
+              "employee",
+              null
+            ]
+          },
+          "work_description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 5000
+          },
+          "locations": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 5000
+          },
+          "good_faith": {
+            "type": "boolean",
+            "default": false
+          },
+          "accurate_and_authorized": {
+            "type": "boolean",
+            "default": false
+          },
+          "signature": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2048
+          },
+          "reporter_role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "self",
+              "other",
+              "on_behalf",
+              null
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 10000
+          },
+          "turnstile_token": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          }
+        }
+      },
+      "PublicReportResponse": {
+        "type": "object",
+        "required": [
+          "reference",
+          "kind"
+        ],
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Short reference shown to the reporter, e.g. SR-3F9A21C4"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "copyright",
+              "abuse"
+            ]
+          }
+        }
       },
       "SupportReportCreateRequest": {
         "type": "object",
