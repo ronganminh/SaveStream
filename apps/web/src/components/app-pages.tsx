@@ -101,6 +101,8 @@ import {
   AdminHealthBadge,
   AppShell,
   ChannelCard,
+  ChannelGridCard,
+  ChannelLimitMeter,
   ChannelRow,
   ConfirmDeleteDialog,
   ConfirmDialog,
@@ -911,7 +913,8 @@ export function AuthPage({
   const [agreed, setAgreed] = useState(false);
   const [linkExpired, setLinkExpired] = useState(false);
   const trialLabel = useTrialMinutesLabel();
-  const agreementError = "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
+  const agreementError =
+    "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
@@ -995,7 +998,9 @@ export function AuthPage({
       nextErrors.password = "Password is required.";
     }
     if ((mode === "sign-up" || mode === "reset") && pw.length < 8) {
-      nextErrors.password = pw ? "Password must be at least 8 characters." : "Password is required.";
+      nextErrors.password = pw
+        ? "Password must be at least 8 characters."
+        : "Password is required.";
     }
     if (mode === "reset" && pw !== pw2) {
       nextErrors.confirm = "Passwords don’t match.";
@@ -1089,7 +1094,9 @@ export function AuthPage({
             <IconTile tone="ok">
               <Send className="size-7" />
             </IconTile>
-            <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">{t("Check your email")}</h1>
+            <h1 className="text-[26px] font-extrabold tracking-[-0.02em]">
+              {t("Check your email")}
+            </h1>
             <p className="text-muted-foreground">
               {t("If an account exists for")} <b className="text-foreground">{email}</b>,{" "}
               {t("a reset link is on its way.")} It’s valid for {ONE_TIME_LINK_MINUTES} minutes.
@@ -1176,7 +1183,9 @@ export function AuthPage({
             </IconTile>
             <h1 className="text-2xl font-bold">{t("Password updated")}</h1>
             <p className="text-sm text-muted-foreground">
-              {t("Your password has been changed. Other sessions were signed out for your security.")}
+              {t(
+                "Your password has been changed. Other sessions were signed out for your security.",
+              )}
             </p>
             <Button asChild className="w-full">
               <Link to="/sign-in">{t("Sign in")}</Link>
@@ -1211,7 +1220,8 @@ export function AuthPage({
                   value={pw}
                   onChange={(value) => {
                     setPw(value);
-                    if (fieldErrors.password) setFieldErrors((c) => ({ ...c, password: undefined }));
+                    if (fieldErrors.password)
+                      setFieldErrors((c) => ({ ...c, password: undefined }));
                   }}
                   showStrength
                   error={fieldErrors.password}
@@ -1373,18 +1383,27 @@ export function AuthPage({
               />
               <span>
                 I am at least 18 and agree to the{" "}
-                <Link to="/terms" className="font-semibold text-accent-ink underline-offset-4 hover:underline">
+                <Link
+                  to="/terms"
+                  className="font-semibold text-accent-ink underline-offset-4 hover:underline"
+                >
                   Terms of Use
                 </Link>{" "}
                 and{" "}
-                <Link to="/privacy" className="font-semibold text-accent-ink underline-offset-4 hover:underline">
+                <Link
+                  to="/privacy"
+                  className="font-semibold text-accent-ink underline-offset-4 hover:underline"
+                >
                   Privacy Policy
                 </Link>
                 .
               </span>
             </label>
             {fieldErrors.agree && (
-              <p id="agree-error" className="mt-1.5 flex items-start gap-1.5 pl-[26px] text-xs text-destructive">
+              <p
+                id="agree-error"
+                className="mt-1.5 flex items-start gap-1.5 pl-[26px] text-xs text-destructive"
+              >
                 {fieldErrors.agree}
               </p>
             )}
@@ -1432,11 +1451,7 @@ export function AuthPage({
             </p>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setSocialConsentOpen(false)}
-            >
+            <Button variant="outline" disabled={busy} onClick={() => setSocialConsentOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -1941,114 +1956,229 @@ export function SectionTitle({ title, action }: { title: string; action?: ReactN
   );
 }
 
+const channelFilters = [
+  { id: "All", label: "All", dot: null },
+  { id: "Recording", label: "Recording", dot: "bg-recording" },
+  { id: "Live", label: "LIVE · not recording", dot: "bg-recording" },
+  { id: "Waiting", label: "Waiting", dot: "bg-info" },
+  { id: "Offline", label: "Offline", dot: "bg-muted-foreground/50" },
+  { id: "Paused", label: "Paused", dot: "bg-warning" },
+  { id: "Error", label: "Error", dot: "bg-destructive" },
+] as const;
+
+function ChannelsEmptyHero({
+  trialLabel,
+  channelLimit,
+}: {
+  trialLabel: string | null;
+  channelLimit: number | null;
+}) {
+  const [value, setValue] = useState("");
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="relative overflow-hidden rounded-[20px] border bg-surface px-6 py-16 text-center">
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(500px_260px_at_50%_0%,color-mix(in_oklab,var(--color-primary)_10%,transparent),transparent_70%)]"
+      />
+      <div className="relative mx-auto flex max-w-[520px] flex-col items-center gap-4">
+        <span className="grid size-24 place-items-center rounded-[28px] bg-primary-subtle text-accent-ink">
+          <Radio className="size-11" strokeWidth={1.6} />
+        </span>
+        <h2 className="text-[26px] font-extrabold tracking-tight">No channels yet</h2>
+        <p className="max-w-[440px] text-muted-foreground">
+          Add a TikTok @username. We’ll detect the next LIVE in about a minute and record it to the
+          cloud — nothing to keep open.
+        </p>
+        <form
+          className="mt-2 flex w-full flex-wrap justify-center gap-2.5"
+          aria-label="Add a channel"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setOpen(true);
+          }}
+        >
+          <label className="relative min-w-[240px] flex-1">
+            <span className="sr-only">TikTok username</span>
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">
+              @
+            </span>
+            <Input
+              value={value}
+              onChange={(event) => setValue(event.target.value)}
+              placeholder="TikTok username"
+              className="h-12 pl-8"
+            />
+          </label>
+          <Button type="submit" className="h-12">
+            <Plus />
+            Add channel
+          </Button>
+        </form>
+        <div className="mt-2 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <span className="size-2 rounded-full bg-success" />
+            Monitoring is free
+          </span>
+          {channelLimit !== null && (
+            <span className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-success" />
+              Up to {pluralize(channelLimit, "channel")}
+            </span>
+          )}
+          {trialLabel && (
+            <span className="flex items-center gap-2">
+              <span className="size-2 rounded-full bg-success" />
+              {trialLabel}
+            </span>
+          )}
+        </div>
+      </div>
+      <AddChannelDialog initialInput={value} open={open} onOpenChange={setOpen} />
+    </section>
+  );
+}
+
 export function ChannelsPage() {
-  const { t } = usePreferences();
   const { query: channelsQuery, state: channelsState } = useChannelsData();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const channelItems = channelsQuery.data ?? [];
   const entitlement = entitlementQuery.data;
-  const channelLimit = entitlement?.limits.max_watches ?? (isDemoMode ? 3 : null);
   const { query: publicPricingQuery } = usePublicPricingData();
+  const channelLimit =
+    entitlement?.limits.max_watches ??
+    publicPricingQuery.data?.free_max_channels_per_user ??
+    (isDemoMode ? 3 : null);
   const channelCount = entitlement?.watch_count ?? channelItems.length;
+  const trialMinutesLabel = useTrialMinutesLabel();
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState<(typeof channelFilters)[number]["id"]>("All");
+  const statusOf = (c: ChannelModel) => (c.backendStatus === "active" ? c.status : "Paused");
   const filtered = channelItems.filter(
     (c) =>
-      (filter === "All" || c.status === filter) &&
+      (filter === "All" || statusOf(c) === filter) &&
       (c.name + c.handle).toLowerCase().includes(q.toLowerCase()),
   );
+  const empty =
+    channelsState.kind !== "loading" && channelsState.kind !== "error" && channelItems.length === 0;
   return (
     <AppShell>
       <PageHeader
         title="Channels"
         subtitle={
-          entitlement?.plan === "free"
-            ? `${freeWebSentence(publicPricingQuery.data, channelLimit)} Automatic cloud recording unlocks after you purchase a cloud-minute package; then turn on Auto-record on each channel page.`
-            : "Channels are monitored automatically. Recording begins when an enabled channel goes live."
+          empty
+            ? "Add a TikTok channel and we’ll start watching it right away."
+            : entitlement?.plan === "free"
+              ? `We check monitored channels around the clock. ${freeWebSentence(publicPricingQuery.data, channelLimit)} Automatic recording unlocks after you buy credits.`
+              : "We check monitored channels around the clock. Monitoring is free — only recording uses credits."
         }
         action={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-4">
             {channelLimit !== null && (
-              <span className="text-sm text-muted-foreground">
-                {channelCount}/{channelLimit} channels
-              </span>
+              <ChannelLimitMeter used={channelCount} limit={channelLimit} className="w-[200px]" />
             )}
-            <AddChannelDialog />
+            {!empty && <AddChannelDialog />}
           </div>
         }
       />
-      <FilterBar>
-        <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
-        <div className="flex gap-1 overflow-x-auto">
-          {["All", "Recording", "Live", "Waiting", "Offline", "Paused", "Error"].map((f) => (
-            <Button
-              key={f}
-              size="sm"
-              variant={filter === f ? "secondary" : "ghost"}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </Button>
-          ))}
-        </div>
-      </FilterBar>
       {channelsState.kind === "loading" ? (
-        <div className="space-y-3" aria-busy="true">
+        <div
+          className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr))]"
+          aria-busy="true"
+        >
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg border bg-muted" />
+            <div key={i} className="h-[230px] animate-pulse rounded-[18px] border bg-surface-2" />
           ))}
         </div>
       ) : channelsState.kind === "error" ? (
         <ErrorState
           title="Could not load channels"
-          body="The channel repository returned an error. Retry when the data source is available."
+          body="Something went wrong while loading your channels. Please try again."
           onRetry={() => channelsQuery.refetch()}
         />
-      ) : filtered.length ? (
+      ) : empty ? (
         <>
-          <div className="hidden overflow-hidden rounded-lg border bg-surface md:block">
-            <div className="grid grid-cols-[1.5fr_.7fr_.7fr_.8fr_.6fr_auto] gap-4 border-b bg-surface-subtle px-4 py-2 text-[11px] font-medium uppercase text-muted-foreground">
-              <span>{t("Creator")}</span>
-              <span>{t("Platform")}</span>
-              <span>{t("Monitoring")}</span>
-              <span>{t("Status")}</span>
-              <span>{t("Last checked")}</span>
-              <span />
-            </div>
-            {filtered.map((c) => (
-              <ChannelRow key={c.id} channel={c} />
-            ))}
-          </div>
-          <div className="space-y-3 md:hidden">
-            {filtered.map((c) => (
-              <ChannelCard key={c.id} channel={c} />
-            ))}
-          </div>
+          <ChannelsEmptyHero
+            channelLimit={channelLimit}
+            trialLabel={trialMinutesLabel ? `${trialMinutesLabel} ready` : null}
+          />
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            Only add channels you own, manage, or have permission to record.{" "}
+            <Link to="/acceptable-use" className="font-semibold text-accent-ink hover:underline">
+              Acceptable Use Policy
+            </Link>
+          </p>
         </>
-      ) : channelItems.length === 0 ? (
-        <EmptyState
-          icon={Radio}
-          title="No channels yet"
-          body="Add a TikTok channel and SaveStream will notify you when it goes live."
-          action={<AddChannelDialog />}
-        />
       ) : (
-        <EmptyState
-          icon={Search}
-          title="No channels found"
-          body="Try another search or clear the current filter."
-          action={
-            <Button
-              variant="outline"
-              onClick={() => {
-                setQ("");
-                setFilter("All");
-              }}
-            >
-              Clear search and filter
-            </Button>
-          }
-        />
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
+              {channelFilters.map((f) => {
+                const count =
+                  f.id === "All"
+                    ? channelItems.length
+                    : channelItems.filter((c) => statusOf(c) === f.id).length;
+                const active = filter === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setFilter(f.id)}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25",
+                      active
+                        ? "border-primary bg-primary-subtle text-accent-ink"
+                        : "bg-surface text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {f.dot && (
+                      <span aria-hidden="true" className={cn("size-2 rounded-full", f.dot)} />
+                    )}
+                    {f.label}
+                    <span className="font-mono text-xs opacity-70">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="w-full sm:w-[260px]">
+              <SearchInput value={q} onChange={setQ} placeholder="Search channels" />
+            </div>
+          </div>
+          {filtered.length ? (
+            <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr))]">
+              {filtered.map((c) => (
+                <ChannelGridCard key={c.id} channel={c} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Search}
+              title="No channels match"
+              body={`None of your ${pluralize(channelItems.length, "channel")} match this ${q ? "search" : "filter"} right now.`}
+              action={
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setQ("");
+                    setFilter("All");
+                  }}
+                >
+                  Show all channels
+                </Button>
+              }
+            />
+          )}
+          <p className="flex flex-wrap items-center gap-2.5 rounded-[14px] border border-primary/20 bg-primary-subtle px-4 py-3 text-sm text-accent-ink">
+            <ShieldCheck className="size-[18px] shrink-0" />
+            <span className="flex-1">
+              Only add channels you own, manage, or have permission to record.
+            </span>
+            <Link to="/acceptable-use" className="font-bold hover:underline">
+              Acceptable Use Policy
+            </Link>
+          </p>
+        </div>
       )}
     </AppShell>
   );
@@ -3943,7 +4073,6 @@ function DemoBillingPage() {
           ))}
         </div>
       </section>
-
     </AppShell>
   );
 }
@@ -4233,9 +4362,7 @@ function CreditPricingPage() {
     pricing && rate && rate.credits_per_unit > 0 && pricing.signup_credits > 0
       ? pricing.signup_credits * minutesPerCredit(rate)
       : null;
-  const hourRange = packages
-    .map(packHours)
-    .filter((value): value is number => value !== null);
+  const hourRange = packages.map(packHours).filter((value): value is number => value !== null);
 
   const comparison: [string, string, string][] = [
     [
@@ -4251,7 +4378,9 @@ function CreditPricingPage() {
     ["Payment needed", "No", "PayPal, one time"],
     [
       "Channels monitored",
-      pricing?.free_max_channels_per_user ? `Up to ${pricing.free_max_channels_per_user}` : "Limited",
+      pricing?.free_max_channels_per_user
+        ? `Up to ${pricing.free_max_channels_per_user}`
+        : "Limited",
       pricing?.max_channels_per_user ? `Up to ${pricing.max_channels_per_user}` : "More",
     ],
     [
@@ -4386,7 +4515,12 @@ function CreditPricingPage() {
                     </p>
                     <div className="mt-auto">
                       {channels.web ? (
-                        <Button size="lg" className="w-full" variant={isRecommended ? "default" : "outline"} asChild>
+                        <Button
+                          size="lg"
+                          className="w-full"
+                          variant={isRecommended ? "default" : "outline"}
+                          asChild
+                        >
                           <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
                         </Button>
                       ) : authenticated ? (
@@ -4434,7 +4568,10 @@ function CreditPricingPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex flex-col gap-2.5 rounded-2xl border bg-surface p-6" aria-live="polite">
+              <div
+                className="flex flex-col gap-2.5 rounded-2xl border bg-surface p-6"
+                aria-live="polite"
+              >
                 <span className="text-sm font-bold text-muted-foreground">{t("We recommend")}</span>
                 <div className="flex flex-wrap items-baseline gap-2.5">
                   <span className="text-[30px] font-extrabold tracking-[-.02em] text-accent-ink">
@@ -4469,7 +4606,9 @@ function CreditPricingPage() {
             <p className="text-lg leading-relaxed text-muted-foreground">
               {pricing && pricing.signup_credits > 0
                 ? `New accounts get ${pricing.signup_credits} free credits after verifying their email. Automatic cloud recording unlocks with your first purchase.`
-                : t("Create a free account to add channels. Automatic cloud recording unlocks with your first purchase.")}
+                : t(
+                    "Create a free account to add channels. Automatic cloud recording unlocks with your first purchase.",
+                  )}
             </p>
             {!authenticated && (
               <Button size="lg" className="mt-2 self-start" asChild>
@@ -5057,7 +5196,9 @@ function ChannelDetail({
           <StatCard
             label="Last livestream"
             value={
-              state === "Recording" || state === "Live" ? "Now" : (channel.live.split(",")[0] ?? "—")
+              state === "Recording" || state === "Live"
+                ? "Now"
+                : (channel.live.split(",")[0] ?? "—")
             }
             detail={
               state === "Recording"

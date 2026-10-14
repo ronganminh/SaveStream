@@ -109,7 +109,7 @@ import { useAuth } from "@/auth/auth-context";
 import { meta, publicMeta } from "@/lib/route-metadata";
 import { planCatalog } from "@/mocks/demo-plan-catalog";
 import { formatDate, pluralize } from "@/lib/formatters";
-import type { ChannelModel, RecordingModel } from "@/repositories";
+import type { ChannelModel, ChannelStatus, RecordingModel } from "@/repositories";
 import {
   useActiveRecordingData,
   useChannelsData,
@@ -231,7 +231,7 @@ export function AvatarCircle({
   src?: string | null | undefined;
   initials: string;
   tone?: string | undefined;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
@@ -247,7 +247,9 @@ export function AvatarCircle({
             ? "size-8 text-[10px]"
             : size === "lg"
               ? "size-14 text-sm"
-              : "size-10 text-xs",
+              : size === "xl"
+                ? "size-[72px] text-xl"
+                : "size-10 text-xs",
       )}
     >
       {image ? (
@@ -372,7 +374,7 @@ export function StatusBadge({ status, pulse = false }: { status: Status; pulse?:
       )}
     >
       {icon}
-      {t(status)}
+      {t(status === "Live" ? "LIVE · not recording" : status)}
     </span>
   );
 }
@@ -1097,6 +1099,101 @@ export function ChannelCard({ channel }: { channel: ChannelModel }) {
     </div>
   );
 }
+const channelLineDot: Record<ChannelStatus, string> = {
+  Recording: "bg-recording animate-pulse",
+  Live: "bg-recording",
+  Waiting: "bg-info",
+  Offline: "bg-muted-foreground/50",
+  Paused: "bg-warning",
+  Error: "bg-destructive",
+};
+
+function channelStatusLine(channel: ChannelModel, on: boolean): string {
+  if (!on || channel.status === "Paused")
+    return "Paused · not being checked, new LIVEs won’t be recorded";
+  switch (channel.status) {
+    case "Recording":
+      return "LIVE · recording on our servers";
+    case "Live":
+      return channel.liveReason ?? "LIVE · not recording";
+    case "Error":
+      return "Checks are failing — open the channel to fix it";
+    case "Offline":
+      return `Offline · watching for the next LIVE · checked ${channel.checked}`;
+    default:
+      return `Waiting for the next LIVE · checked ${channel.checked}`;
+  }
+}
+
+export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
+  const c = useChannelControls(channel);
+  if (c.removed) return null;
+  const status: ChannelStatus = c.on ? channel.status : "Paused";
+  const fix =
+    status === "Recording" && channel.activeRecordingId ? (
+      <Button asChild size="sm">
+        <Link to="/recordings/$id" params={{ id: channel.activeRecordingId }}>
+          Watch
+        </Link>
+      </Button>
+    ) : status === "Live" || status === "Error" ? (
+      <Button asChild size="sm">
+        <Link to="/channels/$id" params={{ id: channel.id }}>
+          {status === "Error" ? "Fix" : "Details"}
+        </Link>
+      </Button>
+    ) : null;
+  return (
+    <article className="flex flex-col gap-4 rounded-[18px] border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <CreatorAvatar channel={channel} />
+        <Link
+          to="/channels/$id"
+          params={{ id: channel.id }}
+          className="min-w-0 flex-1 rounded-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25"
+        >
+          <b className="block truncate">{channel.handle}</b>
+          <span className="block truncate text-xs text-muted-foreground">{channel.name}</span>
+        </Link>
+        <StatusBadge status={status} pulse={status === "Recording"} />
+      </div>
+      <div className="flex min-h-12 items-center gap-2.5 rounded-[12px] bg-surface-2 px-3.5 py-2.5 text-sm">
+        <span
+          aria-hidden="true"
+          className={cn("size-2 shrink-0 rounded-full", channelLineDot[status])}
+        />
+        <span className="min-w-0 flex-1">{channelStatusLine(channel, c.on)}</span>
+        {fix}
+      </div>
+      <dl className="grid grid-cols-3 gap-x-3 gap-y-1 text-[13px]">
+        <dt className="text-xs text-muted-foreground">Recordings</dt>
+        <dt className="text-xs text-muted-foreground">Last LIVE</dt>
+        <dt className="text-xs text-muted-foreground">Hours recorded</dt>
+        <dd className="font-mono font-semibold">{channel.recordings}</dd>
+        <dd className="font-semibold">{channel.live}</dd>
+        <dd className="font-mono font-semibold">{channel.recordedHours}</dd>
+      </dl>
+      <div className="flex items-center gap-2.5 border-t pt-3">
+        <Switch
+          checked={c.on}
+          onCheckedChange={c.toggle}
+          disabled={c.pending}
+          aria-label={`Monitoring for ${channel.handle}`}
+        />
+        <span className="text-sm font-bold">Monitoring {c.on ? "on" : "off"}</span>
+        <div className="ml-auto flex items-center gap-1">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/channels/$id" params={{ id: channel.id }}>
+              Open
+            </Link>
+          </Button>
+          <MoreMenu channel={channel} controls={c} />
+        </div>
+      </div>
+      {c.dialogs}
+    </article>
+  );
+}
 function MoreMenu({
   channel,
   controls,
@@ -1411,14 +1508,86 @@ export function VideoPlayerShell({
     </div>
   );
 }
-export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
+function LimitChannelRow({ channel }: { channel: ChannelModel }) {
+  const c = useChannelControls(channel);
+  if (c.removed) return null;
+  return (
+    <div className="flex items-center gap-3 border-b px-3.5 py-3 last:border-b-0">
+      <CreatorAvatar channel={channel} size="sm" />
+      <b className="min-w-0 flex-1 truncate text-sm">{channel.handle}</b>
+      <StatusBadge status={c.on ? channel.status : "Paused"} />
+      {channel.status !== "Recording" && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => c.openRemove()}
+        >
+          Remove
+        </Button>
+      )}
+      {c.dialogs}
+    </div>
+  );
+}
+
+export function ChannelLimitMeter({
+  used,
+  limit,
+  className,
+}: {
+  used: number;
+  limit: number;
+  className?: string;
+}) {
+  const percent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  return (
+    <div
+      className={cn("flex flex-col gap-1.5", className)}
+      aria-label={`Channel limit: ${used} of ${limit} used`}
+    >
+      <div className="flex items-center justify-between text-xs">
+        <span className="font-bold text-muted-foreground">Channel limit</span>
+        <span className="font-mono font-bold">
+          {used} / {limit}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+        <span
+          className={cn(
+            "block h-full rounded-full",
+            percent >= 100 ? "bg-warning" : "bg-gradient-to-r from-primary to-accent",
+          )}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function AddChannelDialog({
+  trigger,
+  initialInput = "",
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  trigger?: ReactNode;
+  initialInput?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const navigate = useNavigate();
   const { t } = usePreferences();
   const { query: channelsQuery } = useChannelsData();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const createChannel = useCreateChannelMutation();
-  const [open, setOpen] = useState(false);
-  const [input, setInput] = useState("");
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
+  const [input, setInput] = useState(initialInput);
   const [state, setState] = useState<LookupState>("idle");
   const [phase, setPhase] = useState<"form" | "submitting" | "success">("form");
   const [createdWatchId, setCreatedWatchId] = useState<string | null>(null);
@@ -1432,13 +1601,23 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
   const entitlement = entitlementQuery.data;
   const { query: publicPricingQuery } = usePublicPricingData();
   const isFree = isDemoMode || entitlement?.plan === "free";
+  const [autoRecord, setAutoRecord] = useState(true);
+  const channelLimit =
+    entitlement?.limits.max_watches ?? publicPricingQuery.data?.free_max_channels_per_user ?? null;
   const preview = useCreatorPreview(open && parsed ? parsed.source : null);
   const previewCreator =
     preview.data && parsed && preview.data.creator ? preview.data.creator : null;
+  const previewMissing =
+    Boolean(parsed) && (preview.isError || (preview.data !== undefined && !preview.data.creator));
 
   useEffect(() => {
+    if (open) setInput((current) => current || initialInput);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (state === "limit") return;
     setErrorText(null);
-    setQuotaLimit(null);
     setDuplicateWatchId(null);
     if (!input.trim()) {
       setState("idle");
@@ -1457,6 +1636,8 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
       return;
     }
     setState("found");
+    // `state` only guards the limit panel; re-running on it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelItems, input, parsed]);
 
   const reset = () => {
@@ -1467,6 +1648,7 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     setDuplicateWatchId(null);
     setQuotaLimit(null);
     setErrorText(null);
+    setAutoRecord(true);
   };
 
   const submit = async () => {
@@ -1476,15 +1658,10 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     try {
       const watch = await createChannel.mutateAsync({
         source: parsed.source,
-        auto_record: !isFree,
+        auto_record: !isFree && autoRecord,
       });
       setCreatedWatchId(watch.id);
       setPhase("success");
-      toast.success(`Monitoring ${parsed.handle}`, {
-        description: isFree
-          ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
-          : "We’ll record automatically when this channel goes live.",
-      });
     } catch (error) {
       setPhase("form");
       const duplicateId = existingWatchId(error);
@@ -1504,31 +1681,324 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
     }
   };
 
-  const msg: Partial<
-    Record<LookupState, { tone: "error" | "warning" | "info"; title: string; body: string }>
-  > = {
-    invalid: {
-      tone: "error",
-      title: "Enter a valid TikTok username or URL",
-      body: "Use @username or a link like https://www.tiktok.com/@username.",
-    },
-    exists: {
-      tone: "info",
-      title: "This channel is already monitored",
-      body: "It’s in your channel list. Open it to change monitoring.",
-    },
-    unavailable: {
-      tone: "warning",
-      title: "We couldn’t add this channel",
-      body: errorText ?? "SaveStream could not complete the request. Try again.",
-    },
-    limit: {
-      tone: "warning",
-      title: "Monitored channel limit reached",
-      body: `Your account allows ${quotaLimit ?? usage.channels.limit} monitored channels. Remove one or review billing before adding another.`,
-    },
-  };
-  const message = msg[state];
+  const usedSlots = channelItems.length;
+  const limitForPanel = quotaLimit ?? channelLimit ?? usage.channels.limit;
+  const previewInitials = (previewCreator?.display_name || name)
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  let body: ReactNode;
+  if (phase === "success") {
+    const recordsAutomatically = !isFree && autoRecord;
+    body = (
+      <div className="flex flex-col items-center gap-4 py-4 text-center">
+        <div className="relative">
+          <AvatarCircle
+            src={previewCreator?.avatar_url}
+            initials={previewInitials}
+            tone="from-avatar-one to-avatar-one-end"
+            size="xl"
+          />
+          <span className="absolute -bottom-1 -right-1 grid size-7 place-items-center rounded-full border-[3px] border-surface bg-success text-white">
+            <Check className="size-3.5" strokeWidth={3} />
+          </span>
+        </div>
+        <DialogTitle className="text-xl font-extrabold">{handle} is being watched</DialogTitle>
+        <DialogDescription className="max-w-[360px] text-sm text-muted-foreground">
+          {recordsAutomatically
+            ? "We’ll start recording about a minute after the LIVE begins on our servers — nothing to keep open."
+            : isFree
+              ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic recording unlocks after you buy credits; then turn on Auto-record on the channel page.`
+              : "Auto-record is off. Turn it on from the channel page whenever you want LIVEs recorded."}
+        </DialogDescription>
+        <div className="flex flex-wrap justify-center gap-2">
+          <StatusBadge status="Waiting" />
+          <span
+            className={cn(
+              "inline-flex h-6 items-center rounded-full px-2.5 text-xs font-bold",
+              recordsAutomatically
+                ? "bg-success-subtle text-success"
+                : "bg-surface-2 text-muted-foreground",
+            )}
+          >
+            {recordsAutomatically ? "Auto-record on" : "Auto-record off"}
+          </span>
+          {channelLimit !== null && (
+            <span className="inline-flex h-6 items-center rounded-full bg-surface-2 px-2.5 text-xs font-bold text-muted-foreground">
+              {Math.min(usedSlots, channelLimit)} of {channelLimit} slots used
+            </span>
+          )}
+        </div>
+        <div className="mt-1.5 flex flex-col-reverse gap-2 sm:flex-row">
+          <Button variant="outline" onClick={reset}>
+            {t("Add another")}
+          </Button>
+          <Button
+            onClick={() => {
+              setOpen(false);
+              if (createdWatchId) {
+                void navigate({ to: "/channels/$id", params: { id: createdWatchId } });
+              } else {
+                void navigate({ to: "/channels" });
+              }
+            }}
+          >
+            {t("Open channel")}
+          </Button>
+        </div>
+      </div>
+    );
+  } else if (state === "limit") {
+    body = (
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-12 shrink-0 place-items-center rounded-[14px] bg-warning-subtle text-warning">
+            <AlertTriangle className="size-6" />
+          </span>
+          <div className="space-y-1">
+            <DialogTitle className="text-xl font-extrabold">
+              All {limitForPanel} channel slots are in use
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Remove a channel to add a new one.
+            </DialogDescription>
+          </div>
+        </div>
+        <ChannelLimitMeter
+          used={Math.max(channelItems.length, limitForPanel)}
+          limit={limitForPanel}
+        />
+        <div className="overflow-hidden rounded-[14px] border">
+          {channelItems.map((channel) => (
+            <LimitChannelRow key={channel.id} channel={channel} />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Removing a channel stops monitoring it. Its recordings stay in your library until you
+          delete them or they expire.
+        </p>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button asChild variant="ghost">
+            <Link to="/contact" onClick={() => setOpen(false)}>
+              Need more? Contact us
+            </Link>
+          </Button>
+          <Button
+            onClick={() => {
+              setQuotaLimit(null);
+              setState(parsed ? "found" : "idle");
+              void channelsQuery.refetch();
+            }}
+          >
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  } else {
+    const inputTone =
+      state === "invalid" ? "err" : state === "found" && !previewMissing ? "ok" : undefined;
+    body = (
+      <div className="flex flex-col gap-5">
+        <div className="space-y-1.5 pr-6">
+          <DialogTitle className="text-xl font-extrabold">{t("Add a channel")}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            We check the channel around the clock. Monitoring is free — only recording uses credits.
+          </DialogDescription>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="add-channel-input" className="text-sm font-semibold">
+            {t("TikTok username or profile link")}
+          </label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">
+              @
+            </span>
+            <Input
+              id="add-channel-input"
+              autoFocus
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              aria-invalid={state === "invalid"}
+              aria-describedby="add-channel-help"
+              placeholder="username or tiktok.com/@username"
+              className={cn(
+                "h-12 pl-8 pr-10 text-base",
+                inputTone === "ok" && "border-success focus-visible:ring-success/25",
+                inputTone === "err" && "border-destructive focus-visible:ring-destructive/25",
+              )}
+            />
+            {phase === "submitting" ? (
+              <span
+                aria-label={t("Adding channel…")}
+                className="absolute right-3.5 top-1/2 size-4 -translate-y-1/2 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
+              />
+            ) : (
+              inputTone === "ok" && (
+                <Check
+                  className="absolute right-3.5 top-1/2 size-[18px] -translate-y-1/2 text-success"
+                  strokeWidth={2.6}
+                />
+              )
+            )}
+          </div>
+          <p id="add-channel-help" className="text-xs">
+            {state === "invalid" ? (
+              <span className="flex items-center gap-1.5 font-semibold text-destructive">
+                <AlertTriangle className="size-3.5" />
+                Enter a valid TikTok username or profile link.
+              </span>
+            ) : state === "found" && previewMissing ? (
+              <span className="font-semibold text-warning-foreground">
+                We couldn’t load this profile right now. Check the spelling — you can still add it.
+              </span>
+            ) : state === "found" && previewCreator ? (
+              <span className="font-semibold text-success">Channel found</span>
+            ) : (
+              <span className="text-muted-foreground">
+                Accepted: <span className="font-mono">@username</span>,{" "}
+                <span className="font-mono">username</span> or{" "}
+                <span className="font-mono">tiktok.com/@username</span>.
+              </span>
+            )}
+          </p>
+        </div>
+        {state === "found" && parsed && (
+          <div className="flex items-center gap-3.5 rounded-[14px] border bg-surface-2 p-4">
+            <AvatarCircle
+              src={previewCreator?.avatar_url}
+              initials={previewInitials}
+              tone="from-avatar-one to-avatar-one-end"
+              size="lg"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-bold">{previewCreator?.display_name || name}</p>
+              <p className="truncate text-sm text-muted-foreground">{parsed.handle}</p>
+            </div>
+            {preview.data?.live_status === "live" ? (
+              <span className="inline-flex h-6 items-center gap-1.5 rounded-full bg-recording-subtle px-2.5 text-xs font-bold text-live-ink">
+                <span className="size-1.5 animate-pulse rounded-full bg-current" />
+                LIVE
+              </span>
+            ) : preview.data?.live_status === "offline" ? (
+              <StatusBadge status="Offline" />
+            ) : (
+              <PlatformBadge />
+            )}
+          </div>
+        )}
+        {state === "found" && (
+          <div className="flex items-center justify-between gap-4">
+            <span>
+              <b className="block text-sm">Auto-record when live</b>
+              <span className="text-xs text-muted-foreground">
+                {isFree ? "Available after you buy credits." : "Uses credits only while recording."}
+              </span>
+            </span>
+            <Switch
+              checked={!isFree && autoRecord}
+              disabled={isFree}
+              onCheckedChange={setAutoRecord}
+              aria-label="Auto-record when live"
+            />
+          </div>
+        )}
+        {(state === "exists" || state === "unavailable") && (
+          <StateBanner
+            tone={state === "exists" ? "info" : "warning"}
+            title={
+              state === "exists"
+                ? "This channel is already monitored"
+                : "We couldn’t add this channel"
+            }
+            body={
+              state === "exists"
+                ? "It’s in your channel list. Open it to change monitoring."
+                : (errorText ?? "SaveStream could not complete the request. Try again.")
+            }
+            action={
+              state === "exists" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false);
+                    if (duplicateWatchId) {
+                      void navigate({ to: "/channels/$id", params: { id: duplicateWatchId } });
+                    } else {
+                      void navigate({ to: "/channels" });
+                    }
+                  }}
+                >
+                  Open channel
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setState(parsed ? "found" : "invalid");
+                    void channelsQuery.refetch();
+                  }}
+                >
+                  Try again
+                </Button>
+              )
+            }
+          />
+        )}
+        <p className="flex items-start gap-2 rounded-[12px] bg-primary-subtle px-3 py-2.5 text-xs text-accent-ink">
+          <ShieldCheck className="mt-px size-4 shrink-0" />
+          <span>
+            Only add channels you own, manage, or have permission to record (
+            <Link to="/acceptable-use" className="font-semibold underline-offset-2 hover:underline">
+              Acceptable Use Policy
+            </Link>
+            ).
+          </span>
+        </p>
+        {isDemoMode && (
+          <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer">Prototype: try lookup states</summary>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {channelLookupExamples.map((example) => (
+                <button
+                  type="button"
+                  key={example.input}
+                  onClick={() => setInput(example.input)}
+                  className="rounded border bg-background px-2 py-1 font-mono hover:bg-accent"
+                >
+                  {example.input}{" "}
+                  <span className="font-sans text-muted-foreground">· {example.result}</span>
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            {t("Cancel")}
+          </Button>
+          <Button
+            onClick={() => void submit()}
+            disabled={state !== "found" || phase === "submitting"}
+          >
+            {phase === "submitting" ? (
+              <>
+                <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                {t("Adding")}…
+              </>
+            ) : (
+              t("Add channel")
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Dialog
@@ -1538,193 +2008,18 @@ export function AddChannelDialog({ trigger }: { trigger?: ReactNode }) {
         if (!nextOpen) setTimeout(reset, 200);
       }}
     >
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button>
-            <Plus />
-            {t("Add channel")}
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="inset-0 top-0 h-dvh max-w-none translate-x-0 translate-y-0 content-start overflow-y-auto rounded-none sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg">
-        {phase === "success" ? (
-          <div className="py-4 text-center">
-            <span className="mx-auto grid size-12 place-items-center rounded-full bg-success-subtle text-success">
-              <CheckCircle2 className="size-6" />
-            </span>
-            <DialogTitle className="mt-5">{t("Monitoring started")}</DialogTitle>
-            <DialogDescription className="mt-2">
-              {handle} is now monitored.{" "}
-              {isFree
-                ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording unlocks after you purchase a cloud-minute package; you can then turn on Auto-record on each channel page.`
-                : "Recording starts automatically on our servers when the channel goes live."}
-            </DialogDescription>
-            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-center">
-              <Button variant="outline" onClick={reset}>
-                {t("Add another")}
-              </Button>
-              <Button
-                onClick={() => {
-                  setOpen(false);
-                  if (createdWatchId) {
-                    void navigate({ to: "/channels/$id", params: { id: createdWatchId } });
-                  } else {
-                    void navigate({ to: "/channels" });
-                  }
-                }}
-              >
-                {t("View channel")}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>{t("Add TikTok channel")}</DialogTitle>
-              <DialogDescription>
-                Add a TikTok creator to your account. SaveStream will monitor it automatically.
-                {isFree
-                  ? ` ${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic cloud recording starts after you buy credits.`
-                  : " Automatic cloud recording starts when configured to do so."}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div>
-                <label htmlFor="add-channel-input" className="mb-2 block text-sm font-medium">
-                  {t("TikTok username or URL")}
-                </label>
-                <div className="relative">
-                  <Input
-                    id="add-channel-input"
-                    autoFocus
-                    value={input}
-                    onChange={(event) => setInput(event.target.value)}
-                    aria-invalid={state === "invalid"}
-                    placeholder="@username or https://www.tiktok.com/@username"
-                    className="pr-9"
-                  />
-                  {phase === "submitting" && (
-                    <span
-                      aria-label={t("Adding channel…")}
-                      className="absolute right-3 top-2.5 size-4 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent"
-                    />
-                  )}
-                  {state === "found" && phase !== "submitting" && (
-                    <Check className="absolute right-3 top-2.5 size-4 text-success" />
-                  )}
-                </div>
-              </div>
-              {state === "found" && parsed && (
-                <div className="flex items-center gap-3 rounded-md border bg-surface-subtle p-3">
-                  <AvatarCircle
-                    src={previewCreator?.avatar_url}
-                    initials={name
-                      .split(" ")
-                      .map((word) => word[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                    tone="from-primary to-primary"
-                  />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {previewCreator?.display_name || name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{parsed.handle}</p>
-                  </div>
-                  <div className="ml-auto">
-                    <PlatformBadge />
-                  </div>
-                </div>
-              )}
-              {message && (
-                <StateBanner
-                  tone={message.tone}
-                  title={message.title}
-                  body={message.body}
-                  action={
-                    state === "exists" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setOpen(false);
-                          if (duplicateWatchId) {
-                            void navigate({
-                              to: "/channels/$id",
-                              params: { id: duplicateWatchId },
-                            });
-                          } else {
-                            void navigate({ to: "/channels" });
-                          }
-                        }}
-                      >
-                        View channel
-                      </Button>
-                    ) : state === "limit" ? (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setOpen(false);
-                          void navigate({ to: "/billing" });
-                        }}
-                      >
-                        Review billing
-                      </Button>
-                    ) : state === "unavailable" ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setState(parsed ? "found" : "invalid");
-                          void channelsQuery.refetch();
-                        }}
-                      >
-                        Try again
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              )}
-              {isDemoMode && (
-                <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
-                  <summary className="cursor-pointer">Prototype: try lookup states</summary>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {channelLookupExamples.map((example) => (
-                      <button
-                        type="button"
-                        key={example.input}
-                        onClick={() => setInput(example.input)}
-                        className="rounded border bg-background px-2 py-1 font-mono hover:bg-accent"
-                      >
-                        {example.input}{" "}
-                        <span className="font-sans text-muted-foreground">· {example.result}</span>
-                      </button>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                {t("Cancel")}
-              </Button>
-              <Button
-                onClick={() => void submit()}
-                disabled={state !== "found" || phase === "submitting"}
-              >
-                {phase === "submitting" ? (
-                  <>
-                    <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    {t("Adding")}…
-                  </>
-                ) : (
-                  t("Add & start monitoring")
-                )}
-              </Button>
-            </DialogFooter>
-          </>
-        )}
+      {controlledOpen === undefined && (
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button>
+              <Plus />
+              {t("Add channel")}
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
+      <DialogContent className="inset-0 top-0 h-dvh max-w-none translate-x-0 translate-y-0 content-start overflow-y-auto rounded-none p-6 sm:inset-auto sm:left-[50%] sm:top-[50%] sm:h-auto sm:max-w-[540px] sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-[20px] sm:p-7">
+        {body}
       </DialogContent>
     </Dialog>
   );
