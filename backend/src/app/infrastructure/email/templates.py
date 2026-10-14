@@ -3,7 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 
-BRAND = "#4F46E5"
+BRAND = "#6D4AFF"
+INK = "#15122B"
+MUTED = "#56526F"
+LINE = "#E6E1F4"
+PAGE = "#F8F7FC"
+LINK = "#5330F0"
+FONT = "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
 SUPPORT_EMAIL = "support@savestream.online"
 # Same value as apps/web/src/lib/support.ts.
 SUPPORT_RESPONSE_TIME = "2 business days"
@@ -22,6 +28,46 @@ def _duration(seconds: int) -> str:
         hours = minutes // 60
         return f"{hours} hour{'s' if hours != 1 else ''}"
     return f"{minutes} minute{'s' if minutes != 1 else ''}"
+
+
+def _shell(*, subject: str, preheader: str, content: str, site_url: str, footer_note: str) -> str:
+    """Shared layout (Claude Design email template): white card with a brand
+    top rule, logo header, content, and a centered footer. Tables and inline
+    styles only, no images, so it renders with images blocked."""
+    site = escape(site_url, quote=True)
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>{escape(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background:{PAGE};font-family:{FONT};color:{INK};">
+<div style="display:none;max-height:0;overflow:hidden;">{escape(preheader)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{PAGE};">
+<tr><td align="center" style="padding:32px 16px 0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid {LINE};border-radius:20px;border-collapse:separate;">
+<tr><td style="padding:20px 32px;border-top:4px solid {BRAND};border-bottom:1px solid {LINE};border-radius:20px 20px 0 0;">
+<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="background:{BRAND};border-radius:9px;width:28px;height:28px;text-align:center;font-weight:800;font-size:15px;color:#ffffff;">S</td>
+<td style="padding-left:10px;font-weight:800;font-size:18px;letter-spacing:-0.02em;color:{INK};">SaveStream</td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:32px;">
+{content}
+</td></tr>
+</table>
+</td></tr>
+<tr><td align="center" style="padding:24px 32px 40px;font-size:12px;line-height:1.7;color:{MUTED};">
+SaveStream · Cloud recording for TikTok channels you own, manage, or have permission to record.<br>
+<a href="{site}" style="color:{MUTED};">{escape(site_url.removeprefix("https://"))}</a><br>
+Questions? <a href="mailto:{SUPPORT_EMAIL}" style="color:{LINK};">{SUPPORT_EMAIL}</a> · we usually reply within {SUPPORT_RESPONSE_TIME}.{f"<br>{escape(footer_note)}" if footer_note else ""}
+</td></tr>
+</table>
+</body>
+</html>
+"""
 
 
 def action_email(
@@ -46,46 +92,21 @@ def action_email(
         f"Questions? Contact {SUPPORT_EMAIL}; we usually reply within {SUPPORT_RESPONSE_TIME}.\n— SaveStream\n"
     )
     href = escape(link, quote=True)
-    site = escape(site_url, quote=True)
-    html = f"""<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>{escape(subject)}</title>
-</head>
-<body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2330;">
-<div style="display:none;max-height:0;overflow:hidden;">{escape(intro)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px;">
-<tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-<tr><td style="padding:0 4px 20px;">
+    content = f"""<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:{INK};">{escape(heading)}</h1>
+<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:{INK};">{escape(intro)}</p>
 <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="background:{BRAND};border-radius:8px;width:32px;height:32px;text-align:center;font-weight:700;font-size:18px;color:#ffffff;">S</td>
-<td style="padding-left:10px;font-weight:600;font-size:17px;color:#1f2330;">SaveStream</td>
-</tr></table>
-</td></tr>
-<tr><td style="background:#ffffff;border:1px solid #e6e6ec;border-radius:12px;padding:32px;">
-<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#1f2330;">{escape(heading)}</h1>
-<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#4a4f5c;">{escape(intro)}</p>
-<table role="presentation" cellpadding="0" cellspacing="0"><tr>
-<td style="border-radius:8px;background:{BRAND};">
-<a href="{href}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">{escape(button_label)}</a>
+<td style="border-radius:12px;background:{BRAND};">
+<a href="{href}" style="display:inline-block;padding:13px 24px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">{escape(button_label)}</a>
 </td></tr></table>
-<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:#6b7080;">{escape(expires)} {escape(ignore_note)}</p>
-<p style="margin:20px 0 0;padding-top:20px;border-top:1px solid #eeeef3;font-size:12px;line-height:1.6;color:#8a8f9c;">If the button does not work, copy and paste this link into your browser:<br><a href="{href}" style="color:{BRAND};word-break:break-all;">{escape(link)}</a></p>
-</td></tr>
-<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.6;color:#8a8f9c;">
-SaveStream · Cloud recording for TikTok channels you own, manage, or have permission to record.<br>
-<a href="{site}" style="color:#8a8f9c;">{escape(site_url.removeprefix("https://"))}</a> · <a href="mailto:{SUPPORT_EMAIL}" style="color:#8a8f9c;">{SUPPORT_EMAIL}</a> · We usually reply within {SUPPORT_RESPONSE_TIME}.
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body>
-</html>
-"""
+<p style="margin:24px 0 0;font-size:13px;line-height:1.6;color:{MUTED};">{escape(expires)} {escape(ignore_note)}</p>
+<p style="margin:20px 0 0;padding-top:20px;border-top:1px solid {LINE};font-size:12px;line-height:1.6;color:{MUTED};">If the button does not work, copy and paste this link into your browser:<br><a href="{href}" style="color:{LINK};word-break:break-all;">{escape(link)}</a></p>"""
+    html = _shell(
+        subject=subject,
+        preheader=intro,
+        content=content,
+        site_url=site_url,
+        footer_note="This is a required account email, so it can’t be turned off.",
+    )
     return RenderedEmail(subject=subject, text=text, html=html)
 
 
@@ -148,17 +169,9 @@ EMAIL_TEMPLATE_DEFAULTS: dict[str, tuple[str, str]] = {
 
 def message_email(*, subject: str, body: str, site_url: str) -> RenderedEmail:
     text = f"{subject}\n\n{body}\n\n— SaveStream\n{site_url}\n"
-    site = escape(site_url, quote=True)
-    html = f"""<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{escape(subject)}</title></head>
-<body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1f2330;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;padding:32px 16px;"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-<tr><td style="background:#ffffff;border:1px solid #e6e6ec;border-radius:12px;padding:32px;">
-<h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;">{escape(subject)}</h1>
-<p style="margin:0;font-size:15px;line-height:1.7;color:#4a4f5c;white-space:pre-line;">{escape(body)}</p>
-</td></tr>
-<tr><td style="padding:20px 4px 0;font-size:12px;color:#8a8f9c;">SaveStream · <a href="{site}" style="color:#8a8f9c;">{escape(site_url.removeprefix("https://"))}</a></td></tr>
-</table></td></tr></table></body></html>"""
+    content = f"""<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:{INK};">{escape(subject)}</h1>
+<p style="margin:0;font-size:15px;line-height:1.7;color:{INK};white-space:pre-line;">{escape(body)}</p>"""
+    html = _shell(
+        subject=subject, preheader=body[:140], content=content, site_url=site_url, footer_note=""
+    )
     return RenderedEmail(subject=subject, text=text, html=html)
