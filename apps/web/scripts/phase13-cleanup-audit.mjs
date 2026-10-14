@@ -107,7 +107,7 @@ const usage = block(
   "function DemoUsagePage()",
 );
 for (const text of [
-  "Your credit balance, reserved credits, and recording charges.",
+  "Your credit balance, how you’ve used it, and every change to it.",
   "useCreditBalanceData",
   "useCreditReservationsData",
 ]) {
