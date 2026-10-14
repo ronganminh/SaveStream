@@ -159,6 +159,7 @@ function OverviewBody() {
               ? `${latest.active_users_daily} / ${latest.active_users_weekly} / ${latest.active_users_monthly}`
               : "—"
           }
+          detail="Customer accounts only (admin, support and owner excluded). UTC day, refreshed hourly."
         />
         <AdminMetricCard
           label="Free / Pro ratio"
@@ -177,6 +178,7 @@ function OverviewBody() {
         <AdminMetricCard
           label="Recording errors (24h)"
           value={latest?.recording_errors_24h ?? "—"}
+          detail="Rolling 24h at snapshot time. Workers shows a live short window."
         />
         <AdminMetricCard label="Computed" value={dateTime(latest?.computed_at)} />
       </div>
@@ -278,7 +280,7 @@ function OverviewBody() {
             <tr>
               <th className="px-4 py-3">Day</th>
               <th className="px-4 py-3">New users</th>
-              <th className="px-4 py-3">DAU</th>
+              <th className="px-4 py-3" title="Customer accounts only">DAU (customers)</th>
               <th className="px-4 py-3">Pro</th>
               <th className="px-4 py-3">Gross revenue</th>
             </tr>

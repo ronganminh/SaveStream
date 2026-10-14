@@ -423,6 +423,7 @@ export const demoRepositories: SaveStreamRepositories = {
         max_concurrent_recordings_per_user: 2,
         recording_retention_days: 30,
         trial_recording_retention_days: 7,
+        checkout: { web: true, app_store: false, google_play: true },
       };
     },
   },

@@ -45,7 +45,13 @@ export const apiBaseUrl = resolveApiBaseUrl(import.meta.env["VITE_API_BASE_URL"]
 export const apiConfigured = apiBaseUrl.length > 0;
 export const productionBackendConnected = isProductionMode && apiConfigured;
 
+
 const requestedBillingCheckout = import.meta.env["VITE_BILLING_CHECKOUT_ENABLED"];
+/**
+ * Deployment kill switch from the production release checklist. Checkout is
+ * open only when this build allows it AND the backend reports web payments
+ * open (see useCheckoutChannels).
+ */
 export const billingCheckoutEnabled =
   isDemoMode || requestedBillingCheckout?.trim().toLowerCase() === "true";
 

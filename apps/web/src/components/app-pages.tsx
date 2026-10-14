@@ -136,7 +136,7 @@ import {
   planMediaFootnote,
 } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
-import { billingCheckoutEnabled, isAdminRole, isDemoMode } from "@/lib/app-config";
+import { isAdminRole, isDemoMode } from "@/lib/app-config";
 import { authApi, authErrorMessage } from "@/api/auth";
 import { ApiError } from "@/api/errors";
 import {
@@ -168,6 +168,7 @@ import {
   usePaymentOrdersData,
   usePricingData,
   usePublicPricingData,
+  useCheckoutChannels,
   useRecordingArtifactsData,
   useRecordingData,
   useRecordingsData,
@@ -3186,11 +3187,13 @@ function PaymentOrderRow({
   language,
   onContinue,
   pending,
+  checkoutOpen,
 }: {
   order: PaymentOrderResponse;
   language: string;
   onContinue: (id: string) => void;
   pending: boolean;
+  checkoutOpen: boolean;
 }) {
   return (
     <div className="grid gap-3 border-t px-5 py-4 text-sm sm:grid-cols-[1.3fr_.7fr_.7fr_auto] sm:items-center">
@@ -3209,7 +3212,7 @@ function PaymentOrderRow({
       >
         {paymentStatusLabel(order.status)}
       </span>
-      {billingCheckoutEnabled && isAwaitingPaymentConfirmation(order.status) ? (
+      {checkoutOpen && isAwaitingPaymentConfirmation(order.status) ? (
         <Button size="sm" variant="outline" disabled={pending} onClick={() => onContinue(order.id)}>
           <ExternalLink />
           Open checkout
@@ -3228,6 +3231,7 @@ function CreditBillingPage() {
   const { query: ordersQuery, state: ordersState } = usePaymentOrdersData();
   const checkout = useBillingCheckoutMutation();
   const capture = usePayPalCaptureMutation();
+  const billingCheckoutEnabled = useCheckoutChannels().web;
   const [activePurchase, setActivePurchase] = useState<string | null>(null);
   const [paypalCheckout, setPayPalCheckout] = useState<{
     paymentOrderId: string;
@@ -3444,6 +3448,7 @@ function CreditBillingPage() {
               order={order}
               language={language}
               pending={checkout.isPending}
+              checkoutOpen={billingCheckoutEnabled}
               onContinue={(orderId) => void redirectToCheckout({ kind: "order", orderId }, orderId)}
             />
           ))
@@ -3852,6 +3857,20 @@ const includedInEveryPackage = [
   "Credits never expire",
 ];
 
+/** Only advertise store channels the backend currently has enabled. */
+function storePurchaseSentence(appStore: boolean, googlePlay: boolean): string | null {
+  if (appStore && googlePlay) {
+    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.";
+  }
+  if (googlePlay) {
+    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.";
+  }
+  if (appStore) {
+    return "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.";
+  }
+  return null;
+}
+
 function CreditPricingPage() {
   const { language, t } = usePreferences();
   const { status } = useAuth();
@@ -3861,6 +3880,8 @@ function CreditPricingPage() {
   const rate = pricing?.recording_rate ?? null;
   const rateLine = rateSentence(rate, language);
   const ctaTo = authenticated ? "/billing" : "/sign-up";
+  const channels = useCheckoutChannels();
+  const storeLine = storePurchaseSentence(channels.appStore, channels.googlePlay);
 
   return (
     <>
@@ -3931,19 +3952,34 @@ function CreditPricingPage() {
                     </div>
                   )}
                 </dl>
-                <Button className="mt-6 w-full" asChild>
-                  <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
-                </Button>
+                {channels.web ? (
+                  <Button className="mt-6 w-full" asChild>
+                    <Link to={ctaTo}>{t(authenticated ? "Buy credits" : "Get started")}</Link>
+                  </Button>
+                ) : authenticated ? (
+                  <Button className="mt-6 w-full" disabled>
+                    {t("Coming soon")}
+                  </Button>
+                ) : (
+                  <Button className="mt-6 w-full" variant="outline" asChild>
+                    <Link to="/sign-up">{t("Create free account")}</Link>
+                  </Button>
+                )}
               </section>
             ))}
           </div>
         )}
 
-        <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
-          {t(
-            "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.",
-          )}
-        </p>
+        {!channels.web && !channels.loading && pricing?.packages.length ? (
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+            {t("Online checkout is not open yet. Your free trial credits work as usual.")}
+          </p>
+        ) : null}
+        {storeLine && (
+          <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-muted-foreground">
+            {t(storeLine)}
+          </p>
+        )}
 
         {pricing && pricing.signup_credits > 0 && (
           <section className="mt-8 flex flex-col gap-3 rounded-lg border bg-surface-subtle p-5 sm:flex-row sm:items-center sm:justify-between">

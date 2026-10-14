@@ -132,6 +132,14 @@ class PublicCreditPackage(StrictModel):
     recording_minutes: int | None = Field(default=None, ge=0)
 
 
+class PublicCheckoutChannels(StrictModel):
+    """Purchase channels that are open right now (runtime flag + provider)."""
+
+    web: bool = False
+    app_store: bool = False
+    google_play: bool = False
+
+
 class PublicPricingResponse(StrictModel):
     packages: list[PublicCreditPackage]
     recording_rate: PublicRecordingRate | None
@@ -140,3 +148,4 @@ class PublicPricingResponse(StrictModel):
     max_concurrent_recordings_per_user: int | None = Field(default=None, ge=1)
     recording_retention_days: int | None = Field(default=None, ge=1)
     trial_recording_retention_days: int | None = Field(default=None, ge=1)
+    checkout: PublicCheckoutChannels = Field(default_factory=PublicCheckoutChannels)

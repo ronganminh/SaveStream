@@ -80,6 +80,9 @@ def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
         ("starter", 3000, {"amount_minor": 999, "currency": "USD"}, 3000),
         ("standard", 9000, {"amount_minor": 2499, "currency": "USD"}, 9000),
     ]
+    # Fake web provider is configured and payment_web_enabled defaults on;
+    # store purchases are disabled in the test settings.
+    assert body["checkout"] == {"web": True, "app_store": False, "google_play": False}
 
 
 def test_public_pricing_without_configuration_is_empty_not_an_error(tmp_path) -> None:
@@ -189,3 +192,27 @@ def test_no_trial_credits_when_disabled(tmp_path) -> None:
         ).status_code == 200
 
     assert _ledger_for(settings, "plain@example.com") == (0, [])
+
+
+def test_public_pricing_checkout_follows_runtime_flags(tmp_path) -> None:
+    from dataclasses import replace
+
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-checkout.db'}"
+    settings = replace(
+        identity_settings(database_url),
+        payment_provider="disabled",
+        store_purchase_provider="google_play",
+    )
+    create_schema(database_url)
+    app = create_app(settings)
+
+    with TestClient(app, base_url="https://testserver") as client:
+        app.state.rate_limiter = InMemoryRateLimiter()
+        response = client.get("/v1/public/pricing")
+
+    assert response.status_code == 200
+    assert response.json()["checkout"] == {
+        "web": False,
+        "app_store": False,
+        "google_play": True,
+    }

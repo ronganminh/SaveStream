@@ -63,6 +63,7 @@ export function useBillingCheckoutMutation() {
       if (!billingCheckoutEnabled) {
         throw new Error("Hosted checkout is not enabled for this deployment.");
       }
+      // The backend also rejects orders with 503 while web payments are disabled.
 
       const order =
         input.kind === "order"

@@ -154,6 +154,12 @@ const vi: Record<string, string> = {
     "Trang này tự động cập nhật khi bản ghi được xử lý.",
   "Buy cloud hours once and use them whenever your channels go live. No subscription and no recurring charge.":
     "Mua giờ đám mây một lần và dùng khi các kênh phát trực tiếp. Không thuê bao, không phí định kỳ.",
+  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the Android app through Google Play.":
+    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng Android qua Google Play.",
+  "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the iOS app through the App Store.":
+    "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng iOS qua App Store.",
+  "Online checkout is not open yet. Your free trial credits work as usual.":
+    "Thanh toán trực tuyến chưa mở. Credit dùng thử miễn phí của bạn vẫn hoạt động bình thường.",
   "The same Starter, Standard, and Premium hour packs are available as one-time purchases in the mobile app through the App Store or Google Play.":
     "Các gói giờ Starter, Standard và Premium tương tự có thể mua một lần trong ứng dụng qua App Store hoặc Google Play.",
   "Free web accounts get 10 trial credits after email verification and can monitor up to 3 channels.":
