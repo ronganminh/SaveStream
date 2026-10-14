@@ -5,7 +5,7 @@ import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
-import { AdminDataTable, AdminMetricCard } from "@/components/admin/foundation";
+import { AdminBadge, AdminDataTable, AdminMetricCard } from "@/components/admin/foundation";
 import { AppShell, PageHeader } from "@/components/app-components";
 import { Button } from "@/components/ui/button";
 import {
@@ -107,9 +107,7 @@ function SettingActionDialog({
     reason.trim().length >= 3 &&
     password.length > 0 &&
     totp.trim().length === 6 &&
-    (action?.mode === "reset" ||
-      action?.setting.nullable ||
-      value.trim().length > 0);
+    (action?.mode === "reset" || action?.setting.nullable || value.trim().length > 0);
 
   return (
     <Dialog open={action !== null} onOpenChange={(open) => !open && onClose()}>
@@ -119,8 +117,8 @@ function SettingActionDialog({
             {action?.mode === "reset" ? "Reset system setting" : "Update system setting"}
           </DialogTitle>
           <DialogDescription>
-            {action?.setting.key}. This action requires Owner step-up authentication and is
-            written to the permanent admin audit log.
+            {action?.setting.key}. This action requires Owner step-up authentication and is written
+            to the permanent admin audit log.
           </DialogDescription>
         </DialogHeader>
 
@@ -232,9 +230,7 @@ export function AdminSystemD4Page() {
           : Promise.resolve({ items: [] as AdminRuntimeSetting[] }),
       ]);
       setStatus(systemStatus);
-      setSettings(
-        settingsResult.items.filter((item) => !MOBILE_ONLY_SETTING_KEYS.has(item.key)),
-      );
+      setSettings(settingsResult.items.filter((item) => !MOBILE_ONLY_SETTING_KEYS.has(item.key)));
     } catch (error) {
       toast.error("Could not load System", { description: authErrorMessage(error) });
     } finally {
@@ -249,9 +245,7 @@ export function AdminSystemD4Page() {
   }, [isOwner]);
 
   const saveSetting = (updated: AdminRuntimeSetting) => {
-    setSettings((current) =>
-      current.map((item) => (item.key === updated.key ? updated : item)),
-    );
+    setSettings((current) => current.map((item) => (item.key === updated.key ? updated : item)));
   };
 
   const healthOrder = ["api", "database", "redis", "storage", "smtp"];
@@ -270,7 +264,7 @@ export function AdminSystemD4Page() {
         subtitle="Runtime product configuration and dependency health. Secret-backed infrastructure settings are never exposed here."
         action={
           <Button variant="outline" disabled={busy} onClick={() => void load()}>
-            <RefreshCw className="mr-2 size-4" />
+            <RefreshCw className="size-4" />
             {busy ? "Refreshing…" : "Refresh"}
           </Button>
         }
@@ -278,39 +272,36 @@ export function AdminSystemD4Page() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <AdminMetricCard label="Backend version" value={status?.backend_version ?? "—"} />
-        <AdminMetricCard
-          label="Started at"
-          value={formatAdminDateTime(status?.started_at)}
-        />
+        <AdminMetricCard label="Started at" value={formatAdminDateTime(status?.started_at)} />
       </div>
 
-      <section className="mt-6 rounded-[16px] border bg-surface">
-        <div className="border-b p-5">
-          <h2 className="font-medium">Service health</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+      <section className="mt-6" aria-labelledby="system-health">
+        <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
+          <h2 id="system-health" className="text-[17px] font-bold tracking-[-.01em]">
+            Service health
+          </h2>
+          <p className="text-xs text-muted-foreground">
             Health checks return status only. Credentials, connection strings, and secret values are
             never returned by the Admin API.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2">
+        <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
           {healthOrder.map((key) => {
             const item = status?.components[key];
+            const ok = item?.status === "ok";
             return (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-4 border-b p-4 text-sm sm:odd:border-r"
-              >
-                <span>{healthLabels[key]}</span>
-                <span
-                  className={
-                    item?.status === "ok"
-                      ? "font-medium text-foreground"
-                      : "font-medium text-destructive"
-                  }
-                >
-                  {item?.status === "ok" ? "Healthy" : item ? "Error" : "Loading…"}
-                  {item?.detail ? ` · ${item.detail}` : ""}
-                </span>
+              <div key={key} className="flex flex-col gap-2 rounded-[16px] border bg-surface p-4">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={`size-2.5 rounded-full ${!item ? "bg-muted-foreground/40" : ok ? "bg-success" : "bg-destructive"}`}
+                    aria-hidden="true"
+                  />
+                  <b className="flex-1 text-sm">{healthLabels[key]}</b>
+                  <AdminBadge tone={!item ? "neutral" : ok ? "success" : "danger"}>
+                    {ok ? "Healthy" : item ? "Error" : "Loading…"}
+                  </AdminBadge>
+                </div>
+                <p className="min-h-4 text-xs text-muted-foreground">{item?.detail ?? ""}</p>
               </div>
             );
           })}
@@ -319,7 +310,7 @@ export function AdminSystemD4Page() {
 
       <section className="mt-8 space-y-4">
         <div>
-          <h2 className="flex items-center gap-2 font-medium">
+          <h2 className="flex items-center gap-2 text-[17px] font-bold tracking-[-.01em]">
             <Settings2 className="size-4" />
             Runtime product settings
           </h2>
@@ -332,8 +323,8 @@ export function AdminSystemD4Page() {
 
         {isOwner && (
           <AdminDataTable>
-            <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
+            <thead>
+              <tr className="border-b">
                 <th className="px-4 py-3">Setting</th>
                 <th className="px-4 py-3">Current</th>
                 <th className="px-4 py-3">Default</th>
@@ -346,35 +337,41 @@ export function AdminSystemD4Page() {
               {settings.map((setting) => (
                 <tr key={setting.key} className="border-b last:border-0">
                   <td className="px-4 py-3">
-                    <p className="font-mono text-xs font-medium">{setting.key}</p>
+                    <p className="font-mono text-xs font-bold">{setting.key}</p>
                     <p className="mt-1 max-w-md text-xs text-muted-foreground">
                       {setting.description}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-sm">{displayValue(setting.value)}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                  <td className="px-4 py-3">
+                    <code className="rounded-md bg-surface-2 px-2 py-1 font-mono text-xs">
+                      {displayValue(setting.value)}
+                    </code>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                     {displayValue(setting.default_value)}
                   </td>
-                  <td className="px-4 py-3 text-sm">{setting.source}</td>
-                  <td className="px-4 py-3 text-xs">
-                    {formatAdminDateTime(setting.updated_at)}
+                  <td className="px-4 py-3">
+                    <AdminBadge tone={setting.source === "database" ? "accent" : "neutral"}>
+                      {setting.source === "database" ? "Override" : setting.source}
+                    </AdminBadge>
                   </td>
+                  <td className="px-4 py-3 text-xs">{formatAdminDateTime(setting.updated_at)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => setPending({ setting, mode: "update" })}
                       >
                         Edit
                       </Button>
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         disabled={setting.source !== "database"}
                         onClick={() => setPending({ setting, mode: "reset" })}
                       >
-                        <RotateCcw className="mr-1 size-3" />
+                        <RotateCcw className="size-3" />
                         Reset
                       </Button>
                     </div>

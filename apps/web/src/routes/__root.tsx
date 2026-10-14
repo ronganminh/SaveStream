@@ -40,20 +40,23 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
-  if (error instanceof ApiError && error.status === 0) {
-    return <OfflineErrorScreen onRetry={() => {
-      router.invalidate();
-      reset();
-    }} />;
-  }
+  // The root error component replaces RootComponent, so it needs its own
+  // PreferencesProvider: the error screens render the logo and translated copy.
+  const retry = () => {
+    router.invalidate();
+    reset();
+  };
   return (
-    <ServerErrorScreen
-      requestId={error instanceof ApiError ? error.requestId : undefined}
-      onRetry={() => {
-        router.invalidate();
-        reset();
-      }}
-    />
+    <PreferencesProvider>
+      {error instanceof ApiError && error.status === 0 ? (
+        <OfflineErrorScreen onRetry={retry} />
+      ) : (
+        <ServerErrorScreen
+          requestId={error instanceof ApiError ? error.requestId : undefined}
+          onRetry={retry}
+        />
+      )}
+    </PreferencesProvider>
   );
 }
 

@@ -7,9 +7,13 @@ import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, PageHeader } from "@/components/app-components";
 import {
+  AdminBadge,
   AdminDataTable,
   AdminMfaGate,
   AdminMetricCard,
+  AdminTabsList,
+  AdminTabsTrigger,
+  type AdminBadgeTone,
 } from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
   adminOperationsApi,
@@ -126,7 +130,9 @@ function StepUpDialog({
           />
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
             disabled={busy || !password || totp.length !== 6 || reason.trim().length < 3}
             onClick={() => void confirm()}
@@ -137,6 +143,13 @@ function StepUpDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function deliveryTone(status: string): AdminBadgeTone {
+  if (["sent", "delivered", "completed"].includes(status)) return "success";
+  if (["failed", "bounced", "rejected"].includes(status)) return "danger";
+  if (["queued", "pending", "sending", "scheduled"].includes(status)) return "warning";
+  return "neutral";
 }
 
 export function AdminOperationsPage() {
@@ -162,14 +175,20 @@ export function AdminOperationsPage() {
   const [templateBody, setTemplateBody] = useState("");
   const [templateReason, setTemplateReason] = useState("");
 
-  const [broadcastFilters, setBroadcastFilters] = useState<AdminBroadcastFilters>({ sortOrder: "desc" });
-  const [broadcastDraft, setBroadcastDraft] = useState<AdminBroadcastFilters>({ sortOrder: "desc" });
+  const [broadcastFilters, setBroadcastFilters] = useState<AdminBroadcastFilters>({
+    sortOrder: "desc",
+  });
+  const [broadcastDraft, setBroadcastDraft] = useState<AdminBroadcastFilters>({
+    sortOrder: "desc",
+  });
   const [broadcasts, setBroadcasts] = useState<AdminBroadcast[]>([]);
   const [broadcastCursor, setBroadcastCursor] = useState<string | null>(null);
   const [broadcastNext, setBroadcastNext] = useState<string | null>(null);
   const [broadcastHistory, setBroadcastHistory] = useState<Array<string | null>>([]);
   const [broadcastKind, setBroadcastKind] = useState<"system" | "marketing">("system");
-  const [broadcastChannels, setBroadcastChannels] = useState<AdminBroadcast["channels"]>(["in_app"]);
+  const [broadcastChannels, setBroadcastChannels] = useState<AdminBroadcast["channels"]>([
+    "in_app",
+  ]);
   const [broadcastTitle, setBroadcastTitle] = useState("");
   const [broadcastBody, setBroadcastBody] = useState("");
   const [broadcastReason, setBroadcastReason] = useState("");
@@ -287,12 +306,12 @@ export function AdminOperationsPage() {
           }
         />
 
-        <Tabs defaultValue="storage">
-          <TabsList className="mb-6 flex h-auto flex-wrap">
-            <TabsTrigger value="storage">Storage</TabsTrigger>
-            {canViewEmail && <TabsTrigger value="email">Email</TabsTrigger>}
-            {isOwner && <TabsTrigger value="broadcasts">Broadcasts</TabsTrigger>}
-          </TabsList>
+        <Tabs defaultValue="storage" className="space-y-6">
+          <AdminTabsList label="Operations sections">
+            <AdminTabsTrigger value="storage">Storage</AdminTabsTrigger>
+            {canViewEmail && <AdminTabsTrigger value="email">Email</AdminTabsTrigger>}
+            {isOwner && <AdminTabsTrigger value="broadcasts">Broadcasts</AdminTabsTrigger>}
+          </AdminTabsList>
 
           <TabsContent value="storage" className="space-y-6">
             {storageError && <p className="text-sm text-destructive">{storageError}</p>}
@@ -305,7 +324,11 @@ export function AdminOperationsPage() {
               <AdminMetricCard
                 label="Latest cleanup"
                 value={latestCleanup ? String(latestCleanup.deleted_count) : "—"}
-                detail={latestCleanup ? `${latestCleanup.scanned_count} files checked · ${dateTime(latestCleanup.created_at)}` : "No cleanup run recorded yet"}
+                detail={
+                  latestCleanup
+                    ? `${latestCleanup.scanned_count} files checked · ${dateTime(latestCleanup.created_at)}`
+                    : "No cleanup run recorded yet"
+                }
               />
               <AdminMetricCard
                 label="Users with stored data"
@@ -317,8 +340,11 @@ export function AdminOperationsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">Storage by user</h2>
               <AdminDataTable>
-                <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                  <tr><th className="px-4 py-3">User</th><th className="px-4 py-3">Stored</th></tr>
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Stored</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {(storage?.by_user ?? []).map((row) => (
@@ -334,8 +360,11 @@ export function AdminOperationsPage() {
             <section className="space-y-3">
               <h2 className="text-lg font-semibold">30-day storage trend</h2>
               <AdminDataTable>
-                <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                  <tr><th className="px-4 py-3">Day</th><th className="px-4 py-3">Uploaded bytes</th></tr>
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">Day</th>
+                    <th className="px-4 py-3">Uploaded bytes</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {(storage?.daily_trend ?? []).map((row) => (
@@ -378,7 +407,8 @@ export function AdminOperationsPage() {
                   <div className="rounded-md bg-muted/40 p-3 text-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
-                        Run {storageRun.id.slice(0, 8)} · {storageRun.status} · {storageRun.orphan_count} orphan files
+                        Run {storageRun.id.slice(0, 8)} · {storageRun.status} ·{" "}
+                        {storageRun.orphan_count} orphan files
                       </span>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" onClick={() => void refreshRun()}>
@@ -414,9 +444,14 @@ export function AdminOperationsPage() {
                       </div>
                     </div>
                     {storageRun.truncated && (
-                      <p className="mt-2 text-warning">Scan hit its limit; run another scan before assuming storage is fully reconciled.</p>
+                      <p className="mt-2 text-warning">
+                        Scan hit its limit; run another scan before assuming storage is fully
+                        reconciled.
+                      </p>
                     )}
-                    {storageRun.error && <p className="mt-2 text-destructive">{storageRun.error}</p>}
+                    {storageRun.error && (
+                      <p className="mt-2 text-destructive">{storageRun.error}</p>
+                    )}
                   </div>
                 )}
               </section>
@@ -445,17 +480,23 @@ export function AdminOperationsPage() {
                   <Input
                     placeholder="Search recipient"
                     value={emailDraft.recipient ?? ""}
-                    onChange={(event) => setEmailDraft((current) => ({ ...current, recipient: event.target.value }))}
+                    onChange={(event) =>
+                      setEmailDraft((current) => ({ ...current, recipient: event.target.value }))
+                    }
                   />
                   <Input
                     placeholder="Type e.g. password_reset"
                     value={emailDraft.kind ?? ""}
-                    onChange={(event) => setEmailDraft((current) => ({ ...current, kind: event.target.value }))}
+                    onChange={(event) =>
+                      setEmailDraft((current) => ({ ...current, kind: event.target.value }))
+                    }
                   />
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                     value={emailDraft.status ?? ""}
-                    onChange={(event) => setEmailDraft((current) => ({ ...current, status: event.target.value }))}
+                    onChange={(event) =>
+                      setEmailDraft((current) => ({ ...current, status: event.target.value }))
+                    }
                   >
                     <option value="">All statuses</option>
                     <option value="sent">Sent</option>
@@ -465,7 +506,12 @@ export function AdminOperationsPage() {
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                     value={emailDraft.sortOrder ?? "desc"}
-                    onChange={(event) => setEmailDraft((current) => ({ ...current, sortOrder: event.target.value as "asc" | "desc" }))}
+                    onChange={(event) =>
+                      setEmailDraft((current) => ({
+                        ...current,
+                        sortOrder: event.target.value as "asc" | "desc",
+                      }))
+                    }
                   >
                     <option value="desc">Newest first</option>
                     <option value="asc">Oldest first</option>
@@ -482,7 +528,7 @@ export function AdminOperationsPage() {
                   Apply filters
                 </Button>
                 <AdminDataTable>
-                  <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+                  <thead>
                     <tr>
                       <th className="px-4 py-3">Recipient</th>
                       <th className="px-4 py-3">Type</th>
@@ -495,8 +541,12 @@ export function AdminOperationsPage() {
                     {emailLogs.map((row) => (
                       <tr key={row.id} className="border-b last:border-0">
                         <td className="px-4 py-3">{row.recipient_email}</td>
-                        <td className="px-4 py-3">{row.kind}</td>
-                        <td className="px-4 py-3">{row.status}</td>
+                        <td className="px-4 py-3 font-mono text-xs">{row.kind}</td>
+                        <td className="px-4 py-3">
+                          <AdminBadge tone={deliveryTone(row.status)} dot>
+                            {row.status}
+                          </AdminBadge>
+                        </td>
                         <td className="px-4 py-3">{dateTime(row.sent_at ?? row.created_at)}</td>
                         <td className="px-4 py-3 text-right">
                           <Button
@@ -568,7 +618,10 @@ export function AdminOperationsPage() {
                   </div>
                   {selectedTemplate && (
                     <div className="space-y-3">
-                      <Input value={templateSubject} onChange={(event) => setTemplateSubject(event.target.value)} />
+                      <Input
+                        value={templateSubject}
+                        onChange={(event) => setTemplateSubject(event.target.value)}
+                      />
                       <textarea
                         className="min-h-32 w-full rounded-md border bg-background p-3 text-sm"
                         value={templateBody}
@@ -585,7 +638,9 @@ export function AdminOperationsPage() {
                           onClick={() =>
                             void adminOperationsApi
                               .previewEmailTemplate(selectedTemplate.key)
-                              .then((preview) => window.alert(`${preview.subject}\n\n${preview.text}`))
+                              .then((preview) =>
+                                window.alert(`${preview.subject}\n\n${preview.text}`),
+                              )
                               .catch((error) => toast.error(authErrorMessage(error)))
                           }
                         >
@@ -618,7 +673,9 @@ export function AdminOperationsPage() {
                                   token,
                                 );
                                 setTemplates((current) =>
-                                  current.map((item) => item.key === updated.key ? updated : item),
+                                  current.map((item) =>
+                                    item.key === updated.key ? updated : item,
+                                  ),
                                 );
                                 setSelectedTemplate(updated);
                                 toast.success("Email template updated");
@@ -644,7 +701,9 @@ export function AdminOperationsPage() {
                                   );
                                   const fresh = await adminOperationsApi.listEmailTemplates();
                                   setTemplates(fresh);
-                                  const current = fresh.find((item) => item.key === selectedTemplate.key) ?? fresh[0];
+                                  const current =
+                                    fresh.find((item) => item.key === selectedTemplate.key) ??
+                                    fresh[0];
                                   if (current) editTemplate(current);
                                   toast.success("Email template reset");
                                 },
@@ -670,7 +729,8 @@ export function AdminOperationsPage() {
                   <div>
                     <h2 className="font-semibold">Compose broadcast</h2>
                     <p className="text-sm text-muted-foreground">
-                      System reaches every active account. Marketing reaches only users who opted in.
+                      System reaches every active account. Marketing reaches only users who opted
+                      in.
                     </p>
                   </div>
                 </div>
@@ -699,7 +759,11 @@ export function AdminOperationsPage() {
                     ))}
                   </div>
                 </div>
-                <Input placeholder="Title" value={broadcastTitle} onChange={(event) => setBroadcastTitle(event.target.value)} />
+                <Input
+                  placeholder="Title"
+                  value={broadcastTitle}
+                  onChange={(event) => setBroadcastTitle(event.target.value)}
+                />
                 <textarea
                   className="min-h-28 w-full rounded-md border bg-background p-3 text-sm"
                   placeholder="Message"
@@ -787,12 +851,19 @@ export function AdminOperationsPage() {
                   <Input
                     placeholder="Search title or message"
                     value={broadcastDraft.query ?? ""}
-                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, query: event.target.value }))}
+                    onChange={(event) =>
+                      setBroadcastDraft((current) => ({ ...current, query: event.target.value }))
+                    }
                   />
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                     value={broadcastDraft.kind ?? ""}
-                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, kind: event.target.value as "" | "system" | "marketing" }))}
+                    onChange={(event) =>
+                      setBroadcastDraft((current) => ({
+                        ...current,
+                        kind: event.target.value as "" | "system" | "marketing",
+                      }))
+                    }
                   >
                     <option value="">All types</option>
                     <option value="system">System</option>
@@ -801,12 +872,19 @@ export function AdminOperationsPage() {
                   <Input
                     placeholder="Status"
                     value={broadcastDraft.status ?? ""}
-                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, status: event.target.value }))}
+                    onChange={(event) =>
+                      setBroadcastDraft((current) => ({ ...current, status: event.target.value }))
+                    }
                   />
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm"
                     value={broadcastDraft.sortOrder ?? "desc"}
-                    onChange={(event) => setBroadcastDraft((current) => ({ ...current, sortOrder: event.target.value as "asc" | "desc" }))}
+                    onChange={(event) =>
+                      setBroadcastDraft((current) => ({
+                        ...current,
+                        sortOrder: event.target.value as "asc" | "desc",
+                      }))
+                    }
                   >
                     <option value="desc">Newest first</option>
                     <option value="asc">Oldest first</option>
@@ -823,7 +901,7 @@ export function AdminOperationsPage() {
                   Apply filters
                 </Button>
                 <AdminDataTable>
-                  <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
+                  <thead>
                     <tr>
                       <th className="px-4 py-3">Broadcast</th>
                       <th className="px-4 py-3">Status</th>
@@ -836,10 +914,16 @@ export function AdminOperationsPage() {
                     {broadcasts.map((row) => (
                       <tr key={row.id} className="border-b last:border-0">
                         <td className="px-4 py-3">
-                          <div className="font-medium">{row.title}</div>
-                          <div className="text-xs text-muted-foreground">{row.kind} · {row.channels.join(", ")}</div>
+                          <div className="font-bold">{row.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {row.kind} · {row.channels.join(", ")}
+                          </div>
                         </td>
-                        <td className="px-4 py-3">{row.status}</td>
+                        <td className="px-4 py-3">
+                          <AdminBadge tone={deliveryTone(row.status)} dot>
+                            {row.status}
+                          </AdminBadge>
+                        </td>
                         <td className="px-4 py-3">{row.audience_count}</td>
                         <td className="px-4 py-3">
                           {row.delivered_in_app + row.delivered_push + row.delivered_email}

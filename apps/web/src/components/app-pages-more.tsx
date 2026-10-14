@@ -2411,7 +2411,7 @@ function ProductionAdminWorkersPage() {
         />
       </div>
 
-      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid overflow-hidden rounded-[18px] border bg-surface shadow-card sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Active recordings"
           value={String(data.active_recordings)}
@@ -2438,8 +2438,8 @@ function ProductionAdminWorkersPage() {
         />
       </div>
 
-      <section className="mt-8 rounded-lg border bg-surface p-5">
-        <h2 className="font-medium">Operational boundaries</h2>
+      <section className="mt-8 rounded-[18px] border bg-surface p-5">
+        <h2 className="text-[16px] font-bold">Operational boundaries</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Browser admin pages never receive the metrics token and do not call /metrics. Detailed
           worker telemetry requires a future authenticated admin API before this page can safely
@@ -2818,7 +2818,7 @@ function ProductionAdminJobsPage() {
                     "Error",
                     "",
                   ].map((heading) => (
-                    <th key={heading} className="px-4 py-2 font-medium">
+                    <th key={heading} className="px-4 py-3 font-bold">
                       {heading}
                     </th>
                   ))}
@@ -3580,7 +3580,7 @@ function ProductionAdminErrorsPage() {
       </div>
 
       {snapshot.data && (
-        <div className="mb-6 grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mb-6 grid overflow-hidden rounded-[18px] border bg-surface shadow-card sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Recent recording failures"
             value={String(snapshot.data.failed_recordings_recent)}
@@ -3664,12 +3664,12 @@ function ProductionAdminErrorsPage() {
         />
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-lg border bg-surface md:block">
-            <table className="w-full min-w-[900px] text-xs">
-              <thead className="bg-surface-subtle text-left text-[10px] uppercase text-muted-foreground">
+          <div className="relative hidden overflow-x-auto rounded-[16px] border bg-surface md:block">
+            <table className="w-full min-w-[900px] text-sm">
+              <thead className="bg-surface-2 text-left text-[11px] uppercase tracking-[.06em] text-muted-foreground">
                 <tr>
                   {["Time", "Action", "Resource", "Actor", "Request ID"].map((heading) => (
-                    <th key={heading} className="px-4 py-2 font-medium">
+                    <th key={heading} className="px-4 py-3 font-bold">
                       {heading}
                     </th>
                   ))}
@@ -3684,17 +3684,21 @@ function ProductionAdminErrorsPage() {
                     onKeyDown={(event) => {
                       if (event.key === "Enter") setOpen(entry.id);
                     }}
-                    className="cursor-pointer border-t hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                    className="cursor-pointer border-t transition-colors hover:bg-surface-2/60 focus-visible:bg-surface-2 focus-visible:outline-none"
                   >
-                    <td className="whitespace-nowrap px-4 py-3 font-mono">
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground">
                       {new Date(entry.created_at).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 font-mono font-medium">{entry.action}</td>
-                    <td className="px-4 py-3 font-mono">{adminAuditResource(entry)}</td>
-                    <td className="max-w-44 truncate px-4 py-3 font-mono">
+                    <td className="px-4 py-3">
+                      <span className="inline-flex h-6 items-center rounded-full bg-primary-subtle px-[9px] font-mono text-[11px] font-bold text-accent-ink">
+                        {entry.action}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">{adminAuditResource(entry)}</td>
+                    <td className="max-w-44 truncate px-4 py-3 font-mono text-xs">
                       {entry.actor_user_id ?? "system"}
                     </td>
-                    <td className="max-w-44 truncate px-4 py-3 font-mono text-muted-foreground">
+                    <td className="max-w-44 truncate px-4 py-3 font-mono text-xs text-muted-foreground">
                       {entry.request_id ?? "—"}
                     </td>
                   </tr>
@@ -3709,7 +3713,7 @@ function ProductionAdminErrorsPage() {
                 key={entry.id}
                 type="button"
                 onClick={() => setOpen(entry.id)}
-                className="block w-full rounded-lg border bg-surface p-4 text-left"
+                className="block w-full rounded-[16px] border bg-surface p-4 text-left"
               >
                 <p className="font-mono text-xs font-medium">{entry.action}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{adminAuditResource(entry)}</p>
@@ -3727,7 +3731,11 @@ function ProductionAdminErrorsPage() {
           {selected && (
             <>
               <SheetHeader>
-                <SheetTitle className="font-mono">{selected.action}</SheetTitle>
+                <SheetTitle>
+                  <span className="inline-flex h-7 items-center rounded-full bg-primary-subtle px-3 font-mono text-sm font-bold text-accent-ink">
+                    {selected.action}
+                  </span>
+                </SheetTitle>
                 <SheetDescription>
                   {new Date(selected.created_at).toLocaleString()}
                 </SheetDescription>
@@ -3750,7 +3758,7 @@ function ProductionAdminErrorsPage() {
                 </dl>
                 <div>
                   <p className="mb-2 text-xs font-medium text-muted-foreground">Details</p>
-                  <pre className="max-h-80 overflow-auto rounded-md bg-player p-3 font-mono text-[11px] leading-5 text-player-foreground">
+                  <pre className="max-h-80 overflow-auto rounded-[12px] bg-[#15122B] p-3.5 font-mono text-xs leading-[1.65] text-[#D9D4F2]">
                     {JSON.stringify(selected.details, null, 2)}
                   </pre>
                 </div>
