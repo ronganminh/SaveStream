@@ -511,7 +511,7 @@ export function AdminSafetyD8Page() {
           title="Safety"
           subtitle="Complaint and creator-safety operations."
         />
-        <div className="rounded-lg border bg-background p-6">
+        <div className="rounded-[16px] border bg-surface p-6">
           <h2 className="font-medium">Permission required</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Safety cases are available to Support and Owner administrators.
@@ -554,7 +554,7 @@ export function AdminSafetyD8Page() {
         </TabsList>
 
         <TabsContent value="complaints" className="space-y-4">
-          <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-4">
+          <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-4">
             <Input
               placeholder="Search email, summary, channel"
               value={filters.query ?? ""}

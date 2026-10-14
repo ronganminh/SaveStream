@@ -345,7 +345,7 @@ export function AdminRecordingOperationsPage() {
         </TabsList>
 
         <TabsContent value="recordings" className="space-y-4">
-          <div className="grid gap-3 rounded-lg border bg-background p-4 md:grid-cols-4">
+          <div className="grid gap-3 rounded-[16px] border bg-surface p-4 md:grid-cols-4">
             <Input
               placeholder="User ID"
               value={filters.userId ?? ""}
@@ -657,7 +657,7 @@ export function AdminRecordingOperationsPage() {
               value={detector?.failure_rate_1h === null || detector?.failure_rate_1h === undefined ? "—" : `${(detector.failure_rate_1h * 100).toFixed(1)}%`}
             />
           </div>
-          <section className="rounded-lg border bg-background p-4">
+          <section className="rounded-[16px] border bg-surface p-4">
             <h2 className="font-medium">Hourly detector failure rate</h2>
             <p className="mb-4 mt-1 text-sm text-muted-foreground">
               24-hour check telemetry. Taller bars mean a higher failure rate.
@@ -677,7 +677,7 @@ export function AdminRecordingOperationsPage() {
               value={Math.max((capacity?.global_limit ?? 6) - (capacity?.current_in_use ?? 0), 0)}
             />
           </div>
-          <section className="overflow-x-auto rounded-lg border bg-background p-4">
+          <section className="overflow-x-auto rounded-[16px] border bg-surface p-4">
             <h2 className="font-medium">7-day hourly capacity</h2>
             <p className="mb-4 mt-1 text-sm text-muted-foreground">
               Read-only infrastructure capacity. The global stream limit is not editable from Admin.

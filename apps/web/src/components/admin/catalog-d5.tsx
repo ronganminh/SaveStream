@@ -262,7 +262,7 @@ export function AdminCatalogPage() {
             title="Catalog & promotions"
             subtitle="Package, promotion, and bulk cloud-minute administration."
           />
-          <section className="rounded-lg border bg-background p-5">
+          <section className="rounded-[16px] border bg-surface p-5">
             <div className="flex gap-3">
               <ShieldAlert className="mt-0.5 size-5" />
               <div>
@@ -300,7 +300,7 @@ export function AdminCatalogPage() {
           </TabsList>
 
           <TabsContent value="packages" className="space-y-5">
-            <section className="rounded-lg border bg-background p-5">
+            <section className="rounded-[16px] border bg-surface p-5">
               <h2 className="font-medium">Create package</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Prices are USD and charged through PayPal web checkout.
@@ -382,7 +382,7 @@ export function AdminCatalogPage() {
             </AdminDataTable>
 
             {selectedPackage && packageDraft && (
-              <section className="space-y-4 rounded-lg border bg-background p-5">
+              <section className="space-y-4 rounded-[16px] border bg-surface p-5">
                 <div>
                   <h2 className="font-medium">Edit {selectedPackage.name}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -433,7 +433,7 @@ export function AdminCatalogPage() {
           </TabsContent>
 
           <TabsContent value="promotions" className="space-y-5">
-            <section className="rounded-lg border bg-background p-5">
+            <section className="rounded-[16px] border bg-surface p-5">
               <h2 className="font-medium">Create promotion code</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Every code is one redemption per account. Gifts remain Free unless Counts as purchase is explicitly enabled.
@@ -526,7 +526,7 @@ export function AdminCatalogPage() {
             </AdminDataTable>
 
             {selectedPromotion && (
-              <section className="rounded-lg border bg-background p-5">
+              <section className="rounded-[16px] border bg-surface p-5">
                 <h2 className="font-medium">Redemptions — {selectedPromotion.code}</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   One account can redeem this code only once.
@@ -554,7 +554,7 @@ export function AdminCatalogPage() {
           </TabsContent>
 
           <TabsContent value="bulk" className="space-y-5">
-            <section className="rounded-lg border bg-background p-5">
+            <section className="rounded-[16px] border bg-surface p-5">
               <h2 className="font-medium">Bulk cloud-minute grant</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Audience uses the D1 customer filters. Preview the user count and total minutes before step-up confirmation.
@@ -626,7 +626,7 @@ export function AdminCatalogPage() {
             </section>
 
             {bulkJob && (
-              <section className="space-y-4 rounded-lg border bg-background p-5">
+              <section className="space-y-4 rounded-[16px] border bg-surface p-5">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <h2 className="font-medium">Bulk grant report</h2>

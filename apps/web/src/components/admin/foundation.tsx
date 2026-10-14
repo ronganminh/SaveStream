@@ -25,25 +25,138 @@ export function AdminMetricCard({
   label,
   value,
   detail,
+  tone,
 }: {
   label: string;
   value: ReactNode;
   detail?: ReactNode;
+  /** Colors the detail line: "up" good news, "down" needs attention. */
+  tone?: "up" | "down" | undefined;
 }) {
   return (
-    <div className="rounded-lg border bg-background p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-2 text-2xl font-semibold">{value}</div>
-      {detail ? <div className="mt-1 text-xs text-muted-foreground">{detail}</div> : null}
+    <div className="flex flex-col gap-1.5 rounded-[18px] border bg-surface p-5 shadow-card">
+      <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+      <div className="font-mono text-[24px] font-bold leading-tight tracking-[-.02em] text-foreground">
+        {value}
+      </div>
+      {detail ? (
+        <div
+          className={
+            tone === "up"
+              ? "text-xs font-semibold text-success"
+              : tone === "down"
+                ? "text-xs font-semibold text-warning-foreground"
+                : "text-xs text-muted-foreground"
+          }
+        >
+          {detail}
+        </div>
+      ) : null}
     </div>
   );
 }
 
+/** Admin tables share the app table look: tinted header, quiet row hover. */
 export function AdminDataTable({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border bg-background">
+    <div className="overflow-x-auto rounded-[16px] border bg-surface [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-surface-2/60 [&_thead_th]:text-[11px] [&_thead_th]:font-bold [&_thead_th]:tracking-[.06em] [&_thead_th]:text-muted-foreground [&_thead_th]:uppercase [&_thead_tr]:bg-surface-2">
       <table className="w-full min-w-[720px] text-left text-sm">{children}</table>
     </div>
+  );
+}
+
+const adminBadgeTones = {
+  neutral: "bg-surface-2 text-muted-foreground",
+  success: "bg-success-subtle text-success",
+  warning: "bg-warning-subtle text-warning-foreground",
+  danger: "bg-destructive/10 text-destructive",
+  info: "bg-info-subtle text-info",
+  accent: "bg-primary-subtle text-accent-ink",
+} as const;
+
+export type AdminBadgeTone = keyof typeof adminBadgeTones;
+
+/** Small status pill for admin tables (design `.badge`). */
+export function AdminBadge({
+  tone = "neutral",
+  dot = false,
+  children,
+}: {
+  tone?: AdminBadgeTone;
+  dot?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      className={`inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-[9px] text-xs font-bold leading-none ${adminBadgeTones[tone]}`}
+    >
+      {dot ? <span className="size-1.5 rounded-full bg-current" aria-hidden="true" /> : null}
+      {children}
+    </span>
+  );
+}
+
+/** Account state shown in admin user lists and headers. */
+export function AdminUserStatusBadge({ user }: { user: AdminUser }) {
+  if (user.deletion_requested_at) {
+    return (
+      <AdminBadge tone="warning" dot>
+        Pending deletion
+      </AdminBadge>
+    );
+  }
+  if (!user.is_active) {
+    return (
+      <AdminBadge tone="danger" dot>
+        Locked
+      </AdminBadge>
+    );
+  }
+  if (!user.email_verified_at) {
+    return (
+      <AdminBadge tone="warning" dot>
+        Unverified
+      </AdminBadge>
+    );
+  }
+  return (
+    <AdminBadge tone="success" dot>
+      Active
+    </AdminBadge>
+  );
+}
+
+/** Card section used across admin pages: optional header row, then body. */
+export function AdminCard({
+  title,
+  description,
+  action,
+  children,
+  className,
+  bodyClassName,
+}: {
+  title?: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+}) {
+  return (
+    <section className={`overflow-hidden rounded-[18px] border bg-surface ${className ?? ""}`}>
+      {title ? (
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
+          <div>
+            <h2 className="text-[16px] font-bold tracking-[-.01em]">{title}</h2>
+            {description ? (
+              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+            ) : null}
+          </div>
+          {action}
+        </div>
+      ) : null}
+      <div className={bodyClassName ?? "p-5"}>{children}</div>
+    </section>
   );
 }
 
@@ -62,7 +175,9 @@ export function AdminTimeline({ items }: { items: readonly string[] }) {
 
 export function AdminGlobalSearch() {
   const [query, setQuery] = useState("");
-  const [items, setItems] = useState<Awaited<ReturnType<typeof adminFoundationApi.search>>["items"]>([]);
+  const [items, setItems] = useState<
+    Awaited<ReturnType<typeof adminFoundationApi.search>>["items"]
+  >([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -105,7 +220,7 @@ export function AdminGlobalSearch() {
       </form>
       {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
       {items.length ? (
-        <div className="absolute z-30 mt-2 w-full rounded-lg border bg-background p-2 shadow-lg">
+        <div className="absolute z-30 mt-2 w-full rounded-[16px] border bg-surface p-2 shadow-lg">
           {items.map((item) => (
             <a
               key={`${item.type}:${item.id}`}
@@ -195,7 +310,7 @@ function MfaCard({
         </div>
       ) : null}
 
-      {(enabled || setup) ? (
+      {enabled || setup ? (
         <div className="mt-6">
           <label htmlFor="admin-mfa-code" className="text-sm font-medium">
             Authentication code
@@ -277,8 +392,7 @@ export function AdminMfaGate({ children }: { children: ReactNode }) {
 }
 
 type StepUpAction =
-  | { kind: "role"; admin: AdminUser; role: "user" | AdminRole }
-  | { kind: "mfa"; admin: AdminUser };
+  { kind: "role"; admin: AdminUser; role: "user" | AdminRole } | { kind: "mfa"; admin: AdminUser };
 
 function AdminStepUpDialog({
   action,
@@ -316,11 +430,7 @@ function AdminStepUpDialog({
               reason.trim(),
               stepUp.token,
             )
-          : await adminFoundationApi.resetAdminMfa(
-              action.admin.id,
-              reason.trim(),
-              stepUp.token,
-            );
+          : await adminFoundationApi.resetAdminMfa(action.admin.id, reason.trim(), stepUp.token);
       onDone(updated);
       onClose();
     } catch (requestError) {
@@ -335,7 +445,9 @@ function AdminStepUpDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {action?.kind === "role" ? "Confirm admin role change" : "Reset two-factor authentication"}
+            {action?.kind === "role"
+              ? "Confirm admin role change"
+              : "Reset two-factor authentication"}
           </DialogTitle>
           <DialogDescription>
             Re-enter your password, current authenticator code, and the reason for this action.
@@ -390,9 +502,7 @@ function AdminStepUpDialog({
           </Button>
           <Button
             onClick={() => void submit()}
-            disabled={
-              busy || reason.trim().length < 3 || !password || totpCode.trim().length !== 6
-            }
+            disabled={busy || reason.trim().length < 3 || !password || totpCode.trim().length !== 6}
           >
             Confirm
           </Button>
@@ -445,21 +555,23 @@ export function AdminOwnerAccessPanel() {
 
   if (isDemoMode) {
     return (
-      <section className="rounded-lg border bg-background p-5">
+      <section className="rounded-[16px] border bg-surface p-5">
         <h2 className="text-base font-semibold">Admin access</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Owner-only role assignment, MFA reset, and step-up confirmation are available in production mode.
+          Owner-only role assignment, MFA reset, and step-up confirmation are available in
+          production mode.
         </p>
       </section>
     );
   }
 
   return (
-    <section className="space-y-4 rounded-lg border bg-background p-5">
+    <section className="space-y-4 rounded-[16px] border bg-surface p-5">
       <div>
         <h2 className="text-base font-semibold">Admin access</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Only Owners can assign or revoke admin roles and reset another administrator's two-factor authentication.
+          Only Owners can assign or revoke admin roles and reset another administrator's two-factor
+          authentication.
         </p>
       </div>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -532,11 +644,7 @@ export function AdminOwnerAccessPanel() {
           setDraftRoles((current) => ({
             ...current,
             [updated.id]:
-              updated.role === "admin"
-                ? "owner"
-                : updated.role === "user"
-                  ? "user"
-                  : updated.role,
+              updated.role === "admin" ? "owner" : updated.role === "user" ? "user" : updated.role,
           }));
         }}
       />

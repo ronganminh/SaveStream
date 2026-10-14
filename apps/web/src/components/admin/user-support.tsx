@@ -1,17 +1,21 @@
 import { formatAdminDateTime } from "@/lib/formatters";
-import { useEffect, useMemo, useState } from "react";
-import { Download, Eye, Search } from "lucide-react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Download, Eye, Gift, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
 import { useAuth } from "@/auth/auth-context";
 import { AppShell, AvatarCircle, PageHeader } from "@/components/app-components";
 import { initials } from "@/repositories/mappers/channel";
+import { describeUserAgent } from "@/lib/user-agent";
 import {
+  AdminBadge,
+  AdminCard,
   AdminDataTable,
   AdminGlobalSearch,
   AdminMfaGate,
   AdminMetricCard,
+  AdminUserStatusBadge,
 } from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +27,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
@@ -83,6 +94,7 @@ export function AdminUsersPage() {
   const [privacy, setPrivacy] = useState<AdminPrivacyRequest[]>([]);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [quickLook, setQuickLook] = useState<AdminUser | null>(null);
 
   const load = async (activeFilters: AdminUserFilters, activeCursor: string | null) => {
     setBusy(true);
@@ -143,7 +155,7 @@ export function AdminUsersPage() {
           <AdminGlobalSearch />
         </div>
 
-        <section className="rounded-lg border bg-background p-4">
+        <section className="rounded-[16px] border bg-surface p-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <Input
               placeholder="Search email"
@@ -154,7 +166,10 @@ export function AdminUsersPage() {
               className="h-10 rounded-md border bg-background px-3 text-sm"
               value={draft.plan ?? ""}
               onChange={(event) =>
-                setDraft((value) => ({ ...value, plan: event.target.value as AdminUserFilters["plan"] }))
+                setDraft((value) => ({
+                  ...value,
+                  plan: event.target.value as AdminUserFilters["plan"],
+                }))
               }
             >
               <option value="">All plans</option>
@@ -267,40 +282,63 @@ export function AdminUsersPage() {
 
         <div className="mt-6">
           <AdminDataTable>
-            <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
+            <thead>
+              <tr className="border-b">
                 <th className="px-4 py-3">User</th>
-                <th className="px-4 py-3">Plan</th>
-                <th className="px-4 py-3">Cloud minutes</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Verified</th>
+                <th className="px-4 py-3">Plan</th>
+                <th className="px-4 py-3 text-right">Cloud minutes</th>
                 <th className="px-4 py-3">Latest purchase</th>
                 <th className="px-4 py-3">Registered</th>
-                <th className="px-4 py-3 text-right">Open</th>
+                <th className="px-4 py-3 text-right">
+                  <span className="sr-only">Open</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {busy ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
                     Loading users…
                   </td>
                 </tr>
               ) : items.length ? (
                 items.map((user) => (
-                  <tr key={user.id} className="border-b last:border-0">
+                  <tr
+                    key={user.id}
+                    className={`border-b last:border-0 ${quickLook?.id === user.id ? "bg-primary-subtle/60" : ""}`}
+                  >
                     <td className="px-4 py-3">
-                      <p className="font-medium">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">{user.display_name ?? user.id}</p>
+                      <button
+                        type="button"
+                        onClick={() => setQuickLook(user)}
+                        className="flex items-center gap-2.5 text-left"
+                      >
+                        <AvatarCircle
+                          initials={initials(user.display_name || user.email)}
+                          size="sm"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate font-bold">
+                            {user.display_name || user.email}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {user.email}
+                          </span>
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminUserStatusBadge user={user} />
                     </td>
                     <td className="px-4 py-3 uppercase">{user.plan ?? "—"}</td>
-                    <td className="px-4 py-3">{user.cloud_minutes_available ?? 0}</td>
-                    <td className="px-4 py-3">{accountStatus(user)}</td>
-                    <td className="px-4 py-3">{user.email_verified_at ? "Yes" : "No"}</td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {user.cloud_minutes_available ?? 0}
+                    </td>
                     <td className="px-4 py-3">{user.latest_purchase_provider ?? "—"}</td>
-                    <td className="px-4 py-3">{dateTime(user.created_at)}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{dateTime(user.created_at)}</td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="outline" asChild>
+                      <Button size="sm" variant="ghost" asChild>
                         <a href={`/admin/users/${user.id}`}>Open</a>
                       </Button>
                     </td>
@@ -308,7 +346,7 @@ export function AdminUsersPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
                     No users match these filters.
                   </td>
                 </tr>
@@ -341,14 +379,15 @@ export function AdminUsersPage() {
         </div>
 
         <section className="mt-8">
-          <h2 className="text-base font-semibold">Privacy requests</h2>
+          <h2 className="text-[17px] font-bold tracking-[-.01em]">Privacy requests</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Deletion requests use the existing privacy flow. Completed admin exports also appear here.
+            Deletion requests use the existing privacy flow. Completed admin exports also appear
+            here.
           </p>
           <div className="mt-3">
             <AdminDataTable>
-              <thead className="border-b bg-muted/40 text-xs uppercase text-muted-foreground">
-                <tr>
+              <thead>
+                <tr className="border-b">
                   <th className="px-4 py-3">User</th>
                   <th className="px-4 py-3">Kind</th>
                   <th className="px-4 py-3">Status</th>
@@ -381,8 +420,137 @@ export function AdminUsersPage() {
             </AdminDataTable>
           </div>
         </section>
+
+        <UserQuickLook user={quickLook} onClose={() => setQuickLook(null)} />
       </AppShell>
     </AdminMfaGate>
+  );
+}
+
+function hoursLabel(minutes: number) {
+  return `${(minutes / 60).toFixed(1)} h`;
+}
+
+/** Right-side drawer with the essentials of one user, from the users table. */
+function UserQuickLook({ user, onClose }: { user: AdminUser | null; onClose: () => void }) {
+  const [detail, setDetail] = useState<AdminUserDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setDetail(null);
+    setError(null);
+    adminFoundationApi
+      .getUserDetail(user.id)
+      .then((data) => {
+        if (!cancelled) setDetail(data);
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) setError(authErrorMessage(requestError));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  return (
+    <Sheet open={user !== null} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-[440px]">
+        {user ? (
+          <div className="flex flex-col gap-5">
+            <SheetHeader className="space-y-0 p-0 text-left">
+              <p className="font-mono text-xs font-bold text-muted-foreground">{user.id}</p>
+              <div className="mt-3 flex items-center gap-3.5">
+                <AvatarCircle initials={initials(user.display_name || user.email)} size="lg" />
+                <div className="min-w-0">
+                  <SheetTitle className="truncate text-xl font-extrabold">
+                    {user.display_name || user.email}
+                  </SheetTitle>
+                  <SheetDescription className="truncate">{user.email}</SheetDescription>
+                  <div className="mt-1.5">
+                    <AdminUserStatusBadge user={user} />
+                  </div>
+                </div>
+              </div>
+            </SheetHeader>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                ["Balance", detail ? hoursLabel(detail.balance.available) : "…"],
+                ["Channels", detail ? String(detail.entitlement.watch_count) : "…"],
+                ["Recordings", detail ? String(detail.recordings.length) : "…"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[12px] bg-surface-2 p-3">
+                  <p className="text-xs font-bold text-muted-foreground">{label}</p>
+                  <p className="mt-0.5 font-mono font-bold">{value}</p>
+                </div>
+              ))}
+            </div>
+            <dl className="grid grid-cols-[120px_1fr] gap-y-2 text-sm">
+              <dt className="text-muted-foreground">Registered</dt>
+              <dd>{dateTime(user.created_at)}</dd>
+              <dt className="text-muted-foreground">Email verified</dt>
+              <dd>{user.email_verified_at ? dateTime(user.email_verified_at) : "No"}</dd>
+              <dt className="text-muted-foreground">Latest purchase</dt>
+              <dd>{user.latest_purchase_provider ?? "—"}</dd>
+              <dt className="text-muted-foreground">Role</dt>
+              <dd className="capitalize">{user.role}</dd>
+            </dl>
+            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {detail?.watches.length ? (
+              <div>
+                <p className="mb-2 text-sm font-bold">Channels</p>
+                <div className="overflow-hidden rounded-[12px] border">
+                  {detail.watches.slice(0, 5).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 border-b px-3 py-2.5 text-sm last:border-0"
+                    >
+                      <span className="min-w-0 flex-1 font-bold">
+                        <CreatorCell
+                          username={`@${item.creator?.username ?? item.source.value}`}
+                          avatarUrl={item.creator?.avatar_url}
+                        />
+                      </span>
+                      <AdminBadge tone={item.status === "active" ? "success" : "neutral"}>
+                        {item.status}
+                      </AdminBadge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {detail?.payments.length ? (
+              <div>
+                <p className="mb-2 text-sm font-bold">Recent orders</p>
+                <div className="overflow-hidden rounded-[12px] border">
+                  {detail.payments.slice(0, 3).map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-2 border-b px-3 py-2.5 last:border-0"
+                    >
+                      <span className="min-w-0 flex-1 truncate font-mono text-xs">{item.id}</span>
+                      <AdminBadge tone={item.status === "paid" ? "success" : "neutral"}>
+                        {item.status}
+                      </AdminBadge>
+                      <span className="font-mono text-sm">{item.credits} cr</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            <div className="flex flex-col gap-2 border-t pt-4">
+              <Button asChild>
+                <a href={`/admin/users/${user.id}`}>Open full profile</a>
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Support actions need a reason and are recorded in the audit log.
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -447,11 +615,16 @@ function StepUpDialog({
         <DialogHeader>
           <DialogTitle>Confirm dangerous action</DialogTitle>
           <DialogDescription>
-            Re-enter your password, authenticator code, and a reason. This action is permanently audited.
+            Re-enter your password, authenticator code, and a reason. This action is permanently
+            audited.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <Input placeholder="Reason" value={reason} onChange={(event) => setReason(event.target.value)} />
+          <Input
+            placeholder="Reason"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
           <Input
             type="password"
             placeholder="Password"
@@ -485,18 +658,134 @@ function StepUpDialog({
   );
 }
 
+type ReasonRequest = {
+  title: string;
+  description: string;
+  audit: string;
+  confirmLabel: string;
+  danger?: boolean;
+  run: (reason: string) => Promise<void>;
+};
+
+const MIN_REASON_LENGTH = 10;
+
+/** Every support action asks for a reason; it is stored in the audit log. */
+function ReasonDialog({
+  request,
+  onClose,
+}: {
+  request: ReasonRequest | null;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (request) setReason("");
+  }, [request]);
+
+  const confirm = async () => {
+    if (!request) return;
+    setBusy(true);
+    try {
+      await request.run(reason.trim());
+      onClose();
+    } catch (requestError) {
+      toast.error(authErrorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={request !== null} onOpenChange={(open) => !open && !busy && onClose()}>
+      <DialogContent className="max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>{request?.title}</DialogTitle>
+          <DialogDescription>{request?.description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <label htmlFor="admin-reason" className="text-sm font-bold">
+            Reason <span className="text-destructive">*</span>
+          </label>
+          <textarea
+            id="admin-reason"
+            className="min-h-[84px] w-full rounded-[12px] border bg-surface p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            placeholder="Required. Stored in the audit log."
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Required · minimum {MIN_REASON_LENGTH} characters
+          </p>
+        </div>
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="font-mono text-xs text-muted-foreground">audit: {request?.audit}</span>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant={request?.danger ? "destructive" : "default"}
+              disabled={busy || reason.trim().length < MIN_REASON_LENGTH}
+              onClick={() => void confirm()}
+            >
+              {busy ? "Working…" : (request?.confirmLabel ?? "Confirm")}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const userTabs = [
+  ["profile", "Profile"],
+  ["channels", "Channels"],
+  ["recordings", "Recordings"],
+  ["orders", "Orders"],
+  ["ledger", "Ledger"],
+  ["sessions", "Devices & sessions"],
+  ["notifications", "Notifications"],
+  ["notes", "Internal notes"],
+  ["audit", "Audit"],
+  ["privacy", "Privacy"],
+  ["view", "View as user"],
+] as const;
+
+const tabTriggerClass =
+  "-mb-px h-11 flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 font-bold text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
+
+function KeyValues({ rows }: { rows: ReadonlyArray<readonly [string, ReactNode]> }) {
+  return (
+    <dl className="grid grid-cols-[150px_1fr] gap-x-4 gap-y-2.5 text-sm">
+      {rows.map(([label, value]) => (
+        <Fragment key={label}>
+          <dt className="text-muted-foreground">{label}</dt>
+          <dd className="min-w-0 break-words">{value}</dd>
+        </Fragment>
+      ))}
+    </dl>
+  );
+}
+
+function ledgerLabel(type: string) {
+  return type.replace(/_/g, " ").replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
 export function AdminUserDetailPage({ userId }: { userId: string }) {
   const { user: admin } = useAuth();
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [view, setView] = useState<AdminViewAsUser | null>(null);
-  const [reason, setReason] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [danger, setDanger] = useState<DangerousAction | null>(null);
+  const [reasonRequest, setReasonRequest] = useState<ReasonRequest | null>(null);
 
   const canWrite = admin?.role === "owner" || admin?.role === "support" || admin?.role === "admin";
+  const canGrant = admin?.role === "owner" || admin?.role === "finance" || admin?.role === "admin";
 
   const load = async () => {
     setBusy(true);
@@ -516,85 +805,99 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
     void load();
   }, [userId]);
 
-  const runSupportAction = async (
-    action: "resend" | "reset" | "logout" | "profile",
-  ) => {
-    if (reason.trim().length < 3 || !detail) {
-      toast.error("Enter a reason first.");
-      return;
-    }
-    try {
-      if (action === "resend") {
-        await adminFoundationApi.resendVerification(userId, reason);
-      } else if (action === "reset") {
-        await adminFoundationApi.forcePasswordReset(userId, reason);
-      } else if (action === "logout") {
-        await adminFoundationApi.forceLogout(userId, reason);
-      } else {
-        await adminFoundationApi.updateUserProfile(userId, displayName || null, reason);
-      }
-      toast.success("Support action completed");
-      await load();
-    } catch (requestError) {
-      toast.error(authErrorMessage(requestError));
-    }
+  const supportAction = (action: "resend" | "reset" | "logout" | "profile") => {
+    const name = detail?.user.display_name || detail?.user.email || "this user";
+    const copy = {
+      resend: {
+        title: "Resend the verification email?",
+        description: `${name} gets a new verification link.`,
+        audit: "user.resend_verification",
+        confirmLabel: "Resend",
+      },
+      reset: {
+        title: "Send a password reset email?",
+        description: `${name} gets a reset link and must choose a new password.`,
+        audit: "user.force_password_reset",
+        confirmLabel: "Send reset",
+      },
+      logout: {
+        title: "Sign out all sessions?",
+        description: "Every device is signed out. Active recordings keep running.",
+        audit: "user.force_logout",
+        confirmLabel: "Sign out all",
+      },
+      profile: {
+        title: "Save the display name?",
+        description: `The display name changes to “${displayName || "(empty)"}”.`,
+        audit: "user.profile_update",
+        confirmLabel: "Save",
+      },
+    }[action];
+    setReasonRequest({
+      ...copy,
+      run: async (reason) => {
+        if (action === "resend") {
+          await adminFoundationApi.resendVerification(userId, reason);
+        } else if (action === "reset") {
+          await adminFoundationApi.forcePasswordReset(userId, reason);
+        } else if (action === "logout") {
+          await adminFoundationApi.forceLogout(userId, reason);
+        } else {
+          await adminFoundationApi.updateUserProfile(userId, displayName || null, reason);
+        }
+        toast.success("Support action completed");
+        await load();
+      },
+    });
   };
 
-  const addNote = async () => {
-    if (note.trim().length < 1 || reason.trim().length < 3) {
-      toast.error("Enter a note and a reason.");
+  const addNote = () => {
+    if (!note.trim()) {
+      toast.error("Write the note first.");
       return;
     }
-    try {
-      await adminFoundationApi.createUserNote(userId, note, reason);
-      setNote("");
-      toast.success("Internal note added");
-      await load();
-    } catch (requestError) {
-      toast.error(authErrorMessage(requestError));
-    }
+    setReasonRequest({
+      title: "Add internal note?",
+      description: "Internal notes are visible to admins only.",
+      audit: "user.note_create",
+      confirmLabel: "Add note",
+      run: async (reason) => {
+        await adminFoundationApi.createUserNote(userId, note, reason);
+        setNote("");
+        toast.success("Internal note added");
+        await load();
+      },
+    });
   };
 
-  const loadReadOnlyView = async () => {
-    if (reason.trim().length < 3) {
-      toast.error("Enter a reason before viewing as this user.");
-      return;
-    }
-    try {
-      setView(await adminFoundationApi.viewAsUser(userId, reason));
-    } catch (requestError) {
-      toast.error(authErrorMessage(requestError));
-    }
-  };
+  const loadReadOnlyView = () =>
+    setReasonRequest({
+      title: "View as this user?",
+      description: "Opens a read-only view. Opening it is audited with your reason.",
+      audit: "user.view_as",
+      confirmLabel: "View as user",
+      run: async (reason) => {
+        setView(await adminFoundationApi.viewAsUser(userId, reason));
+      },
+    });
 
-  const exportPrivacy = async () => {
-    if (reason.trim().length < 3) {
-      toast.error("Enter a reason before exporting user data.");
-      return;
-    }
-    try {
-      const exported = await adminFoundationApi.exportPrivacyData(userId, reason);
-      downloadText(
-        `savestream-user-${userId}-export.json`,
-        JSON.stringify(exported, null, 2),
-        "application/json",
-      );
-      toast.success("Privacy export downloaded");
-      await load();
-    } catch (requestError) {
-      toast.error(authErrorMessage(requestError));
-    }
-  };
-
-  const metrics = useMemo(() => {
-    if (!detail) return null;
-    return [
-      ["Plan", detail.entitlement.plan.toUpperCase()],
-      ["Cloud minutes", String(detail.balance.available)],
-      ["Channels", String(detail.entitlement.watch_count)],
-      ["Recordings", String(detail.recordings.length)],
-    ] as const;
-  }, [detail]);
+  const exportPrivacy = () =>
+    setReasonRequest({
+      title: "Export this user's data?",
+      description: "Downloads the privacy export as JSON. The export is permanently audited.",
+      audit: "privacy.export",
+      confirmLabel: "Export",
+      run: async (reason) => {
+        const exported = await adminFoundationApi.exportPrivacyData(userId, reason);
+        downloadText(
+          `savestream-user-${userId}-export.json`,
+          JSON.stringify(exported, null, 2),
+          "application/json",
+        );
+        toast.success("Privacy export downloaded");
+        await load();
+      },
+    });
 
   if (busy && !detail) {
     return (
@@ -618,248 +921,578 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
   }
 
   const user = detail.user;
+  const name = user.display_name || user.email;
+  const counts: Partial<Record<(typeof userTabs)[number][0], number>> = {
+    channels: detail.watches.length,
+    recordings: detail.recordings.length,
+    orders: detail.payments.length,
+    sessions: detail.sessions.filter((item) => !item.revoked_at).length,
+  };
 
   return (
     <AdminMfaGate>
       <AppShell>
-        <PageHeader
-          title={user.email}
-          subtitle={`${user.role} · ${accountStatus(user)} · registered ${dateTime(user.created_at)}`}
-          action={
-            <Button variant="outline" asChild>
-              <a href="/admin/users">Back to users</a>
-            </Button>
-          }
-        />
+        <nav
+          className="mb-4 flex items-center gap-2 text-sm text-muted-foreground"
+          aria-label="Breadcrumb"
+        >
+          <a href="/admin/users" className="hover:text-foreground">
+            Users
+          </a>
+          <span aria-hidden="true">/</span>
+          <span className="truncate text-foreground" aria-current="page">
+            {name}
+          </span>
+        </nav>
 
-        <div className="mb-6">
-          <AdminGlobalSearch />
-        </div>
-
-        {metrics ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {metrics.map(([label, value]) => (
-              <AdminMetricCard key={label} label={label} value={value} />
-            ))}
+        <section
+          className="flex flex-wrap items-center gap-5 rounded-[18px] border bg-surface p-6 shadow-card"
+          aria-label="User summary"
+        >
+          <AvatarCircle initials={initials(name)} size="xl" />
+          <div className="min-w-[240px] flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[26px] font-extrabold leading-tight tracking-[-.025em]">
+                {name}
+              </h1>
+              <AdminUserStatusBadge user={user} />
+              {user.email_verified_at ? <AdminBadge>Email verified</AdminBadge> : null}
+              {user.role !== "user" ? <AdminBadge tone="accent">{user.role}</AdminBadge> : null}
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {user.email} · <span className="font-mono">{user.id}</span> · registered{" "}
+              {dateTime(user.created_at)}
+              {user.latest_purchase_provider
+                ? ` · latest purchase ${user.latest_purchase_provider}`
+                : ""}
+            </p>
           </div>
-        ) : null}
-
-        <div className="mt-6 rounded-lg border bg-background p-4">
-          <label htmlFor="admin-action-reason" className="text-sm font-medium">
-            Reason for support action
-          </label>
-          <Input
-            id="admin-action-reason"
-            className="mt-2"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            placeholder="Ticket, investigation, or customer request"
-          />
+          <div className="flex flex-wrap gap-2">
+            {canGrant ? (
+              <Button asChild>
+                <a href="/admin/payments">
+                  <Gift className="size-4" />
+                  Grant minutes
+                </a>
+              </Button>
+            ) : null}
+            {canWrite ? (
+              <>
+                {!user.email_verified_at ? (
+                  <Button variant="outline" onClick={() => supportAction("resend")}>
+                    Resend verification
+                  </Button>
+                ) : null}
+                <Button variant="outline" onClick={() => supportAction("reset")}>
+                  Force password reset
+                </Button>
+                <Button variant="outline" onClick={() => supportAction("logout")}>
+                  Force logout
+                </Button>
+                <Button
+                  variant="outline"
+                  className={
+                    user.is_active
+                      ? "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      : ""
+                  }
+                  onClick={() => setDanger(user.is_active ? "lock" : "unlock")}
+                >
+                  {user.is_active ? "Lock account" : "Unlock account"}
+                </Button>
+              </>
+            ) : null}
+          </div>
           {!canWrite ? (
-            <p className="mt-2 text-xs text-muted-foreground">
+            <p className="w-full text-xs text-muted-foreground">
               Finance access is read-only for user support actions.
             </p>
           ) : null}
+        </section>
+
+        <div className="mt-5">
+          <AdminGlobalSearch />
         </div>
 
-        <Tabs defaultValue="profile" className="mt-6">
-          <TabsList className="h-auto flex-wrap justify-start">
-            {([
-              ["profile", "Profile"],
-              ["plan", "Plan & balance"],
-              ["channels", "Channels"],
-              ["recordings", "Recordings"],
-              ["orders", "Orders"],
-              ["ledger", "Ledger"],
-              ["sessions", "Devices & sessions"],
-              ["notifications", "Notifications"],
-              ["notes", "Internal notes"],
-              ["audit", "Audit"],
-              ["privacy", "Privacy"],
-              ["view", "View as user"],
-            ] as const).map(([value, label]) => (
-              <TabsTrigger key={value} value={value}>
+        <Tabs defaultValue="profile" className="mt-5">
+          <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b bg-transparent p-0">
+            {userTabs.map(([value, label]) => (
+              <TabsTrigger key={value} value={value} className={tabTriggerClass}>
                 {label}
+                {counts[value] !== undefined ? ` · ${counts[value]}` : ""}
               </TabsTrigger>
             ))}
           </TabsList>
 
-          <TabsContent value="profile" className="space-y-4">
-            <section className="rounded-lg border bg-background p-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">User ID</p>
-                  <p className="mt-1 font-mono text-sm">{user.id}</p>
+          <TabsContent value="profile" className="mt-5">
+            <div className="grid items-start gap-5 xl:grid-cols-2">
+              <AdminCard title="Profile & plan">
+                <KeyValues
+                  rows={[
+                    ["User ID", <span className="font-mono text-xs">{user.id}</span>],
+                    [
+                      "Email verified",
+                      user.email_verified_at ? dateTime(user.email_verified_at) : "No",
+                    ],
+                    ["Plan", <span className="uppercase">{detail.entitlement.plan}</span>],
+                    ["Has purchased", detail.entitlement.has_purchased ? "Yes" : "No"],
+                    ["Latest purchase", user.latest_purchase_provider ?? "—"],
+                    [
+                      "Channel limit",
+                      `${detail.entitlement.watch_count} of ${detail.entitlement.max_watches}`,
+                    ],
+                    [
+                      "Concurrent recordings",
+                      String(detail.entitlement.max_concurrent_cloud_recordings),
+                    ],
+                    ["Retention", `${detail.entitlement.cloud_retention_days} days`],
+                  ]}
+                />
+                <div className="mt-5 border-t pt-4">
+                  <label htmlFor="admin-display-name" className="text-sm font-bold">
+                    Display name
+                  </label>
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      id="admin-display-name"
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                      disabled={!canWrite}
+                    />
+                    {canWrite ? (
+                      <Button
+                        variant="outline"
+                        disabled={displayName === (user.display_name ?? "")}
+                        onClick={() => supportAction("profile")}
+                      >
+                        Save
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs uppercase text-muted-foreground">Email verified</p>
-                  <p className="mt-1 text-sm">{user.email_verified_at ? dateTime(user.email_verified_at) : "No"}</p>
-                </div>
-              </div>
-              <div className="mt-5">
-                <label htmlFor="admin-display-name" className="text-sm font-medium">
-                  Display name
-                </label>
-                <div className="mt-2 flex gap-2">
-                  <Input
-                    id="admin-display-name"
-                    value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    disabled={!canWrite}
-                  />
-                  {canWrite ? (
-                    <Button variant="outline" onClick={() => void runSupportAction("profile")}>
-                      Save
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-              {canWrite ? (
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {!user.email_verified_at ? (
-                    <Button variant="outline" onClick={() => void runSupportAction("resend")}>
-                      Resend verification
-                    </Button>
-                  ) : null}
-                  <Button variant="outline" onClick={() => void runSupportAction("reset")}>
-                    Force password reset
-                  </Button>
-                  <Button variant="outline" onClick={() => void runSupportAction("logout")}>
-                    Force logout
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setDanger(user.is_active ? "lock" : "unlock")}
+              </AdminCard>
+
+              <AdminCard
+                title="Cloud minutes"
+                action={
+                  <a
+                    href="/admin/payments"
+                    className="text-sm font-bold text-accent-ink hover:underline"
                   >
-                    {user.is_active ? "Lock account" : "Unlock account"}
-                  </Button>
+                    Full ledger
+                  </a>
+                }
+              >
+                <div className="flex flex-wrap gap-6">
+                  {[
+                    ["Available", detail.balance.available],
+                    ["On hold", detail.balance.reserved],
+                    ["Posted", detail.balance.posted],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <p className="text-[13px] font-semibold text-muted-foreground">{label}</p>
+                      <p className="font-mono text-[24px] font-bold tracking-[-.02em]">
+                        {value}{" "}
+                        <span className="text-sm font-semibold text-muted-foreground">min</span>
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ) : null}
-            </section>
+                {detail.ledger.length ? (
+                  <div className="mt-4 overflow-hidden rounded-[12px] border">
+                    {detail.ledger.slice(0, 5).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-3 border-b px-3.5 py-2.5 last:border-0"
+                      >
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {ledgerLabel(item.type)}
+                        </span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {dateTime(item.created_at)}
+                        </span>
+                        <b className={`font-mono text-sm ${item.amount > 0 ? "text-success" : ""}`}>
+                          {item.amount > 0 ? "+" : ""}
+                          {item.amount}
+                        </b>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-muted-foreground">No ledger entries yet.</p>
+                )}
+              </AdminCard>
+            </div>
           </TabsContent>
 
-          <TabsContent value="plan">
-            <section className="rounded-lg border bg-background p-5">
-              <dl className="grid gap-4 md:grid-cols-3">
-                <div><dt className="text-xs uppercase text-muted-foreground">Plan</dt><dd className="mt-1 font-medium uppercase">{detail.entitlement.plan}</dd></div>
-                <div><dt className="text-xs uppercase text-muted-foreground">Available</dt><dd className="mt-1 font-medium">{detail.balance.available} minutes</dd></div>
-                <div><dt className="text-xs uppercase text-muted-foreground">Reserved</dt><dd className="mt-1 font-medium">{detail.balance.reserved} minutes</dd></div>
-                <div><dt className="text-xs uppercase text-muted-foreground">Latest purchase</dt><dd className="mt-1 font-medium">{user.latest_purchase_provider ?? "—"}</dd></div>
-                <div><dt className="text-xs uppercase text-muted-foreground">Watch limit</dt><dd className="mt-1 font-medium">{detail.entitlement.max_watches}</dd></div>
-                <div><dt className="text-xs uppercase text-muted-foreground">Retention</dt><dd className="mt-1 font-medium">{detail.entitlement.cloud_retention_days} days</dd></div>
-              </dl>
-            </section>
-          </TabsContent>
-
-          <TabsContent value="channels">
+          <TabsContent value="channels" className="mt-5">
             <AdminDataTable>
-              <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Creator</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Live</th><th className="px-4 py-3">Auto record</th></tr></thead>
-              <tbody>{detail.watches.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3"><CreatorCell username={item.creator?.username ?? item.source.value} avatarUrl={item.creator?.avatar_url} /></td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{item.live_status}</td><td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td></tr>)}</tbody>
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3">Creator</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Live</th>
+                  <th className="px-4 py-3">Auto record</th>
+                  <th className="px-4 py-3">Added</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.watches.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-bold">
+                      <CreatorCell
+                        username={item.creator?.username ?? item.source.value}
+                        avatarUrl={item.creator?.avatar_url}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminBadge tone={item.status === "active" ? "success" : "neutral"} dot>
+                        {item.status}
+                      </AdminBadge>
+                    </td>
+                    <td className="px-4 py-3">{item.live_status}</td>
+                    <td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
+                  </tr>
+                ))}
+                {!detail.watches.length ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      No channels.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
             </AdminDataTable>
           </TabsContent>
 
-          <TabsContent value="recordings">
-            <div className="mb-3 rounded-md border border-warning/30 bg-warning/10 p-3 text-sm">
-              Recording metadata only. Playback and download are intentionally unavailable here; D3 requires a separate reasoned, audited access flow.
+          <TabsContent value="recordings" className="mt-5">
+            <div className="mb-3 rounded-[12px] border border-warning/30 bg-warning-subtle px-4 py-3 text-sm">
+              Recording metadata only. Playback and download are intentionally unavailable here; D3
+              requires a separate reasoned, audited access flow.
             </div>
             <AdminDataTable>
-              <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Recording</th><th className="px-4 py-3">Creator</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Created</th></tr></thead>
-              <tbody>{detail.recordings.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3 font-mono text-xs">{item.id}</td><td className="px-4 py-3"><CreatorCell username={item.creator?.username ?? item.source.value} avatarUrl={item.creator?.avatar_url} /></td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{dateTime(item.created_at)}</td></tr>)}</tbody>
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3">Recording</th>
+                  <th className="px-4 py-3">Creator</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.recordings.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-mono text-xs">
+                      <a
+                        className="text-accent-ink hover:underline"
+                        href={`/admin/jobs/${item.id}`}
+                      >
+                        {item.id}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3">
+                      <CreatorCell
+                        username={item.creator?.username ?? item.source.value}
+                        avatarUrl={item.creator?.avatar_url}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <AdminBadge
+                        tone={
+                          item.status === "completed"
+                            ? "success"
+                            : item.status === "failed"
+                              ? "danger"
+                              : "neutral"
+                        }
+                        dot
+                      >
+                        {item.status}
+                      </AdminBadge>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
+                  </tr>
+                ))}
+                {!detail.recordings.length ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                      No recordings.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
             </AdminDataTable>
           </TabsContent>
 
-          <TabsContent value="orders">
+          <TabsContent value="orders" className="mt-5">
             <AdminDataTable>
-              <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Order</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Provider</th><th className="px-4 py-3">Credits</th><th className="px-4 py-3">Created</th></tr></thead>
-              <tbody>{detail.payments.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3 font-mono text-xs">{item.id}</td><td className="px-4 py-3">{item.status}</td><td className="px-4 py-3">{item.provider ?? "—"}</td><td className="px-4 py-3">{item.credits}</td><td className="px-4 py-3">{dateTime(item.created_at)}</td></tr>)}</tbody>
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3">Order</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Provider</th>
+                  <th className="px-4 py-3 text-right">Credits</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.payments.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-mono text-xs">{item.id}</td>
+                    <td className="px-4 py-3">
+                      <AdminBadge
+                        tone={
+                          item.status === "paid"
+                            ? "success"
+                            : item.status === "refunded"
+                              ? "warning"
+                              : "neutral"
+                        }
+                        dot
+                      >
+                        {item.status}
+                      </AdminBadge>
+                    </td>
+                    <td className="px-4 py-3">{item.provider ?? "—"}</td>
+                    <td className="px-4 py-3 text-right font-mono">{item.credits}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
+                  </tr>
+                ))}
+                {!detail.payments.length ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      No orders.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
             </AdminDataTable>
           </TabsContent>
 
-          <TabsContent value="ledger">
+          <TabsContent value="ledger" className="mt-5">
             <AdminDataTable>
-              <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Type</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Balance after</th><th className="px-4 py-3">Reference</th><th className="px-4 py-3">Created</th></tr></thead>
-              <tbody>{detail.ledger.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3">{item.type}</td><td className="px-4 py-3">{item.amount}</td><td className="px-4 py-3">{item.balance_after}</td><td className="px-4 py-3">{item.reference_type}</td><td className="px-4 py-3">{dateTime(item.created_at)}</td></tr>)}</tbody>
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3">Type</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th className="px-4 py-3 text-right">Balance after</th>
+                  <th className="px-4 py-3">Reference</th>
+                  <th className="px-4 py-3">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.ledger.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3">{ledgerLabel(item.type)}</td>
+                    <td
+                      className={`px-4 py-3 text-right font-mono ${item.amount > 0 ? "text-success" : ""}`}
+                    >
+                      {item.amount > 0 ? "+" : ""}
+                      {item.amount}
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono">{item.balance_after}</td>
+                    <td className="px-4 py-3">{item.reference_type}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
+                  </tr>
+                ))}
+                {!detail.ledger.length ? (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      No ledger entries.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
             </AdminDataTable>
           </TabsContent>
 
-          <TabsContent value="sessions">
+          <TabsContent value="sessions" className="mt-5">
             <AdminDataTable>
-              <thead className="border-b bg-muted/40"><tr><th className="px-4 py-3">Client</th><th className="px-4 py-3">User agent</th><th className="px-4 py-3">IP hint</th><th className="px-4 py-3">Last seen</th><th className="px-4 py-3">State</th></tr></thead>
-              <tbody>{detail.sessions.map((item) => <tr key={item.id} className="border-b last:border-0"><td className="px-4 py-3">{item.client_type}</td><td className="px-4 py-3">{item.user_agent ?? "—"}</td><td className="px-4 py-3">{item.ip_hint ?? "—"}</td><td className="px-4 py-3">{dateTime(item.last_seen_at)}</td><td className="px-4 py-3">{item.revoked_at ? "Revoked" : "Active"}</td></tr>)}</tbody>
+              <thead>
+                <tr className="border-b">
+                  <th className="px-4 py-3">Device</th>
+                  <th className="px-4 py-3">IP hint</th>
+                  <th className="px-4 py-3">Last seen</th>
+                  <th className="px-4 py-3">State</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.sessions.map((item) => (
+                  <tr key={item.id} className="border-b last:border-0">
+                    <td className="px-4 py-3">
+                      <p className="font-bold">{describeUserAgent(item.user_agent)}</p>
+                      <p className="text-xs text-muted-foreground">{item.client_type}</p>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs">{item.ip_hint ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {dateTime(item.last_seen_at)}
+                    </td>
+                    <td className="px-4 py-3">
+                      {item.revoked_at ? (
+                        <AdminBadge>Revoked</AdminBadge>
+                      ) : (
+                        <AdminBadge tone="success" dot>
+                          Active
+                        </AdminBadge>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {!detail.sessions.length ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                      No sessions.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
             </AdminDataTable>
           </TabsContent>
 
-          <TabsContent value="notifications">
-            <div className="space-y-3">{detail.notifications.map((item) => <div key={item.id} className="rounded-lg border bg-background p-4"><div className="flex justify-between gap-4"><p className="font-medium">{item.title}</p><span className="text-xs text-muted-foreground">{dateTime(item.created_at)}</span></div><p className="mt-1 text-sm text-muted-foreground">{item.body}</p></div>)}</div>
+          <TabsContent value="notifications" className="mt-5">
+            <div className="overflow-hidden rounded-[16px] border bg-surface">
+              {detail.notifications.map((item) => (
+                <div key={item.id} className="border-b px-5 py-4 last:border-0">
+                  <div className="flex justify-between gap-4">
+                    <p className="font-bold">{item.title}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {dateTime(item.created_at)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
+                </div>
+              ))}
+              {!detail.notifications.length ? (
+                <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                  No notifications.
+                </p>
+              ) : null}
+            </div>
           </TabsContent>
 
-          <TabsContent value="notes">
+          <TabsContent value="notes" className="mt-5 space-y-4">
             {canWrite ? (
-              <section className="mb-4 rounded-lg border bg-background p-4">
-                <label htmlFor="admin-note" className="text-sm font-medium">New internal note</label>
-                <textarea id="admin-note" className="mt-2 min-h-24 w-full rounded-md border bg-background p-3 text-sm" value={note} onChange={(event) => setNote(event.target.value)} />
-                <Button className="mt-3" onClick={() => void addNote()}>Add note</Button>
-              </section>
+              <AdminCard title="New internal note">
+                <label htmlFor="admin-note" className="sr-only">
+                  New internal note
+                </label>
+                <textarea
+                  id="admin-note"
+                  className="min-h-24 w-full rounded-[12px] border bg-surface p-3 text-sm"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                />
+                <Button className="mt-3" onClick={addNote}>
+                  Add note
+                </Button>
+              </AdminCard>
             ) : null}
-            <div className="space-y-3">{detail.notes.map((item) => <div key={item.id} className="rounded-lg border bg-background p-4"><p className="text-sm">{item.body}</p><p className="mt-2 text-xs text-muted-foreground">Updated {dateTime(item.updated_at)} · author {item.author_user_id ?? "deleted admin"}</p></div>)}</div>
+            <div className="space-y-3">
+              {detail.notes.map((item) => (
+                <div key={item.id} className="rounded-[16px] border bg-surface p-4">
+                  <p className="text-sm">{item.body}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Updated {dateTime(item.updated_at)} · author{" "}
+                    {item.author_user_id ?? "deleted admin"}
+                  </p>
+                </div>
+              ))}
+            </div>
           </TabsContent>
 
-          <TabsContent value="audit">
-            <div className="space-y-3">{detail.audit.map((item) => <div key={item.id} className="rounded-lg border bg-background p-4"><div className="flex justify-between gap-4"><p className="font-mono text-sm">{item.action}</p><span className="text-xs text-muted-foreground">{dateTime(item.created_at)}</span></div><p className="mt-1 text-xs text-muted-foreground">Actor role: {item.actor_role ?? "—"} · Reason: {item.reason ?? "—"}</p></div>)}</div>
+          <TabsContent value="audit" className="mt-5">
+            <div className="overflow-hidden rounded-[16px] border bg-surface">
+              {detail.audit.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-center gap-3 border-b px-4 py-3 last:border-0"
+                >
+                  <AdminBadge tone="accent">
+                    <span className="font-mono">{item.action}</span>
+                  </AdminBadge>
+                  <span className="min-w-0 flex-1 text-sm">
+                    {item.actor_role ?? "system"} · {item.reason ?? "—"}
+                  </span>
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {dateTime(item.created_at)}
+                  </span>
+                </div>
+              ))}
+              {!detail.audit.length ? (
+                <p className="px-5 py-8 text-center text-sm text-muted-foreground">
+                  No audit entries.
+                </p>
+              ) : null}
+            </div>
           </TabsContent>
 
-          <TabsContent value="privacy" className="space-y-4">
-            <section className="rounded-lg border bg-background p-5">
-              <h2 className="font-medium">Privacy data</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Export uses the existing privacy service and is permanently audited.</p>
-              <Button className="mt-3" variant="outline" onClick={() => void exportPrivacy()}>
+          <TabsContent value="privacy" className="mt-5 space-y-4">
+            <AdminCard
+              title="Privacy data"
+              description="Export uses the existing privacy service and is permanently audited."
+            >
+              <Button variant="outline" onClick={exportPrivacy}>
                 <Download className="size-4" />
                 Export user data
               </Button>
-            </section>
+            </AdminCard>
             {user.deletion_requested_at ? (
-              <section className="rounded-lg border bg-background p-5">
-                <h2 className="font-medium">Pending account deletion</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Requested {dateTime(user.deletion_requested_at)}.</p>
+              <AdminCard
+                title="Pending account deletion"
+                description={`Requested ${dateTime(user.deletion_requested_at)}.`}
+              >
                 {canWrite ? (
-                  <div className="mt-3 flex gap-2">
-                    <Button variant="outline" onClick={() => setDanger("cancel-deletion")}>Cancel deletion</Button>
-                    <Button onClick={() => setDanger("perform-deletion")}>Perform deletion</Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setDanger("cancel-deletion")}>
+                      Cancel deletion
+                    </Button>
+                    <Button variant="destructive" onClick={() => setDanger("perform-deletion")}>
+                      Perform deletion
+                    </Button>
                   </div>
-                ) : null}
-              </section>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Only Support and Owner admins can act on deletion requests.
+                  </p>
+                )}
+              </AdminCard>
             ) : (
               <p className="text-sm text-muted-foreground">No pending deletion request.</p>
             )}
           </TabsContent>
 
-          <TabsContent value="view">
-            <section className="rounded-lg border bg-background p-5">
+          <TabsContent value="view" className="mt-5">
+            <AdminCard>
               <div className="flex items-start gap-3">
-                <Eye className="mt-0.5 size-5" />
+                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-primary-subtle text-accent-ink">
+                  <Eye className="size-5" />
+                </span>
                 <div>
-                  <h2 className="font-medium">Read-only user perspective</h2>
+                  <h2 className="font-bold">Read-only user perspective</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    This never creates a user token and never allows actions. Opening it is audited with your reason.
+                    This never creates a user token and never allows actions. Opening it is audited
+                    with your reason.
                   </p>
                 </div>
               </div>
-              <Button className="mt-4" variant="outline" onClick={() => void loadReadOnlyView()}>
+              <Button className="mt-4" variant="outline" onClick={loadReadOnlyView}>
                 View as user
               </Button>
-            </section>
+            </AdminCard>
             {view ? (
               <div className="mt-4">
-                <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm font-medium">
+                <div className="rounded-[12px] border border-warning/30 bg-warning-subtle px-4 py-3 text-sm font-bold">
                   Viewing as {view.user.email} (read-only)
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                <div className="mt-4 grid gap-4 sm:grid-cols-3">
                   <AdminMetricCard label="Plan" value={view.entitlement.plan.toUpperCase()} />
                   <AdminMetricCard label="Cloud minutes" value={view.balance.available} />
                   <AdminMetricCard label="Channels" value={view.watches.length} />
                 </div>
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Recording metadata is visible. Playback and download are not exposed by this D1 view.
+                  Recording metadata is visible. Playback and download are not exposed by this D1
+                  view.
                 </p>
               </div>
             ) : null}
@@ -868,6 +1501,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
 
         {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
 
+        <ReasonDialog request={reasonRequest} onClose={() => setReasonRequest(null)} />
         <StepUpDialog
           action={danger}
           user={user}

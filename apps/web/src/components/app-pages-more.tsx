@@ -119,6 +119,7 @@ import { notificationStore, useNotificationFeed } from "@/lib/notification-store
 import type { NotificationModel } from "@/repositories";
 import { pluralize } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
+import { describeUserAgent } from "@/lib/user-agent";
 import { usePreferences } from "@/lib/preferences";
 import { authApi, authErrorMessage } from "@/api/auth";
 import type {
@@ -1216,30 +1217,6 @@ function DemoNotificationSettings() {
       </div>
     </Section>
   );
-}
-function describeUserAgent(agent: string | null) {
-  if (!agent) return "Unknown browser or device";
-  const browser = /Edg\//.test(agent)
-    ? "Edge"
-    : /Chrome\//.test(agent)
-      ? "Chrome"
-      : /Firefox\//.test(agent)
-        ? "Firefox"
-        : /Safari\//.test(agent)
-          ? "Safari"
-          : null;
-  const os = /iPhone|iPad/.test(agent)
-    ? "iOS"
-    : /Android/.test(agent)
-      ? "Android"
-      : /Mac OS X/.test(agent)
-        ? "macOS"
-        : /Windows/.test(agent)
-          ? "Windows"
-          : /Linux/.test(agent)
-            ? "Linux"
-            : null;
-  return browser || os ? [browser, os].filter(Boolean).join(" on ") : agent.slice(0, 60);
 }
 function SecuritySettings() {
   return isDemoMode ? <DemoSecuritySettings /> : <ProductionSecuritySettings />;

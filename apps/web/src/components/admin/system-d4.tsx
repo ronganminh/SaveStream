@@ -284,7 +284,7 @@ export function AdminSystemD4Page() {
         />
       </div>
 
-      <section className="mt-6 rounded-lg border bg-background">
+      <section className="mt-6 rounded-[16px] border bg-surface">
         <div className="border-b p-5">
           <h2 className="font-medium">Service health</h2>
           <p className="mt-1 text-sm text-muted-foreground">
