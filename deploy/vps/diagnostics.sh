@@ -55,6 +55,35 @@ sql "select created_at, status,
        and status in ('failed', 'stopped')
      order by created_at desc limit 25;"
 
+section "Active recordings (heartbeat age = seconds since the worker last checked in)"
+sql "select id, status, coalesce(resolved_username, source_value) as creator,
+            started_at, updated_at,
+            extract(epoch from now() - heartbeat_at)::int as heartbeat_age_s,
+            duration_seconds, bytes_recorded / 1048576 as mib, worker_attempts
+     from recordings
+     where deleted_at is null
+       and status in ('queued', 'resolving', 'waiting_live', 'recording',
+                      'processing', 'uploading', 'stop_requested')
+     order by created_at;"
+
+for service in recorder recorder-blue recorder-green; do
+  id="$(compose ps -q "$service" 2>/dev/null || true)"
+  [[ -n "$id" ]] || continue
+  section "${service}: local recording files and upload connections"
+  docker exec "$id" sh -c '
+    dir="${SAVESTREAM_RECORDING_TEMP_DIR:-/tmp/savestream-recordings}"
+    find "$dir" -type f -printf "%TY-%Tm-%Td %TH:%TM  %10s bytes  %p\n" 2>/dev/null | sort || true
+    echo "-- established TCP connections to port 443 (remote, send-queue bytes):"
+    awk "NR>1 && \$4==\"01\" && substr(\$3, index(\$3, \":\")+1)==\"01BB\" {print \$3, \$5}" \
+      /proc/net/tcp /proc/net/tcp6 2>/dev/null || true
+  ' || true
+  section "${service}: upload log lines (last 24h, newest 40)"
+  compose logs --no-color --since 24h "$service" 2>&1 \
+    | grep -Ei 'upload|retry|timeout|reset|broken pipe|stalled' \
+    | grep -Eiv 'password|secret|token|authorization' \
+    | tail -n 40 || true
+done
+
 section "Watch checks: failures by error (last 24h)"
 sql "select left(coalesce(error, '-'), 160) as error, count(*) as checks
      from admin_watch_check_metrics
