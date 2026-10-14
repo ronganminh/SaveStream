@@ -8,7 +8,7 @@ export const Route = createFileRoute("/help/$article")({
     const article = helpArticle(params.article);
     return publicMeta(
       `/help/${params.article}`,
-      article ? `${article.title} | SaveStream Help` : "Help article",
+      article ? article.title : "Help article",
       article?.summary || "SaveStream help article.",
       "help",
     );

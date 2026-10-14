@@ -5,6 +5,8 @@ from html import escape
 
 BRAND = "#4F46E5"
 SUPPORT_EMAIL = "support@savestream.online"
+# Same value as apps/web/src/lib/support.ts.
+SUPPORT_RESPONSE_TIME = "2 business days"
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +43,7 @@ def action_email(
     expires = f"This link expires in {_duration(expires_in_seconds)}."
     text = (
         f"{heading}\n\n{intro}\n\n{button_label}:\n{link}\n\n{expires}\n{ignore_note}\n\n"
-        f"Questions? Contact {SUPPORT_EMAIL}.\n— SaveStream\n"
+        f"Questions? Contact {SUPPORT_EMAIL}; we usually reply within {SUPPORT_RESPONSE_TIME}.\n— SaveStream\n"
     )
     href = escape(link, quote=True)
     site = escape(site_url, quote=True)
@@ -76,7 +78,7 @@ def action_email(
 </td></tr>
 <tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.6;color:#8a8f9c;">
 SaveStream · Cloud recording for TikTok channels you own, manage, or have permission to record.<br>
-<a href="{site}" style="color:#8a8f9c;">{escape(site_url.removeprefix("https://"))}</a> · <a href="mailto:{SUPPORT_EMAIL}" style="color:#8a8f9c;">{SUPPORT_EMAIL}</a>
+<a href="{site}" style="color:#8a8f9c;">{escape(site_url.removeprefix("https://"))}</a> · <a href="mailto:{SUPPORT_EMAIL}" style="color:#8a8f9c;">{SUPPORT_EMAIL}</a> · We usually reply within {SUPPORT_RESPONSE_TIME}.
 </td></tr>
 </table>
 </td></tr>

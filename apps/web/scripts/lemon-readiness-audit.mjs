@@ -194,7 +194,7 @@ if (
 ) {
   fail("public/favicon.ico: not a valid ICO file");
 }
-must("src/routes/__root.tsx", '"Page not found — SaveStream"');
+must("src/routes/__root.tsx", 'pageTitle("Page not found")');
 
 // English is the only UI language.
 forbid("src/lib/preferences.tsx", "navigator.language");

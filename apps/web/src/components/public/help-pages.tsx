@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { SUPPORT_RESPONSE_TIME } from "@/lib/support";
 import { useMemo, useState, type MouseEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -206,7 +207,7 @@ function StillStuck() {
         <b className="text-lg">Still stuck?</b>
         <span className="text-muted-foreground">
           Email us and include your channel name and the time of the LIVE. We usually reply within
-          [RESPONSE TIME].
+          {SUPPORT_RESPONSE_TIME}.
         </span>
       </div>
       <Button variant="outline" asChild>
