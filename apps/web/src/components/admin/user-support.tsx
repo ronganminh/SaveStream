@@ -15,6 +15,8 @@ import {
   AdminGlobalSearch,
   AdminMfaGate,
   AdminMetricCard,
+  AdminTabsList,
+  AdminTabsTrigger,
   AdminUserStatusBadge,
 } from "@/components/admin/foundation";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
   type AdminPrivacyRequest,
@@ -753,9 +755,6 @@ const userTabs = [
   ["view", "View as user"],
 ] as const;
 
-const tabTriggerClass =
-  "-mb-px h-11 flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 font-bold text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
-
 function KeyValues({ rows }: { rows: ReadonlyArray<readonly [string, ReactNode]> }) {
   return (
     <dl className="grid grid-cols-[150px_1fr] gap-x-4 gap-y-2.5 text-sm">
@@ -1015,14 +1014,13 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
         </div>
 
         <Tabs defaultValue="profile" className="mt-5">
-          <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b bg-transparent p-0">
+          <AdminTabsList label="User sections">
             {userTabs.map(([value, label]) => (
-              <TabsTrigger key={value} value={value} className={tabTriggerClass}>
+              <AdminTabsTrigger key={value} value={value} count={counts[value]}>
                 {label}
-                {counts[value] !== undefined ? ` · ${counts[value]}` : ""}
-              </TabsTrigger>
+              </AdminTabsTrigger>
             ))}
-          </TabsList>
+          </AdminTabsList>
 
           <TabsContent value="profile" className="mt-5">
             <div className="grid items-start gap-5 xl:grid-cols-2">

@@ -21,6 +21,8 @@ import {
   AdminCard,
   AdminDataTable,
   AdminMetricCard,
+  AdminTabsList,
+  AdminTabsTrigger,
   type AdminBadgeTone,
 } from "@/components/admin/foundation";
 import {
@@ -39,7 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
   adminRecordingOpsApi,
@@ -57,9 +59,6 @@ function dateTime(value: string | null | undefined) {
 function channelLabel(recording: RecordingResponse) {
   return recording.creator?.username ?? recording.source.value;
 }
-
-const tabTriggerClass =
-  "-mb-px h-11 flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 font-bold text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
 
 const statusChips = [
   ["", "All"],
@@ -506,21 +505,17 @@ export function AdminRecordingOperationsPage() {
       )}
 
       <Tabs defaultValue="recordings" className="space-y-5">
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 rounded-none border-b bg-transparent p-0">
-          {(
-            [
-              ["recordings", "Recording jobs"],
-              ["queue", `Queue · ${queue?.items.length ?? 0}`],
-              ["channels", `Channels · ${channels.length}`],
-              ["detector", "LIVE detector"],
-              ["capacity", "Capacity"],
-            ] as const
-          ).map(([value, label]) => (
-            <TabsTrigger key={value} value={value} className={tabTriggerClass}>
-              {label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <AdminTabsList label="Recording operations sections">
+          <AdminTabsTrigger value="recordings">Recording jobs</AdminTabsTrigger>
+          <AdminTabsTrigger value="queue" count={queue?.items.length ?? 0}>
+            Queue
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="channels" count={channels.length}>
+            Channels
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="detector">LIVE detector</AdminTabsTrigger>
+          <AdminTabsTrigger value="capacity">Capacity</AdminTabsTrigger>
+        </AdminTabsList>
 
         <TabsContent value="recordings" className="space-y-4">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Job status">
