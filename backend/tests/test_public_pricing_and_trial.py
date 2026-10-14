@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.application.billing.service import BillingAdminService
 from app.application.credits.service import CreditService
+from app.infrastructure.db.admin_models import AdminRuntimeSetting
 from app.infrastructure.db.credit_models import CreditAccount, CreditLedgerEntry
 from app.infrastructure.db.models import User
 from app.infrastructure.db.session import Database
@@ -50,9 +51,13 @@ def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
     settings = replace(
         identity_settings(database_url),
         signup_credits=10,
-        quota_max_watches_per_user=20,
+        # Static quotas no longer drive the public limits; the Admin runtime
+        # settings that entitlements enforce do.
+        quota_max_watches_per_user=50,
         quota_max_active_recordings_per_user=2,
-        watch_max_concurrent_recordings_per_user=3,
+        watch_max_concurrent_recordings_per_user=2,
+        recording_retention_days=30,
+        recording_retention_days_free=7,
     )
     create_schema(database_url)
     _seed_catalog(settings)
@@ -67,7 +72,10 @@ def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
     body = response.json()
     assert body["signup_credits"] == 10
     assert body["max_channels_per_user"] == 20
-    assert body["max_concurrent_recordings_per_user"] == 2
+    assert body["free_max_channels_per_user"] == 3
+    assert body["max_concurrent_recordings_per_user"] == 3
+    assert body["recording_retention_days"] == 30
+    assert body["trial_recording_retention_days"] == 7
     assert body["recording_rate"] == {
         "unit_seconds": 60,
         "credits_per_unit": 1,
@@ -85,6 +93,46 @@ def test_public_pricing_is_readable_without_auth(tmp_path) -> None:
     assert body["checkout"] == {"web": True, "app_store": False, "google_play": False}
 
 
+def test_public_pricing_follows_admin_runtime_settings(tmp_path) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-runtime.db'}"
+    settings = replace(identity_settings(database_url), signup_credits=10)
+    create_schema(database_url)
+    overrides = {
+        "signup_credits": 25,
+        "pro_max_watches": 40,
+        "free_max_watches": 5,
+        "pro_max_concurrent_cloud_recordings": 4,
+        "recording_retention_days": 60,
+        "recording_retention_days_free": 14,
+    }
+
+    async def seed() -> None:
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                session.add_all(
+                    AdminRuntimeSetting(key=key, value=value)
+                    for key, value in overrides.items()
+                )
+                await session.commit()
+        finally:
+            await database.close()
+
+    asyncio.run(seed())
+    app = create_app(settings)
+
+    with TestClient(app, base_url="https://testserver") as client:
+        app.state.rate_limiter = InMemoryRateLimiter()
+        body = client.get("/v1/public/pricing").json()
+
+    assert body["signup_credits"] == 25
+    assert body["max_channels_per_user"] == 40
+    assert body["free_max_channels_per_user"] == 5
+    assert body["max_concurrent_recordings_per_user"] == 4
+    assert body["recording_retention_days"] == 60
+    assert body["trial_recording_retention_days"] == 14
+
+
 def test_public_pricing_without_configuration_is_empty_not_an_error(tmp_path) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-empty.db'}"
     settings = identity_settings(database_url)
@@ -100,7 +148,6 @@ def test_public_pricing_without_configuration_is_empty_not_an_error(tmp_path) ->
     assert body["packages"] == []
     assert body["recording_rate"] is None
     assert body["signup_credits"] == 0
-    assert body["max_channels_per_user"] is None
 
 
 def _ledger_for(settings, email: str) -> tuple[int, list[tuple[str, str, int]]]:

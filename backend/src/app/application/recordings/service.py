@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.application.credits.service import CreditService
 from app.application.creator_safety import ensure_creator_not_blocked, recording_creator_block
-from app.application.recordings.retention import has_paid_purchase, retention_days
+from app.application.recordings.retention import effective_retention_days, has_paid_purchase
 from app.application.notifications.service import ensure_recording_notification
 from app.application.quotas.service import QuotaService
 from app.domain.common.errors import ApplicationError
@@ -136,7 +136,7 @@ class RecordingService:
 
     async def retention_days_for(self, user_id: uuid.UUID) -> int:
         paid = await has_paid_purchase(self.session, user_id)
-        return retention_days(self.settings, paid=paid)
+        return await effective_retention_days(self.session, self.settings, paid=paid)
 
     async def artifact_recording_ids(
         self,

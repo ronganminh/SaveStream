@@ -82,7 +82,8 @@ forbidIn("OnboardingPage", onboarding, "setTimeout(");
 
 mustIn("ChannelsPage", channelsPage, "limits.max_watches");
 mustIn("ChannelsPage", channelsPage, "watch_count");
-mustIn("ChannelsPage", channelsPage, "10 trial credits");
+// Trial credits and channel limits come from the Admin runtime settings.
+mustIn("ChannelsPage", channelsPage, "freeWebSentence(");
 
 mustIn("ChannelDetailPage", detailPage, "useChannelData(id)");
 mustIn("ChannelDetailPage", detailPage, "useRecordingsData()");
