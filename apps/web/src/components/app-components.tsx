@@ -289,16 +289,17 @@ export function PlatformBadge({ soon = false }: { soon?: boolean }) {
     </span>
   );
 }
+// Badge palette from the redesign handoff (.b-* classes).
 const statusStyles: Record<Status, string> = {
-  Recording: "border-recording/20 bg-recording-subtle text-recording",
-  Live: "border-recording/20 bg-surface text-recording",
-  Processing: "border-info/20 bg-info-subtle text-info",
-  Ready: "border-success/20 bg-success-subtle text-success",
-  Waiting: "border-warning/20 bg-warning-subtle text-warning-foreground",
-  Missed: "border-border bg-muted text-muted-foreground",
-  Offline: "border-border bg-muted text-muted-foreground",
-  Paused: "border-border bg-muted text-muted-foreground",
-  Error: "border-recording/20 bg-recording-subtle text-recording",
+  Recording: "bg-recording-subtle text-live-ink",
+  Live: "bg-surface text-live-ink shadow-[inset_0_0_0_1.5px_var(--recording)]",
+  Processing: "bg-primary-subtle text-accent-ink",
+  Ready: "bg-success-subtle text-success",
+  Waiting: "bg-info-subtle text-info",
+  Missed: "bg-neutral-soft text-muted-foreground",
+  Offline: "bg-neutral-soft text-muted-foreground",
+  Paused: "bg-warning-subtle text-warning-foreground",
+  Error: "bg-recording-subtle text-destructive",
 };
 export function StatusBadge({ status, pulse = false }: { status: Status; pulse?: boolean }) {
   const { t } = usePreferences();
@@ -322,7 +323,7 @@ export function StatusBadge({ status, pulse = false }: { status: Status; pulse?:
   return (
     <span
       className={cn(
-        "inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-xs font-medium",
+        "inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-[9px] text-xs font-bold leading-none",
         statusStyles[status],
       )}
     >
@@ -379,7 +380,7 @@ export function StatCard({
         <span>{t(label)}</span>
         <Icon className="size-4" />
       </div>
-      <div className="mt-3 font-mono text-2xl font-semibold tracking-normal text-foreground">
+      <div className="mt-3 font-mono text-[28px] font-semibold tracking-[-.02em] text-foreground">
         {value}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">{t(detail)}</div>
@@ -409,8 +410,8 @@ export function PageHeader({
       <div className="flex items-start gap-3">
         {leading}
         <div>
-          <h1 className="text-2xl font-semibold tracking-normal">{t(title)}</h1>
-          {subtitle && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t(subtitle)}</p>}
+          <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-.025em]">{t(title)}</h1>
+          {subtitle && <p className="mt-1 max-w-2xl text-[15px] text-muted-foreground">{t(subtitle)}</p>}
         </div>
       </div>
       {action}
@@ -480,14 +481,14 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       to={it.to}
       onClick={onClose}
       className={cn(
-        "flex h-9 items-center gap-3 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex min-h-10 items-center gap-3 rounded-[10px] px-3 text-sm font-semibold text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25",
         (path === it.to ||
           path.startsWith(it.to + "/") ||
           (it.to === "/usage" && path.startsWith("/billing"))) &&
-          "bg-accent text-foreground",
+          "bg-primary-subtle text-accent-ink hover:bg-primary-subtle hover:text-accent-ink",
       )}
     >
-      <it.icon className="size-4" />
+      <it.icon className="size-5" />
       <span>{it.to.startsWith("/admin/") ? it.label : t(it.label)}</span>
     </Link>
   );
@@ -505,11 +506,11 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
       <aside
         aria-label={t("Main navigation")}
         className={cn(
-          "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-64 flex-col border-r bg-sidebar transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-[var(--z-drawer)] flex w-64 flex-col border-r bg-surface transition-transform lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-16 items-center justify-between px-5">
+        <div className="flex h-[68px] items-center justify-between px-5">
           <Logo homeTo="/overview" />
           <Button
             variant="ghost"
@@ -521,10 +522,10 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
             <X />
           </Button>
         </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-3">
-          <div className="space-y-1">{mainNav.map(item)}</div>
-          <div>
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
+        <nav className="flex-1 space-y-6 overflow-y-auto px-3.5 py-3">
+          <div className="space-y-0.5">{mainNav.map(item)}</div>
+          <div className="space-y-0.5">
+            <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground">
               {t("Workspace")}
             </p>
             {item({ to: "/notifications", label: "Notifications", icon: Bell })}
@@ -533,8 +534,8 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           </div>
           {canSeeAdmin && (
             <div className="border-t pt-5">
-              <p className="mb-2 flex items-center gap-2 px-3 text-[10px] font-semibold uppercase text-muted-foreground">
-                <ShieldCheck className="size-3" />
+              <p className="mb-1.5 flex items-center gap-2 px-3 text-[11px] font-bold uppercase tracking-[.08em] text-muted-foreground">
+                <ShieldCheck className="size-3.5" />
                 Admin
               </p>
               {visibleAdminNav.map(item)}
@@ -548,9 +549,9 @@ export function AppSidebar({ open, onClose }: { open: boolean; onClose: () => vo
           <Link
             to="/settings/account"
             onClick={onClose}
-            className="flex items-center gap-3 rounded-md p-2 hover:bg-accent"
+            className="flex items-center gap-3 rounded-[12px] p-2 hover:bg-surface-2"
           >
-            <span className="grid size-8 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+            <span className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-avatar-one to-avatar-one-end text-[13px] font-extrabold text-avatar-foreground">
               {account.initials}
             </span>
             <div className="min-w-0 flex-1">
@@ -583,7 +584,7 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
   const list = useNotifications();
   const unread = list.filter((n) => !n.read).length;
   return (
-    <div className="sticky top-0 z-[var(--z-sticky)] flex h-16 items-center gap-2 border-b bg-background/95 px-3 backdrop-blur sm:px-4 lg:px-6">
+    <div className="sticky top-0 z-[var(--z-sticky)] flex h-[68px] items-center gap-2 border-b bg-surface/90 px-3 backdrop-blur-md sm:px-4 lg:px-7">
       <Button
         variant="ghost"
         size="icon"
@@ -596,11 +597,11 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
       <button
         type="button"
         onClick={() => setCmd(true)}
-        className="relative hidden h-9 max-w-md flex-1 items-center rounded-md border bg-surface-subtle pl-9 pr-14 text-left text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex"
+        className="relative hidden h-[42px] max-w-[420px] flex-1 items-center rounded-[12px] border bg-surface-2 pl-10 pr-14 text-left text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/25 md:flex"
       >
-        <Search className="absolute left-3 top-2.5 size-4" />
+        <Search className="absolute left-3 top-[13px] size-4" />
         {t("Search channels or recordings")}
-        <kbd className="absolute right-2 top-2 rounded border bg-background px-1.5 py-0.5 text-[10px]">
+        <kbd className="absolute right-2.5 top-2.5 rounded-md border border-line-strong bg-surface px-1.5 py-0.5 font-mono text-[11px] font-semibold">
           ⌘ K
         </kbd>
       </button>
@@ -2169,7 +2170,7 @@ export function StateBanner({
   return (
     <div
       role={tone === "error" || tone === "warning" ? "alert" : "status"}
-      className={cn("flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-start", styles)}
+      className={cn("flex flex-col gap-3.5 rounded-[14px] border px-[18px] py-3.5 sm:flex-row sm:items-start", styles)}
     >
       <I className="size-4 shrink-0 sm:mt-0.5" />
       <div className="flex-1">
