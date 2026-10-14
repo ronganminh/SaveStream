@@ -131,28 +131,27 @@ for (const text of ["publicServices", "Demo data", "Illustrative service state"]
   forbidIn("ProductionStatusPage", status, text);
 }
 
-const productionHelp = block(
-  "src/components/app-pages-more.tsx",
-  "const productionHelpTopics",
-  "export function HelpPage()",
-);
-for (const text of [
-  'title: "Credits"',
-  "bought once and never expiring",
-]) {
-  mustIn("productionHelpTopics", productionHelp, text);
+// Help center: Markdown articles in src/content/help (see src/lib/help-content.ts).
+const helpDir = path.join(process.cwd(), "src/content/help");
+const productionHelp = fs
+  .readdirSync(helpDir)
+  .filter((name) => name.endsWith(".md"))
+  .map((name) => fs.readFileSync(path.join(helpDir, name), "utf8"))
+  .join("\n");
+for (const text of ["never expire", "{{paid_retention}}", "{{signup_credits}}"]) {
+  mustIn("help articles", productionHelp, text);
 }
-forbidIn("productionHelpTopics", productionHelp, "stored for 30 days");
-// Retention comes from the Admin runtime settings, never a fixed number.
-must("src/components/app-pages-more.tsx", "retentionSentence(publicPricingQuery.data)");
+// Numbers that change in Admin come from {{tokens}}, never fixed copy.
 for (const text of [
+  "stored for 30 days",
+  "10 free",
   "future API",
-  "current frontend values come from one plan catalog",
   "This frontend demo does not connect to a real recorder",
   "Free/Pro",
   "backend-authoritative",
+  "Retry button",
 ]) {
-  forbidIn("productionHelpTopics", productionHelp, text);
+  forbidIn("help articles", productionHelp, text);
 }
 
 must("src/components/app-pages.tsx", "Pay as you go with credits.");

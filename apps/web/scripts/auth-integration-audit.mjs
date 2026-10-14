@@ -54,12 +54,9 @@ must("src/components/app-components.tsx", "signOut");
 must("src/components/app-components.tsx", '<Logo homeTo="/overview" />');
 must("src/components/app-pages.tsx", "restoringExistingSession");
 must("src/components/app-pages.tsx", 'status === "authenticated"');
-must("src/components/app-pages.tsx", '["/billing", "Buy credits"]');
+// Signed-in visitors on public pages get "Buy credits" in the header.
+must("src/components/app-pages.tsx", '<Link to="/billing">');
 must("src/components/app-pages-more.tsx", "<ProductionContactContent embedded />");
-must(
-  "src/components/app-pages-more.tsx",
-  '<Link to="/billing" className="text-primary underline underline-offset-4">',
-);
 forbid("src/components/app-pages.tsx", "Lemon Squeezy");
 forbid("src/components/app-pages-more.tsx", "Lemon Squeezy");
 forbid("src/lib/app-config.ts", "getFrontendIdentity()");

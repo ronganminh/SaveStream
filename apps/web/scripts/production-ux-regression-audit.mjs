@@ -50,7 +50,7 @@ must("src/routes/status.tsx", "publicMeta(");
 forbid("src/routes/status.tsx", "redirect(");
 must("src/lib/app-config.ts", '"/status"');
 must("public/sitemap.xml", "https://savestream.online/status");
-must(pages, '["/status", "Status"]');
+must(pages, '["/status", "System status"]');
 
 // UX-06: operational alert grammar handles a single order correctly.
 must(

@@ -212,24 +212,31 @@ const publicLinks = [
   { href: "/#how", label: "How it works" },
   { href: "/#examples", label: "Examples" },
   { to: "/pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
+  { to: "/help", label: "Help" },
 ] as const;
+const navLinkClass =
+  "rounded-[10px] px-2.5 py-2 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground";
 export function PublicHeader() {
   const { t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
   return (
-    <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:px-6">
+    <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/85 backdrop-blur-md backdrop-saturate-150">
+      <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-2 px-4 sm:px-6">
         <Logo />
-        <nav className="ml-8 hidden items-center gap-5 text-sm text-muted-foreground lg:flex">
+        <nav aria-label={t("Main")} className="ml-6 hidden items-center gap-0.5 lg:flex">
           {publicLinks.map((link) =>
             "to" in link ? (
-              <Link key={link.label} to={link.to}>
+              <Link
+                key={link.label}
+                to={link.to}
+                className={navLinkClass}
+                activeProps={{ className: "font-semibold text-foreground", "aria-current": "page" }}
+              >
                 {t(link.label)}
               </Link>
             ) : (
-              <a key={link.label} href={link.href}>
+              <a key={link.label} href={link.href} className={navLinkClass}>
                 {t(link.label)}
               </a>
             ),
@@ -254,7 +261,7 @@ export function PublicHeader() {
               <Button variant="ghost" asChild className="hidden md:inline-flex">
                 <Link to="/sign-in">{t("Sign in")}</Link>
               </Button>
-              <Button asChild className="hidden md:inline-flex">
+              <Button asChild className="hidden sm:inline-flex">
                 <Link to="/sign-up">{t("Sign up")}</Link>
               </Button>
             </>
@@ -4273,28 +4280,14 @@ function DemoPricingPage() {
 
 export function PublicFooter() {
   const { t } = usePreferences();
-  const { status } = useAuth();
-  const accountLinks: [string, string][] =
-    status === "authenticated"
-      ? [
-          ["/overview", "Overview"],
-          ["/billing", "Buy credits"],
-          ["/settings/account", "Account settings"],
-        ]
-      : status === "guest"
-        ? [
-            ["/sign-in", "Sign in"],
-            ["/sign-up", "Create account"],
-          ]
-        : [];
   const cols: [string, [string, string][]][] = [
     [
       "Product",
       [
+        ["/#features", "Features"],
+        ["/#how", "How it works"],
+        ["/#examples", "Examples"],
         ["/pricing", "Pricing"],
-        ["/status", "Status"],
-        ["/help", "Help"],
-        ["/contact", "Contact"],
       ],
     ],
     [
@@ -4304,43 +4297,58 @@ export function PublicFooter() {
         ["/privacy", "Privacy Policy"],
         ["/acceptable-use", "Acceptable Use Policy"],
         ["/copyright", "Copyright & Takedown"],
-        ["/refund", "Refund policy"],
+        ["/refund", "Refund Policy"],
       ],
     ],
-    ["Account", accountLinks],
+    [
+      "Help",
+      [
+        ["/help", "Help center"],
+        ["/#faq", "FAQ"],
+        ["/contact", "Contact support"],
+        ["/status", "System status"],
+      ],
+    ],
   ];
   return (
-    <footer className="border-t py-12">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+    <footer className="mt-24 border-t">
+      <div className="mx-auto grid max-w-[1240px] gap-10 px-6 py-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
         <div>
           <Logo />
-          <p className="mt-4 max-w-xs text-xs leading-5 text-muted-foreground">
-            Cloud recording, processing, and private storage infrastructure for content you own or
-            are authorized to record.
+          <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
+            {t("Automatic cloud recording for TikTok LIVE.")}
           </p>
         </div>
         {cols.map(([h, links]) => (
-          <div key={h}>
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{t(h)}</p>
-            <ul className="mt-3 space-y-2 text-sm">
+          <nav key={h} aria-label={t(h)}>
+            <p className="text-xs font-bold uppercase tracking-[.08em] text-muted-foreground">
+              {t(h)}
+            </p>
+            <ul className="mt-3 space-y-2 text-[15px]">
               {links.map(([to, l]) => (
                 <li key={to}>
-                  <Link
-                    to={to as "/pricing"}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {t(l)}
-                  </Link>
+                  {to.startsWith("/#") ? (
+                    <a href={to} className="text-muted-foreground hover:text-foreground">
+                      {t(l)}
+                    </a>
+                  ) : (
+                    <Link
+                      to={to as "/pricing"}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      {t(l)}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
-          </div>
+          </nav>
         ))}
       </div>
-      <p className="mx-auto mt-10 max-w-7xl px-4 text-xs text-muted-foreground sm:px-6">
-        © 2026 SaveStream. We provide recording and storage infrastructure — not a public content
-        catalog.
-      </p>
+      <div className="mx-auto flex max-w-[1240px] flex-wrap justify-between gap-3 border-t px-6 py-6 text-sm text-muted-foreground">
+        <span>© 2026 SaveStream · savestream.online</span>
+        <span>{t("SaveStream is not affiliated with TikTok.")}</span>
+      </div>
     </footer>
   );
 }
