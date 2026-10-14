@@ -4453,13 +4453,67 @@ function CreditReservationRow({ reservation }: { reservation: CreditReservationR
   );
 }
 
+const ledgerTypes = [
+  { id: "all", label: "All types" },
+  { id: "recording", label: "Recording" },
+  { id: "purchase", label: "Purchase" },
+  { id: "trial", label: "Trial" },
+  { id: "release", label: "Hold released" },
+  { id: "refund", label: "Refund" },
+  { id: "adjustment", label: "Adjustment" },
+] as const;
+
+function ledgerType(transaction: CreditTransactionResponse): (typeof ledgerTypes)[number]["id"] {
+  if (transaction.type === "charge") return "recording";
+  if (transaction.type === "grant")
+    return transaction.reference_type === "signup_bonus" ? "trial" : "purchase";
+  if (transaction.type === "release") return "release";
+  if (transaction.type === "refund") return "refund";
+  return "adjustment";
+}
+
+const ledgerTypeStyle: Record<(typeof ledgerTypes)[number]["id"], string> = {
+  all: "",
+  recording: "bg-primary-subtle text-accent-ink",
+  purchase: "bg-success-subtle text-success",
+  trial: "bg-info-subtle text-info",
+  release: "bg-warning-subtle text-warning-foreground",
+  refund: "bg-success-subtle text-success",
+  adjustment: "bg-surface-2 text-muted-foreground",
+};
+
+function exportLedgerCsv(transactions: CreditTransactionResponse[]) {
+  const rows = [
+    ["date_utc", "type", "description", "change_credits", "balance_credits"],
+    ...transactions.map((t) => [
+      new Date(t.created_at).toISOString(),
+      ledgerType(t),
+      creditTransactionTitle(t),
+      String(t.amount),
+      String(t.balance_after),
+    ]),
+  ];
+  const csv = rows
+    .map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "savestream-credit-ledger.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function CreditsUsagePage() {
-  const { t, language } = usePreferences();
   const { query: balanceQuery, state: balanceState } = useCreditBalanceData();
   const { query: transactionsQuery, state: transactionsState } = useCreditTransactionsData();
   const { query: reservationsQuery, state: reservationsState } = useCreditReservationsData();
-  const { query: pricingQuery, state: pricingState } = usePricingData();
-  const { query: packagesQuery, state: packagesState } = useCreditPackagesData();
+  // Rules and packs feed the hour conversion and the balance meter.
+  usePricingData();
+  useCreditPackagesData();
+  const { query: recordingsQuery } = useRecordingsData();
+  const credits = useCreditSummary();
+  const [type, setType] = useState<(typeof ledgerTypes)[number]["id"]>("all");
 
   if (
     balanceState.kind === "loading" ||
@@ -4469,8 +4523,8 @@ function CreditsUsagePage() {
   ) {
     return (
       <AppShell>
-        <PageHeader title="Credits & usage" subtitle="Loading credit account…" />
-        <div className="h-40 animate-pulse rounded-lg border bg-muted" aria-busy="true" />
+        <PageHeader title="Usage" subtitle="Loading your credit account…" />
+        <div className="h-40 animate-pulse rounded-[20px] border bg-surface-2" aria-busy="true" />
       </AppShell>
     );
   }
@@ -4478,7 +4532,7 @@ function CreditsUsagePage() {
   if (balanceState.kind === "error") {
     return (
       <AppShell>
-        <PageHeader title="Credits & usage" />
+        <PageHeader title="Usage" />
         <ErrorState
           title="Could not load credit balance"
           body="SaveStream could not load your credit balance. Please try again."
@@ -4492,194 +4546,187 @@ function CreditsUsagePage() {
   const transactions = transactionsQuery.data?.items ?? [];
   const reservations = reservationsQuery.data?.items ?? [];
   const activeReservations = reservations.filter((item) => item.status === "active");
-  const packages = packagesQuery.data?.items ?? [];
-  const pricing = pricingQuery.data;
+  const recordings = recordingsQuery.data ?? [];
+  const minutesPerCredit = balance.available > 0 ? credits.minutes / balance.available : 1;
+  const hours = (creditsValue: number) => formatHoursLeft(creditsValue * minutesPerCredit);
+  const used = transactions
+    .filter((t) => t.type === "charge")
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const since = Date.now() - 30 * 864e5;
+  const byChannel = new Map<string, number>();
+  for (const recording of recordings) {
+    if (new Date(`${recording.date} ${recording.time}`).getTime() < since) continue;
+    byChannel.set(
+      recording.handle,
+      (byChannel.get(recording.handle) ?? 0) + (recording.durationSeconds ?? 0),
+    );
+  }
+  const channelRows = [...byChannel.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topSeconds = channelRows[0]?.[1] ?? 0;
+  const failedRecent = recordings.filter(
+    (r) =>
+      (r.status === "Error" || r.status === "Missed") &&
+      new Date(`${r.date} ${r.time}`).getTime() >= since,
+  ).length;
+  const ledger = transactions.filter((t) => type === "all" || ledgerType(t) === type);
 
   return (
     <AppShell>
-      <PageHeader
-        title="Credits & usage"
-        subtitle="Your credit balance, reserved credits, and recording charges."
-        action={
-          <Button variant="outline" asChild>
-            <Link to="/billing">
-              <CreditCard />
-              Billing
-            </Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-col gap-5">
+        <PageHeader
+          title="Usage"
+          subtitle="Your credit balance, how you’ve used it, and every change to it."
+          action={
+            <Button asChild>
+              <Link to="/billing">Buy credits</Link>
+            </Button>
+          }
+        />
 
-      <div className="mb-6">
-        <StateBanner
-          tone="info"
-          icon={Gauge}
-          title="How credits work"
-          body="Credits are used only while a livestream is being recorded, rounded up to the next minute. When a recording starts, SaveStream holds enough credits for it; after it ends you are charged only for the time recorded and the rest is returned."
-        />
-      </div>
-
-      <div className="grid overflow-hidden rounded-lg border sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Available credits"
-          value={String(balance.available)}
-          detail="Ready to use for recordings"
-          icon={Zap}
-        />
-        <StatCard
-          label="Total balance"
-          value={String(balance.posted)}
-          detail="Including credits on hold"
-          icon={CreditCard}
-        />
-        <StatCard
-          label="On hold"
-          value={String(balance.reserved)}
-          detail="For recordings in progress"
-          icon={Clock3}
-        />
-        <StatCard
-          label="Recordings in progress"
-          value={String(activeReservations.length)}
-          detail="Using credits right now"
-          icon={Radio}
-        />
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section className="rounded-lg border bg-surface p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="font-medium">{t("Current pricing")}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">What recordings cost.</p>
+        <div className="flex flex-wrap gap-5">
+          <section
+            aria-label="Balance"
+            className="flex min-w-0 flex-[2_1_460px] flex-col gap-4 rounded-[20px] border bg-gradient-to-br from-surface to-surface-2 p-6"
+          >
+            <span className="text-sm font-bold text-muted-foreground">Available credits</span>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="font-mono text-[52px] font-semibold leading-none tracking-tight">
+                {credits.label}
+              </span>
+              <span className="text-muted-foreground">
+                {balance.available.toLocaleString("en")} credits
+              </span>
             </div>
-          </div>
-          {pricingState.kind === "error" ? (
-            <div className="mt-5">
-              <StateBanner
-                tone="warning"
-                title="Pricing unavailable"
-                body="Pricing could not be loaded. Please try again."
-                action={
-                  <Button size="sm" variant="outline" onClick={() => void pricingQuery.refetch()}>
-                    Retry
-                  </Button>
-                }
+            <div className="h-2.5 overflow-hidden rounded-full bg-surface-3">
+              <span
+                className={cn(
+                  "block h-full rounded-full",
+                  credits.state === "out"
+                    ? "bg-destructive"
+                    : credits.state === "low"
+                      ? "bg-warning"
+                      : "bg-gradient-to-r from-primary to-accent",
+                )}
+                style={{ width: `${credits.percent}%` }}
               />
             </div>
-          ) : pricing ? (
-            <div className="mt-5 space-y-3">
-              {pricing.rules.length ? (
-                pricing.rules.map((rule, index) => (
-                  <div key={String(rule["code"] ?? index)} className="rounded-md border p-4">
-                    <p className="text-sm font-medium">{pricingRuleTitle(rule, index)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{pricingRuleDetail(rule)}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Pricing details are not available right now.
-                </p>
-              )}
+            <div className="flex flex-wrap gap-5 text-sm">
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-primary" />
+                Total balance {balance.posted.toLocaleString("en")}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-warning" />
+                On hold {balance.reserved.toLocaleString("en")}
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-muted-foreground/50" />
+                Recordings in progress {activeReservations.length}
+              </span>
             </div>
-          ) : (
-            <div className="mt-5 h-24 animate-pulse rounded-md bg-muted" />
-          )}
-        </section>
-
-        <section className="rounded-lg border bg-surface p-5">
-          <h2 className="font-medium">Credit packages</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Available packages. Credits never expire.
-          </p>
-          {packagesState.kind === "error" ? (
-            <div className="mt-5">
-              <StateBanner
-                tone="warning"
-                title="Packages unavailable"
-                body="SaveStream could not load the current credit packages."
-                action={
-                  <Button size="sm" variant="outline" onClick={() => void packagesQuery.refetch()}>
-                    Retry
-                  </Button>
-                }
-              />
-            </div>
-          ) : packages.length ? (
-            <div className="mt-5 space-y-3">
-              {packages.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-4 rounded-md border p-4"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{item.name}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {pluralize(item.credits, "credit")}
-                      {formatApproxHours(item.cloud_minutes, language)
-                        ? ` · ${formatApproxHours(item.cloud_minutes, language)}`
-                        : ""}
-                    </p>
+          </section>
+          <section
+            aria-label="By channel"
+            className="flex flex-[1_1_260px] flex-col gap-3 rounded-[20px] border bg-surface p-5"
+          >
+            <h2 className="text-[17px] font-bold">By channel · 30 days</h2>
+            {channelRows.length ? (
+              channelRows.map(([handle, seconds]) => (
+                <div key={handle} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="truncate">{handle}</span>
+                    <b className="font-mono">{formatHoursLeft(seconds / 60)}</b>
                   </div>
-                  <p className="font-mono font-semibold">{formatCreditMoney(item, language)}</p>
+                  <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+                    <span
+                      className="block h-full rounded-full bg-primary"
+                      style={{
+                        width: `${topSeconds ? Math.max(4, (seconds / topSeconds) * 100) : 0}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-              ))}
-              <Link to="/billing" className="text-xs font-medium text-primary hover:underline">
-                Buy credits in Billing
-              </Link>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">No recordings in the last 30 days.</p>
+            )}
+          </section>
+        </div>
+
+        <p className="flex items-start gap-2.5 rounded-[14px] border border-info/25 bg-info-subtle px-4 py-3 text-sm">
+          <Gauge className="mt-0.5 size-[18px] shrink-0 text-info" />
+          <span>
+            <b>How credits work:</b> credits are used only while a LIVE is being recorded, rounded
+            up to the next minute. When a recording starts we put enough credits on hold; when it
+            ends you’re charged only for the time recorded and the rest is returned.
+          </span>
+        </p>
+
+        <UsageChart recordings={recordings} />
+        <div className="flex flex-wrap gap-8 px-1 text-sm">
+          <span>
+            <span className="block text-xs text-muted-foreground">
+              Credits used (recent entries)
+            </span>
+            <b className="font-mono text-xl">{used.toLocaleString("en")}</b>
+          </span>
+          <span>
+            <span className="block text-xs text-muted-foreground">≈ recording time</span>
+            <b className="font-mono text-xl">{hours(used)}</b>
+          </span>
+          <span>
+            <span className="block text-xs text-muted-foreground">
+              Failed, last 30 days (not charged)
+            </span>
+            <b className="font-mono text-xl">{failedRecent}</b>
+          </span>
+        </div>
+
+        {activeReservations.length > 0 && (
+          <section className="rounded-[18px] border bg-surface">
+            <div className="border-b p-5">
+              <h2 className="text-[17px] font-bold">On hold for recordings in progress</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Unused hold is returned when the recording ends.
+              </p>
             </div>
-          ) : packagesState.kind === "empty" ? (
-            <p className="mt-5 text-sm text-muted-foreground">
-              No active credit packages are available right now.
-            </p>
-          ) : (
-            <div className="mt-5 h-24 animate-pulse rounded-md bg-muted" />
-          )}
-        </section>
-      </div>
-
-      <section className="mt-8 rounded-lg border bg-surface">
-        <div className="border-b p-5">
-          <h2 className="font-medium">Credits held for recordings</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Credits held while a recording runs, what it used, and what was returned.
-          </p>
-        </div>
-        {reservationsState.kind === "error" ? (
-          <div className="p-5">
-            <StateBanner
-              tone="warning"
-              title="Could not load credit holds"
-              body="Please try again in a moment."
-              action={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void reservationsQuery.refetch()}
-                >
-                  Retry
-                </Button>
-              }
-            />
-          </div>
-        ) : reservations.length ? (
-          reservations.map((reservation) => (
-            <CreditReservationRow key={reservation.id} reservation={reservation} />
-          ))
-        ) : (
-          <p className="p-5 text-sm text-muted-foreground">No recordings have used credits yet.</p>
+            {activeReservations.map((reservation) => (
+              <CreditReservationRow key={reservation.id} reservation={reservation} />
+            ))}
+          </section>
         )}
-      </section>
 
-      <section className="mt-8 rounded-lg border bg-surface">
-        <div className="border-b p-5">
-          <h2 className="font-medium">Credit history</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Credits added to and used from your account.
-          </p>
-        </div>
-        {transactionsState.kind === "error" ? (
-          <div className="p-5">
+        <section aria-labelledby="ledger" className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
+            <h2 id="ledger" className="text-[17px] font-bold">
+              Credit ledger
+            </h2>
+            <div className="flex gap-2">
+              <Select value={type} onValueChange={(value) => setType(value as typeof type)}>
+                <SelectTrigger className="h-9 w-[170px]" aria-label="Type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ledgerTypes.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                disabled={!ledger.length}
+                onClick={() => exportLedgerCsv(ledger)}
+              >
+                <Download />
+                Export CSV
+              </Button>
+            </div>
+          </div>
+          {transactionsState.kind === "error" ? (
             <StateBanner
               tone="warning"
               title="Could not load credit history"
@@ -4694,15 +4741,100 @@ function CreditsUsagePage() {
                 </Button>
               }
             />
-          </div>
-        ) : transactions.length ? (
-          transactions.map((transaction) => (
-            <CreditTransactionRow key={transaction.id} transaction={transaction} />
-          ))
-        ) : (
-          <p className="p-5 text-sm text-muted-foreground">No credit activity yet.</p>
-        )}
-      </section>
+          ) : ledger.length ? (
+            <div className="overflow-x-auto rounded-[16px] border bg-surface">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-surface-2 text-left text-[11px] font-bold uppercase tracking-[.06em] text-muted-foreground">
+                    <th scope="col" className="px-4 py-3">
+                      Date
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Type
+                    </th>
+                    <th scope="col" className="px-4 py-3">
+                      Description
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      Change
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right">
+                      Balance
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ledger.map((transaction) => {
+                    const kind = ledgerType(transaction);
+                    const amount =
+                      transaction.type === "release" && transaction.amount === 0
+                        ? "—"
+                        : transaction.amount > 0
+                          ? `+${transaction.amount}`
+                          : String(transaction.amount).replace("-", "−");
+                    return (
+                      <tr key={transaction.id} className="border-b last:border-b-0">
+                        <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-muted-foreground">
+                          {new Date(transaction.created_at).toLocaleString("en", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={cn(
+                              "rounded-full px-2.5 py-0.5 text-xs font-bold",
+                              ledgerTypeStyle[kind],
+                            )}
+                          >
+                            {ledgerTypes.find((item) => item.id === kind)?.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {transaction.reference_type === "recording" &&
+                          transaction.reference_id ? (
+                            <Link
+                              to="/recordings/$id"
+                              params={{ id: transaction.reference_id }}
+                              className="hover:underline"
+                            >
+                              {creditTransactionTitle(transaction)}
+                            </Link>
+                          ) : (
+                            creditTransactionTitle(transaction)
+                          )}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-4 py-3 text-right font-mono font-bold",
+                            transaction.amount > 0 && "text-success",
+                          )}
+                        >
+                          {amount}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono">
+                          {transaction.balance_after}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="rounded-[16px] border bg-surface p-5 text-sm text-muted-foreground">
+              {transactions.length ? "No entries of this type." : "No credit activity yet."}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Showing the latest {pluralize(transactions.length, "entry", "entries")}. Amounts are in
+            credits
+            {minutesPerCredit === 1 ? " (1 credit = 1 minute of recording)" : ""}.
+          </p>
+        </section>
+      </div>
     </AppShell>
   );
 }
