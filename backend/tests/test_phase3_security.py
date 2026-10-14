@@ -47,6 +47,31 @@ def test_expired_access_token_is_rejected() -> None:
         tokens.decode_access_token(token)
 
 
+def test_cors_allows_admin_step_up_header() -> None:
+    settings = identity_settings("sqlite+aiosqlite:///:memory:")
+    app = create_app(settings)
+
+    with TestClient(app, base_url="https://testserver") as client:
+        response = client.options(
+            "/v1/admin/credits/adjustments",
+            headers={
+                "Origin": "https://testserver",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": (
+                    "authorization,content-type,idempotency-key,"
+                    "x-admin-step-up,x-request-id"
+                ),
+            },
+        )
+
+    assert response.status_code == 200
+    allowed_headers = {
+        value.strip().lower()
+        for value in response.headers["access-control-allow-headers"].split(",")
+    }
+    assert "x-admin-step-up" in allowed_headers
+
+
 def test_forgot_password_does_not_enumerate_accounts(tmp_path) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'enumeration.db'}"
     settings = identity_settings(database_url)

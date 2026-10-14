@@ -77,6 +77,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
             "Content-Type",
             "Idempotency-Key",
             "Last-Event-ID",
+            "X-Admin-Step-Up",
             cfg.request_id_header,
         ],
         expose_headers=[cfg.request_id_header],
