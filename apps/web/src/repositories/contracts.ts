@@ -86,6 +86,8 @@ export type RecordingModel = {
   expireTone?: "warning" | "critical";
   status: RecordingStatus;
   color: string;
+  /** Real thumbnail (one frame); the gradient `color` shows when absent. */
+  thumbnailUrl?: string | null;
   /** Creator avatar from the recording or its channel; initials/tone are the fallback. */
   avatarUrl?: string | null;
   initials?: string;

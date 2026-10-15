@@ -156,6 +156,27 @@ class RecordingService:
             ).all()
         )
 
+    async def thumbnail_keys(
+        self,
+        recordings: Sequence[Recording],
+    ) -> dict[uuid.UUID, str]:
+        """Thumbnail object key per recording that has a live artifact with one."""
+        recording_ids = [recording.id for recording in recordings]
+        if not recording_ids:
+            return {}
+        rows = (
+            await self.session.execute(
+                select(RecordingArtifact.recording_id, RecordingArtifact.thumbnail_key)
+                .where(
+                    RecordingArtifact.recording_id.in_(recording_ids),
+                    RecordingArtifact.deleted_at.is_(None),
+                    RecordingArtifact.thumbnail_key.is_not(None),
+                )
+                .order_by(RecordingArtifact.created_at)
+            )
+        ).all()
+        return {recording_id: key for recording_id, key in rows}
+
     async def queue_position(self, recording: Recording) -> int | None:
         from app.application.recordings.cloud_slots import CloudSlotQueueService
 

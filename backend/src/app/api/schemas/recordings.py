@@ -80,6 +80,8 @@ class RecordingResponse(StrictModel):
     updated_at: datetime
     expires_at: datetime | None = None
     playback_ready: bool = False
+    # One frame of the finished video; null until one exists (show a placeholder).
+    thumbnail_url: str | None = None
     engine: Literal["cloud"] = "cloud"
     minutes_charged: int = Field(default=0, ge=0)
     queue_position: int | None = Field(default=None, ge=1)

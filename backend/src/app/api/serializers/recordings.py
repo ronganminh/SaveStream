@@ -24,6 +24,7 @@ def recording_response(
     queue_position: int | None = None,
     artifact_ready: bool = False,
     avatar_url: str | None = None,
+    thumbnail_url: str | None = None,
 ) -> RecordingResponse:
     """retention_days > 0 adds expires_at for finished recordings."""
     status = RecordingStatus(recording.status)
@@ -73,6 +74,7 @@ def recording_response(
             )
         ),
         playback_ready=artifact_ready,
+        thumbnail_url=thumbnail_url,
         engine="cloud",
         minutes_charged=max(recording.actual_cost or 0, 0),
         updated_at=recording.updated_at,
