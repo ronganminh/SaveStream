@@ -45,12 +45,16 @@ class WatchResponse(StrictModel):
     last_live_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    # Set when the user confirmed they own, manage or may record the channel.
+    owner_attested_at: datetime | None = None
 
 
 class CreateWatchRequest(StrictModel):
     source: Source
     auto_record: bool
     notify_on_live: bool = True
+    # Optional: "I own or manage this account, or have permission to record it."
+    owner_attested: bool = False
 
 
 class UpdateWatchRequest(StrictModel):

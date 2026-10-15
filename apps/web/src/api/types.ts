@@ -16,11 +16,7 @@ export type Creator = {
 };
 
 export type WatchStatusValue =
-  | "active"
-  | "paused"
-  | "paused_insufficient_credit"
-  | "paused_error"
-  | "disabled";
+  "active" | "paused" | "paused_insufficient_credit" | "paused_error" | "disabled";
 
 export type LiveStatusValue = "unknown" | "offline" | "live";
 
@@ -39,6 +35,8 @@ export type WatchResponse = {
   last_live_at: string | null;
   created_at: string;
   updated_at: string;
+  /** When the user confirmed they own, manage or may record the channel. */
+  owner_attested_at?: string | null;
 };
 
 export type WatchListResponse = {
@@ -75,6 +73,8 @@ export type EntitlementResponse = {
 export type CreateWatchRequest = {
   source: Source;
   auto_record: boolean;
+  /** Optional "I own or manage this account, or have permission to record it." */
+  owner_attested?: boolean;
 };
 
 export type UpdateWatchRequest = {
@@ -418,10 +418,7 @@ export type OperationalSnapshotResponse = {
   paused_error_watches: number;
 };
 
-export type NotificationTypeValue =
-  | "recording_started"
-  | "recording_ready"
-  | "recording_failed";
+export type NotificationTypeValue = "recording_started" | "recording_ready" | "recording_failed";
 
 export type NotificationResponse = {
   id: string;

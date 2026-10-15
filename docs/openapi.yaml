@@ -9835,6 +9835,14 @@
               }
             ]
           },
+          "owner_attested_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the user confirmed they own, manage or may record this channel; null if not confirmed."
+          },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"
           },
@@ -9882,6 +9890,11 @@
             "type": "boolean",
             "default": true,
             "description": "Optional per-Watch creator LIVE push switch; defaults to true. Effective together with NotificationPreferences.creator_live."
+          },
+          "owner_attested": {
+            "type": "boolean",
+            "default": false,
+            "description": "Optional: the user ticked \"I own or manage this account, or have permission to record it.\" Stored as owner_attested_at."
           }
         },
         "additionalProperties": false

@@ -1636,6 +1636,8 @@ export function AddChannelDialog({
   const { query: publicPricingQuery } = usePublicPricingData();
   const isFree = isDemoMode || entitlement?.plan === "free";
   const [autoRecord, setAutoRecord] = useState(true);
+  // Optional; stored with the time so support can see it.
+  const [ownerAttested, setOwnerAttested] = useState(false);
   const channelLimit =
     entitlement?.limits.max_watches ?? publicPricingQuery.data?.free_max_channels_per_user ?? null;
   const preview = useCreatorPreview(open && parsed ? parsed.source : null);
@@ -1683,6 +1685,7 @@ export function AddChannelDialog({
     setQuotaLimit(null);
     setErrorText(null);
     setAutoRecord(true);
+    setOwnerAttested(false);
   };
 
   const submit = async () => {
@@ -1693,6 +1696,7 @@ export function AddChannelDialog({
       const watch = await createChannel.mutateAsync({
         source: parsed.source,
         auto_record: !isFree && autoRecord,
+        ...(ownerAttested ? { owner_attested: true } : {}),
       });
       setCreatedWatchId(watch.id);
       setPhase("success");
@@ -1939,6 +1943,20 @@ export function AddChannelDialog({
               aria-label="Auto-record when live"
             />
           </div>
+        )}
+        {state === "found" && (
+          <label className="flex items-start gap-2.5 rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm leading-5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 accent-primary"
+              checked={ownerAttested}
+              onChange={(event) => setOwnerAttested(event.target.checked)}
+            />
+            <span>
+              I own or manage this account, or have permission to record it.{" "}
+              <span className="text-muted-foreground">(optional)</span>
+            </span>
+          </label>
         )}
         {(state === "exists" || state === "unavailable") && (
           <StateBanner

@@ -102,4 +102,5 @@ def watch_response(
         last_live_at=watch.last_live_at,
         created_at=watch.created_at,
         updated_at=watch.updated_at,
+        owner_attested_at=watch.owner_attested_at,
     )
