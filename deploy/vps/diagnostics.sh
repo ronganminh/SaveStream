@@ -246,4 +246,18 @@ async def main() -> None:
 asyncio.run(main())
 PY
 
+section "Settings quoted in public copy (guides, help)"
+compose exec -T api python - <<'PY' || echo "settings check could not run"
+from app.settings import get_app_settings
+
+s = get_app_settings()
+print(f"watch_live_check_seconds={s.watch_live_check_seconds}")
+print(f"recording_max_duration_seconds={s.recording_max_duration_seconds}")
+PY
+compose exec -T scheduler python - <<'PY' || true
+from app.settings import get_app_settings
+
+print(f"scheduler watch_live_check_seconds={get_app_settings().watch_live_check_seconds}")
+PY
+
 section "Done"
