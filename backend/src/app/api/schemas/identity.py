@@ -21,11 +21,16 @@ def _validate_email(value: str) -> str:
 
 
 class LegalConsentRequest(StrictModel):
-    """The user ticked "I am at least 18 and agree to the Terms and Privacy Policy"."""
+    """The user ticked "I am at least 18 and agree to the Terms and Privacy Policy"
+    and "I'll only record channels I own, manage or have permission to record
+    (Acceptable Use Policy)". A missing AUP confirmation is answered with
+    LEGAL_CONSENT_REQUIRED (428) so clients show the consent step."""
 
     age_confirmed: Literal[True]
     terms_version: str = Field(min_length=1, max_length=32)
     privacy_version: str = Field(min_length=1, max_length=32)
+    aup_accepted: bool = False
+    aup_version: str | None = Field(default=None, min_length=1, max_length=32)
 
 
 class RegisterRequest(StrictModel):

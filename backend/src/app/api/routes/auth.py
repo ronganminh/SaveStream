@@ -42,6 +42,8 @@ def _consent(payload: object) -> ConsentInput | None:
         terms_version=consent.terms_version,
         privacy_version=consent.privacy_version,
         age_confirmed=consent.age_confirmed,
+        aup_accepted=consent.aup_accepted,
+        aup_version=consent.aup_version,
     )
 
 

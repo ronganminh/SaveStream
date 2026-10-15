@@ -71,7 +71,8 @@ class SocialIdentity(Base):
 
 
 class LegalConsent(Base):
-    """Evidence that a user accepted the Terms and Privacy Policy (18+).
+    """Evidence that a user accepted the Terms and Privacy Policy (18+) and the
+    Acceptable Use Policy.
 
     One row per acceptance; the versions are the legal documents' revision
     dates at the time, so a later revision can be re-accepted as a new row.
@@ -87,6 +88,9 @@ class LegalConsent(Base):
     terms_version: Mapped[str] = mapped_column(String(32), nullable=False)
     privacy_version: Mapped[str] = mapped_column(String(32), nullable=False)
     age_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # Acceptable Use Policy confirmation; null on rows recorded before it existed.
+    aup_accepted: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    aup_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
     method: Mapped[str] = mapped_column(String(32), nullable=False)
     ip_address: Mapped[str] = mapped_column(String(64), nullable=False)
     user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)

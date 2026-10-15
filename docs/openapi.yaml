@@ -9039,11 +9039,13 @@
         "type": "object",
         "additionalProperties": false,
         "required": ["age_confirmed", "terms_version", "privacy_version"],
-        "description": "The user confirmed they are at least 18 and accepted the Terms of Use and Privacy Policy. Versions must equal the current revision dates (409 LEGAL_VERSION_OUTDATED otherwise). Stored with time, IP and user agent.",
+        "description": "The user confirmed they are at least 18 and accepted the Terms of Use and Privacy Policy, and that they will only record channels they own, manage or have permission to record (Acceptable Use Policy). A missing AUP confirmation gives 428 LEGAL_CONSENT_REQUIRED. Versions must equal the current revision dates (409 LEGAL_VERSION_OUTDATED otherwise). Stored with time, IP and user agent.",
         "properties": {
           "age_confirmed": {"type": "boolean", "const": true},
           "terms_version": {"type": "string", "maxLength": 32, "example": "2026-10-14"},
-          "privacy_version": {"type": "string", "maxLength": 32, "example": "2026-10-14"}
+          "privacy_version": {"type": "string", "maxLength": 32, "example": "2026-10-14"},
+          "aup_accepted": {"type": "boolean", "default": false},
+          "aup_version": {"type": ["string", "null"], "maxLength": 32, "example": "2026-10-05"}
         }
       },
       "RegisterRequest": {

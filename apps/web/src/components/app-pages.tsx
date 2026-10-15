@@ -913,6 +913,7 @@ export function AuthPage({
   // Shown when a Google/Apple sign-in would create a new account without consent.
   const [socialConsentOpen, setSocialConsentOpen] = useState(false);
   const [socialConsentChecked, setSocialConsentChecked] = useState(false);
+  const [socialAupChecked, setSocialAupChecked] = useState(false);
   const [socialConsentError, setSocialConsentError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -926,13 +927,17 @@ export function AuthPage({
     password?: string | undefined;
     confirm?: string | undefined;
     agree?: string | undefined;
+    aup?: string | undefined;
   }>({});
   // Sign-up requires confirming age (18+, TikTok's LIVE minimum) and the legal terms.
   const [agreed, setAgreed] = useState(false);
+  // Acceptable Use: only channels the user owns, manages or may record.
+  const [aupAgreed, setAupAgreed] = useState(false);
   const [linkExpired, setLinkExpired] = useState(false);
   const trialLabel = useTrialMinutesLabel();
   const agreementError =
     "Confirm that you are at least 18 and agree to the Terms of Use and Privacy Policy.";
+  const aupError = "Confirm that you’ll only record channels you own, manage or may record.";
   useEffect(() => {
     if (isDemoMode || (mode !== "sign-in" && mode !== "sign-up") || status !== "authenticated") {
       return;
@@ -958,8 +963,12 @@ export function AuthPage({
   }[mode];
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
-    if (mode === "sign-up" && !agreed) {
-      setFieldErrors((current) => ({ ...current, agree: agreementError }));
+    if (mode === "sign-up" && (!agreed || !aupAgreed)) {
+      setFieldErrors((current) => ({
+        ...current,
+        agree: agreed ? undefined : agreementError,
+        aup: aupAgreed ? undefined : aupError,
+      }));
       return;
     }
     if (isDemoMode) {
@@ -977,6 +986,7 @@ export function AuthPage({
     } catch (error) {
       if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
         setSocialConsentChecked(false);
+        setSocialAupChecked(false);
         setSocialConsentError(null);
         setSocialConsentOpen(true);
         return;
@@ -1022,6 +1032,9 @@ export function AuthPage({
     }
     if (mode === "reset" && pw !== pw2) {
       nextErrors.confirm = "Passwords don’t match.";
+    }
+    if (mode === "sign-up" && !aupAgreed) {
+      nextErrors.aup = aupError;
     }
     if (mode === "sign-up" && !agreed) {
       nextErrors.agree = agreementError;
@@ -1425,6 +1438,43 @@ export function AuthPage({
                 {fieldErrors.agree}
               </p>
             )}
+            <label className="mt-3 flex items-start gap-2.5 text-sm leading-5">
+              <input
+                type="checkbox"
+                className={cn(
+                  "mt-0.5 size-4 shrink-0 accent-primary",
+                  fieldErrors.aup && "outline outline-1 outline-destructive",
+                )}
+                checked={aupAgreed}
+                required
+                aria-invalid={fieldErrors.aup ? true : undefined}
+                aria-describedby={fieldErrors.aup ? "aup-error" : undefined}
+                onChange={(event) => {
+                  setAupAgreed(event.target.checked);
+                  if (event.target.checked) {
+                    setFieldErrors((current) => ({ ...current, aup: undefined }));
+                  }
+                }}
+              />
+              <span>
+                I’ll only record channels I own, manage or have permission to record (
+                <Link
+                  to="/acceptable-use"
+                  className="font-semibold text-accent-ink underline-offset-4 hover:underline"
+                >
+                  Acceptable Use Policy
+                </Link>
+                ).
+              </span>
+            </label>
+            {fieldErrors.aup && (
+              <p
+                id="aup-error"
+                className="mt-1.5 flex items-start gap-1.5 pl-[26px] text-xs text-destructive"
+              >
+                {fieldErrors.aup}
+              </p>
+            )}
           </div>
         )}
         {errorAlert}
@@ -1463,6 +1513,21 @@ export function AuthPage({
               .
             </span>
           </label>
+          <label className="flex items-start gap-2 text-sm leading-5">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0 accent-primary"
+              checked={socialAupChecked}
+              onChange={(event) => setSocialAupChecked(event.target.checked)}
+            />
+            <span>
+              I’ll only record channels I own, manage or have permission to record (
+              <Link to="/acceptable-use" target="_blank" className="underline underline-offset-4">
+                Acceptable Use Policy
+              </Link>
+              ).
+            </span>
+          </label>
           {socialConsentError && (
             <p role="alert" className="text-sm text-destructive">
               {socialConsentError}
@@ -1473,7 +1538,7 @@ export function AuthPage({
               Cancel
             </Button>
             <Button
-              disabled={busy || !socialConsentChecked}
+              disabled={busy || !socialConsentChecked || !socialAupChecked}
               onClick={() => void finishSocialSignUp()}
             >
               Create account
