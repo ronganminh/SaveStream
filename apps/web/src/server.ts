@@ -2,7 +2,9 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { isProductionMode } from "./lib/app-config";
+import { apiBaseUrl, isProductionMode } from "./lib/app-config";
+import { buildLlmsTxt } from "./lib/llms-txt";
+import type { PublicPricingResponse } from "./api/types";
 import { PUBLIC_SITE_URL } from "./lib/route-metadata";
 
 type ServerEntry = {
@@ -63,10 +65,33 @@ export function canonicalRedirect(request: Request): Response | null {
   return new Response(null, { status: 301, headers: { location: target.toString() } });
 }
 
+/** /llms.txt with prices and limits from the live public pricing endpoint. */
+async function llmsTxt(): Promise<Response> {
+  let pricing: PublicPricingResponse | null = null;
+  if (apiBaseUrl) {
+    try {
+      const response = await fetch(`${apiBaseUrl}/v1/public/pricing`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (response.ok) pricing = (await response.json()) as PublicPricingResponse;
+    } catch {
+      pricing = null;
+    }
+  }
+  return new Response(buildLlmsTxt(pricing), {
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      "cache-control": "public, max-age=3600",
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const redirect = canonicalRedirect(request);
     if (redirect) return redirect;
+    if (new URL(request.url).pathname === "/llms.txt") return llmsTxt();
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

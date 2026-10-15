@@ -31,6 +31,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TiktokLiveRecorderRouteImport } from './routes/tiktok-live-recorder'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
@@ -56,6 +57,8 @@ import { Route as BillingCanceledRouteImport } from './routes/billing.canceled'
 import { Route as BillingSuccessRouteImport } from './routes/billing.success'
 import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
 import { Route as ChannelsIdRouteImport } from './routes/channels.$id'
+import { Route as GuidesIndexRouteImport } from './routes/guides.index'
+import { Route as GuidesGuideRouteImport } from './routes/guides.$guide'
 import { Route as HelpIndexRouteImport } from './routes/help.index'
 import { Route as HelpArticleRouteImport } from './routes/help.$article'
 import { Route as PartnersApplyRouteImport } from './routes/partners.apply'
@@ -185,6 +188,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TiktokLiveRecorderRoute = TiktokLiveRecorderRouteImport.update({
+  id: '/tiktok-live-recorder',
+  path: '/tiktok-live-recorder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
@@ -310,6 +318,16 @@ const ChannelsIdRoute = ChannelsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ChannelsRoute,
 } as any)
+const GuidesIndexRoute = GuidesIndexRouteImport.update({
+  id: '/guides/',
+  path: '/guides/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesGuideRoute = GuidesGuideRouteImport.update({
+  id: '/guides/$guide',
+  path: '/guides/$guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HelpIndexRoute = HelpIndexRouteImport.update({
   id: '/help/',
   path: '/help/',
@@ -424,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/tiktok-live-recorder': typeof TiktokLiveRecorderRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
@@ -446,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
@@ -459,6 +479,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
+  '/guides/': typeof GuidesIndexRoute
   '/help/': typeof HelpIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -487,6 +508,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/tiktok-live-recorder': typeof TiktokLiveRecorderRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/account/suspended': typeof AccountSuspendedRoute
@@ -506,6 +528,7 @@ export interface FileRoutesByTo {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
@@ -519,6 +542,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/billing': typeof BillingIndexRoute
   '/channels': typeof ChannelsIndexRoute
+  '/guides': typeof GuidesIndexRoute
   '/help': typeof HelpIndexRoute
   '/recordings': typeof RecordingsIndexRoute
   '/settings': typeof SettingsIndexRoute
@@ -552,6 +576,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/tiktok-live-recorder': typeof TiktokLiveRecorderRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
@@ -574,6 +599,7 @@ export interface FileRoutesById {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
   '/recordings/$id': typeof RecordingsIdRoute
@@ -587,6 +613,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
+  '/guides/': typeof GuidesIndexRoute
   '/help/': typeof HelpIndexRoute
   '/recordings/': typeof RecordingsIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -621,6 +648,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/tiktok-live-recorder'
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
@@ -643,6 +671,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
     | '/recordings/$id'
@@ -656,6 +685,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/billing/'
     | '/channels/'
+    | '/guides/'
     | '/help/'
     | '/recordings/'
     | '/settings/'
@@ -684,6 +714,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/tiktok-live-recorder'
     | '/unsubscribe'
     | '/usage'
     | '/account/suspended'
@@ -703,6 +734,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
     | '/recordings/$id'
@@ -716,6 +748,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/billing'
     | '/channels'
+    | '/guides'
     | '/help'
     | '/recordings'
     | '/settings'
@@ -748,6 +781,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/tiktok-live-recorder'
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
@@ -770,6 +804,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
     | '/recordings/$id'
@@ -783,6 +818,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/billing/'
     | '/channels/'
+    | '/guides/'
     | '/help/'
     | '/recordings/'
     | '/settings/'
@@ -816,6 +852,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   StatusRoute: typeof StatusRoute
   TermsRoute: typeof TermsRoute
+  TiktokLiveRecorderRoute: typeof TiktokLiveRecorderRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
@@ -834,9 +871,11 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
+  GuidesGuideRoute: typeof GuidesGuideRoute
   HelpArticleRoute: typeof HelpArticleRoute
   PartnersApplyRoute: typeof PartnersApplyRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  GuidesIndexRoute: typeof GuidesIndexRoute
   HelpIndexRoute: typeof HelpIndexRoute
 }
 
@@ -994,6 +1033,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tiktok-live-recorder': {
+      id: '/tiktok-live-recorder'
+      path: '/tiktok-live-recorder'
+      fullPath: '/tiktok-live-recorder'
+      preLoaderRoute: typeof TiktokLiveRecorderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unsubscribe': {
@@ -1170,6 +1216,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/channels/$id'
       preLoaderRoute: typeof ChannelsIdRouteImport
       parentRoute: typeof ChannelsRoute
+    }
+    '/guides/': {
+      id: '/guides/'
+      path: '/guides'
+      fullPath: '/guides/'
+      preLoaderRoute: typeof GuidesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides/$guide': {
+      id: '/guides/$guide'
+      path: '/guides/$guide'
+      fullPath: '/guides/$guide'
+      preLoaderRoute: typeof GuidesGuideRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/help/': {
       id: '/help/'
@@ -1434,6 +1494,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   StatusRoute: StatusRoute,
   TermsRoute: TermsRoute,
+  TiktokLiveRecorderRoute: TiktokLiveRecorderRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
@@ -1452,9 +1513,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
+  GuidesGuideRoute: GuidesGuideRoute,
   HelpArticleRoute: HelpArticleRoute,
   PartnersApplyRoute: PartnersApplyRoute,
   AdminIndexRoute: AdminIndexRoute,
+  GuidesIndexRoute: GuidesIndexRoute,
   HelpIndexRoute: HelpIndexRoute,
 }
 export const routeTree = rootRouteImport

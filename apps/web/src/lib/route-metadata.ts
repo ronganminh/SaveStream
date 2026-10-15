@@ -12,7 +12,12 @@ export function pageTitle(name: string) {
   return `${name} | SaveStream`;
 }
 
-const baseMeta = (title: string, description: string, image: SocialImage = "home") => {
+const baseMeta = (
+  title: string,
+  description: string,
+  image: SocialImage = "home",
+  type: "website" | "article" = "website",
+) => {
   const heading = pageTitle(title);
   const imageUrl = `${PUBLIC_SITE_URL}/og/${image}.png`;
   return [
@@ -20,7 +25,7 @@ const baseMeta = (title: string, description: string, image: SocialImage = "home
     { name: "description", content: description },
     { property: "og:title", content: heading },
     { property: "og:description", content: description },
-    { property: "og:type", content: "website" },
+    { property: "og:type", content: type },
     { property: "og:site_name", content: "SaveStream" },
     { property: "og:image", content: imageUrl },
     { property: "og:image:width", content: "1200" },
@@ -34,10 +39,7 @@ const baseMeta = (title: string, description: string, image: SocialImage = "home
 
 export function meta(title: string, description: string) {
   return {
-    meta: [
-      ...baseMeta(title, description),
-      { name: "robots", content: "noindex,nofollow" },
-    ],
+    meta: [...baseMeta(title, description), { name: "robots", content: "noindex,nofollow" }],
   };
 }
 
@@ -46,12 +48,13 @@ export function publicMeta(
   title: string,
   description: string,
   image: SocialImage = "home",
+  type: "website" | "article" = "website",
 ) {
   const canonical = `${PUBLIC_SITE_URL}${pathname === "/" ? "/" : pathname}`;
   const access = getRouteAccess(pathname);
   return {
     meta: [
-      ...baseMeta(title, description, image),
+      ...baseMeta(title, description, image, type),
       { name: "robots", content: access.indexable ? "index,follow" : "noindex,nofollow" },
       { property: "og:url", content: canonical },
     ],

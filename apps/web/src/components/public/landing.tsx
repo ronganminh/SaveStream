@@ -536,9 +536,32 @@ function LandingFaq({ retention }: { retention: string }) {
         More answers in the{" "}
         <Link to="/help" className="font-semibold text-accent-ink">
           help center
+        </Link>{" "}
+        and our{" "}
+        <Link to="/guides" className="font-semibold text-accent-ink">
+          guides
         </Link>
         .
       </p>
+      <ul className="mt-8 grid gap-3 sm:grid-cols-3" aria-label="Popular guides">
+        {(
+          [
+            ["/tiktok-live-recorder", "How the TikTok LIVE recorder works"],
+            ["/guides/how-to-record-a-tiktok-live", "How to record a TikTok LIVE"],
+            ["/guides/download-tiktok-live-replay", "Save a TikTok LIVE replay"],
+          ] as const
+        ).map(([to, label]) => (
+          <li key={to}>
+            <Link
+              to={to as "/tiktok-live-recorder"}
+              className="flex h-full items-center justify-between gap-3 rounded-2xl border bg-surface p-4 text-sm font-semibold hover:border-primary/40"
+            >
+              {label}
+              <ArrowRight className="size-4 flex-none text-muted-foreground" />
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
