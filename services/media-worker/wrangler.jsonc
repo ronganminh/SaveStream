@@ -1,13 +1,21 @@
 {
-  // Media delivery Worker (media.savestream.online). See README.md.
+  // Media delivery Worker. See README.md.
+  // Option 1 (docs/decisions/media-worker-options.md): deployed to the
+  // Cloudflare account that owns the R2 bucket and served on that account's
+  // workers.dev subdomain, so the R2 binding works. No custom domain, so the
+  // Cache API does nothing there and EDGE_CACHE is off.
   // The Deploy Media workflow fills in the bucket name from the VPS
   // (SAVESTREAM_R2_BUCKET) and sets the MEDIA_SIGNING_SECRET secret.
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "savestream-media",
   "main": "src/index.js",
   "compatibility_date": "2026-09-28",
-  "routes": [{ "pattern": "media.savestream.online", "custom_domain": true }],
+  "workers_dev": true,
+  "preview_urls": false,
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "__R2_BUCKET__" }],
-  "vars": { "ALLOWED_ORIGINS": "https://savestream.online,https://www.savestream.online" },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://savestream.online,https://www.savestream.online",
+    "EDGE_CACHE": "off"
+  },
   "observability": { "enabled": true }
 }
