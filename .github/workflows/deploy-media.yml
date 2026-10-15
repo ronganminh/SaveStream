@@ -159,6 +159,9 @@ jobs:
           errs() { jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}'; }
           echo "r2 GET bucket '$bucket': $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | errs)"
           echo "r2 list buckets: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], names: [.result.buckets[]?.name]}')"
+          for path in "" /workers/account-settings /workers/scripts /workers/subdomain /workers/scripts/savestream-media/subdomain; do
+            echo "GET /accounts/<id>$path: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID$path" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}')"
+          done
           echo "workers subdomain: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], has_subdomain: ((.result.subdomain // "") != "")}')"
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | ok; then
             report "R2 bucket readable" ok
