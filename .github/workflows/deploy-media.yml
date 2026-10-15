@@ -84,6 +84,26 @@ jobs:
           set -uo pipefail
           [[ -n "$CLOUDFLARE_ACCOUNT_ID" && -n "$CLOUDFLARE_API_TOKEN" ]] \
             || { echo "::error::CLOUDFLARE_MEDIA_ACCOUNT_ID / CLOUDFLARE_MEDIA_API_TOKEN are not set"; exit 1; }
+          # Pasted secrets often carry a newline, spaces or quotes; strip them
+          # and say what was wrong without printing either value.
+          clean() { printf '%s' "$1" | tr -d '[:space:]"'"'"; }
+          account="$(clean "$CLOUDFLARE_ACCOUNT_ID")"
+          token="$(clean "$CLOUDFLARE_API_TOKEN")"
+          [[ "$account" != "$CLOUDFLARE_ACCOUNT_ID" ]] && echo "note: removed whitespace/quotes from CLOUDFLARE_MEDIA_ACCOUNT_ID"
+          [[ "$token" != "$CLOUDFLARE_API_TOKEN" ]] && echo "note: removed whitespace/quotes from CLOUDFLARE_MEDIA_API_TOKEN"
+          if [[ "$account" =~ ^[0-9a-f]{32}$ ]]; then
+            echo "account id format: ok (32 hex)"
+          else
+            echo "account id format: NOT a 32-character hex Account ID (length ${#account}); copy it from the account's Overview page"
+          fi
+          echo "token length: ${#token}"
+          echo "::add-mask::$account"
+          echo "::add-mask::$token"
+          export CLOUDFLARE_ACCOUNT_ID="$account" CLOUDFLARE_API_TOKEN="$token"
+          {
+            echo "CLOUDFLARE_ACCOUNT_ID=$account"
+            echo "CLOUDFLARE_API_TOKEN=$token"
+          } >> "$GITHUB_ENV"
           cf() { curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$CF_API$1"; }
           ok() { jq -e '.success == true' >/dev/null; }
           failed=0
@@ -94,7 +114,8 @@ jobs:
             || cf "/user/tokens/verify" | jq -e '.result.status == "active"' >/dev/null; then
             report "token is active" ok
           else
-            report "token is active" no "token invalid, expired or disabled"
+            reason="$(cf "/user/tokens/verify" | jq -r '[.errors[]? | "\(.code) \(.message)"] | join("; ")')"
+            report "token is active" no "Cloudflare says: ${reason:-no detail}"
           fi
 
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" | ok; then
