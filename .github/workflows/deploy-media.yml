@@ -156,6 +156,10 @@ jobs:
           else
             report "bucket '$bucket' is in this account" no "CLOUDFLARE_MEDIA_ACCOUNT_ID is not the account in SAVESTREAM_R2_ENDPOINT"
           fi
+          errs() { jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}'; }
+          echo "r2 GET bucket '$bucket': $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | errs)"
+          echo "r2 list buckets: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], names: [.result.buckets[]?.name]}')"
+          echo "workers subdomain: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], has_subdomain: ((.result.subdomain // "") != "")}')"
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | ok; then
             report "R2 bucket readable" ok
           else
