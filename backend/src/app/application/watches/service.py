@@ -239,6 +239,9 @@ class WatchService:
             auto_record=payload.auto_record,
             notify_on_live=payload.notify_on_live,
             next_check_at=utcnow(),
+            # Optional "I own or manage this account, or have permission to
+            # record it" on Add channel; kept for admin review.
+            owner_attested_at=utcnow() if payload.owner_attested else None,
         )
         self.session.add(watch)
         try:

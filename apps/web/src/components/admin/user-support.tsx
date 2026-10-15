@@ -1131,6 +1131,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Live</th>
                   <th className="px-4 py-3">Auto record</th>
+                  <th className="px-4 py-3">Ownership</th>
                   <th className="px-4 py-3">Added</th>
                 </tr>
               </thead>
@@ -1150,12 +1151,23 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                     </td>
                     <td className="px-4 py-3">{item.live_status}</td>
                     <td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td>
+                    <td className="px-4 py-3">
+                      {item.owner_attested_at ? (
+                        <span title={`Confirmed ${dateTime(item.owner_attested_at)}`}>
+                          <AdminBadge tone="success">
+                            Confirmed {dateTime(item.owner_attested_at)}
+                          </AdminBadge>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Not confirmed</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
                   </tr>
                 ))}
                 {!detail.watches.length ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                       No channels.
                     </td>
                   </tr>
