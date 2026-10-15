@@ -16,7 +16,7 @@ export function buildLlmsTxt(pricing: PublicPricingResponse | null): string {
     rate && rate.credits_per_unit > 0 ? rate.unit_seconds / 60 / rate.credits_per_unit : null;
 
   const facts: string[] = [
-    "- Cloud recording: SaveStream checks each added channel about every 20 seconds and, with Auto-record on, records the LIVE on its servers. No phone or computer needs to stay on.",
+    "- Cloud recording: SaveStream checks each added channel about every 30 seconds and, with Auto-record on, records the LIVE on its servers. No phone or computer needs to stay on.",
     "- Automatic recording unlocks after the first credit purchase.",
     "- Recordings keep TikTok's vertical format and download as MP4 files; downloading is free.",
     "- Only channels the user owns, manages, or has clear permission from the creator to record may be added (Acceptable Use Policy). Users must be 18+.",
@@ -39,7 +39,9 @@ export function buildLlmsTxt(pricing: PublicPricingResponse | null): string {
       );
     }
     if (pricing.signup_credits) {
-      facts.push(`- New accounts receive ${pricing.signup_credits} free trial credits.`);
+      facts.push(
+        `- New accounts receive ${pricing.signup_credits} free trial credits; before a purchase they can add and monitor channels and get LIVE alerts, and recording starts after the first credit purchase.`,
+      );
     }
     if (pricing.free_max_channels_per_user && pricing.max_channels_per_user) {
       facts.push(

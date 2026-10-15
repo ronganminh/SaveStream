@@ -171,7 +171,7 @@ export function ProductionLanding() {
                 className="md:col-span-4"
                 icon={Radio}
                 title="Automatic live detection"
-                body="Channels are checked about every 20 seconds, so a LIVE is noticed within a minute of starting. Checking offline channels is free."
+                body="Channels are checked about every 30 seconds, so a LIVE is noticed within a minute of starting. Checking offline channels is free."
               />
               <Feature
                 className="md:col-span-2"
@@ -485,7 +485,7 @@ function LandingFaq({ retention }: { retention: string }) {
     ],
     [
       "How quickly is a LIVE detected?",
-      "Channels are checked about every 20 seconds, so a LIVE is usually detected within a minute of starting.",
+      "Channels are checked about every 30 seconds, so a LIVE is usually detected within a minute of starting.",
     ],
     [
       "How do credits work? Do they expire?",

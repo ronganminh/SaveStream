@@ -36,7 +36,7 @@ This gives you the best possible quality, because you are saving the video befor
 
 ## Method 3: Record automatically in the cloud
 
-The third option is to let a service watch your channel and record it for you. SaveStream checks each channel you add about every 20 seconds. When it sees that the channel is live and **Auto-record** is on, it starts recording on its own servers, so your phone and computer can be off. When the LIVE ends, the video is processed and appears in your account, ready to watch or download as an MP4.
+The third option is to let a service watch your channel and record it for you. SaveStream checks each channel you add about every 30 seconds. When it sees that the channel is live and **Auto-record** is on, it starts recording on its own servers, so your phone and computer can be off. When the LIVE ends, the video is processed and appears in your account, ready to watch or download as an MP4.
 
 ## Step by step
 

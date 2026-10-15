@@ -29,7 +29,7 @@ Your account records {{parallel_recordings}} at a time. A LIVE that ended while 
 
 ## The LIVE was very short
 
-Channels are checked about every 20 seconds. A LIVE that ends within the first few seconds may finish before recording starts.
+Channels are checked about every 30 seconds. A LIVE that ends within the first few seconds may finish before recording starts.
 
 ## Still missing?
 

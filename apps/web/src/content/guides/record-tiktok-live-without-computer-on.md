@@ -36,7 +36,7 @@ If you stream from a computer, your streaming software can save a local copy. Th
 
 A cloud recorder runs on a server that is always on. It watches the channels you add, notices when one goes live and records the stream itself. Your devices aren't involved at all: you can be live from your phone, or asleep, and the recording still happens.
 
-SaveStream works this way. It checks each channel you add about every 20 seconds, starts recording when the channel goes live with **Auto-record** on, and saves the finished video to your account.
+SaveStream works this way. It checks each channel you add about every 30 seconds, starts recording when the channel goes live with **Auto-record** on, and saves the finished video to your account.
 
 ## Step by step
 

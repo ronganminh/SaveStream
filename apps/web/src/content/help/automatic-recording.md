@@ -11,7 +11,7 @@ Automatic cloud recording is available once your account has a completed purchas
 
 ## What happens when a channel goes live
 
-1. SaveStream checks each monitored channel about every 20 seconds, so a LIVE is usually noticed within a minute of starting.
+1. SaveStream checks each monitored channel about every 30 seconds, so a LIVE is usually noticed within a minute of starting.
 2. If **Auto-record** is on, a cloud recording starts. Your browser and computer can be closed.
 3. When the LIVE ends, the recording is processed, uploaded to storage and appears in **Recordings**.
 

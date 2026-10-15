@@ -53,7 +53,7 @@ export function TikTokLiveRecorderPage() {
       {
         question: "Can it record TikTok LIVE automatically?",
         answer:
-          "Yes. After your first credit purchase, switch on Auto-record for a channel. SaveStream checks it about every 20 seconds and starts recording on its own when the channel goes live, even if your phone and computer are off.",
+          "Yes. After your first credit purchase, switch on Auto-record for a channel. SaveStream checks it about every 30 seconds and starts recording on its own when the channel goes live, even if your phone and computer are off.",
       },
       {
         question: "Do I need to keep my computer or phone on?",
@@ -149,7 +149,7 @@ export function TikTokLiveRecorderPage() {
                 [
                   Radio,
                   "We watch it",
-                  "SaveStream checks the channel about every 20 seconds from the cloud.",
+                  "SaveStream checks the channel about every 30 seconds from the cloud.",
                 ],
                 [
                   Video,
