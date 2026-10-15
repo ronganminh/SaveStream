@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
     func,
+    true,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -384,6 +385,27 @@ class NotificationPreference(Base):
         Boolean,
         nullable=False,
         default=False,
+    )
+    # Email copies of notifications (on by default; each has an unsubscribe
+    # link). Required account emails (verification, password reset, receipts)
+    # are not controlled here.
+    email_creator_live: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    email_recording_ready: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    email_recording_failed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    email_recording_expiring: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    email_credits_low: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
+    )
+    email_credits_exhausted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=true()
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
