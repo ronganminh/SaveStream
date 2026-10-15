@@ -36,7 +36,11 @@ from app.infrastructure.db.recording_models import (
     RecordingArtifact,
 )
 from app.infrastructure.db.session import Database
-from app.infrastructure.recording.media_probe import probe_media
+from app.infrastructure.recording.media_probe import (
+    extract_thumbnail,
+    probe_media,
+    thumbnail_key_for,
+)
 from app.infrastructure.recording.runtime import (
     AtomicFFmpegMediaProcessor,
     build_recording_runtime,
@@ -108,6 +112,31 @@ async def _upload_with_retry(
                 exc_info=True,
             )
             await asyncio.sleep(retry_seconds * attempt)
+
+
+async def _make_thumbnail(
+    storage: MinioStorageClient,
+    source: Path,
+    storage_key: str,
+    *,
+    duration_ms: int | None,
+) -> str | None:
+    """One JPEG frame next to the video. Best effort: the recording never
+    fails because of its thumbnail; the library shows a gradient instead."""
+    target = source.with_suffix(".thumb.jpg")
+    key = thumbnail_key_for(storage_key)
+    try:
+        if not await asyncio.to_thread(
+            extract_thumbnail, source, target, duration_ms=duration_ms
+        ):
+            return None
+        await asyncio.to_thread(storage.upload_file, target, key, content_type="image/jpeg")
+        return key
+    except Exception:
+        logger.warning("thumbnail failed key=%s", key, exc_info=True)
+        return None
+    finally:
+        target.unlink(missing_ok=True)
 
 
 async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> None:
@@ -312,6 +341,12 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                     )
                     return
 
+                thumbnail_key = await _make_thumbnail(
+                    storage,
+                    result.artifact_path,
+                    storage_key,
+                    duration_ms=media.duration_ms,
+                )
                 session.add(
                     RecordingArtifact(
                         id=artifact_id,
@@ -324,6 +359,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                         duration_ms=media.duration_ms,
                         width=media.width,
                         height=media.height,
+                        thumbnail_key=thumbnail_key,
                     )
                 )
                 credit_service = CreditService(session)
@@ -408,6 +444,11 @@ async def _cleanup_recording(recording_id: uuid.UUID, settings: AppSettings) -> 
                     await asyncio.to_thread(storage.remove, artifact.storage_key)
                 except Exception:
                     continue
+                if artifact.thumbnail_key:
+                    try:
+                        await asyncio.to_thread(storage.remove, artifact.thumbnail_key)
+                    except Exception:
+                        logger.warning("thumbnail delete failed key=%s", artifact.thumbnail_key)
                 artifact.deleted_at = utcnow()
                 deleted_count += 1
             run.deleted_count = deleted_count

@@ -45,8 +45,11 @@ def signed_media_url(
     *,
     content_disposition: str | None = None,
     now: float | None = None,
+    expires_at: int | None = None,
 ) -> str:
-    expires = int(now if now is not None else time.time()) + settings.artifact_presign_seconds
+    expires = expires_at or (
+        int(now if now is not None else time.time()) + settings.artifact_presign_seconds
+    )
     path = "/o/" + quote(storage_key, safe="/")
     disposition = _b64url(content_disposition.encode()) if content_disposition else ""
     query = {"e": str(expires)}
@@ -58,3 +61,10 @@ def signed_media_url(
 
 def media_avatar_url(settings: AppSettings, avatar_id: str) -> str:
     return f"{settings.media_base_url}/a/{avatar_id}"
+
+
+def stable_expiry(now: float | None = None, *, window_seconds: int = 3600) -> int:
+    """An expiry that stays the same for a whole window (valid 1-2 windows),
+    so a list page returns the same image URL and the browser cache works."""
+    current = int(now if now is not None else time.time())
+    return (current // window_seconds + 2) * window_seconds

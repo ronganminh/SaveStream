@@ -114,12 +114,31 @@ async def create_recording(
     return recording_response(recording)
 
 
+async def _thumbnail_urls(request: Request, keys: dict[uuid.UUID, str]) -> dict[uuid.UUID, str]:
+    """Signed thumbnail URLs; a signing failure only drops the image."""
+    if not keys:
+        return {}
+    storage = request.app.state.minio
+
+    def sign() -> dict[uuid.UUID, str]:
+        urls: dict[uuid.UUID, str] = {}
+        for recording_id, key in keys.items():
+            try:
+                urls[recording_id] = storage.thumbnail_url(key)
+            except Exception:
+                continue
+        return urls
+
+    return await asyncio.to_thread(sign)
+
+
 @router.get(
     "/recordings",
     response_model=RecordingListResponse,
     operation_id="listRecordings",
 )
 async def list_recordings(
+    request: Request,
     limit: int = Query(default=20, ge=1, le=100),
     cursor: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
@@ -136,6 +155,7 @@ async def list_recordings(
     positions = await service.queue_positions(page.items)
     artifact_recording_ids = await service.artifact_recording_ids(page.items)
     avatars = await recording_avatar_urls(service.session, page.items)
+    thumbnails = await _thumbnail_urls(request, await service.thumbnail_keys(page.items))
     return RecordingListResponse(
         items=[
             recording_response(
@@ -144,6 +164,7 @@ async def list_recordings(
                 queue_position=positions.get(item.id),
                 artifact_ready=item.id in artifact_recording_ids,
                 avatar_url=avatars.get(item.id),
+                thumbnail_url=thumbnails.get(item.id),
             )
             for item in page.items
         ],
@@ -158,6 +179,7 @@ async def list_recordings(
 )
 async def get_recording(
     recording_id: str,
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("recordings:read")),
     service: RecordingService = Depends(get_recording_service),
 ) -> RecordingResponse:
@@ -166,12 +188,14 @@ async def get_recording(
     queue_position = await service.queue_position(recording)
     artifact_recording_ids = await service.artifact_recording_ids([recording])
     avatars = await recording_avatar_urls(service.session, [recording])
+    thumbnails = await _thumbnail_urls(request, await service.thumbnail_keys([recording]))
     return recording_response(
         recording,
         retention_days=days,
         queue_position=queue_position,
         artifact_ready=recording.id in artifact_recording_ids,
         avatar_url=avatars.get(recording.id),
+        thumbnail_url=thumbnails.get(recording.id),
     )
 
 

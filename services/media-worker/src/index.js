@@ -1,9 +1,9 @@
-// SaveStream media delivery (media.savestream.online).
+// SaveStream media delivery (savestream-media.<subdomain>.workers.dev; see README).
 //
 // Serves recordings and cached creator avatars from the R2 bucket through a
 // Worker binding instead of the S3 API endpoint (<account>.r2.cloudflarestorage.com),
-// which answered 503 to range requests and downloads. Responses come from
-// Cloudflare's edge cache when possible.
+// which answered 503 to range requests and downloads. With EDGE_CACHE on
+// (custom domain only) responses also come from Cloudflare's edge cache.
 //
 //   GET /o/<object key>?e=<unix expiry>&cd=<base64url Content-Disposition>&s=<sig>
 //       A recording. The API signs every link (HMAC-SHA256 with
@@ -15,7 +15,9 @@
 //   GET /healthz
 //
 // Bindings: MEDIA (R2 bucket), MEDIA_SIGNING_SECRET (secret),
-// ALLOWED_ORIGINS (comma-separated web origins allowed to read with CORS).
+// ALLOWED_ORIGINS (comma-separated web origins allowed to read with CORS),
+// EDGE_CACHE ("off" on workers.dev, where the Cache API does nothing: skips
+// cache lookups and the background full-object reads that would fill it).
 
 const RECORDING_PREFIX = "/o/";
 const AVATAR_PREFIX = "/a/";
@@ -160,10 +162,11 @@ function objectHeaders(object, contentType) {
 async function serveObject(request, env, ctx, { key, cacheUrl, contentType, browserCache, extraHeaders }) {
   const cacheKey = new Request(cacheUrl, { method: "GET" });
   const range = request.headers.get("Range");
+  const useCache = env.EDGE_CACHE !== "off";
 
-  const cached = await caches.default.match(
-    new Request(cacheUrl, { headers: range ? { Range: range } : {} }),
-  );
+  const cached = useCache
+    ? await caches.default.match(new Request(cacheUrl, { headers: range ? { Range: range } : {} }))
+    : undefined;
   // A range request must get a 206 from the cache; anything else goes to R2.
   if (cached && (!range || cached.status === 206)) {
     const response = new Response(request.method === "HEAD" ? null : cached.body, cached);
@@ -192,7 +195,9 @@ async function serveObject(request, env, ctx, { key, cacheUrl, contentType, brow
       headers.set("Content-Range", `bytes */${size}`);
       return new Response(null, { status: 416, headers });
     }
-    if (size <= CACHE_MAX_BYTES) ctx.waitUntil(fillCache(env, key, cacheKey, contentType));
+    if (useCache && size <= CACHE_MAX_BYTES) {
+      ctx.waitUntil(fillCache(env, key, cacheKey, contentType));
+    }
     if (parsed) {
       const part = await r2Get(env.MEDIA, key, { range: parsed });
       if (part === null) return text(404, "Not found");
@@ -219,7 +224,7 @@ async function serveObject(request, env, ctx, { key, cacheUrl, contentType, brow
     return new Response(null, { status: 304, headers });
   }
   headers.set("Content-Length", String(object.size));
-  if (object.size <= CACHE_MAX_BYTES) {
+  if (useCache && object.size <= CACHE_MAX_BYTES) {
     const [forClient, forCache] = object.body.tee();
     ctx.waitUntil(putCache(cacheKey, forCache, object, contentType));
     return new Response(forClient, { status: 200, headers });

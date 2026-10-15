@@ -128,6 +128,8 @@ export type RecordingResponse = {
   expires_at?: string | null;
   minutes_charged?: number;
   queue_position?: number | null;
+  /** Signed URL of one JPEG frame; null until one exists. */
+  thumbnail_url?: string | null;
 };
 
 export type RecordingListResponse = {

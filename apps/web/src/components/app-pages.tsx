@@ -150,6 +150,7 @@ import {
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
 import { cn } from "@/lib/utils";
+import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { usePreferences, type Language } from "@/lib/preferences";
 import { sampleMedia, type SampleMediaItem } from "@/lib/sample-media";
 import {
@@ -2601,6 +2602,7 @@ function ProductionOverviewPage() {
                     recording.color,
                   )}
                 >
+                  <RecordingThumbImage url={recording.thumbnailUrl} />
                   <span
                     className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"
                     aria-hidden="true"
@@ -3003,6 +3005,7 @@ function RecordingTile({ recording }: { recording: RecordingModel }) {
           section === "failed" && "opacity-60",
         )}
       >
+        <RecordingThumbImage url={recording.thumbnailUrl} />
         <span
           className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"
           aria-hidden="true"
@@ -3297,8 +3300,13 @@ export function RecordingsPage() {
                             <div className="flex items-center gap-3">
                               <span
                                 aria-hidden="true"
-                                className={cn("h-[54px] w-[30px] shrink-0 rounded-md", r.color)}
-                              />
+                                className={cn(
+                                  "relative overflow-hidden h-[54px] w-[30px] shrink-0 rounded-md",
+                                  r.color,
+                                )}
+                              >
+                                <RecordingThumbImage url={r.thumbnailUrl} />
+                              </span>
                               <b className="font-semibold">{r.title}</b>
                             </div>
                           </td>
@@ -3544,8 +3552,13 @@ export function RecordingsProcessingPage() {
                   >
                     <span
                       aria-hidden="true"
-                      className={cn("h-16 w-12 shrink-0 rounded-[10px]", recording.color)}
-                    />
+                      className={cn(
+                        "relative overflow-hidden h-16 w-12 shrink-0 rounded-[10px]",
+                        recording.color,
+                      )}
+                    >
+                      <RecordingThumbImage url={recording.thumbnailUrl} />
+                    </span>
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="min-w-0">
@@ -3944,6 +3957,7 @@ export function RecordingDetailPage({
             <VideoPlayerShell
               state={state}
               portrait={portrait}
+              poster={rec.thumbnailUrl}
               {...(isDemoMode
                 ? {}
                 : {
@@ -7058,8 +7072,13 @@ function ChannelDetail({
                           <div className="flex items-center gap-3">
                             <span
                               aria-hidden="true"
-                              className={cn("h-14 w-8 shrink-0 rounded-md", recording.color)}
-                            />
+                              className={cn(
+                                "relative overflow-hidden h-14 w-8 shrink-0 rounded-md",
+                                recording.color,
+                              )}
+                            >
+                              <RecordingThumbImage url={recording.thumbnailUrl} />
+                            </span>
                             <b className="font-semibold">{recording.title}</b>
                           </div>
                         </td>
