@@ -1,6 +1,6 @@
-# Media Worker: phương án (chờ chủ sản phẩm chọn)
+# Media Worker: phương án (đã chọn phương án 1)
 
-Trạng thái: **chờ quyết định**. Cập nhật: 2026-10-14.
+Trạng thái: **đã chọn phương án 1** (chủ sản phẩm, 2026-10-15). Secret `CLOUDFLARE_MEDIA_ACCOUNT_ID` và `CLOUDFLARE_MEDIA_API_TOKEN` đã có trong GitHub. Cách deploy/bật/quay lại: `services/media-worker/README.md`.
 
 ## Bối cảnh
 
