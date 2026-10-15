@@ -1,4 +1,4 @@
-"""Terms/Privacy (18+) acceptance evidence for new accounts."""
+"""Terms/Privacy (18+) and Acceptable Use Policy acceptance evidence for new accounts."""
 
 from __future__ import annotations
 
@@ -8,7 +8,11 @@ from dataclasses import replace
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.application.identity.legal import CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION
+from app.application.identity.legal import (
+    CURRENT_AUP_VERSION,
+    CURRENT_PRIVACY_VERSION,
+    CURRENT_TERMS_VERSION,
+)
 from app.infrastructure.db.models import LegalConsent, User
 from app.infrastructure.db.session import Database
 from app.infrastructure.rate_limit import InMemoryRateLimiter
@@ -23,6 +27,8 @@ CONSENT = {
     "age_confirmed": True,
     "terms_version": CURRENT_TERMS_VERSION,
     "privacy_version": CURRENT_PRIVACY_VERSION,
+    "aup_accepted": True,
+    "aup_version": CURRENT_AUP_VERSION,
 }
 
 
@@ -81,6 +87,19 @@ def test_web_signup_requires_and_records_consent(tmp_path) -> None:
         )
         assert outdated.status_code == 409
         assert outdated.json()["error"]["code"] == "LEGAL_VERSION_OUTDATED"
+
+        # The Acceptable Use confirmation is required too.
+        no_aup = client.post(
+            "/v1/auth/register",
+            json={**body, "consent": {**CONSENT, "aup_accepted": False}},
+        )
+        assert no_aup.status_code == 428
+        assert no_aup.json()["error"]["details"]["aup_version"] == CURRENT_AUP_VERSION
+        old_aup = client.post(
+            "/v1/auth/register",
+            json={**body, "consent": {**CONSENT, "aup_version": "2026-01-01"}},
+        )
+        assert old_aup.status_code == 409
         assert _user_count(database_url) == 0
 
         created = client.post(
@@ -97,6 +116,8 @@ def test_web_signup_requires_and_records_consent(tmp_path) -> None:
     assert consent.terms_version == CURRENT_TERMS_VERSION
     assert consent.privacy_version == CURRENT_PRIVACY_VERSION
     assert consent.age_confirmed is True
+    assert consent.aup_accepted is True
+    assert consent.aup_version == CURRENT_AUP_VERSION
     assert consent.method == "email_signup"
     assert consent.ip_address
     assert consent.user_agent == "consent-test-browser"
@@ -143,6 +164,17 @@ def test_new_web_social_account_requires_consent(monkeypatch, tmp_path) -> None:
         assert first.json()["error"]["code"] == "LEGAL_CONSENT_REQUIRED"
         assert _user_count(database_url) == 0
 
+        without_aup = client.post(
+            "/v1/auth/social",
+            json={
+                "id_token": token,
+                "client_type": "web",
+                "consent": {k: v for k, v in CONSENT.items() if not k.startswith("aup")},
+            },
+        )
+        assert without_aup.status_code == 428
+        assert _user_count(database_url) == 0
+
         accepted = client.post(
             "/v1/auth/social",
             json={"id_token": token, "client_type": "web", "consent": CONSENT},
@@ -156,6 +188,7 @@ def test_new_web_social_account_requires_consent(monkeypatch, tmp_path) -> None:
     rows = _consents(database_url)
     assert len(rows) == 1
     assert rows[0][1].method == "social_signup:google.com"
+    assert rows[0][1].aup_accepted is True
 
 
 def test_consent_ip_uses_forwarded_for_from_trusted_proxy(tmp_path) -> None:
