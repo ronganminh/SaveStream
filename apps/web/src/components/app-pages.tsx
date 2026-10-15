@@ -943,7 +943,7 @@ export function AuthPage({
       return;
     }
     void navigate({
-      to: authUser && isAdminRole(authUser.role) ? "/admin/system" : "/overview",
+      to: authUser && isAdminRole(authUser.role) ? "/admin/overview" : "/overview",
       replace: true,
     });
   }, [authUser, mode, navigate, status]);
@@ -982,7 +982,7 @@ export function AuthPage({
         provider,
         mode === "sign-up" ? currentLegalConsent() : undefined,
       );
-      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
+      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/overview" : "/overview" });
     } catch (error) {
       if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
         setSocialConsentChecked(false);
@@ -1004,7 +1004,7 @@ export function AuthPage({
     try {
       const currentUser = await completeSocialSignUp(currentLegalConsent());
       setSocialConsentOpen(false);
-      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
+      await navigate({ to: isAdminRole(currentUser.role) ? "/admin/overview" : "/overview" });
     } catch (error) {
       setSocialConsentError(
         error instanceof ApiError ? authErrorMessage(error) : socialProviderErrorMessage(error),
@@ -1053,7 +1053,7 @@ export function AuthPage({
     if (isDemoMode) {
       setTimeout(() => {
         setBusy(false);
-        if (mode === "sign-in") void navigate({ to: "/admin/system" });
+        if (mode === "sign-in") void navigate({ to: "/admin/overview" });
         else if (mode === "sign-up") void navigate({ to: "/verify-email", search: { token: "" } });
         else setDone(true);
       }, 700);
@@ -1063,7 +1063,7 @@ export function AuthPage({
     try {
       if (mode === "sign-in") {
         const currentUser = await signIn(email, pw);
-        await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
+        await navigate({ to: isAdminRole(currentUser.role) ? "/admin/overview" : "/overview" });
       } else if (mode === "sign-up") {
         await authApi.register({
           email,
