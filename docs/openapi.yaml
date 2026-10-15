@@ -7939,6 +7939,21 @@
         }
       }
     },
+    "/public/email/unsubscribe": {
+      "post": {
+        "tags": ["Notifications"],
+        "summary": "Turn off one kind of notification email",
+        "description": "Signed token from a notification email: in the JSON body (the /unsubscribe page) or the query string (RFC 8058 one-click POST from mail apps, body List-Unsubscribe=One-Click). Idempotent; required account emails are not affected.",
+        "operationId": "unsubscribeEmail",
+        "security": [],
+        "parameters": [{"name": "token", "in": "query", "required": false, "schema": {"type": "string"}}],
+        "requestBody": {"required": false, "content": {"application/json": {"schema": {"type": "object", "properties": {"token": {"type": "string"}}}}}},
+        "responses": {
+          "200": {"description": "Unsubscribed", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EmailUnsubscribeResponse"}}}},
+          "400": {"description": "Invalid or edited link", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ErrorEnvelope"}}}}
+        }
+      }
+    },
     "/support/reports": {
       "post": {
         "tags": [
@@ -10356,6 +10371,7 @@
           "recording_missed",
           "recording_expiring",
           "cloud_minutes_exhausted",
+          "credits_low",
           "free_minutes_low",
           "purchase_completed"
         ]
@@ -10477,7 +10493,7 @@
           },
           "email_supported": {
             "type": "boolean",
-            "const": false
+            "description": "True: notification emails are available (email_* switches)."
           },
           "updated_at": {
             "oneOf": [
@@ -10508,6 +10524,36 @@
             "type": "boolean",
             "default": false,
             "description": "V2 notification preference implemented in B3. Default: false."
+          },
+          "email_creator_live": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email when a monitored channel goes LIVE (at most one per channel every 6 hours). Default: true; each email has a one-click unsubscribe link."
+          },
+          "email_recording_ready": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email when a recording is ready. Default: true; each email has a one-click unsubscribe link."
+          },
+          "email_recording_failed": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email when a recording fails, stops early or is missed. Default: true; each email has a one-click unsubscribe link."
+          },
+          "email_recording_expiring": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email about 24 hours before a recording expires. Default: true; each email has a one-click unsubscribe link."
+          },
+          "email_credits_low": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email (at most daily) when an hour or less of cloud credits is left. Default: true; each email has a one-click unsubscribe link."
+          },
+          "email_credits_exhausted": {
+            "type": "boolean",
+            "default": true,
+            "description": "Email when cloud credits run out. Default: true; each email has a one-click unsubscribe link."
           }
         },
         "additionalProperties": false
@@ -10535,9 +10581,35 @@
           },
           "marketing": {
             "type": "boolean"
+          },
+          "email_creator_live": {
+            "type": "boolean"
+          },
+          "email_recording_ready": {
+            "type": "boolean"
+          },
+          "email_recording_failed": {
+            "type": "boolean"
+          },
+          "email_recording_expiring": {
+            "type": "boolean"
+          },
+          "email_credits_low": {
+            "type": "boolean"
+          },
+          "email_credits_exhausted": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
+      },
+      "EmailUnsubscribeResponse": {
+        "type": "object",
+        "required": ["preference", "label"],
+        "properties": {
+          "preference": {"type": "string"},
+          "label": {"type": "string"}
+        }
       },
       "PublicRecordingRate": {
         "type": "object",

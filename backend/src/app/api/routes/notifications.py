@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from typing import Literal, cast
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 
 from app.api.dependencies import get_current_principal, get_db_session
 from app.api.schemas.notifications import (
+    EmailUnsubscribeRequest,
+    EmailUnsubscribeResponse,
     MarkAllReadResponse,
     NotificationKind,
     NotificationListResponse,
@@ -15,12 +17,26 @@ from app.api.schemas.notifications import (
     UpdateNotificationPreferencesRequest,
 )
 from app.api.schemas.recordings import Pagination
-from app.application.notifications.service import NotificationService
+from app.application.notifications.service import (
+    PREFERENCE_FIELDS,
+    NotificationPreferenceState,
+    NotificationService,
+)
+from app.application.notifications.unsubscribe import EMAIL_LABELS, parse_token
+from app.domain.common.errors import ApplicationError
+from app.infrastructure.db.models import NotificationPreference
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.db.models import UserNotification
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/v1", tags=["Notifications"])
+
+
+def _preferences_response(state: NotificationPreferenceState) -> NotificationPreferenceResponse:
+    return NotificationPreferenceResponse(
+        **{field: getattr(state, field) for field in PREFERENCE_FIELDS},
+        updated_at=state.updated_at,
+    )
 
 
 def _response(item: UserNotification) -> NotificationResponse:
@@ -105,16 +121,7 @@ async def get_notification_preferences(
     session: AsyncSession = Depends(get_db_session),
 ) -> NotificationPreferenceResponse:
     preferences = await NotificationService(session).get_preferences(principal)
-    return NotificationPreferenceResponse(
-        recording_started=preferences.recording_started,
-        recording_ready=preferences.recording_ready,
-        recording_failed=preferences.recording_failed,
-        creator_live=preferences.creator_live,
-        recording_expiring=preferences.recording_expiring,
-        free_minutes_low=preferences.free_minutes_low,
-        marketing=preferences.marketing,
-        updated_at=preferences.updated_at,
-    )
+    return _preferences_response(preferences)
 
 
 @router.patch(
@@ -128,22 +135,44 @@ async def update_notification_preferences(
     session: AsyncSession = Depends(get_db_session),
 ) -> NotificationPreferenceResponse:
     preferences = await NotificationService(session).update_preferences(
-        principal,
-        recording_started=payload.recording_started,
-        recording_ready=payload.recording_ready,
-        recording_failed=payload.recording_failed,
-        creator_live=payload.creator_live,
-        recording_expiring=payload.recording_expiring,
-        free_minutes_low=payload.free_minutes_low,
-        marketing=payload.marketing,
+        principal, **payload.model_dump()
     )
-    return NotificationPreferenceResponse(
-        recording_started=preferences.recording_started,
-        recording_ready=preferences.recording_ready,
-        recording_failed=preferences.recording_failed,
-        creator_live=preferences.creator_live,
-        recording_expiring=preferences.recording_expiring,
-        free_minutes_low=preferences.free_minutes_low,
-        marketing=preferences.marketing,
-        updated_at=preferences.updated_at,
-    )
+    return _preferences_response(preferences)
+
+
+@router.post(
+    "/public/email/unsubscribe",
+    response_model=EmailUnsubscribeResponse,
+    operation_id="unsubscribeEmail",
+)
+async def unsubscribe_email(
+    request: Request,
+    token: str | None = Query(default=None, max_length=512),
+    session: AsyncSession = Depends(get_db_session),
+) -> EmailUnsubscribeResponse:
+    """Turn off one kind of notification email from its signed link.
+
+    The token comes from the JSON body (the /unsubscribe page) or the query
+    string (RFC 8058 one-click: mail apps POST `List-Unsubscribe=One-Click`
+    to the List-Unsubscribe URL). Idempotent.
+    """
+    if token is None and "json" in request.headers.get("content-type", ""):
+        try:
+            token = EmailUnsubscribeRequest.model_validate(await request.json()).token
+        except ValueError as exc:
+            raise ApplicationError(
+                "VALIDATION_ERROR", "This unsubscribe link is not valid.", status_code=400
+            ) from exc
+    if not token:
+        raise ApplicationError(
+            "VALIDATION_ERROR", "This unsubscribe link is not valid.", status_code=400
+        )
+    user_id, preference = parse_token(request.app.state.settings.jwt_secret, token)
+    row = await session.get(NotificationPreference, user_id)
+    if row is None:
+        row = NotificationPreference(user_id=user_id)
+        session.add(row)
+        await session.flush()
+    setattr(row, preference, False)
+    await session.commit()
+    return EmailUnsubscribeResponse(preference=preference, label=EMAIL_LABELS[preference])

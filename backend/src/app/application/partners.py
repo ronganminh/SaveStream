@@ -186,7 +186,19 @@ class PartnerService:
             application.photo_content_type = content_type
         self.session.add(application)
         await self.session.flush()
+        await self._queue_email(application, "partner_received")
         return application
+
+    async def _queue_email(self, application: PartnerApplication, kind: str) -> None:
+        from app.infrastructure.queue.outbox import OutboxWriter
+
+        await OutboxWriter().enqueue(
+            self.session,
+            topic="partner.email",
+            aggregate_type="partner_application",
+            aggregate_id=str(application.id),
+            payload={"application_id": str(application.id), "kind": kind},
+        )
 
     async def list(
         self, *, status: str | None, query: str | None, limit: int = 100
@@ -277,6 +289,10 @@ class PartnerService:
         if target == "withdrawn":
             application.consent_withdrawn_at = application.consent_withdrawn_at or utcnow()
             application.published_at = None
+        if target == "approved" and before == "pending":
+            # Re-approving after a rejection does not send it again (the
+            # email log dedupes per application too).
+            await self._queue_email(application, "partner_approved")
         await self.session.flush()
         await self.session.refresh(application)
         return application, before

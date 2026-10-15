@@ -175,3 +175,164 @@ def message_email(*, subject: str, body: str, site_url: str) -> RenderedEmail:
         subject=subject, preheader=body[:140], content=content, site_url=site_url, footer_note=""
     )
     return RenderedEmail(subject=subject, text=text, html=html)
+
+
+def _notification_shell(
+    *,
+    subject: str,
+    heading: str,
+    intro: str,
+    button_label: str,
+    link: str,
+    site_url: str,
+    unsubscribe_url: str | None,
+    unsubscribe_label: str | None,
+    detail: str = "",
+) -> RenderedEmail:
+    """Notification email: heading, short text, one button. Optional emails
+    end with a one-click unsubscribe link for just this kind."""
+    href = escape(link, quote=True)
+    detail_html = (
+        f'<p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:{MUTED};">{escape(detail)}</p>'
+        if detail
+        else ""
+    )
+    content = f"""<h1 style="margin:0 0 12px;font-size:24px;line-height:1.25;font-weight:800;letter-spacing:-0.02em;color:{INK};">{escape(heading)}</h1>
+<p style="margin:0 0 {"12px" if detail else "24px"};font-size:15px;line-height:1.6;color:{INK};">{escape(intro)}</p>
+{detail_html}<table role="presentation" cellpadding="0" cellspacing="0"><tr>
+<td style="border-radius:12px;background:{BRAND};">
+<a href="{href}" style="display:inline-block;padding:13px 24px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;">{escape(button_label)}</a>
+</td></tr></table>"""
+    if unsubscribe_url:
+        unsub = escape(unsubscribe_url, quote=True)
+        content += (
+            f'\n<p style="margin:24px 0 0;padding-top:20px;border-top:1px solid {LINE};font-size:12px;line-height:1.6;color:{MUTED};">'
+            f"You get this because “{escape(unsubscribe_label or '')}” emails are on. "
+            f'<a href="{unsub}" style="color:{LINK};">Unsubscribe</a> or change them in '
+            f'<a href="{escape(site_url, quote=True)}/settings/notifications" style="color:{LINK};">Settings → Notifications</a>.</p>'
+        )
+    text_lines = [heading, "", intro]
+    if detail:
+        text_lines += ["", detail]
+    text_lines += ["", f"{button_label}: {link}"]
+    if unsubscribe_url:
+        text_lines += [
+            "",
+            f"Unsubscribe from “{unsubscribe_label}” emails: {unsubscribe_url}",
+            f"Manage all emails: {site_url}/settings/notifications",
+        ]
+    text_lines += ["", "— SaveStream"]
+    html = _shell(subject=subject, preheader=intro, content=content, site_url=site_url, footer_note="")
+    return RenderedEmail(subject=subject, text="\n".join(text_lines) + "\n", html=html)
+
+
+def notification_email(
+    kind: str,
+    *,
+    handle: str,
+    link: str,
+    site_url: str,
+    unsubscribe_url: str | None,
+    unsubscribe_label: str | None,
+    available_minutes: int | None = None,
+) -> RenderedEmail | None:
+    """The six notification emails users can turn off. None for kinds that
+    have no email."""
+    def make(
+        *, subject: str, heading: str, intro: str, button_label: str, detail: str = ""
+    ) -> RenderedEmail:
+        return _notification_shell(
+            subject=subject,
+            heading=heading,
+            intro=intro,
+            button_label=button_label,
+            detail=detail,
+            link=link,
+            site_url=site_url,
+            unsubscribe_url=unsubscribe_url,
+            unsubscribe_label=unsubscribe_label,
+        )
+
+    if kind == "creator_live":
+        return make(
+            subject=f"{handle} is LIVE now",
+            heading=f"{handle} just went LIVE",
+            intro="SaveStream noticed the channel is live. If auto-record is on, the recording has already started in the cloud.",
+            button_label="Open channel",
+        )
+    if kind == "recording_ready":
+        return make(
+            subject=f"Your {handle} recording is ready",
+            heading="Your recording is ready",
+            intro=f"The LIVE from {handle} has been saved. You can watch it or download the MP4.",
+            detail="Recordings are kept for a limited time; download a copy to keep it.",
+            button_label="Watch recording",
+        )
+    if kind in ("recording_failed", "recording_missed"):
+        missed = kind == "recording_missed"
+        return make(
+            subject=f"{handle} recording {'missed' if missed else 'didn’t complete'}",
+            heading="Recording missed" if missed else "Recording didn’t complete",
+            intro=(
+                f"{handle} ended before a cloud recording slot became available."
+                if missed
+                else f"The recording of {handle} stopped before it finished. Anything saved is kept."
+            ),
+            detail="Open it to see what happened. Credits are only used for time that was recorded.",
+            button_label="View details",
+        )
+    if kind == "recording_expiring":
+        return make(
+            subject=f"Your {handle} recording expires in about 24 hours",
+            heading="A recording expires soon",
+            intro=f"The {handle} recording will be deleted from cloud storage in about 24 hours.",
+            detail="Download the MP4 now if you want to keep it.",
+            button_label="Download recording",
+        )
+    if kind == "credits_low":
+        minutes = max(available_minutes or 0, 0)
+        return make(
+            subject="Your SaveStream credits are running low",
+            heading="Credits are running low",
+            intro=f"You have {minutes} cloud recording minute{'s' if minutes != 1 else ''} left. Auto-record pauses when they run out.",
+            button_label="Buy credits",
+        )
+    if kind == "cloud_minutes_exhausted":
+        return make(
+            subject="You’re out of SaveStream credits",
+            heading="You’re out of credits",
+            intro="Your cloud recording minutes have run out, so auto-record is paused. Channels are still checked for free.",
+            detail="Buy credits to resume recording. Credits never expire.",
+            button_label="Buy credits",
+        )
+    return None
+
+
+def partner_email(kind: str, *, name: str, reference: str, site_url: str) -> RenderedEmail | None:
+    """Replies to a Partner Program applicant (sent to the email they gave)."""
+    first = name.strip().split(" ")[0] or "there"
+    if kind == "partner_received":
+        return _notification_shell(
+            subject=f"We received your SaveStream partner application ({reference})",
+            heading=f"Thanks, {first}! Application received",
+            intro=f"We’ll review your channel and email you within {SUPPORT_RESPONSE_TIME}. Nothing is published until you approve the final quote, image and clip.",
+            detail="Once your story is published, 50 free recording hours are added to your SaveStream account (same email). You can withdraw consent at any time by emailing privacy@savestream.online.",
+            button_label="About the Partner Program",
+            link=f"{site_url}/partners/apply",
+            site_url=site_url,
+            unsubscribe_url=None,
+            unsubscribe_label=None,
+        )
+    if kind == "partner_approved":
+        return _notification_shell(
+            subject="Your SaveStream partner application was approved",
+            heading=f"You’re in, {first}!",
+            intro="Your Partner Program application was approved. We’ll send the final quote, image and clip for your sign-off before anything is published.",
+            detail="When your story goes live, 50 free recording hours are added to the SaveStream account that uses this email. No account yet? Sign up with this email.",
+            button_label="Open SaveStream",
+            link=site_url,
+            site_url=site_url,
+            unsubscribe_url=None,
+            unsubscribe_label=None,
+        )
+    return None

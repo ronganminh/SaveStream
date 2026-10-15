@@ -436,19 +436,28 @@ export type NotificationListResponse = {
   pagination: Pagination;
 };
 
+/** Email copies of notifications; each email also has an unsubscribe link. */
+export type EmailPreferenceKey =
+  | "email_creator_live"
+  | "email_recording_ready"
+  | "email_recording_failed"
+  | "email_recording_expiring"
+  | "email_credits_low"
+  | "email_credits_exhausted";
+
 export type NotificationPreferencesResponse = {
   recording_started: boolean;
   recording_ready: boolean;
   recording_failed: boolean;
-  email_supported: false;
+  email_supported: boolean;
   updated_at: string | null;
-};
+} & Partial<Record<EmailPreferenceKey, boolean>>;
 
 export type UpdateNotificationPreferencesRequest = {
   recording_started?: boolean;
   recording_ready?: boolean;
   recording_failed?: boolean;
-};
+} & Partial<Record<EmailPreferenceKey, boolean>>;
 
 export type MarkAllNotificationsReadResponse = {
   updated: number;

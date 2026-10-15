@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.api.schemas.recordings import Pagination
 
@@ -20,6 +20,7 @@ NotificationKind = Literal[
     "recording_missed",
     "recording_expiring",
     "cloud_minutes_exhausted",
+    "credits_low",
     "free_minutes_low",
     "purchase_completed",
     "admin_system",
@@ -59,7 +60,14 @@ class NotificationPreferenceResponse(StrictModel):
     recording_expiring: bool = True
     free_minutes_low: bool = True
     marketing: bool = False
-    email_supported: Literal[False] = False
+    # Email copies; each email also has an unsubscribe link.
+    email_creator_live: bool = True
+    email_recording_ready: bool = True
+    email_recording_failed: bool = True
+    email_recording_expiring: bool = True
+    email_credits_low: bool = True
+    email_credits_exhausted: bool = True
+    email_supported: bool = True
     updated_at: datetime | None
 
 
@@ -71,3 +79,18 @@ class UpdateNotificationPreferencesRequest(StrictModel):
     recording_expiring: bool | None = None
     free_minutes_low: bool | None = None
     marketing: bool | None = None
+    email_creator_live: bool | None = None
+    email_recording_ready: bool | None = None
+    email_recording_failed: bool | None = None
+    email_recording_expiring: bool | None = None
+    email_credits_low: bool | None = None
+    email_credits_exhausted: bool | None = None
+
+
+class EmailUnsubscribeRequest(StrictModel):
+    token: str = Field(min_length=10, max_length=512)
+
+
+class EmailUnsubscribeResponse(StrictModel):
+    preference: str
+    label: str

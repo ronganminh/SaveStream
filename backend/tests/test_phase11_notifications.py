@@ -180,7 +180,13 @@ def test_persisted_notifications_read_state_dedupe_and_preferences(tmp_path) -> 
             "recording_expiring": True,
             "free_minutes_low": True,
             "marketing": False,
-            "email_supported": False,
+            "email_creator_live": True,
+            "email_recording_ready": True,
+            "email_recording_failed": True,
+            "email_recording_expiring": True,
+            "email_credits_low": True,
+            "email_credits_exhausted": True,
+            "email_supported": True,
             "updated_at": None,
         }
 
@@ -192,7 +198,7 @@ def test_persisted_notifications_read_state_dedupe_and_preferences(tmp_path) -> 
         assert updated.status_code == 200
         assert updated.json()["recording_started"] is False
         assert updated.json()["recording_ready"] is True
-        assert updated.json()["email_supported"] is False
+        assert updated.json()["email_supported"] is True
 
         _seed_recording_events(
             database_url,
