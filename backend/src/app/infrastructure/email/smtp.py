@@ -28,11 +28,21 @@ class SMTPEmailSender:
     def __init__(self, settings: AppSettings) -> None:
         self.settings = settings
 
-    def send(self, *, to: str, subject: str, text: str, html: str | None = None) -> None:
+    def send(
+        self,
+        *,
+        to: str,
+        subject: str,
+        text: str,
+        html: str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
         message = EmailMessage()
         message["From"] = self.settings.email_from
         message["To"] = to
         message["Subject"] = subject
+        for name, value in (headers or {}).items():
+            message[name] = value
         message.set_content(text)
         if html is not None:
             message.add_alternative(html, subtype="html")

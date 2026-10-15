@@ -125,6 +125,36 @@ def notification_push(self, notification_id: str) -> int:
     return run_notification_push(notification_id)
 
 
+@celery_app.task(
+    bind=True,
+    name="savestream.notification.email",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def notification_email(self, payload: dict[str, str]) -> str:
+    del self
+    from app.infrastructure.notifications.email_delivery import run_notification_email
+
+    return run_notification_email(payload)
+
+
+@celery_app.task(
+    bind=True,
+    name="savestream.partner.email",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def partner_email(self, application_id: str, kind: str) -> str:
+    del self
+    from app.infrastructure.notifications.email_delivery import run_partner_email
+
+    return run_partner_email(application_id, kind)
+
+
 @celery_app.task(name="savestream.admin.storage.orphan_scan")
 def admin_storage_orphan_scan(run_id: str) -> None:
     from app.infrastructure.admin.d7_worker import run_orphan_scan
@@ -184,6 +214,12 @@ def handle_outbox_event(
         return
     if topic == "notification.push":
         notification_push.delay(str(payload["notification_id"]))
+        return
+    if topic == "notification.email":
+        notification_email.delay({key: str(value) for key, value in payload.items()})
+        return
+    if topic == "partner.email":
+        partner_email.delay(str(payload["application_id"]), str(payload["kind"]))
         return
     if topic == "admin.storage.orphan_scan":
         admin_storage_orphan_scan.delay(str(payload["run_id"]))

@@ -18,6 +18,7 @@ from app.api.schemas.recordings import Source
 from app.application.credits.service import CreditService
 from app.application.notifications.service import (
     ensure_cloud_minutes_exhausted_notification,
+    ensure_credits_low_notification,
 )
 from app.application.recordings.service import (
     RecordingStateStore,
@@ -375,6 +376,14 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                             session,
                             user_id=recording.user_id,
                             recording_id=recording.id,
+                        )
+                    else:
+                        # One notice a day once an hour or less is left.
+                        await ensure_credits_low_notification(
+                            session,
+                            user_id=recording.user_id,
+                            available=balance.available,
+                            usage_day=utcnow().date(),
                         )
                 target = RecordingStatus.STOPPED if stopped_by_request else RecordingStatus.COMPLETED
                 recording.status = transition(

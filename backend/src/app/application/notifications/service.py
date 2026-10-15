@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.schemas.notifications import NotificationKind
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
+from app.infrastructure.db.admin_models import AdminEmailLog
 from app.infrastructure.db.models import NotificationPreference, UserNotification
 from app.infrastructure.db.watch_models import Watch
 from app.infrastructure.queue.outbox import OutboxWriter
@@ -257,6 +258,11 @@ class NotificationService:
         return _state(row)
 
 
+def email_dedupe_key(kind: str, resource_id: str | None, dedupe_key: str) -> str:
+    """Email log key; the "LIVE" cooldown looks up keys by kind and channel."""
+    return f"notify:{kind}:{resource_id or '-'}:{dedupe_key}"[:180]
+
+
 async def _store_and_dispatch(
     session: AsyncSession,
     *,
@@ -271,43 +277,61 @@ async def _store_and_dispatch(
     email: bool,
     push_payload: dict[str, str] | None = None,
 ) -> UserNotification | None:
-    """Create the in-app notification once (deduplicated) and queue its push
-    and/or email copy. Nothing is stored when both channels are off."""
-    if not (push or email):
-        return None
-    notification_id = uuid.uuid5(uuid.NAMESPACE_URL, f"savestream:{user_id}:{dedupe_key}")
-    existing = await session.get(UserNotification, notification_id)
-    if existing is not None:
-        return existing
-    notification = UserNotification(
-        id=notification_id,
-        user_id=user_id,
-        kind=kind,
-        title=title,
-        body=body,
-        resource_type=resource_type,
-        resource_id=resource_id,
-        dedupe_key=dedupe_key,
-    )
-    session.add(notification)
-    await session.flush()
+    """App notification (in-app + push) when its switch is on, and an email
+    copy when the email switch is on. Both are deduplicated, so calling this
+    again for the same event does nothing new."""
     writer = OutboxWriter()
+    notification: UserNotification | None = None
+    created = False
     if push:
-        await writer.enqueue(
-            session,
-            topic="notification.push",
-            aggregate_type="notification",
-            aggregate_id=str(notification.id),
-            payload={"notification_id": str(notification.id), **(push_payload or {})},
-        )
+        notification_id = uuid.uuid5(uuid.NAMESPACE_URL, f"savestream:{user_id}:{dedupe_key}")
+        notification = await session.get(UserNotification, notification_id)
+        if notification is None:
+            notification = UserNotification(
+                id=notification_id,
+                user_id=user_id,
+                kind=kind,
+                title=title,
+                body=body,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                dedupe_key=dedupe_key,
+            )
+            session.add(notification)
+            await session.flush()
+            created = True
+            await writer.enqueue(
+                session,
+                topic="notification.push",
+                aggregate_type="notification",
+                aggregate_id=str(notification.id),
+                payload={"notification_id": str(notification.id), **(push_payload or {})},
+            )
     if email:
-        await writer.enqueue(
-            session,
-            topic="notification.email",
-            aggregate_type="notification",
-            aggregate_id=str(notification.id),
-            payload={"notification_id": str(notification.id)},
+        key = email_dedupe_key(kind, resource_id, dedupe_key)
+        # Queue once: with the app notification that was just created, or,
+        # when app notifications are off, while no email is logged yet.
+        already = (notification is not None and not created) or (
+            notification is None
+            and await session.scalar(
+                select(AdminEmailLog.id).where(AdminEmailLog.dedupe_key == key)
+            )
+            is not None
         )
+        if not already:
+            await writer.enqueue(
+                session,
+                topic="notification.email",
+                aggregate_type="notification",
+                aggregate_id=key,
+                payload={
+                    "user_id": str(user_id),
+                    "kind": kind,
+                    "resource_type": resource_type or "",
+                    "resource_id": resource_id or "",
+                    "dedupe_key": key,
+                },
+            )
     return notification
 
 
