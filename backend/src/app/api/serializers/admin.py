@@ -23,6 +23,10 @@ def admin_user_response(
             "plan": plan,
             "cloud_minutes_available": cloud_minutes_available,
             "latest_purchase_provider": latest_purchase_provider,
+            "account_status": user.account_status or "active",
+            "account_status_reason": user.account_status_reason,
+            "account_status_reference": user.account_status_reference,
+            "account_status_changed_at": user.account_status_changed_at,
         }
     )
 

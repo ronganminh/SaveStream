@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
+from app.application.identity.account_status import account_status_error
 from app.application.identity.legal import ConsentInput, record_consent, validate_consent
 from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
@@ -309,7 +310,18 @@ class IdentityService:
             credential.password_hash if credential else None,
             password,
         )
-        if user is None or credential is None or not valid or not user.is_active:
+        if user is None or credential is None or not valid:
+            raise ApplicationError(
+                "AUTH_INVALID_CREDENTIALS",
+                "Invalid email or password",
+                status_code=401,
+            )
+        # Suspended/terminated is shown only after a correct password, so it
+        # does not reveal which emails have accounts.
+        status_error = account_status_error(user)
+        if status_error is not None:
+            raise status_error
+        if not user.is_active:
             raise ApplicationError(
                 "AUTH_INVALID_CREDENTIALS",
                 "Invalid email or password",
@@ -417,6 +429,8 @@ class IdentityService:
         linked = await self.session.get(SocialIdentity, external.uid)
         if linked is not None:
             user = await self.session.get(User, linked.user_id)
+            if user is not None and (status_error := account_status_error(user)) is not None:
+                raise status_error
             if user is None or not user.is_active:
                 raise ApplicationError(
                     "AUTH_SOCIAL_UNAVAILABLE",
@@ -614,7 +628,7 @@ class IdentityService:
             raise self._session_revoked_error()
 
         user = await self.session.get(User, auth_session.user_id)
-        if user is None or not user.is_active:
+        if user is None or not user.is_active or user.account_status != "active":
             raise self._session_revoked_error()
 
         history = list(auth_session.refresh_history or [])

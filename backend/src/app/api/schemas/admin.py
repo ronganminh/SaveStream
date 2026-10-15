@@ -28,6 +28,18 @@ class AdminUserResponse(StrictModel):
     plan: Literal["free", "pro"] | None = None
     cloud_minutes_available: int | None = None
     latest_purchase_provider: str | None = None
+    account_status: Literal["active", "suspended", "terminated"] = "active"
+    account_status_reason: str | None = None
+    account_status_reference: str | None = None
+    account_status_changed_at: datetime | None = None
+
+
+class AdminAccountStatusRequest(StrictModel):
+    status: Literal["active", "suspended", "terminated"]
+    # Shown to the user on the suspended/terminated page and in the email.
+    reason: str = Field(min_length=10, max_length=500)
+    # Case reference shown to the user, e.g. a Safety case "SR-1040".
+    reference: str | None = Field(default=None, max_length=64)
 
 
 class AdminUserListResponse(StrictModel):

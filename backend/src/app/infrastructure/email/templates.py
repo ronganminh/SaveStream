@@ -336,3 +336,52 @@ def partner_email(kind: str, *, name: str, reference: str, site_url: str) -> Ren
             unsubscribe_label=None,
         )
     return None
+
+
+def account_status_email(
+    kind: str, *, reason: str, reference: str | None, site_url: str
+) -> RenderedEmail | None:
+    """Required account emails about enforcement (not unsubscribable)."""
+    ref = (reference or "").strip()
+    appeal_subject = f"Appeal {ref}" if ref else "Appeal"
+    appeal = f"mailto:{SUPPORT_EMAIL}?subject={appeal_subject.replace(' ', '%20')}"
+    reason_line = f"Reason: {reason.strip()}" + (f" (reference {ref})" if ref else "")
+    if kind == "account_suspended":
+        email = _notification_shell(
+            subject="Your SaveStream account is suspended",
+            heading="Your account is suspended",
+            intro="We’ve paused this account while we review how it was used. Channel monitoring and new recordings are paused; your recordings and credits are kept.",
+            detail=f"{reason_line}. Think this is a mistake? Reply to {SUPPORT_EMAIL} with the subject “{appeal_subject}” and explain how you own or are authorized to record the channel. We reply within {SUPPORT_RESPONSE_TIME}.",
+            button_label="Email an appeal",
+            link=appeal,
+            site_url=site_url,
+            unsubscribe_url=None,
+            unsubscribe_label=None,
+        )
+    elif kind == "account_terminated":
+        email = _notification_shell(
+            subject="Your SaveStream account has been closed",
+            heading="This account has been closed",
+            intro="SaveStream closed this account for serious or repeated violations of our Terms of Use. Monitoring has stopped and you can no longer sign in.",
+            detail=f"{reason_line}. Recordings are not deleted early; they expire at the end of their normal retention period. Remaining credits are handled under the Refund Policy. If you believe this was a mistake, email {SUPPORT_EMAIL} with the reference above.",
+            button_label="Contact support",
+            link=appeal,
+            site_url=site_url,
+            unsubscribe_url=None,
+            unsubscribe_label=None,
+        )
+    elif kind == "account_reinstated":
+        email = _notification_shell(
+            subject="Your SaveStream account is active again",
+            heading="Your account is active again",
+            intro="We finished our review and lifted the suspension. You can sign in again, and the channels that were paused by the suspension are being monitored again.",
+            detail="Recordings that were stopped during the suspension are not restarted.",
+            button_label="Sign in",
+            link=f"{site_url}/sign-in",
+            site_url=site_url,
+            unsubscribe_url=None,
+            unsubscribe_label=None,
+        )
+    else:
+        return None
+    return email
