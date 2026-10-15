@@ -1,31 +1,39 @@
 name: Deploy Media
 
-# Deploys the media delivery Worker (services/media-worker) to
-# media.savestream.online and, when asked, switches the backend's recording
-# and avatar links to it. See services/media-worker/README.md.
+# Deploys the media delivery Worker (services/media-worker) and, when asked,
+# switches the backend's recording and avatar links to it. Option 1 of
+# docs/decisions/media-worker-options.md: the Worker lives in the Cloudflare
+# account that owns the R2 bucket (so its R2 binding works) and is served on
+# that account's workers.dev subdomain. See services/media-worker/README.md.
 #
-#   mode = deploy   deploy the Worker, copy the signing secret, smoke-test it
-#   mode = enable   the same, then set SAVESTREAM_MEDIA_BASE_URL on the VPS and
-#                   restart the API services (recordings are not touched)
-#   mode = disable  remove SAVESTREAM_MEDIA_BASE_URL and restart the API
-#                   services: links go back to the R2 S3 endpoint
+#   mode = check    verify the media token and account: token active, Workers
+#                   Scripts and R2 bucket reachable, bucket in this account,
+#                   workers.dev subdomain. Changes nothing.
+#   mode = deploy   check, then deploy the Worker, copy the signing secret and
+#                   smoke-test it. The backend is not changed.
+#   mode = enable   deploy, then set SAVESTREAM_MEDIA_BASE_URL on the VPS,
+#                   restart the API services and roll the recorder over with a
+#                   drain (running recordings are never cut)
+#   mode = disable  rollback: remove SAVESTREAM_MEDIA_BASE_URL, restart the API
+#                   services and drain the recorder; links go back to the R2
+#                   S3 endpoint. The Worker is left running.
 #
 # The bucket name (SAVESTREAM_R2_BUCKET) and the signing secret
 # (secrets dir/media_signing_secret, created by deploy.sh) are read from the
 # VPS over SSH; the secret is masked and only piped to `wrangler secret put`.
 #
-# Secrets: VPS_* (as Deploy Backend), CLOUDFLARE_API_TOKEN (needs Workers
-# Scripts: Edit, Workers R2 Storage: Read and Workers Custom Domains /
-# Zone DNS: Edit on savestream.online), CLOUDFLARE_ACCOUNT_ID.
+# Secrets: VPS_* (as Deploy Backend), CLOUDFLARE_MEDIA_ACCOUNT_ID and
+# CLOUDFLARE_MEDIA_API_TOKEN (account that owns the R2 bucket; token needs
+# Account > Workers Scripts: Edit and Account > Workers R2 Storage: Read).
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "deploy | enable | disable"
+        description: "check | deploy | enable | disable"
         type: choice
-        options: [deploy, enable, disable]
-        default: deploy
+        options: [check, deploy, enable, disable]
+        default: check
 
 concurrency:
   group: deploy-media-production
@@ -42,7 +50,10 @@ jobs:
     env:
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       VPS_APP_DIR: ${{ vars.VPS_APP_DIR || '/home/nduythanh/SaveStream' }}
-      MEDIA_ORIGIN: https://media.savestream.online
+      CF_API: https://api.cloudflare.com/client/v4
+      WORKER_NAME: savestream-media
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_MEDIA_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_MEDIA_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -64,25 +75,74 @@ jobs:
             -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" "cd '$VPS_APP_DIR' && $1"
           EOF
 
-      - name: Read bucket, signing secret and sample objects from the VPS
+      - name: Check the media token and account
         if: inputs.mode != 'disable'
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          set -uo pipefail
+          [[ -n "$CLOUDFLARE_ACCOUNT_ID" && -n "$CLOUDFLARE_API_TOKEN" ]] \
+            || { echo "::error::CLOUDFLARE_MEDIA_ACCOUNT_ID / CLOUDFLARE_MEDIA_API_TOKEN are not set"; exit 1; }
+          cf() { curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$CF_API$1"; }
+          ok() { jq -e '.success == true' >/dev/null; }
+          failed=0
+          report() { if [[ "$2" == ok ]]; then echo "PASS  $1"; else echo "FAIL  $1 — $3"; failed=1; fi; }
+
+          # Account-owned and user-owned tokens verify at different endpoints.
+          if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify" | jq -e '.result.status == "active"' >/dev/null \
+            || cf "/user/tokens/verify" | jq -e '.result.status == "active"' >/dev/null; then
+            report "token is active" ok
+          else
+            report "token is active" no "token invalid, expired or disabled"
+          fi
+
+          if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" | ok; then
+            report "Workers Scripts access" ok
+          else
+            report "Workers Scripts access" no "add Account > Workers Scripts: Edit for this account"
+          fi
+
           env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
           bucket="$(env_value SAVESTREAM_R2_BUCKET)"
           endpoint="$(env_value SAVESTREAM_R2_ENDPOINT)"
-          # The Worker's R2 binding only sees buckets in the account it is
-          # deployed to; compare without printing either id.
+          # The R2 binding only sees buckets in the Worker's own account;
+          # compare without printing either id.
           endpoint_account="$(printf '%s' "$endpoint" | sed -E 's#^https?://([0-9a-f]{32})\..*#\1#')"
-          if [[ "$endpoint_account" != "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-            echo "::error::The R2 bucket '$bucket' belongs to a different Cloudflare account than CLOUDFLARE_ACCOUNT_ID. Deploy the media Worker to the R2 account (set CLOUDFLARE_ACCOUNT_ID / a token for it), or move the bucket."
-            exit 1
+          if [[ "$endpoint_account" == "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            report "bucket '$bucket' is in this account" ok
+          else
+            report "bucket '$bucket' is in this account" no "CLOUDFLARE_MEDIA_ACCOUNT_ID is not the account in SAVESTREAM_R2_ENDPOINT"
           fi
+          if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | ok; then
+            report "R2 bucket readable" ok
+          else
+            report "R2 bucket readable" no "add Account > Workers R2 Storage: Read for this account"
+          fi
+
+          subdomain="$(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -r '.result.subdomain // empty')"
+          if [[ -n "$subdomain" ]]; then
+            report "workers.dev subdomain" ok
+          else
+            report "workers.dev subdomain" no "open Workers & Pages once in this account's dashboard to pick a workers.dev subdomain"
+          fi
+          [[ "$failed" == 0 ]] || exit 1
+          origin="https://$WORKER_NAME.$subdomain.workers.dev"
+          echo "Media origin: $origin"
+          {
+            echo "R2_BUCKET=$bucket"
+            echo "MEDIA_ORIGIN=$origin"
+          } >> "$GITHUB_ENV"
+
+      - name: Read signing secret and sample objects from the VPS
+        if: inputs.mode == 'deploy' || inputs.mode == 'enable'
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
           secrets_dir="$(env_value SAVESTREAM_SECRETS_DIR)"
-          [[ -n "$bucket" && -n "$secrets_dir" ]] || { echo "bucket or secrets dir missing"; exit 1; }
+          [[ -n "$secrets_dir" ]] || { echo "SAVESTREAM_SECRETS_DIR missing"; exit 1; }
           secret="$(bash ~/vps.sh "cat '$secrets_dir/media_signing_secret' 2>/dev/null || true")"
           [[ ${#secret} -ge 32 ]] || { echo "media_signing_secret missing: run Deploy Backend first"; exit 1; }
           echo "::add-mask::$secret"
@@ -93,32 +153,28 @@ jobs:
           artifact_key="$(psql "select storage_key from artifacts where deleted_at is null order by created_at desc limit 1")"
           avatar_key="$(psql "select creator_avatar_key from watches where creator_avatar_key is not null limit 1")"
           {
-            echo "R2_BUCKET=$bucket"
             echo "MEDIA_SIGNING_SECRET=$secret"
             echo "SAMPLE_ARTIFACT_KEY=$artifact_key"
             echo "SAMPLE_AVATAR_ID=${avatar_key#creator-avatars/}"
           } >> "$GITHUB_ENV"
 
       - run: npm install --no-audit --no-fund
-        if: inputs.mode != 'disable'
+        if: inputs.mode == 'deploy' || inputs.mode == 'enable'
 
       - name: Test the Worker
-        if: inputs.mode != 'disable'
+        if: inputs.mode == 'deploy' || inputs.mode == 'enable'
         run: npm --workspace services/media-worker test
 
       - name: Deploy the Worker
-        if: inputs.mode != 'disable'
+        if: inputs.mode == 'deploy' || inputs.mode == 'enable'
         working-directory: services/media-worker
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           sed -i "s/__R2_BUCKET__/${R2_BUCKET}/" wrangler.jsonc
           npx wrangler deploy
           printf '%s' "$MEDIA_SIGNING_SECRET" | npx wrangler secret put MEDIA_SIGNING_SECRET
 
-      - name: Smoke-test media.savestream.online
-        if: inputs.mode != 'disable'
+      - name: Smoke-test the Worker
+        if: inputs.mode == 'deploy' || inputs.mode == 'enable'
         run: |
           for _ in $(seq 1 30); do
             [[ "$(curl -s -o /dev/null -w '%{http_code}' "$MEDIA_ORIGIN/healthz")" == 200 ]] && break
@@ -146,26 +202,38 @@ jobs:
             echo "recording range -> $code"; [[ "$code" == "206 video/mp4"* ]]
             code="$(curl -s -o /dev/null -w '%{http_code}' "${url%%&s=*}&s=bad")"
             echo "bad signature -> $code"; [[ "$code" == 403 ]]
+            curl -s -o /dev/null -D - -H 'Origin: https://savestream.online' -H 'Range: bytes=0-15' "$url" \
+              | grep -qi '^access-control-allow-origin: https://savestream.online' \
+              && echo "CORS for savestream.online -> ok"
           fi
 
-      - name: Switch backend links
-        if: inputs.mode != 'deploy'
+      - name: Switch backend links (API restart + recorder drain)
+        if: inputs.mode == 'enable' || inputs.mode == 'disable'
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           MODE: ${{ inputs.mode }}
         run: |
           if [[ "$MODE" == enable ]]; then line="SAVESTREAM_MEDIA_BASE_URL=$MEDIA_ORIGIN"; else line=""; fi
-          # Rewrite the one line in production.env (untracked), then restart the
-          # non-recorder services; running recordings are not affected.
+          # Rewrite the one line in production.env (untracked) and keep a copy
+          # for manual rollback. API services restart in place; the recorder is
+          # outside `config --services` (profile "recorder") and is rolled over
+          # with recorder-rollout.sh, which drains: running recordings finish
+          # on the old container.
           bash ~/vps.sh "set -e
             f=deploy/vps/production.env
+            cp \"\$f\" \"\$f.before-media-\$(date -u +%Y%m%dT%H%M%SZ)\"
             grep -v '^SAVESTREAM_MEDIA_BASE_URL=' \"\$f\" > \"\$f.tmp\" || true
             [ -n '$line' ] && echo '$line' >> \"\$f.tmp\"
             cat \"\$f.tmp\" > \"\$f\" && rm -f \"\$f.tmp\"
             c='docker compose --env-file deploy/vps/production.env -f deploy/vps/docker-compose.production.yml'
             \$c up -d --no-build \$(\$c config --services)
-            \$c exec -T api python -c 'from app.settings import get_app_settings as s; print(\"media_base_url =\", repr(s().media_base_url))'"
+            for _ in \$(seq 1 60); do
+              [ \"\$(docker inspect -f '{{.State.Health.Status}}' \$(\$c ps -q api))\" = healthy ] && break
+              sleep 5
+            done
+            \$c exec -T api python -c 'from app.settings import get_app_settings as s; print(\"media_base_url =\", repr(s().media_base_url))'
+            bash deploy/vps/recorder-rollout.sh"
 
       - name: Clean up SSH key
         if: always()
