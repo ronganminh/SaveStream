@@ -13,7 +13,9 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_principal, get_db_session
+from app.application.admin.account_status import AccountStatusService
 from app.api.schemas.admin import (
+    AdminAccountStatusRequest,
     AdminActionResponse,
     AdminAdminListResponse,
     AdminEntitlementResponse,
@@ -676,6 +678,48 @@ async def get_admin_user(
     return admin_user_response(
         await AdminService(session, request.app.state.settings).get_user(user_id)
     )
+
+
+@router.post("/users/{user_id}/account-status", response_model=AdminUserResponse)
+async def change_admin_user_account_status(
+    user_id: str,
+    payload: AdminAccountStatusRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminUserResponse:
+    """Suspend, reinstate or terminate a user (reason required, step-up,
+    audited). Pauses monitoring and stops recordings; deletes nothing."""
+    _require_scope(principal, "admin:users:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    service = AdminService(session, request.app.state.settings)
+    user = await service.get_user(user_id)
+    before = user.account_status
+    effects = await AccountStatusService(session, request.app.state.settings).change(
+        user=user, status=payload.status, reason=payload.reason, reference=payload.reference
+    )
+    action = {
+        "suspended": "admin.user.suspended",
+        "terminated": "admin.user.terminated",
+    }.get(payload.status, "admin.user.reinstated")
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action=action,
+        resource_type="user",
+        resource_id=str(user.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"account_status": before},
+        after_state={"account_status": user.account_status},
+        details={"reference": payload.reference, **effects},
+    )
+    await session.commit()
+    await session.refresh(user)
+    return await _user_with_summary(service, user)
 
 
 @router.patch("/users/{user_id}", response_model=AdminUserResponse)

@@ -155,6 +155,21 @@ def partner_email(self, application_id: str, kind: str) -> str:
     return run_partner_email(application_id, kind)
 
 
+@celery_app.task(
+    bind=True,
+    name="savestream.account.email",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=5,
+)
+def account_email(self, payload: dict[str, str]) -> str:
+    del self
+    from app.infrastructure.notifications.email_delivery import run_account_email
+
+    return run_account_email(payload)
+
+
 @celery_app.task(name="savestream.admin.storage.orphan_scan")
 def admin_storage_orphan_scan(run_id: str) -> None:
     from app.infrastructure.admin.d7_worker import run_orphan_scan
@@ -217,6 +232,9 @@ def handle_outbox_event(
         return
     if topic == "notification.email":
         notification_email.delay({key: str(value) for key, value in payload.items()})
+        return
+    if topic == "account.email":
+        account_email.delay({key: str(value) for key, value in payload.items()})
         return
     if topic == "partner.email":
         partner_email.delay(str(payload["application_id"]), str(payload["kind"]))

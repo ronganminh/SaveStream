@@ -291,6 +291,43 @@ async def send_partner_email(
     return await _send(session, log, send or _smtp_sender(settings), to=application.email, email=email)
 
 
+async def send_account_email(
+    session: AsyncSession,
+    settings: AppSettings,
+    payload: dict[str, str],
+    *,
+    send: Sender | None = None,
+) -> str:
+    """Required email about a suspension, termination or reinstatement."""
+    try:
+        user_id = uuid.UUID(payload.get("user_id", ""))
+    except ValueError:
+        return "skipped"
+    user = await session.get(User, user_id)
+    if user is None:
+        return "skipped"
+    kind = payload.get("kind", "")
+    email = templates.account_status_email(
+        kind,
+        reason=user.account_status_reason or "",
+        reference=user.account_status_reference,
+        site_url=settings.frontend_base_url.rstrip("/"),
+    )
+    if email is None:
+        return "skipped"
+    log = await _log(
+        session,
+        dedupe_key=f"account:{user.id}:{kind}:{payload.get('changed_at', '')}",
+        user_id=user.id,
+        recipient=user.email,
+        kind=kind,
+        subject=email.subject,
+    )
+    if log is None:
+        return "duplicate"
+    return await _send(session, log, send or _smtp_sender(settings), to=user.email, email=email)
+
+
 async def _with_session(callback, settings: AppSettings | None):
     cfg = settings or get_app_settings()
     database = Database(cfg.database_url)
@@ -309,3 +346,7 @@ def run_partner_email(application_id: str, kind: str) -> str:
     return asyncio.run(
         _with_session(lambda s, c: send_partner_email(s, c, application_id, kind), None)
     )
+
+
+def run_account_email(payload: dict[str, str]) -> str:
+    return asyncio.run(_with_session(lambda s, c: send_account_email(s, c, payload), None))

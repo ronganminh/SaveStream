@@ -39,7 +39,13 @@ export type AdminUser = {
   plan?: "free" | "pro" | null;
   cloud_minutes_available?: number | null;
   latest_purchase_provider?: string | null;
+  account_status?: AdminAccountStatus;
+  account_status_reason?: string | null;
+  account_status_reference?: string | null;
+  account_status_changed_at?: string | null;
 };
+
+export type AdminAccountStatus = "active" | "suspended" | "terminated";
 
 type Pagination = {
   next_cursor: string | null;
@@ -228,6 +234,20 @@ export const adminFoundationApi = {
   updateUserStatus(userId: string, isActive: boolean, reason: string, stepUpToken: string) {
     return apiClient.patch<AdminUser>(`/v1/admin/users/${userId}`, {
       json: { is_active: isActive, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  /** Suspend, reinstate or terminate a creator account (Terms "Suspension"). */
+  changeAccountStatus(
+    userId: string,
+    status: AdminAccountStatus,
+    reason: string,
+    reference: string | null,
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminUser>(`/v1/admin/users/${userId}/account-status`, {
+      json: { status, reason, reference },
       headers: stepUpHeaders(stepUpToken),
     });
   },

@@ -69,6 +69,7 @@ async def get_current_principal(
         or auth_session.user_id != claims.user_id
         or auth_session.revoked_at is not None
         or not user.is_active
+        or user.account_status != "active"
     ):
         raise ApplicationError(
             "AUTH_SESSION_REVOKED",
