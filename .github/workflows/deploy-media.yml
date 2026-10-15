@@ -143,6 +143,15 @@ jobs:
           else
             report "Workers Scripts access" no "add Account > Workers Scripts: Edit for this account"
           fi
+          # Read-only tokens get "No access" on per-script endpoints; with Edit a
+          # missing script answers "not found" and an existing one succeeds.
+          probe="$(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/settings")"
+          echo "script settings probe: $(printf '%s' "$probe" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}')"
+          if printf '%s' "$probe" | jq -e '[.errors[]?.message] | any(test("No access"; "i"))' >/dev/null; then
+            report "Workers Scripts: Edit" no "the token can only read Workers scripts; change Account > Workers Scripts from Read to Edit"
+          else
+            report "Workers Scripts: Edit" ok
+          fi
 
           env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
           bucket="$(env_value SAVESTREAM_R2_BUCKET)"
@@ -159,9 +168,6 @@ jobs:
           errs() { jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}'; }
           echo "r2 GET bucket '$bucket': $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | errs)"
           echo "r2 list buckets: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], names: [.result.buckets[]?.name]}')"
-          for path in "" /workers/account-settings /workers/scripts /workers/subdomain /workers/scripts/savestream-media/subdomain; do
-            echo "GET /accounts/<id>$path: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID$path" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}')"
-          done
           echo "workers subdomain: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], has_subdomain: ((.result.subdomain // "") != "")}')"
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | ok; then
             report "R2 bucket readable" ok
