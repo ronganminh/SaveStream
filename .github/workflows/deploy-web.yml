@@ -101,6 +101,11 @@ jobs:
             -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
             "sed -n 's/^SAVESTREAM_PAYPAL_CLIENT_ID=//p' '$VPS_APP_DIR/deploy/vps/production.env' | tail -n 1" \
             | tr -d '[:space:]"'"'")"
+          lines="$(ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            "grep -c '^SAVESTREAM_PAYPAL_CLIENT_ID=' '$VPS_APP_DIR/deploy/vps/production.env'; grep -l 'SAVESTREAM_PAYPAL_CLIENT_ID' '$VPS_APP_DIR'/deploy/vps/*.env '$VPS_APP_DIR'/.env 2>/dev/null" || true)"
+          echo "diag: matching lines / files: $(echo $lines)"
+          echo "diag: client id length ${#client_id}, first 2 '${client_id:0:2}', chars outside [A-Za-z0-9_-]: $(printf '%s' "$client_id" | { grep -o '[^A-Za-z0-9_-]' || true; } | wc -l)"
           rm -f ~/.ssh/deploy_key
           [[ "$client_id" =~ ^A[A-Za-z0-9_-]{20,}$ ]] \
             || { echo "::error::SAVESTREAM_PAYPAL_CLIENT_ID on the VPS is missing or not a PayPal client ID"; exit 1; }
