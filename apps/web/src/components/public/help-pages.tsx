@@ -29,6 +29,7 @@ import {
   type HelpArticle,
   type HelpCategoryId,
 } from "@/lib/help-content";
+import { guides } from "@/lib/guides-content";
 import { cn } from "@/lib/utils";
 
 const categoryIcons: Record<HelpCategoryId, typeof Rocket> = {
@@ -188,6 +189,31 @@ export function HelpCenterPage() {
             );
           })}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-[1200px] px-6 pt-12" aria-labelledby="help-guides">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <h2 id="help-guides" className="text-[21px] font-bold tracking-[-.015em]">
+            Guides
+          </h2>
+          <Link to="/guides" className="text-sm font-semibold text-accent-ink">
+            All guides →
+          </Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {guides.slice(0, 3).map((item) => (
+            <li key={item.slug}>
+              <Link
+                to="/guides/$guide"
+                params={{ guide: item.slug }}
+                className="flex h-full items-center justify-between gap-3 rounded-2xl border bg-surface p-4 text-sm font-semibold hover:border-primary/40"
+              >
+                {item.title}
+                <ArrowRight className="size-4 flex-none text-muted-foreground" />
+              </Link>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <section className="mx-auto max-w-[1200px] px-6 pb-4 pt-12">

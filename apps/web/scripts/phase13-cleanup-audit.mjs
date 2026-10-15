@@ -161,6 +161,23 @@ for (const name of fs.readdirSync(helpDir).filter((file) => file.endsWith(".md")
   if (!sitemap.includes(url)) failures.push(`public/sitemap.xml: missing ${url}`);
 }
 
+// Guides (src/content/guides): in the sitemap, numbers from {{tokens}}, permission rule present.
+const guidesDir = path.join(process.cwd(), "src/content/guides");
+for (const name of fs.readdirSync(guidesDir).filter((file) => file.endsWith(".md"))) {
+  const url = `https://savestream.online/guides/${name.replace(/\.md$/, "")}`;
+  if (!sitemap.includes(url)) failures.push(`public/sitemap.xml: missing ${url}`);
+  const guide = fs.readFileSync(path.join(guidesDir, name), "utf8");
+  mustIn(`guide ${name}`, guide, "/acceptable-use");
+  mustIn(`guide ${name}`, guide, "/sign-up");
+  for (const text of ["stored for 30 days", "10 free", "3 recordings"]) {
+    forbidIn(`guide ${name}`, guide, text);
+  }
+}
+for (const page of ["tiktok-live-recorder", "guides"]) {
+  const url = `https://savestream.online/${page}`;
+  if (!sitemap.includes(url)) failures.push(`public/sitemap.xml: missing ${url}`);
+}
+
 must("src/components/app-pages.tsx", "Pay as you go with credits.");
 must(
   "src/components/app-pages.tsx",

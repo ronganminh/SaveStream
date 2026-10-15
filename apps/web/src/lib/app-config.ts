@@ -101,6 +101,8 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/pricing",
   "/status",
   "/help",
+  "/tiktok-live-recorder",
+  "/guides",
   "/contact",
   "/terms",
   "/privacy",
@@ -127,6 +129,6 @@ export function getRouteAccess(pathname: string): RouteAccess {
     return { visibility: "authenticated", requiresAuth: true, indexable: false };
   }
   const indexable =
-    PUBLIC_INDEXABLE_PATHS.includes(pathname) || /^\/help\/[a-z0-9-]+$/.test(pathname);
+    PUBLIC_INDEXABLE_PATHS.includes(pathname) || /^\/(help|guides)\/[a-z0-9-]+$/.test(pathname);
   return { visibility: "public", requiresAuth: false, indexable };
 }

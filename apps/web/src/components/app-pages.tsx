@@ -6547,6 +6547,7 @@ export function PublicFooter() {
         ["/#how", "How it works"],
         ["/#examples", "Examples"],
         ["/pricing", "Pricing"],
+        ["/tiktok-live-recorder", "TikTok LIVE recorder"],
         ["/partners/apply", "Partner Program"],
       ],
     ],
@@ -6565,6 +6566,7 @@ export function PublicFooter() {
       "Help",
       [
         ["/help", "Help center"],
+        ["/guides", "Guides"],
         ["/#faq", "FAQ"],
         ["/contact", "Contact support"],
         ["/status", "System status"],

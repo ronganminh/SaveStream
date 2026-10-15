@@ -180,11 +180,16 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-/** Markdown body to HTML, with heading anchors for the "On this page" list. */
-export function renderHelpArticle(article: HelpArticle, vars: HelpVariables) {
-  const filled = article.body.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (token, key: string) =>
+/** Replaces `{{token}}` placeholders with live values (HTML-escaped). */
+export function fillHelpTokens(body: string, vars: HelpVariables) {
+  return body.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (token, key: string) =>
     key in vars ? escapeHtml(vars[key as keyof HelpVariables]) : token,
   );
+}
+
+/** Markdown body to HTML, with heading anchors for the "On this page" list. */
+export function renderHelpArticle(article: Pick<HelpArticle, "body">, vars: HelpVariables) {
+  const filled = fillHelpTokens(article.body, vars);
   const headings: { id: string; text: string }[] = [];
   const renderer = new marked.Renderer();
   renderer.heading = function ({ tokens, depth }: Tokens.Heading) {
