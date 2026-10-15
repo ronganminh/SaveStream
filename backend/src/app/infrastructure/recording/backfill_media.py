@@ -2,6 +2,11 @@
 ffprobe was used (#177).
 
     python -m app.infrastructure.recording.backfill_media [--apply] [--limit N]
+    python -m app.infrastructure.recording.backfill_media --thumbnails [--apply] [--limit N]
+
+With --thumbnails it instead makes the library thumbnail (one JPEG frame,
+seeked over a signed URL so only a small part of the file is read) for live
+artifacts that have none, uploads it next to the video and stores its key.
 
 Without --apply it only prints what it would change. For each live video
 artifact with no probed duration or frame size it runs ffprobe over a
@@ -19,15 +24,22 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import tempfile
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Callable
 
 from sqlalchemy import or_, select
 
 from app.infrastructure.db.recording_models import Recording, RecordingArtifact
 from app.infrastructure.db.session import Database
-from app.infrastructure.recording.media_probe import MediaInfo, probe_media
+from app.infrastructure.recording.media_probe import (
+    MediaInfo,
+    extract_thumbnail,
+    probe_media,
+    thumbnail_key_for,
+)
 from app.infrastructure.storage.minio import MinioStorageClient
 from app.settings import AppSettings, get_app_settings
 
@@ -116,12 +128,88 @@ async def backfill_artifact_media(
     return rows
 
 
+@dataclass(frozen=True, slots=True)
+class ThumbnailRow:
+    artifact_id: str
+    recording_id: str
+    thumbnail_key: str | None
+    applied: bool
+
+
+async def backfill_thumbnails(
+    settings: AppSettings,
+    *,
+    apply: bool,
+    limit: int = 500,
+    storage: MinioStorageClient | None = None,
+    extract: Callable[..., bool] = extract_thumbnail,
+) -> list[ThumbnailRow]:
+    storage = storage or MinioStorageClient(settings)
+    database = Database(settings.database_url)
+    rows: list[ThumbnailRow] = []
+    try:
+        async with database.session() as session:
+            pending = (
+                await session.scalars(
+                    select(RecordingArtifact)
+                    .where(
+                        RecordingArtifact.deleted_at.is_(None),
+                        RecordingArtifact.kind == "video",
+                        RecordingArtifact.thumbnail_key.is_(None),
+                    )
+                    .order_by(RecordingArtifact.created_at.desc())
+                    .limit(limit)
+                )
+            ).all()
+            with tempfile.TemporaryDirectory() as folder:
+                for artifact in pending:
+                    key = thumbnail_key_for(artifact.storage_key)
+                    if not apply:
+                        rows.append(ThumbnailRow(str(artifact.id), str(artifact.recording_id), key, False))
+                        continue
+                    target = Path(folder) / f"{artifact.id}.jpg"
+                    url = await asyncio.to_thread(storage.presigned_get_url, artifact.storage_key)
+                    made = await asyncio.to_thread(
+                        extract, url, target, duration_ms=artifact.duration_ms
+                    )
+                    if made:
+                        await asyncio.to_thread(
+                            storage.upload_file, target, key, content_type="image/jpeg"
+                        )
+                        artifact.thumbnail_key = key
+                        await session.commit()
+                        target.unlink(missing_ok=True)
+                    rows.append(
+                        ThumbnailRow(
+                            str(artifact.id),
+                            str(artifact.recording_id),
+                            key if made else None,
+                            made,
+                        )
+                    )
+    finally:
+        await database.close()
+    return rows
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--apply", action="store_true", help="write the probed values")
     parser.add_argument("--limit", type=int, default=500)
+    parser.add_argument("--thumbnails", action="store_true", help="make missing thumbnails")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
+
+    if args.thumbnails:
+        thumbs = asyncio.run(
+            backfill_thumbnails(get_app_settings(), apply=args.apply, limit=args.limit)
+        )
+        mode = "APPLY" if args.apply else "DRY RUN"
+        print(f"{mode}: {len(thumbs)} artifact(s) without a thumbnail")
+        for item in thumbs:
+            state = "made" if item.applied else ("would make" if not args.apply else "failed")
+            print(f"{item.recording_id} artifact={item.artifact_id} [{state}]")
+        return 1 if args.apply and any(not item.applied for item in thumbs) else 0
 
     rows = asyncio.run(
         backfill_artifact_media(get_app_settings(), apply=args.apply, limit=args.limit)

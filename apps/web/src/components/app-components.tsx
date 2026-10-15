@@ -92,6 +92,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import {
   channelLookupExamples,
   usage,
@@ -1254,6 +1255,7 @@ export function RecordingThumb({ recording }: { recording: RecordingModel }) {
       )}
     >
       <div className="absolute inset-0 bg-thumbnail-grid" />
+      <RecordingThumbImage url={recording.thumbnailUrl} />
       <span className="absolute bottom-1 right-1 rounded bg-player-overlay px-1 font-mono text-[9px] text-player-foreground">
         {recording.duration}
       </span>
@@ -1299,8 +1301,9 @@ export function RecordingCard({ recording }: { recording: RecordingModel }) {
         params={{ id: recording.id }}
         aria-label={`${recording.handle} — ${recording.title}`}
       >
-        <div className={cn("relative aspect-video", recording.color)}>
+        <div className={cn("relative aspect-video overflow-hidden", recording.color)}>
           <div className="absolute inset-0 bg-thumbnail-grid" />
+          <RecordingThumbImage url={recording.thumbnailUrl} />
           <div className="absolute inset-x-3 bottom-3 flex justify-between">
             <StatusBadge status={recording.status} />
             <span className="rounded bg-player-overlay px-1.5 py-0.5 font-mono text-[10px] text-player-foreground">
@@ -1422,8 +1425,11 @@ export function VideoPlayerShell({
   elapsed,
   failedDetail,
   portrait = false,
+  poster,
 }: {
   state?: "ready" | "active" | "processing" | "failed";
+  /** Thumbnail shown behind the play button and as the video poster. */
+  poster?: string | null | undefined;
   /** TikTok LIVEs are vertical: a 9:16 frame instead of 16:9. */
   portrait?: boolean;
   /** Resolves a playable URL; errors should carry a user-facing message. */
@@ -1464,6 +1470,7 @@ export function VideoPlayerShell({
           autoPlay
           playsInline
           preload="metadata"
+          poster={poster ?? undefined}
           onError={() => {
             setSrc(null);
             setError(t("Playback is unavailable right now."));
@@ -1481,6 +1488,12 @@ export function VideoPlayerShell({
       )}
     >
       <div className="absolute inset-0 bg-player-grid" />
+      {state === "ready" && poster ? (
+        <>
+          <RecordingThumbImage url={poster} />
+          <span className="absolute inset-0 bg-black/35" aria-hidden="true" />
+        </>
+      ) : null}
       {state === "ready" && (
         <div className="relative text-center">
           <button

@@ -153,3 +153,63 @@ def _sample_frame_sizes(
         if width and height:
             sizes.append((height, width) if rotation in (90, 270) else (width, height))
     return sizes
+
+
+THUMBNAIL_WIDTH = 640
+
+
+def thumbnail_key_for(storage_key: str) -> str:
+    """`.../<artifact>.mp4` -> `.../<artifact>.jpg` (same folder as the video)."""
+    return storage_key.rsplit(".", 1)[0] + ".jpg"
+
+
+def thumbnail_offset_seconds(duration_ms: int | None) -> float:
+    """Where to grab the frame: a little in, past black or loading frames at
+    the very start, but never past the end of a short clip."""
+    if not duration_ms:
+        return 1.0
+    seconds = duration_ms / 1000
+    return round(min(10.0, max(0.0, seconds / 3)), 3)
+
+
+def extract_thumbnail(
+    source: Path | str,
+    target: Path,
+    *,
+    duration_ms: int | None,
+    timeout_seconds: float = 60,
+) -> bool:
+    """Write one JPEG frame (640 px wide) of `source` to `target`.
+
+    `source` may be a local file or a signed URL; ffmpeg seeks before
+    decoding, so only a small part of a remote file is read. Returns False
+    when ffmpeg is missing or no frame could be decoded; callers keep the
+    gradient placeholder.
+    """
+    try:
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-ss",
+                str(thumbnail_offset_seconds(duration_ms)),
+                "-i",
+                str(source),
+                "-frames:v",
+                "1",
+                "-vf",
+                f"scale='min({THUMBNAIL_WIDTH},iw)':-2",
+                "-q:v",
+                "4",
+                str(target),
+            ],
+            capture_output=True,
+            check=True,
+            timeout=timeout_seconds,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return target.exists() and target.stat().st_size > 0

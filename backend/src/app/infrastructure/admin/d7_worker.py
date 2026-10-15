@@ -51,6 +51,14 @@ async def _orphan_scan(run_id: uuid.UUID, settings: AppSettings) -> None:
                         await session.scalars(select(RecordingArtifact.storage_key))
                     ).all()
                 )
+                # Thumbnails belong to their artifact, not orphans.
+                known |= {
+                    key
+                    for key in (
+                        await session.scalars(select(RecordingArtifact.thumbnail_key))
+                    ).all()
+                    if key
+                }
                 orphan_keys = [key for key in keys if key not in known]
                 run.scanned_count = len(keys)
                 run.orphan_count = len(orphan_keys)

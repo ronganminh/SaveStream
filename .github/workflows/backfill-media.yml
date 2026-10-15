@@ -1,14 +1,22 @@
 name: Backfill Media Info
 
 # Runs backend/src/app/infrastructure/recording/backfill_media.py on the VPS
-# (inside the worker container, which has ffprobe): reads the real duration
-# and frame size of artifacts recorded before ffprobe was used and stores
-# them. Credits are never changed. Without "apply" it is a dry run that only
-# prints what would change. Uses the same VPS_* secrets as Deploy Backend.
+# (inside the worker container, which has ffprobe/ffmpeg).
+#   what = media       real duration and frame size of artifacts recorded
+#                      before ffprobe was used. Credits are never changed.
+#   what = thumbnails  library thumbnail (one JPEG frame) for artifacts that
+#                      have none.
+# Without "apply" it is a dry run that only prints what would change. Uses the
+# same VPS_* secrets as Deploy Backend.
 
 on:
   workflow_dispatch:
     inputs:
+      what:
+        description: "media | thumbnails"
+        type: choice
+        options: [media, thumbnails]
+        default: media
       apply:
         description: "Write the probed values (unchecked = dry run)"
         type: boolean
@@ -49,13 +57,14 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           APPLY: ${{ inputs.apply && '--apply' || '' }}
           LIMIT: ${{ inputs.limit }}
+          WHAT: ${{ inputs.what == 'thumbnails' && '--thumbnails' || '' }}
         run: |
           [[ "$LIMIT" =~ ^[0-9]+$ ]] || { echo "limit must be a number"; exit 1; }
           ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
             -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
             "cd '$VPS_APP_DIR' && docker compose --env-file deploy/vps/production.env \
               -f deploy/vps/docker-compose.production.yml exec -T worker \
-              python -m app.infrastructure.recording.backfill_media $APPLY --limit $LIMIT"
+              python -m app.infrastructure.recording.backfill_media $WHAT $APPLY --limit $LIMIT"
 
       - name: Clean up SSH key
         if: always()

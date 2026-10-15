@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,7 +13,11 @@ from minio import Minio
 from minio.error import S3Error
 from urllib3.util import Retry, Timeout
 
-from app.infrastructure.storage.media_urls import media_delivery_enabled, signed_media_url
+from app.infrastructure.storage.media_urls import (
+    media_delivery_enabled,
+    signed_media_url,
+    stable_expiry,
+)
 from app.settings import AppSettings
 
 
@@ -95,6 +99,20 @@ class MinioStorageClient:
             storage_key,
             expires=timedelta(seconds=self.settings.artifact_presign_seconds),
             response_headers=response_headers,
+        )
+
+    def thumbnail_url(self, storage_key: str) -> str:
+        """Signed URL for a thumbnail image that stays identical for an hour
+        (valid one to two hours), so the browser can cache it."""
+        expires_at = stable_expiry()
+        if media_delivery_enabled(self.settings):
+            return signed_media_url(self.settings, storage_key, expires_at=expires_at)
+        request_date = datetime.fromtimestamp(expires_at - 7200, tz=timezone.utc)
+        return self.client.presigned_get_object(
+            self.settings.minio_bucket,
+            storage_key,
+            expires=timedelta(seconds=7200),
+            request_date=request_date,
         )
 
     def upload_bytes(

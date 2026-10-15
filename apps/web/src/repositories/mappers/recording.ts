@@ -133,6 +133,7 @@ export function mapRecordingToModel(
     ...expiry(recording.expires_at),
     status: uiStatus(recording.status),
     color: colorFor(recording.id),
+    thumbnailUrl: recording.thumbnail_url ?? null,
     avatarUrl: recording.creator?.avatar_url ?? matchedWatch?.creator?.avatar_url ?? null,
     initials: initials(
       matchedWatch?.creator?.display_name ||

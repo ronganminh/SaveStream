@@ -44,6 +44,7 @@ import {
 } from "@/hooks/use-domain-data";
 import { isDemoMode } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
+import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { repositories, type ChannelModel, type RecordingModel } from "@/repositories";
 import { CreatorAvatar, StatusBadge } from "@/components/app-components";
 
@@ -738,8 +739,13 @@ export function GlobalSearch() {
               >
                 <span
                   aria-hidden="true"
-                  className={cn("h-10 w-[30px] shrink-0 rounded-md", recording.color)}
-                />
+                  className={cn(
+                    "relative h-10 w-[30px] shrink-0 overflow-hidden rounded-md",
+                    recording.color,
+                  )}
+                >
+                  <RecordingThumbImage url={recording.thumbnailUrl} />
+                </span>
                 <span className="min-w-0 flex-1">
                   <b className="block truncate text-sm">
                     <Highlight text={recording.title} query={query.trim()} />

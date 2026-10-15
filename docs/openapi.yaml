@@ -9504,6 +9504,13 @@
             "default": false,
             "description": "True when a playable cloud video exists for this recording."
           },
+          "thumbnail_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Signed URL of one JPEG frame of the finished video; null until one exists (show a placeholder)."
+          },
           "engine": {
             "type": "string",
             "enum": [
