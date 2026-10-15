@@ -161,4 +161,32 @@ for service in recorder-blue recorder-green worker scheduler; do
     | tail -n 80 || true
 done
 
+section "PayPal readiness (no secrets printed; OAuth token check only, nothing is bought)"
+compose exec -T api python - <<'PY' || echo "PayPal check could not run"
+import httpx
+from app.settings import get_app_settings
+
+s = get_app_settings()
+base = s.payment_provider_base_url
+mode = "LIVE" if base == "https://api-m.paypal.com" else "SANDBOX" if "sandbox" in base else "other"
+print(f"provider={s.payment_provider} mode={mode} base={base}")
+print(f"client_id={'set' if s.paypal_client_id else 'MISSING'} ({len(s.paypal_client_id)} chars)"
+      f" client_secret={'set' if s.paypal_client_secret else 'MISSING'}")
+print(f"return_base={s.frontend_base_url} reconcile_every={s.payment_reconcile_seconds}s"
+      f" pending_expiry={s.payment_pending_expiry_seconds}s")
+if s.payment_provider == "paypal" and s.paypal_client_id and s.paypal_client_secret:
+    try:
+        r = httpx.post(f"{base}/v1/oauth2/token", data={"grant_type": "client_credentials"},
+                       auth=(s.paypal_client_id, s.paypal_client_secret), timeout=15)
+        body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+        print(f"oauth_status={r.status_code} app_id={body.get('app_id', '-')}"
+              f" error={body.get('error', '-')}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"oauth_error={type(exc).__name__}")
+PY
+sql "select key, value from admin_runtime_settings where key like 'payment%' order by key;" \
+  || echo "runtime settings table not readable"
+sql "select provider, status, count(*) as orders, max(updated_at) as latest
+     from payment_orders group by provider, status order by provider, status;"
+
 section "Done"

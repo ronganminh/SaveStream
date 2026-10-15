@@ -158,9 +158,12 @@ class PayPalPaymentProvider:
                 first = purchase_units[0]
                 if isinstance(first, dict):
                     amount = first.get("amount")
+            # APPROVED: the buyer approved the payment but the order was not
+            # captured yet (e.g. the tab closed before returning to us).
             normalized = {
                 "COMPLETED": "paid",
                 "VOIDED": "cancelled",
+                "APPROVED": "approved",
             }.get(order_status, "pending")
         if not isinstance(amount, dict):
             raise ValueError("PayPal amount missing")
