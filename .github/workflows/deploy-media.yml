@@ -143,6 +143,15 @@ jobs:
           else
             report "Workers Scripts access" no "add Account > Workers Scripts: Edit for this account"
           fi
+          # Read-only tokens get "No access" on per-script endpoints; with Edit a
+          # missing script answers "not found" and an existing one succeeds.
+          probe="$(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/$WORKER_NAME/settings")"
+          echo "script settings probe: $(printf '%s' "$probe" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}')"
+          if printf '%s' "$probe" | jq -e '[.errors[]?.message] | any(test("No access"; "i"))' >/dev/null; then
+            report "Workers Scripts: Edit" no "the token can only read Workers scripts; change Account > Workers Scripts from Read to Edit"
+          else
+            report "Workers Scripts: Edit" ok
+          fi
 
           env_value() { bash ~/vps.sh "sed -n 's/^$1=//p' deploy/vps/production.env | tail -n 1"; }
           bucket="$(env_value SAVESTREAM_R2_BUCKET)"
@@ -167,14 +176,17 @@ jobs:
           fi
 
           subdomain="$(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -r '.result.subdomain // empty')"
+          origin=""
           if [[ -n "$subdomain" ]]; then
             report "workers.dev subdomain" ok
+            origin="https://$WORKER_NAME.$subdomain.workers.dev"
           else
-            report "workers.dev subdomain" no "open Workers & Pages once in this account's dashboard to pick a workers.dev subdomain"
+            # Some tokens cannot read this endpoint; `wrangler deploy` prints
+            # the workers.dev URL, which the deploy step picks up instead.
+            echo "note: workers.dev subdomain not readable with this token; taking the URL from wrangler deploy"
           fi
           [[ "$failed" == 0 ]] || exit 1
-          origin="https://$WORKER_NAME.$subdomain.workers.dev"
-          echo "Media origin: $origin"
+          echo "Media origin: ${origin:-from wrangler deploy}"
           {
             echo "R2_BUCKET=$bucket"
             echo "MEDIA_ORIGIN=$origin"
@@ -215,8 +227,15 @@ jobs:
         if: inputs.mode == 'deploy' || inputs.mode == 'enable'
         working-directory: services/media-worker
         run: |
+          set -o pipefail
           sed -i "s/__R2_BUCKET__/${R2_BUCKET}/" wrangler.jsonc
-          npx wrangler deploy
+          npx wrangler deploy 2>&1 | tee /tmp/wrangler-deploy.log
+          url="$(grep -oE "https://$WORKER_NAME\.[a-z0-9-]+\.workers\.dev" /tmp/wrangler-deploy.log | head -n 1 || true)"
+          if [[ -z "$MEDIA_ORIGIN" ]]; then
+            [[ -n "$url" ]] || { echo "::error::wrangler did not print a workers.dev URL (is a workers.dev subdomain set up?)"; exit 1; }
+            echo "MEDIA_ORIGIN=$url" >> "$GITHUB_ENV"
+            echo "Media origin (from wrangler): $url"
+          fi
           printf '%s' "$MEDIA_SIGNING_SECRET" | npx wrangler secret put MEDIA_SIGNING_SECRET
 
       - name: Smoke-test the Worker
