@@ -10,6 +10,15 @@ name: Deploy Web
 #   CLOUDFLARE_API_TOKEN   token with "Workers Scripts: Edit" on the account
 #   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
 #   WEB_ENV_PRODUCTION     full contents of apps/web/.env.production
+#   VPS_SSH_KEY, VPS_KNOWN_HOSTS, VPS_HOST, VPS_USER (as Deploy Backend)
+#
+# PayPal checkout (input `checkout`, default auto): when WEB_ENV_PRODUCTION
+# does not set it and the backend reports web checkout open, the build adds
+# VITE_BILLING_CHECKOUT_ENABLED=true and VITE_PAYPAL_CLIENT_ID, read from the
+# single SAVESTREAM_PAYPAL_CLIENT_ID line of the VPS production.env (public;
+# the client secret lives in a separate file and is never read). `off`
+# builds without checkout ("Coming soon"). Admin -> Settings ->
+# payment_web_enabled also closes checkout at once, without a deploy.
 
 on:
   workflow_dispatch:
@@ -17,6 +26,11 @@ on:
       ref:
         description: "Git ref to deploy"
         default: main
+      checkout:
+        description: "PayPal checkout: auto (on when the backend has it open) or off"
+        type: choice
+        options: [auto, "off"]
+        default: auto
   workflow_run:
     workflows: ["Web CI"]
     types: [completed]
@@ -56,6 +70,45 @@ jobs:
             || { echo "VITE_APP_MODE=production missing"; exit 1; }
           grep -Eq '^VITE_API_BASE_URL=https://api\.savestream\.online/?\s*$' apps/web/.env.production \
             || { echo "VITE_API_BASE_URL is not https://api.savestream.online"; exit 1; }
+
+      - name: PayPal client ID from the backend
+        if: inputs.checkout != 'off'
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+          VPS_APP_DIR: ${{ vars.VPS_APP_DIR || '/home/nduythanh/SaveStream' }}
+        run: |
+          set -euo pipefail
+          envfile=apps/web/.env.production
+          if grep -Eq '^VITE_(BILLING_CHECKOUT_ENABLED|PAYPAL_CLIENT_ID)=' "$envfile"; then
+            echo "WEB_ENV_PRODUCTION sets checkout itself; keeping it."
+            exit 0
+          fi
+          open="$(curl -fsS https://api.savestream.online/v1/public/pricing | jq -r '.checkout.web // false')"
+          if [[ "$open" != "true" ]]; then
+            echo "Backend reports web checkout closed; building without it."
+            exit 0
+          fi
+          [[ -n "$VPS_SSH_KEY" && -n "$VPS_HOST" ]] || { echo "::error::VPS secrets missing"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          client_id="$(ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            "sed -n 's/^SAVESTREAM_PAYPAL_CLIENT_ID=//p' '$VPS_APP_DIR/deploy/vps/production.env' | tail -n 1" \
+            | tr -d '[:space:]"'"'")"
+          rm -f ~/.ssh/deploy_key
+          [[ "$client_id" =~ ^A[A-Za-z0-9_-]{20,}$ ]] \
+            || { echo "::error::SAVESTREAM_PAYPAL_CLIENT_ID on the VPS is missing or not a PayPal client ID"; exit 1; }
+          printf 'VITE_BILLING_CHECKOUT_ENABLED=true\nVITE_PAYPAL_CLIENT_ID=%s\n' "$client_id" >> "$envfile"
+          echo "Added checkout from the backend PayPal client ID (${#client_id} chars)."
+
+      - name: Check .env.production
+        run: |
           # Checkout on needs the PayPal LIVE client ID (public) for the buttons.
           if grep -Eiq '^VITE_BILLING_CHECKOUT_ENABLED=true\s*$' apps/web/.env.production; then
             grep -Eq '^VITE_PAYPAL_CLIENT_ID=A[A-Za-z0-9_-]{20,}\s*$' apps/web/.env.production \
