@@ -251,13 +251,23 @@ compose exec -T api python - <<'PY' || echo "settings check could not run"
 from app.settings import get_app_settings
 
 s = get_app_settings()
+print(f"watch_offline_check_seconds={s.watch_offline_check_seconds}")
 print(f"watch_live_check_seconds={s.watch_live_check_seconds}")
+print(f"watch_jitter_ratio={s.watch_jitter_ratio}")
 print(f"recording_max_duration_seconds={s.recording_max_duration_seconds}")
 PY
-compose exec -T scheduler python - <<'PY' || true
-from app.settings import get_app_settings
-
-print(f"scheduler watch_live_check_seconds={get_app_settings().watch_live_check_seconds}")
-PY
+sql "with c as (
+       select watch_id, checked_at,
+              extract(epoch from checked_at - lag(checked_at) over (partition by watch_id order by checked_at)) as gap
+       from admin_watch_check_metrics where checked_at >= now() - interval '6 hours')
+     select count(*) as gaps,
+            round(percentile_cont(0.5) within group (order by gap)::numeric, 1) as p50_seconds,
+            round(percentile_cont(0.9) within group (order by gap)::numeric, 1) as p90_seconds
+     from c where gap is not null and gap < 600;"
+sql "select count(*) as recordings,
+            round(percentile_cont(0.5) within group (order by extract(epoch from started_at - created_at))::numeric, 1) as p50_start_delay_s,
+            round(percentile_cont(0.9) within group (order by extract(epoch from started_at - created_at))::numeric, 1) as p90_start_delay_s,
+            max(duration_seconds) as longest_seconds
+     from recordings where started_at is not null and created_at >= now() - interval '14 days';"
 
 section "Done"
