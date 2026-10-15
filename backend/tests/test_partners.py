@@ -247,3 +247,59 @@ def test_public_stories_show_only_published_with_consent(tmp_path) -> None:
         for handle in ("pending.one", "approved.one", "gone.one"):
             hidden = client.get(f"/v1/public/partner-stories/{rows[handle]}/photo")
             assert hidden.status_code == 404
+
+
+def test_partner_reward_is_granted_once_after_publishing(tmp_path) -> None:
+    from app.infrastructure.db.credit_models import CreditLedgerEntry
+
+    app, database_url = _app(tmp_path)
+    # Legacy "admin" role skips the step-up token in tests; scopes as owner.
+    owner = replace(_principal(database_url, "owner"), role="admin")
+    reason = "Story published on the home page."
+    with TestClient(app, base_url="https://testserver") as client:
+        _start(client, app)
+        client.post("/v1/public/partner-applications", json=APPLICATION)
+        app.dependency_overrides[get_current_principal] = lambda: owner
+        [item] = client.get("/v1/admin/partners").json()["items"]
+        assert item["account_user_id"] is None and item["reward_credits"] is None
+        reward = f"/v1/admin/partners/{item['id']}/reward"
+
+        early = client.post(reward, json={"reason": reason})
+        assert early.status_code == 409 and early.json()["error"]["code"] == "INVALID_STATE"
+        for action in ("approve", "publish"):
+            client.post(
+                f"/v1/admin/partners/{item['id']}/actions",
+                json={"action": action, "reason": reason},
+            )
+        no_account = client.post(reward, json={"reason": reason})
+        assert no_account.json()["error"]["code"] == "PARTNER_ACCOUNT_NOT_FOUND"
+
+        _user(database_url, "maya@example.com")
+        granted = client.post(reward, json={"reason": reason})
+        assert granted.status_code == 200, granted.text
+        assert granted.json()["reward_credits"] == 3000
+        assert granted.json()["reward_granted_at"]
+        again = client.post(reward, json={"hours": 10, "reason": reason})
+        assert again.status_code == 409
+        assert again.json()["error"]["code"] == "PARTNER_REWARD_ALREADY_GRANTED"
+        listed = client.get("/v1/admin/partners").json()["items"][0]
+        assert listed["reward_credits"] == 3000 and listed["account_user_id"]
+
+    entries = _rows(database_url, CreditLedgerEntry)
+    assert [entry.amount for entry in entries] == [3000]
+    assert "Partner Program reward (50 h)" in entries[0].details["reason"]
+    actions = {log.action for log in _rows(database_url, AuditLog)}
+    assert "partner.reward_granted" in actions
+
+
+def _user(database_url: str, email: str) -> None:
+    async def run() -> None:
+        database = Database(database_url)
+        try:
+            async with database.session() as session:
+                session.add(User(email=email, normalized_email=email, role="user"))
+                await session.commit()
+        finally:
+            await database.close()
+
+    asyncio.run(run())

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ import { formatAdminDateTime } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { initials } from "@/repositories/mappers/channel";
 import {
+  adminFoundationApi,
   adminPartnersApi,
   type AdminPartnerAction,
   type AdminPartnerApplication,
@@ -210,12 +211,201 @@ function Photo({ application }: { application: AdminPartnerApplication }) {
   );
 }
 
+const REWARD_HOURS_DEFAULT = 50;
+const CREDITS_PER_HOUR = 60;
+
+function RewardDialog({
+  application,
+  hours,
+  open,
+  onClose,
+  onDone,
+}: {
+  application: AdminPartnerApplication;
+  hours: number;
+  open: boolean;
+  onClose: () => void;
+  onDone: (updated: AdminPartnerApplication) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [password, setPassword] = useState("");
+  const [totp, setTotp] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open) {
+      setReason("");
+      setPassword("");
+      setTotp("");
+      setError(null);
+    }
+  }, [open]);
+
+  const confirm = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const stepUp = await adminFoundationApi.stepUp(password, totp);
+      const updated = await adminPartnersApi.grantReward(
+        application.id,
+        hours,
+        reason.trim(),
+        stepUp.token,
+      );
+      toast.success(`Granted ${hours} h to ${application.email}`);
+      onDone(updated);
+    } catch (requestError) {
+      setError(authErrorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => (!next && !busy ? onClose() : undefined)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Grant {hours} recording hours</DialogTitle>
+          <DialogDescription>
+            {hours * CREDITS_PER_HOUR} credits to {application.email}. Granted once per application;
+            written to the credit ledger and the audit log as <code>partner.reward_granted</code>.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Textarea
+            placeholder={`Reason (at least ${MIN_REASON_LENGTH} characters)`}
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <Input
+            placeholder="Authenticator code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={totp}
+            onChange={(event) => setTotp(event.target.value)}
+          />
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button
+            disabled={
+              busy || reason.trim().length < MIN_REASON_LENGTH || !password || totp.length !== 6
+            }
+            onClick={() => void confirm()}
+          >
+            {busy ? "Granting…" : `Grant ${hours} h`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function RewardCard({
+  application,
+  canGrant,
+  onUpdated,
+}: {
+  application: AdminPartnerApplication;
+  canGrant: boolean;
+  onUpdated: (updated: AdminPartnerApplication) => void;
+}) {
+  const [hours, setHours] = useState(REWARD_HOURS_DEFAULT);
+  const [open, setOpen] = useState(false);
+  useEffect(() => setHours(REWARD_HOURS_DEFAULT), [application.id]);
+  const validHours = Number.isInteger(hours) && hours >= 1 && hours <= 500;
+
+  let body: ReactNode;
+  if (application.reward_credits) {
+    body = (
+      <AdminBadge tone="success">
+        Granted {Math.round(application.reward_credits / CREDITS_PER_HOUR)} h ·{" "}
+        {formatAdminDateTime(application.reward_granted_at)}
+      </AdminBadge>
+    );
+  } else if (application.status !== "published") {
+    body = (
+      <p className="text-sm text-muted-foreground">
+        {REWARD_HOURS_DEFAULT} h are granted once the story is published.
+      </p>
+    );
+  } else if (!application.account_user_id) {
+    body = (
+      <p className="rounded-[12px] bg-warning-subtle px-3 py-2 text-sm text-warning-foreground">
+        No SaveStream account uses {application.email}. Ask the creator to sign up with that email,
+        then grant the reward.
+      </p>
+    );
+  } else {
+    body = (
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex h-10 items-center rounded-[12px] border bg-surface pr-3">
+          <input
+            type="number"
+            min={1}
+            max={500}
+            aria-label="Reward hours"
+            className="h-full w-20 bg-transparent px-3 font-mono text-sm outline-none"
+            value={hours}
+            onChange={(event) => setHours(Number(event.target.value))}
+          />
+          <span className="text-sm text-muted-foreground">h</span>
+        </div>
+        <Button disabled={!canGrant || !validHours} onClick={() => setOpen(true)}>
+          Grant hours
+        </Button>
+        {!canGrant ? (
+          <span className="text-xs text-muted-foreground">
+            Needs the credit-adjust permission (Owner).
+          </span>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <AdminCard
+      title="Reward hours"
+      description={`Partner welcome reward: ${REWARD_HOURS_DEFAULT} h (${
+        REWARD_HOURS_DEFAULT * CREDITS_PER_HOUR
+      } credits), once per application.`}
+    >
+      {body}
+      <RewardDialog
+        application={application}
+        hours={hours}
+        open={open}
+        onClose={() => setOpen(false)}
+        onDone={(updated) => {
+          setOpen(false);
+          onUpdated(updated);
+        }}
+      />
+    </AdminCard>
+  );
+}
+
 function Detail({
   application,
   onAction,
+  canGrant,
+  onUpdated,
 }: {
   application: AdminPartnerApplication;
   onAction: (action: AdminPartnerAction) => void;
+  canGrant: boolean;
+  onUpdated: (updated: AdminPartnerApplication) => void;
 }) {
   const actions = actionsFor[application.status];
   const consentStatus = application.consent_withdrawn_at
@@ -313,6 +503,8 @@ function Detail({
         </dl>
       </AdminCard>
 
+      <RewardCard application={application} canGrant={canGrant} onUpdated={onUpdated} />
+
       <AdminCard>
         {actions.length ? (
           <div className="flex flex-wrap gap-2">
@@ -343,6 +535,8 @@ function Detail({
 export function AdminPartnersPage() {
   const { identity } = useAuth();
   const canUse = ["owner", "admin", "support"].includes(identity.role);
+  // Granting credits needs admin:credits:adjust (Owner; Support does not have it).
+  const canGrant = ["owner", "admin"].includes(identity.role);
   const [status, setStatus] = useState<AdminPartnerStatus | "">("pending");
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<AdminPartnerApplication[]>([]);
@@ -514,7 +708,16 @@ export function AdminPartnersPage() {
         </AdminDataTable>
 
         {selected ? (
-          <Detail application={selected} onAction={setAction} />
+          <Detail
+            application={selected}
+            onAction={setAction}
+            canGrant={canGrant}
+            onUpdated={(updated) =>
+              setItems((current) =>
+                current.map((item) => (item.id === updated.id ? updated : item)),
+              )
+            }
+          />
         ) : (
           <div className="rounded-[18px] border border-dashed bg-surface p-8 text-center text-sm text-muted-foreground">
             Select an application to review it.

@@ -20,10 +20,13 @@ from typing import Any
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.credits.service import CreditAdminService
 from app.application.identity.legal import CURRENT_PRIVACY_VERSION, CURRENT_TERMS_VERSION
 from app.application.public_reports import PublicReportService
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.admin_models import PartnerApplication
+from app.infrastructure.db.credit_models import CreditLedgerEntry
+from app.infrastructure.db.models import User
 from app.infrastructure.rate_limit import RateLimiter
 from app.settings import AppSettings
 
@@ -45,6 +48,23 @@ NICHES = (
     "Other",
 )
 STATUSES = ("pending", "approved", "rejected", "published", "withdrawn")
+
+# Partner Program reward: 50 recording hours (1 credit = 1 recording minute),
+# granted once per application after its story is published.
+REWARD_HOURS_DEFAULT = 50
+CREDITS_PER_HOUR = 60
+MAX_REWARD_HOURS = 500
+_REWARD_NAMESPACE = uuid.UUID("6f1d9a52-3c4b-4f7e-9f8a-2b5c7d0e4a11")
+
+
+def reward_idempotency_key(application_id: uuid.UUID) -> str:
+    """Stable per application, so the ledger's unique reference key blocks a
+    second grant even from two admins clicking at once."""
+    return str(uuid.uuid5(_REWARD_NAMESPACE, f"partner-reward:{application_id}"))
+
+
+def reward_reference_key(application_id: uuid.UUID) -> str:
+    return f"admin-adjustment:{reward_idempotency_key(application_id)}"
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 _HANDLE = re.compile(r"^[A-Za-z0-9._]{2,24}$")
 _PHOTO_TYPES = {b"\x89PNG\r\n\x1a\n": ("image/png", "png"), b"\xff\xd8\xff": ("image/jpeg", "jpg")}
@@ -260,3 +280,66 @@ class PartnerService:
         await self.session.flush()
         await self.session.refresh(application)
         return application, before
+
+
+    async def accounts_by_email(self, emails: Sequence[str]) -> dict[str, User]:
+        if not emails:
+            return {}
+        users = (
+            await self.session.scalars(
+                select(User).where(User.normalized_email.in_({e.casefold() for e in emails}))
+            )
+        ).all()
+        return {user.normalized_email: user for user in users}
+
+    async def rewards(
+        self, applications: Sequence[PartnerApplication]
+    ) -> dict[uuid.UUID, CreditLedgerEntry]:
+        keys = {reward_reference_key(item.id): item.id for item in applications}
+        if not keys:
+            return {}
+        entries = (
+            await self.session.scalars(
+                select(CreditLedgerEntry).where(CreditLedgerEntry.reference_key.in_(keys))
+            )
+        ).all()
+        return {keys[entry.reference_key]: entry for entry in entries}
+
+    async def grant_reward(
+        self, *, application_id: str, hours: int, reason: str
+    ) -> tuple[PartnerApplication, User, CreditLedgerEntry]:
+        application = await self.get(application_id)
+        if application.status != "published":
+            raise ApplicationError(
+                "INVALID_STATE",
+                "The reward is granted once the story is published.",
+                status_code=409,
+            )
+        if not 1 <= hours <= MAX_REWARD_HOURS:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                f"Hours must be between 1 and {MAX_REWARD_HOURS}.",
+                status_code=400,
+            )
+        if application.id in await self.rewards([application]):
+            raise ApplicationError(
+                "PARTNER_REWARD_ALREADY_GRANTED",
+                "The reward for this application was already granted.",
+                status_code=409,
+            )
+        user = (await self.accounts_by_email([application.email])).get(application.email)
+        if user is None:
+            raise ApplicationError(
+                "PARTNER_ACCOUNT_NOT_FOUND",
+                f"No SaveStream account uses {application.email}. "
+                "Ask the creator to sign up with that email first.",
+                status_code=409,
+            )
+        entry = await CreditAdminService(self.session).adjust(
+            user_id=user.id,
+            amount=hours * CREDITS_PER_HOUR,
+            idempotency_key=reward_idempotency_key(application.id),
+            reason=f"Partner Program reward ({hours} h): {reason}",
+            commit=False,
+        )
+        return application, user, entry
