@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_principal, get_db_session
 from app.api.middleware import client_ip as trusted_client_ip
-from app.api.routes.admin import _context, _require_scope
+from app.api.routes.admin import _context, _require_scope, _require_step_up
 from app.api.schemas.partners import (
     AdminPartnerActionRequest,
     AdminPartnerApplicationListResponse,
     AdminPartnerApplicationResponse,
+    AdminPartnerRewardRequest,
     PartnerApplicationReceipt,
     PartnerApplicationRequest,
     PartnerStoryListResponse,
@@ -22,7 +23,10 @@ from app.application.partners import MAX_PHOTO_BYTES, STATUSES, PartnerService
 from app.application.public_reports import report_reference
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
+from app.application.watches.resume import resume_credit_paused_watches
 from app.infrastructure.db.admin_models import PartnerApplication
+from app.infrastructure.db.credit_models import CreditLedgerEntry
+from app.infrastructure.db.models import User
 
 public_router = APIRouter(prefix="/v1/public", tags=["Partners"])
 admin_router = APIRouter(prefix="/v1/admin/partners", tags=["Admin"], include_in_schema=False)
@@ -32,7 +36,12 @@ def _reference(application: PartnerApplication) -> str:
     return "PA-" + report_reference(application.id).removeprefix("SR-")
 
 
-def _response(application: PartnerApplication) -> AdminPartnerApplicationResponse:
+def _response(
+    application: PartnerApplication,
+    *,
+    account: User | None = None,
+    reward: CreditLedgerEntry | None = None,
+) -> AdminPartnerApplicationResponse:
     return AdminPartnerApplicationResponse(
         id=str(application.id),
         reference=_reference(application),
@@ -53,7 +62,21 @@ def _response(application: PartnerApplication) -> AdminPartnerApplicationRespons
         published_at=application.published_at,
         created_at=application.created_at,
         updated_at=application.updated_at,
+        account_user_id=str(account.id) if account else None,
+        reward_credits=reward.amount if reward else None,
+        reward_granted_at=reward.created_at if reward else None,
     )
+
+
+async def _responses(
+    service: PartnerService, rows: list[PartnerApplication]
+) -> list[AdminPartnerApplicationResponse]:
+    accounts = await service.accounts_by_email([row.email for row in rows])
+    rewards = await service.rewards(rows)
+    return [
+        _response(row, account=accounts.get(row.email), reward=rewards.get(row.id))
+        for row in rows
+    ]
 
 
 @public_router.post(
@@ -166,11 +189,10 @@ async def list_partner_applications(
     _require_scope(principal, "admin:partners:read")
     if status_filter and status_filter not in STATUSES:
         raise ApplicationError("VALIDATION_ERROR", "Invalid status", status_code=400)
-    rows, counts = await PartnerService(session, request.app.state.settings).list(
-        status=status_filter, query=query
-    )
+    service = PartnerService(session, request.app.state.settings)
+    rows, counts = await service.list(status=status_filter, query=query)
     return AdminPartnerApplicationListResponse(
-        items=[_response(row) for row in rows], counts=counts
+        items=await _responses(service, rows), counts=counts
     )
 
 
@@ -183,7 +205,7 @@ async def get_partner_application(
 ) -> AdminPartnerApplicationResponse:
     _require_scope(principal, "admin:partners:read")
     service = PartnerService(session, request.app.state.settings)
-    return _response(await service.get(application_id))
+    return (await _responses(service, [await service.get(application_id)]))[0]
 
 
 @admin_router.get(
@@ -211,7 +233,8 @@ async def act_on_partner_application(
     session: AsyncSession = Depends(get_db_session),
 ) -> AdminPartnerApplicationResponse:
     _require_scope(principal, "admin:partners:write")
-    application, before = await PartnerService(session, request.app.state.settings).transition(
+    service = PartnerService(session, request.app.state.settings)
+    application, before = await service.transition(
         application_id=application_id, action=payload.action, reviewer_id=principal.user_id
     )
     await AuditService(session).record(
@@ -226,4 +249,45 @@ async def act_on_partner_application(
         after_state={"status": application.status},
     )
     await session.commit()
-    return _response(application)
+    return (await _responses(service, [application]))[0]
+
+
+@admin_router.post("/{application_id}/reward", response_model=AdminPartnerApplicationResponse)
+async def grant_partner_reward(
+    application_id: str,
+    payload: AdminPartnerRewardRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminPartnerApplicationResponse:
+    """Grant the Partner Program reward (default 50 h) once per application:
+    a credit ledger adjustment plus an audit entry, behind step-up like any
+    manual credit grant."""
+    _require_scope(principal, "admin:partners:write")
+    _require_scope(principal, "admin:credits:adjust")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    service = PartnerService(session, request.app.state.settings)
+    application, user, entry = await service.grant_reward(
+        application_id=application_id, hours=payload.hours, reason=payload.reason
+    )
+    await resume_credit_paused_watches(session, user.id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="partner.reward_granted",
+        resource_type="partner_application",
+        resource_id=str(application.id),
+        context=_context(request),
+        reason=payload.reason,
+        after_state={
+            "user_id": str(user.id),
+            "hours": payload.hours,
+            "credits": entry.amount,
+            "transaction_id": str(entry.id),
+        },
+    )
+    await session.commit()
+    return _response(application, account=user, reward=entry)

@@ -68,6 +68,10 @@ class AdminPartnerApplicationResponse(BaseModel):
     published_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    # SaveStream account with the application's email, if any (reward target).
+    account_user_id: str | None = None
+    reward_credits: int | None = None
+    reward_granted_at: datetime | None = None
 
 
 class AdminPartnerApplicationListResponse(BaseModel):
@@ -79,4 +83,11 @@ class AdminPartnerActionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     action: Literal["approve", "reject", "publish", "unpublish"]
+    reason: str = Field(min_length=10, max_length=500)
+
+
+class AdminPartnerRewardRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    hours: int = Field(default=50, ge=1, le=500)
     reason: str = Field(min_length=10, max_length=500)

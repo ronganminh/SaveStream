@@ -1589,6 +1589,10 @@ export type AdminPartnerApplication = {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  /** SaveStream account with the application's email (reward target). */
+  account_user_id?: string | null;
+  reward_credits?: number | null;
+  reward_granted_at?: string | null;
 };
 
 export const adminPartnersApi = {
@@ -1609,6 +1613,14 @@ export const adminPartnersApi = {
       { responseMode: "response" },
     );
     return URL.createObjectURL(await response.blob());
+  },
+
+  /** Partner reward (default 50 h): one ledger grant per application, needs step-up. */
+  grantReward(applicationId: string, hours: number, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminPartnerApplication>(
+      `/v1/admin/partners/${encodeURIComponent(applicationId)}/reward`,
+      { json: { hours, reason }, headers: { "X-Admin-Step-Up": stepUpToken } },
+    );
   },
 
   act(applicationId: string, action: AdminPartnerAction, reason: string) {

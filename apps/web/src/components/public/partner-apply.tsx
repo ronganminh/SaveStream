@@ -220,7 +220,7 @@ function Received({ result, onEdit }: { result: PartnerApplicationReceipt; onEdi
           {[
             "We confirm you own the channel",
             "We draft your story and send it for approval",
-            "Free hours are added when it goes live",
+            "50 free recording hours are added when it goes live",
           ].map((step, index) => (
             <li key={step} className="flex items-center gap-2.5">
               <span className="grid size-6 shrink-0 place-items-center rounded-full bg-primary-subtle font-mono text-xs font-bold text-accent-ink">
@@ -321,7 +321,7 @@ export function PartnerApplyPage() {
               If SaveStream records your own TikTok LIVEs, we’d love to feature you on our site.
             </p>
             <ul className="mt-2 flex flex-col gap-3.5">
-              <Perk icon={<Clock className="size-[18px]" />} title="Free recording hours">
+              <Perk icon={<Clock className="size-[18px]" />} title="50 free recording hours">
                 Added to your balance when your story goes live.
               </Perk>
               <Perk icon={<MessageSquare className="size-[18px]" />} title="You approve everything">
