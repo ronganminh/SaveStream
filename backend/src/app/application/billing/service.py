@@ -984,6 +984,9 @@ class BillingReconciliationService:
             )
             if payment_state is None:
                 continue
+            if payment_state.status == "approved":
+                processed += await self._capture_approved(order)
+                continue
             event_type = {
                 "paid": "payment.paid",
                 "failed": "payment.failed",
@@ -1060,6 +1063,44 @@ class BillingReconciliationService:
             processed += int(accepted)
         return processed
 
+    async def _capture_approved(self, order: PaymentOrder) -> int:
+        """Capture an order the buyer approved at PayPal but never returned
+        from, so they get the credits they paid for."""
+        if not order.provider_reference:
+            return 0
+        try:
+            state = await self.provider.capture_payment(order.provider_reference)
+        except ApplicationError:
+            # Retried on the next run; the order expires if it never captures.
+            return 0
+        if (
+            state.status != "paid"
+            or state.amount_minor != order.amount_minor
+            or state.currency != order.currency
+        ):
+            return 0
+        accepted = await self.processor.ingest(
+            ProviderEvent(
+                event_id=f"capture:{state.event_id}",
+                event_type="payment.paid",
+                provider_reference=state.provider_reference,
+                payment_order_id=str(order.id),
+                amount_minor=state.amount_minor,
+                currency=state.currency,
+            ),
+            raw_payload={
+                "id": f"capture:{state.event_id}",
+                "type": "payment.paid",
+                "payment_reference": state.provider_reference,
+                "payment_order_id": str(order.id),
+                "amount_minor": state.amount_minor,
+                "currency": state.currency,
+                "source": "paypal_reconcile_capture",
+            },
+            signature_verified=True,
+        )
+        return int(accepted)
+
     async def _expire_abandoned_orders(self, *, limit: int) -> int:
         if self.pending_expiry is None:
             return 0
@@ -1089,6 +1130,14 @@ class BillingReconciliationService:
                     # Provider unreachable: never expire an order we could not check.
                     continue
                 if state is not None and state.status == "paid":
+                    continue
+                # Approved at PayPal: keep retrying the capture for a while
+                # (PayPal holds an approved order for days, not forever).
+                if (
+                    state is not None
+                    and state.status == "approved"
+                    and aware(order.created_at) > utcnow() - 3 * self.pending_expiry
+                ):
                     continue
             current = PaymentStatus(order.status)
             order.status = transition_payment(current, PaymentStatus.EXPIRED).value

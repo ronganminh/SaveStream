@@ -181,3 +181,123 @@ def test_paypal_capture_grants_credits_once_and_rejects_swapped_order(tmp_path) 
             await database.close()
 
     asyncio.run(run())
+
+
+def _approved_transport(calls: list[str], *, capture_ok: bool = True) -> httpx.MockTransport:
+    """PayPal where the buyer approved the order but never came back."""
+    base = _paypal_transport(calls)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/v2/checkout/orders/PAYPAL-ORDER-123" and request.method == "GET":
+            calls.append(f"GET {request.url.path}")
+            return httpx.Response(
+                200,
+                json={
+                    "id": "PAYPAL-ORDER-123",
+                    "status": "APPROVED",
+                    "purchase_units": [{"amount": {"currency_code": "USD", "value": "9.99"}}],
+                },
+            )
+        if request.url.path.endswith("/capture") and not capture_ok:
+            calls.append(f"{request.method} {request.url.path}")
+            return httpx.Response(500, json={"name": "INTERNAL_SERVER_ERROR"})
+        return base.handle_request(request)
+
+    return httpx.MockTransport(handler)
+
+
+async def _pending_order(session, settings, provider):
+    user = User(
+        email="approved@example.com",
+        normalized_email="approved@example.com",
+        role="user",
+        email_verified_at=utcnow(),
+    )
+    session.add(user)
+    await session.commit()
+    await session.refresh(user)
+    package = await BillingAdminService(session, provider).create_package(
+        code=f"paypal-{uuid.uuid4().hex}",
+        name="Starter",
+        credits=3000,
+        amount_minor=999,
+        currency="USD",
+    )
+    service = BillingService(session, settings, provider)
+    order = await service.create_order(
+        user_id=user.id, package_id=str(package.id), idempotency_key=str(uuid.uuid4())
+    )
+    await service.checkout(
+        user_id=user.id,
+        payment_order_id=str(order.id),
+        return_url=f"https://testserver/billing/success?order_id={order.id}",
+        idempotency_key=str(uuid.uuid4()),
+    )
+    return user, order
+
+
+def test_reconcile_captures_an_order_the_buyer_approved_but_never_returned_from(tmp_path) -> None:
+    from app.application.billing.service import BillingReconciliationService
+
+    async def run() -> None:
+        settings = _settings(f"sqlite+aiosqlite:///{tmp_path / 'approved.db'}")
+        calls: list[str] = []
+        provider = PayPalPaymentProvider(settings, transport=_approved_transport(calls))
+        database = Database(settings.database_url)
+        try:
+            async with database.engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+            async with database.session() as session:
+                user, order = await _pending_order(session, settings, provider)
+                reconciler = BillingReconciliationService(session, provider)
+                assert await reconciler.run_once() >= 1
+                await session.refresh(order)
+                assert order.status == "paid"
+                assert (await CreditService(session).balance(user.id)).posted == 3000
+                # The next run neither captures again nor grants twice.
+                await reconciler.run_once()
+                assert (await CreditService(session).balance(user.id)).posted == 3000
+                assert calls.count("POST /v2/checkout/orders/PAYPAL-ORDER-123/capture") == 1
+        finally:
+            await database.close()
+
+    asyncio.run(run())
+
+
+def test_approved_order_is_not_expired_while_capture_keeps_failing(tmp_path) -> None:
+    from datetime import timedelta
+
+    from app.application.billing.service import BillingReconciliationService
+
+    async def run() -> None:
+        settings = _settings(f"sqlite+aiosqlite:///{tmp_path / 'approved-fail.db'}")
+        calls: list[str] = []
+        provider = PayPalPaymentProvider(
+            settings, transport=_approved_transport(calls, capture_ok=False)
+        )
+        database = Database(settings.database_url)
+        try:
+            async with database.engine.begin() as connection:
+                await connection.run_sync(Base.metadata.create_all)
+            async with database.session() as session:
+                user, order = await _pending_order(session, settings, provider)
+                reconciler = BillingReconciliationService(
+                    session, provider, pending_expiry=timedelta(hours=1)
+                )
+                order.updated_at = utcnow() - timedelta(hours=2)
+                await session.commit()
+                await reconciler.run_once()
+                await session.refresh(order)
+                assert order.status == "pending"
+                assert (await CreditService(session).balance(user.id)).posted == 0
+                # Past three expiry windows it is given up on.
+                order.created_at = utcnow() - timedelta(hours=4)
+                order.updated_at = utcnow() - timedelta(hours=4)
+                await session.commit()
+                await reconciler.run_once()
+                await session.refresh(order)
+                assert order.status == "expired"
+        finally:
+            await database.close()
+
+    asyncio.run(run())

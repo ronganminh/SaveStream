@@ -56,6 +56,14 @@ jobs:
             || { echo "VITE_APP_MODE=production missing"; exit 1; }
           grep -Eq '^VITE_API_BASE_URL=https://api\.savestream\.online/?\s*$' apps/web/.env.production \
             || { echo "VITE_API_BASE_URL is not https://api.savestream.online"; exit 1; }
+          # Checkout on needs the PayPal LIVE client ID (public) for the buttons.
+          if grep -Eiq '^VITE_BILLING_CHECKOUT_ENABLED=true\s*$' apps/web/.env.production; then
+            grep -Eq '^VITE_PAYPAL_CLIENT_ID=A[A-Za-z0-9_-]{20,}\s*$' apps/web/.env.production \
+              || { echo "VITE_BILLING_CHECKOUT_ENABLED=true needs VITE_PAYPAL_CLIENT_ID (LIVE client ID)"; exit 1; }
+            echo "Checkout: ON (PayPal client ID present)"
+          else
+            echo "Checkout: OFF (billing shows Coming soon)"
+          fi
           sed -E 's/=.*/=***/' apps/web/.env.production
 
       - run: npm install --no-audit --no-fund
