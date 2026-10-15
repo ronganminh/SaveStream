@@ -91,6 +91,22 @@ jobs:
           token="$(clean "$CLOUDFLARE_API_TOKEN")"
           [[ "$account" != "$CLOUDFLARE_ACCOUNT_ID" ]] && echo "note: removed whitespace/quotes from CLOUDFLARE_MEDIA_ACCOUNT_ID"
           [[ "$token" != "$CLOUDFLARE_API_TOKEN" ]] && echo "note: removed whitespace/quotes from CLOUDFLARE_MEDIA_API_TOKEN"
+          # Diagnostics (the account ID is not a secret; the token is never printed).
+          echo "account id: raw length ${#CLOUDFLARE_ACCOUNT_ID}, cleaned length ${#account}, first 4 '${account:0:4}', last 4 '${account: -4}'"
+          printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | grep -q '[[:space:]]' && echo "account id: raw value contains whitespace/newline" || echo "account id: no whitespace/newline"
+          bad="$(printf '%s' "$account" | grep -o '[^0-9a-f]' | tr -d '\n' || true)"
+          echo "account id: characters that are not lowercase hex: '${bad:-none}'"
+          printf '%s' "$CLOUDFLARE_API_TOKEN" | grep -q '[[:space:]]' && echo "token: raw value contains whitespace/newline" || echo "token: no whitespace/newline"
+          echo "token: raw length ${#CLOUDFLARE_API_TOKEN}, cleaned length ${#token}, characters outside [A-Za-z0-9_-]: $(printf '%s' "$token" | { grep -o '[^A-Za-z0-9_-]' || true; } | wc -l)"
+          # A stray character pasted next to the ID (seen: 33 hex chars): when the
+          # secret contains the account that owns the R2 bucket, use that ID.
+          r2_account="$(bash ~/vps.sh "sed -n 's/^SAVESTREAM_R2_ENDPOINT=//p' deploy/vps/production.env | tail -n 1" \
+            | sed -E 's#^https?://([0-9a-f]{32})\..*#\1#')"
+          echo "R2 bucket account (from SAVESTREAM_R2_ENDPOINT): ${r2_account:-unknown}"
+          if [[ ! "$account" =~ ^[0-9a-f]{32}$ && "$r2_account" =~ ^[0-9a-f]{32}$ && "$account" == *"$r2_account"* ]]; then
+            echo "note: the secret is the R2 account ID with $(( ${#account} - 32 )) extra character(s); using the R2 account ID"
+            account="$r2_account"
+          fi
           if [[ "$account" =~ ^[0-9a-f]{32}$ ]]; then
             echo "account id format: ok (32 hex)"
           else
@@ -117,6 +133,10 @@ jobs:
             reason="$(cf "/user/tokens/verify" | jq -r '[.errors[]? | "\(.code) \(.message)"] | join("; ")')"
             report "token is active" no "Cloudflare says: ${reason:-no detail}"
           fi
+          echo "verify /user/tokens/verify: $(cf "/user/tokens/verify" | jq -c '{success, status: .result.status, errors: [.errors[]? | "\(.code) \(.message)"]}')"
+          echo "verify /accounts/<secret id>/tokens/verify: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/tokens/verify" | jq -c '{success, status: .result.status, errors: [.errors[]? | "\(.code) \(.message)"]}')"
+          echo "accounts this token can see:"
+          cf "/accounts?per_page=50" | jq -r 'if .success then (.result[]? | "  \(.id)  \(.name)") else "  (none) \([.errors[]? | "\(.code) \(.message)"] | join("; "))" end'
 
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts" | ok; then
             report "Workers Scripts access" ok
@@ -130,11 +150,16 @@ jobs:
           # The R2 binding only sees buckets in the Worker's own account;
           # compare without printing either id.
           endpoint_account="$(printf '%s' "$endpoint" | sed -E 's#^https?://([0-9a-f]{32})\..*#\1#')"
+          echo "bucket '$bucket' lives in account ${endpoint_account} (from SAVESTREAM_R2_ENDPOINT); secret account starts ${CLOUDFLARE_ACCOUNT_ID:0:4}…${CLOUDFLARE_ACCOUNT_ID: -4}"
           if [[ "$endpoint_account" == "$CLOUDFLARE_ACCOUNT_ID" ]]; then
             report "bucket '$bucket' is in this account" ok
           else
             report "bucket '$bucket' is in this account" no "CLOUDFLARE_MEDIA_ACCOUNT_ID is not the account in SAVESTREAM_R2_ENDPOINT"
           fi
+          errs() { jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"]}'; }
+          echo "r2 GET bucket '$bucket': $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | errs)"
+          echo "r2 list buckets: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], names: [.result.buckets[]?.name]}')"
+          echo "workers subdomain: $(cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain" | jq -c '{success, errors: [.errors[]? | "\(.code) \(.message)"], has_subdomain: ((.result.subdomain // "") != "")}')"
           if cf "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/$bucket" | ok; then
             report "R2 bucket readable" ok
           else
