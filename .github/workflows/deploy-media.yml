@@ -94,17 +94,18 @@ jobs:
           # Diagnostics (the account ID is not a secret; the token is never printed).
           echo "account id: raw length ${#CLOUDFLARE_ACCOUNT_ID}, cleaned length ${#account}, first 4 '${account:0:4}', last 4 '${account: -4}'"
           printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | grep -q '[[:space:]]' && echo "account id: raw value contains whitespace/newline" || echo "account id: no whitespace/newline"
-          bad="$(printf '%s' "$account" | grep -o '[^0-9a-f]' | tr -d '\n')"
+          bad="$(printf '%s' "$account" | grep -o '[^0-9a-f]' | tr -d '\n' || true)"
           echo "account id: characters that are not lowercase hex: '${bad:-none}'"
           printf '%s' "$CLOUDFLARE_API_TOKEN" | grep -q '[[:space:]]' && echo "token: raw value contains whitespace/newline" || echo "token: no whitespace/newline"
-          echo "token: raw length ${#CLOUDFLARE_API_TOKEN}, cleaned length ${#token}, characters outside [A-Za-z0-9_-]: $(printf '%s' "$token" | grep -o '[^A-Za-z0-9_-]' | wc -l)"
-          # One 32-hex run inside a longer value (e.g. a stray character) is the account ID.
-          if [[ ! "$account" =~ ^[0-9a-f]{32}$ ]]; then
-            runs="$(printf '%s' "$account" | grep -oE '[0-9a-f]{32,}' || true)"
-            if [[ "$(printf '%s\n' "$runs" | grep -c .)" == 1 && ${#runs} == 32 ]]; then
-              echo "note: using the 32-hex account ID found inside the secret (${#account} chars)"
-              account="$runs"
-            fi
+          echo "token: raw length ${#CLOUDFLARE_API_TOKEN}, cleaned length ${#token}, characters outside [A-Za-z0-9_-]: $(printf '%s' "$token" | { grep -o '[^A-Za-z0-9_-]' || true; } | wc -l)"
+          # A stray character pasted next to the ID (seen: 33 hex chars): when the
+          # secret contains the account that owns the R2 bucket, use that ID.
+          r2_account="$(bash ~/vps.sh "sed -n 's/^SAVESTREAM_R2_ENDPOINT=//p' deploy/vps/production.env | tail -n 1" \
+            | sed -E 's#^https?://([0-9a-f]{32})\..*#\1#')"
+          echo "R2 bucket account (from SAVESTREAM_R2_ENDPOINT): ${r2_account:-unknown}"
+          if [[ ! "$account" =~ ^[0-9a-f]{32}$ && "$r2_account" =~ ^[0-9a-f]{32}$ && "$account" == *"$r2_account"* ]]; then
+            echo "note: the secret is the R2 account ID with $(( ${#account} - 32 )) extra character(s); using the R2 account ID"
+            account="$r2_account"
           fi
           if [[ "$account" =~ ^[0-9a-f]{32}$ ]]; then
             echo "account id format: ok (32 hex)"
