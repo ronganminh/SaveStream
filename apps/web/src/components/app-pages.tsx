@@ -3938,13 +3938,21 @@ export function RecordingDetailPage({
               body="The stored file is no longer available. It may have expired or already been cleaned up."
             />
           )}
-        <div className="flex flex-wrap items-start gap-8">
+        {/* Player and details side by side whenever they fit (portrait: from
+            640 px; landscape: from 1280 px), stacked otherwise. A grid, not
+            flex-wrap, so the details never drop below the player and leave
+            the right side empty. */}
+        <div
+          className={cn(
+            "grid items-start gap-6 lg:gap-8",
+            portrait
+              ? "sm:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)]"
+              : "xl:grid-cols-[minmax(0,1.5fr)_minmax(320px,1fr)]",
+          )}
+        >
           <section
             aria-label="Video player"
-            className={cn(
-              "w-full",
-              portrait ? "max-w-[400px] flex-[0_0_400px]" : "flex-[1_1_560px]",
-            )}
+            className={cn("w-full min-w-0", portrait && "mx-auto max-w-[400px] sm:mx-0")}
           >
             <VideoPlayerShell
               state={state}
@@ -3971,7 +3979,7 @@ export function RecordingDetailPage({
                   })}
             />
           </section>
-          <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-5">
             <div className="space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={rec.status} pulse={state === "active"} />
