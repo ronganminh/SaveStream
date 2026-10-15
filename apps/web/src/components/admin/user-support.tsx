@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
+  type AdminAccountStatus,
   type AdminPrivacyRequest,
   type AdminUser,
   type AdminUserDetail,
@@ -671,6 +672,172 @@ type ReasonRequest = {
 
 const MIN_REASON_LENGTH = 10;
 
+const accountStatusCopy: Record<
+  AdminAccountStatus,
+  { title: string; description: string; confirm: string; audit: string; danger: boolean }
+> = {
+  suspended: {
+    title: "Suspend this account?",
+    description:
+      "Signs the user out, pauses channel monitoring and stops active recordings. Nothing is deleted. The user is emailed the reason and can appeal to support@savestream.online.",
+    confirm: "Suspend account",
+    audit: "admin.user.suspended",
+    danger: true,
+  },
+  terminated: {
+    title: "Terminate this account?",
+    description:
+      "Permanent: the user can no longer sign in and monitoring stops. Recordings and billing records are kept and are not deleted by this action. The user is emailed the reason.",
+    confirm: "Terminate account",
+    audit: "admin.user.terminated",
+    danger: true,
+  },
+  active: {
+    title: "Reinstate this account?",
+    description:
+      "The user can sign in again. Channels paused by the suspension resume monitoring. The user is emailed.",
+    confirm: "Reinstate account",
+    audit: "admin.user.reinstated",
+    danger: false,
+  },
+};
+
+/** Suspend / reinstate / terminate: reason (shown to the user), optional
+ * case reference, and password + authenticator step-up. */
+function AccountStatusDialog({
+  status,
+  user,
+  onClose,
+  onDone,
+}: {
+  status: AdminAccountStatus | null;
+  user: AdminUser;
+  onClose: () => void;
+  onDone: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [reference, setReference] = useState("");
+  const [password, setPassword] = useState("");
+  const [totp, setTotp] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status) {
+      setReason("");
+      setReference(user.account_status_reference ?? "");
+      setPassword("");
+      setTotp("");
+      setError(null);
+    }
+  }, [status]);
+
+  const copy = status ? accountStatusCopy[status] : null;
+
+  const run = async () => {
+    if (!status) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const stepUp = await adminFoundationApi.stepUp(password, totp);
+      await adminFoundationApi.changeAccountStatus(
+        user.id,
+        status,
+        reason.trim(),
+        reference.trim() || null,
+        stepUp.token,
+      );
+      toast.success("Account status updated");
+      onClose();
+      onDone();
+    } catch (requestError) {
+      setError(authErrorMessage(requestError));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={status !== null} onOpenChange={(open) => !open && !busy && onClose()}>
+      <DialogContent className="max-w-[520px]">
+        <DialogHeader>
+          <DialogTitle>{copy?.title}</DialogTitle>
+          <DialogDescription>{copy?.description}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label htmlFor="account-status-reason" className="text-sm font-bold">
+              Reason <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              id="account-status-reason"
+              className="min-h-[84px] w-full rounded-[12px] border bg-surface p-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder={
+                status === "active"
+                  ? "e.g. Appeal accepted: the owner showed proof of authorization."
+                  : "e.g. Recording LIVEs without the channel owner's permission (AUP)."
+              }
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {status === "active"
+                ? "Stored in the audit log."
+                : "Shown to the user on the sign-in page and in the email, and stored in the audit log."}{" "}
+              Minimum {MIN_REASON_LENGTH} characters.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="account-status-reference" className="text-sm font-bold">
+              Case reference <span className="font-normal text-muted-foreground">(optional)</span>
+            </label>
+            <Input
+              id="account-status-reference"
+              placeholder="e.g. SR-1040"
+              maxLength={64}
+              value={reference}
+              onChange={(event) => setReference(event.target.value)}
+            />
+          </div>
+          <Input
+            type="password"
+            placeholder="Your password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <Input
+            placeholder="Authenticator code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={totp}
+            onChange={(event) => setTotp(event.target.value)}
+          />
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </div>
+        <DialogFooter className="items-center sm:justify-between">
+          <span className="font-mono text-xs text-muted-foreground">audit: {copy?.audit}</span>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              Cancel
+            </Button>
+            <Button
+              variant={copy?.danger ? "destructive" : "default"}
+              disabled={
+                busy || reason.trim().length < MIN_REASON_LENGTH || !password || totp.length !== 6
+              }
+              onClick={() => void run()}
+            >
+              {busy ? "Working…" : copy?.confirm}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /** Every support action asks for a reason; it is stored in the audit log. */
 function ReasonDialog({
   request,
@@ -782,6 +949,7 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [danger, setDanger] = useState<DangerousAction | null>(null);
   const [reasonRequest, setReasonRequest] = useState<ReasonRequest | null>(null);
+  const [statusChange, setStatusChange] = useState<AdminAccountStatus | null>(null);
 
   const canWrite = admin?.role === "owner" || admin?.role === "support" || admin?.role === "admin";
   const canGrant = admin?.role === "owner" || admin?.role === "finance" || admin?.role === "admin";
@@ -999,6 +1167,38 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                 >
                   {user.is_active ? "Lock account" : "Unlock account"}
                 </Button>
+                {user.role === "user" && (user.account_status ?? "active") === "active" ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setStatusChange("suspended")}
+                    >
+                      Suspend
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setStatusChange("terminated")}
+                    >
+                      Terminate
+                    </Button>
+                  </>
+                ) : null}
+                {user.account_status === "suspended" ? (
+                  <>
+                    <Button variant="outline" onClick={() => setStatusChange("active")}>
+                      Reinstate
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setStatusChange("terminated")}
+                    >
+                      Terminate
+                    </Button>
+                  </>
+                ) : null}
               </>
             ) : null}
           </div>
@@ -1008,6 +1208,28 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
             </p>
           ) : null}
         </section>
+
+        {user.account_status && user.account_status !== "active" ? (
+          <div
+            role="status"
+            className="mt-4 rounded-[14px] border border-destructive/30 bg-destructive/5 p-4 text-sm"
+          >
+            <p className="font-bold text-destructive">
+              Account {user.account_status}
+              {user.account_status_changed_at
+                ? ` · ${dateTime(user.account_status_changed_at)}`
+                : ""}
+              {user.account_status_reference ? ` · ${user.account_status_reference}` : ""}
+            </p>
+            {user.account_status_reason ? (
+              <p className="mt-1 text-foreground">{user.account_status_reason}</p>
+            ) : null}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Monitoring is paused and the user cannot sign in. Data is kept. Appeals go to
+              support@savestream.online.
+            </p>
+          </div>
+        ) : null}
 
         <div className="mt-5">
           <AdminGlobalSearch />
@@ -1517,6 +1739,12 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
           user={user}
           open={danger !== null}
           onOpenChange={(open) => !open && setDanger(null)}
+          onDone={() => void load()}
+        />
+        <AccountStatusDialog
+          status={statusChange}
+          user={user}
+          onClose={() => setStatusChange(null)}
           onDone={() => void load()}
         />
       </AppShell>

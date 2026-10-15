@@ -111,7 +111,13 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/partners/apply",
 ];
 
+/** Shown to signed-out users after sign-in is refused (suspended/closed accounts). */
+const PUBLIC_ACCOUNT_STATUS_PATHS = ["/account/suspended", "/account/terminated"];
+
 export function getRouteAccess(pathname: string): RouteAccess {
+  if (PUBLIC_ACCOUNT_STATUS_PATHS.includes(pathname)) {
+    return { visibility: "public", requiresAuth: false, indexable: false };
+  }
   if (pathname.startsWith("/admin")) {
     return { visibility: "admin", requiresAuth: true, requiredRole: "admin", indexable: false };
   }

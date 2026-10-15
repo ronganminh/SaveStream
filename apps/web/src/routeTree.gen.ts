@@ -34,6 +34,8 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as AccountSuspendedRouteImport } from './routes/account_.suspended'
+import { Route as AccountTerminatedRouteImport } from './routes/account_.terminated'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminCatalogRouteImport } from './routes/admin/catalog'
 import { Route as AdminErrorsRouteImport } from './routes/admin/errors'
@@ -196,6 +198,16 @@ const UsageRoute = UsageRouteImport.update({
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountSuspendedRoute = AccountSuspendedRouteImport.update({
+  id: '/account_/suspended',
+  path: '/account/suspended',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountTerminatedRoute = AccountTerminatedRouteImport.update({
+  id: '/account_/terminated',
+  path: '/account/terminated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -415,6 +427,8 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
+  '/account/suspended': typeof AccountSuspendedRoute
+  '/account/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
@@ -475,6 +489,8 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
+  '/account/suspended': typeof AccountSuspendedRoute
+  '/account/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/operations': typeof AdminOperationsRoute
@@ -539,6 +555,8 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
+  '/account_/suspended': typeof AccountSuspendedRoute
+  '/account_/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/errors': typeof AdminErrorsRoute
   '/admin/jobs': typeof AdminJobsRouteWithChildren
@@ -606,6 +624,8 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
+    | '/account/suspended'
+    | '/account/terminated'
     | '/admin/catalog'
     | '/admin/errors'
     | '/admin/jobs'
@@ -666,6 +686,8 @@ export interface FileRouteTypes {
     | '/terms'
     | '/unsubscribe'
     | '/usage'
+    | '/account/suspended'
+    | '/account/terminated'
     | '/admin/catalog'
     | '/admin/errors'
     | '/admin/operations'
@@ -729,6 +751,8 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
+    | '/account_/suspended'
+    | '/account_/terminated'
     | '/admin/catalog'
     | '/admin/errors'
     | '/admin/jobs'
@@ -795,6 +819,8 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
+  AccountSuspendedRoute: typeof AccountSuspendedRoute
+  AccountTerminatedRoute: typeof AccountTerminatedRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
   AdminErrorsRoute: typeof AdminErrorsRoute
   AdminJobsRoute: typeof AdminJobsRouteWithChildren
@@ -989,6 +1015,20 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account_/suspended': {
+      id: '/account_/suspended'
+      path: '/account/suspended'
+      fullPath: '/account/suspended'
+      preLoaderRoute: typeof AccountSuspendedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account_/terminated': {
+      id: '/account_/terminated'
+      path: '/account/terminated'
+      fullPath: '/account/terminated'
+      preLoaderRoute: typeof AccountTerminatedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1397,6 +1437,8 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
+  AccountSuspendedRoute: AccountSuspendedRoute,
+  AccountTerminatedRoute: AccountTerminatedRoute,
   AdminCatalogRoute: AdminCatalogRoute,
   AdminErrorsRoute: AdminErrorsRoute,
   AdminJobsRoute: AdminJobsRouteWithChildren,

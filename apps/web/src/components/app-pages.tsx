@@ -232,6 +232,10 @@ import type { ChannelModel, ChannelStatus, RecordingModel, Status } from "@/repo
 import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
 import { currentLegalConsent } from "@/lib/legal";
 import {
+  rememberAccountStatus,
+  type AccountStatusDetails,
+} from "@/components/account/account-status";
+import {
   artifactActionErrorMessage,
   recordingActionErrorMessage,
   useDeleteRecordingMutation,
@@ -961,6 +965,26 @@ export function AuthPage({
     ],
     reset: ["Set a new password", "Use at least 8 characters.", "Update password"],
   }[mode];
+  /** Suspended or closed accounts get their own page instead of an error line. */
+  const openAccountStatusPage = async (error: unknown) => {
+    if (
+      !(error instanceof ApiError) ||
+      (error.code !== "ACCOUNT_SUSPENDED" && error.code !== "ACCOUNT_TERMINATED")
+    ) {
+      return false;
+    }
+    const details = (error.details ?? {}) as Partial<AccountStatusDetails>;
+    const status = error.code === "ACCOUNT_SUSPENDED" ? "suspended" : "terminated";
+    rememberAccountStatus({
+      status,
+      reason: details.reason ?? "",
+      reference: details.reference ?? "",
+      since: details.since ?? "",
+      email: details.email ?? "",
+    });
+    await navigate({ to: status === "suspended" ? "/account/suspended" : "/account/terminated" });
+    return true;
+  };
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
     if (mode === "sign-up" && (!agreed || !aupAgreed)) {
@@ -984,6 +1008,7 @@ export function AuthPage({
       );
       await navigate({ to: isAdminRole(currentUser.role) ? "/admin/system" : "/overview" });
     } catch (error) {
+      if (await openAccountStatusPage(error)) return;
       if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
         setSocialConsentChecked(false);
         setSocialAupChecked(false);
@@ -1083,6 +1108,7 @@ export function AuthPage({
         setDone(true);
       }
     } catch (error) {
+      if (await openAccountStatusPage(error)) return;
       if (mode === "reset" && isExpiredLinkError(error)) {
         setLinkExpired(true);
         return;

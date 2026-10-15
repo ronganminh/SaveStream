@@ -106,6 +106,20 @@ export function AdminBadge({
 
 /** Account state shown in admin user lists and headers. */
 export function AdminUserStatusBadge({ user }: { user: AdminUser }) {
+  if (user.account_status === "terminated") {
+    return (
+      <AdminBadge tone="danger" dot>
+        Terminated
+      </AdminBadge>
+    );
+  }
+  if (user.account_status === "suspended") {
+    return (
+      <AdminBadge tone="danger" dot>
+        Suspended
+      </AdminBadge>
+    );
+  }
   if (user.deletion_requested_at) {
     return (
       <AdminBadge tone="warning" dot>
