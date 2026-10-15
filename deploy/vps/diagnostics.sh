@@ -189,4 +189,61 @@ sql "select key, value from admin_runtime_settings where key like 'payment%' ord
 sql "select provider, status, count(*) as orders, max(updated_at) as latest
      from payment_orders group by provider, status order by provider, status;"
 
+section "Media links as the API signs them (latest completed recording; links are not printed)"
+compose exec -T api python - <<'PY' || echo "media link check could not run"
+import asyncio
+from urllib.parse import urlparse
+
+import httpx
+from sqlalchemy import select
+
+from app.application.recordings.download import attachment_disposition, download_filename
+from app.infrastructure.db.recording_models import RecordingArtifact as Artifact, Recording
+from app.infrastructure.db.session import Database
+from app.infrastructure.storage.minio import MinioStorageClient
+from app.settings import get_app_settings
+
+
+async def main() -> None:
+    s = get_app_settings()
+    db = Database(s.database_url)
+    try:
+        async with db.session() as session:
+            row = (
+                await session.execute(
+                    select(Artifact, Recording)
+                    .join(Recording, Recording.id == Artifact.recording_id)
+                    .where(Recording.status == "completed", Artifact.storage_key.like("%.mp4"))
+                    .order_by(Artifact.created_at.desc())
+                    .limit(1)
+                )
+            ).first()
+    finally:
+        await db.close()
+    if row is None:
+        print("no completed recording")
+        return
+    artifact, recording = row
+    minio = MinioStorageClient(s)
+    play = minio.presigned_get_url(artifact.storage_key)
+    name = download_filename(recording)
+    save = minio.presigned_get_url(
+        artifact.storage_key, content_disposition=attachment_disposition(name)
+    )
+    print(f"link host: {urlparse(play).netloc}")
+    print(f"expected file name: {name}")
+    with httpx.Client(timeout=30) as client:
+        r = client.get(play, headers={"Range": "bytes=0-1023"})
+        print(f"play  range 0-1023 -> {r.status_code} {r.headers.get('content-type')} "
+              f"content-range={r.headers.get('content-range')} bytes={len(r.content)}")
+        r = client.get(save, headers={"Range": "bytes=0-1023"})
+        print(f"download range    -> {r.status_code} disposition={r.headers.get('content-disposition')}")
+        with client.stream("GET", save) as r:
+            print(f"download full GET -> {r.status_code} length={r.headers.get('content-length')} "
+                  f"disposition={r.headers.get('content-disposition')}")
+
+
+asyncio.run(main())
+PY
+
 section "Done"
