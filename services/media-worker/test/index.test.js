@@ -216,3 +216,28 @@ test("a suffix range is served from R2 on a cache miss", async () => {
   assert.equal(response.headers.get("Content-Range"), "bytes 990-999/1000");
   assert.deepEqual(new Uint8Array(await response.arrayBuffer()), VIDEO.slice(990));
 });
+
+test("with EDGE_CACHE off the cache is never touched and ranges read only the range", async () => {
+  env.EDGE_CACHE = "off";
+  globalThis.caches = {
+    default: {
+      match: () => assert.fail("cache.match called"),
+      put: () => assert.fail("cache.put called"),
+    },
+  };
+  const url = await signedUrl();
+  const partial = await call(url, { headers: { Range: "bytes=10-19" } });
+  assert.equal(partial.status, 206);
+  assert.deepEqual(new Uint8Array(await partial.arrayBuffer()), VIDEO.slice(10, 20));
+  const full = await call(url);
+  assert.equal(full.status, 200);
+  assert.deepEqual(new Uint8Array(await full.arrayBuffer()), VIDEO);
+  await Promise.all(pending);
+  assert.equal(pending.length, 0);
+  assert.equal(full.headers.get("X-Media-Cache"), "MISS");
+  // One ranged read and one full read; no background fill.
+  assert.deepEqual(
+    env.MEDIA.calls.filter(([op]) => op === "get").map(([, , r]) => r),
+    [{ offset: 10, length: 10 }, null],
+  );
+});
