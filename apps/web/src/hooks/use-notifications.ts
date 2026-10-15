@@ -1,3 +1,4 @@
+import type { UpdateNotificationPreferencesRequest } from "@/api/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { isDemoMode } from "@/lib/app-config";
@@ -31,11 +32,8 @@ export function useNotificationPreferencesData(enabled = true) {
 export function useUpdateNotificationPreferencesMutation() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (input: {
-      recording_started: boolean;
-      recording_ready: boolean;
-      recording_failed: boolean;
-    }) => repositories.notifications.updatePreferences(input),
+    mutationFn: (input: UpdateNotificationPreferencesRequest) =>
+      repositories.notifications.updatePreferences(input),
     onSuccess: (data) => {
       client.setQueryData(notificationQueryKeys.preferences, data);
     },

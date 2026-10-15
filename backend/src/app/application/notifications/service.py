@@ -323,7 +323,7 @@ async def _store_and_dispatch(
                 session,
                 topic="notification.email",
                 aggregate_type="notification",
-                aggregate_id=key,
+                aggregate_id=str(user_id),
                 payload={
                     "user_id": str(user_id),
                     "kind": kind,

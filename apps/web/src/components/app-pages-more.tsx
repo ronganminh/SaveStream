@@ -128,6 +128,8 @@ import type {
   PaymentStatusValue,
   RecordingResponse,
   RecordingStatusValue,
+  EmailPreferenceKey,
+  NotificationPreferencesResponse,
 } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
@@ -1146,18 +1148,92 @@ function ProductionNotificationSettings() {
           {updatePreferences.isPending ? "Saving…" : "Save preferences"}
         </Button>
       </Section>
-      <Section
-        title="Email notifications"
-        body="Recording notifications appear in the app. Email notifications are not available yet."
-      >
-        <StateBanner
-          tone="info"
-          icon={Mail}
-          title="In-app notifications"
-          body="You’ll see recording updates in the notification bell. We’ll add email notifications in a future update."
-        />
-      </Section>
+      <EmailNotificationSettings preferences={preferences.data} />
     </>
+  );
+}
+
+const EMAIL_ROWS: readonly [EmailPreferenceKey, string, string][] = [
+  [
+    "email_creator_live",
+    "Channel went LIVE",
+    "When a channel you monitor goes live (at most one email per channel every 6 hours).",
+  ],
+  [
+    "email_recording_ready",
+    "Recording ready",
+    "When a recording is saved and ready to watch or download.",
+  ],
+  [
+    "email_recording_failed",
+    "Recording failed or missed",
+    "When a recording stops early or a LIVE is missed.",
+  ],
+  [
+    "email_recording_expiring",
+    "Recording expiring soon",
+    "About 24 hours before a recording is deleted from cloud storage.",
+  ],
+  [
+    "email_credits_low",
+    "Credits running low",
+    "Once a day at most, when an hour or less of cloud recording is left.",
+  ],
+  [
+    "email_credits_exhausted",
+    "Out of credits",
+    "When your cloud recording credits run out and auto-record pauses.",
+  ],
+];
+
+function EmailNotificationSettings({
+  preferences,
+}: {
+  preferences: NotificationPreferencesResponse;
+}) {
+  const updatePreferences = useUpdateNotificationPreferencesMutation();
+  const [pending, setPending] = useState<EmailPreferenceKey | null>(null);
+  const toggle = (key: EmailPreferenceKey, checked: boolean) => {
+    setPending(key);
+    void updatePreferences
+      .mutateAsync({ [key]: checked })
+      .then(() => toast.success(checked ? "Email turned on" : "Email turned off"))
+      .catch(() => toast.error("Could not save email preferences"))
+      .finally(() => setPending(null));
+  };
+  return (
+    <Section
+      title="Email notifications"
+      body="Sent to your account email. In-app notifications are not affected. Every email has a one-click unsubscribe link."
+    >
+      <div>
+        {EMAIL_ROWS.map(([key, label, description]) => (
+          <div
+            key={key}
+            className="flex items-center justify-between gap-4 border-b py-4 last:border-0"
+          >
+            <div>
+              <label htmlFor={`email-np-${key}`} className="text-sm font-medium">
+                {label}
+              </label>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </div>
+            <Switch
+              id={`email-np-${key}`}
+              checked={preferences[key] ?? true}
+              disabled={pending === key}
+              onCheckedChange={(checked) => toggle(key, checked)}
+            />
+          </div>
+        ))}
+      </div>
+      <StateBanner
+        tone="info"
+        icon={Mail}
+        title="Required account emails"
+        body="Account emails such as email verification and password resets are always sent and can’t be turned off. To avoid inbox floods we send at most 6 notification emails an hour and 20 a day; anything over that stays in the app."
+      />
+    </Section>
   );
 }
 

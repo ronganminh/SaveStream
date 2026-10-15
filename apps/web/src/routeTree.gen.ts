@@ -31,6 +31,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as StatusRouteImport } from './routes/status'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -180,6 +181,11 @@ const StatusRoute = StatusRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsageRoute = UsageRouteImport.update({
@@ -406,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/catalog': typeof AdminCatalogRoute
@@ -466,6 +473,7 @@ export interface FileRoutesByTo {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/admin/catalog': typeof AdminCatalogRoute
   '/admin/errors': typeof AdminErrorsRoute
@@ -528,6 +536,7 @@ export interface FileRoutesById {
   '/sign-up': typeof SignUpRoute
   '/status': typeof StatusRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
   '/admin/catalog': typeof AdminCatalogRoute
@@ -594,6 +603,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/unsubscribe'
     | '/usage'
     | '/verify-email'
     | '/admin/catalog'
@@ -654,6 +664,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/unsubscribe'
     | '/usage'
     | '/admin/catalog'
     | '/admin/errors'
@@ -715,6 +726,7 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/status'
     | '/terms'
+    | '/unsubscribe'
     | '/usage'
     | '/verify-email'
     | '/admin/catalog'
@@ -780,6 +792,7 @@ export interface RootRouteChildren {
   SignUpRoute: typeof SignUpRoute
   StatusRoute: typeof StatusRoute
   TermsRoute: typeof TermsRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
   AdminCatalogRoute: typeof AdminCatalogRoute
@@ -955,6 +968,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/usage': {
@@ -1374,6 +1394,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignUpRoute: SignUpRoute,
   StatusRoute: StatusRoute,
   TermsRoute: TermsRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
   AdminCatalogRoute: AdminCatalogRoute,

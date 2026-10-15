@@ -36,6 +36,8 @@ import type {
   WatchResponse,
   WatchStatusValue,
   LiveStatusValue,
+  NotificationPreferencesResponse,
+  UpdateNotificationPreferencesRequest,
 } from "@/api/types";
 
 export type ChannelStatus = "Recording" | "Live" | "Waiting" | "Offline" | "Paused" | "Error";
@@ -139,13 +141,7 @@ export type NotificationModel = {
   link: NotificationLink;
 };
 
-export type NotificationPreferenceModel = {
-  recording_started: boolean;
-  recording_ready: boolean;
-  recording_failed: boolean;
-  email_supported: false;
-  updated_at: string | null;
-};
+export type NotificationPreferenceModel = NotificationPreferencesResponse;
 
 export type PageOptions = {
   limit?: number;
@@ -277,10 +273,7 @@ export interface NotificationRepository {
   markAllRead(): Promise<void>;
   getPreferences(): Promise<NotificationPreferenceModel>;
   updatePreferences(
-    input: Pick<
-      NotificationPreferenceModel,
-      "recording_started" | "recording_ready" | "recording_failed"
-    >,
+    input: UpdateNotificationPreferencesRequest,
   ): Promise<NotificationPreferenceModel>;
 }
 
