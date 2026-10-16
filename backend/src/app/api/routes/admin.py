@@ -1678,8 +1678,7 @@ async def get_admin_user_detail(
         watches=[
             watch_response(
                 item,
-                is_pro=data.entitlement.is_pro,
-                has_purchased=data.entitlement.has_purchased,
+                entitlement=data.entitlement,
             )
             for item in data.watches
         ],
@@ -2097,8 +2096,7 @@ async def view_as_admin_user(
         watches=[
             watch_response(
                 item,
-                is_pro=data.entitlement.is_pro,
-                has_purchased=data.entitlement.has_purchased,
+                entitlement=data.entitlement,
             )
             for item in data.watches
         ],

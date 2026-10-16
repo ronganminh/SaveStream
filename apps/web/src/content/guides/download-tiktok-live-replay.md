@@ -1,11 +1,12 @@
 ---
 title: How to download or save a TikTok LIVE replay
 summary: Where to look for a replay of your own TikTok LIVE, how to save it to your device, and how to make sure future LIVEs are saved automatically.
-updated: 2026-10-15
+updated: 2026-10-16
 order: 2
 howto: true
 ---
-You finished a great LIVE and now you want the video: to rewatch it, cut highlights, or keep it as a record. Whether you can still get it depends on what happened *before* and *during* the stream. This guide covers the options you have after a LIVE has ended, and how to set things up so the next one is saved without any effort.
+
+You finished a great LIVE and now you want the video: to rewatch it, cut highlights, or keep it as a record. Whether you can still get it depends on what happened _before_ and _during_ the stream. This guide covers the options you have after a LIVE has ended, and how to set things up so the next one is saved without any effort.
 
 As always: these steps are for **your own LIVEs**, or LIVEs you manage or have the creator's permission to save. Downloading and reposting other people's streams is not allowed on SaveStream and can break TikTok's rules. See [What you may record](/help/acceptable-use).
 
@@ -42,7 +43,7 @@ How to save a LIVE that SaveStream recorded:
 
 If you expected a recording and can't find it, the most common reasons are:
 
-- **Auto-record wasn't on** for that channel, or automatic recording hadn't been unlocked yet with a first purchase.
+- **Auto-record wasn't on** for that channel, the account email wasn't verified yet, or the free minutes or credits had run out.
 - **The account ran out of credits**, so new recordings couldn't start.
 - **All recording slots were busy.** An account records {{parallel_recordings}} at the same time; a LIVE that ended while waiting for a free slot is marked **Missed** and isn't charged.
 - **The LIVE was very short** and ended within seconds of starting.

@@ -14,10 +14,13 @@ Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời 
 {
   "plan": "free",
   "has_purchased": false,
-  "cloud_minutes_available": 0,
+  "email_verified": true,
+  "can_auto_record": true,
+  "trial_recording": true,
+  "cloud_minutes_available": 10,
   "limits": {
     "max_watches": 3,
-    "max_concurrent_cloud_recordings": 0,
+    "max_concurrent_cloud_recordings": 1,
     "cloud_retention_days": 7
   },
   "watch_count": 2,
@@ -39,9 +42,11 @@ Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời 
 Quy tắc:
 
 - `plan = "pro"` khi tài khoản có ít nhất một đơn mua đã thanh toán **và** số dư credit khả dụng > 0. Ngược lại là `"free"`.
-- 10 credit dùng thử khi xác minh email **không** làm tài khoản thành Pro.
+- 10 credit dùng thử khi xác minh email **không** làm tài khoản thành Pro, nhưng được ghi thật (quyết định 2026-10-16): `trial_recording = true` khi chưa mua, email đã xác minh và số dư khả dụng > 0.
+- `can_auto_record = plan == "pro" || trial_recording`: bật được Auto-record. Khi chưa mua và chưa xác minh email, bật Auto-record trả `403 EMAIL_NOT_VERIFIED`; hết credit trả `403 PLAN_REQUIRED`.
 - Pro: `max_watches = 20`, `max_concurrent_cloud_recordings = 3`.
-- Free: `max_watches = 3`, `max_concurrent_cloud_recordings = 0` trên mobile. Web vẫn cho tài khoản Free dùng credit dùng thử để ghi cloud thủ công; quy tắc đó do web và backend xử lý, không qua trường này.
+- Free đang dùng thử: `max_watches = 3`, `max_concurrent_cloud_recordings = 1`. Free hết credit hoặc chưa xác minh email: `max_concurrent_cloud_recordings = 0`.
+- Bản ghi luôn bị giới hạn theo số dư; khi credit hết, bản ghi dừng, hoàn tất bình thường và tính đúng phần đã giữ chỗ (số dư không âm). Thông báo `cloud_minutes_exhausted` (in-app + email nếu bật) dẫn tới `/billing`.
 - `has_purchased = true` khi còn ít nhất một đơn ở trạng thái paid hợp lệ theo `PAID_ORDER_STATUSES`; đơn đã hoàn tiền toàn bộ không tính. `cloud_retention_days` theo lịch sử mua hiện có của backend: `30` khi `has_purchased = true`, ngược lại `7`. Vì vậy tài khoản đã mua nhưng vừa hết số dư có thể có `plan = "free"` đồng thời `cloud_retention_days = 30`.
 - `local.enabled`: tài khoản có được ghi trên máy không. `local.unlimited`: không giới hạn phút, khi đó app bỏ qua các trường phút và phần thưởng.
 - Free: `enabled = true`, `unlimited = false`.

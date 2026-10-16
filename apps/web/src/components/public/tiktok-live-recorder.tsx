@@ -52,8 +52,7 @@ export function TikTokLiveRecorderPage() {
       },
       {
         question: "Can it record TikTok LIVE automatically?",
-        answer:
-          "Yes. After your first credit purchase, switch on Auto-record for a channel. SaveStream checks it about every 30 seconds and starts recording on its own when the channel goes live, even if your phone and computer are off.",
+        answer: `Yes. Switch on Auto-record for a channel. SaveStream checks it about every 30 seconds and starts recording on its own when the channel goes live, even if your phone and computer are off. New accounts can try it with their ${vars.trial_minutes} after verifying their email, then buy a pack to keep recording.`,
       },
       {
         question: "Do I need to keep my computer or phone on?",
@@ -62,7 +61,7 @@ export function TikTokLiveRecorderPage() {
       },
       {
         question: "How much does it cost?",
-        answer: `Checking channels is free. Recording is paid with credits at ${vars.credit_rate}, bought in one-time packs that never expire. New accounts receive ${vars.signup_credits}. Current packs are on the Pricing page.`,
+        answer: `Checking channels is free. Recording is paid with credits at ${vars.credit_rate}, bought in one-time packs that never expire. New accounts get ${vars.trial_minutes} of recording to try it. Current packs are on the Pricing page.`,
       },
       {
         question: "How long are recordings kept?",
@@ -74,7 +73,7 @@ export function TikTokLiveRecorderPage() {
           "Only channels you own, manage, or have clear permission from the creator to record. Adding a channel confirms you have that right, and channels that break the Acceptable Use Policy may be removed.",
       },
     ],
-    [vars.credit_rate, vars.signup_credits, pricing],
+    [vars.credit_rate, vars.trial_minutes, pricing],
   );
 
   const structured = useMemo(
@@ -302,7 +301,7 @@ export function TikTokLiveRecorderPage() {
                     : ""
                 }.`
               : ""}{" "}
-            New accounts receive {vars.signup_credits}.
+            New accounts get {vars.trial_minutes} of recording to try it.
           </p>
           <Button variant="outline" asChild>
             <Link to="/pricing">

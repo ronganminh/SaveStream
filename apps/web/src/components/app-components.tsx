@@ -121,6 +121,7 @@ import {
   useRecordingsData,
 } from "@/hooks/use-domain-data";
 import { freeWebSentence } from "@/lib/plan-facts";
+import { autoRecordAccess, autoRecordBlockedText } from "@/lib/auto-record";
 import {
   channelActionErrorMessage,
   existingWatchId,
@@ -1635,6 +1636,9 @@ export function AddChannelDialog({
   const entitlement = entitlementQuery.data;
   const { query: publicPricingQuery } = usePublicPricingData();
   const isFree = isDemoMode || entitlement?.plan === "free";
+  // Purchased credit, or free trial minutes on a verified email.
+  const autoRecordState = autoRecordAccess(entitlement, isDemoMode);
+  const canAutoRecord = autoRecordState.allowed;
   const [autoRecord, setAutoRecord] = useState(true);
   // Optional; stored with the time so support can see it.
   const [ownerAttested, setOwnerAttested] = useState(false);
@@ -1695,7 +1699,7 @@ export function AddChannelDialog({
     try {
       const watch = await createChannel.mutateAsync({
         source: parsed.source,
-        auto_record: !isFree && autoRecord,
+        auto_record: canAutoRecord && autoRecord,
         ...(ownerAttested ? { owner_attested: true } : {}),
       });
       setCreatedWatchId(watch.id);
@@ -1730,7 +1734,7 @@ export function AddChannelDialog({
 
   let body: ReactNode;
   if (phase === "success") {
-    const recordsAutomatically = !isFree && autoRecord;
+    const recordsAutomatically = canAutoRecord && autoRecord;
     body = (
       <div className="flex flex-col items-center gap-4 py-4 text-center">
         <div className="relative">
@@ -1747,9 +1751,11 @@ export function AddChannelDialog({
         <DialogTitle className="text-xl font-extrabold">{handle} is being watched</DialogTitle>
         <DialogDescription className="max-w-[360px] text-sm text-muted-foreground">
           {recordsAutomatically
-            ? "We’ll start recording about a minute after the LIVE begins on our servers — nothing to keep open."
-            : isFree
-              ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} Automatic recording unlocks after you buy credits; then turn on Auto-record on the channel page.`
+            ? autoRecordState.trial
+              ? "We’ll start recording about a minute after the LIVE begins, using your free trial minutes — nothing to keep open."
+              : "We’ll start recording about a minute after the LIVE begins on our servers — nothing to keep open."
+            : !canAutoRecord && isFree
+              ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} ${autoRecordBlockedText(autoRecordState)}`
               : "Auto-record is off. Turn it on from the channel page whenever you want LIVEs recorded."}
         </DialogDescription>
         <div className="flex flex-wrap justify-center gap-2">
@@ -1933,12 +1939,16 @@ export function AddChannelDialog({
             <span>
               <b className="block text-sm">Auto-record when live</b>
               <span className="text-xs text-muted-foreground">
-                {isFree ? "Available after you buy credits." : "Uses credits only while recording."}
+                {!canAutoRecord
+                  ? autoRecordBlockedText(autoRecordState)
+                  : autoRecordState.trial
+                    ? "Uses your free trial minutes, one LIVE at a time. Then buy a pack."
+                    : "Uses credits only while recording."}
               </span>
             </span>
             <Switch
-              checked={!isFree && autoRecord}
-              disabled={isFree}
+              checked={canAutoRecord && autoRecord}
+              disabled={!canAutoRecord}
               onCheckedChange={setAutoRecord}
               aria-label="Auto-record when live"
             />
@@ -2243,6 +2253,9 @@ export function NotificationItem({ notification: n }: { notification: Notificati
           )}
         </p>
         <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{n.body}</p>
+        {n.link.to === "/billing" && (
+          <p className="mt-1 text-xs font-semibold text-primary">{t("Buy a pack")} →</p>
+        )}
         <p className="mt-1 text-[10px] text-muted-foreground">{n.time}</p>
       </div>
     </Link>

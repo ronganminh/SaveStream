@@ -9,6 +9,7 @@ from app.api.schemas.watches import (
     WatchResponse,
     WatchStatusValue,
 )
+from app.application.entitlements.service import EntitlementSnapshot
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 
@@ -55,8 +56,7 @@ def active_recording_for(
 def watch_response(
     watch: Watch,
     *,
-    is_pro: bool | None = None,
-    has_purchased: bool | None = None,
+    entitlement: EntitlementSnapshot | None = None,
     waiting_for_cloud_slot: bool = False,
     active_recording: Recording | None = None,
 ) -> WatchResponse:
@@ -69,9 +69,11 @@ def watch_response(
         )
     if not watch.auto_record:
         auto_record_state: AutoRecordStateValue = "off"
-    elif watch.status == "paused_insufficient_credit" and has_purchased is not False:
+    elif watch.status == "paused_insufficient_credit" or (
+        entitlement is not None and entitlement.out_of_credit
+    ):
         auto_record_state = "paused_no_cloud_minutes"
-    elif is_pro is False:
+    elif entitlement is not None and not entitlement.can_auto_record:
         auto_record_state = "off"
     elif waiting_for_cloud_slot:
         auto_record_state = "waiting_for_cloud_slot"

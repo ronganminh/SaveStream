@@ -215,8 +215,8 @@ function SignUpAside() {
     [
       "Turn on Auto-record",
       trial
-        ? `Your ${trial} arrive when you verify; Auto-record unlocks with your first credit pack`
-        : "Auto-record unlocks with your first credit pack",
+        ? `Your ${trial} arrive when you verify — try Auto-record on a real LIVE`
+        : "Try Auto-record on a real LIVE with your free minutes",
     ],
   ];
   return (

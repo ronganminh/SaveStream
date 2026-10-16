@@ -40,7 +40,11 @@ must("src/hooks/use-channel-mutations.ts", "PLAN_REQUIRED");
 must("src/lib/tiktok-source.ts", "parseTikTokSource");
 
 const components = "src/components/app-components.tsx";
-const addChannel = block(components, "export function AddChannelDialog", "export function UpgradeDialog");
+const addChannel = block(
+  components,
+  "export function AddChannelDialog",
+  "export function UpgradeDialog",
+);
 const channelControls = block(
   components,
   "export function useChannelControls",
@@ -56,7 +60,9 @@ mustIn("AddChannelDialog", addChannel, "useCreateChannelMutation()");
 mustIn("AddChannelDialog", addChannel, "createChannel.mutateAsync");
 mustIn("AddChannelDialog", addChannel, "channelsQuery.data");
 mustIn("AddChannelDialog", addChannel, "useEntitlementData");
-mustIn("AddChannelDialog", addChannel, "auto_record: !isFree");
+// Auto-record follows the backend can_auto_record (purchase or verified trial).
+mustIn("AddChannelDialog", addChannel, "autoRecordAccess(entitlement");
+mustIn("AddChannelDialog", addChannel, "auto_record: canAutoRecord && autoRecord");
 forbidIn("AddChannelDialog", addChannel, "channels.find(");
 forbidIn("AddChannelDialog", addChannel, "channels.some(");
 
@@ -71,8 +77,16 @@ forbidIn("CommandSearch", commandSearch, "channels.map(");
 
 const pages = "src/components/app-pages.tsx";
 const onboarding = block(pages, "export function OnboardingPage", "export function OverviewPage");
-const channelsPage = block(pages, "export function ChannelsPage", "export function ChannelDetailPage");
-const detailPage = block(pages, "export function ChannelDetailPage", "export function RecordingsPage");
+const channelsPage = block(
+  pages,
+  "export function ChannelsPage",
+  "export function ChannelDetailPage",
+);
+const detailPage = block(
+  pages,
+  "export function ChannelDetailPage",
+  "export function RecordingsPage",
+);
 const detail = block(pages, "function ChannelDetail({", "function RecordingHeader()");
 
 mustIn("OnboardingPage", onboarding, "useCreateChannelMutation()");
@@ -100,7 +114,10 @@ must("src/repositories/demo.ts", "syncDemoChannel");
 
 // Creator avatars: same `creator.avatar_url` as mobile, initials when missing/broken.
 must("src/repositories/mappers/channel.ts", "avatarUrl: watch.creator?.avatar_url ?? null");
-must("src/repositories/mappers/recording.ts", "recording.creator?.avatar_url ?? matchedWatch?.creator?.avatar_url");
+must(
+  "src/repositories/mappers/recording.ts",
+  "recording.creator?.avatar_url ?? matchedWatch?.creator?.avatar_url",
+);
 must("src/components/app-components.tsx", "onError={() => setFailed(true)}");
 must("src/components/app-components.tsx", "useCreatorPreview(");
 must("src/hooks/use-domain-data.ts", "repositories.recordings.getLiveStatus");

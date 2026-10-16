@@ -24,12 +24,12 @@ from tests.credit_helpers import configure_test_pricing, grant_test_credits
 from tests.identity_helpers import identity_settings
 
 
-async def _user(session, email: str) -> User:
+async def _user(session, email: str, *, verified: bool = True) -> User:
     user = User(
         email=email,
         normalized_email=email.casefold(),
         role="user",
-        email_verified_at=utcnow(),
+        email_verified_at=utcnow() if verified else None,
     )
     session.add(user)
     await session.commit()
@@ -121,7 +121,10 @@ def test_v2_b1_entitlement_derivation_uses_purchase_and_available_balance(
                 assert free_snapshot.has_purchased is False
                 assert free_snapshot.cloud_minutes_available == 10
                 assert free_snapshot.max_watches == 3
-                assert free_snapshot.max_concurrent_cloud_recordings == 0
+                # Trial credits on a verified email record, one at a time.
+                assert free_snapshot.trial_recording is True
+                assert free_snapshot.can_auto_record is True
+                assert free_snapshot.max_concurrent_cloud_recordings == 1
                 assert free_snapshot.cloud_retention_days == 7
                 assert free_snapshot.local.enabled is True
                 assert free_snapshot.local.unlimited is False
@@ -146,6 +149,9 @@ def test_v2_b1_entitlement_derivation_uses_purchase_and_available_balance(
                     session, settings
                 ).get(exhausted.id)
                 assert exhausted_snapshot.plan == "free"
+                assert exhausted_snapshot.can_auto_record is False
+                assert exhausted_snapshot.out_of_credit is True
+                assert exhausted_snapshot.max_concurrent_cloud_recordings == 0
                 assert exhausted_snapshot.has_purchased is True
                 assert exhausted_snapshot.cloud_minutes_available == 0
                 assert exhausted_snapshot.max_watches == 3
@@ -352,7 +358,7 @@ def test_v2_b1_pro_cloud_recording_limit_is_three(tmp_path) -> None:
     asyncio.run(run())
 
 
-def test_v2_b1_scheduler_skips_legacy_free_auto_record_and_states_are_plan_aware(
+def test_v2_b1_scheduler_skips_unverified_free_auto_record_and_states_are_plan_aware(
     tmp_path,
 ) -> None:
     async def run() -> None:
@@ -365,7 +371,9 @@ def test_v2_b1_scheduler_skips_legacy_free_auto_record_and_states_are_plan_aware
                 await connection.run_sync(Base.metadata.create_all)
 
             async with database.session() as session:
-                legacy_free = await _user(session, "legacy-free-b1@example.com")
+                legacy_free = await _user(
+                    session, "legacy-free-b1@example.com", verified=False
+                )
                 await grant_test_credits(session, legacy_free.id, 10)
                 legacy_watch = await _seed_watch(
                     session,
@@ -374,8 +382,9 @@ def test_v2_b1_scheduler_skips_legacy_free_auto_record_and_states_are_plan_aware
                 )
                 response = watch_response(
                     legacy_watch,
-                    is_pro=False,
-                    has_purchased=False,
+                    entitlement=await EntitlementService(session, settings).get(
+                        legacy_free.id
+                    ),
                 )
                 assert response.auto_record_state == "off"
 
@@ -403,8 +412,9 @@ def test_v2_b1_scheduler_skips_legacy_free_auto_record_and_states_are_plan_aware
                 )
                 exhausted_response = watch_response(
                     paused,
-                    is_pro=False,
-                    has_purchased=True,
+                    entitlement=await EntitlementService(session, settings).get(
+                        exhausted.id
+                    ),
                 )
                 assert (
                     exhausted_response.auto_record_state
@@ -417,8 +427,9 @@ def test_v2_b1_scheduler_skips_legacy_free_auto_record_and_states_are_plan_aware
                 active = await _seed_watch(session, pro, auto_record=True)
                 pro_response = watch_response(
                     active,
-                    is_pro=True,
-                    has_purchased=True,
+                    entitlement=await EntitlementService(session, settings).get(
+                        pro.id
+                    ),
                 )
                 assert pro_response.auto_record_state == "active"
         finally:

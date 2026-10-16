@@ -137,6 +137,10 @@ export function helpVariables(pricing: PublicPricingResponse | null | undefined)
     signup_credits: pricing?.signup_credits
       ? pluralize(pricing.signup_credits, "free trial credit")
       : "free trial credits",
+    trial_minutes:
+      pricing?.signup_credits && minutesPerCredit !== null
+        ? pluralize(Math.floor(pricing.signup_credits * minutesPerCredit), "free minute")
+        : "free trial minutes",
     free_channels: pricing?.free_max_channels_per_user
       ? `up to ${pluralize(pricing.free_max_channels_per_user, "channel")}`
       : "a limited number of channels",

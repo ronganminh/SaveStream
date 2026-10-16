@@ -1,10 +1,11 @@
 ---
 title: How to record a TikTok LIVE
 summary: Three ways to record your own TikTok LIVE — screen recording, streaming software and automatic cloud recording — with steps and trade-offs.
-updated: 2026-10-15
+updated: 2026-10-16
 order: 1
 howto: true
 ---
+
 A TikTok LIVE disappears from the app when it ends, so if you want a copy of your stream you have to capture it while it is happening. This guide walks through the three practical ways to do that, what each one costs you in time and equipment, and how to set up automatic recording so you never have to remember to press a button.
 
 Before you start, one rule applies to every method: **only record LIVEs you own, manage, or have clear permission from the creator to record.** Recording someone else's stream and reposting it can break TikTok's rules and copyright law, and it is not allowed on SaveStream. See [What you may record](/help/acceptable-use) for the details.
@@ -42,20 +43,20 @@ The third option is to let a service watch your channel and record it for you. S
 
 Here is how to set up automatic recording for your own channel with SaveStream.
 
-1. **Create an account.** [Sign up](/sign-up) with your email, confirm you are 18 or older, and verify your address. New accounts receive {{signup_credits}}.
+1. **Create an account.** [Sign up](/sign-up) with your email, confirm you are 18 or older, and verify your address. New accounts get {{trial_minutes}} of recording to try it.
 2. **Add your channel.** Open **Channels**, choose **Add channel**, and enter your TikTok username or profile link. Only add channels you own, manage or have permission to record.
-3. **Buy a credit pack.** Automatic recording unlocks after your first purchase. Recording is charged at {{credit_rate}}, and checking an offline channel is free.
-4. **Turn on Auto-record.** Open the channel and switch **Auto-record** on. You can also keep live alerts on to get a notification when the channel goes live.
-5. **Go live as usual.** When the channel goes live, recording starts in the cloud within about a minute. You don't need to keep anything open.
-6. **Watch or download the recording.** When the LIVE ends, open **Recordings** to play it in the browser or choose **Download video** to save the MP4.
+3. **Turn on Auto-record.** Open the channel and switch **Auto-record** on. You can also keep live alerts on to get a notification when the channel goes live.
+4. **Go live as usual.** When the channel goes live, recording starts in the cloud within about a minute. You don't need to keep anything open.
+5. **Watch or download the recording.** When the LIVE ends, open **Recordings** to play it in the browser or choose **Download video** to save the MP4.
+6. **Buy a pack to keep recording.** When your free minutes are used up, buy a credit pack. Recording is charged at {{credit_rate}}, and checking an offline channel is free.
 
 ## Which method should you use?
 
-| Situation | Best fit |
-| --- | --- |
-| A one-off LIVE and a spare device nearby | Screen recording |
-| You stream from a computer and want the highest quality | Local recording in your streaming software |
-| You go live often, from your phone, or at unpredictable times | Automatic cloud recording |
+| Situation                                                        | Best fit                                           |
+| ---------------------------------------------------------------- | -------------------------------------------------- |
+| A one-off LIVE and a spare device nearby                         | Screen recording                                   |
+| You stream from a computer and want the highest quality          | Local recording in your streaming software         |
+| You go live often, from your phone, or at unpredictable times    | Automatic cloud recording                          |
 | You manage channels for a creator or brand with their permission | Automatic cloud recording, one channel per creator |
 
 Many creators combine methods: they keep a local recording when they stream from their desk, and rely on automatic recording for LIVEs started from their phone.

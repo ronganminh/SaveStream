@@ -235,6 +235,7 @@ def notification_email(
     unsubscribe_url: str | None,
     unsubscribe_label: str | None,
     available_minutes: int | None = None,
+    trial: bool = False,
 ) -> RenderedEmail | None:
     """The six notification emails users can turn off. None for kinds that
     have no email."""
@@ -296,6 +297,14 @@ def notification_email(
             heading="Credits are running low",
             intro=f"You have {minutes} cloud recording minute{'s' if minutes != 1 else ''} left. Auto-record pauses when they run out.",
             button_label="Buy credits",
+        )
+    if kind == "cloud_minutes_exhausted" and trial:
+        return make(
+            subject="Your free minutes are used up",
+            heading="Your free minutes are used up",
+            intro="Your free minutes are used up — buy a pack to keep recording.",
+            detail="Your recordings stay available to watch and download. Channels are still checked for free, and credits you buy never expire.",
+            button_label="Buy a pack",
         )
     if kind == "cloud_minutes_exhausted":
         return make(

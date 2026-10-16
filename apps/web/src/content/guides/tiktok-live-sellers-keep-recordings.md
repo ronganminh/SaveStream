@@ -1,9 +1,10 @@
 ---
 title: How LIVE sellers can keep recordings of their own streams
 summary: Why sellers who sell on TikTok LIVE should keep a copy of every stream, and a practical system for recording, storing and using those recordings.
-updated: 2026-10-15
+updated: 2026-10-16
 order: 4
 ---
+
 If you sell products on TikTok LIVE, each stream is more than entertainment: it is your storefront, your product demo and your sales pitch, all in one. Once the LIVE ends, though, it is gone from the app. Keeping your own recording of every stream gives you a record of what you said and showed, material for training and marketing, and a way to learn what actually sells.
 
 This guide covers why sellers keep recordings, how to capture every stream reliably, and how to organize the files so they are useful later. It applies to **your own shop channels**, and to channels you run for a brand or seller who has given you permission to record them.
@@ -43,9 +44,9 @@ SaveStream watches the channels you add and records them on its own servers when
 
 1. **Every LIVE is captured**, whoever starts it and whatever device they use, as long as **Auto-record** is on for the channel.
 2. **No equipment has to stay on.** Your phone, laptop and studio computer can all be off.
-3. **Several channels are covered.** If you run more than one shop channel, your account can record {{parallel_recordings}} at the same time.
+3. **Several channels are covered.** If you run more than one shop channel, your account can record {{parallel_recordings}} at the same time after a purchase.
 
-To set it up, [create an account](/sign-up), add your shop channel, buy a credit pack to unlock automatic recording, and turn on **Auto-record**. Recording is charged at {{credit_rate}}, credits never expire, and there is no subscription.
+To set it up, [create an account](/sign-up), add your shop channel and turn on **Auto-record**. Your {{trial_minutes}} let you test it on a real sales LIVE; after that, buy a credit pack to keep recording. Recording is charged at {{credit_rate}}, credits never expire, and there is no subscription.
 
 ## Organizing your recordings
 
@@ -61,13 +62,13 @@ Cloud recordings are kept for {{paid_retention}} on accounts that have bought cr
 
 A folder of video files is hard to search. A simple log makes it useful:
 
-| Column | Example |
-| --- | --- |
-| Date and channel | 2026-10-14, yourshop |
-| Host | The person who presented |
-| Products shown | Product names or SKUs |
-| Key moments | Timestamps of demos, offers and common questions |
-| Notes | What worked, what to change next time |
+| Column           | Example                                          |
+| ---------------- | ------------------------------------------------ |
+| Date and channel | 2026-10-14, yourshop                             |
+| Host             | The person who presented                         |
+| Products shown   | Product names or SKUs                            |
+| Key moments      | Timestamps of demos, offers and common questions |
+| Notes            | What worked, what to change next time            |
 
 ### Decide how long to keep files
 
@@ -96,6 +97,6 @@ Recording is charged at {{credit_rate}}, so the cost scales with the length actu
 
 ### What if two of my channels are live at the same time?
 
-Your account records {{parallel_recordings}} at once. If more channels are live than that, the extra ones wait and start as soon as a slot frees up, provided the LIVE is still going.
+After a purchase your account records {{parallel_recordings}} at once (one at a time on free minutes). If more channels are live than that, the extra ones wait and start as soon as a slot frees up, provided the LIVE is still going.
 
 Ready to keep every sales LIVE? [Create a free account](/sign-up) and add your shop channel.

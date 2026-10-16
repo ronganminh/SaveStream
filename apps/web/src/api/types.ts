@@ -47,6 +47,10 @@ export type WatchListResponse = {
 export type EntitlementResponse = {
   plan: "free" | "pro";
   has_purchased: boolean;
+  /** Older API builds omit these; fall back to plan === "pro". */
+  email_verified?: boolean;
+  can_auto_record?: boolean;
+  trial_recording?: boolean;
   cloud_minutes_available: number;
   limits: {
     max_watches: number;
@@ -418,7 +422,12 @@ export type OperationalSnapshotResponse = {
   paused_error_watches: number;
 };
 
-export type NotificationTypeValue = "recording_started" | "recording_ready" | "recording_failed";
+export type NotificationTypeValue =
+  | "recording_started"
+  | "recording_ready"
+  | "recording_failed"
+  | "cloud_minutes_exhausted"
+  | "credits_low";
 
 export type NotificationResponse = {
   id: string;

@@ -16,6 +16,7 @@ from app.infrastructure.db.local_recording_models import (
     LocalSlotGrant,
     RewardIntent,
 )
+from app.infrastructure.db.models import User
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
 
@@ -41,6 +42,7 @@ class LocalEntitlementSnapshot:
 class EntitlementSnapshot:
     plan: EntitlementPlan
     has_purchased: bool
+    email_verified: bool
     cloud_minutes_available: int
     max_watches: int
     max_concurrent_cloud_recordings: int
@@ -54,10 +56,34 @@ class EntitlementSnapshot:
         return self.plan == "pro"
 
     @property
+    def trial_recording(self) -> bool:
+        """Not purchased yet, but the free trial credits may record.
+
+        Trial credits are granted once per account, and only accounts with a
+        verified email may spend them on cloud recording.
+        """
+        return (
+            not self.has_purchased
+            and self.email_verified
+            and self.cloud_minutes_available > 0
+        )
+
+    @property
+    def can_auto_record(self) -> bool:
+        return self.is_pro or self.trial_recording
+
+    @property
+    def out_of_credit(self) -> bool:
+        """Could record, but the credits ran out (trial used up or pack spent)."""
+        return (
+            not self.can_auto_record
+            and self.cloud_minutes_available <= 0
+            and (self.has_purchased or self.email_verified)
+        )
+
+    @property
     def manual_cloud_recording_limit(self) -> int:
-        # Free web accounts retain the V1 trial recording path. Mobile Free does
-        # not expose cloud recording, but one manual cloud job remains allowed
-        # for backwards compatibility while trial credit is available.
+        # Free accounts may record one cloud job at a time on trial credit.
         return 3 if self.is_pro else 1
 
 
@@ -65,6 +91,7 @@ class EntitlementService:
     FREE_MAX_WATCHES = 3
     PRO_MAX_WATCHES = 20
     PRO_MAX_CONCURRENT_CLOUD_RECORDINGS = 3
+    TRIAL_MAX_CONCURRENT_CLOUD_RECORDINGS = 1
 
     def __init__(self, session: AsyncSession, settings: AppSettings) -> None:
         self.session = session
@@ -74,6 +101,11 @@ class EntitlementService:
         has_purchased = await has_paid_purchase(self.session, user_id)
         balance = await CreditService(self.session).balance(user_id)
         is_pro = has_purchased and balance.available > 0
+        user = await self.session.get(User, user_id)
+        email_verified = user is not None and user.email_verified_at is not None
+        trial_recording = (
+            not has_purchased and email_verified and balance.available > 0
+        )
         plan: EntitlementPlan = "pro" if is_pro else "free"
         runtime = RuntimeSettingsService(self.session, self.settings)
         pro_local_recording = await runtime.string("pro_local_recording")
@@ -167,9 +199,16 @@ class EntitlementService:
         return EntitlementSnapshot(
             plan=plan,
             has_purchased=has_purchased,
+            email_verified=email_verified,
             cloud_minutes_available=balance.available,
             max_watches=(pro_max_watches if is_pro else free_max_watches),
-            max_concurrent_cloud_recordings=(pro_max_concurrent if is_pro else 0),
+            max_concurrent_cloud_recordings=(
+                pro_max_concurrent
+                if is_pro
+                else self.TRIAL_MAX_CONCURRENT_CLOUD_RECORDINGS
+                if trial_recording
+                else 0
+            ),
             # Retention follows purchase history, matching the existing backend:
             # accounts that have ever retained a paid order keep cloud files for
             # the paid retention window even after their available balance hits 0.

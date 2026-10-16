@@ -6,6 +6,7 @@ import asyncio
 import uuid
 
 from app.api.serializers.watches import active_recording_for, watch_response
+from app.application.entitlements.service import EntitlementService
 from app.application.recordings.service import utcnow
 from app.application.watches.service import WatchService
 from app.domain.recordings.state import RecordingStatus
@@ -58,8 +59,7 @@ def test_live_watch_without_recording_job_is_not_reported_as_recording(tmp_path)
                 active = await service.active_recordings(user.id)
                 response = watch_response(
                     watch,
-                    is_pro=False,
-                    has_purchased=False,
+                    entitlement=await EntitlementService(session, settings).get(user.id),
                     active_recording=active_recording_for(watch, active),
                 )
                 assert response.live_status == "live"
@@ -95,8 +95,7 @@ def test_live_watch_without_recording_job_is_not_reported_as_recording(tmp_path)
                 active = await service.active_recordings(user.id)
                 response = watch_response(
                     watch,
-                    is_pro=False,
-                    has_purchased=False,
+                    entitlement=await EntitlementService(session, settings).get(user.id),
                     active_recording=active_recording_for(watch, active),
                 )
                 assert response.active_recording_id == str(recording.id)

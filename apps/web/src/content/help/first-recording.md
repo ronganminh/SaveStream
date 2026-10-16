@@ -2,9 +2,10 @@
 title: Your first recording, step by step
 category: getting-started
 summary: Create an account, add a TikTok channel and let SaveStream record its next LIVE in the cloud.
-updated: 2026-10-14
+updated: 2026-10-16
 order: 1
 ---
+
 SaveStream watches the TikTok channels you add and records their LIVEs on our servers. Nothing needs to stay open on your computer or phone.
 
 ## 1. Create your account
@@ -19,7 +20,7 @@ From that moment SaveStream checks the channel automatically. Checking an offlin
 
 ## 3. Turn on automatic recording
 
-Automatic cloud recording unlocks after your first credit purchase. Buy a pack in **Usage & Billing**, then open the channel and switch **Auto-record** on. The next time the channel goes live, recording starts on its own.
+Open the channel and switch **Auto-record** on. The next time the channel goes live, recording starts on its own. Your first recordings use your {{trial_minutes}} (one LIVE at a time); when they are used up, buy a pack in **Usage & Billing** to keep recording.
 
 See [How automatic recording works](/help/automatic-recording) for the details.
 

@@ -1,10 +1,11 @@
 ---
 title: Record TikTok LIVE without leaving your computer on
 summary: Why manual recording ties up a device for hours, and how to record your own TikTok LIVEs in the cloud so your phone and computer can be off.
-updated: 2026-10-15
+updated: 2026-10-16
 order: 3
 howto: true
 ---
+
 Most ways of recording a TikTok LIVE have the same catch: something has to stay on. A phone screen recording needs the phone awake and connected. A computer recording needs the computer running, the browser open and the disk free. If you go live late at night, on the road, or at times you can't predict, that quickly becomes a problem.
 
 This guide explains why manual recording works that way, what your options are, and how to set up recording that runs on a server instead of on your own devices.
@@ -42,20 +43,20 @@ SaveStream works this way. It checks each channel you add about every 30 seconds
 
 Set up cloud recording for your own channel:
 
-1. **Create a SaveStream account.** [Sign up](/sign-up) and verify your email. New accounts receive {{signup_credits}}.
+1. **Create a SaveStream account.** [Sign up](/sign-up) and verify your email. New accounts get {{trial_minutes}} of recording to try it.
 2. **Add your TikTok channel.** In **Channels**, choose **Add channel** and enter your username or profile link. Free accounts can monitor {{free_channels}}, and accounts with a purchase {{pro_channels}}.
-3. **Unlock automatic recording.** Buy a credit pack. Automatic recording becomes available after your first purchase. Credits never expire and there is no subscription.
-4. **Switch on Auto-record.** Open the channel page and turn **Auto-record** on. Leave live alerts on if you want a notification when the channel goes live.
-5. **Close everything.** You can turn off your computer and put your phone away. The next time the channel goes live, recording starts in the cloud.
-6. **Collect the recording later.** When the LIVE ends, the video is processed and appears in **Recordings**, ready to play or download as an MP4.
+3. **Switch on Auto-record.** Open the channel page and turn **Auto-record** on. Leave live alerts on if you want a notification when the channel goes live.
+4. **Close everything.** You can turn off your computer and put your phone away. The next time the channel goes live, recording starts in the cloud.
+5. **Collect the recording later.** When the LIVE ends, the video is processed and appears in **Recordings**, ready to play or download as an MP4.
+6. **Buy a pack to keep recording.** Your free minutes cover a first test. After that, buy a credit pack — credits never expire and there is no subscription.
 
 ## What to know before you rely on it
 
 Cloud recording removes the need to keep a device on, but it has its own limits worth knowing:
 
-- **Credits pay for recording time.** Recording is charged at {{credit_rate}}; checking channels while they are offline is free. If your balance runs out, new recordings can't start until you add credits.
+- **Credits pay for recording time.** Recording is charged at {{credit_rate}}; checking channels while they are offline is free. If your balance runs out during a LIVE, the recording stops there and is saved; new recordings start again once you add credits.
 - **Recordings are reserved up front.** When a recording starts, credits for its maximum length are held, and anything unused is released when it ends. A single recording runs for up to 4 hours or as long as your available credits cover.
-- **Parallel recordings are limited.** Your account can record {{parallel_recordings}} at the same time. If more of your channels are live at once, the extra ones wait for a free slot.
+- **Parallel recordings are limited.** After a purchase your account can record {{parallel_recordings}} at the same time (one at a time on free minutes). If more of your channels are live at once, the extra ones wait for a free slot.
 - **Very short LIVEs can be missed.** A LIVE that ends within a few seconds may finish before recording starts.
 - **Recordings expire.** They are kept for {{paid_retention}} on accounts that have bought credits, then deleted. Download anything you want to keep.
 
@@ -63,7 +64,7 @@ Cloud recording removes the need to keep a device on, but it has its own limits 
 
 1. Keep **Auto-record** on for every channel you stream on.
 2. Check your credit balance once a week, and top up before you run low. A spare pack costs nothing to keep because credits don't expire.
-3. When you get the *recording ready* notification, glance at the recording to confirm it looks right.
+3. When you get the _recording ready_ notification, glance at the recording to confirm it looks right.
 4. Download the recordings you want to keep and move them to long-term storage.
 
 ## Frequently asked questions

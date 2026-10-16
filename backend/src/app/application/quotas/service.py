@@ -54,6 +54,13 @@ class QuotaService:
 
     async def check_recording_create(self, user_id: uuid.UUID) -> None:
         entitlement = await EntitlementService(self.session, self.settings).get(user_id)
+        if not entitlement.is_pro and not entitlement.email_verified:
+            raise ApplicationError(
+                "EMAIL_NOT_VERIFIED",
+                "Verify your email address to record with free trial minutes",
+                status_code=403,
+                retryable=False,
+            )
         active_limit = entitlement.manual_cloud_recording_limit
         active = int(
             await self.session.scalar(

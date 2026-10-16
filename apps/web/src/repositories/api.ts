@@ -127,13 +127,16 @@ function mapNotificationToModel(item: NotificationResponse): NotificationModel {
       : item.type === "recording_ready"
         ? "Ready"
         : "Error";
-  const link =
-    item.resource_type === "recording" && item.resource_id
-      ? {
-          to: "/recordings/$id" as const,
-          params: { id: item.resource_id },
-        }
-      : { to: "/usage" as const };
+  // Out of credits / free minutes used up: the action is buying a pack.
+  const link: NotificationModel["link"] =
+    item.type === "cloud_minutes_exhausted" || item.type === "credits_low"
+      ? { to: "/billing" as const }
+      : item.resource_type === "recording" && item.resource_id
+        ? {
+            to: "/recordings/$id" as const,
+            params: { id: item.resource_id },
+          }
+        : { to: "/usage" as const };
 
   return {
     id: item.id,

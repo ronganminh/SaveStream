@@ -1,13 +1,16 @@
 ---
 title: How automatic recording works
 category: channels
-summary: Once you have bought credits, channels with Auto-record on are recorded in the cloud as soon as they go live.
-updated: 2026-10-14
+summary: Channels with Auto-record on are recorded in the cloud as soon as they go live — first with your free minutes, then with a credit pack.
+updated: 2026-10-16
 order: 2
 ---
+
 ## Who gets automatic recording
 
-Automatic cloud recording is available once your account has a completed purchase **and** an available credit balance. Free trial credits alone don't unlock it. When it is available, every channel has an **Auto-record** switch on its page.
+Every account can use automatic cloud recording. New accounts get {{trial_minutes}} to try it: verify your email, switch **Auto-record** on for a channel, and its next LIVE is recorded. On free minutes one LIVE is recorded at a time.
+
+When the free minutes are used up, buy a credit pack to keep recording. Every channel has an **Auto-record** switch on its page.
 
 ## What happens when a channel goes live
 
@@ -19,13 +22,13 @@ A LIVE that ends within the first few seconds may finish before recording starts
 
 ## Several channels live at once
 
-Your account can record {{parallel_recordings}} at the same time. If more of your channels are live, the extra ones wait in line and start as soon as a recording finishes — if the LIVE is still going. A LIVE that ends while waiting is marked **Missed** and costs nothing.
+After a purchase your account can record {{parallel_recordings}} at the same time (one on free minutes). If more of your channels are live, the extra ones wait in line and start as soon as a recording finishes — if the LIVE is still going. A LIVE that ends while waiting is marked **Missed** and costs nothing.
 
 ## Length and credits
 
 Before a recording starts, SaveStream reserves credits for it. The recording can run for up to 4 hours, or as long as your available credits cover, whichever is shorter. At the end you pay only for the time actually recorded and the rest of the reservation is released. See [How credits work](/help/credits-and-pricing).
 
-If your balance runs out, automatic recording stops starting new recordings until you add credits. Channels that were paused for lack of credits resume automatically after a purchase.
+If your credits run out during a LIVE, the recording stops at that point and everything recorded so far is saved — you can watch and download it as usual. Your balance never goes below zero. You get a notice in the app (and an email, if that email is on) asking you to buy a pack; new recordings start again as soon as you have credits. Channels that were paused for lack of credits resume automatically after a purchase.
 
 ## Stop a recording early
 
