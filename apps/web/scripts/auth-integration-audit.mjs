@@ -63,6 +63,58 @@ forbid("src/lib/app-config.ts", "getFrontendIdentity()");
 forbid("src/auth/auth-context.tsx", "localStorage");
 forbid("src/api/auth.ts", "localStorage");
 
+// Sign-up with Google/Apple (P0, 2026-10-16): a click before the consent
+// checkboxes are ticked must answer next to the buttons, and a ticked click
+// must start OAuth with the consent attached.
+{
+  const legal = await import(path.join(root, "src/lib/legal.ts"));
+  const check = (label, ok) => {
+    if (!ok) failures.push(`socialSignUpGate: ${label}`);
+  };
+  const none = legal.socialSignUpGate("google", false, false);
+  check("blocks with nothing ticked", none.ok === false);
+  check(
+    "message asks to agree to continue",
+    /^Please agree to the Terms of Use/.test(none.message),
+  );
+  check("message names the provider", none.message.endsWith("continue with Google."));
+  check(
+    "focuses the first checkbox",
+    none.focus === "agree" && none.agreeMissing && none.aupMissing,
+  );
+  const aupOnly = legal.socialSignUpGate("apple", true, false);
+  check(
+    "blocks without AUP",
+    aupOnly.ok === false && aupOnly.focus === "aup" && !aupOnly.agreeMissing,
+  );
+  check("names Apple", aupOnly.message.endsWith("continue with Apple."));
+  check("passes when both ticked", legal.socialSignUpGate("google", true, true).ok === true);
+
+  // The consent the web sends must be the version the API accepts.
+  const backendLegal = fs.readFileSync(
+    path.join(root, "../../backend/src/app/application/identity/legal.py"),
+    "utf8",
+  );
+  const backendVersion = (name) => backendLegal.match(new RegExp(`${name} = "([^"]+)"`))?.[1];
+  const consent = legal.currentLegalConsent();
+  check(
+    "terms version matches backend",
+    consent.terms_version === backendVersion("CURRENT_TERMS_VERSION"),
+  );
+  check(
+    "privacy version matches backend",
+    consent.privacy_version === backendVersion("CURRENT_PRIVACY_VERSION"),
+  );
+  check(
+    "AUP version matches backend",
+    consent.aup_version === backendVersion("CURRENT_AUP_VERSION"),
+  );
+}
+must("src/components/app-pages.tsx", "socialSignUpGate(provider, agreed, aupAgreed)");
+must("src/components/app-pages.tsx", 'id="social-consent-error"');
+must("src/components/app-pages.tsx", 'scrollIntoView({ behavior: "smooth", block: "center" })');
+must("src/components/app-pages.tsx", 'mode === "sign-up" ? currentLegalConsent() : undefined');
+
 if (failures.length) {
   console.error("Auth integration audit failed:\n- " + failures.join("\n- "));
   process.exit(1);

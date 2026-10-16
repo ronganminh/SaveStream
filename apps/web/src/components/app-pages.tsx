@@ -27,6 +27,7 @@ import {
 import {
   Fragment,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
   type ElementType,
@@ -236,7 +237,7 @@ import {
 } from "@/hooks/use-channel-mutations";
 import type { ChannelModel, ChannelStatus, RecordingModel, Status } from "@/repositories";
 import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
-import { currentLegalConsent } from "@/lib/legal";
+import { currentLegalConsent, socialSignUpGate } from "@/lib/legal";
 import {
   rememberAccountStatus,
   type AccountStatusDetails,
@@ -943,6 +944,11 @@ export function AuthPage({
   const [agreed, setAgreed] = useState(false);
   // Acceptable Use: only channels the user owns, manages or may record.
   const [aupAgreed, setAupAgreed] = useState(false);
+  // Shown under the Google/Apple buttons when they are clicked before the
+  // consent checkboxes are ticked (the checkboxes sit far below the buttons).
+  const [socialGateMessage, setSocialGateMessage] = useState<string | null>(null);
+  const agreeRef = useRef<HTMLInputElement>(null);
+  const aupRef = useRef<HTMLInputElement>(null);
   const [linkExpired, setLinkExpired] = useState(false);
   const trialLabel = useTrialMinutesLabel();
   const agreementError =
@@ -993,13 +999,21 @@ export function AuthPage({
   };
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
-    if (mode === "sign-up" && (!agreed || !aupAgreed)) {
-      setFieldErrors((current) => ({
-        ...current,
-        agree: agreed ? undefined : agreementError,
-        aup: aupAgreed ? undefined : aupError,
-      }));
-      return;
+    if (mode === "sign-up") {
+      const gate = socialSignUpGate(provider, agreed, aupAgreed);
+      if (!gate.ok) {
+        setFieldErrors((current) => ({
+          ...current,
+          agree: gate.agreeMissing ? agreementError : undefined,
+          aup: gate.aupMissing ? aupError : undefined,
+        }));
+        setSocialGateMessage(gate.message);
+        const target = gate.focus === "agree" ? agreeRef.current : aupRef.current;
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        target?.focus({ preventScroll: true });
+        return;
+      }
+      setSocialGateMessage(null);
     }
     if (isDemoMode) {
       toast("Social sign-in isn't connected in this prototype.");
@@ -1355,6 +1369,18 @@ export function AuthPage({
               className={signUp ? "flex-1" : undefined}
             />
           </div>
+          {signUp && socialGateMessage && (
+            <p
+              role="alert"
+              id="social-consent-error"
+              className="-mt-1 flex items-start gap-2 rounded-[12px] border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              {agreed && aupAgreed
+                ? "Thanks — now choose Google or Apple again to continue."
+                : socialGateMessage}
+            </p>
+          )}
           <OrDivider />
         </>
       )}
@@ -1426,12 +1452,18 @@ export function AuthPage({
         )}
         {signUp && (
           <div>
-            <label className="flex items-start gap-2.5 text-sm leading-5">
+            <label
+              className={cn(
+                "flex items-start gap-2.5 rounded-[10px] text-sm leading-5",
+                fieldErrors.agree && "-m-2 border border-destructive/50 bg-destructive/5 p-2",
+              )}
+            >
               <input
+                ref={agreeRef}
                 type="checkbox"
                 className={cn(
                   "mt-0.5 size-4 shrink-0 accent-primary",
-                  fieldErrors.agree && "outline outline-1 outline-destructive",
+                  fieldErrors.agree && "outline outline-2 outline-offset-1 outline-destructive",
                 )}
                 checked={agreed}
                 required
@@ -1470,12 +1502,18 @@ export function AuthPage({
                 {fieldErrors.agree}
               </p>
             )}
-            <label className="mt-3 flex items-start gap-2.5 text-sm leading-5">
+            <label
+              className={cn(
+                "mt-3 flex items-start gap-2.5 rounded-[10px] text-sm leading-5",
+                fieldErrors.aup && "-mx-2 -mb-2 border border-destructive/50 bg-destructive/5 p-2",
+              )}
+            >
               <input
+                ref={aupRef}
                 type="checkbox"
                 className={cn(
                   "mt-0.5 size-4 shrink-0 accent-primary",
-                  fieldErrors.aup && "outline outline-1 outline-destructive",
+                  fieldErrors.aup && "outline outline-2 outline-offset-1 outline-destructive",
                 )}
                 checked={aupAgreed}
                 required
