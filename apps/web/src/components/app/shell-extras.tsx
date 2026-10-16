@@ -8,6 +8,7 @@ import {
   Flag,
   Lock,
   Mail,
+  Radio,
   Search,
 } from "lucide-react";
 import {
@@ -37,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useResendVerificationMutation } from "@/hooks/use-account-settings";
 import {
+  useActiveRecordingData,
   useChannelsData,
   useCreditBalanceData,
   useEntitlementData,
@@ -67,7 +69,16 @@ const LOW_CREDIT_SNOOZE_MS = 24 * 60 * 60 * 1000;
 
 export type CreditSummary = {
   loaded: boolean;
+  /**
+   * Recording time left, counting credits held for a recording that is
+   * running (they are only spent as it records). "Out" means none at all.
+   */
   minutes: number;
+  /** Part of `minutes` held for recordings that are running now. */
+  heldMinutes: number;
+  /** A recording is holding credits right now. */
+  recording: boolean;
+  minutesPerCredit: number;
   /** "12.4 h" or "45 min". */
   label: string;
   /** 0–100, against the smallest pack (a full Starter pack reads 100%). */
@@ -91,13 +102,21 @@ export function useCreditSummary(): CreditSummary {
   const smallestPackMinutes = Math.min(
     ...(pricingQuery.data?.packages ?? []).map((pack) => pack.recording_minutes ?? pack.credits),
   );
-  const available = balanceQuery.data?.available ?? 0;
-  const minutes = Math.max(0, available * minutesPerCredit);
+  // Posted balance, not "available": a running recording holds credits it has
+  // not spent yet. Counting only available read "0 h" / "used up" the moment
+  // a trial recording started (QA 2026-10-16).
+  const posted = balanceQuery.data?.posted ?? 0;
+  const reserved = balanceQuery.data?.reserved ?? 0;
+  const minutes = Math.max(0, posted * minutesPerCredit);
+  const heldMinutes = Math.max(0, Math.min(reserved, posted) * minutesPerCredit);
   const reference =
     Number.isFinite(smallestPackMinutes) && smallestPackMinutes > 0 ? smallestPackMinutes : 3000;
   return {
     loaded: Boolean(balanceQuery.data),
     minutes,
+    heldMinutes,
+    recording: reserved > 0,
+    minutesPerCredit,
     label: formatRecordingTime(minutes),
     percent: Math.min(100, Math.round((minutes / reference) * 100)),
     state: minutes <= 0 ? "out" : minutes < LOW_CREDIT_MINUTES ? "low" : "ok",
@@ -161,6 +180,7 @@ export function CreditBanner() {
   const credits = useCreditSummary();
   const { query: channelsQuery } = useChannelsData();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  const { query: activeQuery } = useActiveRecordingData();
   // Not purchased yet: the balance is the free trial minutes.
   const onTrial = entitlementQuery.data?.has_purchased === false;
   const [snoozedUntil, setSnoozedUntil] = useState(0);
@@ -194,6 +214,24 @@ export function CreditBanner() {
       >
         <Button asChild size="sm">
           <Link to="/billing">{onTrial ? "Buy a pack" : "Buy credits"}</Link>
+        </Button>
+      </Banner>
+    );
+  }
+
+  if (onTrial && credits.recording) {
+    // The trial minutes are held by the running recording, not used up yet.
+    const elapsed = (activeQuery.data?.durationSeconds ?? 0) / 60;
+    const left = formatRecordingTime(Math.max(0, credits.minutes - elapsed));
+    return (
+      <Banner
+        tone="warn"
+        icon={<Radio className="size-5" />}
+        title={`Recording with your free minutes — ${left} left`}
+        body="When they run out, the recording stops and is saved to Recordings. Buy a pack to keep recording."
+      >
+        <Button asChild size="sm">
+          <Link to="/billing">Buy a pack</Link>
         </Button>
       </Banner>
     );

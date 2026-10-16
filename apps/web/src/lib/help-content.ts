@@ -159,8 +159,8 @@ export function helpVariables(pricing: PublicPricingResponse | null | undefined)
       minutesPerCredit === null
         ? "the rate shown on the Pricing page"
         : minutesPerCredit === 1
-          ? "1 credit per minute of recording"
-          : `1 credit per ${minutesPerCredit} minutes of recording`,
+          ? "1 credit per minute of recording, billed per started minute"
+          : `1 credit per ${minutesPerCredit} minutes of recording, billed per started block`,
     minimum_credits:
       rate && rate.minimum_credits > 0
         ? `a minimum of ${pluralize(rate.minimum_credits, "credit")} per recording`

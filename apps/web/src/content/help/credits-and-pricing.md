@@ -13,7 +13,7 @@ Recording time is paid with credits at {{credit_rate}}, with {{minimum_credits}}
 ## How a recording is charged
 
 1. **Reserve.** When a recording starts, SaveStream reserves enough credits for its maximum length. Reserved credits show as _held_ in **Usage**.
-2. **Charge.** When it ends, you are charged for the real length of the saved video.
+2. **Charge.** When it ends, you are charged for the real length of the saved video, billed per started minute: a 3 min 9 s recording uses 4 minutes of credit.
 3. **Release.** The rest of the reservation goes back to your available balance. In your history this appears as _Released N held credits_.
 
 The rate is fixed when a recording starts, so a price change never affects a recording that is already running.

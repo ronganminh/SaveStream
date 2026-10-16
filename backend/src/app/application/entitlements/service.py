@@ -44,6 +44,11 @@ class EntitlementSnapshot:
     has_purchased: bool
     email_verified: bool
     cloud_minutes_available: int
+    # Posted balance: includes credits held for recordings that are running.
+    # Plan and Auto-record follow it, so a recording that holds every credit
+    # does not flip the account to "out of credit" while it records (QA
+    # 2026-10-16). Starting a new recording still needs available credit.
+    cloud_minutes_posted: int
     max_watches: int
     max_concurrent_cloud_recordings: int
     cloud_retention_days: int
@@ -65,7 +70,7 @@ class EntitlementSnapshot:
         return (
             not self.has_purchased
             and self.email_verified
-            and self.cloud_minutes_available > 0
+            and self.cloud_minutes_posted > 0
         )
 
     @property
@@ -73,11 +78,16 @@ class EntitlementSnapshot:
         return self.is_pro or self.trial_recording
 
     @property
+    def can_start_recording(self) -> bool:
+        """Auto-record is on and some credit is not held by a running recording."""
+        return self.can_auto_record and self.cloud_minutes_available > 0
+
+    @property
     def out_of_credit(self) -> bool:
         """Could record, but the credits ran out (trial used up or pack spent)."""
         return (
             not self.can_auto_record
-            and self.cloud_minutes_available <= 0
+            and self.cloud_minutes_posted <= 0
             and (self.has_purchased or self.email_verified)
         )
 
@@ -100,11 +110,11 @@ class EntitlementService:
     async def get(self, user_id: uuid.UUID) -> EntitlementSnapshot:
         has_purchased = await has_paid_purchase(self.session, user_id)
         balance = await CreditService(self.session).balance(user_id)
-        is_pro = has_purchased and balance.available > 0
+        is_pro = has_purchased and balance.posted > 0
         user = await self.session.get(User, user_id)
         email_verified = user is not None and user.email_verified_at is not None
         trial_recording = (
-            not has_purchased and email_verified and balance.available > 0
+            not has_purchased and email_verified and balance.posted > 0
         )
         plan: EntitlementPlan = "pro" if is_pro else "free"
         runtime = RuntimeSettingsService(self.session, self.settings)
@@ -201,6 +211,7 @@ class EntitlementService:
             has_purchased=has_purchased,
             email_verified=email_verified,
             cloud_minutes_available=balance.available,
+            cloud_minutes_posted=balance.posted,
             max_watches=(pro_max_watches if is_pro else free_max_watches),
             max_concurrent_cloud_recordings=(
                 pro_max_concurrent

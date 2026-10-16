@@ -2378,10 +2378,7 @@ function ProductionOverviewPage() {
   const activeRecording = recordingChannels[0]
     ? overviewRecordings.find((r) => r.id === recordingChannels[0]?.activeRecordingId)
     : undefined;
-  const reservedMinutes =
-    credits.minutes > 0 && balance.available > 0
-      ? (balance.reserved / balance.available) * credits.minutes
-      : balance.reserved;
+  const reservedMinutes = credits.heldMinutes;
 
   return (
     <AppShell>
@@ -2431,7 +2428,9 @@ function ProductionOverviewPage() {
                 {credits.label}
               </span>
               <span className="text-muted-foreground">
-                of recording left · {balance.available.toLocaleString("en")} credits available
+                of recording left · {balance.posted.toLocaleString("en")} credits
+                {balance.reserved > 0 &&
+                  ` (${balance.reserved.toLocaleString("en")} on hold for a recording)`}
               </span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-surface-3">
@@ -3240,7 +3239,11 @@ export function RecordingsPage() {
   const expiring = recordingItems.filter(isExpiring);
   const ready = recordingItems.filter((r) => recordingSection(r) === "ready");
   const totalSeconds = ready.reduce((sum, r) => sum + (r.durationSeconds ?? 0), 0);
-  const retentionDays = pricingQuery.data?.recording_retention_days;
+  // The account's own window (7 days on the free trial), not the paid default.
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  const retentionDays =
+    entitlementQuery.data?.limits.cloud_retention_days ??
+    pricingQuery.data?.recording_retention_days;
   const clear = () => {
     setQ("");
     setStatus("all");
@@ -3935,6 +3938,7 @@ export function RecordingDetailPage({
   const [reportOpen, setReportOpen] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
   const { query: publicPricingQuery } = usePublicPricingData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
 
   const rec = forced
     ? (recordingsQuery.data ?? []).find((item) => recordingMatchesForcedState(item, forced))
@@ -4023,7 +4027,10 @@ export function RecordingDetailPage({
 
     void downloadRecording.start(rec, { onError: () => void artifactsQuery.refetch() });
   };
-  const retentionDays = publicPricingQuery.data?.recording_retention_days ?? null;
+  const retentionDays =
+    entitlementQuery.data?.limits.cloud_retention_days ??
+    publicPricingQuery.data?.recording_retention_days ??
+    null;
   const expiryDate = rec.expires.match(/\(([^)]+)\)/)?.[1] ?? null;
   const daysLeft = rec.expiresDays;
   const quality =
@@ -4719,7 +4726,7 @@ function CreditsUsagePage() {
   const reservations = reservationsQuery.data?.items ?? [];
   const activeReservations = reservations.filter((item) => item.status === "active");
   const recordings = recordingsQuery.data ?? [];
-  const minutesPerCredit = balance.available > 0 ? credits.minutes / balance.available : 1;
+  const minutesPerCredit = credits.minutesPerCredit;
   const hours = (creditsValue: number) => formatHoursLeft(creditsValue * minutesPerCredit);
   const used = transactions
     .filter((t) => t.type === "charge")
@@ -6065,7 +6072,13 @@ export function formatRecordingTime(minutes: number, _language: Language = "en")
 function rateSentence(rate: PublicRecordingRate | null, _language: Language) {
   if (!rate || rate.credits_per_unit === 0) return null;
   const minutes = minutesPerCredit(rate);
-  return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
+  return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording, billed per started ${
+    rate.unit_seconds % 60 === 0 && rate.unit_seconds > 60
+      ? `${rate.unit_seconds / 60}-minute block`
+      : rate.unit_seconds === 60
+        ? "minute"
+        : `${rate.unit_seconds}-second block`
+  }`;
 }
 
 function packageLimits(pricing: PublicPricingResponse | undefined, _language: Language) {
