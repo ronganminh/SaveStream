@@ -16,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.schemas.recordings import Source
 from app.application.credits.service import CreditService
+from app.application.recordings.retention import has_paid_purchase
 from app.application.notifications.service import (
     ensure_cloud_minutes_exhausted_notification,
     ensure_credits_low_notification,
@@ -325,6 +326,11 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                 media = await asyncio.to_thread(probe_media, result.artifact_path)
                 if media.duration_seconds is not None:
                     recording.duration_seconds = media.duration_seconds
+                if recording.max_duration_seconds:
+                    # Capture stops at the cap (e.g. when the credits run out).
+                    recording.duration_seconds = min(
+                        recording.duration_seconds, recording.max_duration_seconds
+                    )
                 try:
                     await _upload_with_retry(
                         storage,
@@ -376,6 +382,7 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                             session,
                             user_id=recording.user_id,
                             recording_id=recording.id,
+                            trial=not await has_paid_purchase(session, recording.user_id),
                         )
                     else:
                         # One notice a day once an hour or less is left.

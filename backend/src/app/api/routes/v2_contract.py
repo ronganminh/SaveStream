@@ -49,6 +49,9 @@ async def get_entitlement(
     return EntitlementResponse(
         plan=snapshot.plan,
         has_purchased=snapshot.has_purchased,
+        email_verified=snapshot.email_verified,
+        can_auto_record=snapshot.can_auto_record,
+        trial_recording=snapshot.trial_recording,
         cloud_minutes_available=snapshot.cloud_minutes_available,
         limits=EntitlementLimitsResponse(
             max_watches=snapshot.max_watches,

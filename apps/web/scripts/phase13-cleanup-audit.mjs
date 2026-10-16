@@ -52,10 +52,7 @@ forbid("src/components/app-pages.tsx", 'from "@/lib/plan-catalog"');
 forbid("src/routeTree.gen.ts", "overview-empty");
 forbid("src/hooks/use-domain-data.ts", "useNotificationRecordingFeedData");
 
-for (const file of [
-  "src/components/app-pages.tsx",
-  "src/components/app-pages-more.tsx",
-]) {
+for (const file of ["src/components/app-pages.tsx", "src/components/app-pages-more.tsx"]) {
   const source = read(file);
   if (/\bLegacy[A-Za-z0-9_]*/.test(source)) {
     failures.push(`${file}: Legacy* component naming must be replaced by Demo*`);
@@ -76,12 +73,7 @@ for (const text of [
 ]) {
   mustIn("ProductionOverviewPage", overview, text);
 }
-for (const text of [
-  "12.6 / 50 h",
-  "18.4 GB",
-  "25% used · resets Oct 1",
-  "Sunday, September 27",
-]) {
+for (const text of ["12.6 / 50 h", "18.4 GB", "25% used · resets Oct 1", "Sunday, September 27"]) {
   forbidIn("ProductionOverviewPage", overview, text);
 }
 
@@ -151,6 +143,10 @@ for (const text of [
   "Free/Pro",
   "backend-authoritative",
   "Retry button",
+  // Trial minutes record for real (2026-10-16): no "purchase first" gate.
+  "unlocks after",
+  "first purchase",
+  "first credit purchase",
 ]) {
   forbidIn("help articles", productionHelp, text);
 }
@@ -169,7 +165,14 @@ for (const name of fs.readdirSync(guidesDir).filter((file) => file.endsWith(".md
   const guide = fs.readFileSync(path.join(guidesDir, name), "utf8");
   mustIn(`guide ${name}`, guide, "/acceptable-use");
   mustIn(`guide ${name}`, guide, "/sign-up");
-  for (const text of ["stored for 30 days", "10 free", "3 recordings"]) {
+  for (const text of [
+    "stored for 30 days",
+    "10 free",
+    "3 recordings",
+    "unlocks after",
+    "first purchase",
+    "unlock automatic recording",
+  ]) {
     forbidIn(`guide ${name}`, guide, text);
   }
 }

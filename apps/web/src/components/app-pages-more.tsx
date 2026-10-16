@@ -1749,6 +1749,16 @@ const notificationTone: Record<string, { icon: typeof Bell; className: string; l
     className: "bg-warning-subtle text-warning",
     label: "Credits",
   },
+  cloud_minutes_exhausted: {
+    icon: CreditCard,
+    className: "bg-warning-subtle text-warning",
+    label: "Credits",
+  },
+  credits_low: {
+    icon: CreditCard,
+    className: "bg-warning-subtle text-warning",
+    label: "Credits",
+  },
 };
 
 function NotificationRow({ notification: n }: { notification: NotificationModel }) {
@@ -1783,6 +1793,11 @@ function NotificationRow({ notification: n }: { notification: NotificationModel 
           </span>
         </span>
         <span className="block text-sm text-muted-foreground">{n.body}</span>
+        {n.link.to === "/billing" && (
+          <span className="inline-flex h-8 items-center rounded-[10px] bg-primary px-3 text-xs font-bold text-primary-foreground">
+            Buy a pack
+          </span>
+        )}
       </span>
       <span className="flex shrink-0 flex-col items-end gap-2">
         <span className="text-xs text-muted-foreground">{n.time}</span>

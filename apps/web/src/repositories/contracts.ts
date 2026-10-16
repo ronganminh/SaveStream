@@ -125,10 +125,17 @@ export type UsageData = {
 };
 
 export type NotificationType =
-  "recording_started" | "recording_ready" | "recording_failed" | "quota_warning";
+  | "recording_started"
+  | "recording_ready"
+  | "recording_failed"
+  | "quota_warning"
+  | "cloud_minutes_exhausted"
+  | "credits_low";
 
 export type NotificationLink =
-  { to: "/recordings/$id" | "/channels/$id"; params: { id: string } } | { to: "/usage" };
+  | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
+  | { to: "/usage" }
+  | { to: "/billing" };
 
 export type NotificationModel = {
   id: string;

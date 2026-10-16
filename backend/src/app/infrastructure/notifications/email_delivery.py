@@ -20,6 +20,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.credits.service import CreditService
+from app.application.recordings.retention import has_paid_purchase
 from app.application.notifications.service import (
     EMAIL_PREFERENCE_FOR_KIND,
     email_enabled_for,
@@ -207,6 +208,8 @@ async def send_notification_email(
         unsubscribe_url=f"{site}/unsubscribe?token={token}",
         unsubscribe_label=EMAIL_LABELS[preference],
         available_minutes=available,
+        trial=kind == "cloud_minutes_exhausted"
+        and not await has_paid_purchase(session, user.id),
     )
     if email is None:
         return "skipped"

@@ -476,15 +476,25 @@ async def ensure_cloud_minutes_exhausted_notification(
     *,
     user_id: uuid.UUID,
     recording_id: uuid.UUID,
+    trial: bool = False,
 ) -> UserNotification:
     preferences = await session.get(NotificationPreference, user_id)
+    if trial:
+        title = "Your free minutes are used up"
+        body = (
+            "Your free minutes are used up — buy a pack to keep recording. "
+            "Your recordings stay available to watch and download."
+        )
+    else:
+        title = "Cloud minutes exhausted"
+        body = "Your available cloud recording minutes have reached zero."
     notification = await _store_and_dispatch(
         session,
         user_id=user_id,
         dedupe_key=f"recording:{recording_id}:cloud_minutes_exhausted",
         kind="cloud_minutes_exhausted",
-        title="Cloud minutes exhausted",
-        body="Your available cloud recording minutes have reached zero.",
+        title=title,
+        body=body,
         resource_type="recording",
         resource_id=str(recording_id),
         push=True,

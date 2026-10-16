@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/auth/auth-context";
 import { usePublicPricingData } from "@/hooks/use-domain-data";
 import { pluralize } from "@/lib/formatters";
+import { helpVariables } from "@/lib/help-content";
 import { packHours, retentionSentence } from "@/lib/plan-facts";
 import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import { cn } from "@/lib/utils";
@@ -276,7 +277,7 @@ export function ProductionLanding() {
                       [
                         "Try it first",
                         pricing?.signup_credits
-                          ? `${pricing.signup_credits} free credits`
+                          ? `${helpVariables(pricing).trial_minutes} of recording`
                           : "Free account",
                         "Varies",
                       ],
@@ -357,7 +358,10 @@ export function ProductionLanding() {
           </div>
         </section>
 
-        <LandingFaq retention={retentionSentence(pricing)} />
+        <LandingFaq
+          retention={retentionSentence(pricing)}
+          trialMinutes={helpVariables(pricing).trial_minutes}
+        />
 
         {/* Final CTA */}
         <section className="mx-auto max-w-[1200px] px-6 pt-24">
@@ -476,7 +480,7 @@ function HeroMockup() {
   );
 }
 
-function LandingFaq({ retention }: { retention: string }) {
+function LandingFaq({ retention, trialMinutes }: { retention: string; trialMinutes: string }) {
   const [open, setOpen] = useState(0);
   const faqs: [string, string][] = [
     [
@@ -493,7 +497,7 @@ function LandingFaq({ retention }: { retention: string }) {
     ],
     [
       "When does automatic recording start?",
-      "After your first credit purchase, switch on Auto-record for a channel. From then on its LIVEs are recorded automatically.",
+      `As soon as you switch on Auto-record for a channel. New accounts can try it with their ${trialMinutes} after verifying their email, then buy a pack to keep recording.`,
     ],
     ["How long are recordings kept?", `${retention}. Download anything you want to keep longer.`],
     [

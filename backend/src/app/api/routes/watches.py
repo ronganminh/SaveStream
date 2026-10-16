@@ -35,8 +35,7 @@ async def create_watch(
     active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
-        is_pro=entitlement.is_pro,
-        has_purchased=entitlement.has_purchased,
+        entitlement=entitlement,
         waiting_for_cloud_slot=(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
@@ -70,8 +69,7 @@ async def list_watches(
         items=[
             watch_response(
                 item,
-                is_pro=entitlement.is_pro,
-                has_purchased=entitlement.has_purchased,
+                entitlement=entitlement,
                 waiting_for_cloud_slot=(
                     item.resolved_room_id is not None
                     and item.resolved_room_id in waiting_room_ids
@@ -100,8 +98,7 @@ async def get_watch(
     active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
-        is_pro=entitlement.is_pro,
-        has_purchased=entitlement.has_purchased,
+        entitlement=entitlement,
         waiting_for_cloud_slot=(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
@@ -127,8 +124,7 @@ async def update_watch(
     active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
-        is_pro=entitlement.is_pro,
-        has_purchased=entitlement.has_purchased,
+        entitlement=entitlement,
         waiting_for_cloud_slot=(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids
@@ -172,8 +168,7 @@ async def resume_watch(
     active_recordings = await service.active_recordings(principal.user_id)
     return watch_response(
         watch,
-        is_pro=entitlement.is_pro,
-        has_purchased=entitlement.has_purchased,
+        entitlement=entitlement,
         waiting_for_cloud_slot=(
             watch.resolved_room_id is not None
             and watch.resolved_room_id in waiting_room_ids

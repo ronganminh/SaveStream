@@ -9,13 +9,9 @@ async function invalidateChannels(
   queryClient: ReturnType<typeof useQueryClient>,
   channelId?: string,
 ) {
-  const tasks = [
-    queryClient.invalidateQueries({ queryKey: domainQueryKeys.channels }),
-  ];
+  const tasks = [queryClient.invalidateQueries({ queryKey: domainQueryKeys.channels })];
   if (channelId) {
-    tasks.push(
-      queryClient.invalidateQueries({ queryKey: domainQueryKeys.channel(channelId) }),
-    );
+    tasks.push(queryClient.invalidateQueries({ queryKey: domainQueryKeys.channel(channelId) }));
   }
   await Promise.all(tasks);
 }
@@ -105,11 +101,14 @@ export function channelActionErrorMessage(error: unknown): string {
   if (error.code === "INSUFFICIENT_CREDITS") {
     return "There are not enough available credits to resume automatic recording.";
   }
+  if (error.code === "EMAIL_NOT_VERIFIED") {
+    return "Verify your email to record with your free minutes. Monitoring keeps working meanwhile.";
+  }
   if (error.code === "PLAN_REQUIRED") {
-    return "Automatic cloud recording requires a one-time hour purchase. Monitoring remains available on Free.";
+    return "You’re out of recording minutes — buy a pack to keep recording. Monitoring keeps working.";
   }
   if (error.code === "WATCH_LIMIT_REACHED" || error.code === "RATE_LIMITED") {
-    return "Your account has reached the monitored-channel limit. Buy hours to unlock the Pro limit.";
+    return "Your account has reached the monitored-channel limit. Buy a pack to monitor more channels.";
   }
   if (error.status >= 500 || error.retryable) {
     return "SaveStream is temporarily unavailable. Please try again.";

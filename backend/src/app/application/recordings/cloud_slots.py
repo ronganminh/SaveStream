@@ -263,7 +263,7 @@ class CloudSlotQueueService:
             self.session,
             self.settings,
         ).get(user_id)
-        if not entitlement.is_pro:
+        if not entitlement.can_auto_record:
             return None
 
         active_values = [item.value for item in ACTIVE_RECORDING_STATUSES]

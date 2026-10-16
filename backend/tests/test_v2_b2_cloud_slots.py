@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from app.api.schemas.recordings import CreateRecordingRequest, Source
 from app.api.schemas.watches import CreateWatchRequest
 from app.api.serializers.watches import watch_response
+from app.application.entitlements.service import EntitlementService
 from app.application.billing.credits import BillingCreditService
 from app.application.credits.service import CreditService
 from app.application.recordings.cloud_slots import CloudSlotQueueService
@@ -209,8 +210,7 @@ def test_v2_b2_scheduler_queues_fifo_after_three_pro_slots(tmp_path) -> None:
                 await session.refresh(first_watch)
                 response = watch_response(
                     first_watch,
-                    is_pro=True,
-                    has_purchased=True,
+                    entitlement=await EntitlementService(session, settings).get(user.id),
                     waiting_for_cloud_slot=True,
                 )
                 assert response.auto_record_state == "waiting_for_cloud_slot"

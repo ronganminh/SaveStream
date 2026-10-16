@@ -254,13 +254,11 @@ class CreditService:
             duration_seconds=duration_seconds,
             bytes_recorded=bytes_recorded,
         )
-        if actual > reservation.reserved:
-            raise ApplicationError(
-                "INTERNAL_ERROR",
-                "Actual credit cost exceeds reserved maximum",
-                status_code=500,
-                details={"actual": actual, "reserved": reservation.reserved},
-            )
+        # The reservation is the most a recording may cost. A recording capped
+        # to the balance (trial or last credits) can run a few seconds past its
+        # cap while connecting and finalizing; bill the reservation, never more,
+        # so the balance cannot go negative and the recording still completes.
+        actual = min(actual, reservation.reserved)
 
         account = await self.session.scalar(
             select(CreditAccount)

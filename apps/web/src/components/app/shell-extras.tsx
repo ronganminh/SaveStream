@@ -39,10 +39,12 @@ import { useResendVerificationMutation } from "@/hooks/use-account-settings";
 import {
   useChannelsData,
   useCreditBalanceData,
+  useEntitlementData,
   usePublicPricingData,
   useRecordingsData,
 } from "@/hooks/use-domain-data";
 import { isDemoMode } from "@/lib/app-config";
+import { FREE_MINUTES_USED_UP } from "@/lib/auto-record";
 import { cn } from "@/lib/utils";
 import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { repositories, type ChannelModel, type RecordingModel } from "@/repositories";
@@ -158,27 +160,40 @@ function Banner({
 export function CreditBanner() {
   const credits = useCreditSummary();
   const { query: channelsQuery } = useChannelsData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  // Not purchased yet: the balance is the free trial minutes.
+  const onTrial = entitlementQuery.data?.has_purchased === false;
   const [snoozedUntil, setSnoozedUntil] = useState(0);
   useEffect(() => setSnoozedUntil(readSnooze()), []);
   const path = useRouterState({ select: (s) => s.location.pathname });
   if (!credits.loaded || credits.state === "ok" || path.startsWith("/billing")) return null;
+  // Trial minutes arrive with email verification; the verify banner covers that case.
+  if (entitlementQuery.data?.email_verified === false) return null;
 
   if (credits.state === "out") {
     const monitored = (channelsQuery.data ?? []).filter((channel) => channel.monitoring).length;
+    const watching =
+      monitored > 0
+        ? `We’re still watching your ${monitored === 1 ? "channel" : `${monitored} channels`} for free.`
+        : "Monitoring stays free.";
     return (
       <Banner
         tone="err"
         role="alert"
         icon={<AlertCircle className="size-5" />}
-        title="You’re out of credits — new LIVEs won’t be recorded"
+        title={
+          onTrial ? FREE_MINUTES_USED_UP : "You’re out of credits — new LIVEs won’t be recorded"
+        }
         body={
-          monitored > 0
-            ? `We’re still watching your ${monitored === 1 ? "channel" : `${monitored} channels`} for free. Add credits and recording resumes automatically.`
-            : "Monitoring stays free. Add credits to record your next LIVE."
+          onTrial
+            ? `${watching} Your recordings stay available to watch and download.`
+            : monitored > 0
+              ? `${watching} Add credits and recording resumes automatically.`
+              : "Monitoring stays free. Add credits to record your next LIVE."
         }
       >
         <Button asChild size="sm">
-          <Link to="/billing">Buy credits</Link>
+          <Link to="/billing">{onTrial ? "Buy a pack" : "Buy credits"}</Link>
         </Button>
       </Banner>
     );
@@ -189,8 +204,16 @@ export function CreditBanner() {
     <Banner
       tone="warn"
       icon={<CreditCard className="size-5" />}
-      title={`Only ${credits.label} of credits left`}
-      body="Top up so your next LIVE isn’t cut short."
+      title={
+        onTrial
+          ? `You have ${credits.label} of free recording`
+          : `Only ${credits.label} of credits left`
+      }
+      body={
+        onTrial
+          ? "Turn on Auto-record to try it on a real LIVE, then buy a pack to keep recording."
+          : "Top up so your next LIVE isn’t cut short."
+      }
     >
       <Button
         variant="ghost"

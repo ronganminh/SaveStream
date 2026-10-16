@@ -59,14 +59,14 @@ function liveReasonFor(watch: WatchResponse): string | null {
   if (watch.active_recording_id || watch.live_status !== "live") return null;
   switch (watch.auto_record_state) {
     case "paused_no_cloud_minutes":
-      return "Not recording – out of cloud minutes.";
+      return "Not recording – out of credits. Buy a pack to keep recording.";
     case "waiting_for_cloud_slot":
       return "Not recording yet – waiting for a free cloud recording slot.";
     case "active":
       return "Starting the recording…";
     default:
       return watch.auto_record
-        ? "Not recording – automatic recording needs purchased cloud minutes."
+        ? "Not recording – verify your email to record with your free minutes."
         : "Not recording – automatic recording is off for this channel.";
   }
 }

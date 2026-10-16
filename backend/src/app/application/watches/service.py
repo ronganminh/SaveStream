@@ -125,6 +125,31 @@ def decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID]:
         ) from exc
 
 
+def require_auto_record(entitlement: EntitlementSnapshot) -> None:
+    """Auto-record needs credit: purchased, or free trial on a verified email."""
+    if entitlement.can_auto_record:
+        return
+    if not entitlement.has_purchased and not entitlement.email_verified:
+        raise ApplicationError(
+            "EMAIL_NOT_VERIFIED",
+            "Verify your email address to record with free trial minutes",
+            status_code=403,
+            retryable=False,
+            details={"plan": entitlement.plan},
+        )
+    raise ApplicationError(
+        "PLAN_REQUIRED",
+        "Automatic cloud recording needs cloud minutes; buy a pack to keep recording",
+        status_code=403,
+        retryable=False,
+        details={
+            "plan": entitlement.plan,
+            "has_purchased": entitlement.has_purchased,
+            "cloud_minutes_available": entitlement.cloud_minutes_available,
+        },
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class WatchPage:
     items: list[Watch]
@@ -215,14 +240,8 @@ class WatchService:
             )
 
         entitlement = await self.entitlement_for(principal.user_id)
-        if payload.auto_record and not entitlement.is_pro:
-            raise ApplicationError(
-                "PLAN_REQUIRED",
-                "Automatic cloud recording requires purchased cloud minutes",
-                status_code=403,
-                retryable=False,
-                details={"plan": entitlement.plan},
-            )
+        if payload.auto_record:
+            require_auto_record(entitlement)
 
         await QuotaService(self.session, self.settings).check_watch_create(
             principal.user_id
@@ -349,15 +368,7 @@ class WatchService:
         watch = await self.get(principal, watch_id)
         if payload.auto_record is not None:
             if payload.auto_record:
-                entitlement = await self.entitlement_for(principal.user_id)
-                if not entitlement.is_pro:
-                    raise ApplicationError(
-                        "PLAN_REQUIRED",
-                        "Automatic cloud recording requires purchased cloud minutes",
-                        status_code=403,
-                        retryable=False,
-                        details={"plan": entitlement.plan},
-                    )
+                require_auto_record(await self.entitlement_for(principal.user_id))
             watch.auto_record = payload.auto_record
         if payload.notify_on_live is not None:
             watch.notify_on_live = payload.notify_on_live
@@ -407,7 +418,7 @@ class WatchService:
             source_value=watch.resolved_username or watch.source_value,
         )
         entitlement = await self.entitlement_for(principal.user_id)
-        if watch.auto_record and entitlement.is_pro:
+        if watch.auto_record and entitlement.can_auto_record:
             affordable, required, available = await CreditService(
                 self.session
             ).can_afford(

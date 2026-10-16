@@ -170,6 +170,12 @@ import {
   retentionFeature,
   retentionSentence,
 } from "@/lib/plan-facts";
+import {
+  autoRecordAccess,
+  autoRecordBlockedText,
+  freeAutoRecordSentence,
+  trialRecordingText,
+} from "@/lib/auto-record";
 import { authApi, authErrorMessage, isExpiredLinkError } from "@/api/auth";
 import {
   AuthCardLayout,
@@ -1631,8 +1637,9 @@ export function OnboardingPage() {
   const preferencesQuery = useNotificationPreferencesData();
   const updatePreferences = useUpdateNotificationPreferencesMutation();
   const trialLabel = useTrialMinutesLabel();
-  // Automatic recording needs purchased credits; the backend rejects it for Free.
-  const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
+  // Purchased credit or free trial minutes on a verified email.
+  const autoRecordState = autoRecordAccess(entitlementQuery.data, isDemoMode);
+  const canAutoRecord = autoRecordState.allowed;
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [channelId, setChannelId] = useState<string | null>(null);
@@ -1873,9 +1880,11 @@ export function OnboardingPage() {
                 <span className="flex-1">
                   <b className="block">Auto-record every LIVE</b>
                   <span className="text-sm text-muted-foreground">
-                    {canAutoRecord
-                      ? "Start recording as soon as the channel goes live."
-                      : "Unlocks after you buy credits. Until then we detect LIVEs and notify you."}
+                    {!canAutoRecord
+                      ? `${autoRecordBlockedText(autoRecordState)} Until then we detect LIVEs and notify you.`
+                      : autoRecordState.trial
+                        ? `Start recording as soon as the channel goes live. ${trialRecordingText(trialLabel)}`
+                        : "Start recording as soon as the channel goes live."}
                   </span>
                 </span>
                 <Switch
@@ -1957,7 +1966,9 @@ export function OnboardingPage() {
                 We’re now watching <b className="text-foreground">{handle}</b>.{" "}
                 {channel?.autoRecord && canAutoRecord
                   ? "The next time it goes LIVE, we’ll record it automatically and let you know."
-                  : "We’ll let you know when it goes LIVE. Buy credits to record LIVEs automatically."}
+                  : canAutoRecord
+                    ? "We’ll let you know when it goes LIVE. Turn on Auto-record on the channel page to record it."
+                    : `We’ll let you know when it goes LIVE. ${autoRecordBlockedText(autoRecordState)}`}
               </p>
               <div className="flex flex-wrap justify-center gap-2.5">
                 {channel ? (
@@ -2261,6 +2272,7 @@ function ProductionOverviewPage() {
   const { query: balanceQuery } = useCreditBalanceData();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
   const credits = useCreditSummary();
+  const autoRecordState = autoRecordAccess(entitlementQuery.data, isDemoMode);
 
   if (channelsQuery.isPending || recordingsQuery.isPending || balanceQuery.isPending) {
     return (
@@ -2401,10 +2413,18 @@ function ProductionOverviewPage() {
               <span className="text-muted-foreground">
                 {balance.reserved > 0
                   ? `${formatHoursLeft(reservedMinutes)} on hold for live recordings — released if unused.`
-                  : "Credits are only used while a LIVE is being recorded."}
+                  : autoRecordState.allowed
+                    ? autoRecordState.trial
+                      ? "Your free trial minutes record LIVEs automatically — turn on Auto-record for a channel."
+                      : "Credits are only used while a LIVE is being recorded."
+                    : autoRecordState.reason === "loading"
+                      ? "Credits are only used while a LIVE is being recorded."
+                      : autoRecordBlockedText(autoRecordState)}
               </span>
               <Button asChild size="sm">
-                <Link to="/billing">Buy credits</Link>
+                <Link to="/billing">
+                  {autoRecordState.reason === "trial_used_up" ? "Buy a pack" : "Buy credits"}
+                </Link>
               </Button>
             </div>
           </section>
@@ -2851,7 +2871,7 @@ export function ChannelsPage() {
           empty
             ? "Add a TikTok channel and we’ll start watching it right away."
             : entitlement?.plan === "free"
-              ? `We check monitored channels around the clock. ${freeWebSentence(publicPricingQuery.data, channelLimit)} Automatic recording unlocks after you buy credits.`
+              ? `We check monitored channels around the clock. ${freeWebSentence(publicPricingQuery.data, channelLimit)} ${freeAutoRecordSentence(autoRecordAccess(entitlement), trialMinutesLabel)}`
               : "We check monitored channels around the clock. Monitoring is free — only recording uses credits."
         }
         action={
@@ -6119,7 +6139,7 @@ function CreditPricingPage() {
         ? `${Math.round(Math.min(...hourRange))}–${Math.round(Math.max(...hourRange))} hours per pack`
         : "Depends on the pack",
     ],
-    ["Automatic cloud recording", "After your first purchase", "Included"],
+    ["Automatic cloud recording", "Included, on your free minutes", "Included"],
     ["Payment needed", "No", "PayPal, one time"],
     [
       "Channels monitored",
@@ -6130,7 +6150,7 @@ function CreditPricingPage() {
     ],
     [
       "Recordings at the same time",
-      "—",
+      "1",
       pricing?.max_concurrent_recordings_per_user
         ? `Up to ${pricing.max_concurrent_recordings_per_user}`
         : "Several",
@@ -6350,9 +6370,9 @@ function CreditPricingPage() {
             </h2>
             <p className="text-lg leading-relaxed text-muted-foreground">
               {pricing && pricing.signup_credits > 0
-                ? `New accounts get ${pricing.signup_credits} free credits after verifying their email. Automatic cloud recording unlocks with your first purchase.`
+                ? `New accounts get ${trialMinutes ? `${formatRecordingTime(trialMinutes)} of free recording` : `${pricing.signup_credits} free credits`} after verifying their email. Turn on Auto-record and try it on a real LIVE, then buy a pack to keep recording.`
                 : t(
-                    "Create a free account to add channels. Automatic cloud recording unlocks with your first purchase.",
+                    "Create a free account, verify your email and try automatic cloud recording with your free minutes. Then buy a pack to keep recording.",
                   )}
             </p>
             {!authenticated && (
@@ -6746,7 +6766,8 @@ function ChannelDetail({
   const updateChannel = useUpdateChannelMutation();
   const stopRecording = useStopRecordingMutation();
   const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
-  const canAutoRecord = isDemoMode || entitlementQuery.data?.plan === "pro";
+  const autoRecordState = autoRecordAccess(entitlementQuery.data, isDemoMode);
+  const canAutoRecord = autoRecordState.allowed;
   const resumeChannel = useResumeChannelMutation();
   const deleteChannel = useDeleteChannelMutation();
   const [previewState, setPreviewState] = useState<ChannelStatus>(channel.status);
@@ -6845,20 +6866,36 @@ function ChannelDetail({
   } else if (state === "Live") {
     const reason = channel.autoRecordState;
     if (reason === "paused_no_cloud_minutes" || (!canAutoRecord && channel.autoRecord)) {
+      const verify = autoRecordState.reason === "verify_email";
+      const trialUsedUp = autoRecordState.reason === "trial_used_up";
       banner = (
         <ChannelStatusBanner
           tone="warn"
           icon={<CreditCard className="size-6" />}
-          title="LIVE — not recording: out of credits"
+          title={
+            verify
+              ? "LIVE — not recording: verify your email"
+              : trialUsedUp
+                ? "LIVE — not recording: free minutes used up"
+                : "LIVE — not recording: out of credits"
+          }
           description={
             canAutoRecord
               ? "No recording was started because your balance is empty. Add credits and recording starts at the next check — while the channel is still live."
-              : "Automatic recording unlocks after you buy credits. Buy any pack and turn on Auto-record for this channel."
+              : verify
+                ? `${autoRecordBlockedText(autoRecordState)} Recording starts at the next check once it’s verified.`
+                : `${autoRecordBlockedText(autoRecordState)} Recording starts at the next check — while the channel is still live.`
           }
           actions={
-            <Button asChild>
-              <Link to="/billing">Buy credits</Link>
-            </Button>
+            verify ? (
+              <Button asChild>
+                <Link to="/settings/account">Verify email</Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link to="/billing">Buy a pack</Link>
+              </Button>
+            )
           }
         />
       );
@@ -6959,8 +6996,12 @@ function ChannelDetail({
         }
         description={`Last checked ${channel.checked}. Last LIVE ${channel.live}. ${
           channel.autoRecord && canAutoRecord
-            ? "Recording starts automatically when the channel goes live."
-            : "Auto-record is off, so LIVEs are detected but not recorded."
+            ? autoRecordState.trial
+              ? "Recording starts automatically when the channel goes live, using your free trial minutes."
+              : "Recording starts automatically when the channel goes live."
+            : channel.autoRecord
+              ? `${autoRecordBlockedText(autoRecordState)} LIVEs are detected but not recorded.`
+              : "Auto-record is off, so LIVEs are detected but not recorded."
         } Monitoring is free.`}
         actions={
           <Button variant="outline" disabled={pending} onClick={() => setDialog("pause")}>
@@ -7037,9 +7078,7 @@ function ChannelDetail({
             </label>
             <label
               className="flex items-center gap-2.5 text-sm font-bold"
-              title={
-                canAutoRecord ? undefined : "Automatic recording unlocks after you buy credits"
-              }
+              title={canAutoRecord ? undefined : autoRecordBlockedText(autoRecordState)}
             >
               <Switch
                 checked={channel.autoRecord && canAutoRecord}

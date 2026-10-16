@@ -264,7 +264,7 @@ class WatchScheduler:
             self.session,
             self.settings,
         ).get(watch.user_id)
-        if not entitlement.is_pro:
+        if not entitlement.can_auto_record:
             return
 
         queue = CloudSlotQueueService(self.session, self.settings)

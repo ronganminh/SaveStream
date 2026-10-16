@@ -92,7 +92,7 @@ def _copy(
         return (
             ("Đã hết phút cloud", fallback_body)
             if vi
-            else ("Cloud minutes exhausted", fallback_body)
+            else (fallback_title or "Cloud minutes exhausted", fallback_body)
         )
     if kind == "free_minutes_low":
         return (

@@ -33,6 +33,11 @@ class LocalEntitlementResponse(StrictModel):
 class EntitlementResponse(StrictModel):
     plan: Literal["free", "pro"]
     has_purchased: bool
+    email_verified: bool = False
+    # Auto-record may be switched on: purchased credit, or free trial credit
+    # on a verified email (trial_recording).
+    can_auto_record: bool = False
+    trial_recording: bool = False
     cloud_minutes_available: int
     limits: EntitlementLimitsResponse
     watch_count: int
