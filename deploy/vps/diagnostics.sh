@@ -334,4 +334,31 @@ for name in sorted(vars(s)):
         print(name, "=", getattr(s, name))
 PY
 
+section "Host nginx around the incident (read-only, if readable)"
+ls -la /var/log/nginx/ 2>&1 | head -n 12 || true
+for f in /var/log/nginx/access.log /var/log/nginx/error.log; do
+  [[ -r "$f" ]] || { echo "$f not readable by $(id -un)"; continue; }
+  echo "-- $f lines 15:38:30-15:39:30 local (08:38:30-08:39:30 UTC), api host only, query strings removed"
+  grep -E '16/Oct/2026:15:3(8:[3-5][0-9]|9:[0-2][0-9])|2026/10/16 15:3(8:[3-5][0-9]|9:[0-2][0-9])' "$f" \
+    | grep -Eiv 'password|secret|authorization' \
+    | sed -E 's/\?[^ "]*/?…/g; s/^([0-9]+\.[0-9]+)\.[0-9]+\.[0-9]+/\1.x.x/' | tail -n 80 || true
+done
+nginx -T 2>/dev/null | grep -Ei 'worker_connections|worker_processes|keepalive_timeout|http2|log_format|proxy_read_timeout|limit_req|limit_conn' | head -n 20 \
+  || grep -rhEi 'worker_connections|worker_processes|log_format|limit_req|limit_conn' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/ 2>/dev/null | head -n 20 || true
+echo "-- auth token lifetimes"
+compose exec -T api python - <<'PY' 2>/dev/null || true
+from app.settings import AppSettings
+s = AppSettings.from_env()
+for name in sorted(vars(s)):
+    if ("ttl" in name or "expire" in name or "lifetime" in name) and "secret" not in name:
+        print(name, "=", getattr(s, name))
+PY
+echo "-- web sessions created/revoked 08:30-08:45 UTC (no user ids)"
+sql "select date_trunc('second', coalesce(revoked_at, created_at))::text as at,
+            client_type, coalesce(revoked_reason, 'created') as what, count(*)
+     from auth_sessions
+     where (created_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
+        or (revoked_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
+     group by 1, 2, 3 order by 1;"
+
 section "Done"
