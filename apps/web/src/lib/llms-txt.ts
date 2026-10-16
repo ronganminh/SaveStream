@@ -40,11 +40,11 @@ export function buildLlmsTxt(pricing: PublicPricingResponse | null): string {
     }
     if (pricing.signup_credits) {
       facts.push(
-        `- New accounts receive ${pricing.signup_credits} free trial credits${
+        `- Free trial: ${
           minutesPerCredit !== null
-            ? ` (${Math.floor(pricing.signup_credits * minutesPerCredit)} minutes of recording)`
-            : ""
-        } once, after verifying their email. They record for real with Auto-record, one recording at a time; when they are used up the recording stops, is saved, and the user buys a pack to keep recording.`,
+            ? `${Math.floor(pricing.signup_credits * minutesPerCredit)} free minutes to try, then buy a pack`
+            : "free minutes to try, then buy a pack"
+        }. New accounts receive ${pricing.signup_credits} free trial credits once, after verifying their email, and record for real with Auto-record, one recording at a time; when they are used up the recording stops and is saved.`,
       );
     }
     if (pricing.free_max_channels_per_user && pricing.max_channels_per_user) {
