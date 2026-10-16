@@ -24,7 +24,7 @@ export function buildLlmsTxt(pricing: PublicPricingResponse | null): string {
   if (pricing) {
     if (minutesPerCredit !== null) {
       facts.push(
-        `- Billing: credits pay for recording time (${minutesPerCredit === 1 ? "1 credit per minute" : `1 credit per ${minutesPerCredit} minutes`}); checking offline channels is free; failed or missed recordings are not charged.`,
+        `- Billing: credits pay for recording time (${minutesPerCredit === 1 ? "1 credit per minute" : `1 credit per ${minutesPerCredit} minutes`}, billed per started minute); checking offline channels is free; failed or missed recordings are not charged.`,
       );
     }
     if (pricing.packages.length) {

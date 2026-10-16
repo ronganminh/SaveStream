@@ -27,6 +27,7 @@ import {
 import {
   Fragment,
   useEffect,
+  useRef,
   useState,
   type ComponentProps,
   type ElementType,
@@ -236,7 +237,7 @@ import {
 } from "@/hooks/use-channel-mutations";
 import type { ChannelModel, ChannelStatus, RecordingModel, Status } from "@/repositories";
 import { displayNameFromTikTokUsername, parseTikTokSource } from "@/lib/tiktok-source";
-import { currentLegalConsent } from "@/lib/legal";
+import { currentLegalConsent, socialSignUpGate } from "@/lib/legal";
 import {
   rememberAccountStatus,
   type AccountStatusDetails,
@@ -943,6 +944,11 @@ export function AuthPage({
   const [agreed, setAgreed] = useState(false);
   // Acceptable Use: only channels the user owns, manages or may record.
   const [aupAgreed, setAupAgreed] = useState(false);
+  // Shown under the Google/Apple buttons when they are clicked before the
+  // consent checkboxes are ticked (the checkboxes sit far below the buttons).
+  const [socialGateMessage, setSocialGateMessage] = useState<string | null>(null);
+  const agreeRef = useRef<HTMLInputElement>(null);
+  const aupRef = useRef<HTMLInputElement>(null);
   const [linkExpired, setLinkExpired] = useState(false);
   const trialLabel = useTrialMinutesLabel();
   const agreementError =
@@ -993,13 +999,21 @@ export function AuthPage({
   };
   const startSocial = async (provider: SocialProvider) => {
     setErr(null);
-    if (mode === "sign-up" && (!agreed || !aupAgreed)) {
-      setFieldErrors((current) => ({
-        ...current,
-        agree: agreed ? undefined : agreementError,
-        aup: aupAgreed ? undefined : aupError,
-      }));
-      return;
+    if (mode === "sign-up") {
+      const gate = socialSignUpGate(provider, agreed, aupAgreed);
+      if (!gate.ok) {
+        setFieldErrors((current) => ({
+          ...current,
+          agree: gate.agreeMissing ? agreementError : undefined,
+          aup: gate.aupMissing ? aupError : undefined,
+        }));
+        setSocialGateMessage(gate.message);
+        const target = gate.focus === "agree" ? agreeRef.current : aupRef.current;
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        target?.focus({ preventScroll: true });
+        return;
+      }
+      setSocialGateMessage(null);
     }
     if (isDemoMode) {
       toast("Social sign-in isn't connected in this prototype.");
@@ -1355,6 +1369,18 @@ export function AuthPage({
               className={signUp ? "flex-1" : undefined}
             />
           </div>
+          {signUp && socialGateMessage && (
+            <p
+              role="alert"
+              id="social-consent-error"
+              className="-mt-1 flex items-start gap-2 rounded-[12px] border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm text-destructive"
+            >
+              <AlertCircle className="mt-0.5 size-4 shrink-0" />
+              {agreed && aupAgreed
+                ? "Thanks — now choose Google or Apple again to continue."
+                : socialGateMessage}
+            </p>
+          )}
           <OrDivider />
         </>
       )}
@@ -1426,12 +1452,18 @@ export function AuthPage({
         )}
         {signUp && (
           <div>
-            <label className="flex items-start gap-2.5 text-sm leading-5">
+            <label
+              className={cn(
+                "flex items-start gap-2.5 rounded-[10px] text-sm leading-5",
+                fieldErrors.agree && "-m-2 border border-destructive/50 bg-destructive/5 p-2",
+              )}
+            >
               <input
+                ref={agreeRef}
                 type="checkbox"
                 className={cn(
                   "mt-0.5 size-4 shrink-0 accent-primary",
-                  fieldErrors.agree && "outline outline-1 outline-destructive",
+                  fieldErrors.agree && "outline outline-2 outline-offset-1 outline-destructive",
                 )}
                 checked={agreed}
                 required
@@ -1470,12 +1502,18 @@ export function AuthPage({
                 {fieldErrors.agree}
               </p>
             )}
-            <label className="mt-3 flex items-start gap-2.5 text-sm leading-5">
+            <label
+              className={cn(
+                "mt-3 flex items-start gap-2.5 rounded-[10px] text-sm leading-5",
+                fieldErrors.aup && "-mx-2 -mb-2 border border-destructive/50 bg-destructive/5 p-2",
+              )}
+            >
               <input
+                ref={aupRef}
                 type="checkbox"
                 className={cn(
                   "mt-0.5 size-4 shrink-0 accent-primary",
-                  fieldErrors.aup && "outline outline-1 outline-destructive",
+                  fieldErrors.aup && "outline outline-2 outline-offset-1 outline-destructive",
                 )}
                 checked={aupAgreed}
                 required
@@ -2340,10 +2378,7 @@ function ProductionOverviewPage() {
   const activeRecording = recordingChannels[0]
     ? overviewRecordings.find((r) => r.id === recordingChannels[0]?.activeRecordingId)
     : undefined;
-  const reservedMinutes =
-    credits.minutes > 0 && balance.available > 0
-      ? (balance.reserved / balance.available) * credits.minutes
-      : balance.reserved;
+  const reservedMinutes = credits.heldMinutes;
 
   return (
     <AppShell>
@@ -2393,7 +2428,9 @@ function ProductionOverviewPage() {
                 {credits.label}
               </span>
               <span className="text-muted-foreground">
-                of recording left · {balance.available.toLocaleString("en")} credits available
+                of recording left · {balance.posted.toLocaleString("en")} credits
+                {balance.reserved > 0 &&
+                  ` (${balance.reserved.toLocaleString("en")} on hold for a recording)`}
               </span>
             </div>
             <div className="h-2.5 overflow-hidden rounded-full bg-surface-3">
@@ -3202,7 +3239,11 @@ export function RecordingsPage() {
   const expiring = recordingItems.filter(isExpiring);
   const ready = recordingItems.filter((r) => recordingSection(r) === "ready");
   const totalSeconds = ready.reduce((sum, r) => sum + (r.durationSeconds ?? 0), 0);
-  const retentionDays = pricingQuery.data?.recording_retention_days;
+  // The account's own window (7 days on the free trial), not the paid default.
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
+  const retentionDays =
+    entitlementQuery.data?.limits.cloud_retention_days ??
+    pricingQuery.data?.recording_retention_days;
   const clear = () => {
     setQ("");
     setStatus("all");
@@ -3897,6 +3938,7 @@ export function RecordingDetailPage({
   const [reportOpen, setReportOpen] = useState(false);
   const [stopConfirm, setStopConfirm] = useState(false);
   const { query: publicPricingQuery } = usePublicPricingData();
+  const { query: entitlementQuery } = useEntitlementData(!isDemoMode);
 
   const rec = forced
     ? (recordingsQuery.data ?? []).find((item) => recordingMatchesForcedState(item, forced))
@@ -3985,7 +4027,10 @@ export function RecordingDetailPage({
 
     void downloadRecording.start(rec, { onError: () => void artifactsQuery.refetch() });
   };
-  const retentionDays = publicPricingQuery.data?.recording_retention_days ?? null;
+  const retentionDays =
+    entitlementQuery.data?.limits.cloud_retention_days ??
+    publicPricingQuery.data?.recording_retention_days ??
+    null;
   const expiryDate = rec.expires.match(/\(([^)]+)\)/)?.[1] ?? null;
   const daysLeft = rec.expiresDays;
   const quality =
@@ -4681,7 +4726,7 @@ function CreditsUsagePage() {
   const reservations = reservationsQuery.data?.items ?? [];
   const activeReservations = reservations.filter((item) => item.status === "active");
   const recordings = recordingsQuery.data ?? [];
-  const minutesPerCredit = balance.available > 0 ? credits.minutes / balance.available : 1;
+  const minutesPerCredit = credits.minutesPerCredit;
   const hours = (creditsValue: number) => formatHoursLeft(creditsValue * minutesPerCredit);
   const used = transactions
     .filter((t) => t.type === "charge")
@@ -6027,7 +6072,13 @@ export function formatRecordingTime(minutes: number, _language: Language = "en")
 function rateSentence(rate: PublicRecordingRate | null, _language: Language) {
   if (!rate || rate.credits_per_unit === 0) return null;
   const minutes = minutesPerCredit(rate);
-  return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording`;
+  return `1 credit = ${minutes === 1 ? "1 minute" : `${minutes} minutes`} of cloud recording, billed per started ${
+    rate.unit_seconds % 60 === 0 && rate.unit_seconds > 60
+      ? `${rate.unit_seconds / 60}-minute block`
+      : rate.unit_seconds === 60
+        ? "minute"
+        : `${rate.unit_seconds}-second block`
+  }`;
 }
 
 function packageLimits(pricing: PublicPricingResponse | undefined, _language: Language) {

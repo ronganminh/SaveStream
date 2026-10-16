@@ -319,3 +319,55 @@ def test_trial_used_up_notification_and_email_ask_to_buy_a_pack(tmp_path) -> Non
     assert email.subject == "Your free minutes are used up"
     assert "buy a pack to keep recording" in email.text
     assert "https://savestream.online/billing" in email.html
+
+
+def test_trial_auto_record_stays_on_while_a_recording_holds_the_credits(
+    tmp_path,
+) -> None:
+    """QA 2026-10-16: a LIVE of 3m09s, then a second LIVE after a reconnect."""
+
+    async def body(session, settings) -> None:
+        user = await _trial_user(session, "trial-holding@example.com")
+        watch = await _watch(session, user, "room-hold")
+        other = await _watch(session, user, "room-other")
+        scheduler = WatchScheduler(session, settings)
+        await scheduler._auto_record(watch, "room-hold")
+        [first] = await _recordings(session, user)
+
+        # All 10 credits are held by the running recording, none spent yet.
+        held = await EntitlementService(session, settings).get(user.id)
+        assert held.cloud_minutes_available == 0
+        assert held.cloud_minutes_posted == TRIAL_CREDITS
+        assert held.can_auto_record is True
+        assert held.out_of_credit is False
+        assert held.can_start_recording is False
+        await session.refresh(watch)
+        assert watch_response(watch, entitlement=held).auto_record_state == "active"
+
+        # Another LIVE meanwhile is skipped, and its Watch is not paused.
+        await scheduler._auto_record(other, "room-other")
+        await session.refresh(other)
+        assert other.status == "active"
+        assert len(await _recordings(session, user)) == 1
+
+        # 3m09s is billed per started minute: 4 credits, 6 left.
+        credits = CreditService(session)
+        charged = await credits.settle_recording(
+            recording_id=first.id, duration_seconds=189, bytes_recorded=1_000
+        )
+        first.status = RecordingStatus.COMPLETED.value
+        first.active_dedupe_key = None
+        await session.commit()
+        assert charged == 4
+        after = await EntitlementService(session, settings).get(user.id)
+        assert after.cloud_minutes_available == 6
+        assert after.can_start_recording is True
+
+        # The LIVE resumes: the second recording is capped to 6 minutes.
+        await session.refresh(watch)
+        await scheduler._auto_record(watch, "room-hold-2")
+        [second] = [r for r in await _recordings(session, user) if r.id != first.id]
+        assert second.max_duration_seconds == 6 * 60
+        assert second.estimated_max_cost == 6
+
+    _run(tmp_path, "trial-holding.db", body)

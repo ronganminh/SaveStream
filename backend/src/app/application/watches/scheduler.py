@@ -264,7 +264,9 @@ class WatchScheduler:
             self.session,
             self.settings,
         ).get(watch.user_id)
-        if not entitlement.can_auto_record:
+        # Every credit may be held by a recording that is running: skip this
+        # check rather than pausing the Watch; it starts once credit is free.
+        if not entitlement.can_start_recording:
             return
 
         queue = CloudSlotQueueService(self.session, self.settings)
