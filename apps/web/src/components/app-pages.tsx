@@ -920,7 +920,14 @@ export function AuthPage({
 }) {
   const { t } = usePreferences();
   const navigate = useNavigate();
-  const { signIn, signInWithSocial, completeSocialSignUp, status, user: authUser } = useAuth();
+  const {
+    signIn,
+    signInWithSocial,
+    completeSocialSignUp,
+    status,
+    user: authUser,
+    retrySessionRestore,
+  } = useAuth();
   // Shown when a Google/Apple sign-in would create a new account without consent.
   const [socialConsentOpen, setSocialConsentOpen] = useState(false);
   const [socialConsentChecked, setSocialConsentChecked] = useState(false);
@@ -1144,6 +1151,7 @@ export function AuthPage({
         message={
           status === "authenticated" ? "Returning to your workspace…" : "Restoring your session…"
         }
+        onRetry={status === "bootstrapping" ? retrySessionRestore : undefined}
       />
     );
   }

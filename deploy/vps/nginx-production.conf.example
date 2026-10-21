@@ -25,6 +25,12 @@ server {
 
     client_max_body_size 2m;
 
+    # Timing log (format from /etc/nginx/conf.d/savestream-timing.conf, see
+    # deploy/vps/nginx-timing-logs.sh): rt / uct / urt show whether a slow
+    # request was slow in nginx, connecting to the API, or in the API.
+    access_log /var/log/nginx/savestream-api-timing.log savestream_timing;
+    access_log /var/log/nginx/access.log;
+
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;

@@ -20,7 +20,7 @@ function SessionGate({ message }: { message: string }) {
 export function AuthRouteGuard({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (state) => state.location.pathname });
   const navigate = useNavigate();
-  const { status, identity, sessionExpired } = useAuth();
+  const { status, identity, sessionExpired, retrySessionRestore } = useAuth();
   const access = getRouteAccess(path);
   const allowed = canAccessRoute(access, identity);
   const checkingProtectedRoute = access.requiresAuth && status === "bootstrapping";
@@ -35,7 +35,7 @@ export function AuthRouteGuard({ children }: { children: ReactNode }) {
     });
   }, [allowed, checkingProtectedRoute, identity.authenticated, navigate, showSessionExpired]);
 
-  if (checkingProtectedRoute) return <RestoringSessionScreen />;
+  if (checkingProtectedRoute) return <RestoringSessionScreen onRetry={retrySessionRestore} />;
   if (showSessionExpired) return <SessionExpiredDialog />;
   if (!allowed) {
     return (

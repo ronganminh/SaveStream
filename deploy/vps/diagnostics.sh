@@ -267,6 +267,16 @@ for id in $(docker ps -aq --filter "label=com.docker.compose.project=savestream-
   docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}} started={{.State.StartedAt}} restarts={{.RestartCount}} oom={{.State.OOMKilled}} status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}-{{end}}' "$id"
   docker inspect -f '{{if .State.Health}}{{range .State.Health.Log}}   health {{.Start}} exit={{.ExitCode}}{{"\n"}}{{end}}{{end}}' "$id" | tail -n 6
 done
+echo "-- slowest API requests in the nginx timing log, last ${DAYS} day(s) (rt = total, urt = API)"
+if [[ -r /var/log/nginx/savestream-api-timing.log ]]; then
+  awk '{for (i = 1; i <= NF; i++) if ($i ~ /^rt=/) {split($i, a, "="); print a[2], $0}}' \
+    /var/log/nginx/savestream-api-timing.log \
+    | sort -rn | head -n 15 | cut -d' ' -f2- | sed -E 's/\?[^ "]*/?…/g' || true
+else
+  echo "timing log not readable yet (run deploy/vps/nginx-timing-logs.sh as root)"
+fi
+echo "-- deploy user can sudo without a password?"
+sudo -n true 2>/dev/null && echo yes || echo no
 echo "-- api processes (uvicorn workers)"
 docker top "$(compose ps -q api)" -o pid,etime,pcpu,rss,args 2>/dev/null | sed -E 's/(token|secret|password)=[^ ]*/\1=***/gi' || true
 for service in api worker scheduler outbox-dispatcher postgres redis; do
@@ -336,7 +346,7 @@ PY
 
 section "Host nginx around the incident (read-only, if readable)"
 ls -la /var/log/nginx/ 2>&1 | head -n 12 || true
-for f in /var/log/nginx/access.log /var/log/nginx/error.log; do
+for f in /var/log/nginx/savestream-api-timing.log /var/log/nginx/access.log /var/log/nginx/error.log; do
   [[ -r "$f" ]] || { echo "$f not readable by $(id -un)"; continue; }
   echo "-- $f lines 15:38:30-15:39:30 local (08:38:30-08:39:30 UTC), api host only, query strings removed"
   grep -E '16/Oct/2026:15:3(8:[3-5][0-9]|9:[0-2][0-9])|2026/10/16 15:3(8:[3-5][0-9]|9:[0-2][0-9])' "$f" \

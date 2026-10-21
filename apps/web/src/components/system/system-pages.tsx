@@ -26,11 +26,28 @@ function Skeleton({ className, width }: { className?: string; width?: number }) 
 }
 
 /** App boot state: a skeleton of the dashboard with a "Restoring…" pill. */
+/** After this long the restoring screen offers a Retry button. */
+export const RESTORE_RETRY_AFTER_MS = 4_000;
+
 export function RestoringSessionScreen({
   message = "Restoring your session…",
+  onRetry,
+  retryAfterMs = RESTORE_RETRY_AFTER_MS,
 }: {
   message?: string;
+  /** Shown as "Retry" once restoring takes longer than `retryAfterMs`. */
+  onRetry?: (() => void) | undefined;
+  retryAfterMs?: number;
 }) {
+  const [slow, setSlow] = useState(false);
+  // Each Retry restarts the wait before the button shows again.
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!onRetry) return;
+    setSlow(false);
+    const timer = window.setTimeout(() => setSlow(true), retryAfterMs);
+    return () => window.clearTimeout(timer);
+  }, [attempt, onRetry, retryAfterMs]);
   return (
     <div className="relative flex min-h-screen bg-background" aria-busy="true">
       <aside
@@ -87,6 +104,25 @@ export function RestoringSessionScreen({
         <span className="size-5 animate-spin rounded-full border-[2.5px] border-primary-subtle border-t-primary" />
         <span className="text-sm font-semibold">{message}</span>
       </div>
+      {slow && onRetry && (
+        <div
+          role="alert"
+          className="absolute left-1/2 top-[176px] flex w-[min(420px,calc(100%-32px))] -translate-x-1/2 flex-col items-center gap-3 rounded-2xl border bg-surface p-4 text-center shadow-dashboard"
+        >
+          <p className="text-sm text-muted-foreground">
+            This is taking longer than usual. Check your connection, then try again.
+          </p>
+          <Button
+            size="sm"
+            onClick={() => {
+              setAttempt((value) => value + 1);
+              onRetry();
+            }}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { ApiError } from "@/api/errors";
 import { authErrorMessage } from "@/api/auth";
 import { requestFirebaseIdToken, type SocialProvider } from "@/lib/firebase-social-login";
 import type { LegalConsent } from "@/lib/legal";
+import { needsEarlyRefresh } from "@/auth/token-expiry";
 import { toast } from "sonner";
 
 export type AuthStatus = "bootstrapping" | "authenticated" | "guest";
@@ -48,6 +49,8 @@ type AuthContextValue = {
    */
   sessionExpired: boolean;
   acknowledgeSessionExpired: () => void;
+  /** Start restoring the session again now (the "Restoring…" screen's Retry). */
+  retrySessionRestore: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -120,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     configureApiSession({
       getAccessToken: () => accessTokenRef.current,
+      getFreshAccessToken: async () => {
+        const token = accessTokenRef.current;
+        if (!token || !needsEarlyRefresh(token)) return token;
+        return (await refreshAccessToken()) ?? token;
+      },
       refreshAccessToken,
       onAuthExpired: () => {
         if (statusRef.current === "authenticated") setSessionExpired(true);
@@ -139,6 +147,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("authenticated");
     setSessionExpired(false);
     return currentUser;
+  }, []);
+
+  // Bumped by the Retry button to restart the restore below.
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
+  const retrySessionRestore = useCallback(() => {
+    // Drop a refresh stuck on a dead connection so the retry sends a new one.
+    refreshInFlightRef.current = null;
+    setRestoreAttempt((value) => value + 1);
   }, []);
 
   useEffect(() => {
@@ -189,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [clearSession, refreshAccessToken]);
+  }, [clearSession, refreshAccessToken, restoreAttempt]);
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<AuthUser> => {
@@ -322,9 +338,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshSession,
       sessionExpired,
       acknowledgeSessionExpired,
+      retrySessionRestore,
     }),
     [
       acknowledgeSessionExpired,
+      retrySessionRestore,
       completeSocialSignUp,
       identity,
       refreshSession,
