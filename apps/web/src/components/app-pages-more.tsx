@@ -4085,6 +4085,10 @@ const LEGAL_LAST_UPDATED = "October 5, 2026";
 // Terms, Privacy and Refund were revised for the web-only, PayPal-only scope;
 // sign-up consent records the same revision (lib/legal.ts).
 const LEGAL_REVISED_2026_10_14 = LEGAL_REVISION_LABEL;
+// Privacy Policy: PostHog product analytics added (owner-approved). The
+// consent version stays PRIVACY_VERSION 2026-10-14, so existing users are
+// not asked to agree again.
+const PRIVACY_LAST_UPDATED = "October 21, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
 const ABUSE_EMAIL = "abuse@savestream.online";
@@ -4390,7 +4394,7 @@ export function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      lastUpdated={LEGAL_REVISED_2026_10_14}
+      lastUpdated={PRIVACY_LAST_UPDATED}
       intro={
         <p>
           This Privacy Policy explains how SaveStream processes personal information across our

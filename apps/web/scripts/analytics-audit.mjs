@@ -55,8 +55,7 @@ check("tokens, signed links and emails are stripped", () => {
       event: "$pageview",
       properties: {
         $current_url: "https://savestream.online/verify-email?token=SECRET-TOKEN#x",
-        $referrer:
-          "https://media.savestream.online/v/abc.mp4?exp=1&sig=SIGNED&email=a@b.co",
+        $referrer: "https://media.savestream.online/v/abc.mp4?exp=1&sig=SIGNED&email=a@b.co",
         $initial_referrer: "https://www.google.com/search?q=jane%40example.com",
         $pathname: "/reset-password",
         note: "contact jane.doe@example.com now",
@@ -96,14 +95,17 @@ check("a Google/Apple sign-in counts as sign-up only for a new account", () => {
 });
 
 check("funnel event names", () => {
-  assert.deepEqual([...privacy.FUNNEL_EVENTS], [
-    "signup_started",
-    "signup_completed",
-    "email_verified",
-    "channel_added",
-    "auto_record_enabled",
-    "checkout_started",
-  ]);
+  assert.deepEqual(
+    [...privacy.FUNNEL_EVENTS],
+    [
+      "signup_started",
+      "signup_completed",
+      "email_verified",
+      "channel_added",
+      "auto_record_enabled",
+      "checkout_started",
+    ],
+  );
 });
 
 // --- SDK settings ----------------------------------------------------------------
@@ -135,7 +137,10 @@ must("src/routes/__root.tsx", "useEffect(() => initAnalytics(), []);");
 // --- identify / reset ---------------------------------------------------------------
 const auth = "src/auth/auth-context.tsx";
 must(auth, "identifyUser({ id: user.id, role: user.role })");
-must(auth, "clearSession();\n      resetAnalytics();\n    }\n  }, [clearSession]);\n\n  const signOutEverywhere");
+must(
+  auth,
+  "clearSession();\n      resetAnalytics();\n    }\n  }, [clearSession]);\n\n  const signOutEverywhere",
+);
 must(auth, "logoutAll();\n    } finally {\n      clearSession();\n      resetAnalytics();");
 
 // --- funnel events -----------------------------------------------------------------
@@ -144,8 +149,14 @@ must("src/components/app-pages.tsx", 'track("signup_started", { method: provider
 must("src/components/app-pages.tsx", 'track("signup_completed", { method: "email" });');
 must(auth, 'track("signup_completed", { method: provider });');
 must("src/components/app-pages-more.tsx", 'track("email_verified");');
-must("src/hooks/use-channel-mutations.ts", 'track("channel_added", { auto_record: input.auto_record });');
-must("src/hooks/use-channel-mutations.ts", 'track("auto_record_enabled", { where: "add_channel" });');
+must(
+  "src/hooks/use-channel-mutations.ts",
+  'track("channel_added", { auto_record: input.auto_record });',
+);
+must(
+  "src/hooks/use-channel-mutations.ts",
+  'track("auto_record_enabled", { where: "add_channel" });',
+);
 must("src/hooks/use-channel-mutations.ts", 'track("auto_record_enabled", { where: "channel" });');
 must("src/components/app-pages.tsx", 'track("checkout_started", {');
 // Sent by the API instead, so they count once even with the browser closed.
@@ -156,8 +167,15 @@ for (const file of ["src/components/app-pages.tsx", "src/components/app-pages-mo
 }
 
 // --- Privacy Policy names PostHog (wording approved by the owner before merge) ----
-must("src/components/app-pages-more.tsx", "and PostHog,\n              Inc. (United States) for product analytics.");
+must(
+  "src/components/app-pages-more.tsx",
+  "and PostHog,\n              Inc. (United States) for product analytics.",
+);
 must("src/components/app-pages-more.tsx", 'h: "Product analytics"');
+must("src/components/app-pages-more.tsx", 'const PRIVACY_LAST_UPDATED = "October 21, 2026";');
+must("src/components/app-pages-more.tsx", "lastUpdated={PRIVACY_LAST_UPDATED}");
+// Owner decision: no re-consent for this addition.
+must("src/lib/legal.ts", 'export const PRIVACY_VERSION = "2026-10-14";');
 
 // --- production build gets the public project token ------------------------------
 const deploy = fs.readFileSync(path.join(root, "../../.github/workflows/deploy-web.yml"), "utf8");
