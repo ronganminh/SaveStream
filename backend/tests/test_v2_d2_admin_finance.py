@@ -50,6 +50,11 @@ def test_d2_payment_queries_stuck_detection_and_repair(tmp_path) -> None:
                     )
                 ).id == user.id
 
+                # Fixed, ordered timestamps: created_at defaults to the
+                # database clock (whole seconds on SQLite) while paid_at had
+                # microseconds, so the timeline order flipped whenever the
+                # commit crossed a second boundary.
+                created_at = utcnow().replace(microsecond=0) - timedelta(hours=1)
                 paid = PaymentOrder(
                     user_id=user.id,
                     package_id=package.id,
@@ -59,7 +64,8 @@ def test_d2_payment_queries_stuck_detection_and_repair(tmp_path) -> None:
                     currency="USD",
                     provider="app_store",
                     provider_reference="store_tx_missing_grant",
-                    paid_at=utcnow(),
+                    created_at=created_at,
+                    paid_at=created_at + timedelta(minutes=1),
                 )
                 pending = PaymentOrder(
                     user_id=user.id,
@@ -70,6 +76,7 @@ def test_d2_payment_queries_stuck_detection_and_repair(tmp_path) -> None:
                     currency="USD",
                     provider="fake",
                     provider_reference="fake_pending",
+                    created_at=created_at,
                     updated_at=utcnow() - timedelta(minutes=30),
                 )
                 session.add_all([paid, pending])
@@ -95,7 +102,10 @@ def test_d2_payment_queries_stuck_detection_and_repair(tmp_path) -> None:
 
                 detail = await service.payment_detail(str(paid.id))
                 assert detail["order"]["user_email"] == "finance-target@example.com"
-                assert detail["timeline"][0]["event"] == "order.created"
+                assert [item["event"] for item in detail["timeline"]][:2] == [
+                    "order.created",
+                    "payment.paid",
+                ]
 
                 stuck, _, _ = await service.stuck_payments(
                     limit=10, cursor=None
