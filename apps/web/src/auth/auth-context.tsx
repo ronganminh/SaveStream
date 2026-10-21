@@ -17,6 +17,8 @@ import { authErrorMessage } from "@/api/auth";
 import { requestFirebaseIdToken, type SocialProvider } from "@/lib/firebase-social-login";
 import type { LegalConsent } from "@/lib/legal";
 import { needsEarlyRefresh } from "@/auth/token-expiry";
+import { identifyUser, resetAnalytics, track } from "@/lib/analytics";
+import { isFreshAccount } from "@/lib/analytics-privacy";
 import { toast } from "sonner";
 
 export type AuthStatus = "bootstrapping" | "authenticated" | "guest";
@@ -85,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const accessTokenRef = useRef<string | null>(null);
   const pendingSocialLinkRef = useRef<string | null>(null);
   const pendingSocialSignUpRef = useRef<string | null>(null);
+  const pendingSocialProviderRef = useRef<SocialProvider | null>(null);
   const refreshInFlightRef = useRef<Promise<string | null> | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const statusRef = useRef(status);
@@ -251,7 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const firebaseIdToken = await requestFirebaseIdToken(provider);
       try {
         const tokens = await authApi.socialLogin(firebaseIdToken, consent);
-        return await loadCurrentUser(tokens.access_token);
+        const signedIn = await loadCurrentUser(tokens.access_token);
+        // With the consent given up front (/sign-up) the account is created here.
+        if (isFreshAccount(signedIn.created_at)) track("signup_completed", { method: provider });
+        return signedIn;
       } catch (error) {
         if (error instanceof ApiError && error.code === "AUTH_ACCOUNT_LINK_REQUIRED") {
           // Keep only in memory. After explicit password sign-in, the user can
@@ -261,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
           // New account: kept in memory only until the user agrees.
           pendingSocialSignUpRef.current = firebaseIdToken;
+          pendingSocialProviderRef.current = provider;
         }
         throw error;
       }
@@ -276,7 +283,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const tokens = await authApi.socialLogin(firebaseIdToken, consent);
       pendingSocialSignUpRef.current = null;
-      return loadCurrentUser(tokens.access_token);
+      const signedIn = await loadCurrentUser(tokens.access_token);
+      const provider = pendingSocialProviderRef.current;
+      pendingSocialProviderRef.current = null;
+      if (provider && isFreshAccount(signedIn.created_at)) {
+        track("signup_completed", { method: provider });
+      }
+      return signedIn;
     },
     [loadCurrentUser],
   );
@@ -287,6 +300,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (accessTokenRef.current) await authApi.logout();
     } finally {
       clearSession();
+      resetAnalytics();
     }
   }, [clearSession]);
 
@@ -296,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (accessTokenRef.current) await authApi.logoutAll();
     } finally {
       clearSession();
+      resetAnalytics();
     }
   }, [clearSession]);
 
@@ -316,6 +331,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }, [clearSession, loadCurrentUser, refreshAccessToken, user]);
+
+  // Analytics knows the account by its internal id only (never the email).
+  useEffect(() => {
+    if (status === "authenticated" && user) identifyUser({ id: user.id, role: user.role });
+  }, [status, user]);
 
   const identity = useMemo<AuthIdentity>(() => {
     if (isDemoMode) return { authenticated: true, role: "owner" };

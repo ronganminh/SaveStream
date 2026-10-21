@@ -133,6 +133,7 @@ import type {
 } from "@/api/types";
 import { useAuth } from "@/auth/auth-context";
 import { isDemoMode } from "@/lib/app-config";
+import { track } from "@/lib/analytics";
 import {
   useCurrentUserData,
   usePublicPricingData,
@@ -193,6 +194,7 @@ export function VerifyEmailPage({ token = "" }: { token?: string }) {
         if (typeof window !== "undefined") {
           window.sessionStorage.removeItem("savestream:pending-verification-email");
         }
+        track("email_verified");
         await navigate({ to: "/verify-email/success", replace: true });
       })
       .catch((verifyError) => {
@@ -4421,6 +4423,10 @@ export function PrivacyPage() {
               </li>
               <li>Support, abuse, privacy, and copyright communications you send to us.</li>
               <li>
+                Product usage events, such as pages visited and steps completed, as described under
+                Product analytics.
+              </li>
+              <li>
                 Partner Program applications, including your name, email, TikTok handle, other
                 channel links, niche, story, photo or logo, and consent records.
               </li>
@@ -4464,16 +4470,50 @@ export function PrivacyPage() {
             <p>
               We may share the minimum necessary information with providers that help operate
               SaveStream, including Cloudflare for website infrastructure and object storage, server
-              hosting providers, Brevo for transactional email, and PayPal for payments. We may also
-              disclose information when required by law, to protect rights or safety, or to
-              investigate abuse, fraud, or infringement. Payment-card details are processed by
-              PayPal and are not stored by SaveStream in full.
+              hosting providers, Brevo for transactional email, PayPal for payments, and PostHog,
+              Inc. (United States) for product analytics. We may also disclose information when
+              required by law, to protect rights or safety, or to investigate abuse, fraud, or
+              infringement. Payment-card details are processed by PayPal and are not stored by
+              SaveStream in full.
             </p>
           ),
         },
         {
+          h: "Product analytics",
+          p: (
+            <>
+              <p>
+                We use PostHog, a product analytics service hosted in the United States, to
+                understand how people use SaveStream, for example which pages are visited and
+                whether steps such as creating an account, verifying an email address, adding a
+                channel, starting a first recording, or buying credits are completed. PostHog
+                receives the page address without its query string, the referring site, browser and
+                device type, an approximate location derived from your IP address, and these usage
+                events. When you are signed in, events are linked to an internal account ID, not to
+                your name or email address.
+              </p>
+              <p>
+                We do not use session recording, we do not capture what you type, and we do not send
+                recordings, links to recordings, or payment details to PostHog. PostHog processes
+                this information on our behalf and we do not use it for advertising. Analytics is
+                not loaded when your browser sends a Do Not Track or Global Privacy Control signal.
+                To have analytics data about your account deleted, contact{" "}
+                <MailLink email={PRIVACY_EMAIL} />.
+              </p>
+            </>
+          ),
+        },
+        {
           h: "Cookies and device data",
-          p: <p>The website uses essential session and preference storage.</p>,
+          p: (
+            <p>
+              The website uses essential session and preference storage. For product analytics,
+              PostHog also keeps a random identifier in your browser&apos;s local storage so that
+              visits from the same browser can be counted together. We do not use advertising
+              cookies. You can clear or block this storage in your browser settings without
+              affecting how SaveStream works.
+            </p>
+          ),
         },
         {
           h: "Retention and deletion",

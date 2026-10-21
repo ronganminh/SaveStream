@@ -15,6 +15,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.api.schemas.recordings import Source
+from app.application.analytics import record_first_recording_event
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
 from app.application.notifications.service import (
@@ -183,6 +184,13 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                         retryable=False,
                     )
                     return
+                await record_first_recording_event(
+                    session,
+                    recording,
+                    event="first_recording_started",
+                    properties={},
+                    settings=settings,
+                )
                 await store.set_status(
                     recording,
                     RecordingStatus.RECORDING,
@@ -392,6 +400,16 @@ async def _run_recording_job(recording_id: uuid.UUID, settings: AppSettings) -> 
                             available=balance.available,
                             usage_day=utcnow().date(),
                         )
+                await record_first_recording_event(
+                    session,
+                    recording,
+                    event="first_recording_ready",
+                    properties={
+                        "duration_seconds": recording.duration_seconds,
+                        "credits_charged": actual_cost,
+                    },
+                    settings=settings,
+                )
                 target = RecordingStatus.STOPPED if stopped_by_request else RecordingStatus.COMPLETED
                 recording.status = transition(
                     RecordingStatus(recording.status),

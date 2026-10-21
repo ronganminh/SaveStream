@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/auth-context";
+import { initAnalytics } from "@/lib/analytics";
 import { AuthRouteGuard } from "@/auth/auth-guards";
 import { PublicNotFoundPage } from "@/components/public/contact-status";
 import {
@@ -130,6 +131,7 @@ function SkipLink() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useEffect(() => initAnalytics(), []);
 
   return (
     <PreferencesProvider>

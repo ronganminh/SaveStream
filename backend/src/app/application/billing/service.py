@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.analytics import enqueue_purchase_completed
 from app.domain.billing.state import PaymentStatus, transition_payment
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.billing_models import (
@@ -627,6 +628,8 @@ class PaymentEventProcessor:
                     PaymentStatus.PAID,
                 ).value
                 order.paid_at = utcnow()
+                # Once per order: the capture and the webhook both land here.
+                await enqueue_purchase_completed(self.session, order)
             elif status not in {
                 PaymentStatus.PAID,
                 PaymentStatus.PARTIALLY_REFUNDED,

@@ -132,3 +132,21 @@ export function getRouteAccess(pathname: string): RouteAccess {
     PUBLIC_INDEXABLE_PATHS.includes(pathname) || /^\/(help|guides)\/[a-z0-9-]+$/.test(pathname);
   return { visibility: "public", requiresAuth: false, indexable };
 }
+
+function resolvePosthogHost(value: string | undefined): string {
+  const candidate = value?.trim() || "https://us.i.posthog.com";
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol === "https:") return parsed.origin;
+  } catch {
+    // fall through
+  }
+  throw new Error("VITE_POSTHOG_HOST must be an https URL such as https://us.i.posthog.com.");
+}
+
+/**
+ * PostHog product analytics. The project token (phc_...) is public and
+ * write-only, so it is safe in the bundle; empty turns analytics off.
+ */
+export const posthogKey = import.meta.env["VITE_POSTHOG_KEY"]?.trim() ?? "";
+export const posthogHost = resolvePosthogHost(import.meta.env["VITE_POSTHOG_HOST"]);
