@@ -30,6 +30,12 @@ x-app-env: &app-env
   SAVESTREAM_MEDIA_BASE_URL: ${SAVESTREAM_MEDIA_BASE_URL:-}
   SAVESTREAM_MEDIA_SIGNING_SECRET_FILE: /run/secrets/media_signing_secret
   SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:-https://savestream.online,https://www.savestream.online}
+  # PostHog product analytics, US Cloud (funnel events sent by the server:
+  # first_recording_started/ready, purchase_completed). The project token is
+  # public and write-only; set SAVESTREAM_POSTHOG_API_KEY= (empty) in
+  # production.env to turn server events off.
+  SAVESTREAM_POSTHOG_API_KEY: ${SAVESTREAM_POSTHOG_API_KEY-phc_kgs6M7zNgvUZgkVxHfiAEVyaW2JdheSw5LQuPGHTMhuo}
+  SAVESTREAM_POSTHOG_HOST: ${SAVESTREAM_POSTHOG_HOST:-https://us.i.posthog.com}
 
   SAVESTREAM_SMTP_HOST: smtp-relay.brevo.com
   SAVESTREAM_SMTP_PORT: "587"

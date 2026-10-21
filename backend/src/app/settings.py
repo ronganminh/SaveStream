@@ -160,6 +160,10 @@ class AppSettings:
     public_report_rate_limit: int = 5
     public_report_rate_window_seconds: int = 3600
     turnstile_secret_key: str = field(default="", repr=False)
+    # PostHog product analytics (server-side funnel events). The project
+    # token is public and write-only; empty turns server events off.
+    posthog_api_key: str = ""
+    posthog_host: str = "https://us.i.posthog.com"
     recording_temp_dir: str = "/tmp/savestream-recordings"
     recording_max_duration_seconds: int = 14_400
     recording_heartbeat_seconds: int = 10
@@ -652,6 +656,9 @@ class AppSettings:
             public_report_rate_limit=_int_env("PUBLIC_REPORT_RATE_LIMIT", 5),
             public_report_rate_window_seconds=_int_env("PUBLIC_REPORT_RATE_WINDOW_SECONDS", 3600),
             turnstile_secret_key=_env("TURNSTILE_SECRET_KEY", ""),
+            posthog_api_key=_env("POSTHOG_API_KEY", ""),
+            posthog_host=_env("POSTHOG_HOST", "https://us.i.posthog.com").rstrip("/")
+            or "https://us.i.posthog.com",
             recording_temp_dir=_env("RECORDING_TEMP_DIR", "/tmp/savestream-recordings"),
             recording_max_duration_seconds=_int_env("RECORDING_MAX_DURATION_SECONDS", 14_400),
             recording_heartbeat_seconds=_int_env("RECORDING_HEARTBEAT_SECONDS", 10),

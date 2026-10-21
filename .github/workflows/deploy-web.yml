@@ -71,6 +71,24 @@ jobs:
           grep -Eq '^VITE_API_BASE_URL=https://api\.savestream\.online/?\s*$' apps/web/.env.production \
             || { echo "VITE_API_BASE_URL is not https://api.savestream.online"; exit 1; }
 
+      - name: PostHog analytics (public project token)
+        env:
+          # The phc_ project token is public and write-only (it ships in the
+          # bundle anyway), so it lives here instead of a secret. A repository
+          # variable can override it; WEB_ENV_PRODUCTION setting the keys wins.
+          POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY || 'phc_kgs6M7zNgvUZgkVxHfiAEVyaW2JdheSw5LQuPGHTMhuo' }}
+          POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST || 'https://us.i.posthog.com' }}
+        run: |
+          envfile=apps/web/.env.production
+          if grep -Eq '^VITE_POSTHOG_(KEY|HOST)=' "$envfile"; then
+            echo "WEB_ENV_PRODUCTION sets PostHog itself; keeping it."
+            exit 0
+          fi
+          [[ -z "$POSTHOG_KEY" || "$POSTHOG_KEY" =~ ^phc_[A-Za-z0-9]{20,}$ ]] \
+            || { echo "::error::VITE_POSTHOG_KEY is not a PostHog project token (phc_...)"; exit 1; }
+          printf 'VITE_POSTHOG_KEY=%s\nVITE_POSTHOG_HOST=%s\n' "$POSTHOG_KEY" "$POSTHOG_HOST" >> "$envfile"
+          if [[ -n "$POSTHOG_KEY" ]]; then echo "Analytics: ON (${POSTHOG_HOST})"; else echo "Analytics: OFF"; fi
+
       - name: PayPal client ID from the backend
         if: inputs.checkout != 'off'
         env:

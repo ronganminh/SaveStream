@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/errors";
 import type { CreateWatchRequest, UpdateWatchRequest } from "@/api/types";
 import { domainQueryKeys } from "@/hooks/use-domain-data";
+import { track } from "@/lib/analytics";
 import { repositories } from "@/repositories";
 
 async function invalidateChannels(
@@ -20,7 +21,9 @@ export function useCreateChannelMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateWatchRequest) => repositories.channels.create(input),
-    onSuccess: async (watch) => {
+    onSuccess: async (watch, input) => {
+      track("channel_added", { auto_record: input.auto_record });
+      if (input.auto_record) track("auto_record_enabled", { where: "add_channel" });
       await invalidateChannels(queryClient, watch.id);
     },
   });
@@ -31,7 +34,8 @@ export function useUpdateChannelMutation() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateWatchRequest }) =>
       repositories.channels.update(id, input),
-    onSuccess: async (watch) => {
+    onSuccess: async (watch, { input }) => {
+      if (input.auto_record === true) track("auto_record_enabled", { where: "channel" });
       await invalidateChannels(queryClient, watch.id);
     },
   });

@@ -257,4 +257,9 @@ def handle_outbox_event(
     if topic == "recording.cleanup":
         recording_cleanup.delay(str(payload["recording_id"]))
         return
+    if topic == "analytics.capture":
+        from app.infrastructure.analytics.posthog_client import deliver_analytics_event
+
+        deliver_analytics_event(payload)
+        return
     logger.info("outbox event handled id=%s topic=%s", event_id, topic)

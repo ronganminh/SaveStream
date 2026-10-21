@@ -162,6 +162,7 @@ import {
 } from "@/mocks/demo-plan-catalog";
 import { formatCurrencyUsd, formatDate, pluralize } from "@/lib/formatters";
 import { isAdminRole, isDemoMode } from "@/lib/app-config";
+import { track } from "@/lib/analytics";
 import { ProductionLanding } from "@/components/public/landing";
 import {
   freeWebSentence,
@@ -1021,6 +1022,7 @@ export function AuthPage({
         return;
       }
       setSocialGateMessage(null);
+      track("signup_started", { method: provider });
     }
     if (isDemoMode) {
       toast("Social sign-in isn't connected in this prototype.");
@@ -1037,6 +1039,8 @@ export function AuthPage({
     } catch (error) {
       if (await openAccountStatusPage(error)) return;
       if (error instanceof ApiError && error.code === "LEGAL_CONSENT_REQUIRED") {
+        // New account from /sign-in: the consent step is its sign-up.
+        if (mode !== "sign-up") track("signup_started", { method: provider });
         setSocialConsentChecked(false);
         setSocialAupChecked(false);
         setSocialConsentError(null);
@@ -1117,12 +1121,14 @@ export function AuthPage({
         const currentUser = await signIn(email, pw);
         await navigate({ to: isAdminRole(currentUser.role) ? "/admin/overview" : "/overview" });
       } else if (mode === "sign-up") {
+        track("signup_started", { method: "email" });
         await authApi.register({
           email,
           password: pw,
           display_name: name.trim() || null,
           consent: currentLegalConsent(),
         });
+        track("signup_completed", { method: "email" });
         if (typeof window !== "undefined") {
           window.sessionStorage.setItem("savestream:pending-verification-email", email);
         }
@@ -5355,6 +5361,16 @@ function CreditBillingPage() {
     setActivePurchase(activeId);
     try {
       const result = await checkout.mutateAsync(input);
+      const order = result.payment_order;
+      track("checkout_started", {
+        pack:
+          packagesQuery.data?.items.find((item) => item.id === order.package_id)?.name ?? "unknown",
+        package_id: order.package_id,
+        credits: order.credits,
+        revenue: order.amount.amount_minor / 100,
+        currency: order.amount.currency,
+        provider: order.provider ?? "unknown",
+      });
       if (result.payment_order.provider === "paypal") {
         const providerOrderId = result.payment_order.provider_reference;
         if (!providerOrderId) {

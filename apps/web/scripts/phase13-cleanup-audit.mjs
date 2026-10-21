@@ -204,8 +204,10 @@ const localStorageUsers = walk(srcRoot)
   .filter((file) => fs.readFileSync(file, "utf8").includes("localStorage"))
   .map((file) => path.relative(root, file).replaceAll("\\", "/"));
 
+// analytics.ts: PostHog keeps only its random visitor id there (persistence:
+// "localStorage", disclosed in the Privacy Policy); no app data or tokens.
 const unexpectedStorageUsers = localStorageUsers.filter(
-  (file) => file !== "src/lib/preferences.tsx",
+  (file) => file !== "src/lib/preferences.tsx" && file !== "src/lib/analytics.ts",
 );
 if (unexpectedStorageUsers.length) {
   failures.push(
