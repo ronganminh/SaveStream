@@ -1,5 +1,6 @@
 import { apiBaseUrl } from "@/lib/app-config";
 import { ApiError, REQUEST_ID_HEADER, apiErrorFromResponse, apiNetworkError } from "@/api/errors";
+import { RequestTimeoutError, fetchWithTimeout } from "@/api/request-timeout";
 
 export type ApiResponseMode = "json" | "text" | "response";
 
@@ -17,6 +18,11 @@ export type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
 
 type ApiSessionHooks = {
   getAccessToken: () => string | null;
+  /**
+   * The access token, refreshed first when it is about to expire, so calls do
+   * not take a 401 → refresh → retry round trip every 15 minutes.
+   */
+  getFreshAccessToken?: () => Promise<string | null>;
   refreshAccessToken: () => Promise<string | null>;
   onAuthExpired: () => void;
 };
@@ -86,8 +92,17 @@ export class ApiClient {
     const requestId = requestedRequestId ?? headers.get(REQUEST_ID_HEADER) ?? createRequestId();
     headers.set(REQUEST_ID_HEADER, requestId);
 
-    const accessToken =
-      requestedAccessToken ?? (!skipAuth ? apiSessionHooks?.getAccessToken() : null);
+    let accessToken = requestedAccessToken ?? null;
+    if (!accessToken && !skipAuth && apiSessionHooks) {
+      try {
+        accessToken = apiSessionHooks.getFreshAccessToken
+          ? await apiSessionHooks.getFreshAccessToken()
+          : apiSessionHooks.getAccessToken();
+      } catch {
+        // A failed early refresh is retried by the 401 path below.
+        accessToken = apiSessionHooks.getAccessToken();
+      }
+    }
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
     if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
 
@@ -99,16 +114,33 @@ export class ApiClient {
 
     const url = buildApiUrl(this.baseUrl, path);
     let response: Response;
+    const init: RequestInit = {
+      ...requestInit,
+      credentials,
+      headers,
+      ...(requestBody !== undefined ? { body: requestBody } : {}),
+    };
+    // Plain GETs get a 15 s limit and one retry; streams (responseMode
+    // "response", e.g. recording events) and writes never do.
+    const timed =
+      (requestInit.method ?? "GET").toUpperCase() === "GET" && responseMode !== "response";
     try {
-      response = await fetch(url, {
-        ...requestInit,
-        credentials,
-        headers,
-        ...(requestBody !== undefined ? { body: requestBody } : {}),
-      });
+      response = timed
+        ? await fetchWithTimeout((input, options) => fetch(input, options), url, init)
+        : await fetch(url, init);
     } catch (error) {
       if (requestInit.signal?.aborted) throw error;
       if (error instanceof ApiError) throw error;
+      if (error instanceof RequestTimeoutError) {
+        rememberFailedRequest(requestId);
+        throw new ApiError({
+          status: 0,
+          code: "REQUEST_TIMEOUT",
+          requestId,
+          retryable: true,
+          cause: error,
+        });
+      }
       rememberFailedRequest(requestId);
       throw apiNetworkError(error, requestId);
     }

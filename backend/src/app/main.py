@@ -84,6 +84,10 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
             cfg.request_id_header,
         ],
         expose_headers=[cfg.request_id_header],
+        # Browsers cache a preflight per URL; Chrome caps this at 2 hours.
+        # The default (600 s) repeated an OPTIONS round trip for most API
+        # calls (QA latency report 2026-10-16).
+        max_age=7200,
     )
     app.add_middleware(SecurityHeadersMiddleware, settings=cfg)
     app.add_middleware(GlobalRateLimitMiddleware, settings=cfg)

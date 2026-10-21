@@ -246,4 +246,129 @@ async def main() -> None:
 asyncio.run(main())
 PY
 
+section "API latency incident window (read-only)"
+# QA 2026-10-16: GET /v1/me 30.5s from 08:38:45, POST /v1/auth/login 24.1s,
+# both done ~08:39:15.6 UTC; normal (~0.3s) right after.
+SINCE="${INCIDENT_SINCE:-2026-10-16T08:36:00Z}"
+UNTIL="${INCIDENT_UNTIL:-2026-10-16T08:42:00Z}"
+echo "window: $SINCE .. $UNTIL (now $(date -u +%FT%TZ))"
+echo "-- host"
+uptime || true
+nproc || true
+free -m || true
+df -h / | tail -n 1 || true
+cat /proc/pressure/cpu /proc/pressure/memory /proc/pressure/io 2>/dev/null || true
+docker stats --no-stream --format '{{.Name}} cpu={{.CPUPerc}} mem={{.MemUsage}} ({{.MemPerc}}) pids={{.PIDs}}' 2>/dev/null || true
+echo "-- kernel OOM / hung task messages (if readable)"
+(dmesg -T 2>/dev/null || journalctl -k --since "$SINCE" --no-pager 2>/dev/null || true) \
+  | grep -Ei 'oom|killed process|hung_task|blocked for more than' | tail -n 10 || true
+echo "-- containers: started, restarts, OOM, health log"
+for id in $(docker ps -aq --filter "label=com.docker.compose.project=savestream-production"); do
+  docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}} started={{.State.StartedAt}} restarts={{.RestartCount}} oom={{.State.OOMKilled}} status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}-{{end}}' "$id"
+  docker inspect -f '{{if .State.Health}}{{range .State.Health.Log}}   health {{.Start}} exit={{.ExitCode}}{{"\n"}}{{end}}{{end}}' "$id" | tail -n 6
+done
+echo "-- slowest API requests in the nginx timing log, last ${DAYS} day(s) (rt = total, urt = API)"
+if [[ -r /var/log/nginx/savestream-api-timing.log ]]; then
+  awk '{for (i = 1; i <= NF; i++) if ($i ~ /^rt=/) {split($i, a, "="); print a[2], $0}}' \
+    /var/log/nginx/savestream-api-timing.log \
+    | sort -rn | head -n 15 | cut -d' ' -f2- | sed -E 's/\?[^ "]*/?…/g' || true
+else
+  echo "timing log not readable yet (run deploy/vps/nginx-timing-logs.sh as root)"
+fi
+echo "-- deploy user can sudo without a password?"
+sudo -n true 2>/dev/null && echo yes || echo no
+echo "-- api processes (uvicorn workers)"
+docker top "$(compose ps -q api)" -o pid,etime,pcpu,rss,args 2>/dev/null | sed -E 's/(token|secret|password)=[^ ]*/\1=***/gi' || true
+for service in api worker scheduler outbox-dispatcher postgres redis; do
+  id="$(compose ps -q "$service" 2>/dev/null | head -n 1)"
+  [[ -n "$id" ]] || continue
+  echo "-- $service log lines in window (query strings removed)"
+  docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$id" 2>&1 \
+    | grep -Eiv 'password|secret|authorization|X-Amz-Signature' \
+    | sed -E 's/\?[^ "]*/?…/g; s/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<email>/g' \
+    | tail -n 120 || true
+done
+for name in $(docker ps -a --filter label=com.docker.compose.project=savestream-production --format '{{.Names}}' | grep -i recorder); do
+  echo "-- $name log lines in window"
+  docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$name" 2>&1 \
+    | grep -Eiv 'password|secret|authorization|X-Amz-Signature|https?://' | tail -n 40 || true
+done
+echo "-- api access lines per 5 s in window (a gap = API not answering)"
+docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$(compose ps -q api)" 2>&1 \
+  | grep -E '" [0-9]{3}' | cut -c12-19 | awk '{split($1,t,":"); s=t[3]-t[3]%5; printf "%s:%s:%02d\n", t[1], t[2], s}' \
+  | uniq -c || true
+echo "-- postgres: settings, connections, locks, long queries"
+sql "select name, setting from pg_settings where name in
+     ('max_connections','shared_buffers','log_min_duration_statement','log_lock_waits',
+      'deadlock_timeout','idle_in_transaction_session_timeout','statement_timeout');"
+sql "select coalesce(application_name,'-') as app, state, count(*),
+            max(now() - query_start)::text as longest
+     from pg_stat_activity where datname = 'savestream' group by 1, 2 order by 3 desc;"
+sql "select pid, state, wait_event_type, wait_event, (now() - query_start)::text as running,
+            left(regexp_replace(query, '\s+', ' ', 'g'), 120) as query
+     from pg_stat_activity
+     where datname = 'savestream' and state <> 'idle' and pid <> pg_backend_pid()
+     order by query_start limit 10;"
+sql "select count(*) as waiting_locks from pg_locks where not granted;"
+sql "select datname, deadlocks, temp_files, xact_rollback, blks_read, blks_hit,
+            stats_reset::text from pg_stat_database where datname = 'savestream';"
+sql "select checkpoints_timed, checkpoints_req, buffers_checkpoint, stats_reset::text
+     from pg_stat_bgwriter;" 2>/dev/null || true
+sql "select count(*) > 0 as pg_stat_statements_installed
+     from pg_extension where extname = 'pg_stat_statements';"
+sql "select calls, round(mean_exec_time::numeric, 1) as mean_ms,
+            round(max_exec_time::numeric, 1) as max_ms,
+            left(regexp_replace(query, '\s+', ' ', 'g'), 140) as query
+     from pg_stat_statements order by max_exec_time desc limit 15;" 2>/dev/null \
+  || echo "pg_stat_statements not available"
+sql "select relname, n_live_tup, n_dead_tup, last_autovacuum::text, last_autoanalyze::text
+     from pg_stat_user_tables order by n_dead_tup desc limit 8;"
+echo "-- redis"
+compose exec -T redis redis-cli INFO clients < /dev/null | grep -E 'connected_clients|blocked_clients' || true
+compose exec -T redis redis-cli INFO memory < /dev/null | grep -E 'used_memory_human|maxmemory_human|mem_fragmentation_ratio' || true
+compose exec -T redis redis-cli INFO persistence < /dev/null | grep -E 'rdb_last_bgsave_status|rdb_last_save_time|aof_enabled|rdb_bgsave_in_progress|latest_fork_usec' || true
+compose exec -T redis redis-cli SLOWLOG GET 10 < /dev/null | head -n 80 || true
+compose exec -T redis redis-cli LATENCY LATEST < /dev/null || true
+echo "-- app metrics: mean seconds per route since the api started (slowest 15)"
+compose exec -T api sh -c 'tok=""; for f in /run/secrets/metrics_token; do [ -r "$f" ] && tok="$(cat "$f")"; done; [ -n "$tok" ] || tok="${SAVESTREAM_METRICS_TOKEN:-}"; curl -s -m 10 -H "X-Metrics-Token: $tok" http://localhost:8000/metrics' < /dev/null 2>/dev/null \
+  | awk '/duration_seconds_sum\{/ {match($0,/\{[^}]*\}/); k=substr($0,RSTART,RLENGTH); s[k]=$NF}
+         /duration_seconds_count\{/ {match($0,/\{[^}]*\}/); k=substr($0,RSTART,RLENGTH); c[k]=$NF}
+         END {for (k in s) if (c[k] > 0) printf "%.3f s mean over %d  %s\n", s[k]/c[k], c[k], k}' \
+  | sort -rn | head -n 15 || true
+echo "-- api settings that bound waits (no secrets)"
+compose exec -T api python - <<'PY' 2>/dev/null || true
+from app.settings import AppSettings
+s = AppSettings.from_env()
+for name in sorted(vars(s)):
+    if any(k in name for k in ("timeout", "pool", "worker", "rate_limit", "rate_window")):
+        print(name, "=", getattr(s, name))
+PY
+
+section "Host nginx around the incident (read-only, if readable)"
+ls -la /var/log/nginx/ 2>&1 | head -n 12 || true
+for f in /var/log/nginx/savestream-api-timing.log /var/log/nginx/access.log /var/log/nginx/error.log; do
+  [[ -r "$f" ]] || { echo "$f not readable by $(id -un)"; continue; }
+  echo "-- $f lines 15:38:30-15:39:30 local (08:38:30-08:39:30 UTC), api host only, query strings removed"
+  grep -E '16/Oct/2026:15:3(8:[3-5][0-9]|9:[0-2][0-9])|2026/10/16 15:3(8:[3-5][0-9]|9:[0-2][0-9])' "$f" \
+    | grep -Eiv 'password|secret|authorization' \
+    | sed -E 's/\?[^ "]*/?…/g; s/^([0-9]+\.[0-9]+)\.[0-9]+\.[0-9]+/\1.x.x/' | tail -n 80 || true
+done
+nginx -T 2>/dev/null | grep -Ei 'worker_connections|worker_processes|keepalive_timeout|http2|log_format|proxy_read_timeout|limit_req|limit_conn' | head -n 20 \
+  || grep -rhEi 'worker_connections|worker_processes|log_format|limit_req|limit_conn' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/ 2>/dev/null | head -n 20 || true
+echo "-- auth token lifetimes"
+compose exec -T api python - <<'PY' 2>/dev/null || true
+from app.settings import AppSettings
+s = AppSettings.from_env()
+for name in sorted(vars(s)):
+    if ("ttl" in name or "expire" in name or "lifetime" in name) and "secret" not in name:
+        print(name, "=", getattr(s, name))
+PY
+echo "-- web sessions created/revoked 08:30-08:45 UTC (no user ids)"
+sql "select date_trunc('second', coalesce(revoked_at, created_at))::text as at,
+            client_type, coalesce(revoked_reason, 'created') as what, count(*)
+     from auth_sessions
+     where (created_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
+        or (revoked_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
+     group by 1, 2, 3 order by 1;"
+
 section "Done"

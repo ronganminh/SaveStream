@@ -6,17 +6,12 @@ import { repositories } from "@/repositories";
 
 const adminKeys = {
   snapshot: ["admin", "operations", "snapshot"] as const,
-  recordings: (status?: string | null) =>
-    ["admin", "recordings", status ?? "all"] as const,
+  recordings: (status?: string | null) => ["admin", "recordings", status ?? "all"] as const,
   recording: (id: string) => ["admin", "recordings", id] as const,
   audit: ["admin", "audit"] as const,
 };
 
-const terminalRecordingStatuses = new Set<RecordingStatusValue>([
-  "completed",
-  "failed",
-  "stopped",
-]);
+const terminalRecordingStatuses = new Set<RecordingStatusValue>(["completed", "failed", "stopped"]);
 
 export function useAdminOperationalSnapshotData() {
   const signedIn = useSignedIn();
@@ -37,6 +32,7 @@ export function useAdminRecordingsData(status?: RecordingStatusValue | null) {
         limit: 100,
         status: status ?? null,
       }),
+    enabled: signedIn,
     refetchInterval: 10_000,
   });
 }

@@ -79,6 +79,22 @@ def test_cors_is_allowlisted() -> None:
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
+def test_cors_preflight_is_cached_for_two_hours() -> None:
+    """QA latency report 2026-10-16: repeated OPTIONS round trips."""
+    app = create_app(settings())
+    with TestClient(app) as client:
+        response = client.options(
+            "/v1/me",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "authorization",
+            },
+        )
+    assert response.status_code == 200
+    assert response.headers["access-control-max-age"] == "7200"
+
+
 def test_readiness_reports_each_dependency() -> None:
     class Healthy:
         async def ping(self) -> bool:
