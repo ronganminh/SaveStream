@@ -61,8 +61,9 @@ Future<void> loadBundledFonts() async {
 }
 
 /// Sets a phone-sized view with animations disabled (spinners hold still).
-void usePhoneView(WidgetTester tester) {
-  tester.view.physicalSize = artboardSize * screenshotPixelRatio;
+/// [size] is for taller artboards (a scrolled list drawn in full).
+void usePhoneView(WidgetTester tester, {Size size = artboardSize}) {
+  tester.view.physicalSize = size * screenshotPixelRatio;
   tester.view.devicePixelRatio = screenshotPixelRatio;
   tester.view.padding = FakeViewPadding.zero;
   tester.view.viewPadding = FakeViewPadding.zero;
