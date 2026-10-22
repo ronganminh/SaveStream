@@ -57,7 +57,7 @@ class _AdPrivacyScreenState extends ConsumerState<AdPrivacyScreen> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final SsV2Palette palette = SsV2Palette.of(context);
-    final bool personalized = ref.watch(personalizedAdsProvider).value ?? false;
+    final bool personalized = ref.watch(personalizedAdsProvider).value ?? true;
     final bool purchased =
         ref.watch(entitlementProvider).value?.hasPurchased ?? false;
     final TextStyle muted = TextStyle(

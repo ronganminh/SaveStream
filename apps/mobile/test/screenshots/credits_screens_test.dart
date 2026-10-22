@@ -13,6 +13,7 @@ import 'package:savestream_mobile/core/api/api_error.dart';
 import 'package:savestream_mobile/core/api/api_exception.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/channels/domain/repositories/watch_repository.dart';
 import 'package:savestream_mobile/features/credits/domain/credit_balance.dart';
@@ -57,6 +58,7 @@ class _Harness {
     RewardedAdOutcome adOutcome = RewardedAdOutcome.earned,
     this.rewardError,
     bool bannerConfigured = false,
+    bool privacyRequired = false,
   }) : store = FakePurchaseService(
          buyStatus: buyStatus,
          restorable: restorable,
@@ -64,6 +66,7 @@ class _Harness {
        ads = FakeAdsService(
          outcome: adOutcome,
          bannerConfigured: bannerConfigured,
+         privacyRequired: privacyRequired,
        );
 
   int minutes = 760;
@@ -156,7 +159,9 @@ void main() {
     // The ad carries the intent's SSV user id and custom data.
     expect(harness.ads.shown.single.userId, _userId);
     expect(harness.ads.shown.single.customData, 'rwd_1');
-    expect(harness.ads.shown.single.personalized, isFalse);
+    // Personalized ads are on by default (UMP still governs where it
+    // applies).
+    expect(harness.ads.shown.single.personalized, isTrue);
     expect(find.text('+5 minutes added to your balance'), findsOneWidget);
     expect(
       find.text('Optional · up to 6 a day · 3 of 6 used today'),
@@ -413,10 +418,51 @@ void main() {
     );
     await captureScreen(tester, 'AAdPrivacy');
 
-    await tester.tap(find.text('Review consent choices'));
+    await tester.tap(find.text('Review privacy choices'));
     await settle(tester);
     expect(harness.ads.consentChecks, 1);
     expect(harness.ads.privacyFormsShown, 0);
+    expect(
+      find.text(
+        'No privacy form is needed in your region. You can still turn '
+        'personalized ads off above.',
+      ),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('UMP privacy options open when UMP requires them', (
+    WidgetTester tester,
+  ) async {
+    // EEA/UK/Switzerland, or a US state with the AdMob US-states message.
+    final _Harness harness = _Harness(privacyRequired: true);
+    await pumpCredits(tester, harness, location: AppRoutes.adPrivacy);
+    await tester.tap(find.text('Review privacy choices'));
+    await settle(tester);
+    expect(harness.ads.privacyFormsShown, 1);
+  });
+
+  testWidgets('turning personalized ads off sends non-personalized requests', (
+    WidgetTester tester,
+  ) async {
+    final _Harness harness = _Harness();
+    await pumpCredits(tester, harness, location: AppRoutes.adPrivacy);
+    final Finder toggle = find.descendant(
+      of: find.byKey(const ValueKey<String>('ad-privacy-personalized')),
+      matching: find.byType(SsV2Switch),
+    );
+    expect(tester.widget<SsV2Switch>(toggle).value, isTrue);
+    await tester.tap(toggle);
+    await settle(tester);
+    expect(tester.widget<SsV2Switch>(toggle).value, isFalse);
+
+    GoRouter.of(
+      tester.element(find.byType(Scaffold).first),
+    ).go(AppRoutes.usage);
+    await settle(tester);
+    await tapKey(tester, 'credits-watch-ad');
+    expect(harness.ads.shown.single.personalized, isFalse);
     await tester.pump(const Duration(seconds: 5));
   });
 }

@@ -103,7 +103,12 @@ class RewardedAdController extends Notifier<RewardState> {
       return;
     }
 
-    final bool personalized = ref.read(personalizedAdsProvider).value ?? false;
+    bool personalized;
+    try {
+      personalized = await ref.read(personalizedAdsProvider.future);
+    } on Object {
+      personalized = true;
+    }
     final RewardedAdOutcome outcome = await ref
         .read(adsServiceProvider)
         .showRewarded(

@@ -23,7 +23,10 @@ class AdBannerSlot extends ConsumerWidget {
     if (ads == null || !ads.showBanners) return const SizedBox.shrink();
     final adsService = ref.watch(adsServiceProvider);
     if (!adsService.bannerConfigured) return const SizedBox.shrink();
-    final bool personalized = ref.watch(personalizedAdsProvider).value ?? false;
+    // Wait for the stored choice so an opted-out user never gets one
+    // personalized request; a changed choice loads a new banner.
+    final bool? personalized = ref.watch(personalizedAdsProvider).value;
+    if (personalized == null) return const SizedBox.shrink();
     return Semantics(
       container: true,
       label: context.l10n.crAdLabel,
@@ -31,7 +34,10 @@ class AdBannerSlot extends ConsumerWidget {
         padding: const EdgeInsets.only(top: 4),
         child: DefaultTextStyle.merge(
           style: TextStyle(color: SsV2Palette.of(context).textMuted),
-          child: adsService.buildBanner(personalized: personalized),
+          child: KeyedSubtree(
+            key: ValueKey<bool>(personalized),
+            child: adsService.buildBanner(personalized: personalized),
+          ),
         ),
       ),
     );

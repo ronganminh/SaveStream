@@ -29,10 +29,15 @@ abstract interface class AdsService {
   /// Returns whether ads may be requested.
   Future<bool> ensureConsent();
 
-  /// The UMP privacy options entry point is required (consent was asked).
+  /// UMP says the privacy options entry point is required
+  /// (`ConsentInformation.privacyOptionsRequirementStatus == required`): the
+  /// user is in the EEA, UK or Switzerland, or in a US state with a privacy
+  /// law whose message is turned on in AdMob (Privacy & messaging › US state
+  /// regulations).
   Future<bool> privacyOptionsRequired();
 
-  /// Opens the UMP privacy options form so the user can change consent.
+  /// Opens the UMP privacy options form (`showPrivacyOptionsForm`) so the
+  /// user can change consent or opt out under US state laws.
   Future<void> showPrivacyOptions();
 
   /// Loads and shows one rewarded ad with AdMob server-side verification:

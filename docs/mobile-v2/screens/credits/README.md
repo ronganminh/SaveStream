@@ -103,9 +103,12 @@ Recordings no longer in the first page of the list show "Recording" without the 
 Not completed) but no order id or price: payment orders store the token hash and the web list
 price, not Play's order id or the charged local price.
 
-**Ad privacy (AAdPrivacy).** "Personalized ads" is stored on the device and off by default (as
-drawn); off sends non-personalized ad requests. "Review consent choices" opens the UMP privacy
-options form when UMP requires it (EEA/UK/Switzerland); elsewhere a toast says no form is needed.
+**Ad privacy (AAdPrivacy).** "Personalized ads" is stored on the device and **on by default** (the
+owner's decision; the artboard draws it off); off sends non-personalized ad requests (npa=1). In
+the EEA, UK and Switzerland UMP's consent answer governs. "Review privacy choices" (drawn as
+"Review consent choices") opens the UMP privacy options form when UMP requires it (EEA/UK/
+Switzerland, or a US state once the US-states message is published in AdMob); elsewhere a toast
+says no form is needed.
 The purchased note shows only for accounts with `has_purchased`.
 
 **Banner (not drawn).** A 320×50 banner at the end of Home only when `ads.show_banners` (never

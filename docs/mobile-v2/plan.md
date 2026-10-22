@@ -345,7 +345,7 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 | Tương tác trong app (kênh, bản ghi) (App activity) | Có | Không | Chức năng app | |
 | **Advertising ID** (Device or other IDs) | **Có** | **Có — Google AdMob** | **Quảng cáo; chống gian lận, bảo mật** | Do SDK Google Mobile Ads thu thập (rewarded + banner). Quyền `com.google.android.gms.permission.AD_ID` do SDK merge vào manifest (không `tools:node="remove"`). App không tự đọc hay gửi Advertising ID về server SaveStream |
 | **Device or other IDs**: install id của app (`device_id`, chuỗi ngẫu nhiên 128 bit `dev_…` sinh khi cài, lưu trong secure storage) | Có | Không | Chống gian lận, bảo mật | Gửi kèm `POST /v1/rewards` khi tạo lượt xem quảng cáo thưởng: cap 6 lượt/ngày/thiết bị, cảnh báo một máy có hơn 3 tài khoản. Cũng là khoá đăng ký thiết bị cho push. Xoá cùng tài khoản |
-| **Device or other IDs**: push token FCM | Có | Không (Google FCM là bên xử lý thay mặt chúng ta) | Chức năng app (thông báo) | Gửi qua `PUT /v1/me/devices/{id}` cùng tên máy (hãng + model), phiên bản app, ngôn ngữ. Xoá khi đăng xuất hoặc xoá tài khoản |
+| **Device or other IDs**: push token FCM | Có | Không (Google FCM là bên xử lý thay mặt chúng ta) | Chức năng app (thông báo) | Gửi qua `PUT /v1/me/devices/{id}` cùng nền tảng (android/ios), phiên bản app, ngôn ngữ. **Không gửi tên máy (hãng + model)**: trường `device_name` backend còn bắt buộc nên app gửi hằng số trung tính `Android`/`iOS` (backend sẽ cho phép bỏ trường này ở PR riêng). Xoá khi đăng xuất hoặc xoá tài khoản |
 | Video bản ghi (của kênh đã xác minh) (Photos and videos) | Có | Không | Chức năng app | |
 | Crash/analytics | Không (đã bỏ firebase-analytics) | — | — | |
 
@@ -373,8 +373,12 @@ Khai báo ngoài bảng:
 - [ ] Số thưởng đặt trong AdMob không cần đổi: server luôn cộng 5 phút cloud cho mỗi lượt SSV hợp lệ từ ad unit trong allowlist.
 - [ ] Rewarded: người dùng **tự bấm** "Watch ad · +5 min". Không quảng cáo bất ngờ, không xen ngang player.
 - [ ] **Banner (quyết định cuối của chủ sản phẩm):** một banner nhỏ, chỉ cho tài khoản **chưa từng mua** (`entitlement.ads.show_banners`), đặt **ở cuối Home và chỉ ở đó**. Không bao giờ có ở màn player, mua/thanh toán, xác minh kênh (và không ở Channels, Library). Không che nút. Mua bất kỳ gói nào thì tắt banner.
-- [ ] Công tắc "Personalized ads" (Settings › Ad privacy choices) **mặc định TẮT** (quảng cáo không cá nhân hoá) trong khi chờ chủ sản phẩm quyết. Công tắc lưu trên máy, áp cho cả rewarded và banner.
-- [ ] UMP consent cho EEA/UK/Thuỵ Sĩ trước khi tải quảng cáo. Có mục "Privacy options" trong Settings để mở lại form.
+- [ ] **Personalized ads (quyết định cuối của chủ sản phẩm), theo Google UMP:**
+  - **EEA/UK/Thuỵ Sĩ:** form đồng ý UMP hiện **trước khi tải bất kỳ quảng cáo nào** (`ensureConsent()` chạy trước mọi lần tải rewarded/banner). Nếu người dùng không đồng ý, quảng cáo không cá nhân hoá hoặc theo đúng lựa chọn trong UMP: app để SDK/UMP quyết, không thêm cờ chặt hơn.
+  - **Các bang Mỹ có luật quyền riêng tư:** app hỗ trợ thông điệp US states của UMP: khi `ConsentInformation.privacyOptionsRequirementStatus == required`, nút "Review privacy choices" (Settings › Ad privacy choices) gọi `ConsentForm.showPrivacyOptionsForm` để người dùng từ chối bán/chia sẻ dữ liệu.
+  - **Mọi nơi khác:** personalized ads **BẬT mặc định**.
+  - Người dùng luôn tắt được công tắc "Personalized ads" (Settings › Ad privacy choices). Công tắc lưu trên máy, áp cho cả rewarded và banner; tắt thì mọi request là non-personalized (`npa=1`).
+- [ ] **Chủ sản phẩm cấu hình trong AdMob console:** Privacy & messaging › **European regulations** (GDPR, đã có) và Privacy & messaging › **US state regulations**: tạo và publish thông điệp US states cho app Android `com.savestream.app`. App không cần đổi code khi bật/tắt thông điệp này.
 - [ ] Đối tượng **18+**, không nhắm trẻ em (Families policy không áp dụng). Content rating qua IARC.
 - [ ] Khai báo "Contains ads" = **Có** trong Store listing / App content (§4.2).
 - [x] `app-ads.txt` đã đăng tại `https://savestream.online/app-ads.txt` (PR #242).
@@ -425,7 +429,7 @@ Khai báo ngoài bảng:
 
 1. **Google Play Console**: tài khoản tổ chức hay cá nhân, ai là chủ? Nếu cá nhân và mới thì cần 12 tester × 14 ngày closed test.
 2. **Package name**: giữ `com.savestream.app` không? Bản v1 (có recorder) đã từng phát hành lên Play chưa, kể cả internal/closed?
-3. ~~**AdMob**: dùng lại app ID hay tạo mới? Có banner cho người chưa mua không?~~ **Đã quyết:** dùng lại AdMob v1 (`ca-app-pub-2078852906622512~2464439785`). Rewarded tự nguyện + **một banner** chỉ cho người chưa từng mua (`entitlement.ads.show_banners`), chỉ ở cuối Home, không bao giờ ở player, mua/thanh toán, xác minh (§4.4). Còn mở: mặc định của công tắc personalized ads (hiện **TẮT**).
+3. ~~**AdMob**: dùng lại app ID hay tạo mới? Có banner cho người chưa mua không?~~ **Đã quyết:** dùng lại AdMob v1 (`ca-app-pub-2078852906622512~2464439785`). Rewarded tự nguyện + **một banner** chỉ cho người chưa từng mua (`entitlement.ads.show_banners`), chỉ ở cuối Home, không bao giờ ở player, mua/thanh toán, xác minh (§4.4). **Đã quyết (personalized ads):** BẬT mặc định ngoài EEA/UK/Thuỵ Sĩ; ở EEA/UK/Thuỵ Sĩ hỏi đồng ý bằng UMP trước khi tải quảng cáo; hỗ trợ thông báo US states của UMP (chủ sản phẩm bật trong AdMob › Privacy & messaging › US state regulations); người dùng tắt được trong Settings › Ad privacy choices (§4.4).
 4. **Rewarded**: +5 phút, 6 lần/ngày. Reset theo **UTC** hay giờ địa phương? Có giới hạn tháng không?
 5. **Xác minh kênh**: đồng ý mã trong bio làm phương án chính và TikTok Login Kit (OAuth) là hướng dài hạn? Ân hạn 14 ngày cho kênh cũ trên web có ổn không? Đối tác thì admin xác minh tay?
 6. **Hoàn tiền khi credit đã tiêu**: cho số dư âm và chặn ghi, hay chỉ thu hồi phần còn lại?

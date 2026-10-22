@@ -91,8 +91,11 @@ final FutureProvider<Map<String, RecordingSummary>> ledgerRecordingsProvider =
 final Provider<DateTime Function()> creditsClockProvider =
     Provider<DateTime Function()>((ref) => DateTime.now);
 
-/// The "Personalized ads" choice on Ad privacy choices (off by default).
-/// Off sends non-personalized ad requests; UMP consent still applies.
+/// The "Personalized ads" choice on Ad privacy choices (on by default, the
+/// owner's decision). Off sends non-personalized ad requests (npa=1). On
+/// leaves the choice to Google's UMP: in the EEA, UK and Switzerland the
+/// consent form answer governs, and US-state opt-outs made in the UMP
+/// privacy options form apply too; the app adds no stricter flag of its own.
 abstract interface class AdPreferencesStore {
   Future<bool> loadPersonalized();
 
@@ -100,7 +103,9 @@ abstract interface class AdPreferencesStore {
 }
 
 final class MemoryAdPreferencesStore implements AdPreferencesStore {
-  bool _value = false;
+  MemoryAdPreferencesStore({bool personalized = true}) : _value = personalized;
+
+  bool _value;
 
   @override
   Future<bool> loadPersonalized() async => _value;
@@ -115,9 +120,9 @@ final class SharedPreferencesAdPreferencesStore implements AdPreferencesStore {
   @override
   Future<bool> loadPersonalized() async {
     try {
-      return (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+      return (await SharedPreferences.getInstance()).getBool(_key) ?? true;
     } on Object {
-      return false;
+      return true;
     }
   }
 
