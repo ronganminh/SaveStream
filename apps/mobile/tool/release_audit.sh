@@ -32,7 +32,7 @@ if grep -qs "MOBILE_EXTERNAL_CHECKOUT_ENABLED" lib/core/config/app_config.dart t
   fail "legacy external checkout gate must be removed"
 fi
 
-grep -q "NotificationSettingsScreen" lib/app/router/app_router.dart ||
+grep -q "NotificationPreferencesScreen" lib/app/router/app_router.dart ||
   fail "Notifications must use the real settings screen"
 grep -q "/v1/me/notification-preferences"   lib/features/settings/data/repositories/api_notification_preferences_repository.dart ||
   fail "Notification preferences API integration is missing"
