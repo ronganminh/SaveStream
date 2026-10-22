@@ -45,7 +45,6 @@ void main() {
         writeSecureValue: (String key, String value) async {
           secureValues[key] = value;
         },
-        deviceNameLoader: () async => 'Pixel test device',
         freeStorageLoader: () async => 1024,
       );
 
@@ -63,13 +62,11 @@ void main() {
         platformOverride: DevicePlatform.ios,
         readSecureValue: (String key) async => 'dev_existing',
         writeSecureValue: (String key, String value) async {},
-        deviceNameLoader: () async => 'iPhone test device',
         freeStorageLoader: () async => 4096,
       );
 
       expect(service.platform, DevicePlatform.ios);
       expect(await service.deviceId, 'dev_existing');
-      expect(await service.deviceName, 'iPhone test device');
       expect(await service.freeStorageBytes, 4096);
     });
   });

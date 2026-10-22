@@ -58,7 +58,6 @@ void main() {
     const DeviceRegistration device = DeviceRegistration(
       deviceId: 'dev_1',
       platform: DevicePlatform.android,
-      deviceName: 'Pixel',
       appVersion: '2.0.0',
       locale: 'en',
     );

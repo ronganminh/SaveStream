@@ -85,7 +85,7 @@ void main() {
       expect(options.data, <String, Object?>{
         'platform': 'android',
         'push_token': 'push-token',
-        'device_name': 'Pixel',
+        'device_name': 'Android',
         'app_version': '2.0.0',
         'locale': 'vi',
       });
@@ -95,7 +95,6 @@ void main() {
       deviceId: 'dev/1',
       platform: DevicePlatform.android,
       pushToken: 'push-token',
-      deviceName: 'Pixel',
       appVersion: '2.0.0',
       locale: 'vi',
     );
@@ -105,6 +104,27 @@ void main() {
     ).register(device);
 
     expect(stored, same(device));
+  });
+
+  test('device registration sends no phone model, only the platform', () async {
+    final List<Object?> sent = <Object?>[];
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      sent.add((options.data as Map<String, Object?>)['device_name']);
+      return ResponseBody.fromString('', 204);
+    });
+    await ApiDeviceRepository(apiClient: _clientFor(adapter)).register(
+      const DeviceRegistration(
+        deviceId: 'dev_ios',
+        platform: DevicePlatform.ios,
+        appVersion: '2.0.0',
+        locale: 'en',
+      ),
+    );
+
+    expect(sent, <Object?>['iOS']);
   });
 
   test('watch create sends notify_on_live and paginates', () async {

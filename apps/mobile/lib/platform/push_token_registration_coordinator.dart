@@ -87,7 +87,6 @@ final class PushTokenRegistrationCoordinator {
 
     try {
       final String deviceId = await _deviceInfoService.deviceId;
-      final String deviceName = await _deviceInfoService.deviceName;
       final String appVersion = await _appVersionLoader();
       final String locale = _settings.locale.languageCode;
       final String token = _latestToken ?? '';
@@ -107,7 +106,6 @@ final class PushTokenRegistrationCoordinator {
           deviceId: deviceId,
           platform: _deviceInfoService.platform,
           pushToken: _latestToken,
-          deviceName: deviceName,
           appVersion: appVersion,
           locale: locale,
         ),
