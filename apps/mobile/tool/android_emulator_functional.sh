@@ -66,9 +66,16 @@ run_android_suite() {
     if [[ "$result" -ne 124 || "$attempt" -eq 2 ]]; then
       return "$result"
     fi
-    echo '::warning::Restarting the stuck app on the emulator after a test startup timeout.'
+    # Start the retry from a clean device state: the killed flutter tool can
+    # leave the app process and adb forwards behind, and the next run then
+    # loses its VM Service (VmServiceDisappearedException).
+    echo '::warning::Reinstalling the stuck app on the emulator after a test startup timeout.'
     adb -s "$android_device" shell am force-stop com.savestream.app || true
+    adb -s "$android_device" uninstall com.savestream.app || true
+    adb -s "$android_device" forward --remove-all || true
+    adb -s "$android_device" reverse --remove-all || true
     adb -s "$android_device" reverse tcp:18095 tcp:18095 || true
+    sleep 5
   done
 }
 
