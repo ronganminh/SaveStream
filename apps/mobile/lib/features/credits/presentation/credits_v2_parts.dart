@@ -511,7 +511,7 @@ void showCreditsToast(BuildContext context, String message) {
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         backgroundColor: const Color(0xFF2B2840),
-        elevation: 6,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         content: Text(
           message,

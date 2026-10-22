@@ -134,7 +134,6 @@ class _HistoryBody extends ConsumerWidget {
 
     final List<LedgerLine> lines = <LedgerLine>[];
     for (final CreditTransaction item in items) {
-      if (item.createdAt.toLocal().isBefore(first)) continue;
       final LedgerLine? line = _line(
         context,
         item,
