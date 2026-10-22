@@ -99,4 +99,46 @@ class NotificationFeedController extends AsyncNotifier<NotificationFeedState> {
       ),
     );
   }
+
+  /// Marks everything read at once (optimistic). Restores the previous items
+  /// and rethrows when the server refuses.
+  Future<void> markAllRead() async {
+    final NotificationFeedState? current = state.value;
+    if (current == null) return;
+    NotificationFeedState withItems(List<AppNotification> items) {
+      return NotificationFeedState(
+        items: items,
+        nextCursor: current.nextCursor,
+        isLoadingMore: current.isLoadingMore,
+        loadMoreError: current.loadMoreError,
+      );
+    }
+
+    state = AsyncData<NotificationFeedState>(
+      withItems(<AppNotification>[
+        for (final AppNotification item in current.items)
+          item.read ? item : item.copyWith(read: true),
+      ]),
+    );
+    try {
+      await ref.read(notificationsRepositoryProvider).markAllRead();
+    } on Object {
+      if (ref.mounted) {
+        state = AsyncData<NotificationFeedState>(withItems(current.items));
+      }
+      rethrow;
+    }
+  }
 }
+
+/// Whether the bell shows its unread dot. The API has no unread-count
+/// endpoint, so this reads the loaded feed pages (newest first).
+final Provider<int> unreadNotificationCountProvider = Provider<int>((ref) {
+  return ref
+          .watch(notificationFeedProvider)
+          .value
+          ?.items
+          .where((AppNotification item) => !item.read)
+          .length ??
+      0;
+});

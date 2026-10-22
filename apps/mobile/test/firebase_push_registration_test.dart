@@ -133,6 +133,9 @@ final class _TestPushService implements PushService {
       PushPermissionStatus.granted;
 
   @override
+  Future<bool> openSystemSettings() async => true;
+
+  @override
   Stream<String?> get tokenStream => _tokens.stream;
 }
 

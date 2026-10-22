@@ -33,6 +33,16 @@ final class ApiNotificationsRepository implements NotificationsRepository {
     return response.data;
   }
 
+  @override
+  Future<int> markAllRead() async {
+    final response = await _apiClient.post<int>(
+      '/v1/notifications/mark-all-read',
+      decoder: (Object? json) =>
+          (json as Map<String, Object?>)['updated'] as int? ?? 0,
+    );
+    return response.data;
+  }
+
   static NotificationPage _decodePage(Object? json) {
     final map = json as Map<String, Object?>;
     final items = map['items'] as List<Object?>;
@@ -59,8 +69,12 @@ final class ApiNotificationsRepository implements NotificationsRepository {
       },
       v2Type: switch (rawType) {
         'creator_live' => AppNotificationV2Type.creatorLive,
+        'recording_missed' => AppNotificationV2Type.recordingMissed,
         'recording_expiring' => AppNotificationV2Type.recordingExpiring,
+        'cloud_minutes_exhausted' =>
+          AppNotificationV2Type.cloudMinutesExhausted,
         'free_minutes_low' => AppNotificationV2Type.freeMinutesLow,
+        'purchase_completed' => AppNotificationV2Type.purchaseCompleted,
         _ => null,
       },
       title: map['title'] as String,
@@ -69,6 +83,7 @@ final class ApiNotificationsRepository implements NotificationsRepository {
       createdAt: DateTime.parse(map['created_at'] as String),
       resourceType: map['resource_type'] as String?,
       resourceId: map['resource_id'] as String?,
+      kind: rawType,
     );
   }
 }

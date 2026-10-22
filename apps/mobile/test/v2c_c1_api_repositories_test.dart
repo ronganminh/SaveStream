@@ -183,6 +183,51 @@ void main() {
     expect(planError.message, isNotEmpty);
   });
 
+  test('mark all read posts to the server and returns the count', () async {
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      expect(options.method, 'POST');
+      expect(options.path, '/v1/notifications/mark-all-read');
+      return _jsonResponse(200, <String, Object?>{'updated': 3});
+    });
+    final ApiNotificationsRepository repository = ApiNotificationsRepository(
+      apiClient: _clientFor(adapter),
+    );
+
+    expect(await repository.markAllRead(), 3);
+  });
+
+  test('notification preferences decode email switches', () async {
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      return _jsonResponse(200, <String, Object?>{
+        ..._notificationPreferencesJson(
+          creatorLive: true,
+          recordingExpiring: true,
+          freeMinutesLow: true,
+        ),
+        'marketing': true,
+        'email_creator_live': false,
+        'email_credits_low': false,
+        'email_supported': true,
+      });
+    });
+    final NotificationPreferences value =
+        await ApiNotificationPreferencesRepository(
+          apiClient: _clientFor(adapter),
+        ).getPreferences();
+
+    expect(value.marketing, isTrue);
+    expect(value.emailCreatorLive, isFalse);
+    expect(value.emailCreditsLow, isFalse);
+    expect(value.emailRecordingReady, isTrue);
+    expect(value.emailSupported, isTrue);
+  });
+
   test('notification preferences map V2 fields in both directions', () async {
     final _FakeAdapter adapter = _FakeAdapter((
       RequestOptions options,
@@ -208,6 +253,13 @@ void main() {
         'creator_live': true,
         'recording_expiring': false,
         'free_minutes_low': true,
+        'marketing': false,
+        'email_creator_live': true,
+        'email_recording_ready': true,
+        'email_recording_failed': true,
+        'email_recording_expiring': true,
+        'email_credits_low': true,
+        'email_credits_exhausted': true,
       });
       return _jsonResponse(
         200,
@@ -250,6 +302,7 @@ void main() {
                 _notificationJson(id: 'n2', type: 'recording_expiring'),
                 _notificationJson(id: 'n3', type: 'free_minutes_low'),
                 _notificationJson(id: 'n4', type: 'recording_missed'),
+                _notificationJson(id: 'n5', type: 'admin_system'),
               ],
               'pagination': <String, Object?>{
                 'next_cursor': null,
@@ -262,13 +315,18 @@ void main() {
 
       final page = await repository.listNotifications();
 
-      expect(page.items, hasLength(4));
+      expect(page.items, hasLength(5));
       expect(page.items[0].type, AppNotificationType.other);
       expect(page.items[0].v2Type, AppNotificationV2Type.creatorLive);
       expect(page.items[1].v2Type, AppNotificationV2Type.recordingExpiring);
       expect(page.items[2].v2Type, AppNotificationV2Type.freeMinutesLow);
       expect(page.items[3].type, AppNotificationType.other);
-      expect(page.items[3].v2Type, isNull);
+      expect(page.items[3].v2Type, AppNotificationV2Type.recordingMissed);
+      // The wire kind is kept for icons and links.
+      expect(page.items[3].kind, 'recording_missed');
+      expect(page.items[4].type, AppNotificationType.other);
+      expect(page.items[4].v2Type, isNull);
+      expect(page.items[4].kind, 'admin_system');
     },
   );
 
