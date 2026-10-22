@@ -88,6 +88,22 @@ jobs:
             echo "::error::Bundle is debug-signed"; exit 1
           fi
 
+      - name: Print upload certificate fingerprints and version
+        # Public certificate data only, to compare with the upload key
+        # certificate in Play Console (Setup > App signing).
+        run: |
+          keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab \
+            | grep -E "Owner:|SHA1:|SHA256:"
+          grep -E '^version:' pubspec.yaml
+          {
+            echo "### Android release bundle"
+            echo '```'
+            keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab \
+              | grep -E "Owner:|SHA1:|SHA256:"
+            grep -E '^version:' pubspec.yaml
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - uses: actions/upload-artifact@v4
         with:
           name: savestream-android-aab
