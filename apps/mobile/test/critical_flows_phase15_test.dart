@@ -34,11 +34,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Never miss a LIVE.'), findsOneWidget);
-
-    final Finder signIn = find.widgetWithText(OutlinedButton, 'Sign in');
-    await tester.ensureVisible(signIn);
-    await tester.tap(signIn);
+    expect(find.text('Your LIVEs, backed up automatically.'), findsOneWidget);
+    for (int i = 0; i < 2; i++) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);
@@ -51,8 +52,8 @@ void main() {
     await tester.pump();
 
     expect(session.isAuthenticated, isTrue);
-    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Hi, Alex'), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
   });
 
   testWidgets('critical flow add creator -> creator detail', (
@@ -76,7 +77,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -118,7 +119,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 

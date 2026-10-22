@@ -45,11 +45,13 @@ void registerDeviceJourneys() {
       authStatus: AppAuthStatus.unauthenticated,
     );
     await tester.pumpWidget(SaveStreamApp(config: config(), session: session));
-    await _waitFor(tester, find.text('Never miss a LIVE.'));
+    await _waitFor(tester, find.text('Your LIVEs, backed up automatically.'));
 
-    final Finder signIn = find.widgetWithText(OutlinedButton, 'Sign in');
-    await tester.ensureVisible(signIn);
-    await tester.tap(signIn);
+    for (int i = 0; i < 2; i++) {
+      await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Sign in'));
     await _waitFor(tester, find.byType(TextFormField));
     final Finder fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'alex@example.com');
@@ -67,7 +69,7 @@ void registerDeviceJourneys() {
     await tester.pumpAndSettle();
     await tester.tap(submit);
 
-    await _waitFor(tester, find.text('Welcome back, Alex Nguyen'));
+    await _waitFor(tester, find.text('Hi, Alex'));
     expect(session.isAuthenticated, isTrue);
     expect(find.text('Home'), findsWidgets);
   });
@@ -91,8 +93,8 @@ void registerDeviceJourneys() {
         ],
       ),
     );
-    await _waitFor(tester, find.byIcon(Icons.visibility_outlined));
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await _waitFor(tester, find.byKey(const ValueKey<String>('nav-channels')));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await _waitFor(tester, find.text('Ada Live'));
     await tester.tap(find.byTooltip('Add channel').first);
     await _waitFor(tester, find.byType(TextFormField));
@@ -113,7 +115,7 @@ void registerDeviceJourneys() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: config()));
     await _waitFor(tester, find.text('Recordings'));
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await _waitFor(tester, find.text('Ada Live'));
     await tester.tap(find.text('Ada Live').first);
     await _waitFor(tester, find.byType(RecordingDetailScreen));
@@ -145,8 +147,8 @@ void registerDeviceJourneys() {
     await tester.pumpWidget(
       SaveStreamApp(config: config(), settings: settings),
     );
-    await _waitFor(tester, find.text('Settings'));
-    await tester.tap(find.text('Settings'));
+    await _waitFor(tester, find.byKey(const ValueKey<String>('nav-account')));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await _waitFor(tester, find.text('Settings'));
     final BuildContext context = tester.element(find.text('Settings').first);
     GoRouter.of(context).push(AppRoutes.language);

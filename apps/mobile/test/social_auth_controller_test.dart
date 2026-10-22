@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
+import 'package:savestream_mobile/core/legal/legal_consent.dart';
 import 'package:savestream_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:savestream_mobile/features/auth/presentation/widgets/social_auth_buttons.dart';
+import 'package:savestream_mobile/features/auth/presentation/widgets/auth_v2_parts.dart';
+import 'package:savestream_mobile/l10n/l10n.dart';
 
 void main() {
   group('social auth controller', () {
@@ -70,12 +72,10 @@ void main() {
 
   group('social auth buttons', () {
     Widget host(bool showApple) => MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: SocialAuthButtons(
-          isLoading: false,
-          onProvider: (_) {},
-          showApple: showApple,
-        ),
+        body: SocialSignInButtons(onProvider: (_) {}, showApple: showApple),
       ),
     );
 
@@ -100,7 +100,10 @@ final class _FakeSocialRepository
   SocialAuthProvider? lastProvider;
 
   @override
-  Future<void> signInSocial(SocialAuthProvider provider) async {
+  Future<void> signInSocial(
+    SocialAuthProvider provider, {
+    LegalConsent? consent,
+  }) async {
     lastProvider = provider;
     if (failure case final code?) {
       throw AuthException(code);
@@ -117,6 +120,7 @@ final class _FakeSocialRepository
   Future<void> register({
     required String email,
     required String password,
+    LegalConsent? consent,
   }) async {}
 
   @override

@@ -41,28 +41,41 @@ void main() {
     expect(restored.hasCompletedIntro, isTrue);
   });
 
-  testWidgets('A04 password rule changes when eight characters are entered', (
-    WidgetTester tester,
-  ) async {
-    final AppSessionController session = AppSessionController(
-      hasCompletedOnboarding: true,
-      authStatus: AppAuthStatus.unauthenticated,
-    );
-    await tester.pumpWidget(SaveStreamApp(config: config(), session: session));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'A04 password helper turns into an error under eight characters',
+    (WidgetTester tester) async {
+      final AppSessionController session = AppSessionController(
+        hasCompletedOnboarding: true,
+        authStatus: AppAuthStatus.unauthenticated,
+      );
+      await tester.pumpWidget(
+        SaveStreamApp(config: config(), session: session),
+      );
+      await tester.pumpAndSettle();
 
-    final createLink = find.text('Create account');
-    await tester.ensureVisible(createLink);
-    await tester.tap(createLink);
-    await tester.pumpAndSettle();
+      final createLink = find.text('Create an account');
+      await tester.ensureVisible(createLink);
+      await tester.tap(createLink);
+      await tester.pumpAndSettle();
 
-    expect(find.text('At least 8 characters'), findsOneWidget);
-    final Finder fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(2), '12345678');
-    await tester.pump();
+      expect(find.text('At least 8 characters'), findsOneWidget);
+      final Finder fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), 'new@example.com');
+      await tester.enterText(fields.at(1), '1234567');
+      final Finder create = find.widgetWithText(FilledButton, 'Create account');
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pump();
 
-    expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
-  });
+      expect(find.text('Use at least 8 characters'), findsOneWidget);
+      expect(find.text('At least 8 characters'), findsNothing);
+
+      await tester.enterText(fields.at(1), '12345678');
+      await tester.pump();
+      expect(find.text('Use at least 8 characters'), findsNothing);
+      expect(find.text('At least 8 characters'), findsOneWidget);
+    },
+  );
 
   testWidgets('A1 first-run auth and onboarding reaches Home', (
     WidgetTester tester,
@@ -85,14 +98,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Never miss a LIVE.'), findsOneWidget);
+    expect(find.text('Your LIVEs, backed up automatically.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pumpAndSettle();
 
     final Finder registerFields = find.byType(TextFormField);
-    await tester.enterText(registerFields.at(0), 'Alex Nguyen');
-    await tester.enterText(registerFields.at(1), 'new@example.com');
-    await tester.enterText(registerFields.at(2), 'password-123');
+    await tester.enterText(registerFields.at(0), 'new@example.com');
+    await tester.enterText(registerFields.at(1), 'password-123');
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
     final Finder create = find.widgetWithText(FilledButton, 'Create account');
     await tester.ensureVisible(create);
     await tester.tap(create);
@@ -108,6 +126,10 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Email verified'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Go to Home'));
     await tester.pumpAndSettle();
 
     final Finder signInFields = find.byType(TextFormField);
@@ -149,7 +171,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(settings.hasCompletedIntro, isTrue);
-    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Home'), findsWidgets);
   });
 
   testWidgets('A09 skips platform recording screens on iOS', (

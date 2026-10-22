@@ -64,10 +64,14 @@ abstract final class AppRoutes {
     ).toString();
   }
 
-  static String verifyEmailLocation({String? token}) {
+  static String verifyEmailLocation({String? token, bool sent = false}) {
+    final Map<String, String> query = <String, String>{
+      if (token != null) 'token': token,
+      if (sent) 'sent': '1',
+    };
     return Uri(
       path: verifyEmail,
-      queryParameters: token == null ? null : <String, String>{'token': token},
+      queryParameters: query.isEmpty ? null : query,
     ).toString();
   }
 

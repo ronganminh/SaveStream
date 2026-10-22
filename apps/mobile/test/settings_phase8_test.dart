@@ -37,7 +37,7 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pumpAndSettle();
   }
 
@@ -193,7 +193,7 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pumpAndSettle();
 
     expect(find.text('SaveStream Pro'), findsOneWidget);

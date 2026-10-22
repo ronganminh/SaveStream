@@ -95,16 +95,16 @@ void main() {
       expect(find.byType(NavigationDestination), findsNWidgets(4));
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.byIcon(Icons.visibility_outlined));
+      await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.byIcon(Icons.video_library_outlined));
+      await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
       await tester.pumpAndSettle();
       expect(find.text('Quality'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -127,7 +127,7 @@ void main() {
 
       expect(find.byTooltip('Add channel'), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.visibility_outlined));
+      await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 

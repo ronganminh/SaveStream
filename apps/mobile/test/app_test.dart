@@ -11,6 +11,7 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
+import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
@@ -53,9 +54,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    // The Home tab opens with the V2 greeting header instead of an app bar.
-    expect(find.byType(SsLargeHeader), findsOneWidget);
-    expect(find.byTooltip('Notifications'), findsOneWidget);
+    // The Home tab opens with the v2 header (logo, greeting, bell).
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.byTooltip(RegExp(r'^Notifications')), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('notification-unread-dot')),
       findsOneWidget,
@@ -75,22 +76,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
-    expect(find.text('Cloud time available'), findsOneWidget);
-    expect(find.text('Watching 8/3'), findsOneWidget);
-    expect(find.text('Available credit'), findsNothing);
+    expect(find.text('Hi, Alex'), findsOneWidget);
+    expect(find.text('Recording time left'), findsOneWidget);
+    expect(find.text('Your channels'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
-    expect(find.text('Ada Live'), findsWidgets);
-    expect(find.text('Cloud'), findsWidgets);
     expect(find.textContaining('on this device'), findsNothing);
-    expect(find.text('Record now'), findsWidgets);
-    expect(find.text('View Pro'), findsOneWidget);
-    expect(
-      tester
-          .widgetList<SsAvatar>(find.byType(SsAvatar))
-          .any((SsAvatar avatar) => avatar.isLive),
-      isTrue,
-    );
+    expect(find.text('Advertisement'), findsNothing);
+    expect(find.byType(SsV2Avatar), findsWidgets);
   });
 
   testWidgets('renders skeleton while the home dashboard is loading', (
@@ -101,7 +93,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(SsSkeleton), findsWidgets);
+    expect(find.byType(HomeSkeleton), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
@@ -114,7 +106,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add your channel to get started'), findsOneWidget);
+    expect(find.text('Get set up'), findsOneWidget);
+    expect(find.text('Recording happens on our servers'), findsOneWidget);
     expect(find.text('Advertisement'), findsNothing);
   });
 
@@ -149,28 +142,22 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Never miss a LIVE.'), findsOneWidget);
-    expect(find.text('Theme: System'), findsOneWidget);
+    expect(find.text('Your LIVEs, backed up automatically.'), findsOneWidget);
+    expect(find.text('Skip'), findsOneWidget);
 
-    // Language can be switched before signing in.
-    await tester.ensureVisible(find.text('English'));
-    await tester.tap(find.text('English'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
     await tester.pumpAndSettle();
-    expect(find.text('Không bỏ lỡ LIVE nào.'), findsOneWidget);
-    await tester.ensureVisible(find.text('Tiếng Việt'));
-    await tester.tap(find.text('Tiếng Việt'));
+    expect(find.text('Add the channels you own.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
     await tester.pumpAndSettle();
+    expect(find.text('Prove it’s yours with a bio code.'), findsOneWidget);
+    expect(find.text('Skip'), findsNothing);
 
-    final Finder createAccount = find.widgetWithText(
-      FilledButton,
-      'Create account',
-    );
-    await tester.ensureVisible(createAccount);
-    await tester.tap(createAccount);
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pumpAndSettle();
 
     expect(session.hasCompletedOnboarding, isTrue);
-    expect(find.text('Never miss a LIVE.'), findsNothing);
+    expect(find.text('Create your account'), findsOneWidget);
     expect(find.byType(TextFormField), findsWidgets);
   });
 
@@ -183,8 +170,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pump();
 
-    expect(find.text('Enter your email.'), findsOneWidget);
-    expect(find.text('Enter your password.'), findsOneWidget);
+    expect(find.text('Enter your email'), findsOneWidget);
+    expect(find.text('Enter your password'), findsOneWidget);
   });
 
   testWidgets('signs in through mock auth repository', (
@@ -204,8 +191,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
+    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.text('Hi, Alex'), findsOneWidget);
   });
 
   testWidgets('shows invalid credentials from mock auth repository', (
@@ -225,7 +212,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pump();
 
-    expect(find.text('The email or password is incorrect.'), findsOneWidget);
+    expect(
+      find.textContaining('Wrong email or password.', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.text('Incorrect password'), findsOneWidget);
   });
 
   testWidgets('registers then verifies email and returns to sign in', (
@@ -236,15 +227,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final createLink = find.text('Create account');
+    final createLink = find.text('Create an account');
     await tester.ensureVisible(createLink);
     await tester.tap(createLink);
     await tester.pumpAndSettle();
 
     final Finder fields = find.byType(TextFormField);
-    await tester.enterText(fields.at(0), 'Alex Nguyen');
-    await tester.enterText(fields.at(1), 'new@example.com');
-    await tester.enterText(fields.at(2), 'password-123');
+    await tester.enterText(fields.at(0), 'new@example.com');
+    await tester.enterText(fields.at(1), 'password-123');
 
     final Finder createAccountButton = find.widgetWithText(
       FilledButton,
@@ -252,12 +242,28 @@ void main() {
     );
     await tester.ensureVisible(createAccountButton);
     await tester.pumpAndSettle();
+    // Without the 18+/Terms/Privacy/AUP box ticked nothing is sent.
+    await tester.tap(createAccountButton);
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        'You must be 18+ and accept the Terms, Privacy Policy and '
+        'Acceptable Use Policy to continue.',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byType(Checkbox));
+    await tester.pump();
     await tester.tap(createAccountButton);
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('Verify email'), findsOneWidget);
-    expect(find.textContaining('new@example.com'), findsOneWidget);
+    expect(find.text('Check your email'), findsOneWidget);
+    expect(
+      find.textContaining('new@example.com', findRichText: true),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Resend in '), findsOneWidget);
 
     final GoRouter router = GoRouter.of(
       tester.element(find.byType(VerifyEmailScreen)),
@@ -269,7 +275,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('Email verified'), findsOneWidget);
+    expect(find.text('+10 free minutes'), findsOneWidget);
+    // Verifying by link does not sign in; Home leads to sign in first.
+    await tester.tap(find.widgetWithText(TextButton, 'Go to Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome back'), findsOneWidget);
   });
 
   testWidgets('forgot password reaches generic sent state', (
@@ -288,7 +299,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('Check your email'), findsOneWidget);
+    expect(find.text('Check your inbox'), findsOneWidget);
+    expect(find.textContaining('alex@example.com'), findsOneWidget);
   });
 
   testWidgets('reset password accepts backend token contract', (
@@ -307,7 +319,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final GoRouter router = GoRouter.of(
-      tester.element(find.text('Check your email')),
+      tester.element(find.text('Check your inbox')),
     );
     router.go(
       AppRoutes.resetPasswordLocation(token: 'password-reset-token-123456'),
@@ -321,10 +333,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('New password saved'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    expect(find.text('Password updated'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
-    expect(find.text('Sign in'), findsWidgets);
+    expect(find.text('Welcome back'), findsOneWidget);
   });
 
   testWidgets('navigates mock channel detail and preserves tab stack', (
@@ -333,7 +345,7 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -345,9 +357,9 @@ void main() {
     expect(find.text('Channel detail'), findsOneWidget);
     expect(find.text('@ada_live'), findsOneWidget);
 
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
 
     expect(find.text('Channel detail'), findsOneWidget);
@@ -358,7 +370,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -379,7 +391,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -399,7 +411,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -442,7 +454,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pumpAndSettle();
 
     final ProviderContainer container = ProviderScope.containerOf(
@@ -479,7 +491,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'Studio North');
@@ -503,7 +515,7 @@ void main() {
     (WidgetTester tester) async {
       await tester.pumpWidget(SaveStreamApp(config: testConfig()));
       await tester.pump();
-      await tester.tap(find.text('Recordings'));
+      await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
       await tester.pumpAndSettle();
 
       final Finder allFilter = find.widgetWithText(ChoiceChip, 'All');
@@ -560,7 +572,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Ada Live'));
@@ -595,7 +607,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Recordings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
     await tester.pumpAndSettle();
 
     final GoRouter router = GoRouter.of(
@@ -666,7 +678,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pump();
     final BuildContext settingsContext = tester.element(
       find.text('Settings').first,
@@ -689,7 +701,7 @@ void main() {
       SaveStreamApp(config: testConfig(), settings: settings),
     );
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pump();
 
     final BuildContext settingsContext = tester.element(
@@ -729,7 +741,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pump();
 
     final BuildContext settingsContext = tester.element(
@@ -752,7 +764,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
-    await tester.tap(find.text('Settings'));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
     await tester.pump();
 
     final BuildContext settingsContext = tester.element(
@@ -785,7 +797,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
 
     expect(find.byType(SsSkeleton), findsWidgets);
@@ -798,7 +810,7 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
@@ -820,8 +832,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Trang chủ'), findsOneWidget);
-    expect(find.text('Theo dõi'), findsWidgets);
+    expect(find.text('Trang chủ'), findsWidgets);
+    expect(find.text('Kênh'), findsWidgets);
 
     final MaterialApp app = tester.widget<MaterialApp>(
       find.byType(MaterialApp),

@@ -1,17 +1,14 @@
-/// A05 — Forgot password.
+/// AForgot — request a password reset link.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
-import '../../../app/theme/ss_tokens.dart';
-import '../../../core/widgets/savestream_widgets.dart';
+import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/repositories/auth_repository.dart';
-import 'auth_validation.dart';
 import 'controllers/auth_controller.dart';
-import 'widgets/auth_failure_banner.dart';
-import 'widgets/auth_scaffold.dart';
+import 'widgets/auth_v2_parts.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({
@@ -28,9 +25,9 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   late final AuthController _controller;
+  String? _emailError;
 
   @override
   void initState() {
@@ -50,7 +47,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _emailError = validateEmail(context.l10n, _emailController.text);
+    });
+    if (_emailError != null) return;
     final String email = _emailController.text.trim();
     final bool sent = await _controller.forgotPassword(email: email);
     if (sent && mounted) {
@@ -58,52 +58,60 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.signIn);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AuthScaffold(
-      title: l10n.forgotPasswordTitle,
-      subtitle: l10n.forgotPasswordSubtitle,
-      showBackButton: true,
-      onBack: () => context.go(AppRoutes.signIn),
+    return SsV2Page(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
-          return Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (_controller.failure != null) ...<Widget>[
-                  AuthFailureBanner(failure: _controller.failure!),
-                  const SizedBox(height: SsSpacing.lg),
-                ],
-                SsTextField(
-                  label: l10n.emailLabel,
-                  hintText: l10n.emailHint,
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.mail_outline_rounded,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
-                  validator: (String? value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return l10n.emailRequiredMessage;
-                    }
-                    if (!AuthValidation.isEmail(value)) {
-                      return l10n.emailInvalidMessage;
-                    }
-                    return null;
-                  },
+          final AuthFailureCode? failure = _controller.failure;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SsV2Header(onBack: _back),
+              Expanded(
+                child: SsV2FillScroll(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+                  gap: 20,
+                  children: <Widget>[
+                    SsV2TitleBlock(
+                      title: l10n.v2ForgotTitle,
+                      subtitle: Text(l10n.v2ForgotSubtitle),
+                    ),
+                    if (failure != null) AuthErrorBanner(failure: failure),
+                    SsV2TextField(
+                      label: l10n.v2EmailLabel,
+                      controller: _emailController,
+                      errorText: _emailError,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const <String>[AutofillHints.email],
+                      onSubmitted: (_) => _submit(),
+                      onChanged: (_) {
+                        if (_emailError != null) {
+                          setState(() => _emailError = null);
+                        }
+                      },
+                    ),
+                    const Spacer(),
+                    SsV2Button(
+                      label: l10n.v2SendResetLink,
+                      isLoading: _controller.isLoading,
+                      onPressed: _submit,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: SsSpacing.xl),
-                SsPrimaryButton(
-                  label: l10n.sendResetLinkAction,
-                  isLoading: _controller.isLoading,
-                  onPressed: _submit,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

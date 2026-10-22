@@ -1,18 +1,14 @@
-/// A03 · A03-error — Sign in.
+/// ASignIn · ASignInError · AGoogleLoading · AGoogleError — Sign in.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
-import '../../../app/theme/ss_tokens.dart';
-import '../../../core/widgets/savestream_widgets.dart';
+import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/repositories/auth_repository.dart';
-import 'auth_validation.dart';
 import 'controllers/auth_controller.dart';
-import 'widgets/auth_failure_banner.dart';
-import 'widgets/auth_scaffold.dart';
-import 'widgets/social_auth_buttons.dart';
+import 'widgets/auth_v2_parts.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({
@@ -31,10 +27,12 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   late final AuthController _controller;
+  String? _emailError;
+  String? _passwordError;
+  bool _showGoogleError = false;
 
   @override
   void initState() {
@@ -43,6 +41,8 @@ class _SignInScreenState extends State<SignInScreen> {
       repository: widget.repository,
       session: widget.session,
     );
+    final String? pending = widget.session.pendingVerificationEmail;
+    if (pending != null) _emailController.text = pending;
   }
 
   @override
@@ -54,8 +54,15 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> _submit() async {
+    final AppLocalizations l10n = context.l10n;
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _emailError = validateEmail(l10n, _emailController.text);
+      _passwordError = _passwordController.text.isEmpty
+          ? l10n.v2PasswordRequired
+          : null;
+    });
+    if (_emailError != null || _passwordError != null) return;
     final bool signedIn = await _controller.signIn(
       email: _emailController.text.trim(),
       password: _passwordController.text,
@@ -67,9 +74,7 @@ class _SignInScreenState extends State<SignInScreen> {
           mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Signed in, but Google/Apple linking did not finish.',
-            ),
+            content: Text('Signed in, but Google linking did not finish.'),
           ),
         );
       }
@@ -77,10 +82,19 @@ class _SignInScreenState extends State<SignInScreen> {
     }
   }
 
-  Future<void> _socialSignIn(SocialAuthProvider provider) async {
-    final signedIn = await _controller.signInSocial(provider);
-    if (signedIn && mounted) {
+  Future<void> _google() => _social(SocialAuthProvider.google);
+
+  Future<void> _social(SocialAuthProvider provider) async {
+    setState(() => _showGoogleError = false);
+    final bool signedIn = await _controller.signInSocial(provider);
+    if (!mounted) return;
+    if (signedIn) {
       widget.onSignedIn?.call();
+      return;
+    }
+    final AuthFailureCode? failure = _controller.failure;
+    if (failure != null && isGoogleScreenFailure(failure)) {
+      setState(() => _showGoogleError = true);
     }
   }
 
@@ -94,118 +108,143 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AuthScaffold(
-      title: l10n.signInTitle,
-      showBackButton: true,
-      onBack: _back,
+    return SsV2Page(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
-          final AuthFailureCode? failure = _controller.failure;
-          final bool invalidCredentials =
-              failure == AuthFailureCode.invalidCredentials;
-
-          return AutofillGroup(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  if (failure != null && !invalidCredentials) ...<Widget>[
-                    AuthFailureBanner(
-                      failure: failure,
-                      actionLabel: failure == AuthFailureCode.emailNotVerified
-                          ? l10n.verifyEmailAction
-                          : null,
-                      onAction: failure == AuthFailureCode.emailNotVerified
-                          ? () => context.go(AppRoutes.verifyEmail)
-                          : null,
-                    ),
-                    const SizedBox(height: SsSpacing.lg),
-                  ],
-                  SocialAuthButtons(
-                    isLoading: _controller.isLoading,
-                    onProvider: (provider) => _socialSignIn(provider),
-                  ),
-                  SsTextField(
-                    label: l10n.emailLabel,
-                    hintText: l10n.emailHint,
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.mail_outline_rounded,
-                    autofillHints: const <String>[AutofillHints.email],
-                    textInputAction: TextInputAction.next,
-                    validator: (String? value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.emailRequiredMessage;
-                      }
-                      if (!AuthValidation.isEmail(value)) {
-                        return l10n.emailInvalidMessage;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: SsSpacing.md),
-                  SsPasswordField(
-                    label: l10n.passwordLabel,
-                    hintText: 'Password',
-                    controller: _passwordController,
-                    autofillHints: const <String>[AutofillHints.password],
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => _submit(),
-                    validator: (String? value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.passwordRequiredMessage;
-                      }
-                      return null;
-                    },
-                  ),
-                  if (invalidCredentials) ...<Widget>[
-                    const SizedBox(height: SsSpacing.xs),
-                    Text(
-                      l10n.invalidCredentialsMessage,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: SsTextAction(
-                      label: l10n.forgotPasswordAction,
-                      onPressed: _controller.isLoading
-                          ? null
-                          : () => context.push(AppRoutes.forgotPassword),
-                    ),
-                  ),
-                  const SizedBox(height: SsSpacing.sm),
-                  SsPrimaryButton(
-                    label: l10n.signInAction,
-                    isLoading: _controller.isLoading,
-                    onPressed: _submit,
-                  ),
-                  const SizedBox(height: SsSpacing.md),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      Text(l10n.noAccountPrompt),
-                      SsTextAction(
-                        label: l10n.createAccountAction,
-                        onPressed: _controller.isLoading
-                            ? null
-                            : () => context.push(AppRoutes.register),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
+          if (_controller.socialInProgress) {
+            return GoogleSignInLoadingBody(onCancel: _controller.cancelSocial);
+          }
+          if (_showGoogleError) {
+            return GoogleSignInErrorBody(
+              onRetry: _google,
+              onUseEmail: () {
+                _controller.clearFailure();
+                setState(() => _showGoogleError = false);
+              },
+            );
+          }
+          return _buildForm(context);
         },
       ),
+    );
+  }
+
+  Widget _buildForm(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final SsV2Palette palette = SsV2Palette.of(context);
+    final AuthFailureCode? failure = _controller.failure;
+    final bool invalidCredentials =
+        failure == AuthFailureCode.invalidCredentials;
+    final bool busy = _controller.isLoading;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        SsV2Header(onBack: _back),
+        Expanded(
+          child: AutofillGroup(
+            child: SsV2FillScroll(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+              gap: 18,
+              children: <Widget>[
+                SsV2TitleBlock(
+                  title: l10n.v2SignInTitle,
+                  subtitle: Text(l10n.v2SignInSubtitle),
+                ),
+                if (failure != null)
+                  AuthErrorBanner(
+                    failure: failure,
+                    actions: <Widget>[
+                      if (failure == AuthFailureCode.emailNotVerified)
+                        SsV2Button(
+                          label: l10n.v2ResendLink,
+                          size: SsV2ButtonSize.small,
+                          expand: false,
+                          onPressed: () {
+                            widget.session.setPendingVerificationEmail(
+                              _emailController.text.trim(),
+                            );
+                            context.push(AppRoutes.verifyEmail);
+                          },
+                        ),
+                      if (failure == AuthFailureCode.consentRequired)
+                        SsV2Button(
+                          label: l10n.v2CreateAccount,
+                          size: SsV2ButtonSize.small,
+                          expand: false,
+                          onPressed: () => context.push(AppRoutes.register),
+                        ),
+                    ],
+                  ),
+                SocialSignInButtons(enabled: !busy, onProvider: _social),
+                SsV2OrDivider(label: l10n.v2Or),
+                SsV2TextField(
+                  label: l10n.v2EmailLabel,
+                  controller: _emailController,
+                  errorText: _emailError,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const <String>[AutofillHints.email],
+                  onChanged: (_) {
+                    if (_emailError != null) {
+                      setState(() => _emailError = null);
+                    }
+                  },
+                ),
+                SsV2PasswordField(
+                  label: l10n.v2PasswordLabel,
+                  controller: _passwordController,
+                  errorText:
+                      _passwordError ??
+                      (invalidCredentials ? l10n.v2IncorrectPassword : null),
+                  showLabel: l10n.v2ShowPassword,
+                  hideLabel: l10n.v2HidePassword,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const <String>[AutofillHints.password],
+                  onSubmitted: (_) => _submit(),
+                  onChanged: (_) {
+                    if (_passwordError != null) {
+                      setState(() => _passwordError = null);
+                    }
+                    if (invalidCredentials) _controller.clearFailure();
+                  },
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: SsV2Link(
+                    label: l10n.v2ForgotPassword,
+                    onPressed: busy
+                        ? null
+                        : () => context.push(AppRoutes.forgotPassword),
+                  ),
+                ),
+                const Spacer(),
+                SsV2Button(
+                  label: l10n.v2SignIn,
+                  isLoading: busy,
+                  onPressed: _submit,
+                ),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  children: <Widget>[
+                    Text(
+                      '${l10n.v2NoAccountPrompt} ',
+                      style: TextStyle(fontSize: 14, color: palette.textMuted),
+                    ),
+                    SsV2Link(
+                      label: l10n.v2CreateAnAccount,
+                      onPressed: busy
+                          ? null
+                          : () => context.push(AppRoutes.register),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
