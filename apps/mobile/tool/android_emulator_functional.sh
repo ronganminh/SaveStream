@@ -50,10 +50,12 @@ run_android_suite() {
   local label="$1"
   local deadline="$2"
   shift 2
-  local attempt result logfile
+  local attempt result logfile since
   for attempt in 1 2; do
     logfile="build/ci/android-${label}.txt"
     echo "Android ${label} device test attempt ${attempt}/2 (limit ${deadline}s)"
+    # Device clock, for reading only this attempt's logcat afterwards.
+    since="$(adb -s "$android_device" shell date "'+%m-%d %H:%M:%S.000'" 2>/dev/null | tr -d '\r' || true)"
     if python3 tool/ci_deadline.py --seconds "$deadline" -- \
       flutter test "$@" -d "$android_device" --reporter expanded \
       2>&1 | tee "$logfile"; then
@@ -64,10 +66,27 @@ run_android_suite() {
       echo "::warning::Android ${label} attempt ${attempt} exited ${result}"
     fi
     # Retry once only for infrastructure: a startup hang (timeout, exit 124)
-    # or the emulator dropping off adb mid-run ("device offline"). Test
-    # assertion failures are never retried.
+    # or the emulator dropping off adb mid-run. The drop shows either as
+    # "device offline" from flutter, or only on the device: adbd logs
+    # "host-N: offline", flutter loses the VM Service, every test "did not
+    # complete" and it exits 79 (no test finished). Test assertion failures
+    # are never retried.
     local offline=0
     if grep -q 'device offline' "$logfile"; then
+      offline=1
+    fi
+    # Say why it failed: did adb drop the host, or did the app die?
+    local adbd_log app_pid
+    adbd_log="$(adb -s "$android_device" logcat -d ${since:+-T "$since"} -s adbd 2>/dev/null || true)"
+    app_pid="$(adb -s "$android_device" shell pidof com.savestream.app 2>/dev/null | tr -d '\r' || true)"
+    {
+      echo "--- ${label} attempt ${attempt} diagnostics (exit ${result})"
+      echo "app process: ${app_pid:-not running}"
+      echo "adbd since ${since:-boot}:"
+      printf '%s\n' "$adbd_log" | grep -E 'host-[0-9]+: (offline|connection terminated)|flushing socket' \
+        || echo '(no adb transport drop logged)'
+    } | tee -a "build/ci/android-${label}-diagnostics.txt"
+    if printf '%s\n' "$adbd_log" | grep -qE 'host-[0-9]+: offline'; then
       offline=1
     fi
     if [[ "$attempt" -eq 2 || ( "$result" -ne 124 && "$offline" -eq 0 ) ]]; then
