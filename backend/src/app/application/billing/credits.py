@@ -89,6 +89,7 @@ class BillingCreditService:
         )
         self.session.add(entry)
         await self.session.flush()
+        await self._settle_refund_debt(account, payment_order_id=payment_order_id)
         from app.application.watches.resume import resume_credit_paused_watches
 
         await resume_credit_paused_watches(self.session, user_id)
@@ -208,11 +209,16 @@ class BillingCreditService:
         account = await self._account(user_id)
         reserved = await self._reserved(account.id)
         removable = max(account.posted_balance - reserved, 0)
-        deducted = min(max(credits, 0), removable)
-        if deducted <= 0:
+        requested = max(credits, 0)
+        deducted = min(requested, removable)
+        # Credits already spent can't be taken back: the rest becomes a debt
+        # that blocks recording until the next purchase pays it off.
+        debt = requested - deducted
+        if deducted <= 0 and debt <= 0:
             return 0
 
         account.posted_balance -= deducted
+        account.refund_debt = (account.refund_debt or 0) + debt
         self.session.add(
             CreditLedgerEntry(
                 account_id=account.id,
@@ -227,8 +233,38 @@ class BillingCreditService:
                     "source": "store_notification",
                     "requested_credits": credits,
                     "deducted_credits": deducted,
+                    "refund_debt_added": debt,
                 },
             )
         )
         await self.session.flush()
         return deducted
+
+    async def _settle_refund_debt(
+        self, account: CreditAccount, *, payment_order_id: uuid.UUID
+    ) -> int:
+        """Pay an unpaid store refund out of a new purchase."""
+        debt = account.refund_debt or 0
+        if debt <= 0:
+            return 0
+        reserved = await self._reserved(account.id)
+        paid = min(debt, max(account.posted_balance - reserved, 0))
+        if paid <= 0:
+            return 0
+        account.posted_balance -= paid
+        account.refund_debt = debt - paid
+        self.session.add(
+            CreditLedgerEntry(
+                account_id=account.id,
+                user_id=account.user_id,
+                entry_type="refund",
+                amount=-paid,
+                balance_after=account.posted_balance,
+                reference_type="store_refund_debt",
+                reference_id=str(payment_order_id),
+                reference_key=f"store-refund-debt:{payment_order_id}",
+                details={"settled_credits": paid, "refund_debt_left": account.refund_debt},
+            )
+        )
+        await self.session.flush()
+        return paid

@@ -43,6 +43,14 @@ def create_celery_app(settings: AppSettings | None = None) -> Celery:
                 "task": "savestream.watch.verification_reminders",
                 "schedule": 3600.0,
             },
+            "google-play-retry": {
+                "task": "savestream.billing.google_play_retry",
+                "schedule": 1800.0,
+            },
+            "google-play-voided": {
+                "task": "savestream.billing.google_play_voided",
+                "schedule": 86400.0,
+            },
             "creator-avatar-refresh": {
                 "task": "savestream.creators.avatar_refresh",
                 "schedule": 600.0,

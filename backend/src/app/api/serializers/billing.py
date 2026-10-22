@@ -22,7 +22,8 @@ def package_response(package: CreditPackage) -> CreditPackageResponse:
                 app_store=package.app_store_product_id,
                 google_play=package.google_play_product_id,
             )
-            if package.app_store_product_id and package.google_play_product_id
+            # Each store's id stands alone: Android sells without an Apple id.
+            if package.app_store_product_id or package.google_play_product_id
             else None
         ),
         cloud_minutes=package.credits,

@@ -141,6 +141,7 @@ def test_payment_api_webhook_signature_and_credit_grant_once(tmp_path) -> None:
             "posted": 0,
             "reserved": 0,
             "available": 0,
+            "refund_debt": 0,
         }
 
         event_payload = {
@@ -203,6 +204,7 @@ def test_payment_api_webhook_signature_and_credit_grant_once(tmp_path) -> None:
             "posted": 100,
             "reserved": 0,
             "available": 100,
+            "refund_debt": 0,
         }
 
     async def assert_grant_once() -> None:

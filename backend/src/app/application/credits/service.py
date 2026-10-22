@@ -102,15 +102,36 @@ class CreditService:
         )
         return int(value or 0)
 
+    async def _raise_on_refund_debt(self, user_id: uuid.UUID) -> None:
+        """A store refund that came after the credits were spent blocks
+        recording until a purchase pays it off (like a negative balance)."""
+        debt = await self.session.scalar(
+            select(CreditAccount.refund_debt).where(CreditAccount.user_id == user_id)
+        )
+        if debt:
+            raise ApplicationError(
+                "INSUFFICIENT_CREDITS",
+                "A refunded purchase must be paid off before recording",
+                status_code=402,
+                retryable=False,
+                details={"required": 0, "available": 0, "refund_debt": int(debt)},
+            )
+
     async def balance(self, user_id: uuid.UUID) -> CreditBalance:
         account = await self._account(user_id)
         if account is None:
             return CreditBalance(posted=0, reserved=0, available=0)
         reserved = await self._active_reserved(account.id)
+        debt = account.refund_debt or 0
         return CreditBalance(
             posted=account.posted_balance,
             reserved=reserved,
-            available=account.posted_balance - reserved,
+            # An unpaid store refund acts as a negative balance: nothing is
+            # spendable until a purchase pays it off.
+            available=max(account.posted_balance - reserved - debt, 0)
+            if debt
+            else account.posted_balance - reserved,
+            refund_debt=debt,
         )
 
     async def reserve_recording(
@@ -127,6 +148,7 @@ class CreditService:
         )
         if existing is not None:
             return existing, existing.reserved
+        await self._raise_on_refund_debt(user_id)
 
         rule = await PricingService(self.session).active_rule()
         snapshot = await PricingService(self.session).snapshot(rule)
@@ -170,6 +192,9 @@ class CreditService:
         user_id: uuid.UUID,
         max_duration_seconds: int,
     ) -> tuple[bool, int, int]:
+        balance = await self.balance(user_id)
+        if balance.refund_debt:
+            return False, 0, balance.available
         rule = await PricingService(self.session).active_rule()
         snapshot = await PricingService(self.session).snapshot(rule)
         # Recordings are capped to what the balance covers, so being able to pay

@@ -11,6 +11,7 @@ from app.domain.common.errors import ApplicationError
 from app.infrastructure.store.apple import AppleStoreReceiptVerifier
 from app.infrastructure.store.base import StoreReceiptVerifier, VerifiedStoreRefund
 from app.infrastructure.store.factory import store_receipt_verifier_for_platform
+from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
 
 router = APIRouter(prefix="/v1/webhooks", tags=["Billing"])
 
@@ -95,4 +96,35 @@ async def google_play_webhook(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> Response:
-    return await _store_refund_webhook("google_play", request, session)
+    verifier = store_receipt_verifier_for_platform(
+        request.app.state.settings, "google_play"
+    )
+    if not isinstance(verifier, GooglePlayReceiptVerifier):
+        # Disabled providers fail closed; fake test verifiers are refund-only.
+        return await _store_refund_webhook("google_play", request, session)
+
+    raw_body = await request.body()
+    notification = await verifier.parse_notification(raw_body, dict(request.headers))
+    if notification.kind == "refund" and notification.refund is not None:
+        return await _apply_store_refund(raw_body, verifier, notification.refund, session)
+    if (
+        notification.kind == "purchased"
+        and notification.product_id
+        and notification.store_token
+    ):
+        try:
+            raw_payload = json.loads(raw_body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            raw_payload = {}
+        try:
+            await StorePurchaseService(session, verifier).handle_purchased_notification(
+                product_id=notification.product_id,
+                store_token=notification.store_token,
+                raw_payload=raw_payload if isinstance(raw_payload, dict) else {},
+            )
+        except ApplicationError as exc:
+            if exc.retryable:
+                # Let Pub/Sub retry when Google Play itself was unavailable.
+                raise
+    # Test, subscription and cancelled-purchase notifications need no action.
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

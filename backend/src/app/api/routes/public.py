@@ -24,7 +24,7 @@ from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.creators.avatar_fetch import ALLOWED_AVATAR_TYPES, MAX_AVATAR_BYTES
 from app.infrastructure.payments.disabled import DisabledPaymentProvider
-from app.settings import AppSettings
+from app.settings import AppSettings, store_purchase_platform_enabled
 
 router = APIRouter(prefix="/v1/public", tags=["Billing"])
 
@@ -57,11 +57,10 @@ async def _checkout_channels(
 ) -> PublicCheckoutChannels:
     """Single source of truth for which purchase channels clients may offer.
 
-    SaveStream is sold on the web only (PayPal checkout), so the App Store and
-    Google Play channels are always reported closed, whatever the store
-    purchase configuration. Web checkout is open only when its admin runtime
-    flag is on *and* the payment provider is configured, mirroring the checks
-    the billing routes enforce.
+    Web checkout (PayPal) and Google Play (Android app) are each open only
+    when their admin runtime flag is on *and* the provider is configured,
+    mirroring the checks the billing routes enforce. The App Store is not
+    sold through (no iOS app yet).
     """
     runtime = RuntimeSettingsService(session, settings)
     return PublicCheckoutChannels(
@@ -70,7 +69,10 @@ async def _checkout_channels(
             and await runtime.boolean("payment_web_enabled")
         ),
         app_store=False,
-        google_play=False,
+        google_play=(
+            store_purchase_platform_enabled(settings.store_purchase_provider, "google_play")
+            and await runtime.boolean("payment_google_play_enabled")
+        ),
     )
 
 

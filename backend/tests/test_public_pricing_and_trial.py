@@ -241,24 +241,31 @@ def test_no_trial_credits_when_disabled(tmp_path) -> None:
     assert _ledger_for(settings, "plain@example.com") == (0, [])
 
 
-def test_public_pricing_never_offers_store_checkout(tmp_path) -> None:
+def test_public_pricing_offers_google_play_only_when_configured(tmp_path) -> None:
+    """Android v2 sells through Google Play; the App Store stays closed."""
     from dataclasses import replace
 
-    database_url = f"sqlite+aiosqlite:///{tmp_path / 'public-checkout.db'}"
-    settings = replace(
-        identity_settings(database_url),
-        payment_provider="disabled",
-        store_purchase_provider="google_play",
-    )
-    create_schema(database_url)
-    app = create_app(settings)
+    def checkout(name: str, provider: str) -> dict[str, bool]:
+        database_url = f"sqlite+aiosqlite:///{tmp_path / name}"
+        settings = replace(
+            identity_settings(database_url),
+            payment_provider="disabled",
+            store_purchase_provider=provider,
+        )
+        create_schema(database_url)
+        app = create_app(settings)
+        with TestClient(app, base_url="https://testserver") as client:
+            app.state.rate_limiter = InMemoryRateLimiter()
+            response = client.get("/v1/public/pricing")
+        assert response.status_code == 200
+        return response.json()["checkout"]
 
-    with TestClient(app, base_url="https://testserver") as client:
-        app.state.rate_limiter = InMemoryRateLimiter()
-        response = client.get("/v1/public/pricing")
-
-    assert response.status_code == 200
-    assert response.json()["checkout"] == {
+    assert checkout("play.db", "google_play") == {
+        "web": False,
+        "app_store": False,
+        "google_play": True,
+    }
+    assert checkout("none.db", "disabled") == {
         "web": False,
         "app_store": False,
         "google_play": False,

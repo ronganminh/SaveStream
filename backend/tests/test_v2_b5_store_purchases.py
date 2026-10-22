@@ -725,6 +725,7 @@ def test_v2_b5_live_google_verifier_gets_acknowledges_consumes_and_parses_rtdn(
             platform="google_play",
             transaction_id="GPA.1234-5678-9012-34567",
             event_id="google-rtdn-event-1",
+            store_token="purchase-token",
         )
 
     asyncio.run(run())

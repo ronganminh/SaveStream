@@ -67,7 +67,7 @@ def test_credit_and_pricing_read_endpoints(tmp_path) -> None:
 
         balance = client.get("/v1/credits/balance")
         assert balance.status_code == 200
-        assert balance.json() == {"posted": 100, "reserved": 2, "available": 98}
+        assert balance.json() == {"posted": 100, "reserved": 2, "available": 98, "refund_debt": 0}
 
         reservations = client.get("/v1/credits/reservations")
         assert reservations.status_code == 200

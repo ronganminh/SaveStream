@@ -19,8 +19,8 @@ class Money(StrictModel):
 
 
 class StoreProductIds(StrictModel):
-    app_store: str
-    google_play: str
+    app_store: str | None = None
+    google_play: str | None = None
 
 
 class CreditPackageResponse(StrictModel):
@@ -100,7 +100,7 @@ class CapturePaymentRequest(StrictModel):
 
 
 StorePurchasePlatform = Literal["app_store", "google_play"]
-StorePurchaseStatus = Literal["credited", "pending", "rejected"]
+StorePurchaseStatus = Literal["credited", "pending", "payment_pending", "rejected"]
 
 
 class StorePurchaseRequest(StrictModel):

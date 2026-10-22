@@ -15,3 +15,5 @@ class CreditBalance:
     posted: int
     reserved: int
     available: int
+    # Unpaid store refund (credits spent before the refund came in).
+    refund_debt: int = 0
