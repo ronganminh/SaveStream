@@ -100,7 +100,9 @@ run_ios_suite() {
 }
 
 # Keep every run bounded so the CI reaches log/artifact upload on failures.
-run_ios_suite functional 420 integration_test/native_journeys_test.dart
-run_ios_suite media 420 integration_test/native_media_test.dart \
+# The limit covers the Xcode build that flutter test runs first (about 4-5
+# minutes on a cold cache), so leave room for it plus app launch and tests.
+run_ios_suite functional 720 integration_test/native_journeys_test.dart
+run_ios_suite media 720 integration_test/native_media_test.dart \
   --dart-define=CI_MEDIA_HOST=127.0.0.1 \
   --dart-define=CI_MEDIA_PORT=18095

@@ -304,7 +304,8 @@ class LocalRecordingService:
                 DeviceRegistration.device_id == payload.device_id,
             )
         )
-        device_name = device.device_name if device is not None else payload.device_id
+        # Device registrations no longer carry a name; fall back to the id.
+        device_name = (device.device_name if device is not None else None) or payload.device_id
 
         unlimited = entitlement.local.unlimited
         free_granted_seconds = 0

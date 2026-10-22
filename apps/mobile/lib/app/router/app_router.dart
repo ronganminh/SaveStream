@@ -37,7 +37,8 @@ import '../../features/settings/presentation/help_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
 import '../../features/settings/presentation/legal_privacy_screen.dart';
-import '../../features/settings/presentation/notification_settings_screen.dart';
+import '../../features/settings/presentation/notification_preferences_screen.dart';
+import '../../features/settings/presentation/notifications_screen.dart';
 import '../../features/settings/presentation/profile_screen.dart';
 import '../../features/settings/presentation/report_issue_screen.dart';
 import '../../features/settings/presentation/responsible_use_screen.dart';
@@ -343,6 +344,20 @@ GoRouter createAppRouter({
           );
         },
       ),
+      // Notifications inbox and preferences are full screen (no bottom bar),
+      // as drawn.
+      GoRoute(
+        path: AppRoutes.notifications,
+        builder: (BuildContext context, GoRouterState state) {
+          return const NotificationsScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.notificationPreferences,
+        builder: (BuildContext context, GoRouterState state) {
+          return const NotificationPreferencesScreen();
+        },
+      ),
       // The v2 player is full screen (no bottom bar), as drawn.
       GoRoute(
         path: '/recordings/:id',
@@ -459,12 +474,6 @@ GoRouter createAppRouter({
                     path: 'theme',
                     builder: (BuildContext context, GoRouterState state) {
                       return ThemeScreen(settings: settings);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'notifications',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return const NotificationSettingsScreen();
                     },
                   ),
                   GoRoute(

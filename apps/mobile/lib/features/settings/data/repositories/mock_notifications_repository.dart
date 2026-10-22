@@ -8,6 +8,10 @@ final class MockNotificationsRepository extends MockRepositoryBase
   MockNotificationsRepository(super.behavior);
 
   final Set<String> _readIds = <String>{};
+  bool _allRead = false;
+
+  bool _read(String id, bool seeded) =>
+      _allRead || seeded || _readIds.contains(id);
 
   List<AppNotification> get _seed => <AppNotification>[
     AppNotification(
@@ -15,7 +19,7 @@ final class MockNotificationsRepository extends MockRepositoryBase
       type: AppNotificationType.recordingReady,
       title: 'Recording ready',
       body: 'Your recording of @alex.live is ready to play.',
-      read: _readIds.contains('notification-ready'),
+      read: _read('notification-ready', false),
       createdAt: DateTime.utc(2026, 10, 2, 9),
       resourceType: 'recording',
       resourceId: 'recording-completed',
@@ -25,7 +29,7 @@ final class MockNotificationsRepository extends MockRepositoryBase
       type: AppNotificationType.recordingStarted,
       title: 'Recording started',
       body: 'SaveStream started recording @alex.live.',
-      read: true,
+      read: _read('notification-started', true),
       createdAt: DateTime.utc(2026, 10, 2, 8),
     ),
     AppNotification(
@@ -34,7 +38,7 @@ final class MockNotificationsRepository extends MockRepositoryBase
       v2Type: AppNotificationV2Type.creatorLive,
       title: 'Creator is LIVE',
       body: '@alex.live is LIVE now.',
-      read: false,
+      read: _read('notification-creator-live', false),
       createdAt: DateTime.utc(2026, 10, 2, 7, 45),
       resourceType: 'watch',
       resourceId: 'watch_001',
@@ -45,7 +49,7 @@ final class MockNotificationsRepository extends MockRepositoryBase
       v2Type: AppNotificationV2Type.recordingExpiring,
       title: 'Recording expires soon',
       body: 'A cloud recording will expire soon.',
-      read: false,
+      read: _read('notification-expiring', false),
       createdAt: DateTime.utc(2026, 10, 2, 7, 30),
       resourceType: 'recording',
       resourceId: 'recording-completed',
@@ -56,7 +60,7 @@ final class MockNotificationsRepository extends MockRepositoryBase
       v2Type: AppNotificationV2Type.freeMinutesLow,
       title: 'Free minutes are running low',
       body: 'You are close to using today\'s Free recording minutes.',
-      read: false,
+      read: _read('notification-free-minutes-low', false),
       createdAt: DateTime.utc(2026, 10, 2, 7, 15),
     ),
   ];
@@ -81,6 +85,18 @@ final class MockNotificationsRepository extends MockRepositoryBase
       empty: () => throw StateError('No notification to mark read.'),
     );
   }
+
+  @override
+  Future<int> markAllRead() {
+    return respond<int>(
+      success: () {
+        final int unread = _seed.where((item) => !item.read).length;
+        _allRead = true;
+        return unread;
+      },
+      empty: () => 0,
+    );
+  }
 }
 
 final class MockNotificationPreferencesRepository extends MockRepositoryBase
@@ -94,6 +110,7 @@ final class MockNotificationPreferencesRepository extends MockRepositoryBase
     creatorLive: true,
     recordingExpiring: true,
     freeMinutesLow: true,
+    marketing: false,
   );
 
   @override

@@ -5,6 +5,9 @@ abstract interface class NotificationsRepository {
   Future<NotificationPage> listNotifications({String? cursor});
 
   Future<AppNotification> markRead(String notificationId);
+
+  /// Marks every notification read. Returns how many changed.
+  Future<int> markAllRead();
 }
 
 abstract interface class NotificationPreferencesRepository {

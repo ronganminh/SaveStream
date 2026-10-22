@@ -61,6 +61,13 @@ def privacy_retention() -> dict[str, int]:
     return run_privacy_retention()
 
 
+@celery_app.task(name="savestream.rewards.retention")
+def rewards_retention() -> int:
+    from app.infrastructure.rewards.retention import run_reward_retention
+
+    return run_reward_retention()
+
+
 @celery_app.task(name="savestream.local_recordings.expire")
 def local_recordings_expire() -> int:
     from app.infrastructure.local_recordings.worker import (

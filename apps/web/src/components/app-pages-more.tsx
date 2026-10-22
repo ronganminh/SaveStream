@@ -1,4 +1,3 @@
-import { LEGAL_REVISION_LABEL } from "@/lib/legal";
 import { SUPPORT_RESPONSE_TIME } from "@/lib/support";
 import {
   PublicContactPage,
@@ -4087,13 +4086,19 @@ function DemoAdminErrorsPage() {
 
 /* ---------------- Public: legal, refund, contact ---------------- */
 const LEGAL_LAST_UPDATED = "October 5, 2026";
-// Terms, Privacy and Refund were revised for the web-only, PayPal-only scope;
-// sign-up consent records the same revision (lib/legal.ts).
-const LEGAL_REVISED_2026_10_14 = LEGAL_REVISION_LABEL;
-// Privacy Policy: PostHog product analytics added (owner-approved). The
+// Terms, Privacy and Refund were revised for the web-only, PayPal-only scope on
+// October 14, 2026; sign-up consent records that revision (LEGAL_REVISION_LABEL
+// and PRIVACY_VERSION in lib/legal.ts).
+// Privacy Policy: PostHog product analytics (October 21, 2026) and the
+// SaveStream Android app (October 22, 2026) added (owner-approved). The
 // consent version stays PRIVACY_VERSION 2026-10-14, so existing users are
 // not asked to agree again.
-const PRIVACY_LAST_UPDATED = "October 21, 2026";
+const PRIVACY_LAST_UPDATED = "October 22, 2026";
+// Terms and Refund Policy: Google Play purchases in the Android app added
+// (owner-approved). The consent revision stays unchanged, so existing users
+// are not asked to agree again.
+const TERMS_LAST_UPDATED = "October 22, 2026";
+const REFUND_LAST_UPDATED = "October 22, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
 const ABUSE_EMAIL = "abuse@savestream.online";
@@ -4235,7 +4240,7 @@ export function TermsPage() {
   return (
     <LegalPage
       title="Terms of Use"
-      lastUpdated={LEGAL_REVISED_2026_10_14}
+      lastUpdated={TERMS_LAST_UPDATED}
       intro={
         <p>
           These Terms govern your use of SaveStream (“SaveStream”, “we”, “us”), a software and cloud
@@ -4315,7 +4320,9 @@ export function TermsPage() {
               </p>
               <p>
                 Purchasing credits does not grant intellectual-property rights in content processed
-                or stored through SaveStream. Purchases are processed by PayPal.
+                or stored through SaveStream. Purchases on the website are processed by PayPal.
+                Purchases in the Android app are processed by Google Play under Google Play&apos;s
+                terms; refunds for app purchases are requested through Google Play.
               </p>
             </>
           ),
@@ -4403,7 +4410,7 @@ export function PrivacyPage() {
       intro={
         <p>
           This Privacy Policy explains how SaveStream processes personal information across our
-          website, API, recording workers, and cloud storage services. Contact{" "}
+          website, Android app, API, recording workers, and cloud storage services. Contact{" "}
           <MailLink email={PRIVACY_EMAIL} /> with privacy questions or requests.
         </p>
       }
@@ -4424,11 +4431,17 @@ export function PrivacyPage() {
                 media files.
               </li>
               <li>
-                Billing records, purchased credits, order references, and PayPal transaction
-                references.
+                Billing records, purchased credits, order references, PayPal transaction references,
+                and Google Play purchase tokens, order IDs, products and purchase status for
+                purchases made in the Android app.
               </li>
               <li>
                 Device, browser, IP address, locale, diagnostics, security logs, and audit events.
+              </li>
+              <li>
+                In the Android app: a random app installation identifier, a push notification token,
+                app version, and rewarded-ad confirmations, as described under SaveStream Android
+                app.
               </li>
               <li>Support, abuse, privacy, and copyright communications you send to us.</li>
               <li>
@@ -4479,11 +4492,14 @@ export function PrivacyPage() {
             <p>
               We may share the minimum necessary information with providers that help operate
               SaveStream, including Cloudflare for website infrastructure and object storage, server
-              hosting providers, Brevo for transactional email, PayPal for payments, and PostHog,
-              Inc. (United States) for product analytics. We may also disclose information when
-              required by law, to protect rights or safety, or to investigate abuse, fraud, or
-              infringement. Payment-card details are processed by PayPal and are not stored by
-              SaveStream in full.
+              hosting providers, Brevo for transactional email, PayPal for payments on the website,
+              Google (Firebase Authentication for sign-in on the website and in the Android app,
+              including Google sign-in; Google Play Billing for purchases in the Android app;
+              Firebase Cloud Messaging for push notifications; and Google AdMob for ads in the
+              Android app), and PostHog, Inc. (United States) for product analytics. We may also
+              disclose information when required by law, to protect rights or safety, or to
+              investigate abuse, fraud, or infringement. Payment-card details are processed by
+              PayPal or Google Play and are not stored by SaveStream.
             </p>
           ),
         },
@@ -4518,10 +4534,166 @@ export function PrivacyPage() {
             <p>
               The website uses essential session and preference storage. For product analytics,
               PostHog also keeps a random identifier in your browser&apos;s local storage so that
-              visits from the same browser can be counted together. We do not use advertising
-              cookies. You can clear or block this storage in your browser settings without
-              affecting how SaveStream works.
+              visits from the same browser can be counted together. The website does not use
+              advertising cookies. The Android app shows ads through Google AdMob, as described
+              under SaveStream Android app. You can clear or block this storage in your browser
+              settings without affecting how SaveStream works.
             </p>
+          ),
+        },
+        {
+          h: "SaveStream Android app",
+          p: (
+            <>
+              <p>
+                This section applies when you use the SaveStream app for Android. The rest of this
+                Policy also applies to the app. The app is a dashboard and player for your
+                SaveStream account: recordings are made on SaveStream&apos;s servers, not on your
+                device.
+              </p>
+              <p>
+                <strong>Ads (Google AdMob).</strong> The app shows ads served by Google AdMob, a
+                service of Google LLC. There are two kinds:
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  <strong>Rewarded ads</strong>, which you choose to watch to add free recording
+                  minutes to your account. They are never shown unless you tap to watch one.
+                </li>
+                <li>
+                  <strong>One small banner ad</strong> at the end of the Home screen. It is shown
+                  only to accounts that have never bought a recording pack, and it is removed after
+                  any purchase. Banner ads are never shown on the player, purchase or channel
+                  verification screens.
+                </li>
+              </ul>
+              <p>
+                To serve ads, Google&apos;s Mobile Ads SDK in the app collects information from your
+                device, including the Android Advertising ID, IP address, device and app
+                information, and how you interact with ads. Google uses this information to deliver
+                and measure ads and to prevent ad fraud and keep its services secure. SaveStream
+                does not read your Advertising ID and does not send it to our servers.
+              </p>
+              <p>
+                When you finish a rewarded ad, Google sends our server a confirmation with a
+                transaction reference, the ad unit, and a reward reference that our app created for
+                your account (server-side verification). We use it only to credit your minutes once
+                and to prevent abuse.
+              </p>
+              <p>
+                <strong>Personalized and non-personalized ads.</strong> If you are in the European
+                Economic Area, the United Kingdom or Switzerland, the app uses Google&apos;s User
+                Messaging Platform to ask for your consent before any ads are loaded. If you do not
+                consent to personalized ads, Google serves non-personalized ads or limited ads
+                according to your choices. If you are in a US state whose privacy laws give you the
+                right to opt out of the sale or sharing of personal information or of targeted
+                advertising, the app shows Google&apos;s US state privacy message, where you can opt
+                out. Elsewhere, the app requests personalized ads by default, which Google selects
+                using information such as your interests and activity. You can turn personalized ads
+                off at any time in Settings › Ad privacy choices.
+              </p>
+              <p>
+                <strong>Non-personalized ads</strong> are selected based on context, such as the app
+                you are using and your general location. They still use device identifiers for
+                frequency capping, aggregated reporting and fraud prevention. Where Google&apos;s
+                consent or privacy options apply to you, you can review or change your choices at
+                any time in Settings › Ad privacy choices › Review consent choices.
+              </p>
+              <p>
+                To learn how Google uses information from apps that use its services, see{" "}
+                <ExternalLink href="https://policies.google.com/technologies/partner-sites">
+                  https://policies.google.com/technologies/partner-sites
+                </ExternalLink>
+                . Google&apos;s Privacy Policy is at{" "}
+                <ExternalLink href="https://policies.google.com/privacy">
+                  https://policies.google.com/privacy
+                </ExternalLink>
+                .
+              </p>
+              <p>
+                <strong>Push notifications (Firebase Cloud Messaging).</strong> If you allow
+                notifications, the app registers with Firebase Cloud Messaging, a Google service,
+                and receives a push token. The app sends us that token together with a random app
+                installation identifier, the app version and your language, so we can deliver
+                notifications to the right device. We send notifications about your account, such as
+                a channel you added going LIVE, a recording starting, being ready, failing, being
+                missed or about to expire, a completed purchase, and low recording time.
+                Notification content passes through Google&apos;s servers to reach your device. We
+                do not use push notifications for advertising.
+              </p>
+              <p>
+                <strong>Purchases (Google Play Billing).</strong> Recording packs in the app are
+                sold through Google Play Billing. Google processes the payment under its own terms
+                and privacy policy; SaveStream does not receive your card or other payment details.
+                We receive from Google the purchase token and order ID, the product you bought, and
+                the status of the purchase (for example purchased, pending, refunded or cancelled),
+                and we keep a record of the order and the credits added. When you buy, the app gives
+                Google a one-way hashed (SHA-256) version of your SaveStream account ID, not your
+                email address, so we can confirm that the purchase belongs to your account.
+              </p>
+              <p>
+                Refunds for purchases made in the app are requested and handled through Google Play.
+                When Google tells us that a purchase was refunded or cancelled, we remove the
+                related credits from your account.
+              </p>
+              <p>
+                <strong>App installation identifier.</strong> The first time you open the app, it
+                creates a random identifier for that installation and stores it securely on your
+                device. It is not derived from your hardware or from the Advertising ID. We receive
+                it when the app registers for notifications and when you start a rewarded ad. We use
+                it to apply the daily limit on rewarded minutes per device, to detect one device
+                being used with many accounts, and to prevent fraud and abuse. Uninstalling the app
+                or clearing its data removes the identifier from your device.
+              </p>
+              <p>
+                <strong>Retention for app data.</strong>
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  Push tokens and device registrations are deleted when you sign out on that device,
+                  when you delete your account, or when Google reports that the token is no longer
+                  valid.
+                </li>
+                <li>
+                  Rewarded ad records (including the app installation identifier and Google&apos;s
+                  transaction reference) are kept for 12 months and then deleted automatically, or
+                  earlier if you delete your account.
+                </li>
+                <li>
+                  Purchase records from Google Play are kept after account deletion for accounting,
+                  tax, refund and dispute purposes, as described under Retention and deletion.
+                </li>
+                <li>
+                  Information that Google collects through AdMob, Firebase Cloud Messaging and
+                  Google Play is kept by Google under its own policies.
+                </li>
+              </ul>
+              <p>
+                <strong>Your choices in the app.</strong>
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  <strong>Ads:</strong> Settings › Ad privacy choices lets you turn personalized ads
+                  on or off and, where it applies, review your consent choices. You can also reset
+                  or delete your Advertising ID in your device&apos;s Android settings (Privacy ›
+                  Ads, or Google › Ads, depending on the device). Buying any recording pack removes
+                  the banner ad; rewarded ads are always optional.
+                </li>
+                <li>
+                  <strong>Notifications:</strong> Settings › Notifications lets you choose which
+                  notifications you receive. You can also turn off notifications for SaveStream in
+                  your device&apos;s Android settings.
+                </li>
+                <li>
+                  <strong>Account:</strong> you can delete your account in the app (Settings ›
+                  Security &amp; account) or at{" "}
+                  <ExternalLink href="https://savestream.online/delete-account">
+                    https://savestream.online/delete-account
+                  </ExternalLink>
+                  .
+                </li>
+              </ul>
+            </>
           ),
         },
         {
@@ -4788,16 +4960,22 @@ export function RefundPage() {
   return (
     <LegalPage
       title="Refund Policy"
-      lastUpdated={LEGAL_REVISED_2026_10_14}
+      lastUpdated={REFUND_LAST_UPDATED}
       intro={<p>This policy explains how to request a refund for a SaveStream credit purchase.</p>}
       sections={[
         {
           h: "Who processes payments",
           p: (
-            <p>
-              Web credit purchases are processed by PayPal. Your payment receipt is issued by
-              PayPal, and PayPal&apos;s terms also apply to your payment.
-            </p>
+            <>
+              <p>
+                Web credit purchases are processed by PayPal. Your payment receipt is issued by
+                PayPal, and PayPal&apos;s terms also apply to your payment.
+              </p>
+              <p>
+                Purchases made in the SaveStream Android app are processed by Google Play under
+                Google Play&apos;s terms.
+              </p>
+            </>
           ),
         },
         {
@@ -4823,6 +5001,16 @@ export function RefundPage() {
               automatically. When a refund is approved, it is issued through PayPal to your original
               payment method, and the credits from that purchase are removed from your balance.
               Credits that have already been used for recordings may reduce or rule out a refund.
+            </p>
+          ),
+        },
+        {
+          h: "Purchases in the Android app",
+          p: (
+            <p>
+              Refunds for purchases made in the Android app are requested through Google Play and
+              handled under Google Play&apos;s refund policies. When Google tells us that a purchase
+              was refunded or cancelled, we remove the related credits from your account.
             </p>
           ),
         },

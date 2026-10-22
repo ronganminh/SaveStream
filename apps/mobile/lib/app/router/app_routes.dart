@@ -36,7 +36,12 @@ abstract final class AppRoutes {
   static const String profile = '/settings/profile';
   static const String language = '/settings/language';
   static const String theme = '/settings/theme';
-  static const String notifications = '/settings/notifications';
+
+  /// The inbox (bell on Home and Channels).
+  static const String notifications = '/notifications';
+
+  /// Per-event Push / Email switches (Settings → Notifications).
+  static const String notificationPreferences = '/settings/notifications';
   static const String securityAccount = '/settings/security';
   static const String signedInDevices = '/settings/security/devices';
   static const String help = '/settings/help';

@@ -166,13 +166,14 @@ for (const text of [
   "Free mobile advertising",
   "Advertising in the Free mobile app",
   "App Store or Google Play",
-  "push token",
   "Merchant of Record",
 ]) {
   forbid("src/components/app-pages-more.tsx", text);
 }
 for (const text of [
-  "Purchases are processed by PayPal.",
+  "Purchases on the website are processed by PayPal.",
+  "Purchases in the Android app are processed by Google Play under Google Play&apos;s\n                terms; refunds for app purchases are requested through Google Play.",
+  "Refunds for purchases made in the Android app are requested through Google Play and",
   "Web credit purchases are processed by PayPal.",
   "the PayPal transaction ID from your receipt",
   "You must be at least 18 years old",

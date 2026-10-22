@@ -169,10 +169,10 @@ for (const file of ["src/components/app-pages.tsx", "src/components/app-pages-mo
 // --- Privacy Policy names PostHog (wording approved by the owner before merge) ----
 must(
   "src/components/app-pages-more.tsx",
-  "and PostHog,\n              Inc. (United States) for product analytics.",
+  "and PostHog, Inc. (United States) for product analytics.",
 );
 must("src/components/app-pages-more.tsx", 'h: "Product analytics"');
-must("src/components/app-pages-more.tsx", 'const PRIVACY_LAST_UPDATED = "October 21, 2026";');
+must("src/components/app-pages-more.tsx", 'const PRIVACY_LAST_UPDATED = "October 22, 2026";');
 must("src/components/app-pages-more.tsx", "lastUpdated={PRIVACY_LAST_UPDATED}");
 // Owner decision: no re-consent for this addition.
 must("src/lib/legal.ts", 'export const PRIVACY_VERSION = "2026-10-14";');

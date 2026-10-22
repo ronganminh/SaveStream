@@ -21,6 +21,8 @@ final class RecordingApiModel {
     this.creditReservationId,
     this.errorCode,
     this.errorMessage,
+    this.failureReason,
+    this.failureGuidance,
     this.expiresAt,
     this.minutesCharged = 0,
     this.queuePosition,
@@ -44,6 +46,11 @@ final class RecordingApiModel {
   final String? creditReservationId;
   final String? errorCode;
   final String? errorMessage;
+
+  /// Plain-English `failure_reason` / `failure_guidance` the server adds to a
+  /// failed or missed recording; null on older servers.
+  final String? failureReason;
+  final String? failureGuidance;
   final DateTime? expiresAt;
   final int minutesCharged;
   final int? queuePosition;
@@ -133,6 +140,8 @@ final class RecordingApiModel {
       ),
       errorCode: errorCode,
       errorMessage: errorMessage,
+      failureReason: _optionalText(map['failure_reason']),
+      failureGuidance: _optionalText(map['failure_guidance']),
       expiresAt: _optionalDateTime(map['expires_at'], 'expires_at'),
       minutesCharged:
           _optionalInt(map['minutes_charged'], 'minutes_charged') ?? 0,
@@ -163,6 +172,8 @@ final class RecordingApiModel {
       costCredits: actualCost?.toDouble(),
       errorCode: errorCode,
       errorMessage: errorMessage,
+      failureReason: failureReason,
+      failureGuidance: failureGuidance,
       expiresAt: expiresAt,
       minutesCharged: minutesCharged,
       queuePosition: queuePosition,
@@ -331,6 +342,14 @@ String _requiredString(Object? value, String name) {
     throw FormatException('Expected non-empty $name.');
   }
   return value.trim();
+}
+
+/// Display text that only adds to the UI: anything but a non-blank string
+/// reads as absent instead of failing the whole recording.
+String? _optionalText(Object? value) {
+  if (value is! String) return null;
+  final String trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 String? _optionalString(Object? value, String name) {

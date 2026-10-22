@@ -297,7 +297,8 @@ class DeviceRegistration(Base):
     device_id: Mapped[str] = mapped_column(String(160), nullable=False)
     platform: Mapped[str] = mapped_column(String(16), nullable=False)
     push_token: Mapped[str | None] = mapped_column(String(4096), nullable=True)
-    device_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    # No longer stored (the apps stop sending it); legacy rows were cleared.
+    device_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
     app_version: Mapped[str] = mapped_column(String(64), nullable=False)
     locale: Mapped[str] = mapped_column(String(16), nullable=False, default="en")
     created_at: Mapped[datetime] = mapped_column(

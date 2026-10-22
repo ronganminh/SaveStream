@@ -31,6 +31,13 @@ final class ApiNotificationPreferencesRepository
         'creator_live': preferences.creatorLive,
         'recording_expiring': preferences.recordingExpiring,
         'free_minutes_low': preferences.freeMinutesLow,
+        'marketing': preferences.marketing,
+        'email_creator_live': preferences.emailCreatorLive,
+        'email_recording_ready': preferences.emailRecordingReady,
+        'email_recording_failed': preferences.emailRecordingFailed,
+        'email_recording_expiring': preferences.emailRecordingExpiring,
+        'email_credits_low': preferences.emailCreditsLow,
+        'email_credits_exhausted': preferences.emailCreditsExhausted,
       },
       decoder: _decode,
     );
@@ -39,6 +46,9 @@ final class ApiNotificationPreferencesRepository
 
   static NotificationPreferences _decode(Object? json) {
     final map = json as Map<String, Object?>;
+    // Fields added after the first release default like the server does.
+    bool flag(String key, {bool fallback = true}) =>
+        map[key] as bool? ?? fallback;
     return NotificationPreferences(
       recordingStarted: map['recording_started'] as bool,
       recordingReady: map['recording_ready'] as bool,
@@ -46,6 +56,14 @@ final class ApiNotificationPreferencesRepository
       creatorLive: map['creator_live'] as bool,
       recordingExpiring: map['recording_expiring'] as bool,
       freeMinutesLow: map['free_minutes_low'] as bool,
+      marketing: flag('marketing', fallback: false),
+      emailCreatorLive: flag('email_creator_live'),
+      emailRecordingReady: flag('email_recording_ready'),
+      emailRecordingFailed: flag('email_recording_failed'),
+      emailRecordingExpiring: flag('email_recording_expiring'),
+      emailCreditsLow: flag('email_credits_low'),
+      emailCreditsExhausted: flag('email_credits_exhausted'),
+      emailSupported: flag('email_supported'),
     );
   }
 }
