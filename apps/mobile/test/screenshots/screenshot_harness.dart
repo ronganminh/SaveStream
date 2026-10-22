@@ -6,9 +6,12 @@
 // Without it the tests still render every screen and fail on layout errors.
 //
 // On the Android emulator (integration_test/auth_home_screenshots_test.dart)
-// pass --dart-define=SAVESTREAM_SCREENSHOT_DIR=device: PNGs go to the app's
-// cache folder and CI pulls them with `adb run-as`.
+// pass --dart-define=SAVESTREAM_SCREENSHOT_DIR=device: each PNG is printed as
+// base64 lines (`SS-SCREEN <name> <chunk>`) because `flutter test` uninstalls
+// the app afterwards; tool/decode_screens.py rebuilds them from the log.
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -26,10 +29,10 @@ const String _definedScreenshotDir = String.fromEnvironment(
   'SAVESTREAM_SCREENSHOT_DIR',
 );
 
+bool get _printToLog => _definedScreenshotDir == 'device';
+
 String? get screenshotDir {
-  if (_definedScreenshotDir == 'device') {
-    return '${Directory.systemTemp.path}/screens';
-  }
+  if (_printToLog) return 'device';
   if (_definedScreenshotDir.isNotEmpty) return _definedScreenshotDir;
   final String? dir = Platform.environment['SAVESTREAM_SCREENSHOT_DIR'];
   return dir == null || dir.isEmpty ? null : dir;
@@ -95,6 +98,14 @@ Future<void> captureScreen(WidgetTester tester, String name) async {
       format: ui.ImageByteFormat.png,
     );
     image.dispose();
+    if (_printToLog) {
+      final String data = base64Encode(png!.buffer.asUint8List());
+      for (int i = 0; i < data.length; i += 800) {
+        // ignore: avoid_print
+        print('SS-SCREEN $name ${data.substring(i, math.min(i + 800, data.length))}');
+      }
+      return;
+    }
     final File file = File('$dir/$name.png');
     file.parent.createSync(recursive: true);
     file.writeAsBytesSync(png!.buffer.asUint8List());
