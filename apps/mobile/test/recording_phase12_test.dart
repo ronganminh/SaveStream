@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/core/api/access_token_provider.dart';
 import 'package:savestream_mobile/core/api/api_client.dart';
@@ -13,6 +14,8 @@ import 'package:savestream_mobile/features/recordings/data/remote/recording_api_
 import 'package:savestream_mobile/features/recordings/data/remote/recording_event_source.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recording_v2_parts.dart';
+import 'package:savestream_mobile/l10n/l10n.dart';
 
 void main() {
   AppConfig config() {
@@ -331,6 +334,43 @@ void main() {
     expect(artifacts.single.sizeBytes, 1234);
     expect(first.uri, isNot(second.uri));
     expect(downloadCalls, 2);
+  });
+
+  test('prefers failure_reason and failure_guidance over error.message', () {
+    final AppLocalizations l10n = lookupAppLocalizations(const Locale('en'));
+    final RecordingSummary explained = RecordingApiModel.fromJson(
+      <String, Object?>{
+        ..._recordingJson(id: 'rec-1', status: 'failed', canStop: false),
+        'error': <String, Object?>{
+          'code': 'INTERNAL_ERROR',
+          'message': 'Artifact upload failed: s3 timeout',
+          'retryable': false,
+        },
+        'failure_reason': ' We couldn’t save this recording. ',
+        'failure_guidance': 'Try recording the next LIVE.',
+      },
+    ).toDomain();
+    expect(explained.failureReason, 'We couldn’t save this recording.');
+    expect(explained.failureGuidance, 'Try recording the next LIVE.');
+    expect(failureReason(l10n, explained), 'We couldn’t save this recording.');
+    expect(failureAdvice(l10n, explained), 'Try recording the next LIVE.');
+
+    // Localized advice for a known error code still wins over the guidance.
+    expect(
+      failureAdvice(l10n, explained.copyWith(errorCode: 'STREAM_OFFLINE')),
+      l10n.v2RecAdviceStream,
+    );
+
+    // Older servers (or unusable values) fall back to error.message.
+    final RecordingSummary legacy =
+        RecordingApiModel.fromJson(<String, Object?>{
+          ..._recordingJson(id: 'rec-2', status: 'failed', canStop: false),
+          'failure_reason': 42,
+          'failure_guidance': '  ',
+        }).toDomain();
+    expect(legacy.failureReason, isNull);
+    expect(legacy.failureGuidance, isNull);
+    expect(failureReason(l10n, legacy), 'Stream ended.');
   });
 
   test('decodes thumbnail_url, expiry, failure and artifact video size', () {

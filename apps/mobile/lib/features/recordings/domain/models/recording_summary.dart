@@ -141,6 +141,8 @@ class RecordingSummary {
     this.thumbnailReady = false,
     this.errorCode,
     this.errorMessage,
+    this.failureReason,
+    this.failureGuidance,
     this.engine = Engine.cloud,
     this.expiresAt,
     this.minutesCharged = 0,
@@ -167,6 +169,14 @@ class RecordingSummary {
   final bool thumbnailReady;
   final String? errorCode;
   final String? errorMessage;
+
+  /// The server's plain-English reason a recording failed or was missed
+  /// (`failure_reason`), preferred over the raw `error.message`.
+  final String? failureReason;
+
+  /// The server's suggested next step that goes with [failureReason]
+  /// (`failure_guidance`).
+  final String? failureGuidance;
   final Engine engine;
   final DateTime? expiresAt;
   final int minutesCharged;
@@ -212,6 +222,8 @@ class RecordingSummary {
     bool? thumbnailReady,
     String? errorCode,
     String? errorMessage,
+    String? failureReason,
+    String? failureGuidance,
     Engine? engine,
     DateTime? expiresAt,
     int? minutesCharged,
@@ -238,6 +250,8 @@ class RecordingSummary {
       thumbnailReady: thumbnailReady ?? this.thumbnailReady,
       errorCode: errorCode ?? this.errorCode,
       errorMessage: errorMessage ?? this.errorMessage,
+      failureReason: failureReason ?? this.failureReason,
+      failureGuidance: failureGuidance ?? this.failureGuidance,
       engine: engine ?? this.engine,
       expiresAt: expiresAt ?? this.expiresAt,
       minutesCharged: minutesCharged ?? this.minutesCharged,

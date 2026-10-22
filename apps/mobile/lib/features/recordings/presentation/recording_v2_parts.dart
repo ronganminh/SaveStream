@@ -102,24 +102,30 @@ String recordingDayTime(BuildContext context, DateTime value) {
       '${DateFormat.Hm(_locale(context)).format(local)}';
 }
 
-/// The server's reason a recording failed (`error.message`), or what its
-/// status says.
+/// The server's plain-English reason a recording failed (`failure_reason`),
+/// else its raw `error.message`, else what its status says.
 String failureReason(AppLocalizations l10n, RecordingSummary recording) {
-  final String? message = recording.errorMessage?.trim();
-  if (message != null && message.isNotEmpty) return message;
+  for (final String? text in <String?>[
+    recording.failureReason,
+    recording.errorMessage,
+  ]) {
+    final String? message = text?.trim();
+    if (message != null && message.isNotEmpty) return message;
+  }
   if (recording.status == RecordingStatus.missedNoCloudSlot) {
     return l10n.v2RecMissedNoSlot;
   }
   return l10n.v2RecFailedGeneric;
 }
 
-/// What the user can do, by the server's `error.code`; null when the code
-/// carries no advice.
+/// What the user can do: localized advice by the server's `error.code`, else
+/// the server's `failure_guidance`; null when neither has any.
 String? failureAdvice(AppLocalizations l10n, RecordingSummary recording) {
   final String code = recording.errorCode ?? '';
   if (code.startsWith('STREAM_')) return l10n.v2RecAdviceStream;
   if (code == 'SERVICE_UNAVAILABLE') return l10n.v2RecAdviceService;
-  return null;
+  final String? guidance = recording.failureGuidance?.trim();
+  return guidance == null || guidance.isEmpty ? null : guidance;
 }
 
 /// Thumbnail fills of the artboards, picked per recording.

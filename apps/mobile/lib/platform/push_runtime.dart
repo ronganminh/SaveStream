@@ -33,6 +33,18 @@ abstract final class PushRuntime {
     });
   }
 
+  /// Android's notification settings screen for this app.
+  static Future<bool> openNotificationSettings() async {
+    try {
+      return await _channel.invokeMethod<bool>('openNotificationSettings') ??
+          false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
   static String routeFor({
     required String kind,
     String? resourceType,

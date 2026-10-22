@@ -66,6 +66,13 @@ void main() {
           'creator_live': true,
           'recording_expiring': true,
           'free_minutes_low': true,
+          'marketing': false,
+          'email_creator_live': true,
+          'email_recording_ready': true,
+          'email_recording_failed': true,
+          'email_recording_expiring': true,
+          'email_credits_low': true,
+          'email_credits_exhausted': true,
         });
         return _jsonResponse(200, <String, Object?>{
           'recording_started': false,
@@ -261,6 +268,9 @@ final class _FakeNotifications implements NotificationsRepository {
           )
         : NotificationPage(items: <AppNotification>[_item('n2')]);
   }
+
+  @override
+  Future<int> markAllRead() async => 0;
 
   @override
   Future<AppNotification> markRead(String notificationId) async {

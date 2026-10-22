@@ -95,6 +95,9 @@ final class FirebasePushService implements PushService {
   }
 
   @override
+  Future<bool> openSystemSettings() => PushRuntime.openNotificationSettings();
+
+  @override
   Stream<String?> get tokenStream => _tokens.stream;
 
   Stream<ForegroundPushMessage> get foregroundMessageStream =>

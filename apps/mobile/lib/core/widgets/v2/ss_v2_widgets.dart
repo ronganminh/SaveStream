@@ -258,13 +258,21 @@ class SsV2Link extends StatelessWidget {
   }
 }
 
-/// 64px top bar with a 48px back button and an optional title.
+/// 64px top bar with a 48px back button, an optional title and trailing
+/// actions (e.g. a text button).
 class SsV2Header extends StatelessWidget {
-  const SsV2Header({this.onBack, this.title, this.backLabel, super.key});
+  const SsV2Header({
+    this.onBack,
+    this.title,
+    this.backLabel,
+    this.actions = const <Widget>[],
+    super.key,
+  });
 
   final VoidCallback? onBack;
   final String? title;
   final String? backLabel;
+  final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -289,17 +297,21 @@ class SsV2Header extends StatelessWidget {
               const SizedBox(width: 4),
             ],
             Expanded(
-              child: Text(
-                title ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.22,
+              child: Semantics(
+                header: title != null,
+                child: Text(
+                  title ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.22,
+                  ),
                 ),
               ),
             ),
+            ...actions,
           ],
         ),
       ),

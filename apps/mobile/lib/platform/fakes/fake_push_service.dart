@@ -12,6 +12,9 @@ final class FakePushService implements PushService {
 
   PushPermissionStatus _status = PushPermissionStatus.notDetermined;
 
+  /// How many times the system notification settings were opened.
+  int systemSettingsOpened = 0;
+
   @override
   Future<PushPermissionStatus> get permissionStatus async => _status;
 
@@ -26,5 +29,11 @@ final class FakePushService implements PushService {
     _status = PushPermissionStatus.granted;
     _tokens.add('fake-fcm-token');
     return _status;
+  }
+
+  @override
+  Future<bool> openSystemSettings() async {
+    systemSettingsOpened += 1;
+    return true;
   }
 }
