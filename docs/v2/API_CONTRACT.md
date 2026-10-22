@@ -35,6 +35,10 @@ Quy ước giữ nguyên như API hiện tại: tiền tố `/v1`, JSON, thời 
     "minutes_per_reward": 10,
     "extensions_cap_per_recording": 4
   },
+  "last_pack_name": null,
+  "last_pack_minutes": null,
+  "cloud_minutes_cycle_total": 10,
+  "trial_used": true,
   "updated_at": "2026-10-03T13:05:00Z"
 }
 ```
@@ -52,6 +56,9 @@ Quy tắc:
 - Free: `enabled = true`, `unlimited = false`.
 - Pro: `enabled = true`, `unlimited = true` (mặc định hiện tại). Backend đổi được bằng cấu hình `SAVESTREAM_PRO_LOCAL_RECORDING` (`unlimited` hoặc `disabled`); app **phải đọc hai trường này**, không tự suy ra từ `plan`.
 - Phút Free reset lúc 00:00 UTC. App chỉ hiển thị đếm ngược theo giờ máy.
+- `last_pack_name` / `last_pack_minutes`: tên và số phút của gói mua gần nhất còn ở trạng thái `paid` hoặc `partially_refunded`; `null` khi chưa mua (đơn đã hoàn tiền toàn bộ không tính).
+- `cloud_minutes_cycle_total`: số N trong thanh "còn X phút / N". Bằng số dư (posted) ngay sau lần nạp gần nhất (mua gói; chưa mua thì lần cấp dùng thử) cộng các phút được cấp thêm sau đó (quảng cáo thưởng, mã khuyến mãi, hỗ trợ cộng). Ghi hình chỉ làm giảm số dư nên số dư không bao giờ vượt N. `null` khi chưa từng được nạp. Chọn cách này thay vì "tổng phút đã mua" (thanh vô nghĩa sau nhiều lần mua) hay "cỡ gói cuối" (số dư có thể lớn hơn gói vì còn dư từ trước).
+- `trial_used`: đã từng được cấp phút dùng thử (một lần mỗi tài khoản), dù đã dùng hết hay chưa.
 
 ## 2. Kênh theo dõi (watch)
 
@@ -192,7 +199,9 @@ Trả `201`: `{ "reward_id": "rwd_123", "ssv_user_id": "usr_1", "ssv_custom_data
 
 - `purpose`: `local_minutes` (thêm phút ghi) hoặc `local_slot` (mở ô ghi thứ 2; cần 2 phần thưởng).
 - Đã đủ 8 phần thưởng hợp lệ trong ngày: `409` mã `REWARD_DAILY_CAP_REACHED`.
-- Tạm khoá vì nhiều lần không hợp lệ: `429` mã `REWARD_LOCKED`.
+- Tạm khoá vì nhiều lần không hợp lệ: `429` mã `REWARD_LOCKED`, `error.details` có `locked_until` và `retry_after_seconds`.
+- `purpose = cloud_minutes`: bắt đầu quá `SAVESTREAM_REWARD_INTENTS_PER_HOUR` quảng cáo trong 1 giờ trượt: `429` mã `RATE_LIMITED`, `error.details = {"retry_after_seconds": 600, "limit": 20, "window_seconds": 3600}`. `retry_after_seconds` tính từ lúc ý định cũ nhất cần thiết ra khỏi cửa sổ.
+- Mọi phản hồi `429` có `error.details.retry_after_seconds` đều kèm header `Retry-After` (giây) cùng giá trị.
 
 ### `GET /v1/rewards/{reward_id}`
 
@@ -209,8 +218,10 @@ Trả `201`: `{ "reward_id": "rwd_123", "ssv_user_id": "usr_1", "ssv_custom_data
 Mỗi gói thêm:
 
 ```json
-{ "store_product_ids": { "app_store": "savestream.hours.50", "google_play": "savestream.hours.50" }, "cloud_minutes": 3000 }
+{ "store_product_ids": { "app_store": "savestream.hours.50", "google_play": "savestream.hours.50" }, "cloud_minutes": 3000, "featured": false }
 ```
+
+`featured`: gói được làm nổi bật ("Phổ biến nhất"). Theo cấu hình `SAVESTREAM_FEATURED_PACKAGE_CODES` (danh sách `code` cách nhau dấu phẩy); mặc định rỗng, staging/production mặc định `standard`. Không đổi giá. `GET /v1/public/pricing` cũng trả `featured` cho mỗi gói.
 
 Mã sản phẩm: `savestream.hours.50`, `savestream.hours.150`, `savestream.hours.400`, loại mua một lần dùng dần (consumable).
 
@@ -221,9 +232,13 @@ Mã sản phẩm: `savestream.hours.50`, `savestream.hours.150`, `savestream.hou
   "platform": "app_store",
   "product_id": "savestream.hours.50",
   "transaction_id": "2000000123456789",
-  "receipt": "<chuỗi JWS của App Store hoặc purchase token của Google Play>"
+  "receipt": "<chuỗi JWS của App Store hoặc purchase token của Google Play>",
+  "price_amount_micros": 24990000,
+  "price_currency_code": "USD"
 }
 ```
+
+`price_amount_micros` / `price_currency_code` (tuỳ chọn): giá Google Play hiện cho người dùng (`ProductDetails`). Chỉ để hiển thị: lưu vào đơn dưới tên `client_price_*`, không xác minh với Google, không dùng để tính tiền. `purchases.products.get` của Google không trả giá nên backend không có giá đã thu thật.
 
 Trả `200`:
 
@@ -236,6 +251,21 @@ Trả `200`:
 - `status`: `credited`, `pending` (store chưa xác nhận), `rejected`.
 - Hoá đơn không hợp lệ: `422` mã `STORE_RECEIPT_INVALID`.
 - Hoàn tiền từ store (nhận qua thông báo máy chủ của Apple/Google): backend trừ lại số phút tương ứng, không để số dư âm.
+
+### `GET /v1/billing/payment-orders` (thay đổi)
+
+Mỗi đơn thêm:
+
+```json
+{ "store_order_id": "GPA.3301-2345-6789-01234", "client_price_amount_micros": 24990000, "client_price_currency": "USD" }
+```
+
+- `store_order_id`: `orderId` Google Play trả khi xác minh. `null` với đơn web, mua bằng mã khuyến mãi của Play (không có orderId) và đơn cũ chưa được xác minh lại. `provider_reference` giữ nguyên (với Google Play là hash của purchase token).
+- `client_price_*`: giá app báo khi mua (xem trên); `null` khi app không gửi. `amount` vẫn là giá niêm yết của gói.
+
+### `GET /v1/credits/transactions` (thay đổi)
+
+Mỗi dòng thêm `store_order_id`, `package_name` (dòng của đơn mua/hoàn tiền) và `recording_channel_username`, `recording_duration_seconds` (dòng của bản ghi: giữ chỗ, trừ, trả lại). Các trường không áp dụng là `null`. Backend nạp bằng một truy vấn cho mỗi loại, không truy vấn theo từng dòng.
 
 ## 7. Thiết bị và push
 
@@ -301,7 +331,7 @@ Trả `201`: `{ "report_id": "rpt_123" }`. Không bao giờ gửi file video.
 | `LOCAL_SLOT_BUSY` | 409 | Đang có phiên ghi trên máy khác |
 | `EXTENSION_LIMIT_REACHED` | 409 | Quá 4 lần gia hạn một phiên |
 | `REWARD_DAILY_CAP_REACHED` | 409 | Đủ 8 phần thưởng trong ngày |
-| `REWARD_LOCKED` | 429 | Tạm khoá phần thưởng |
+| `REWARD_LOCKED` | 429 | Tạm khoá phần thưởng (`details.retry_after_seconds`, header `Retry-After`) |
 | `STORE_RECEIPT_INVALID` | 422 | Hoá đơn store không hợp lệ |
 | `NOT_SOURCE_DEVICE` | 403 | Xoá bản ghi trên máy từ thiết bị khác |
 | `LOCAL_RECORDING_DISABLED` | 403 | Tài khoản không được ghi trên máy |

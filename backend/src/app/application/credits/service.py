@@ -13,6 +13,8 @@ from app.application.pricing.policy import PricingEvaluator
 from app.application.pricing.service import PricingService
 from app.domain.common.errors import ApplicationError
 from app.domain.credits.types import CreditBalance, ReservationStatus
+from app.infrastructure.db.billing_models import CreditPackage, PaymentOrder
+from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.credit_models import (
     CreditAccount,
     CreditLedgerEntry,
@@ -55,6 +57,39 @@ class CreditPage:
     items: list[CreditLedgerEntry]
     next_cursor: str | None
     has_more: bool
+
+
+# Ledger reference types whose reference_id is a payment order id.
+PAYMENT_ORDER_REFERENCE_TYPES = frozenset(
+    {"payment_order", "store_refund", "store_refund_debt"}
+)
+
+
+@dataclass(frozen=True, slots=True)
+class LedgerOrderContext:
+    store_order_id: str | None
+    package_name: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class LedgerRecordingContext:
+    channel_username: str | None
+    duration_seconds: int
+
+
+@dataclass(frozen=True, slots=True)
+class LedgerContext:
+    """What a page of ledger entries points at, loaded in two queries."""
+
+    orders: dict[str, LedgerOrderContext]
+    recordings: dict[str, LedgerRecordingContext]
+
+
+def _uuid_or_none(value: str | None) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(value) if value else None
+    except ValueError:
+        return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -446,6 +481,44 @@ class CreditService:
             else None
         )
         return CreditPage(items, next_cursor, has_more)
+
+    async def ledger_context(
+        self, user_id: uuid.UUID, entries: list[CreditLedgerEntry]
+    ) -> LedgerContext:
+        """Payment orders and recordings referenced by ``entries`` (own only)."""
+        order_ids = {
+            parsed
+            for entry in entries
+            if entry.reference_type in PAYMENT_ORDER_REFERENCE_TYPES
+            and (parsed := _uuid_or_none(entry.reference_id)) is not None
+        }
+        recording_ids = {
+            parsed
+            for entry in entries
+            if entry.reference_type == "recording"
+            and (parsed := _uuid_or_none(entry.reference_id)) is not None
+        }
+        orders: dict[str, LedgerOrderContext] = {}
+        if order_ids:
+            rows = await self.session.execute(
+                select(PaymentOrder.id, PaymentOrder.store_order_id, CreditPackage.name)
+                .join(CreditPackage, CreditPackage.id == PaymentOrder.package_id)
+                .where(PaymentOrder.user_id == user_id, PaymentOrder.id.in_(order_ids))
+            )
+            for order_id, store_order_id, package_name in rows:
+                orders[str(order_id)] = LedgerOrderContext(store_order_id, package_name)
+        recordings: dict[str, LedgerRecordingContext] = {}
+        if recording_ids:
+            rows = await self.session.execute(
+                select(
+                    Recording.id, Recording.resolved_username, Recording.duration_seconds
+                ).where(Recording.user_id == user_id, Recording.id.in_(recording_ids))
+            )
+            for recording_id, username, duration in rows:
+                recordings[str(recording_id)] = LedgerRecordingContext(
+                    username, int(duration or 0)
+                )
+        return LedgerContext(orders=orders, recordings=recordings)
 
     async def reservations(
         self,

@@ -12,6 +12,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp
 
+from app.api.errors import retry_after_headers
 from app.domain.common.errors import ApplicationError
 from app.infrastructure.db.admin_models import AdminSecuritySignal
 from app.settings import AppSettings
@@ -196,6 +197,7 @@ class GlobalRateLimitMiddleware(BaseHTTPMiddleware):
                 await _record_rate_limit_signal(request, identifier)
             return JSONResponse(
                 status_code=exc.status_code,
+                headers=retry_after_headers(exc.status_code, exc.details),
                 content={
                     "error": {
                         "code": exc.code,

@@ -54,8 +54,9 @@ async def list_credit_transactions(
         limit=limit,
         cursor=cursor,
     )
+    context = await service.ledger_context(principal.user_id, page.items)
     return CreditTransactionListResponse(
-        items=[transaction_response(item) for item in page.items],
+        items=[transaction_response(item, context) for item in page.items],
         pagination=Pagination(
             next_cursor=page.next_cursor,
             has_more=page.has_more,

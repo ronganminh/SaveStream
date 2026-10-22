@@ -7,11 +7,17 @@ from typing import Literal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.application.rewards.service import cloud_rewards_enabled
 from app.application.runtime_settings import RuntimeSettingsService
 from app.application.credits.service import CreditService
-from app.application.recordings.retention import has_paid_purchase
+from app.application.recordings.retention import (
+    PAID_ORDER_STATUSES,
+    has_paid_purchase,
+)
+from app.infrastructure.db.billing_models import CreditPackage, PaymentOrder
+from app.infrastructure.db.credit_models import CreditLedgerEntry
 from app.infrastructure.db.local_recording_models import (
     LocalDailyUsage,
     LocalSlotGrant,
@@ -70,6 +76,16 @@ class EntitlementSnapshot:
     local: LocalEntitlementSnapshot
     updated_at: datetime
     ads: AdsEntitlementSnapshot | None = None
+    # Latest paid (or partly refunded) pack: its name and size.
+    last_pack_name: str | None = None
+    last_pack_minutes: int | None = None
+    # The N in "X minutes left of N": posted minutes right after the latest
+    # top-up (pack purchase, else the free trial grant), plus minutes granted
+    # since (rewarded ads, promo codes, support grants). Charges only lower
+    # the balance, so cloud_minutes_posted <= this. None before any top-up.
+    cloud_minutes_cycle_total: int | None = None
+    # The one-time free trial grant was ever made (used up or not).
+    trial_used: bool = False
 
     @property
     def is_pro(self) -> bool:
@@ -254,7 +270,13 @@ class EntitlementService:
             show_banners=not has_purchased,
         )
 
+        purchase = await self._purchase_summary(user_id)
+
         return EntitlementSnapshot(
+            last_pack_name=purchase.last_pack_name,
+            last_pack_minutes=purchase.last_pack_minutes,
+            cloud_minutes_cycle_total=purchase.cycle_total,
+            trial_used=purchase.trial_used,
             plan=plan,
             has_purchased=has_purchased,
             email_verified=email_verified,
@@ -281,3 +303,80 @@ class EntitlementService:
             updated_at=now,
             ads=ads,
         )
+
+    async def _purchase_summary(self, user_id: uuid.UUID) -> _PurchaseSummary:
+        last_pack = (
+            await self.session.execute(
+                select(CreditPackage.name, PaymentOrder.credits)
+                .join(CreditPackage, CreditPackage.id == PaymentOrder.package_id)
+                .where(
+                    PaymentOrder.user_id == user_id,
+                    PaymentOrder.status.in_(PAID_ORDER_STATUSES),
+                )
+                .order_by(
+                    func.coalesce(PaymentOrder.paid_at, PaymentOrder.created_at).desc(),
+                    PaymentOrder.created_at.desc(),
+                )
+                .limit(1)
+            )
+        ).first()
+        trial_used = (
+            await self.session.scalar(
+                select(CreditLedgerEntry.id)
+                .where(
+                    CreditLedgerEntry.user_id == user_id,
+                    CreditLedgerEntry.reference_type == "signup_bonus",
+                )
+                .limit(1)
+            )
+        ) is not None
+        anchor = await self.session.scalar(
+            select(CreditLedgerEntry)
+            .where(
+                CreditLedgerEntry.user_id == user_id,
+                CreditLedgerEntry.entry_type == "grant",
+                CreditLedgerEntry.amount > 0,
+                CreditLedgerEntry.reference_type.in_(_TOP_UP_REFERENCE_TYPES),
+            )
+            .order_by(CreditLedgerEntry.created_at.desc(), CreditLedgerEntry.id.desc())
+            .limit(1)
+        )
+        cycle_total: int | None = None
+        if anchor is not None:
+            anchor_entry = aliased(CreditLedgerEntry)
+            granted_since = int(
+                await self.session.scalar(
+                    select(func.coalesce(func.sum(CreditLedgerEntry.amount), 0)).where(
+                        CreditLedgerEntry.user_id == user_id,
+                        CreditLedgerEntry.amount > 0,
+                        CreditLedgerEntry.id != anchor.id,
+                        # Ties count as later: overstating N is harmless,
+                        # understating it would let the balance exceed it.
+                        # Compared in SQL, against the stored value.
+                        CreditLedgerEntry.created_at
+                        >= select(anchor_entry.created_at)
+                        .where(anchor_entry.id == anchor.id)
+                        .scalar_subquery(),
+                    )
+                )
+                or 0
+            )
+            cycle_total = max(anchor.balance_after, 0) + granted_since
+        return _PurchaseSummary(
+            last_pack_name=last_pack[0] if last_pack is not None else None,
+            last_pack_minutes=int(last_pack[1]) if last_pack is not None else None,
+            cycle_total=cycle_total,
+            trial_used=trial_used,
+        )
+
+
+# Ledger grants that start a new "minutes left of N" cycle.
+_TOP_UP_REFERENCE_TYPES = ("payment_order", "signup_bonus")
+
+
+@dataclass(frozen=True, slots=True)
+class _PurchaseSummary:
+    last_pack_name: str | None
+    last_pack_minutes: int | None
+    cycle_total: int | None
+    trial_used: bool

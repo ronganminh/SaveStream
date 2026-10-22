@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import uuid
 from datetime import datetime, time, timedelta, timezone
 
@@ -24,6 +25,8 @@ CLOUD_MINUTES = "cloud_minutes"
 LOCAL_PURPOSES = frozenset({"local_minutes", "local_slot"})
 # A device used by more accounts than this is flagged to admins.
 SHARED_DEVICE_ACCOUNTS = 3
+# reward_intents_per_hour counts intents created in this sliding window.
+REWARD_INTENT_WINDOW = timedelta(hours=1)
 
 
 def utcnow() -> datetime:
@@ -46,6 +49,11 @@ def ad_unit_key(value: str | None) -> str:
     """AdMob SSV sends the ad unit's numeric part (``5155016450``); config
     may hold the full id (``ca-app-pub-…/5155016450``)."""
     return (value or "").strip().rsplit("/", 1)[-1]
+
+
+def seconds_until(moment: datetime, now: datetime) -> int:
+    """Whole seconds from ``now`` until ``moment``, rounded up, at least 1."""
+    return max(math.ceil((moment - now).total_seconds()), 1)
 
 
 def reward_day(now: datetime) -> tuple[datetime, datetime]:
@@ -88,7 +96,10 @@ class RewardService:
                 "REWARD_LOCKED",
                 "Reward verification is temporarily locked",
                 status_code=429,
-                details={"locked_until": aware(state.locked_until).isoformat()},
+                details={
+                    "locked_until": aware(state.locked_until).isoformat(),
+                    "retry_after_seconds": seconds_until(aware(state.locked_until), now),
+                },
             )
 
         if payload.purpose == CLOUD_MINUTES:
@@ -181,22 +192,44 @@ class RewardService:
                 "device_id is required for cloud minute rewards",
                 status_code=400,
             )
+        window_start = now - REWARD_INTENT_WINDOW
+        recent_in_window = (
+            select(RewardIntent.created_at)
+            .where(
+                RewardIntent.user_id == user_id,
+                RewardIntent.created_at >= window_start,
+            )
+        )
         recent = int(
             await self.session.scalar(
-                select(func.count())
-                .select_from(RewardIntent)
-                .where(
-                    RewardIntent.user_id == user_id,
-                    RewardIntent.created_at >= now - timedelta(hours=1),
-                )
+                select(func.count()).select_from(recent_in_window.subquery())
             )
             or 0
         )
-        if recent >= self.settings.reward_intents_per_hour:
+        limit = self.settings.reward_intents_per_hour
+        if recent >= limit:
+            # Sliding window: a new intent is allowed once enough of the
+            # oldest ones in the window have aged out of it.
+            frees_slot = await self.session.scalar(
+                recent_in_window.order_by(RewardIntent.created_at.asc())
+                .offset(recent - limit)
+                .limit(1)
+            )
+            retry_after = (
+                seconds_until(aware(frees_slot) + REWARD_INTENT_WINDOW, now)
+                if frees_slot is not None
+                else int(REWARD_INTENT_WINDOW.total_seconds())
+            )
             raise ApplicationError(
                 "RATE_LIMITED",
                 "Too many rewarded ads started. Try again later.",
                 status_code=429,
+                retryable=True,
+                details={
+                    "retry_after_seconds": retry_after,
+                    "limit": limit,
+                    "window_seconds": int(REWARD_INTENT_WINDOW.total_seconds()),
+                },
             )
         await self._check_cloud_caps(user_id, payload.device_id, now)
 
