@@ -339,8 +339,9 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 | User ID | Có | Không | Tài khoản, chống gian lận |
 | Lịch sử mua (Play) | Có | Không | Thanh toán |
 | Tương tác trong app (kênh, bản ghi) | Có | Không | Chức năng app |
-| Device ID / push token | Có | Không | Thông báo |
-| Advertising ID (nếu giữ AdMob) | Có (AdMob) | Có (Google AdMob) | Quảng cáo, chống gian lận |
+| Push token (FCM) | Có | Không | Thông báo |
+| **Device or other IDs**: install id của app (`device_id` gửi khi tạo lượt xem quảng cáo thưởng) | Có | Không | Chống gian lận: giới hạn 6 lượt thưởng/ngày/thiết bị, cảnh báo một máy dùng cho hơn 3 tài khoản. Xoá cùng tài khoản. |
+| Advertising ID (AdMob) | Có (AdMob) | Có (Google AdMob) | Quảng cáo, chống gian lận |
 | Video bản ghi (của kênh đã xác minh) | Có | Không | Chức năng app |
 | Crash/analytics | Không (đã bỏ firebase-analytics) | — | — |
 
@@ -357,8 +358,11 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 
 ### 4.4 Quảng cáo
 
-- [ ] Chỉ rewarded, người dùng **tự bấm** "Watch ad · +5 min". Không quảng cáo bất ngờ, không xen ngang player.
-- [ ] Tài khoản đã mua không thấy quảng cáo nào khác. Nút rewarded vẫn tự nguyện (theo bản nháp).
+- [ ] **Dùng lại AdMob của v1** (cùng package `com.savestream.app`): App ID Android `ca-app-pub-2078852906622512~2464439785`, Rewarded `ca-app-pub-2078852906622512/5155016450`, Banner `ca-app-pub-2078852906622512/4061426634`. ID lấy từ build config của app (`--dart-define`) và env server `SAVESTREAM_ADMOB_REWARD_AD_UNITS`, không viết cứng trong code.
+- [ ] SSV callback URL trong AdMob phải là `https://api.savestream.online/v1/webhooks/admob-ssv` (chủ sản phẩm kiểm tra trong AdMob → Ad unit Rewarded → Server-side verification).
+- [ ] Số thưởng đặt trong AdMob không cần đổi: server luôn cộng 5 phút cloud cho mỗi lượt SSV hợp lệ từ ad unit trong allowlist.
+- [ ] Rewarded: người dùng **tự bấm** "Watch ad · +5 min". Không quảng cáo bất ngờ, không xen ngang player.
+- [ ] Banner nhỏ chỉ cho tài khoản chưa mua (`ads.show_banners`), không che nút, không có ở màn player, thanh toán, xác minh kênh. Mua bất kỳ gói nào thì tắt banner.
 - [ ] UMP consent cho EEA/UK/Thuỵ Sĩ trước khi tải quảng cáo. Có mục "Privacy options" trong Settings để mở lại form.
 - [ ] Đối tượng **18+**, không nhắm trẻ em (Families policy không áp dụng). Content rating qua IARC.
 - [ ] Khai báo "Contains ads" trong Store listing.
