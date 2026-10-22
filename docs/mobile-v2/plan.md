@@ -318,6 +318,25 @@ App Flutter v2:
 Thứ tự đề xuất: 3.6 và 3.1 trước (đổi luật chơi cho cả web), song song 3.4. Sau đó 3.2, 3.3, 3.5.
 Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 
+### 3.8 Khoảng trống API phát hiện khi làm màn Account và System (app v2)
+
+App đã nối các màn Account/System vào API có sẵn (chi tiết: `docs/mobile-v2/screens/account/README.md`,
+`docs/mobile-v2/screens/system/README.md`). Những chỗ backend chưa hỗ trợ, app **không giả lập**:
+
+- **Đổi email**: `PATCH /v1/me` chỉ nhận `display_name`, `locale`. App để email chỉ đọc kèm ghi chú.
+  Cần endpoint đổi email có xác minh email mới nếu muốn làm như artboard.
+- **Cách đăng nhập**: `/v1/me` không cho biết tài khoản dùng mật khẩu hay Google. App nhớ cách đăng nhập
+  gần nhất trên máy (Profile hiện "Signed in with Google" hoặc hàng Password). Đề xuất thêm
+  `has_password` / `auth_providers` vào `/v1/me`.
+- **Báo cáo nội dung**: chỉ có `POST /v1/public/reports` (form /report công khai), cần Turnstile khi
+  `TURNSTILE_SECRET_KEY` được đặt. App gửi báo cáo abuse tới endpoint này; nếu server trả
+  `CAPTCHA_FAILED` thì mở form web `/report?type=abuse` trong trình duyệt. Thông báo bản quyền luôn mở
+  form web (cần đủ trường theo Copyright Policy). Đề xuất: endpoint báo cáo cho người đã đăng nhập
+  (không cần Turnstile, gắn user id), ví dụ `POST /v1/reports`.
+- **Tạm ngưng / đóng tài khoản**: server chỉ báo `ACCOUNT_SUSPENDED` / `ACCOUNT_TERMINATED` lúc đăng nhập;
+  phiên đang mở nhận `AUTH_SESSION_REVOKED` (app hiện "phiên hết hạn"). App hiện màn Suspended/Closed khi
+  đăng nhập bị từ chối.
+
 ---
 
 ## 4. Checklist nộp Google Play
