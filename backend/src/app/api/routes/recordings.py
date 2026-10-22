@@ -26,7 +26,7 @@ from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import RecordingStatus, TERMINAL_RECORDING_STATUSES
 from app.infrastructure.db.recording_models import Recording, RecordingEvent
-from app.infrastructure.recording.runtime import build_recording_runtime
+from app.infrastructure.recording.runtime import NoLiveRoomError, build_recording_runtime
 
 router = APIRouter(prefix="/v1", tags=["Recordings"])
 
@@ -69,12 +69,31 @@ async def live_status(
             retryable=True,
         ) from exc
 
+    lookup = profile_result if not isinstance(profile_result, BaseException) else None
+    metadata = lookup.metadata if lookup is not None else None
+    from app.api.schemas.recordings import Creator
+
+    if isinstance(status_result, NoLiveRoomError) and metadata is not None:
+        # No LIVE room, but the profile page shows a real account: the
+        # creator is simply not LIVE (most channels are added while offline).
+        return LiveStatusResponse(
+            source=payload.source,
+            creator=Creator(
+                username=metadata.username,
+                display_name=metadata.display_name,
+                avatar_url=metadata.avatar_url,
+            ),
+            live_status="offline",
+            room_id=None,
+            checked_at=datetime.now(timezone.utc),
+        )
+
     if isinstance(status_result, BaseException):
         # The LIVE page of an unknown handle looks like that of a creator who
         # never went LIVE, so only TikTok's profile page can say the account
         # does not exist.  Anything less certain (room-id sources, WAF/login
         # pages, timeouts) stays a retryable 503.
-        if not isinstance(profile_result, BaseException) and profile_result.not_found:
+        if lookup is not None and lookup.not_found:
             raise ApplicationError(
                 "CHANNEL_NOT_FOUND",
                 "No TikTok account with this username",
@@ -89,11 +108,6 @@ async def live_status(
         ) from status_result
 
     resolved, is_live = status_result
-    metadata = (
-        profile_result.metadata if not isinstance(profile_result, BaseException) else None
-    )
-    from app.api.schemas.recordings import Creator
-
     return LiveStatusResponse(
         source=payload.source,
         creator=Creator(

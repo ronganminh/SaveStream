@@ -13,18 +13,26 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event, func, select
 
 from app.api.dependencies import get_current_principal
+from app.api.schemas.recordings import Source
 from app.application.recordings.service import utcnow
 from app.application.watches.channel_stats import watch_extras
+from app.application.watches.service import CreatorMetadata
 from app.domain.identity.types import AuthPrincipal, scopes_for_role
 from app.infrastructure.creators.tiktok_profile import CreatorLookupResult
 from app.infrastructure.db.models import Base, User
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import ChannelVerification, Watch
-from app.infrastructure.recording.runtime import RecordingRuntime, ResolvedSource
+from app.infrastructure.recording.runtime import (
+    NoLiveRoomError,
+    RecordingRuntime,
+    ResolvedSource,
+    TikTokSourceResolver,
+)
 from app.main import create_app
 from core.tiktok_api import TikTokAPI
 from tests.identity_helpers import identity_settings
+from utils.custom_exceptions import UserLiveError
 
 # --- TikTok "user not found" signal -------------------------------------------------
 
@@ -120,22 +128,32 @@ def test_unclear_profile_pages_are_never_reported_as_not_found() -> None:
 # --- POST /v1/live-status ---------------------------------------------------------
 
 
+
+# What TikTokSourceResolver raises when the LIVE page has no room: an offline
+# creator who never went LIVE and an unknown handle look the same there.
+NO_ROOM = "no room"
+# Anything else: TikTok outage, timeout, WAF page.
+SOURCE_ERROR = "source error"
+
+
 class _Resolver:
-    def __init__(self, *, fail: bool) -> None:
-        self.fail = fail
+    def __init__(self, *, error: str | None) -> None:
+        self.error = error
 
     def resolve(self, source):
         raise NotImplementedError
 
     def live_status(self, source):
-        if self.fail:
-            # What TikTokAPI raises for an unknown handle, an offline creator
-            # who never went LIVE and a TikTok outage alike.
-            raise RuntimeError("The user is not hosting a live stream at the moment.")
+        if self.error == NO_ROOM:
+            raise NoLiveRoomError("The user is not hosting a live stream at the moment.")
+        if self.error == SOURCE_ERROR:
+            raise RuntimeError("TikTok timed out")
         return ResolvedSource(username=source.value, room_id="7312345"), True
 
 
-def _live_status_client(tmp_path, monkeypatch, *, fail: bool, lookup: CreatorLookupResult):
+def _live_status_client(
+    tmp_path, monkeypatch, *, error: str | None, lookup: CreatorLookupResult
+):
     from app.api.routes import recordings as recordings_routes
     from app.infrastructure.creators import tiktok_profile
 
@@ -145,7 +163,7 @@ def _live_status_client(tmp_path, monkeypatch, *, fail: bool, lookup: CreatorLoo
     monkeypatch.setattr(
         recordings_routes,
         "build_recording_runtime",
-        lambda settings: RecordingRuntime(resolver=_Resolver(fail=fail), gateway=None),  # type: ignore[arg-type]
+        lambda settings: RecordingRuntime(resolver=_Resolver(error=error), gateway=None),  # type: ignore[arg-type]
     )
     monkeypatch.setattr(tiktok_profile.TikTokCreatorMetadataLookup, "resolve", resolve)
     app = create_app(identity_settings(f"sqlite+aiosqlite:///{tmp_path / 'live.db'}"))
@@ -155,13 +173,61 @@ def _live_status_client(tmp_path, monkeypatch, *, fail: bool, lookup: CreatorLoo
     return TestClient(app, base_url="https://testserver")
 
 
+def _post_live_status(client, value: str):
+    return client.post("/v1/live-status", json={"source": {"type": "username", "value": value}})
+
+
+CREATOR = CreatorMetadata(
+    username="creator",
+    display_name="Creator LIVE",
+    avatar_url="https://p16.tiktokcdn.com/avatar.jpeg",
+)
+
+
+def test_resolver_marks_an_empty_live_room() -> None:
+    class _NoRoomApi:
+        def get_room_id_from_user(self, user: str) -> str:
+            return ""
+
+        def is_room_alive(self, room_id: str) -> bool:  # pragma: no cover - not reached
+            raise AssertionError("no room to check")
+
+    resolver = TikTokSourceResolver(_NoRoomApi())  # type: ignore[arg-type]
+    try:
+        resolver.live_status(Source(type="username", value="creator"))
+    except NoLiveRoomError as error:
+        # Still the UserLiveError other callers (watch checks) already handle.
+        assert isinstance(error, UserLiveError)
+    else:  # pragma: no cover
+        raise AssertionError("expected NoLiveRoomError")
+
+
+def test_live_status_answers_offline_creator_with_offline(tmp_path, monkeypatch) -> None:
+    with _live_status_client(
+        tmp_path, monkeypatch, error=NO_ROOM, lookup=CreatorLookupResult(metadata=CREATOR)
+    ) as client:
+        response = _post_live_status(client, "creator")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["live_status"] == "offline"
+    assert body["room_id"] is None
+    assert body["creator"] == {
+        "platform": "tiktok",
+        "username": "creator",
+        "display_name": "Creator LIVE",
+        "avatar_url": "https://p16.tiktokcdn.com/avatar.jpeg",
+    }
+    assert body["source"] == {"type": "username", "value": "creator"}
+
+
 def test_live_status_answers_unknown_handle_with_channel_not_found(tmp_path, monkeypatch) -> None:
     with _live_status_client(
-        tmp_path, monkeypatch, fail=True, lookup=CreatorLookupResult(metadata=None, not_found=True)
+        tmp_path,
+        monkeypatch,
+        error=NO_ROOM,
+        lookup=CreatorLookupResult(metadata=None, not_found=True),
     ) as client:
-        response = client.post(
-            "/v1/live-status", json={"source": {"type": "username", "value": "ghost"}}
-        )
+        response = _post_live_status(client, "ghost")
     assert response.status_code == 404, response.text
     error = response.json()["error"]
     assert error["code"] == "CHANNEL_NOT_FOUND"
@@ -169,24 +235,29 @@ def test_live_status_answers_unknown_handle_with_channel_not_found(tmp_path, mon
 
 
 def test_live_status_keeps_503_when_tiktok_cannot_say(tmp_path, monkeypatch) -> None:
-    with _live_status_client(
-        tmp_path, monkeypatch, fail=True, lookup=CreatorLookupResult(metadata=None)
-    ) as client:
-        response = client.post(
-            "/v1/live-status", json={"source": {"type": "username", "value": "creator"}}
-        )
-    assert response.status_code == 503, response.text
-    assert response.json()["error"]["code"] == "STREAM_UNAVAILABLE"
-    assert response.json()["error"]["retryable"] is True
+    cases = [
+        # No room and the profile page was unreadable (WAF/login shell).
+        (NO_ROOM, CreatorLookupResult(metadata=None)),
+        # A genuine source error, even with a readable profile.
+        (SOURCE_ERROR, CreatorLookupResult(metadata=CREATOR)),
+        (SOURCE_ERROR, CreatorLookupResult(metadata=None)),
+    ]
+    for error, lookup in cases:
+        with _live_status_client(tmp_path, monkeypatch, error=error, lookup=lookup) as client:
+            response = _post_live_status(client, "creator")
+        assert response.status_code == 503, (error, response.text)
+        assert response.json()["error"]["code"] == "STREAM_UNAVAILABLE"
+        assert response.json()["error"]["retryable"] is True
 
 
 def test_live_status_success_ignores_profile_page(tmp_path, monkeypatch) -> None:
     with _live_status_client(
-        tmp_path, monkeypatch, fail=False, lookup=CreatorLookupResult(metadata=None, not_found=True)
+        tmp_path,
+        monkeypatch,
+        error=None,
+        lookup=CreatorLookupResult(metadata=None, not_found=True),
     ) as client:
-        response = client.post(
-            "/v1/live-status", json={"source": {"type": "username", "value": "creator"}}
-        )
+        response = _post_live_status(client, "creator")
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["live_status"] == "live"

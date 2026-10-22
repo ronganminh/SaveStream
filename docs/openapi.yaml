@@ -634,7 +634,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK. A creator who is not LIVE now (including one who never went LIVE) is live_status \"offline\" with room_id null and the profile's creator metadata.",
             "content": {
               "application/json": {
                 "schema": {

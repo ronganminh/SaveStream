@@ -304,7 +304,7 @@ Trả `201`: `{ "report_id": "rpt_123" }`. Không bao giờ gửi file video.
 | `NOT_IMPLEMENTED` | 501 | Route V2 đã được B0 đóng băng contract nhưng phase sở hữu chưa triển khai; chỉ dùng trong giai đoạn rollout |
 | `CREATOR_BLOCKED` | 403 | Kênh bị chặn toàn hệ thống (khiếu nại) |
 | `PROMO_CODE_INVALID` | 409 | Mã khuyến mãi không dùng được |
-| `CHANNEL_NOT_FOUND` | 404 | `POST /v1/live-status`: trang hồ sơ TikTok báo không có tài khoản với username này. TikTok lỗi, hết giờ hoặc không trả lời rõ vẫn là `503 STREAM_UNAVAILABLE` |
+| `CHANNEL_NOT_FOUND` | 404 | `POST /v1/live-status`: trang hồ sơ TikTok báo không có tài khoản với username này. TikTok lỗi, hết giờ hoặc không trả lời rõ vẫn là `503 STREAM_UNAVAILABLE`. Kênh có thật nhưng không LIVE (kể cả chưa từng LIVE) trả `200` với `live_status: "offline"`, `room_id: null` |
 
 ## 11. Không thay đổi
 
