@@ -11,7 +11,7 @@ import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/settings/presentation/legal_link_screen.dart';
-import 'package:savestream_mobile/features/settings/presentation/notification_settings_screen.dart';
+import 'package:savestream_mobile/features/settings/presentation/notification_preferences_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
 
 void main() {
@@ -143,9 +143,9 @@ void main() {
     }
 
     await openInfo(
-      AppRoutes.notifications,
+      AppRoutes.notificationPreferences,
       'Notifications',
-      NotificationSettingsScreen,
+      NotificationPreferencesScreen,
     );
     expect(find.text('https://savestream.online/privacy'), findsNothing);
     await openInfo(AppRoutes.privacy, 'Privacy Policy', LegalLinkScreen);

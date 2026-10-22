@@ -111,7 +111,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           subtitle: l10n.notificationsReleaseSubtitle,
                           leading: const Icon(Icons.notifications_outlined),
                           trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => context.push(AppRoutes.notifications),
+                          onTap: () =>
+                              context.push(AppRoutes.notificationPreferences),
                         ),
                         const Divider(),
                         SsListTile(

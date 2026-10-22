@@ -1376,5 +1376,78 @@
   "v2ChannelGone": "This channel isn’t in your list anymore.",
   "v2ChannelLoadError": "Couldn’t load this channel",
   "v2ActionFailed": "That didn’t work. Try again.",
-  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens."
+  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens.",
+  "v2NotifTitle": "Notifications",
+  "v2NotifMarkAllRead": "Mark all read",
+  "v2NotifMarkAllFailed": "Couldn’t mark your notifications as read. Try again.",
+  "v2NotifUnread": "Unread",
+  "v2NotifYesterday": "Yesterday",
+  "v2NotifEmptyTitle": "You’re all caught up",
+  "v2NotifEmptyBody": "LIVE alerts, finished recordings and balance warnings will show up here.",
+  "v2NotifErrorTitle": "Couldn’t load notifications",
+  "v2NotifErrorBody": "Check your connection and try again.",
+  "v2NotifLoadMoreFailed": "Couldn’t load older notifications.",
+  "v2NotifKindLive": "Channel is LIVE",
+  "v2NotifKindStarted": "Recording started",
+  "v2NotifKindReady": "Recording ready",
+  "v2NotifKindEnded": "Recording ended",
+  "v2NotifKindMissed": "Missed a LIVE",
+  "v2NotifKindLow": "Running low",
+  "v2NotifKindOut": "Out of minutes",
+  "v2NotifKindExpiring": "Expiring soon",
+  "v2NotifKindPurchase": "Minutes added",
+  "v2NotifKindVerify": "Verify your channel",
+  "v2NotifPrefsOsOff": "Notifications are off for SaveStream in Android settings. Turn them on to get LIVE alerts.",
+  "v2NotifPrefsOpenSettings": "Open settings",
+  "v2NotifPrefsAsk": "Allow notifications to get LIVE alerts on this phone.",
+  "v2NotifPrefsAllow": "Turn on notifications",
+  "v2NotifPrefsEvent": "Event",
+  "v2NotifPrefsPush": "Push",
+  "v2NotifPrefsEmail": "Email",
+  "v2NotifPrefLive": "LIVE started",
+  "v2NotifPrefLiveSub": "A channel went LIVE",
+  "v2NotifPrefStarted": "Recording started",
+  "v2NotifPrefStartedSub": "Cloud recording began",
+  "v2NotifPrefReady": "Recording ready",
+  "v2NotifPrefReadySub": "Ready to watch or save",
+  "v2NotifPrefFailed": "Failed or missed",
+  "v2NotifPrefFailedSub": "With the reason",
+  "v2NotifPrefLow": "Running low",
+  "v2NotifPrefLowSub": "An hour or less left",
+  "v2NotifPrefOut": "Out of minutes",
+  "v2NotifPrefOutSub": "Recording paused",
+  "v2NotifPrefExpiring": "Expiring soon",
+  "v2NotifPrefExpiringSub": "About a day before deletion",
+  "v2NotifPrefNews": "Product news",
+  "v2NotifPrefNewsSub": "Tips by push and email",
+  "v2NotifPrefSwitch": "{channel}: {event}",
+  "@v2NotifPrefSwitch": {
+    "placeholders": {
+      "channel": {
+        "type": "String"
+      },
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "v2NotifPrefAlwaysOn": "{event}: always sent in the app",
+  "@v2NotifPrefAlwaysOn": {
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "v2NotifPrefNoEmail": "{event}: no email",
+  "@v2NotifPrefNoEmail": {
+    "placeholders": {
+      "event": {
+        "type": "String"
+      }
+    }
+  },
+  "v2NotifPrefsNote": "Turning off Push also hides that event from your Notifications list. Running low, Out of minutes and missed LIVEs always show in the app.",
+  "v2NotifPrefsEmailOff": "Email isn’t available right now, so no notification emails are sent.",
+  "v2NotifPrefsErrorTitle": "Couldn’t load your notification settings"
 }
