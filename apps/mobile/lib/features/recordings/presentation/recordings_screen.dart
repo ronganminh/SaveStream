@@ -7,11 +7,8 @@ import '../../../app/theme/ss_semantic_colors.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/ads_service.dart';
-import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../../settings/presentation/notification_action_button.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_file_providers.dart';
@@ -25,11 +22,11 @@ enum _RecordingLibraryView { content, list }
 
 enum _RecordingLibrarySort { date, expiring, size, name }
 
-enum _RecordingLibraryFilter { all, local, cloud, issues }
+enum _RecordingLibraryFilter { all, issues }
 
 enum _RecordingStatusGroup { completed, processing, partial, issues }
 
-/// L01 — Unified local + cloud recording library.
+/// L01 — Cloud recording library.
 class RecordingsScreen extends ConsumerStatefulWidget {
   const RecordingsScreen({super.key});
 
@@ -78,17 +75,12 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
   }
 
   String _routeFor(RecordingLibraryItem item) {
-    return item.storage == RecordingLibraryStorage.local
-        ? AppRoutes.localRecordingDetail(item.id)
-        : AppRoutes.recordingDetail(item.id);
+    return AppRoutes.recordingDetail(item.id);
   }
 
   Uri _playerRouteFor(RecordingLibraryItem item) {
     return Uri.parse(AppRoutes.recordingPlayer(item.id)).replace(
       queryParameters: <String, String>{
-        'source': item.storage == RecordingLibraryStorage.local
-            ? 'local'
-            : 'cloud',
         'title': item.creatorDisplayName,
         'duration': item.durationSeconds.toString(),
         if (item.startedAt != null)
@@ -106,27 +98,16 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
     if (!item.canShare || _busyItemId != null) return;
     setState(() => _busyItemId = item.id);
     try {
-      if (item.storage == RecordingLibraryStorage.local) {
-        final String? filePath = item.filePath;
-        if (filePath == null) throw StateError('Local file is unavailable.');
-        await ref
-            .read(shareServiceProvider)
-            .shareFile(
-              filePath: filePath,
-              displayName: item.creatorDisplayName,
-            );
-      } else {
-        final artifacts = await ref.read(
-          recordingArtifactsProvider(item.id).future,
-        );
-        if (artifacts.isEmpty) throw StateError('Artifact is unavailable.');
-        await ref
-            .read(cloudRecordingShareCoordinatorProvider)
-            .share(
-              artifactId: artifacts.first.id,
-              displayName: item.creatorDisplayName,
-            );
-      }
+      final artifacts = await ref.read(
+        recordingArtifactsProvider(item.id).future,
+      );
+      if (artifacts.isEmpty) throw StateError('Artifact is unavailable.');
+      await ref
+          .read(cloudRecordingShareCoordinatorProvider)
+          .share(
+            artifactId: artifacts.first.id,
+            displayName: item.creatorDisplayName,
+          );
     } on Object {
       if (mounted) {
         SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
@@ -149,14 +130,8 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
 
     setState(() => _busyItemId = item.id);
     try {
-      if (item.storage == RecordingLibraryStorage.local) {
-        await ref
-            .read(localRecordingRepositoryProvider)
-            .delete(item.id, deviceId: item.deviceId!);
-      } else {
-        await ref.read(recordingControllerProvider).delete(item.id);
-        await ref.read(cloudRecordingFileServiceProvider).delete(item.id);
-      }
+      await ref.read(recordingControllerProvider).delete(item.id);
+      await ref.read(cloudRecordingFileServiceProvider).delete(item.id);
       ref.invalidate(recordingLibraryProvider);
     } on Object catch (error) {
       if (mounted) SsSnackbar.show(context, error.toString());
@@ -202,10 +177,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
   ) {
     return switch (filter) {
       _RecordingLibraryFilter.all => true,
-      _RecordingLibraryFilter.local =>
-        item.storage == RecordingLibraryStorage.local,
-      _RecordingLibraryFilter.cloud =>
-        item.storage == RecordingLibraryStorage.cloud,
       _RecordingLibraryFilter.issues =>
         item.issue != RecordingLibraryIssue.none ||
             item.status == RecordingStatus.failed ||
@@ -278,31 +249,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                       ],
                     ),
                     const SizedBox(height: SsSpacing.md),
-                    Text(
-                      context.l10n.recordingFiltersStorageTitle,
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: SsSpacing.sm),
-                    SsFilterChips(
-                      items: <String>[
-                        context.l10n.recordingFilterAll,
-                        context.l10n.localLabel,
-                        context.l10n.cloudLabel,
-                      ],
-                      selectedIndex: switch (draftFilter) {
-                        _RecordingLibraryFilter.local => 1,
-                        _RecordingLibraryFilter.cloud => 2,
-                        _ => 0,
-                      },
-                      onSelected: (int index) => setSheetState(() {
-                        draftFilter = <_RecordingLibraryFilter>[
-                          _RecordingLibraryFilter.all,
-                          _RecordingLibraryFilter.local,
-                          _RecordingLibraryFilter.cloud,
-                        ][index];
-                      }),
-                    ),
-                    const SizedBox(height: SsSpacing.lg),
                     Text(
                       context.l10n.recordingFiltersStatusTitle,
                       style: Theme.of(context).textTheme.labelMedium,
@@ -400,8 +346,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
     final AsyncValue<List<RecordingLibraryItem>> library = ref.watch(
       recordingLibraryProvider,
     );
-    final bool hasForeignLocalRecordings =
-        ref.watch(foreignLocalRecordingOwnershipProvider).value ?? false;
     final Entitlement? entitlement = ref.watch(entitlementProvider).value;
 
     return Scaffold(
@@ -459,14 +403,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                         SsSpacing.xxl,
                       ),
                       children: <Widget>[
-                        if (hasForeignLocalRecordings) ...<Widget>[
-                          SsInlineAlert(
-                            title: context.l10n.foreignLocalRecordingsTitle,
-                            message: context.l10n.foreignLocalRecordingsBody,
-                            tone: SsInlineAlertTone.warning,
-                          ),
-                          const SizedBox(height: SsSpacing.md),
-                        ],
                         if (items.isEmpty)
                           _EmptyRecordingLibrary(
                             onAddCreator: () =>
@@ -536,8 +472,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                                   child: SsFilterChips(
                                     items: <String>[
                                       context.l10n.recordingFilterAll,
-                                      context.l10n.localLabel,
-                                      context.l10n.cloudLabel,
                                       context.l10n.errorStatus,
                                     ],
                                     selectedIndex: _filter.index,
@@ -630,16 +564,6 @@ class _RecordingsScreenState extends ConsumerState<RecordingsScreen> {
                                 const SizedBox(height: SsSpacing.sm),
                               ],
                               const SizedBox(height: SsSpacing.xs),
-                              if (groupIndex == 0 &&
-                                  groups.length > 1 &&
-                                  entitlement?.plan == Plan.free &&
-                                  MediaQuery.textScalerOf(context).scale(1) <
-                                      1.8) ...<Widget>[
-                                ref
-                                        .watch(adsServiceProvider)
-                                        .bannerFor(AdPlacement.library) ??
-                                    const SizedBox.shrink(),
-                              ],
                             ],
                         ],
                       ],
@@ -1047,8 +971,6 @@ class _ContentRow extends StatelessWidget {
           height: 64,
           child: RecordingThumbnail(
             recordingId: item.id,
-            storage: item.storage,
-            filePath: item.filePath,
             enabled: item.canPlay,
           ),
         ),
@@ -1097,7 +1019,6 @@ class _ItemDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool local = item.storage == RecordingLibraryStorage.local;
     final bool missingCloudArtifact =
         item.issue == RecordingLibraryIssue.missingCloudArtifact;
     final Color onVariant = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -1154,9 +1075,9 @@ class _ItemDetails extends StatelessWidget {
                   : null,
             ),
             SsStatusChip(
-              label: local ? context.l10n.localLabel : context.l10n.cloudLabel,
-              tone: local ? SsStatusTone.local : SsStatusTone.cloud,
-              icon: local ? Icons.smartphone_rounded : Icons.cloud_rounded,
+              label: context.l10n.cloudLabel,
+              tone: SsStatusTone.cloud,
+              icon: Icons.cloud_rounded,
             ),
           ],
         ),

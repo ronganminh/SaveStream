@@ -40,23 +40,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Free minutes today'), findsOneWidget);
-    expect(find.text('6 / 10 minutes remaining'), findsOneWidget);
-    expect(find.text('Watching'), findsWidgets);
-    expect(find.text('8/3'), findsOneWidget);
+    expect(find.text('Cloud time available'), findsOneWidget);
+    expect(find.text('Watching 8/3'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
 
     await tester.tap(find.byIcon(Icons.visibility_outlined));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Watching 8/3 creators · FREE'), findsOneWidget);
+    expect(find.text('Channels 8/3 · FREE'), findsOneWidget);
     expect(
-      find.textContaining('You already have 8 creators from an older plan'),
+      find.textContaining('You already have 8 channels from an older plan'),
       findsWidgets,
     );
 
-    await tester.tap(find.byTooltip('Add creator').first);
+    await tester.tap(find.byTooltip('Add channel').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Watching is full'), findsOneWidget);
@@ -181,20 +179,20 @@ void main() {
 
       final Finder field = find.byType(TextFormField);
       await tester.enterText(field, '@notfound_creator');
-      await tester.tap(find.widgetWithText(FilledButton, 'Find creator'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Creator not found'), findsOneWidget);
+      expect(find.text('Channel not found'), findsOneWidget);
 
       await tester.enterText(field, '@fresh_creator');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Find creator'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Found'), findsOneWidget);
       expect(find.text('Use recordings responsibly'), findsOneWidget);
       expect(find.byType(Checkbox), findsNothing);
 
-      final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
+      final Finder add = find.widgetWithText(FilledButton, 'Add channel');
       await tester.ensureVisible(add);
       await tester.tap(add);
       await tester.pump(const Duration(milliseconds: 200));
@@ -257,8 +255,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Phút Free hôm nay'), findsOneWidget);
-    expect(find.text('Theo dõi'), findsWidgets);
+    expect(find.text('Giờ cloud còn lại'), findsOneWidget);
+    expect(find.text('Theo dõi 8/3'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
   });
 }

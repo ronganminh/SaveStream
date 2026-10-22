@@ -3,11 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/savestream_widgets.dart';
-import '../../features/ads/presentation/ad_consent_gate.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
-import '../../features/local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
 import '../router/app_routes.dart';
@@ -45,14 +42,9 @@ class MainShell extends ConsumerWidget {
         SsSnackbar.show(context, l10n.globalReconnectedToast);
       }
     });
-    final LocalRecordingController localController = ref.watch(
-      localRecordingControllerProvider,
-    );
     final bool sessionExpired = session.authStatus == AppAuthStatus.expired;
-    final bool localRecordingActive =
-        localController.hasActiveSession || localController.hasSecondarySession;
 
-    if (gate != A6GlobalGate.none && !localRecordingActive) {
+    if (gate != A6GlobalGate.none) {
       final bool maintenance = gate == A6GlobalGate.maintenance;
       return Scaffold(
         body: SafeArea(
@@ -120,68 +112,53 @@ class MainShell extends ConsumerWidget {
               ),
             ),
           ),
-        Expanded(child: RecordingPlatformBridge(child: navigationShell)),
+        Expanded(child: navigationShell),
       ],
     );
 
     return Scaffold(
-      body: AdConsentGate(
-        child: Stack(
-          children: <Widget>[
-            shellBody,
-            if (sessionExpired)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.scrim.withValues(alpha: 0.72),
-                  child: SafeArea(
-                    child: Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: SsCard(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                Icon(
-                                  Icons.lock_clock_rounded,
-                                  size: 48,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  l10n.sessionExpiredTitle,
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  localRecordingActive
-                                      ? l10n.sessionExpiredRecordingBody
-                                      : l10n.sessionExpiredBody,
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 16),
-                                SsPrimaryButton(
-                                  label: l10n.signInAgainAction,
-                                  onPressed: () =>
-                                      context.push(AppRoutes.signIn),
-                                ),
-                                if (localRecordingActive) ...<Widget>[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    l10n.sessionExpiredRecordingSafeBody,
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ],
-                            ),
+      body: Stack(
+        children: <Widget>[
+          shellBody,
+          if (sessionExpired)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Theme.of(
+                  context,
+                ).colorScheme.scrim.withValues(alpha: 0.72),
+                child: SafeArea(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: SsCard(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Icon(
+                                Icons.lock_clock_rounded,
+                                size: 48,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                l10n.sessionExpiredTitle,
+                                style: Theme.of(context).textTheme.titleLarge,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                l10n.sessionExpiredBody,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              SsPrimaryButton(
+                                label: l10n.signInAgainAction,
+                                onPressed: () => context.push(AppRoutes.signIn),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -189,8 +166,8 @@ class MainShell extends ConsumerWidget {
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
       bottomNavigationBar: MediaQuery.withClampedTextScaling(
         maxScaleFactor: 1.2,

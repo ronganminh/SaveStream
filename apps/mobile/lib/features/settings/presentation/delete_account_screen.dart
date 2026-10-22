@@ -8,7 +8,6 @@ import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import 'controllers/settings_providers.dart';
 
 class DeleteAccountScreen extends ConsumerStatefulWidget {
@@ -28,11 +27,6 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
   String? _error;
 
   Future<void> _delete() async {
-    final controller = ref.read(localRecordingControllerProvider);
-    if (controller.hasActiveSession || controller.hasSecondarySession) {
-      setState(() => _error = context.l10n.deleteAccountRecordingBlocked);
-      return;
-    }
     setState(() {
       _busy = true;
       _error = null;

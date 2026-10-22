@@ -176,7 +176,6 @@ String _title(AppLocalizations l10n, CloudHoursPurchaseContext value) {
       l10n.purchaseContextIosBackgroundTitle,
     CloudHoursPurchaseContext.freeMinutesExhausted =>
       l10n.purchaseContextFreeMinutesTitle,
-    CloudHoursPurchaseContext.removeAds => l10n.purchaseContextRemoveAdsTitle,
   };
 }
 
@@ -188,7 +187,6 @@ String _subtitle(AppLocalizations l10n, CloudHoursPurchaseContext value) {
       l10n.purchaseContextIosBackgroundBody,
     CloudHoursPurchaseContext.freeMinutesExhausted =>
       l10n.purchaseContextFreeMinutesBody,
-    CloudHoursPurchaseContext.removeAds => l10n.purchaseContextRemoveAdsBody,
   };
 }
 

@@ -4,7 +4,7 @@ Flutter mobile client for SaveStream.
 
 ## Current V2 release architecture
 
-SaveStream V2 is Android-first. Production bootstrap uses real authenticated repositories, native Local recording on Android, cloud recording through the backend, native store purchases, AdMob/UMP for Free, and Firebase Cloud Messaging for push/deep links. Mock/fake implementations are retained for deterministic tests and previews only.
+SaveStream V2 is Android-first. Production bootstrap uses real authenticated repositories, cloud recording through the backend, native store purchases, and Firebase Cloud Messaging for push/deep links. The v1.x cleanup build (2.0.1+) removed on-device (Local) recording and all ads; ads return in v2 with IDs from build config. The unwired web-checkout Credits/Billing repositories were removed too (phase notes below are historical); native store purchases live in `features/store`. Mock/fake implementations are retained for deterministic tests and previews only.
 
 Current V2 mobile implementation includes:
 
@@ -30,7 +30,7 @@ Current V2 mobile implementation includes:
 - lifecycle-specific detail UI for queued, resolving, waiting_live, recording, processing, uploading, completed, failed, stop_requested, and stopped;
 - Stop / Retry / Delete actions driven by backend-aligned `actions.can_stop`, `actions.can_retry`, and `actions.can_delete` flags;
 - mutable mock recording actions for stop, retry, and delete, with Home and Channel recording history refresh signals;
-- artifact Play / Download is wired to real backend artifact discovery and fresh presigned URLs, with Local files handled separately on-device;
+- artifact Play / Download is wired to real backend artifact discovery and fresh presigned URLs, and downloaded cloud copies kept in app-private storage;
 - Credits screen with backend-authoritative integer posted, reserved, and available balances;
 - real credit ledger, reservation history, active reservation count, pricing metadata, empty/loading/error states, and pull-to-refresh;
 - Billing screen with backend credit packages, exact minor-unit money values, recent payment orders, and buy CTA;
@@ -132,9 +132,7 @@ Current V2 mobile implementation includes:
 - the Phase 15 suite reuses prior DTO/domain mapper, error/status mapping, idempotency, auth session/token, auth form, status-variant, credit, theme/language, and async-state coverage instead of duplicating those cases;
 - final Phase 15 validation runs 96 passing Flutter tests under the same CI format/analyze/test gates;
 - A7 cloud-hour exhaustion states pause cloud auto-recording, explain safe active-recording stop, and route users to buy more hours;
-- Free ad consent has an in-app explanation gate backed by `AdsService.consentState`, while Pro bypasses the gate;
-- Local files remain namespaced by account and device; files owned by another account are detected only to show a warning and are never imported or reassigned;
-- Home, active Local recording, and cloud-hour purchase layouts are audited for 200% text scaling, with the recording timer capped at 1.5x;
+- Home and cloud-hour purchase layouts are audited for 200% text scaling, with the recording timer capped at 1.5x;
 - A7 copy and legacy terminology are swept so mobile uses one-time cloud hours rather than subscription/Cloud Pack language.
 
 Authentication, Channels/Watch management, Recordings, Credits, and Billing now use real backend APIs in production bootstrap while mock implementations remain available for tests/previews. Home consumes real Watch/Recording data and the real available-credit balance; Profile remains on its current repository until a later integration phase.
@@ -400,9 +398,9 @@ Phase 8 settings validation additionally covers unverified profile fallback, all
 
 ## Cloud recording and artifacts
 
-SaveStream V2 supports both Android Local recording and cloud recording. Local captures are stored in app-private device storage under the owning account/device namespace; cloud jobs continue on backend infrastructure after the app is closed.
+The v1.x cleanup build records in the cloud only (on-device Local recording was removed). Cloud jobs continue on backend infrastructure after the app is closed, and the recordings library lists cloud recordings only.
 
-Cloud Play / Download requests a fresh presigned artifact URL from the backend. Local recordings remain device-owned files and cloud artifacts remain authoritative only for cloud recordings.
+Cloud Play / Download requests a fresh presigned artifact URL from the backend. A downloaded copy is kept in app-private storage for playback and sharing; cloud artifacts remain authoritative.
 
 Notification preferences now use the persisted backend preference API. Privacy
 Policy and Terms of Use open the published documents at savestream.online.

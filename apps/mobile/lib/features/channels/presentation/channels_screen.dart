@@ -5,18 +5,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/ads_service.dart';
-import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../local_recordings/presentation/local_recording_reward_sheet.dart';
-import '../../local_recordings/presentation/local_recording_start_sheet.dart';
-import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../../settings/presentation/notification_action_button.dart';
@@ -46,126 +38,31 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
     if (_mutating.contains(watch.id)) return;
     setState(() => _mutating.add(watch.id));
     try {
-      if (entitlement.plan == Plan.pro) {
-        final Engine? engine = await showProManualRecordSheet(
-          context: context,
-          creatorName: watch.creatorDisplayName,
-          entitlement: entitlement,
-        );
-        if (engine == null || !mounted) return;
-        if (engine == Engine.cloud) {
-          final RecordingSummary created = await ref
-              .read(recordingControllerProvider)
-              .create(
-                CreateRecordingCommand(
-                  sourceType: RecordingSourceType.username,
-                  sourceValue: watch.creatorUsername,
-                ),
-              );
-          if (mounted) context.push(AppRoutes.recordingDetail(created.id));
-          return;
-        }
-      }
-      await _startLocalRecording(watch, entitlement);
-    } on Object {
-      if (mounted) {
-        SsToast.show(context, context.l10n.localRecordingErrorTitle);
-      }
-    } finally {
-      if (mounted) setState(() => _mutating.remove(watch.id));
-    }
-  }
-
-  Future<void> _startRewardedRecording(
-    WatchSummary watch,
-    Entitlement entitlement,
-  ) async {
-    final bool started = await showRewardedRecordingStartSheet(
-      context: context,
-      ref: ref,
-      watchId: watch.id,
-      entitlement: entitlement.local,
-    );
-    if (started && mounted) {
-      context.push(AppRoutes.localRecording(watch.id));
-    }
-  }
-
-  Future<void> _startLocalRecording(
-    WatchSummary watch,
-    Entitlement entitlement,
-  ) async {
-    if (!entitlement.local.enabled) return;
-    if (!entitlement.local.unlimited &&
-        entitlement.local.minutesRemaining <= 0) {
-      await _startRewardedRecording(watch, entitlement);
-      return;
-    }
-    final LocalRecordingController controller = ref.read(
-      localRecordingControllerProvider,
-    );
-    if (controller.hasActiveSession) {
-      if (entitlement.plan == Plan.pro || controller.hasSecondarySession) {
-        SsToast.show(context, context.l10n.secondLocalSlotBusy);
+      if (entitlement.cloudMinutesAvailable <= 0) {
+        await showCloudHoursUpsellSheet(context);
         return;
       }
-      final bool startSecond = await showSecondLocalSlotSheet(
-        context: context,
-        ref: ref,
-        entitlement: entitlement.local,
-        targetCreatorName: watch.creatorDisplayName,
-      );
-      if (!startSecond || !mounted) return;
-      await controller.startSecond(watchId: watch.id);
-      if (mounted) context.push(AppRoutes.localRecording(watch.id));
-      return;
-    }
-
-    final LocalRecordingConfirmationController confirmation = ref.read(
-      localRecordingConfirmationControllerProvider,
-    );
-    final bool shouldConfirm = await confirmation.shouldConfirm(
-      force:
-          !entitlement.local.unlimited &&
-          entitlement.local.minutesRemaining <= 0,
-    );
-    if (!mounted) return;
-    if (shouldConfirm) {
-      final deviceInfo = ref.read(deviceInfoServiceProvider);
-      final int freeStorageBytes = await deviceInfo.freeStorageBytes;
-      if (!mounted) return;
-      final bool confirmed = await showLocalRecordingStartSheet(
+      final Engine? engine = await showProManualRecordSheet(
         context: context,
         creatorName: watch.creatorDisplayName,
         entitlement: entitlement,
-        platform: deviceInfo.platform,
-        freeStorageBytes: freeStorageBytes,
       );
-      if (!confirmed || !mounted) return;
-      await confirmation.markConfirmed();
-      if (!mounted) return;
-    }
-    try {
-      await controller.start(watchId: watch.id);
-      if (mounted) context.push(AppRoutes.localRecording(watch.id));
-    } on ApiException catch (error) {
-      if (error.code == 'FREE_MINUTES_EXHAUSTED') {
-        ref.invalidate(entitlementProvider);
-        final Entitlement refreshed = await ref.read(
-          entitlementProvider.future,
-        );
-        if (mounted) {
-          await _startRewardedRecording(watch, refreshed);
-        }
-        return;
+      if (engine != Engine.cloud || !mounted) return;
+      final RecordingSummary created = await ref
+          .read(recordingControllerProvider)
+          .create(
+            CreateRecordingCommand(
+              sourceType: RecordingSourceType.username,
+              sourceValue: watch.creatorUsername,
+            ),
+          );
+      if (mounted) context.push(AppRoutes.recordingDetail(created.id));
+    } on Object {
+      if (mounted) {
+        SsToast.show(context, context.l10n.cloudRecordingStartError);
       }
-      if (error.code == 'LOCAL_SLOT_BUSY') {
-        if (mounted) {
-          SsToast.show(context, context.l10n.secondLocalSlotBusy);
-        }
-        return;
-      }
-      rethrow;
+    } finally {
+      if (mounted) setState(() => _mutating.remove(watch.id));
     }
   }
 
@@ -258,7 +155,6 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
     final List<WatchSummary> all = watches.requireValue;
     final Entitlement access = entitlement.requireValue;
     final List<RecordingSummary> recs = recordings.requireValue;
-    final bool online = ref.watch(appOnlineProvider).value ?? true;
     if (all.isEmpty) {
       return _EmptyChannels(onAdd: () => _add(access, 0));
     }
@@ -340,12 +236,6 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
                 ),
               ),
             ),
-          ],
-          if (access.plan == Plan.free &&
-              online &&
-              MediaQuery.textScalerOf(context).scale(1) < 1.8) ...<Widget>[
-            ref.watch(adsServiceProvider).bannerFor(AdPlacement.watchList) ??
-                const SizedBox.shrink(),
           ],
         ],
       ),

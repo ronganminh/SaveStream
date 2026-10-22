@@ -7,10 +7,8 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/local_recorder.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../home/presentation/controllers/home_dashboard_controller.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import '../domain/models/recording_summary.dart';
 
 class ActiveRecordingBarItem {
@@ -32,51 +30,7 @@ class ActiveRecordingBarItem {
 final Provider<List<ActiveRecordingBarItem>> activeRecordingBarItemsProvider =
     Provider<List<ActiveRecordingBarItem>>((Ref ref) {
       final dashboard = ref.watch(homeDashboardProvider).value;
-      final LocalRecordingController localController = ref.watch(
-        localRecordingControllerProvider,
-      );
-      final LocalRecorderState? primary = ref
-          .watch(localRecorderStateProvider)
-          .value;
-      final LocalRecorderState? secondary = ref
-          .watch(secondaryLocalRecorderStateProvider)
-          .value;
       final List<ActiveRecordingBarItem> items = <ActiveRecordingBarItem>[];
-
-      String creatorNameForWatch(String watchId) {
-        if (dashboard != null) {
-          for (final watch in dashboard.watches) {
-            if (watch.id == watchId) return watch.creatorDisplayName;
-          }
-        }
-        return watchId;
-      }
-
-      final primarySession = localController.activeSession;
-      if (primarySession != null && _isActiveLocalPhase(primary?.phase)) {
-        items.add(
-          ActiveRecordingBarItem(
-            id: primarySession.sessionId,
-            creatorName: creatorNameForWatch(primarySession.watchId),
-            engine: Engine.local,
-            elapsedSeconds: primary?.recordedSeconds ?? 0,
-            route: AppRoutes.localRecording(primarySession.watchId),
-          ),
-        );
-      }
-
-      final secondarySession = localController.secondarySession;
-      if (secondarySession != null && _isActiveLocalPhase(secondary?.phase)) {
-        items.add(
-          ActiveRecordingBarItem(
-            id: secondarySession.sessionId,
-            creatorName: creatorNameForWatch(secondarySession.watchId),
-            engine: Engine.local,
-            elapsedSeconds: secondary?.recordedSeconds ?? 0,
-            route: AppRoutes.localRecording(secondarySession.watchId),
-          ),
-        );
-      }
 
       if (dashboard != null) {
         for (final RecordingSummary recording in dashboard.recordings) {
@@ -99,12 +53,6 @@ final Provider<List<ActiveRecordingBarItem>> activeRecordingBarItemsProvider =
 
       return List<ActiveRecordingBarItem>.unmodifiable(items);
     });
-
-bool _isActiveLocalPhase(LocalRecorderPhase? phase) {
-  return phase == LocalRecorderPhase.starting ||
-      phase == LocalRecorderPhase.recording ||
-      phase == LocalRecorderPhase.reconnecting;
-}
 
 class ActiveRecordingBar extends StatelessWidget {
   const ActiveRecordingBar({required this.items, super.key});

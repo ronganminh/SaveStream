@@ -1,4 +1,4 @@
-/// A09 — Notification rationale · step 3/3.
+/// A09 — Notification rationale · step 2/2.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +7,6 @@ import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../l10n/l10n.dart';
 import '../../../platform/platform_providers.dart';
-import '../../devices/domain/models/device_registration.dart';
 import 'widgets/onboarding_step_scaffold.dart';
 
 class NotificationRationaleScreen extends ConsumerStatefulWidget {
@@ -23,14 +22,7 @@ class _NotificationRationaleScreenState
   bool _requesting = false;
 
   void _continue() {
-    final DevicePlatform platform = ref
-        .read(deviceInfoServiceProvider)
-        .platform;
-    context.go(
-      platform == DevicePlatform.android
-          ? AppRoutes.onboardingAndroidPermission
-          : AppRoutes.onboardingIosLimits,
-    );
+    context.go(AppRoutes.onboardingAddCreator);
   }
 
   Future<void> _requestPermission() async {
@@ -49,7 +41,7 @@ class _NotificationRationaleScreenState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return OnboardingStepScaffold(
-      stepLabel: l10n.onboardingStepLabel(3, 3),
+      stepLabel: l10n.onboardingStepLabel(2, 2),
       title: l10n.notificationRationaleTitle,
       body: l10n.notificationRationaleBody,
       icon: Icons.notifications_active_outlined,

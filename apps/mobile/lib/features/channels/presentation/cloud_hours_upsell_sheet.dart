@@ -23,7 +23,6 @@ Future<void> showCloudHoursUpsellSheet(BuildContext context) {
             l10n.cloudHoursBenefitAuto,
             l10n.cloudHoursBenefitPhone,
             l10n.cloudHoursBenefitCreators,
-            l10n.cloudHoursBenefitNoAds,
           ])
             Padding(
               padding: const EdgeInsets.only(bottom: SsSpacing.sm),

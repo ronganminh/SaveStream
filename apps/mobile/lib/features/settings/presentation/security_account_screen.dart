@@ -8,7 +8,6 @@ import '../../../app/session/app_session_controller.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
 import 'controllers/settings_providers.dart';
 
 class SecurityAccountScreen extends ConsumerStatefulWidget {
@@ -26,19 +25,12 @@ class _SecurityAccountScreenState extends ConsumerState<SecurityAccountScreen> {
   String? _error;
 
   Future<void> _logout() async {
-    final controller = ref.read(localRecordingControllerProvider);
-    final bool localActive =
-        controller.hasActiveSession || controller.hasSecondarySession;
     final bool? confirmed = await SsConfirmDialog.show(
       context,
       title: context.l10n.logoutConfirmTitle,
-      message: localActive
-          ? context.l10n.logoutLocalRecordingWarning
-          : context.l10n.logoutConfirmBody,
+      message: context.l10n.logoutConfirmBody,
       cancelLabel: context.l10n.cancelAction,
-      confirmLabel: localActive
-          ? context.l10n.logoutStopSaveAction
-          : context.l10n.logoutAction,
+      confirmLabel: context.l10n.logoutAction,
     );
     if (confirmed != true || !mounted) return;
 
@@ -47,12 +39,6 @@ class _SecurityAccountScreenState extends ConsumerState<SecurityAccountScreen> {
       _error = null;
     });
     try {
-      if (controller.hasSecondarySession) {
-        await controller.stopSecond();
-      }
-      if (controller.hasActiveSession) {
-        await controller.stop();
-      }
       await ref
           .read(settingsAccountControllerProvider(widget.session))
           .logout();

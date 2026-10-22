@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../platform/platform_providers.dart';
-import '../../../local_recordings/data/cloud_recording_share_coordinator.dart';
 import '../../data/cloud_artifact_downloader.dart';
 import '../../data/cloud_recording_file_service.dart';
+import '../../data/cloud_recording_share_coordinator.dart';
 import 'recording_providers.dart';
 
 final Provider<CloudArtifactDownloader> cloudArtifactDownloaderProvider =

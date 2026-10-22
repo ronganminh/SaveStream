@@ -4,7 +4,7 @@ Phase 17 turns the Flutter client into a release-ready native package while keep
 
 ## Product model
 
-SaveStream V2 supports both cloud recording and local recording on the user's device. Cloud artifacts remain authoritative for cloud recordings; local recording files stay in app-private device storage.
+The v1.x cleanup build (2.0.1+) records in the cloud only. On-device (Local) recording, rewarded ads and all ad placements were removed; the recordings library lists cloud recordings only. Users can still download a cloud recording to app-private storage to play or share it. Ads return in v2 with IDs supplied by build config.
 
 Recording Play / Download requests a fresh backend presigned artifact URL and opens it through the platform/browser. The backend/cloud storage remains the source of truth.
 
@@ -42,47 +42,9 @@ C6 code and CI use fake store/plugin behavior; no real store transaction is run 
 
 Record device/OS, store environment, product ID, transaction ID (non-secret), backend result, and final cloud-minute balance in release evidence.
 
-## C7 ads and consent
+## Ads
 
-Free-plan ads use Google Mobile Ads with UMP consent. Production ad unit IDs are supplied at build time; when omitted, the app uses Google demo/test units so CI and development do not generate live traffic.
-
-Android production ad unit defines:
-
-```text
-ADMOB_BANNER_HOME_ANDROID
-ADMOB_BANNER_WATCH_ANDROID
-ADMOB_BANNER_LIBRARY_ANDROID
-ADMOB_REWARDED_ANDROID
-```
-
-iOS production ad unit defines:
-
-```text
-ADMOB_BANNER_HOME_IOS
-ADMOB_BANNER_WATCH_IOS
-ADMOB_BANNER_LIBRARY_IOS
-ADMOB_REWARDED_IOS
-```
-
-The Android release defaults to AdMob app ID
-`ca-app-pub-2078852906622512~2464439785`, banner unit
-`ca-app-pub-2078852906622512/4061426634`, and rewarded unit
-`ca-app-pub-2078852906622512/5155016450`. Debug/profile builds keep Google's
-sample IDs to avoid invalid production traffic. `SAVESTREAM_ADMOB_ANDROID_APP_ID`
-and the Android Dart defines above can still override those release defaults.
-For iOS release signing, set the real `ADMOB_APP_ID` in the private release
-xcconfig. Configure GDPR/privacy messages and the iOS IDFA/ATT message in AdMob
-Privacy & messaging before store release.
-
-Manual C7 checks:
-
-- Free account with zero watched creators: confirm no UMP prompt and no ad request occurs.
-- Free account after the first creator is added: complete the in-app explanation, then verify UMP appears only when required for the region.
-- iOS: verify the localized ATT description appears only when the AdMob IDFA flow needs the system prompt.
-- Pro account: confirm Google Mobile Ads is never initialized and no consent prompt appears.
-- Home, Watch list and Library: verify adaptive banners collapse to zero height on no-fill.
-- Recording, purchase and player screens: confirm no banner request is made.
-- Rewarded local-minutes/local-slot flow: verify `ssv_user_id` and `ssv_custom_data` from `POST /v1/rewards` reach AdMob SSV, then wait for backend `valid` before granting the reward.
+This build ships no ads SDK (`google_mobile_ads` removed), no AdMob app/unit IDs, no UMP consent gate and no iOS ATT prompt. Do not add hardcoded ad IDs back; v2 will read them from build config.
 
 ## Android signing
 
@@ -165,24 +127,9 @@ For production delivery, configure `SAVESTREAM_PUSH_PROVIDER=fcm` and provide `S
 - Version/build numbers are incremented before submission.
 
 
-## C3 Android local-recording final APK checks
-
-Real-device checks are intentionally deferred to the final APK pass. Record model, Android version, battery start/end, free storage start/end, recorded duration and resulting file size for each run.
-
-- Record for 10 minutes in foreground, then repeat with the screen locked.
-- Start recording, switch to another app for 10 minutes, and confirm the foreground service remains active.
-- Disconnect networking for 30 seconds, reconnect, and verify reconnecting returns to recording without charging/claiming disconnected time.
-- Force-stop or kill the app during capture, relaunch, and verify the interrupted file is detected and recovery ends as recovered or partial.
-- Reduce free storage below 250 MB and verify recording stops safely without deleting captured bytes.
-- Use the notification Stop action and verify stopping finalizes the file without opening the app.
-- Sign out while a granted lease is active and verify capture is not truncated solely because the auth session ended.
-- Verify app-private files remain under the source `user_id` and are hidden after a different account signs in; sign back into the original account and confirm they are visible again.
-- Check the Android battery-optimization state shown by the app, open the corresponding system battery settings, switch to unrestricted where supported, then return and confirm the state refreshes.
-
-
 ## C9 production configuration
 
-The release version starts at `2.0.0+1`; increment the build number for every store upload.
+The release version started at `2.0.0+1`; the v1.x cleanup build is `2.0.1+9`. Increment the build number for every store upload.
 
 Supported production Dart defines:
 
@@ -191,38 +138,29 @@ APP_ENV=production
 API_BASE_URL=https://api.savestream.online
 PRIVACY_POLICY_URL=https://savestream.online/privacy
 TERMS_OF_USE_URL=https://savestream.online/terms
-APP_VERSION=2.0.0
-
-ADMOB_BANNER_HOME_ANDROID=<production ad unit id>
-ADMOB_BANNER_WATCH_ANDROID=<production ad unit id>
-ADMOB_BANNER_LIBRARY_ANDROID=<production ad unit id>
-ADMOB_REWARDED_ANDROID=<production ad unit id>
-
-ADMOB_BANNER_HOME_IOS=<production ad unit id>
-ADMOB_BANNER_WATCH_IOS=<production ad unit id>
-ADMOB_BANNER_LIBRARY_IOS=<production ad unit id>
-ADMOB_REWARDED_IOS=<production ad unit id>
+APP_VERSION=2.0.1
 ```
 
-Android's AdMob app ID is supplied separately through `SAVESTREAM_ADMOB_ANDROID_APP_ID`. Firebase app files and signing material remain outside Git.
+Firebase app files and signing material remain outside Git.
 
 ## C9 permission and privacy audit
 
 Android release permissions are intentionally limited to:
 
-- `INTERNET`: authenticated API, Firebase, store billing, ads and artifact URLs.
-- `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_DATA_SYNC`: Android Local recording foreground service.
-- `POST_NOTIFICATIONS`: Local-recording service notifications plus FCM notifications on Android 13+.
+- `INTERNET`: authenticated API, Firebase, store billing and artifact URLs.
+- `POST_NOTIFICATIONS`: FCM notifications on Android 13+.
+
+No foreground-service permission is declared (the on-device recorder service was removed).
 
 No location, contacts, camera, microphone, broad storage or media-library permission is declared.
 
-iOS `Info.plist` contains only the ATT usage description required by the Free-plan advertising flow plus local-network development transport configuration. No camera, microphone, contacts, location or photo-library usage description is declared.
+iOS `Info.plist` contains no ATT usage description (ads are removed) and only local-network development transport configuration. No camera, microphone, contacts, location or photo-library usage description is declared.
 
 ## C9 R8 / release shrinking
 
 Android release builds enable R8 code shrinking and resource shrinking with `android/app/proguard-rules.pro`. The app keeps SaveStream native entry points, Flutter generated plugin registration and Firebase Messaging plugin classes while relying on SDK consumer rules for the remaining plugins.
 
-Before publishing, run the exact release AAB through the emulator/device smoke flow and verify Firebase push, Google Mobile Ads, Store billing, Local recording and artifact playback after shrinking.
+Before publishing, run the exact release AAB through the emulator/device smoke flow and verify Firebase push, Store billing, cloud recording and artifact playback after shrinking.
 
 ## Store data disclosure inventory
 
@@ -231,7 +169,6 @@ Use this inventory when filling Google Play Data safety / App Store privacy decl
 - account identity and authenticated device registration identifiers;
 - FCM push token and notification preferences;
 - purchase/order/transaction history used for store verification and cloud-hour crediting;
-- advertising/consent identifiers handled by Google Mobile Ads / UMP where applicable;
 - support diagnostics such as request IDs and issue reports actually submitted by the user;
 - creator/watch configuration and recording metadata required to provide the SaveStream service.
 

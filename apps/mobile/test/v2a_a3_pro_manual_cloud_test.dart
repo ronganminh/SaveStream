@@ -15,7 +15,7 @@ void main() {
     );
   }
 
-  testWidgets('Q06 Pro defaults to enabled unlimited Local from server', (
+  testWidgets('Q06 manual record sheet offers Cloud only', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -32,13 +32,18 @@ void main() {
     );
 
     expect(find.text('Record Lina Studio'), findsOneWidget);
-    expect(find.text('Local · on this device'), findsOneWidget);
-    expect(find.textContaining('Does not use cloud hours'), findsOneWidget);
-    expect(find.text('Record Local'), findsOneWidget);
+    expect(find.text('Local · on this device'), findsNothing);
+    expect(find.text('Cloud · on SaveStream servers'), findsOneWidget);
     expect(find.textContaining('5 h'), findsOneWidget);
+    final Finder action = find.widgetWithText(
+      FilledButton,
+      'Record Cloud · use cloud hours',
+    );
+    expect(action, findsOneWidget);
+    expect(tester.widget<FilledButton>(action).onPressed, isNotNull);
   });
 
-  testWidgets('Q06 disables Local when server local.enabled is false', (
+  testWidgets('Q06 disables Cloud record when no cloud hours remain', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -48,17 +53,18 @@ void main() {
           entitlement: _entitlement(
             localEnabled: false,
             localUnlimited: false,
-            cloudMinutes: 300,
+            cloudMinutes: 0,
           ),
         ),
       ),
     );
 
-    expect(
-      find.text('Local recording is currently disabled for this account.'),
-      findsOneWidget,
+    expect(find.text('No cloud hours are available.'), findsOneWidget);
+    final Finder action = find.widgetWithText(
+      FilledButton,
+      'Record Cloud · use cloud hours',
     );
-    expect(find.text('Record Cloud · use cloud hours'), findsOneWidget);
+    expect(tester.widget<FilledButton>(action).onPressed, isNull);
   });
 
   testWidgets('R26 cloud active uses server lifecycle copy', (

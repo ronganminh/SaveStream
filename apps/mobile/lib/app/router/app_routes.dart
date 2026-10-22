@@ -12,11 +12,7 @@ abstract final class AppRoutes {
   static const String resetPassword = '/auth/reset';
 
   static const String introWatchDetect = '/onboarding/intro/watch-detect';
-  static const String introLocalCloud = '/onboarding/intro/local-cloud';
   static const String onboardingNotifications = '/onboarding/notifications';
-  static const String onboardingAndroidPermission =
-      '/onboarding/android-permission';
-  static const String onboardingIosLimits = '/onboarding/ios-limits';
   static const String onboardingAddCreator = '/onboarding/add-creator';
   static const String onboardingCreatorAdded = '/onboarding/creator-added';
 
@@ -24,7 +20,6 @@ abstract final class AppRoutes {
   static const String channels = '/channels';
   static const String addChannel = '/channels/add';
   static const String recordings = '/recordings';
-  static const String localRecovery = '/recordings/recovery';
   static const String usage = '/usage';
   static const String cloudHours = '/usage/cloud-hours';
 
@@ -40,11 +35,6 @@ abstract final class AppRoutes {
   static const String legalHub = '/settings/legal';
   static const String responsibleUse = '/settings/legal/responsible-use';
   static const String deleteAccount = '/settings/security/delete';
-  static const String deviceStorage = '/settings/storage';
-  static const String androidRecordingGuide = '/settings/recording/android';
-  static const String androidOemRecordingGuide =
-      '/settings/recording/android/oem';
-  static const String iosRecordingGuide = '/settings/recording/ios';
   static const String privacy = '/settings/privacy';
   static const String terms = '/settings/terms';
 
@@ -54,15 +44,11 @@ abstract final class AppRoutes {
   static String autoRecordSettings(String id) =>
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
-  static String localRecordingDetail(String id) =>
-      '/recordings/local-file/' + id;
   static String recordingPlayer(String id) => '/recordings/player/' + id;
   static String cloudHoursLocation(String context) => Uri(
     path: cloudHours,
     queryParameters: <String, String>{'context': context},
   ).toString();
-  static String localRecording(String watchId) =>
-      '/recordings/local/' + watchId;
 
   static String liveNotification(String id, {String state = 'checking'}) {
     return Uri(
