@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/app_settings_controller.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
 import '../../../core/widgets/v2/ss_v2_widgets.dart';
@@ -15,12 +16,16 @@ class SignInScreen extends StatefulWidget {
     required this.repository,
     required this.session,
     this.onSignedIn,
+    this.onSignInMethod,
     super.key,
   });
 
   final AuthRepository repository;
   final AppSessionController session;
   final VoidCallback? onSignedIn;
+
+  /// Remembers how this device signed in (Profile shows it).
+  final ValueChanged<SignInMethod>? onSignInMethod;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -78,7 +83,10 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         );
       }
+      widget.onSignInMethod?.call(SignInMethod.password);
       widget.onSignedIn?.call();
+    } else if (mounted) {
+      openAccountStatusIfBlocked(context, _controller);
     }
   }
 
@@ -89,9 +97,11 @@ class _SignInScreenState extends State<SignInScreen> {
     final bool signedIn = await _controller.signInSocial(provider);
     if (!mounted) return;
     if (signedIn) {
+      widget.onSignInMethod?.call(SignInMethod.google);
       widget.onSignedIn?.call();
       return;
     }
+    if (openAccountStatusIfBlocked(context, _controller)) return;
     final AuthFailureCode? failure = _controller.failure;
     if (failure != null && isGoogleScreenFailure(failure)) {
       setState(() => _showGoogleError = true);

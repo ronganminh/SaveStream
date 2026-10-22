@@ -788,6 +788,10 @@ class _FakeProfile implements ProfileRepository {
     displayName: 'Alex Morgan',
     id: _userId,
   );
+
+  @override
+  Future<UserProfile> updateDisplayName(String? displayName) =>
+      throw UnimplementedError();
 }
 
 class _FakeNotifications implements NotificationsRepository {

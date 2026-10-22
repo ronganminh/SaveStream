@@ -28,6 +28,48 @@ class AppConfig {
   /// Refund Policy, on the same site as the Terms of Use.
   Uri get refundPolicyUrl => termsOfUseUrl.replace(path: '/refund');
 
+  /// A page on the website that hosts the Terms of Use.
+  Uri sitePage(String path, {Map<String, String>? query}) =>
+      termsOfUseUrl.replace(path: path, queryParameters: query);
+
+  /// Copyright & Takedown Policy.
+  Uri get copyrightPolicyUrl => sitePage('/copyright');
+
+  /// The web /report form (copyright notice, or abuse with [abuse]).
+  Uri reportFormUrl({bool abuse = false}) => sitePage(
+    '/report',
+    query: abuse ? const <String, String>{'type': 'abuse'} : null,
+  );
+
+  /// A help center article (savestream.online/help/<slug>).
+  Uri helpArticleUrl(String slug) => sitePage('/help/$slug');
+
+  /// Service status page.
+  Uri get statusPageUrl => sitePage('/status');
+
+  /// Account deletion on the web (Play's data deletion link).
+  Uri get accountDeletionUrl => sitePage('/delete-account');
+
+  static const String supportEmail = 'support@savestream.online';
+  static const String abuseEmail = 'abuse@savestream.online';
+
+  /// Android application id; the Play Store listing opens from it.
+  static const String androidPackageName = 'com.savestream.app';
+
+  /// The Play Store app (market://) and the web listing as fallback.
+  static final Uri playStoreAppUrl = Uri.parse(
+    'market://details?id=$androidPackageName',
+  );
+  static final Uri playStoreWebUrl = Uri.parse(
+    'https://play.google.com/store/apps/details?id=$androidPackageName',
+  );
+
+  static Uri mailto(String address, {String? subject}) => Uri(
+    scheme: 'mailto',
+    path: address,
+    query: subject == null ? null : 'subject=${Uri.encodeComponent(subject)}',
+  );
+
   /// Google Play's order history (receipts, refunds) for the signed-in
   /// Play account.
   static final Uri googlePlayOrderHistoryUrl = Uri.parse(

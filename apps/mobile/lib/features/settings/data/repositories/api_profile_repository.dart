@@ -17,4 +17,17 @@ final class ApiProfileRepository implements ProfileRepository {
     );
     return response.data;
   }
+
+  @override
+  Future<UserProfile> updateDisplayName(String? displayName) async {
+    final String? value = displayName?.trim();
+    final response = await _apiClient.patch<UserProfile>(
+      '/v1/me',
+      data: <String, Object?>{
+        'display_name': value == null || value.isEmpty ? null : value,
+      },
+      decoder: userProfileFromJson,
+    );
+    return response.data;
+  }
 }

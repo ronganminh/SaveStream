@@ -30,12 +30,34 @@ enum AuthFailureCode {
   sessionExpired,
   server,
   offlineLike,
+
+  /// Sign-in refused: the account is suspended (ACCOUNT_SUSPENDED).
+  accountSuspended,
+
+  /// Sign-in refused: the account was closed (ACCOUNT_TERMINATED).
+  accountTerminated,
+}
+
+/// What the server says about a suspended or closed account.
+class AccountStatusDetails {
+  const AccountStatusDetails({
+    this.reason = '',
+    this.reference = '',
+    this.email = '',
+  });
+
+  final String reason;
+  final String reference;
+  final String email;
 }
 
 class AuthException implements Exception {
-  const AuthException(this.code);
+  const AuthException(this.code, {this.accountStatus});
 
   final AuthFailureCode code;
+
+  /// Set for [AuthFailureCode.accountSuspended] / [accountTerminated].
+  final AccountStatusDetails? accountStatus;
 }
 
 abstract interface class AuthRepository {

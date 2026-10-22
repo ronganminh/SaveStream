@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../core/storage/app_settings_store.dart';
 
+enum SignInMethod { password, google }
+
 class AppSettingsController extends ChangeNotifier {
   AppSettingsController({
     ThemeMode themeMode = ThemeMode.system,
@@ -20,22 +22,32 @@ class AppSettingsController extends ChangeNotifier {
   static const String _themeKey = 'settings.theme';
   static const String _localeKey = 'settings.locale';
   static const String _introKey = 'onboarding.intro.completed';
+  static const String _signInMethodKey = 'auth.sign_in_method';
 
   final AppSettingsStore _store;
   ThemeMode _themeMode;
   Locale _locale;
   bool _useSystemLocale;
   bool _hasCompletedIntro;
+  SignInMethod? _signInMethod;
 
   ThemeMode get themeMode => _themeMode;
   Locale get locale => _locale;
   bool get useSystemLocale => _useSystemLocale;
   bool get hasCompletedIntro => _hasCompletedIntro;
 
+  /// How this device last signed in (the server does not say), for the
+  /// Profile screen's password / Google row. Null before the first sign-in.
+  SignInMethod? get signInMethod => _signInMethod;
+
   Future<void> initialize() async {
     final String? themeValue = await _store.readString(_themeKey);
     final String? localeValue = await _store.readString(_localeKey);
     final String? introValue = await _store.readString(_introKey);
+    final String? methodValue = await _store.readString(_signInMethodKey);
+    for (final SignInMethod method in SignInMethod.values) {
+      if (method.name == methodValue) _signInMethod = method;
+    }
 
     final ThemeMode restoredTheme = _parseTheme(themeValue) ?? _themeMode;
     final bool restoredUseSystemLocale = localeValue == 'system';
@@ -89,6 +101,13 @@ class AppSettingsController extends ChangeNotifier {
     _useSystemLocale = true;
     notifyListeners();
     unawaited(_store.writeString(_localeKey, 'system'));
+  }
+
+  void setSignInMethod(SignInMethod value) {
+    if (_signInMethod == value) return;
+    _signInMethod = value;
+    notifyListeners();
+    unawaited(_store.writeString(_signInMethodKey, value.name));
   }
 
   Future<void> markIntroCompleted() async {

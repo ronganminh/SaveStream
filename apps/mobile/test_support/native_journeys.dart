@@ -166,8 +166,8 @@ void registerDeviceJourneys() {
     );
     await _waitFor(tester, find.byKey(const ValueKey<String>('nav-account')));
     await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await _waitFor(tester, find.text('Settings'));
-    final BuildContext context = tester.element(find.text('Settings').first);
+    await _waitFor(tester, find.text('Account'));
+    final BuildContext context = tester.element(find.text('Account').first);
     GoRouter.of(context).push(AppRoutes.language);
     await _waitFor(tester, find.text('Vietnamese'));
     await tester.tap(find.text('Vietnamese'));
@@ -175,9 +175,9 @@ void registerDeviceJourneys() {
     expect(settings.locale.languageCode, 'vi');
 
     GoRouter.of(tester.element(find.text('Ngôn ngữ').first)).pop();
-    await _waitFor(tester, find.text('Cài đặt'));
+    await _waitFor(tester, find.text('Tài khoản'));
     GoRouter.of(
-      tester.element(find.text('Cài đặt').first),
+      tester.element(find.text('Tài khoản').first),
     ).push(AppRoutes.theme);
     await _waitFor(tester, find.text('Tối'));
     await tester.tap(find.text('Tối'));

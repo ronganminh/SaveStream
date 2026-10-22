@@ -8,6 +8,8 @@ import 'package:flutter/widgets.dart';
 import '../core/config/app_config.dart';
 import '../core/errors/app_error_reporter.dart';
 import '../core/storage/shared_preferences_app_settings_store.dart';
+import '../features/account/data/report_repository.dart';
+import '../features/account/presentation/account_providers.dart';
 import '../features/app_status/data/repositories/api_app_status_repository.dart';
 import '../features/auth/data/auth_runtime.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
@@ -157,6 +159,9 @@ Future<void> bootstrap() async {
           SharedPreferencesAdPreferencesStore(),
         ),
         deviceRepositoryProvider.overrideWithValue(deviceRepository),
+        reportRepositoryProvider.overrideWithValue(
+          ApiReportRepository(apiClient: authenticatedApiClient),
+        ),
         shareServiceProvider.overrideWithValue(const SharePlusService()),
       ],
     ),

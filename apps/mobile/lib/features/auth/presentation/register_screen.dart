@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/app_settings_controller.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
 import '../../../core/config/app_config.dart';
@@ -19,6 +20,7 @@ class RegisterScreen extends StatefulWidget {
     required this.session,
     required this.config,
     this.onSignedIn,
+    this.onSignInMethod,
     super.key,
   });
 
@@ -26,6 +28,9 @@ class RegisterScreen extends StatefulWidget {
   final AppSessionController session;
   final AppConfig config;
   final VoidCallback? onSignedIn;
+
+  /// Remembers how this device signed in (Profile shows it).
+  final ValueChanged<SignInMethod>? onSignInMethod;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -97,10 +102,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
     if (!mounted) return;
     if (signedIn) {
+      widget.onSignInMethod?.call(SignInMethod.google);
       widget.onSignedIn?.call();
       context.go(AppRoutes.home);
       return;
     }
+    if (openAccountStatusIfBlocked(context, _controller)) return;
     final AuthFailureCode? failure = _controller.failure;
     if (failure != null && isGoogleScreenFailure(failure)) {
       setState(() => _showGoogleError = true);

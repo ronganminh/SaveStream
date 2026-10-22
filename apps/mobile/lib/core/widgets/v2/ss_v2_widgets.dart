@@ -101,7 +101,7 @@ List<Widget> _withGaps(List<Widget> children, double gap) {
 List<Widget> ssV2Gap(List<Widget> children, double gap) =>
     _withGaps(children, gap);
 
-enum SsV2ButtonVariant { primary, outlined, text }
+enum SsV2ButtonVariant { primary, outlined, text, danger }
 
 enum SsV2ButtonSize { regular, small }
 
@@ -140,6 +140,7 @@ class SsV2Button extends StatelessWidget {
       SsV2ButtonVariant.primary => palette.onPrimary,
       SsV2ButtonVariant.outlined => palette.text,
       SsV2ButtonVariant.text => palette.link,
+      SsV2ButtonVariant.danger => Colors.white,
     };
     final Widget content = isLoading
         ? SizedBox.square(
@@ -169,16 +170,19 @@ class SsV2Button extends StatelessWidget {
     final VoidCallback? handler = isLoading ? null : onPressed;
     final Size minimum = Size(expand ? double.infinity : 0, height);
     const EdgeInsets padding = EdgeInsets.symmetric(horizontal: 12);
+    final bool danger = variant == SsV2ButtonVariant.danger;
+    final Color filled = danger ? palette.error : palette.primary;
+    final Color onFilled = danger ? Colors.white : palette.onPrimary;
     final Widget button = switch (variant) {
-      SsV2ButtonVariant.primary => FilledButton(
+      SsV2ButtonVariant.primary || SsV2ButtonVariant.danger => FilledButton(
         onPressed: handler,
         style: FilledButton.styleFrom(
-          backgroundColor: palette.primary,
-          foregroundColor: palette.onPrimary,
+          backgroundColor: filled,
+          foregroundColor: onFilled,
           disabledBackgroundColor: isLoading
-              ? palette.primary
-              : palette.primary.withValues(alpha: 0.45),
-          disabledForegroundColor: palette.onPrimary,
+              ? filled
+              : filled.withValues(alpha: 0.45),
+          disabledForegroundColor: onFilled,
           minimumSize: minimum,
           fixedSize: Size.fromHeight(height),
           padding: padding,
@@ -373,11 +377,22 @@ class SsV2TextField extends StatelessWidget {
     this.fieldKey,
     this.hintText,
     this.autocorrect,
+    this.readOnly = false,
+    this.maxLength,
+    this.minLines,
+    this.maxLines = 1,
     super.key,
   });
 
   final String label;
   final TextEditingController controller;
+
+  /// Shown as drawn but not editable (e.g. an email the server can't
+  /// change).
+  final bool readOnly;
+  final int? maxLength;
+  final int? minLines;
+  final int? maxLines;
   final String? errorText;
   final String? helperText;
   final String? hintText;
@@ -408,6 +423,10 @@ class SsV2TextField extends StatelessWidget {
           key: fieldKey,
           controller: controller,
           enabled: enabled,
+          readOnly: readOnly,
+          maxLength: maxLength,
+          minLines: minLines,
+          maxLines: obscureText ? 1 : maxLines,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
           autofillHints: autofillHints,
@@ -447,6 +466,7 @@ class SsV2TextField extends StatelessWidget {
             ),
             filled: false,
             isDense: false,
+            counterText: '',
             contentPadding: EdgeInsets.fromLTRB(
               13,
               18,
@@ -855,12 +875,17 @@ class SsV2Avatar extends StatelessWidget {
     this.size = 44,
     this.liveRing = false,
     this.fontSize,
+    this.brand = false,
     super.key,
   });
 
   final String name;
   final double size;
   final bool liveRing;
+
+  /// The brand (purple) pair instead of one picked from [name] (the
+  /// signed-in user's own avatar).
+  final bool brand;
 
   /// Initials size; defaults to 17 from 48px and 15 below.
   final double? fontSize;
@@ -899,7 +924,7 @@ class SsV2Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final SsV2Palette palette = SsV2Palette.of(context);
-    final (Color bg, Color fg) = colorsFor(name);
+    final (Color bg, Color fg) = brand ? _pairs.first : colorsFor(name);
     return ExcludeSemantics(
       child: Container(
         width: size,
@@ -1227,7 +1252,7 @@ class SsV2PageDots extends StatelessWidget {
   }
 }
 
-enum SsV2TileTone { brand, success, error, warning }
+enum SsV2TileTone { brand, success, error, warning, neutral }
 
 /// Centered status screen body: 96px icon tile, title, body and actions.
 class SsV2StatusBody extends StatelessWidget {
@@ -1238,6 +1263,7 @@ class SsV2StatusBody extends StatelessWidget {
     required this.body,
     required this.actions,
     this.extra,
+    this.bodySpan,
     super.key,
   });
 
@@ -1245,6 +1271,10 @@ class SsV2StatusBody extends StatelessWidget {
   final SsV2TileTone tone;
   final String title;
   final String body;
+
+  /// Rich body (e.g. a bold time) shown instead of [body], which stays the
+  /// plain-text label.
+  final InlineSpan? bodySpan;
   final Widget? extra;
   final List<Widget> actions;
 
@@ -1256,6 +1286,7 @@ class SsV2StatusBody extends StatelessWidget {
       SsV2TileTone.success => (palette.successBackground, palette.success),
       SsV2TileTone.error => (palette.errorBackground, palette.errorText),
       SsV2TileTone.warning => (palette.warningBackground, palette.warning),
+      SsV2TileTone.neutral => (palette.neutralBackground, palette.neutralText),
     };
     // The body is at most 310 wide. A ConstrainedBox would report its
     // intrinsic height at the full width (fewer lines), and the
@@ -1309,8 +1340,9 @@ class SsV2StatusBody extends StatelessWidget {
                 const SizedBox(height: 16),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: bodyInset),
-                  child: Text(
-                    body,
+                  child: Text.rich(
+                    bodySpan ?? TextSpan(text: body),
+                    semanticsLabel: body,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,

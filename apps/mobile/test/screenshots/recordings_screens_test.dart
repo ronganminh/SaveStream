@@ -622,6 +622,10 @@ class _FakeProfile implements ProfileRepository {
     emailVerified: true,
     displayName: 'Alex Morgan',
   );
+
+  @override
+  Future<UserProfile> updateDisplayName(String? displayName) =>
+      throw UnimplementedError();
 }
 
 class _FakeNotifications implements NotificationsRepository {

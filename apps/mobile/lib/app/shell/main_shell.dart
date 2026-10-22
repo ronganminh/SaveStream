@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config_provider.dart';
 import '../../core/widgets/savestream_widgets.dart';
 import '../../core/widgets/v2/ss_v2_widgets.dart';
-import '../../features/app_status/presentation/a6_app_status_providers.dart';
+import '../../features/app_status/presentation/system_screens.dart';
+import '../../features/app_status/presentation/system_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
 import '../../l10n/l10n.dart';
@@ -40,91 +42,49 @@ class MainShell extends ConsumerWidget {
           (ActiveRecordingBarItem item) => item.route == location,
         );
     final bool isOnline = ref.watch(appOnlineProvider).value ?? true;
-    final A6GlobalGate gate =
-        ref.watch(a6GlobalGateProvider).value ?? A6GlobalGate.none;
+    final SystemStatus status =
+        ref.watch(systemStatusProvider).value ?? SystemStatus.open;
     ref.listen<AsyncValue<bool>>(appOnlineProvider, (
       AsyncValue<bool>? previous,
       AsyncValue<bool> next,
     ) {
       if (previous?.value == false && next.value == true) {
         SsSnackbar.show(context, l10n.globalReconnectedToast);
+        ref.invalidate(systemStatusProvider);
       }
     });
     final bool sessionExpired = session.authStatus == AppAuthStatus.expired;
 
-    if (gate != A6GlobalGate.none) {
-      final bool maintenance = gate == A6GlobalGate.maintenance;
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 520),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Icon(
-                      maintenance
-                          ? Icons.construction_rounded
-                          : Icons.system_update_rounded,
-                      size: 64,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      maintenance
-                          ? l10n.globalMaintenanceTitle
-                          : l10n.globalUpdateRequiredTitle,
-                      style: Theme.of(context).textTheme.headlineSmall,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      maintenance
-                          ? l10n.globalMaintenanceBody
-                          : l10n.globalUpdateRequiredBody,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    void retryStatus() => ref.invalidate(systemStatusProvider);
 
-    final Widget shellBody = Column(
-      children: <Widget>[
-        if (!isOnline)
-          Material(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: SafeArea(
-              bottom: false,
-              child: Semantics(
-                liveRegion: true,
-                label: l10n.homeOfflineTitle,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      const Icon(Icons.cloud_off_rounded),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(l10n.homeOfflineBody)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        Expanded(child: navigationShell),
-      ],
-    );
+    // Full-screen system states (v2 artboards), most blocking first. They
+    // cover the shell, which stays mounted so the tabs keep their place.
+    final Widget? systemScreen = switch (status.gate) {
+      SystemGate.updateRequired => ForceUpdateScreen(
+        installedVersion: status.installedVersion,
+        requiredVersion: status.requiredVersion,
+      ),
+      SystemGate.maintenance => MaintenanceScreen(
+        eta: status.maintenanceEta,
+        statusPageUrl: ref.watch(appConfigProvider).statusPageUrl,
+        onRetry: retryStatus,
+      ),
+      SystemGate.serverError => ServerErrorScreen(
+        requestId: status.requestId,
+        onRetry: retryStatus,
+      ),
+      SystemGate.none when !isOnline => OfflineScreen(
+        onRetry: () {
+          ref.invalidate(appOnlineProvider);
+          retryStatus();
+        },
+      ),
+      SystemGate.none => null,
+    };
 
-    return Scaffold(
+    final Widget shellBody = navigationShell;
+
+    final Widget shell = Scaffold(
       body: Stack(
         children: <Widget>[
           shellBody,
@@ -218,6 +178,17 @@ class MainShell extends ConsumerWidget {
           ],
         ),
       ),
+    );
+    final bool covered = systemScreen != null;
+    // One tree shape either way, so the shell is never remounted.
+    return Stack(
+      children: <Widget>[
+        ExcludeSemantics(
+          excluding: covered,
+          child: IgnorePointer(ignoring: covered, child: shell),
+        ),
+        if (covered) Positioned.fill(child: systemScreen),
+      ],
     );
   }
 }

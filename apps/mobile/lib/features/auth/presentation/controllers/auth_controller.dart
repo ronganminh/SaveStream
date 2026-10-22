@@ -18,8 +18,13 @@ class AuthController extends ChangeNotifier {
   bool _socialInProgress = false;
   bool _socialCancelled = false;
   AuthFailureCode? _failure;
+  AccountStatusDetails? _accountStatus;
 
   bool get isLoading => _isLoading;
+
+  /// The server's details when sign-in was refused for a suspended or
+  /// closed account.
+  AccountStatusDetails? get accountStatus => _accountStatus;
 
   /// True while a Google/Apple sign-in is running (the full-screen state).
   bool get socialInProgress => _socialInProgress;
@@ -53,6 +58,7 @@ class AuthController extends ChangeNotifier {
       if (error.code == AuthFailureCode.emailNotVerified) {
         _session.setPendingVerificationEmail(email);
       }
+      _accountStatus = error.accountStatus;
       _fail(error.code);
       return false;
     }
@@ -96,6 +102,7 @@ class AuthController extends ChangeNotifier {
         _finish();
         return false;
       }
+      _accountStatus = error.accountStatus;
       _fail(error.code);
       return false;
     }
