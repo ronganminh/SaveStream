@@ -136,7 +136,11 @@ function mapNotificationToModel(item: NotificationResponse): NotificationModel {
             to: "/recordings/$id" as const,
             params: { id: item.resource_id },
           }
-        : { to: "/usage" as const };
+        : item.resource_type === "watch" && item.resource_id
+          ? { to: "/channels/$id" as const, params: { id: item.resource_id } }
+          : item.type === "channel_verification_needed"
+            ? { to: "/channels" as const }
+            : { to: "/usage" as const };
 
   return {
     id: item.id,

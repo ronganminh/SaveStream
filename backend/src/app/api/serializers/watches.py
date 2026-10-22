@@ -10,8 +10,10 @@ from app.api.schemas.watches import (
     WatchStatusValue,
 )
 from app.application.entitlements.service import EntitlementSnapshot
+from app.application.watches.verification import verification_required
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
+from app.settings import AppSettings
 
 
 def creator_avatar_url(watch: Watch) -> str | None:
@@ -59,6 +61,7 @@ def watch_response(
     entitlement: EntitlementSnapshot | None = None,
     waiting_for_cloud_slot: bool = False,
     active_recording: Recording | None = None,
+    settings: AppSettings | None = None,
 ) -> WatchResponse:
     creator = None
     if watch.resolved_username:
@@ -105,4 +108,9 @@ def watch_response(
         created_at=watch.created_at,
         updated_at=watch.updated_at,
         owner_attested_at=watch.owner_attested_at,
+        owner_verified_at=watch.owner_verified_at,
+        verification_due_at=watch.verification_due_at,
+        verification_required=(
+            verification_required(watch, settings) if settings is not None else False
+        ),
     )

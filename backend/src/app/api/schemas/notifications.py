@@ -23,6 +23,7 @@ NotificationKind = Literal[
     "credits_low",
     "free_minutes_low",
     "purchase_completed",
+    "channel_verification_needed",
     "admin_system",
     "admin_marketing",
 ]

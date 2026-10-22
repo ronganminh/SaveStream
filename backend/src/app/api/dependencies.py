@@ -145,6 +145,20 @@ def get_recording_service(
     )
 
 
+def get_channel_verification_service(
+    request: Request,
+    session: AsyncSession = Depends(get_db_session),
+):
+    from app.application.watches.verification import ChannelVerificationService
+    from app.infrastructure.creators.tiktok_profile import TikTokChannelProfileLookup
+
+    return ChannelVerificationService(
+        session,
+        request.app.state.settings,
+        lookup=TikTokChannelProfileLookup(),
+    )
+
+
 def get_watch_service(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
