@@ -40,7 +40,7 @@ Future<void> showCloudHoursUpsellSheet(BuildContext context) {
             label: l10n.buyCloudHoursAction,
             onPressed: () {
               Navigator.of(sheetContext).pop();
-              context.push(AppRoutes.cloudHoursLocation('autoRecord'));
+              context.push(AppRoutes.usage);
             },
           ),
         ],

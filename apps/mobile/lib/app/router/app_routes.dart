@@ -20,8 +20,17 @@ abstract final class AppRoutes {
   static const String channels = '/channels';
   static const String addChannel = '/channels/add';
   static const String recordings = '/recordings';
+
+  /// Recording time (Credits): balance, rewarded ad, Google Play packs.
   static const String usage = '/usage';
+
+  /// Old "buy cloud hours" link; redirects to [usage].
   static const String cloudHours = '/usage/cloud-hours';
+  static const String creditsHistory = '/usage/history';
+  static const String purchases = '/usage/purchases';
+  static const String adPrivacy = '/usage/ad-privacy';
+  static const String purchaseSuccess = '/usage/purchase/success';
+  static const String purchasePending = '/usage/purchase/pending';
 
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
@@ -46,11 +55,6 @@ abstract final class AppRoutes {
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
   static String recordingPlayer(String id) => '/recordings/player/' + id;
-  static String cloudHoursLocation(String context) => Uri(
-    path: cloudHours,
-    queryParameters: <String, String>{'context': context},
-  ).toString();
-
   static String liveNotification(String id, {String state = 'checking'}) {
     return Uri(
       path: '/live/' + id,

@@ -323,7 +323,7 @@ final class _TestPurchaseService implements PurchaseService {
       .toList(growable: false);
 
   @override
-  Future<void> buy(String productId) async {}
+  Future<void> buy(String productId, {String? accountReference}) async {}
 
   @override
   Future<void> restore() async {}

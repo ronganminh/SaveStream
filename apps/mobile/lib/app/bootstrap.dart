@@ -11,6 +11,7 @@ import '../core/storage/shared_preferences_app_settings_store.dart';
 import '../features/app_status/data/repositories/api_app_status_repository.dart';
 import '../features/auth/data/auth_runtime.dart';
 import '../features/channels/data/repositories/api_watch_repository.dart';
+import '../features/credits/data/api_credit_ledger_repository.dart';
 import '../features/credits/data/api_credits_repository.dart';
 import '../features/credits/presentation/credits_providers.dart';
 import '../features/devices/data/repositories/api_device_repository.dart';
@@ -29,6 +30,7 @@ import '../l10n/l10n.dart';
 import '../platform/connectivity_plus_service.dart';
 import '../platform/device_info_plus_service.dart';
 import '../platform/firebase_push_service.dart';
+import '../platform/google_mobile_ads_service.dart';
 import '../platform/in_app_purchase_service.dart';
 import '../platform/platform_providers.dart';
 import '../platform/push_runtime.dart';
@@ -75,6 +77,9 @@ Future<void> bootstrap() async {
     apiClient: authenticatedApiClient,
   );
   final deviceRepository = ApiDeviceRepository(
+    apiClient: authenticatedApiClient,
+  );
+  final ApiCreditLedgerRepository creditLedger = ApiCreditLedgerRepository(
     apiClient: authenticatedApiClient,
   );
   final DeviceInfoPlusService deviceInfoService = DeviceInfoPlusService();
@@ -144,6 +149,12 @@ Future<void> bootstrap() async {
         appStatusRepositoryProvider.overrideWithValue(appStatusRepository),
         creditsRepositoryProvider.overrideWithValue(
           ApiCreditsRepository(apiClient: authenticatedApiClient),
+        ),
+        creditLedgerRepositoryProvider.overrideWithValue(creditLedger),
+        rewardsRepositoryProvider.overrideWithValue(creditLedger),
+        adsServiceProvider.overrideWithValue(GoogleMobileAdsService()),
+        adPreferencesStoreProvider.overrideWithValue(
+          SharedPreferencesAdPreferencesStore(),
         ),
         deviceRepositoryProvider.overrideWithValue(deviceRepository),
         shareServiceProvider.overrideWithValue(const SharePlusService()),

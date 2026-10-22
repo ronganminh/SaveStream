@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 import 'contracts/purchase_service.dart';
 
@@ -56,7 +58,7 @@ final class InAppPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<void> buy(String productId) async {
+  Future<void> buy(String productId, {String? accountReference}) async {
     final ProductDetails? product = _products[productId];
     if (product == null) {
       throw StateError(
@@ -64,7 +66,11 @@ final class InAppPurchaseService implements PurchaseService {
       );
     }
     final bool started = await _client.buyConsumable(
-      purchaseParam: PurchaseParam(productDetails: product),
+      // applicationUserName is Play Billing's obfuscatedAccountId.
+      purchaseParam: PurchaseParam(
+        productDetails: product,
+        applicationUserName: accountReference,
+      ),
       autoConsume: false,
     );
     if (!started) {
@@ -83,7 +89,18 @@ final class InAppPurchaseService implements PurchaseService {
         'No store purchase details are available for $transactionId.',
       );
     }
-    if (purchase.pendingCompletePurchase) {
+    if (purchase is GooglePlayPurchaseDetails) {
+      // The server consumes too; consuming here as well makes the pack
+      // buyable again at once. Consuming implies acknowledging, so a failure
+      // (e.g. already consumed by the server) falls back to acknowledge.
+      final BillingResultWrapper result = await _client
+          .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+          .consumePurchase(purchase);
+      if (result.responseCode != BillingResponse.ok &&
+          purchase.pendingCompletePurchase) {
+        await _client.completePurchase(purchase);
+      }
+    } else if (purchase.pendingCompletePurchase) {
       await _client.completePurchase(purchase);
     }
     _purchasesByTransaction.remove(transactionId);
@@ -96,7 +113,13 @@ final class InAppPurchaseService implements PurchaseService {
 
   void _handlePurchases(List<PurchaseDetails> purchases) {
     for (final PurchaseDetails purchase in purchases) {
-      final String? transactionId = purchase.purchaseID;
+      final String token = purchase.verificationData.serverVerificationData;
+      final String? orderId = purchase.purchaseID;
+      // Play leaves orderId empty for promo codes; the server then accepts
+      // the purchase token as the transaction id.
+      final String? transactionId = orderId != null && orderId.isNotEmpty
+          ? orderId
+          : (token.isEmpty ? null : token);
       if (transactionId != null && transactionId.isNotEmpty) {
         _purchasesByTransaction[transactionId] = purchase;
       }
@@ -114,8 +137,20 @@ final class InAppPurchaseService implements PurchaseService {
           productId: purchase.productID,
           status: status,
           transactionId: transactionId,
-          receipt: purchase.verificationData.serverVerificationData,
+          receipt: token,
           errorMessage: purchase.error?.message,
+        ),
+      );
+    }
+    // Only a restore delivers an empty batch or a batch of restored
+    // purchases; tell listeners the store has answered.
+    if (purchases.every(
+      (PurchaseDetails item) => item.status == PurchaseStatus.restored,
+    )) {
+      _events.add(
+        const PurchaseServiceEvent(
+          productId: 'restore',
+          status: PurchaseEventStatus.restoreCompleted,
         ),
       );
     }

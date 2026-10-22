@@ -88,6 +88,32 @@ final class ApiEntitlementRepository implements EntitlementRepository {
       emailVerified: _optionalBool(map['email_verified']),
       canAutoRecord: _optionalBool(map['can_auto_record']),
       trialRecording: _optionalBool(map['trial_recording']),
+      ads: _decodeAds(map['ads']),
+    );
+  }
+
+  static AdsEntitlement? _decodeAds(Object? json) {
+    if (json == null) return null;
+    final Map<Object?, Object?> ads = _requiredMap(json, 'ads');
+    return AdsEntitlement(
+      rewardedAvailable: _requiredBool(
+        ads['rewarded_available'],
+        'ads.rewarded_available',
+      ),
+      rewardsLeftToday: _requiredInt(
+        ads['rewards_left_today'],
+        'ads.rewards_left_today',
+      ),
+      rewardsCapPerDay: _requiredInt(
+        ads['rewards_cap_per_day'],
+        'ads.rewards_cap_per_day',
+      ),
+      minutesPerReward: _requiredInt(
+        ads['minutes_per_reward'],
+        'ads.minutes_per_reward',
+      ),
+      resetsAt: _requiredDateTime(ads['resets_at'], 'ads.resets_at'),
+      showBanners: _requiredBool(ads['show_banners'], 'ads.show_banners'),
     );
   }
 

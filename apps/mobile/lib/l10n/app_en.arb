@@ -1376,5 +1376,301 @@
   "v2ChannelGone": "This channel isn’t in your list anymore.",
   "v2ChannelLoadError": "Couldn’t load this channel",
   "v2ActionFailed": "That didn’t work. Try again.",
-  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens."
+  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens.",
+  "crTitle": "Recording time",
+  "crBalanceLabel": "Recording time left",
+  "crBalanceCaption": "Billed per started minute · minutes never expire",
+  "crLoadError": "Couldn’t load your recording time",
+  "crRetry": "Retry",
+  "crTryAgain": "Try again",
+  "crRewardTitle": "Watch an ad, get {minutes} minutes",
+  "@crRewardTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "crRewardCaption": "Optional · up to {cap} a day · {used} of {cap} used today",
+  "@crRewardCaption": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      },
+      "used": {
+        "type": "int"
+      }
+    }
+  },
+  "crRewardAction": "Watch ad · +{minutes} min",
+  "@crRewardAction": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "crRewardLoading": "Loading ad…",
+  "crRewardVerifying": "Adding your minutes…",
+  "crRewardCooldown": "Next ad in {time}",
+  "@crRewardCooldown": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "crRewardLimit": "You’ve used all {cap} for today. More tomorrow.",
+  "@crRewardLimit": {
+    "placeholders": {
+      "cap": {
+        "type": "int"
+      }
+    }
+  },
+  "crRewardFailed": "The ad didn’t load. No minutes were used — try again in a moment.",
+  "crRewardEarned": "+{minutes} minutes added to your balance",
+  "@crRewardEarned": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "crRewardSlow": "Google is still confirming the ad. Your minutes will appear in a moment.",
+  "crRewardEmail": "Verify your email to earn minutes from ads.",
+  "crBuyTitle": "Buy recording time",
+  "crPackHours": "{hours} h of recording · one-time",
+  "@crPackHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "crMostPopular": "Most popular",
+  "crPaidNote": "Paid securely through Google Play. Any purchase removes other ads — you can still choose to watch rewarded ads.",
+  "crPacksError": "Couldn’t load packs from Google Play.",
+  "crPacksEmpty": "Packs aren’t available on Google Play right now.",
+  "crRestore": "Restore purchases",
+  "crRestoring": "Checking Google Play…",
+  "crUsageHistory": "Usage history",
+  "crFailedTitle": "Purchase didn’t go through",
+  "crFailedBody": "Google Play couldn’t complete the payment. You weren’t charged.",
+  "crConfirmDelayedTitle": "We’re still confirming your purchase",
+  "crConfirmDelayedBody": "Google Play has your payment, but we couldn’t confirm it with our server yet. We’ll keep trying and add the time automatically.",
+  "crRestoreFailedTitle": "Couldn’t restore purchases",
+  "crRestoreFailedBody": "We couldn’t reach Google Play or our server. Try again in a moment.",
+  "crClose": "Close",
+  "crOk": "OK",
+  "crRestoredTitle": "Purchases restored",
+  "crRestoredCount": "{count, plural, =1{1 purchase} other{{count} purchases}}",
+  "@crRestoredCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "crRestoredBodyOne": "We checked your Google Play account and found {count} that hadn’t been added: {packs}. It’s now in your balance.",
+  "@crRestoredBodyOne": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "packs": {
+        "type": "String"
+      }
+    }
+  },
+  "crRestoredBodyMany": "We checked your Google Play account and found {count} that hadn’t been added: {packs}. They’re now in your balance.",
+  "@crRestoredBodyMany": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "packs": {
+        "type": "String"
+      }
+    }
+  },
+  "crRestoredNote": "Already-added purchases are never added twice.",
+  "crRestoreNoneTitle": "Nothing to restore",
+  "crRestoreNoneBody": "We checked your Google Play account. Every purchase is already in your balance.",
+  "crPackLabel": "{name} · {hours} h",
+  "@crPackLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "crPurchaseTitle": "Purchase",
+  "crPendingTitle": "Payment pending",
+  "crPendingBody": "Google Play is still confirming your payment for the {pack} pack ({hours} h). We’ll add the time as soon as it’s confirmed — you can close the app.",
+  "@crPendingBody": {
+    "placeholders": {
+      "pack": {
+        "type": "String"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "crPendingBodyGeneric": "Google Play is still confirming your payment. We’ll add the time as soon as it’s confirmed — you can close the app.",
+  "crBackToCredits": "Back to Recording time",
+  "crViewInPlay": "View in Google Play",
+  "crSuccessTitle": "{hours} hours added",
+  "@crSuccessTitle": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "crSuccessBody": "Thanks for your purchase. Ads are now removed — rewarded ads stay available if you want them.",
+  "crSuccessPack": "Pack",
+  "crSuccessPrice": "Price",
+  "crSuccessOrder": "Google Play order",
+  "crSuccessBalance": "New balance",
+  "crDone": "Done",
+  "crHistoryTitle": "Usage history",
+  "crHistoryWindow": "Last {days} days",
+  "@crHistoryWindow": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "crHistoryChartLabel": "Minutes recorded per day, last {days} days: {total}",
+  "@crHistoryChartLabel": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "crHistoryEmpty": "Nothing in the last {days} days.",
+  "@crHistoryEmpty": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "crHistoryError": "Couldn’t load your usage history",
+  "crLedgerRecordingChannel": "Recording · @{handle}",
+  "@crLedgerRecordingChannel": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "crLedgerRecording": "Recording",
+  "crLedgerRefunded": "Failed recording · refunded",
+  "crLedgerReward": "Rewarded ad",
+  "crLedgerPack": "{name} pack · Google Play",
+  "@crLedgerPack": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "crLedgerPurchase": "Purchase",
+  "crLedgerTrial": "Free trial",
+  "crLedgerPromo": "Promo code",
+  "crLedgerAdjustment": "Adjustment",
+  "crLedgerRefund": "Refund",
+  "crLedgerBilled": "{details} · billed per started minute",
+  "@crLedgerBilled": {
+    "placeholders": {
+      "details": {
+        "type": "String"
+      }
+    }
+  },
+  "crLedgerNotCharged": "{date} · not charged",
+  "@crLedgerNotCharged": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "crLedgerAfterVerify": "{date} · after email verification",
+  "@crLedgerAfterVerify": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "crAmountMinutes": "{sign}{minutes} min",
+  "@crAmountMinutes": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "crAmountHours": "{sign}{hours} h",
+  "@crAmountHours": {
+    "placeholders": {
+      "sign": {
+        "type": "String"
+      },
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "crPurchasesTitle": "Purchases & usage",
+  "crBuy": "Buy",
+  "crPlayPurchases": "Google Play purchases",
+  "crPurchasesEmpty": "No Google Play purchases yet.",
+  "crPurchasesError": "Couldn’t load your purchases",
+  "crOrderAdded": "Added",
+  "crOrderPending": "Pending",
+  "crOrderRefunded": "Refunded",
+  "crOrderFailed": "Not completed",
+  "crPlayFootnote": "Receipts and refunds for Google Play purchases are handled by Google Play.",
+  "crManageInPlay": "Manage in Google Play",
+  "crRefundPolicy": "Refund Policy",
+  "crAdPrivacyTitle": "Ad privacy choices",
+  "crAdPrivacyIntro": "We show ads to free users to keep SaveStream affordable. Rewarded ads are always optional.",
+  "crPersonalizedAds": "Personalized ads",
+  "crPersonalizedAdsBody": "Use my activity to choose ads. Off = ads are still shown, just less relevant.",
+  "crReviewConsent": "Review consent choices",
+  "crConsentNote": "Opens the consent form from our ad partner (Google). Where required by law (EEA, UK, Switzerland) we ask before showing personalized ads.",
+  "crConsentNotRequired": "No consent form is needed in your region. You can still turn personalized ads off above.",
+  "crAdsRemoved": "You bought a pack, so other ads are removed. Rewarded ads stay available if you choose to watch them.",
+  "crLearnMorePrefix": "Learn more in our ",
+  "crPrivacyPolicy": "Privacy Policy",
+  "crSettingsPurchases": "Purchases & usage",
+  "crSettingsAdPrivacy": "Ad privacy choices",
+  "crAdLabel": "Advertisement",
+  "crDurationMinutesSeconds": "{minutes} min {seconds} s",
+  "@crDurationMinutesSeconds": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  }
 }

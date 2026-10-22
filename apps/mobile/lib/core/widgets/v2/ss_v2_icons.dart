@@ -35,7 +35,12 @@ enum SsV2IconGlyph {
     'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01',
   ),
   more('M12 5h.01M12 12h.01M12 19h.01'),
-  trash('M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3');
+  trash('M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3'),
+  play('M7 4v16l13-8z'),
+  ad(
+    'M4 5h16v14H4zM9 15l2-6 2 6M9.7 13h2.6M15 9v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z',
+  ),
+  chart('M4 20V10M10 20V4M16 20v-7M22 20H2');
 
   const SsV2IconGlyph(this.pathData);
 

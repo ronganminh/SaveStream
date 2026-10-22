@@ -33,35 +33,43 @@ final Provider<StorePurchaseRetryStore> storePurchaseRetryStoreProvider =
       (Ref ref) => MemoryStorePurchaseRetryStore(),
     );
 
+/// `GET /v1/billing/packages`: names and minutes of the packs.
+final FutureProvider<List<StorePackage>> storePackagesProvider =
+    FutureProvider<List<StorePackage>>(
+      (Ref ref) => ref.watch(storeRepositoryProvider).listPackages(),
+    );
+
 final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =
     FutureProvider<List<CloudHoursOffer>>((Ref ref) async {
-      final List<StorePackage> packages = await ref
-          .watch(storeRepositoryProvider)
-          .listPackages();
+      final List<StorePackage> packages = await ref.watch(
+        storePackagesProvider.future,
+      );
       final DevicePlatform platform = ref
           .watch(deviceInfoServiceProvider)
           .platform;
-      final List<String> ids = packages
-          .map(
-            (StorePackage package) => platform == DevicePlatform.ios
-                ? package.productIds.appStore
-                : package.productIds.googlePlay,
-          )
+      String productIdOf(StorePackage package) => platform == DevicePlatform.ios
+          ? package.productIds.appStore
+          : package.productIds.googlePlay;
+      final List<StorePackage> sellable = packages
+          .where((StorePackage package) => productIdOf(package).isNotEmpty)
           .toList(growable: false);
 
       final products = await ref
           .watch(purchaseServiceProvider)
-          .loadProducts(ids);
+          .loadProducts(sellable.map(productIdOf));
       final Map<String, String> prices = <String, String>{
         for (final product in products) product.id: product.localizedPrice,
       };
 
+      // Prices only ever come from the store: a pack the store doesn't
+      // return (not active in Play Console) is not offered.
       return <CloudHoursOffer>[
-        for (int index = 0; index < packages.length; index += 1)
-          CloudHoursOffer(
-            package: packages[index],
-            productId: ids[index],
-            localizedPrice: prices[ids[index]] ?? '',
-          ),
+        for (final StorePackage package in sellable)
+          if ((prices[productIdOf(package)] ?? '').isNotEmpty)
+            CloudHoursOffer(
+              package: package,
+              productId: productIdOf(package),
+              localizedPrice: prices[productIdOf(package)]!,
+            ),
       ];
     });

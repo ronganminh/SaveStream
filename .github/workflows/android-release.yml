@@ -75,10 +75,18 @@ jobs:
           SAVESTREAM_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           SAVESTREAM_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           SAVESTREAM_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # AdMob ids (public, not secrets) of the v1 app com.savestream.app;
+          # repository variables override them. Sources only hold Google's
+          # test ids, which debug builds and CI use.
+          SAVESTREAM_ADMOB_ANDROID_APP_ID: ${{ vars.ADMOB_ANDROID_APP_ID || 'ca-app-pub-2078852906622512~2464439785' }}
+          ADMOB_REWARDED_ANDROID: ${{ vars.ADMOB_REWARDED_ANDROID || 'ca-app-pub-2078852906622512/5155016450' }}
+          ADMOB_BANNER_ANDROID: ${{ vars.ADMOB_BANNER_ANDROID || 'ca-app-pub-2078852906622512/4061426634' }}
         run: |
           flutter pub get --enforce-lockfile
           bash tool/generate_native_assets.sh
-          flutter build appbundle --release --dart-define=APP_ENV=production
+          flutter build appbundle --release --dart-define=APP_ENV=production \
+            --dart-define=ADMOB_REWARDED_ANDROID="$ADMOB_REWARDED_ANDROID" \
+            --dart-define=ADMOB_BANNER_ANDROID="$ADMOB_BANNER_ANDROID"
           ls -l build/app/outputs/bundle/release/
 
       - name: Verify the bundle is release-signed

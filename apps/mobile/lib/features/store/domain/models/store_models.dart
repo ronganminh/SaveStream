@@ -43,10 +43,22 @@ class StorePurchaseResult {
     required this.paymentOrderId,
     required this.cloudMinutesAdded,
     required this.cloudMinutesAvailable,
+    this.productId,
   });
 
   final StorePurchaseStatus status;
   final String paymentOrderId;
   final int cloudMinutesAdded;
   final int cloudMinutesAvailable;
+
+  /// The store product the result is for (set by the app, not the server).
+  final String? productId;
+
+  StorePurchaseResult withProductId(String value) => StorePurchaseResult(
+    status: status,
+    paymentOrderId: paymentOrderId,
+    cloudMinutesAdded: cloudMinutesAdded,
+    cloudMinutesAvailable: cloudMinutesAvailable,
+    productId: value,
+  );
 }

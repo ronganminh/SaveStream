@@ -11,6 +11,7 @@ import '../../../app/router/app_routes.dart';
 import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../channels/domain/models/watch_summary.dart';
+import '../../credits/presentation/ad_banner_slot.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../../settings/domain/models/user_profile.dart';
 import '../../settings/presentation/controllers/notification_feed_providers.dart';
@@ -258,6 +259,8 @@ class HomeDashboardBody extends StatelessWidget {
         ),
         _RecordingGrid(recordings: recent.take(2).toList(), now: now),
       ],
+      // Non-purchasers only (entitlement.ads.show_banners); nothing otherwise.
+      AdBannerSlot(ads: data.entitlement.ads),
     ];
 
     return SingleChildScrollView(
@@ -416,11 +419,7 @@ class _CreditsBanner extends StatelessWidget {
           label: action,
           size: SsV2ButtonSize.small,
           expand: false,
-          onPressed: () => context.push(
-            AppRoutes.cloudHoursLocation(
-              credits.isTrial ? 'freeMinutesExhausted' : 'autoRecord',
-            ),
-          ),
+          onPressed: () => context.push(AppRoutes.usage),
         ),
       ],
       title: title,

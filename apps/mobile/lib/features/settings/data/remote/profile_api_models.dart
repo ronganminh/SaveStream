@@ -8,6 +8,7 @@ UserProfile userProfileFromJson(Object? json) {
   final Object? email = json['email'];
   final Object? emailVerified = json['email_verified'];
   final Object? displayName = json['display_name'];
+  final Object? id = json['id'];
 
   if (email is! String ||
       email.trim().isEmpty ||
@@ -26,5 +27,6 @@ UserProfile userProfileFromJson(Object? json) {
     displayName: normalizedDisplayName == null || normalizedDisplayName.isEmpty
         ? null
         : normalizedDisplayName,
+    id: id is String && id.trim().isNotEmpty ? id.trim() : null,
   );
 }

@@ -42,6 +42,30 @@ class LocalEntitlement {
   final DateTime? secondSlotExpiresAt;
 }
 
+/// Entitlement `ads` block: the optional rewarded ad (+N cloud minutes,
+/// verified by AdMob server-side verification) and whether the account
+/// still sees the small banner (it never bought a pack).
+class AdsEntitlement {
+  const AdsEntitlement({
+    required this.rewardedAvailable,
+    required this.rewardsLeftToday,
+    required this.rewardsCapPerDay,
+    required this.minutesPerReward,
+    required this.resetsAt,
+    required this.showBanners,
+  });
+
+  final bool rewardedAvailable;
+  final int rewardsLeftToday;
+  final int rewardsCapPerDay;
+  final int minutesPerReward;
+  final DateTime resetsAt;
+  final bool showBanners;
+
+  int get rewardsUsedToday =>
+      (rewardsCapPerDay - rewardsLeftToday).clamp(0, rewardsCapPerDay);
+}
+
 class Entitlement {
   const Entitlement({
     required this.plan,
@@ -54,6 +78,7 @@ class Entitlement {
     this.emailVerified = false,
     this.canAutoRecord = false,
     this.trialRecording = false,
+    this.ads,
   });
 
   final Plan plan;
@@ -69,4 +94,7 @@ class Entitlement {
   final int watchCount;
   final LocalEntitlement local;
   final DateTime updatedAt;
+
+  /// Null when the server predates the ads block (no ads then).
+  final AdsEntitlement? ads;
 }
