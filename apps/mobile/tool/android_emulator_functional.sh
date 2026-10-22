@@ -63,13 +63,27 @@ run_android_suite() {
       result=${PIPESTATUS[0]}
       echo "::warning::Android ${label} attempt ${attempt} exited ${result}"
     fi
-    if [[ "$result" -ne 124 || "$attempt" -eq 2 ]]; then
+    # Retry once only for infrastructure: a startup hang (timeout, exit 124)
+    # or the emulator dropping off adb mid-run ("device offline"). Test
+    # assertion failures are never retried.
+    local offline=0
+    if grep -q 'device offline' "$logfile"; then
+      offline=1
+    fi
+    if [[ "$attempt" -eq 2 || ( "$result" -ne 124 && "$offline" -eq 0 ) ]]; then
       return "$result"
+    fi
+    if [[ "$offline" -eq 1 ]]; then
+      echo '::warning::The emulator went offline during the run; reconnecting before the retry.'
+      adb reconnect offline || true
+      timeout 180 adb -s "$android_device" wait-for-device || return "$result"
+      timeout 180 bash -c "until [[ \"\$(adb -s $android_device shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')\" == 1 ]]; do sleep 2; done" \
+        || return "$result"
     fi
     # Start the retry from a clean device state: the killed flutter tool can
     # leave the app process and adb forwards behind, and the next run then
     # loses its VM Service (VmServiceDisappearedException).
-    echo '::warning::Reinstalling the stuck app on the emulator after a test startup timeout.'
+    echo '::warning::Reinstalling the app on the emulator before the retry.'
     adb -s "$android_device" shell am force-stop com.savestream.app || true
     adb -s "$android_device" uninstall com.savestream.app || true
     adb -s "$android_device" forward --remove-all || true
