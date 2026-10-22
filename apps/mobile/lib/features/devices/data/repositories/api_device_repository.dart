@@ -20,7 +20,13 @@ final class ApiDeviceRepository implements DeviceRepository {
             DevicePlatform.ios => 'ios',
           },
           'push_token': device.pushToken,
-          'device_name': device.deviceName,
+          // The phone's manufacturer and model are not sent. The backend
+          // still requires a non-empty device_name, so it gets the neutral
+          // platform name until that field becomes optional.
+          'device_name': switch (device.platform) {
+            DevicePlatform.android => 'Android',
+            DevicePlatform.ios => 'iOS',
+          },
           'app_version': device.appVersion,
           'locale': device.locale,
         },

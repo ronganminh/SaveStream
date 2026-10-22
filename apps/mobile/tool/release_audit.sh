@@ -61,19 +61,29 @@ grep -q "minSdk = 24" android/app/build.gradle.kts ||
   fail "Android minSdk must be 24 for the C0 plugin set"
 grep -q "min_sdk_android: 24" pubspec.yaml ||
   fail "launcher icon minSdk must match Android minSdk"
-# v1.x cleanup build: no ads SDK, ad IDs or tracking prompt, and no on-device
-# recorder service. Ads return in v2 with IDs supplied by build config.
-if grep -q "^  google_mobile_ads:" pubspec.yaml; then
-  fail "google_mobile_ads must not ship in this build"
+# v2 ads: rewarded (+5 cloud minutes, SSV) and the non-purchaser banner on
+# Android. Production AdMob ids come from the build (gradle env
+# SAVESTREAM_ADMOB_ANDROID_APP_ID, --dart-define ADMOB_REWARDED_ANDROID /
+# ADMOB_BANNER_ANDROID); sources only carry Google's public test ids.
+grep -q "^  google_mobile_ads:" pubspec.yaml ||
+  fail "google_mobile_ads is missing"
+if grep -rqs "ca-app-pub-2078852906622512" android/app/build.gradle.kts android/app/src/main ios/Runner ios/Flutter lib; then
+  fail "production AdMob IDs must come from build config, not sources"
 fi
-if grep -rqs "ca-app-pub-" android/app/build.gradle.kts android/app/src/main ios/Runner ios/Flutter lib; then
-  fail "hardcoded AdMob IDs must not ship in this build"
-fi
-if grep -qs "com.google.android.gms.ads.APPLICATION_ID" android/app/src/main/AndroidManifest.xml; then
-  fail "AdMob application metadata must not ship in this build"
-fi
+grep -q "SAVESTREAM_ADMOB_ANDROID_APP_ID" android/app/build.gradle.kts ||
+  fail "Android AdMob app id build variable is missing"
+grep -q 'android:value="${admobAppId}"' android/app/src/main/AndroidManifest.xml ||
+  fail "Android AdMob application metadata must use the build placeholder"
+grep -q "ADMOB_REWARDED_ANDROID" lib/platform/google_mobile_ads_service.dart ||
+  fail "rewarded ad unit dart-define is missing"
+grep -q "ServerSideVerificationOptions" lib/platform/google_mobile_ads_service.dart ||
+  fail "rewarded-ad SSV wiring is missing"
+grep -q "requestConsentInfoUpdate" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP consent refresh is missing"
+grep -q "canRequestAds" lib/platform/google_mobile_ads_service.dart ||
+  fail "UMP canRequestAds gate is missing"
 if grep -qs "NSUserTrackingUsageDescription" ios/Runner/Info.plist; then
-  fail "iOS ATT usage description must not ship without ads"
+  fail "iOS ATT usage description must not ship (no iOS ads)"
 fi
 if grep -qs "LocalRecordingService" android/app/src/main/AndroidManifest.xml; then
   fail "on-device recording service must not ship in this build"
@@ -109,7 +119,8 @@ test -f ../../docs/v2/RELEASE_CHECKLIST_MOBILE.md ||
   fail "mobile owner release checklist is missing"
 
 for forbidden_permission in FOREGROUND_SERVICE ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION READ_CONTACTS WRITE_CONTACTS CAMERA RECORD_AUDIO READ_MEDIA_IMAGES READ_MEDIA_VIDEO READ_EXTERNAL_STORAGE WRITE_EXTERNAL_STORAGE; do
-  if grep -q "android.permission.${forbidden_permission}" android/app/src/main/AndroidManifest.xml; then
+  # tools:node="remove" lines strip permissions merged from libraries.
+  if grep "android.permission.${forbidden_permission}" android/app/src/main/AndroidManifest.xml | grep -vq 'tools:node="remove"'; then
     fail "unexpected Android permission ${forbidden_permission}"
   fi
 done

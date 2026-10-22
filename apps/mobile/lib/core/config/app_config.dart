@@ -25,6 +25,15 @@ class AppConfig {
   /// Acceptable Use Policy, on the same site as the Terms of Use.
   final Uri acceptableUseUrl;
 
+  /// Refund Policy, on the same site as the Terms of Use.
+  Uri get refundPolicyUrl => termsOfUseUrl.replace(path: '/refund');
+
+  /// Google Play's order history (receipts, refunds) for the signed-in
+  /// Play account.
+  static final Uri googlePlayOrderHistoryUrl = Uri.parse(
+    'https://play.google.com/store/account/orderhistory',
+  );
+
   bool get isProduction => environment == AppEnvironment.production;
   bool get developerToolsEnabled => environment != AppEnvironment.production;
 

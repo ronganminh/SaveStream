@@ -26,10 +26,7 @@ void main() {
             session: session,
             settings: settings,
             pushService: push,
-            deviceInfoService: const FakeDeviceInfoService(
-              id: 'dev-1',
-              name: 'Pixel',
-            ),
+            deviceInfoService: const FakeDeviceInfoService(id: 'dev-1'),
             deviceRepository: repository,
             appVersionLoader: () async => '2.0.0',
           )..start();

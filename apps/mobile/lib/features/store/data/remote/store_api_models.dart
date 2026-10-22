@@ -14,18 +14,22 @@ List<StorePackage> storePackagesFromJson(Object? json) {
 
 StorePackage storePackageFromJson(Object? json) {
   final Map<Object?, Object?> map = _requiredMap(json, 'store package');
-  final Map<Object?, Object?> productIds = _requiredMap(
-    map['store_product_ids'],
-    'store_product_ids',
-  );
+  // Web-only packages have no store ids (null); stores skip them.
+  final Object? rawIds = map['store_product_ids'];
+  final Map<Object?, Object?> productIds = rawIds is Map
+      ? rawIds
+      : const <Object?, Object?>{};
   return StorePackage(
     id: _requiredString(map['id'], 'package.id'),
     name: _requiredString(map['name'], 'package.name'),
     cloudMinutes: _requiredInt(map['cloud_minutes'], 'package.cloud_minutes'),
+    // Each store id stands alone (Android sells without an Apple id); a
+    // missing one is empty and that store does not offer the package.
     productIds: StoreProductIds(
-      appStore: _requiredString(productIds['app_store'], 'app_store'),
-      googlePlay: _requiredString(productIds['google_play'], 'google_play'),
+      appStore: _optionalString(productIds['app_store']),
+      googlePlay: _optionalString(productIds['google_play']),
     ),
+    featured: map['featured'] == true,
   );
 }
 
@@ -34,7 +38,9 @@ StorePurchaseResult storePurchaseResultFromJson(Object? json) {
   return StorePurchaseResult(
     status: switch (_requiredString(map['status'], 'purchase.status')) {
       'credited' => StorePurchaseStatus.credited,
-      'pending' => StorePurchaseStatus.pending,
+      // `payment_pending`: Google Play is still confirming the payment
+      // (e.g. cash); the server grants it when Play reports it paid.
+      'pending' || 'payment_pending' => StorePurchaseStatus.pending,
       'rejected' => StorePurchaseStatus.rejected,
       final String value => throw FormatException(
         'Unsupported store purchase status: $value',
@@ -68,6 +74,8 @@ String _requiredString(Object? value, String name) {
   }
   return value.trim();
 }
+
+String _optionalString(Object? value) => value is String ? value.trim() : '';
 
 int _requiredInt(Object? value, String name) {
   if (value is! int || value < 0) {

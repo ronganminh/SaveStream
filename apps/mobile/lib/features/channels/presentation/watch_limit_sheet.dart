@@ -34,7 +34,7 @@ Future<void> showWatchLimitSheet(
             label: context.l10n.buyCloudHoursAction,
             onPressed: () {
               Navigator.of(sheetContext).pop();
-              context.push(AppRoutes.cloudHoursLocation('watchLimit'));
+              context.push(AppRoutes.usage);
             },
           ),
           const SizedBox(height: SsSpacing.sm),

@@ -78,8 +78,14 @@ class HomeCredits {
       caption = HomeCreditsCaption.trialUsed;
     }
 
+    // The bar compares the balance with the server's cycle total (balance
+    // after the latest top-up plus minutes granted since). Older servers
+    // send none: then only the free trial has a known size.
+    final int? cycleTotal = entitlement.cloudMinutesCycleTotal;
     final double? progress = tone == HomeCreditsTone.out
         ? 0
+        : cycleTotal != null && cycleTotal > 0
+        ? (minutes / cycleTotal).clamp(0, 1).toDouble()
         : isTrial
         ? (minutes / trialMinutes).clamp(0, 1).toDouble()
         : null;

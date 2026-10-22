@@ -16,7 +16,8 @@ import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
-import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
+import 'package:savestream_mobile/features/credits/presentation/credits_screen.dart';
+import 'package:savestream_mobile/features/credits/presentation/purchase_status_screens.dart';
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
@@ -26,7 +27,6 @@ import 'package:savestream_mobile/features/store/domain/models/store_models.dart
 import 'package:savestream_mobile/features/store/domain/repositories/store_repository.dart';
 import 'package:savestream_mobile/features/store/presentation/a5_purchase_controller.dart';
 import 'package:savestream_mobile/features/store/presentation/a5_store_providers.dart';
-import 'package:savestream_mobile/features/store/presentation/cloud_hours_purchase_screen.dart';
 import 'package:savestream_mobile/platform/contracts/purchase_service.dart';
 import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
 import 'package:savestream_mobile/platform/platform_providers.dart';
@@ -212,24 +212,23 @@ void registerDeviceJourneys() {
       ),
     );
     await _waitFor(tester, find.text('Home'));
-    GoRouter.of(tester.element(find.text('Home').first)).go(
-      AppRoutes.cloudHoursLocation(CloudHoursPurchaseContext.autoRecord.name),
-    );
-    await _waitFor(tester, find.byType(CloudHoursPurchaseScreen));
+    GoRouter.of(tester.element(find.text('Home').first)).go(AppRoutes.usage);
+    await _waitFor(tester, find.byType(CreditsScreen));
     await _waitFor(tester, find.text(r'$59.99'));
 
     expect(find.text(r'$9.99'), findsOneWidget);
     expect(find.text(r'$24.99'), findsOneWidget);
     expect(find.text(r'$59.99'), findsOneWidget);
 
-    final Finder buy = find.widgetWithText(SsPrimaryButton, 'Buy cloud hours');
-    expect(buy, findsNWidgets(3));
-    await tester.ensureVisible(buy.first);
-    await tester.tap(buy.first);
-
     final ProviderContainer container = ProviderScope.containerOf(
-      tester.element(find.byType(CloudHoursPurchaseScreen)),
+      tester.element(find.byType(CreditsScreen)),
     );
+    final Finder buy = find.byKey(
+      const ValueKey<String>('credits-pack-savestream.hours.50'),
+    );
+    await tester.ensureVisible(buy);
+    await tester.tap(buy);
+
     for (int i = 0; i < 35; i++) {
       if (container.read(cloudHoursPurchaseControllerProvider).phase ==
           CloudHoursPurchasePhase.credited)
@@ -250,6 +249,9 @@ void registerDeviceJourneys() {
           : StorePurchasePlatform.googlePlay,
     );
     expect(backend.requests.single.receipt, 'fake-ci-only-receipt');
+    // The success screen opens and the refreshed account data settles.
+    await _waitFor(tester, find.byType(PurchaseSuccessScreen));
+    await tester.pump(const Duration(seconds: 1));
   });
 }
 
@@ -286,7 +288,7 @@ final class _CiPurchaseService implements PurchaseService {
       .toList(growable: false);
 
   @override
-  Future<void> buy(String productId) async {
+  Future<void> buy(String productId, {String? accountReference}) async {
     purchases.add(productId);
     _events.add(
       PurchaseServiceEvent(

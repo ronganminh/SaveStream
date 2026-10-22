@@ -12,7 +12,6 @@ import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../store/presentation/a5_purchase_controller.dart';
 import '../domain/models/user_profile.dart';
 import 'controllers/settings_providers.dart';
 import 'notification_action_button.dart';
@@ -64,11 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     profile: profile,
                     entitlement: entitlement,
                     onUsage: () => context.push(AppRoutes.usage),
-                    onUpgrade: () => context.push(
-                      AppRoutes.cloudHoursLocation(
-                        CloudHoursPurchaseContext.autoRecord.name,
-                      ),
-                    ),
+                    onUpgrade: () => context.push(AppRoutes.usage),
                   ),
                   const SizedBox(height: SsSpacing.xl),
                   _SectionLabel(label: l10n.settingsRecordingSectionTitle),
@@ -148,22 +143,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           title: l10n.buyCloudHoursAction,
                           leading: const Icon(Icons.add_shopping_cart_rounded),
                           trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => context.push(
-                            AppRoutes.cloudHoursLocation(
-                              CloudHoursPurchaseContext.autoRecord.name,
-                            ),
-                          ),
+                          onTap: () => context.push(AppRoutes.usage),
                         ),
                         const Divider(),
                         SsListTile(
-                          title: l10n.restorePurchasesAction,
-                          leading: const Icon(Icons.restore_rounded),
+                          title: l10n.crSettingsPurchases,
+                          leading: const Icon(Icons.receipt_long_rounded),
                           trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => context.push(
-                            AppRoutes.cloudHoursLocation(
-                              CloudHoursPurchaseContext.autoRecord.name,
-                            ),
-                          ),
+                          onTap: () => context.push(AppRoutes.purchases),
+                        ),
+                        const Divider(),
+                        // UMP "Privacy options" entry point (plan §4.4).
+                        SsListTile(
+                          title: l10n.crSettingsAdPrivacy,
+                          leading: const Icon(Icons.privacy_tip_outlined),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => context.push(AppRoutes.adPrivacy),
                         ),
                         const Divider(),
                         SsListTile(

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -10,23 +9,18 @@ import 'contracts/device_info_service.dart';
 
 typedef SecureValueReader = Future<String?> Function(String key);
 typedef SecureValueWriter = Future<void> Function(String key, String value);
-typedef DeviceNameLoader = Future<String> Function();
 typedef FreeStorageLoader = Future<int> Function();
 
 final class DeviceInfoPlusService implements DeviceInfoService {
   DeviceInfoPlusService({
-    DeviceInfoPlugin? deviceInfo,
     FlutterSecureStorage? secureStorage,
     SecureValueReader? readSecureValue,
     SecureValueWriter? writeSecureValue,
-    DeviceNameLoader? deviceNameLoader,
     FreeStorageLoader? freeStorageLoader,
     DevicePlatform? platformOverride,
-  }) : _deviceInfo = deviceInfo ?? DeviceInfoPlugin(),
-       _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+  }) : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
        _readSecureValue = readSecureValue,
        _writeSecureValue = writeSecureValue,
-       _deviceNameLoader = deviceNameLoader,
        _freeStorageLoader = freeStorageLoader,
        _platformOverride = platformOverride;
 
@@ -35,11 +29,9 @@ final class DeviceInfoPlusService implements DeviceInfoService {
     'savestream/device_info',
   );
 
-  final DeviceInfoPlugin _deviceInfo;
   final FlutterSecureStorage _secureStorage;
   final SecureValueReader? _readSecureValue;
   final SecureValueWriter? _writeSecureValue;
-  final DeviceNameLoader? _deviceNameLoader;
   final FreeStorageLoader? _freeStorageLoader;
   final DevicePlatform? _platformOverride;
 
@@ -61,8 +53,7 @@ final class DeviceInfoPlusService implements DeviceInfoService {
   @override
   Future<String> get deviceId async {
     final SecureValueReader reader =
-        _readSecureValue ??
-        (String key) => _secureStorage.read(key: key);
+        _readSecureValue ?? (String key) => _secureStorage.read(key: key);
     final SecureValueWriter writer =
         _writeSecureValue ??
         (String key, String value) {
@@ -77,35 +68,6 @@ final class DeviceInfoPlusService implements DeviceInfoService {
     final String generated = _generateDeviceId();
     await writer(_deviceIdKey, generated);
     return generated;
-  }
-
-  @override
-  Future<String> get deviceName async {
-    final DeviceNameLoader? loader = _deviceNameLoader;
-    if (loader != null) {
-      return loader();
-    }
-
-    switch (platform) {
-      case DevicePlatform.android:
-        final AndroidDeviceInfo info = await _deviceInfo.androidInfo;
-        final String manufacturer = info.manufacturer.trim();
-        final String model = info.model.trim();
-        if (manufacturer.isEmpty) {
-          return model;
-        }
-        if (model.isEmpty) {
-          return manufacturer;
-        }
-        return '$manufacturer $model';
-      case DevicePlatform.ios:
-        final IosDeviceInfo info = await _deviceInfo.iosInfo;
-        final String name = info.name.trim();
-        if (name.isNotEmpty) {
-          return name;
-        }
-        return info.utsname.machine.trim();
-    }
   }
 
   @override

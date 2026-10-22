@@ -1227,7 +1227,7 @@ class SsV2PageDots extends StatelessWidget {
   }
 }
 
-enum SsV2TileTone { brand, success, error }
+enum SsV2TileTone { brand, success, error, warning }
 
 /// Centered status screen body: 96px icon tile, title, body and actions.
 class SsV2StatusBody extends StatelessWidget {
@@ -1255,6 +1255,7 @@ class SsV2StatusBody extends StatelessWidget {
       SsV2TileTone.brand => (palette.tint, palette.link),
       SsV2TileTone.success => (palette.successBackground, palette.success),
       SsV2TileTone.error => (palette.errorBackground, palette.errorText),
+      SsV2TileTone.warning => (palette.warningBackground, palette.warning),
     };
     // The body is at most 310 wide. A ConstrainedBox would report its
     // intrinsic height at the full width (fewer lines), and the

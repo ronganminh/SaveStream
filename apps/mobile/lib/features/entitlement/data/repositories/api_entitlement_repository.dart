@@ -88,6 +88,37 @@ final class ApiEntitlementRepository implements EntitlementRepository {
       emailVerified: _optionalBool(map['email_verified']),
       canAutoRecord: _optionalBool(map['can_auto_record']),
       trialRecording: _optionalBool(map['trial_recording']),
+      ads: _decodeAds(map['ads']),
+      cloudMinutesCycleTotal: _optionalPositiveInt(
+        map['cloud_minutes_cycle_total'],
+      ),
+      lastPackName: _optionalText(map['last_pack_name']),
+      trialUsed: _optionalBool(map['trial_used']),
+    );
+  }
+
+  static AdsEntitlement? _decodeAds(Object? json) {
+    if (json == null) return null;
+    final Map<Object?, Object?> ads = _requiredMap(json, 'ads');
+    return AdsEntitlement(
+      rewardedAvailable: _requiredBool(
+        ads['rewarded_available'],
+        'ads.rewarded_available',
+      ),
+      rewardsLeftToday: _requiredInt(
+        ads['rewards_left_today'],
+        'ads.rewards_left_today',
+      ),
+      rewardsCapPerDay: _requiredInt(
+        ads['rewards_cap_per_day'],
+        'ads.rewards_cap_per_day',
+      ),
+      minutesPerReward: _requiredInt(
+        ads['minutes_per_reward'],
+        'ads.minutes_per_reward',
+      ),
+      resetsAt: _requiredDateTime(ads['resets_at'], 'ads.resets_at'),
+      showBanners: _requiredBool(ads['show_banners'], 'ads.show_banners'),
     );
   }
 
@@ -141,6 +172,12 @@ bool _requiredBool(Object? value, String name) {
 }
 
 bool _optionalBool(Object? value) => value is bool && value;
+
+int? _optionalPositiveInt(Object? value) =>
+    value is int && value > 0 ? value : null;
+
+String? _optionalText(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
 
 int _requiredInt(Object? value, String name) {
   if (value is! int || value < 0) {

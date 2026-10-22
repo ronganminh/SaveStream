@@ -412,7 +412,7 @@ class _BuyMinutesButton extends StatelessWidget {
       label: context.l10n.v2BuyMinutes,
       size: SsV2ButtonSize.small,
       expand: false,
-      onPressed: () => context.push(AppRoutes.cloudHoursLocation('autoRecord')),
+      onPressed: () => context.push(AppRoutes.usage),
     );
   }
 }

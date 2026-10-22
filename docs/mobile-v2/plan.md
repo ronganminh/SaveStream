@@ -30,7 +30,7 @@ Mức: 🔴 chặn phát hành · 🟠 phải sửa trước khi nộp · 🟡 n
 | 2 | 🔴 | **Giả User-Agent trình duyệt**. Client chuyển tiếp header do server cấp (Referer/Cookie) tới CDN của TikTok. | `LocalRecordingService.kt:222`, `:707-708`; `api_local_recording_repository.dart:158-176` (server trả `stream.url/headers`) | Xoá. Backend ngừng cấp URL luồng thô cho client (xem §3.6) |
 | 3 | 🔴 | Foreground service kiểu `dataSync` dùng để bắt luồng: sai mục đích khai báo FGS. | `AndroidManifest.xml:3-4`, `:43-46` | Bỏ `FOREGROUND_SERVICE*` và `<service>` |
 | 4 | 🔴 | **Theo dõi kênh công khai bất kỳ** bằng username/URL. Chỉ có ô tự cam kết "I own…". Copy kiểu "Monitor a TikTok creator", "Add up to 3 TikTok creators", "Douyin · Coming soon". | `add_channel_screen.dart`, `add_first_creator_screen.dart`, `api_watch_repository.dart:17` (`/v1/live-status`); `app_en.arb:212-216, 526, 533-534, 566-567, 701-705` | Chỉ thêm **kênh của mình**, bắt buộc **xác minh mã trong bio** trước khi ghi (§3.1). Viết lại copy |
-| 5 | 🟠 | Rewarded ads chỉ để mở phút ghi trên máy hoặc slot thứ 2. Banner đặt ở Home, Channels và Library. Ad unit ID production hardcode. | `lib/platform/google_mobile_ads_service.dart:48-63` (ID), `:181-191` (SSV); `home_screen.dart:451`, `channels_screen.dart:347`, `recordings_screen.dart:639`; `build.gradle.kts:11-13` | Bỏ banner. Chỉ giữ **rewarded tự nguyện +5 phút cloud**, verify phía server (§3.3). ID lấy từ build config |
+| 5 | 🟠 | Rewarded ads chỉ để mở phút ghi trên máy hoặc slot thứ 2. Banner đặt ở Home, Channels và Library. Ad unit ID production hardcode. | `lib/platform/google_mobile_ads_service.dart:48-63` (ID), `:181-191` (SSV); `home_screen.dart:451`, `channels_screen.dart:347`, `recordings_screen.dart:639`; `build.gradle.kts:11-13` | Giữ **rewarded tự nguyện +5 phút cloud**, verify phía server (§3.3). Banner chỉ còn **một chỗ: cuối Home**, chỉ cho tài khoản chưa từng mua (`entitlement.ads.show_banners`); bỏ banner ở Channels và Library (§4.4, §6 câu 3). ID lấy từ build config |
 | 6 | 🟠 | `firebase-analytics` thêm ở tầng native (tự thu thập, có AD_ID) nhưng **không khai báo** trong danh mục dữ liệu. | `build.gradle.kts:77`; `MOBILE_RELEASE.md:227-238` | Bỏ. Nếu cần đo thì dùng sự kiện server-side đã có (PostHog) |
 | 7 | 🟠 | Nút "Continue with Apple" hiện cả trên Android. Có entitlement Sign in with Apple, ATT. Có màn iOS riêng. | `social_auth_buttons.dart:30-35`; `Info.plist:50-51`; `ios_recording_*_screen.dart` | Android v2: chỉ Email + Google. iOS để sau |
 | 8 | 🟠 | Repo checkout web (PayPal) còn trong code, tuy chưa nối UI. Nếu lỡ nối sẽ vi phạm Payments policy của Play. | `lib/features/billing/data/repositories/api_billing_repository.dart:49, :90`; `features/credits/**` | Xoá khỏi app. Chỉ dùng Google Play Billing |
@@ -57,7 +57,7 @@ Không tìm thấy:
 | FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC | manifest | **Bỏ** |
 | `c2dm.RECEIVE`, WAKE_LOCK, ACCESS_NETWORK_STATE | firebase_messaging | Giữ |
 | `com.android.vending.BILLING` | in_app_purchase | Giữ |
-| `com.google.android.gms.permission.AD_ID`, ACCESS_ADSERVICES_* | google_mobile_ads, firebase-analytics | Giữ chỉ khi giữ rewarded ads (phải khai báo Advertising ID). Bỏ firebase-analytics |
+| `com.google.android.gms.permission.AD_ID`, ACCESS_ADSERVICES_* | google_mobile_ads, firebase-analytics | Giữ (rewarded + banner). AD_ID do SDK Google Mobile Ads tự merge; khai báo Advertising ID trong Data safety (§4.2). Bỏ firebase-analytics |
 | RECEIVE_BOOT_COMPLETED, FOREGROUND_SERVICE (merge từ work-runtime) | workaround ads | Bỏ; dùng `tools:node="remove"` nếu SDK còn kéo vào |
 
 Kiểm tra lại bằng merged manifest của AAB release (`./gradlew :app:processReleaseManifest`) trước khi nộp.
@@ -88,7 +88,7 @@ Kiểm tra lại bằng merged manifest của AAB release (`./gradlew :app:proce
 - `lib/features/local_recordings/**`, `lib/platform/android_local_*`, `recording_platform_service*`, `flv_timestamp_normalizer` (nếu không cần), `features/rewards/**` (viết lại cho cloud reward).
 - `features/billing/**`, `features/credits/**` (checkout web).
 - `tool/spike_local_recording/**`.
-- Banner ads, hardcode ad ID, `firebase-analytics`, `permission_handler`, `wakelock_plus`, `work-runtime`.
+- Banner ở Channels và Library (chỉ giữ banner cuối Home, §4.4), hardcode ad ID, `firebase-analytics`, `permission_handler`, `wakelock_plus`, `work-runtime`.
 - Màn iOS-only và onboarding local/cloud/pin.
 
 ---
@@ -243,7 +243,7 @@ Phần còn thiếu: hiện reward chỉ cộng **phút ghi trên máy** (10 ph�
   - cảnh báo admin khi một thiết bị có trên 3 tài khoản.
 - Thêm vào entitlement khối `ads`:
   - `rewarded_available`, `rewards_left_today`, `minutes_per_reward`, `resets_at`;
-  - `show_banners=false` khi `has_purchased`. Nếu quyết không có banner thì bỏ hẳn trường này.
+  - `show_banners`: `true` chỉ khi tài khoản **chưa từng mua** gói nào; mua bất kỳ gói nào thì `false` (`has_paid_purchase`, §4.4).
 - **Mốc reset ngày:** hiện tính theo UTC, bản nháp ghi "resets at midnight". Cần chọn UTC hay múi giờ thiết bị (§6).
 
 **Test:** chữ ký thật với key server giả (đã có khung test); cap 6/ngày theo user và thiết bị; replay transaction; key rotation; ad unit sai; tài khoản chưa xác minh email.
@@ -333,40 +333,55 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 
 ### 4.2 Data safety (khai báo trung thực)
 
-| Dữ liệu | Thu thập | Chia sẻ | Mục đích |
-|---|---|---|---|
-| Email, tên hiển thị | Có | Không | Tài khoản |
-| User ID | Có | Không | Tài khoản, chống gian lận |
-| Lịch sử mua (Play) | Có | Không | Thanh toán |
-| Tương tác trong app (kênh, bản ghi) | Có | Không | Chức năng app |
-| Push token (FCM) | Có | Không | Thông báo |
-| **Device or other IDs**: install id của app (`device_id` gửi khi tạo lượt xem quảng cáo thưởng) | Có | Không | Chống gian lận: giới hạn 6 lượt thưởng/ngày/thiết bị, cảnh báo một máy dùng cho hơn 3 tài khoản. Xoá cùng tài khoản. |
-| Advertising ID (AdMob) | Có (AdMob) | Có (Google AdMob) | Quảng cáo, chống gian lận |
-| Video bản ghi (của kênh đã xác minh) | Có | Không | Chức năng app |
-| Crash/analytics | Không (đã bỏ firebase-analytics) | — | — |
+> **Chủ sản phẩm tự điền các mục này trong Play Console** (App content › Data safety, và App content ›
+> Ads). Bảng dưới là bản đối chiếu với code (`apps/mobile` nhánh credits + backend), không phải
+> câu chữ của Play. Khi code đổi thì sửa bảng này trước khi cập nhật Play Console.
 
+| Dữ liệu (nhóm Play) | Thu thập | Chia sẻ | Mục đích | Ghi chú |
+|---|---|---|---|---|
+| Email, tên hiển thị (Personal info) | Có | Không | Tài khoản | |
+| User ID (Personal info) | Có | Không | Tài khoản, chống gian lận | Khi mua, app gửi Google `obfuscatedAccountId` = SHA-256 của user id (không phải email) |
+| Lịch sử mua (Financial info › Purchase history) | Có | Không | Thanh toán | Google Play xử lý thanh toán; server nhận purchase token, order id, product id, trạng thái, và giá Google Play đã hiện cho người dùng (`price_amount_micros` + mã tiền tệ, chỉ để hiển thị trong Purchases). Không nhận số thẻ |
+| Tương tác trong app (kênh, bản ghi) (App activity) | Có | Không | Chức năng app | |
+| **Advertising ID** (Device or other IDs) | **Có** | **Có — Google AdMob** | **Quảng cáo; chống gian lận, bảo mật** | Do SDK Google Mobile Ads thu thập (rewarded + banner). Quyền `com.google.android.gms.permission.AD_ID` do SDK merge vào manifest (không `tools:node="remove"`). App không tự đọc hay gửi Advertising ID về server SaveStream |
+| **Device or other IDs**: install id của app (`device_id`, chuỗi ngẫu nhiên 128 bit `dev_…` sinh khi cài, lưu trong secure storage) | Có | Không | Chống gian lận, bảo mật | Gửi kèm `POST /v1/rewards` khi tạo lượt xem quảng cáo thưởng: cap 6 lượt/ngày/thiết bị, cảnh báo một máy có hơn 3 tài khoản. Cũng là khoá đăng ký thiết bị cho push. Xoá cùng tài khoản |
+| **Device or other IDs**: push token FCM | Có | Không (Google FCM là bên xử lý thay mặt chúng ta) | Chức năng app (thông báo) | Gửi qua `PUT /v1/me/devices/{id}` cùng nền tảng (android/ios), phiên bản app, ngôn ngữ. **Không gửi tên máy (hãng + model)**: trường `device_name` backend còn bắt buộc nên app gửi hằng số trung tính `Android`/`iOS` (backend sẽ cho phép bỏ trường này ở PR riêng). Xoá khi đăng xuất hoặc xoá tài khoản |
+| Video bản ghi (của kênh đã xác minh) (Photos and videos) | Có | Không | Chức năng app | |
+| Crash/analytics | Không (đã bỏ firebase-analytics) | — | — | |
+
+Khai báo ngoài bảng:
+
+- [ ] **Contains ads = Có** (App content › Ads, hiện trên Store listing). App có rewarded tự nguyện và
+  một banner cuối Home cho người chưa từng mua (§4.4).
 - [ ] Dữ liệu được mã hoá khi truyền: có (HTTPS).
 - [ ] Người dùng yêu cầu xoá được: có, trong app và qua `https://savestream.online/delete-account` (§3.4).
-- [ ] Privacy Policy URL: `https://savestream.online/privacy`. Cần bổ sung mục mobile: FCM, AdMob, Play Billing.
-  **Câu chữ cần chủ sản phẩm duyệt.**
+- [x] `app-ads.txt` đã đăng tại `https://savestream.online/app-ads.txt` (PR #242).
+- [x] SSV callback URL trong AdMob (`https://api.savestream.online/v1/webhooks/admob-ssv`): chủ sản phẩm đã xác nhận.
+- [ ] Privacy Policy URL: `https://savestream.online/privacy`. Cần bổ sung mục mobile: FCM, AdMob, Play Billing,
+  install id. **Câu chữ cần chủ sản phẩm duyệt** (bản nháp đang soạn, chưa merge).
 
 ### 4.3 Quyền
 
-- [ ] Chỉ còn INTERNET, POST_NOTIFICATIONS, BILLING, quyền của FCM, và AD_ID nếu có ads.
+- [ ] Chỉ còn INTERNET, POST_NOTIFICATIONS, BILLING, quyền của FCM, và AD_ID (do SDK Google Mobile Ads merge; app có rewarded + banner).
 - [ ] Không có foreground service nên không phải nộp form FGS.
 - [ ] Hỏi POST_NOTIFICATIONS đúng ngữ cảnh (sau khi thêm kênh), không hỏi ngay khi mở app.
 
 ### 4.4 Quảng cáo
 
 - [ ] **Dùng lại AdMob của v1** (cùng package `com.savestream.app`): App ID Android `ca-app-pub-2078852906622512~2464439785`, Rewarded `ca-app-pub-2078852906622512/5155016450`, Banner `ca-app-pub-2078852906622512/4061426634`. ID lấy từ build config của app (`--dart-define`) và env server `SAVESTREAM_ADMOB_REWARD_AD_UNITS`, không viết cứng trong code.
-- [ ] SSV callback URL trong AdMob phải là `https://api.savestream.online/v1/webhooks/admob-ssv` (chủ sản phẩm kiểm tra trong AdMob → Ad unit Rewarded → Server-side verification).
+- [x] SSV callback URL trong AdMob là `https://api.savestream.online/v1/webhooks/admob-ssv` (AdMob → Ad unit Rewarded → Server-side verification). **Chủ sản phẩm đã xác nhận.**
 - [ ] Số thưởng đặt trong AdMob không cần đổi: server luôn cộng 5 phút cloud cho mỗi lượt SSV hợp lệ từ ad unit trong allowlist.
 - [ ] Rewarded: người dùng **tự bấm** "Watch ad · +5 min". Không quảng cáo bất ngờ, không xen ngang player.
-- [ ] Banner nhỏ chỉ cho tài khoản chưa mua (`ads.show_banners`), không che nút, không có ở màn player, thanh toán, xác minh kênh. Mua bất kỳ gói nào thì tắt banner.
-- [ ] UMP consent cho EEA/UK/Thuỵ Sĩ trước khi tải quảng cáo. Có mục "Privacy options" trong Settings để mở lại form.
+- [ ] **Banner (quyết định cuối của chủ sản phẩm):** một banner nhỏ, chỉ cho tài khoản **chưa từng mua** (`entitlement.ads.show_banners`), đặt **ở cuối Home và chỉ ở đó**. Không bao giờ có ở màn player, mua/thanh toán, xác minh kênh (và không ở Channels, Library). Không che nút. Mua bất kỳ gói nào thì tắt banner.
+- [ ] **Personalized ads (quyết định cuối của chủ sản phẩm), theo Google UMP:**
+  - **EEA/UK/Thuỵ Sĩ:** form đồng ý UMP hiện **trước khi tải bất kỳ quảng cáo nào** (`ensureConsent()` chạy trước mọi lần tải rewarded/banner). Nếu người dùng không đồng ý, quảng cáo không cá nhân hoá hoặc theo đúng lựa chọn trong UMP: app để SDK/UMP quyết, không thêm cờ chặt hơn.
+  - **Các bang Mỹ có luật quyền riêng tư:** app hỗ trợ thông điệp US states của UMP: khi `ConsentInformation.privacyOptionsRequirementStatus == required`, nút "Review privacy choices" (Settings › Ad privacy choices) gọi `ConsentForm.showPrivacyOptionsForm` để người dùng từ chối bán/chia sẻ dữ liệu.
+  - **Mọi nơi khác:** personalized ads **BẬT mặc định**.
+  - Người dùng luôn tắt được công tắc "Personalized ads" (Settings › Ad privacy choices). Công tắc lưu trên máy, áp cho cả rewarded và banner; tắt thì mọi request là non-personalized (`npa=1`).
+- [ ] **Chủ sản phẩm cấu hình trong AdMob console:** Privacy & messaging › **European regulations** (GDPR, đã có) và Privacy & messaging › **US state regulations**: tạo và publish thông điệp US states cho app Android `com.savestream.app`. App không cần đổi code khi bật/tắt thông điệp này.
 - [ ] Đối tượng **18+**, không nhắm trẻ em (Families policy không áp dụng). Content rating qua IARC.
-- [ ] Khai báo "Contains ads" trong Store listing.
-- [ ] `app-ads.txt` trên `savestream.online`.
+- [ ] Khai báo "Contains ads" = **Có** trong Store listing / App content (§4.2).
+- [x] `app-ads.txt` đã đăng tại `https://savestream.online/app-ads.txt` (PR #242).
 
 ### 4.5 Tài khoản test cho reviewer
 
@@ -414,7 +429,7 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 
 1. **Google Play Console**: tài khoản tổ chức hay cá nhân, ai là chủ? Nếu cá nhân và mới thì cần 12 tester × 14 ngày closed test.
 2. **Package name**: giữ `com.savestream.app` không? Bản v1 (có recorder) đã từng phát hành lên Play chưa, kể cả internal/closed?
-3. **AdMob**: dùng lại tài khoản/app ID `ca-app-pub-2078852906622512~2464439785` hay tạo mới? Có cần banner cho người chưa mua không? Đề xuất: **không banner**, chỉ rewarded.
+3. ~~**AdMob**: dùng lại app ID hay tạo mới? Có banner cho người chưa mua không?~~ **Đã quyết:** dùng lại AdMob v1 (`ca-app-pub-2078852906622512~2464439785`). Rewarded tự nguyện + **một banner** chỉ cho người chưa từng mua (`entitlement.ads.show_banners`), chỉ ở cuối Home, không bao giờ ở player, mua/thanh toán, xác minh (§4.4). **Đã quyết (personalized ads):** BẬT mặc định ngoài EEA/UK/Thuỵ Sĩ; ở EEA/UK/Thuỵ Sĩ hỏi đồng ý bằng UMP trước khi tải quảng cáo; hỗ trợ thông báo US states của UMP (chủ sản phẩm bật trong AdMob › Privacy & messaging › US state regulations); người dùng tắt được trong Settings › Ad privacy choices (§4.4).
 4. **Rewarded**: +5 phút, 6 lần/ngày. Reset theo **UTC** hay giờ địa phương? Có giới hạn tháng không?
 5. **Xác minh kênh**: đồng ý mã trong bio làm phương án chính và TikTok Login Kit (OAuth) là hướng dài hạn? Ân hạn 14 ngày cho kênh cũ trên web có ổn không? Đối tác thì admin xác minh tay?
 6. **Hoàn tiền khi credit đã tiêu**: cho số dư âm và chặn ghi, hay chỉ thu hồi phần còn lại?
@@ -422,5 +437,6 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 8. **Tên trên store và câu "not affiliated"**: chọn tên app (không có chữ TikTok).
 9. **Download/Share** trên app: giữ Download, bỏ Share ở bản đầu?
 10. **iOS**: để sau hoàn toàn? Nếu có, sẽ cần Sign in with Apple và StoreKit (code backend đã có, đang tắt).
-11. **Privacy Policy mobile**: bổ sung FCM, AdMob, Play Billing. Tôi sẽ soạn câu chữ để duyệt trước khi merge, giống lần PostHog.
+11. ~~**Privacy Policy mobile**: bổ sung FCM, AdMob, Play Billing.~~ **Đã quyết:** mục "SaveStream Android app" trong Privacy, Terms (thanh toán Google Play) và Refund Policy (PR #244); bản ghi rewarded giữ 12 tháng (job `savestream.rewards.retention`) và không thu tên thiết bị; tên thiết bị đã lưu được xoá bằng migration `0036_device_name_optional` (PR #245).
 12. **Firebase**: dùng project Firebase hiện tại (đang dùng cho Google sign-in web) cho app Android luôn không?
+13. **`local_recording_sessions.device_name` (v1 ghi trên máy)**: các phiên ghi on-device cũ của v1 vẫn còn tên model thiết bị (cột NOT NULL, có trong API). **Chưa xoá lúc này.** Đề xuất: sau khi v2 lên Production và không còn client v1 gọi API local recording, bỏ hẳn cột này (hoặc thay bằng device id) bằng một migration riêng, cùng lúc gỡ API local recording của v1.

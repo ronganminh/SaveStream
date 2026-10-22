@@ -16,6 +16,11 @@ import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/channels/presentation/live_notification_screen.dart';
 import '../../features/channels/presentation/verify_ownership_screen.dart';
+import '../../features/credits/presentation/ad_privacy_screen.dart';
+import '../../features/credits/presentation/credits_screen.dart';
+import '../../features/credits/presentation/purchase_status_screens.dart';
+import '../../features/credits/presentation/purchases_screen.dart';
+import '../../features/credits/presentation/usage_history_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -41,9 +46,6 @@ import '../../features/settings/presentation/security_account_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/settings/presentation/signed_in_devices_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
-import '../../features/store/presentation/a5_purchase_controller.dart';
-import '../../features/store/presentation/a5_usage_screen.dart';
-import '../../features/store/presentation/cloud_hours_purchase_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
 import '../session/app_session_controller.dart';
@@ -247,21 +249,46 @@ GoRouter createAppRouter({
           );
         },
       ),
+      // Recording time and its screens: full screen (no bottom bar), as
+      // drawn. None of them shows the banner ad.
       GoRoute(
         path: AppRoutes.usage,
         builder: (BuildContext context, GoRouterState state) {
-          return const A5UsageScreen();
+          return const CreditsScreen();
         },
-      ),
-      GoRoute(
-        path: AppRoutes.cloudHours,
-        builder: (BuildContext context, GoRouterState state) {
-          return CloudHoursPurchaseScreen(
-            contextType: cloudHoursPurchaseContextFromValue(
-              state.uri.queryParameters['context'],
-            ),
-          );
-        },
+        routes: <RouteBase>[
+          GoRoute(path: 'cloud-hours', redirect: (_, _) => AppRoutes.usage),
+          GoRoute(
+            path: 'history',
+            builder: (BuildContext context, GoRouterState state) {
+              return const UsageHistoryScreen();
+            },
+          ),
+          GoRoute(
+            path: 'purchases',
+            builder: (BuildContext context, GoRouterState state) {
+              return const PurchasesScreen();
+            },
+          ),
+          GoRoute(
+            path: 'ad-privacy',
+            builder: (BuildContext context, GoRouterState state) {
+              return const AdPrivacyScreen();
+            },
+          ),
+          GoRoute(
+            path: 'purchase/success',
+            builder: (BuildContext context, GoRouterState state) {
+              return const PurchaseSuccessScreen();
+            },
+          ),
+          GoRoute(
+            path: 'purchase/pending',
+            builder: (BuildContext context, GoRouterState state) {
+              return const PurchasePendingScreen();
+            },
+          ),
+        ],
       ),
       GoRoute(path: '/auth/register', redirect: (_, _) => AppRoutes.register),
       GoRoute(

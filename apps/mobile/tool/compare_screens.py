@@ -4,7 +4,7 @@ Usage: compare_screens.py <emulator_dir> <artboard_dir> [<artboard_dir> ...] <ou
 
 Each screenshot is matched with `<name>.artboard.png` from the first artboard
 directory that has it (one directory per screen group, e.g. auth-home,
-channels and notifications).
+channels, credits and notifications).
 """
 
 from __future__ import annotations

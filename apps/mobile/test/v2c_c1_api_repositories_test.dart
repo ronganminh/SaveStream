@@ -11,6 +11,8 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/features/app_status/data/repositories/api_app_status_repository.dart';
 import 'package:savestream_mobile/features/channels/data/repositories/api_watch_repository.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
+import 'package:savestream_mobile/features/credits/data/api_credit_ledger_repository.dart';
+import 'package:savestream_mobile/features/credits/domain/credit_ledger.dart';
 import 'package:savestream_mobile/features/devices/data/repositories/api_device_repository.dart';
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/api_entitlement_repository.dart';
@@ -40,6 +42,95 @@ void main() {
     expect(entitlement.limits.maxWatches, 20);
     expect(entitlement.limits.maxConcurrentCloudRecordings, 3);
     expect(entitlement.local.unlimited, isTrue);
+    expect(entitlement.cloudMinutesCycleTotal, isNull);
+    expect(entitlement.trialUsed, isFalse);
+  });
+
+  test('entitlement reads the credits additions', () async {
+    final ApiClient client = _clientFor(
+      _FakeAdapter((RequestOptions options, int call) {
+        return _jsonResponse(200, <String, Object?>{
+          ..._entitlementJson(),
+          'last_pack_name': 'Standard',
+          'last_pack_minutes': 9000,
+          'cloud_minutes_cycle_total': 9010,
+          'trial_used': true,
+        });
+      }),
+    );
+
+    final Entitlement entitlement = await ApiEntitlementRepository(
+      apiClient: client,
+    ).getEntitlement();
+
+    expect(entitlement.cloudMinutesCycleTotal, 9010);
+    expect(entitlement.lastPackName, 'Standard');
+    expect(entitlement.trialUsed, isTrue);
+  });
+
+  test('ledger and payment orders read the store and recording details', () {
+    final CreditTransactionPage page = decodeCreditTransactionPage(
+      <String, Object?>{
+        'items': <Object?>[
+          <String, Object?>{
+            'id': 't1',
+            'type': 'grant',
+            'amount': 9000,
+            'balance_after': 9010,
+            'reference_type': 'payment_order',
+            'reference_id': 'ord_1',
+            'store_order_id': 'GPA.1',
+            'package_name': 'Standard',
+            'created_at': '2026-10-15T12:00:00Z',
+          },
+          <String, Object?>{
+            'id': 't2',
+            'type': 'charge',
+            'amount': -99,
+            'balance_after': 8911,
+            'reference_type': 'recording',
+            'reference_id': 'rec_1',
+            'recording_channel_username': 'my_shop_live',
+            'recording_duration_seconds': 5940,
+            'created_at': '2026-10-21T21:00:00Z',
+          },
+        ],
+      },
+    );
+    expect(page.items.first.storeOrderId, 'GPA.1');
+    expect(page.items.first.packageName, 'Standard');
+    expect(page.items.last.recordingChannelUsername, 'my_shop_live');
+    expect(page.items.last.recordingDurationSeconds, 5940);
+
+    final List<PaymentOrder> orders = decodePaymentOrders(<String, Object?>{
+      'items': <Object?>[
+        <String, Object?>{
+          'id': 'ord_1',
+          'package_id': 'standard',
+          'status': 'paid',
+          'credits': 9000,
+          'provider': 'google_play',
+          'store_order_id': 'GPA.1',
+          'client_price_amount_micros': 24990000,
+          'client_price_currency': 'USD',
+          'created_at': '2026-10-15T12:00:00Z',
+        },
+        <String, Object?>{
+          'id': 'ord_2',
+          'package_id': 'starter',
+          'status': 'paid',
+          'credits': 3000,
+          'provider': 'google_play',
+          'store_order_id': null,
+          'created_at': '2026-09-02T12:00:00Z',
+        },
+      ],
+    });
+    expect(orders.first.storeOrderId, 'GPA.1');
+    expect(orders.first.clientPriceAmountMicros, 24990000);
+    expect(orders.first.clientPriceCurrency, 'USD');
+    expect(orders.last.storeOrderId, isNull);
+    expect(orders.last.clientPriceAmountMicros, isNull);
   });
 
   test('501 entitlement falls back to a safe Free snapshot', () async {
@@ -85,7 +176,7 @@ void main() {
       expect(options.data, <String, Object?>{
         'platform': 'android',
         'push_token': 'push-token',
-        'device_name': 'Pixel',
+        'device_name': 'Android',
         'app_version': '2.0.0',
         'locale': 'vi',
       });
@@ -95,7 +186,6 @@ void main() {
       deviceId: 'dev/1',
       platform: DevicePlatform.android,
       pushToken: 'push-token',
-      deviceName: 'Pixel',
       appVersion: '2.0.0',
       locale: 'vi',
     );
@@ -105,6 +195,27 @@ void main() {
     ).register(device);
 
     expect(stored, same(device));
+  });
+
+  test('device registration sends no phone model, only the platform', () async {
+    final List<Object?> sent = <Object?>[];
+    final _FakeAdapter adapter = _FakeAdapter((
+      RequestOptions options,
+      int call,
+    ) {
+      sent.add((options.data as Map<String, Object?>)['device_name']);
+      return ResponseBody.fromString('', 204);
+    });
+    await ApiDeviceRepository(apiClient: _clientFor(adapter)).register(
+      const DeviceRegistration(
+        deviceId: 'dev_ios',
+        platform: DevicePlatform.ios,
+        appVersion: '2.0.0',
+        locale: 'en',
+      ),
+    );
+
+    expect(sent, <Object?>['iOS']);
   });
 
   test('watch create sends notify_on_live and paginates', () async {
