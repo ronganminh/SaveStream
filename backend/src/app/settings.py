@@ -230,6 +230,13 @@ class AppSettings:
     recording_retention_days_free: int = 7
     signup_credits: int = 0
     account_deletion_grace_days: int = 0
+    # Only channels whose owner verified a bio code may be recorded (after
+    # each channel's verification_due_at). From the environment: on in
+    # staging/production (SAVESTREAM_CHANNEL_VERIFICATION_ENFORCED overrides).
+    channel_verification_enforced: bool = False
+    channel_verification_code_ttl_seconds: int = 1800
+    channel_verification_max_checks: int = 20
+    channel_verification_check_interval_seconds: int = 10
     retention_check_seconds: int = 3600
     recording_source_backend: str = "tiktok"
     e2e_stream_base_url: str = ""
@@ -729,6 +736,18 @@ class AppSettings:
             recording_retention_days_free=_nonnegative_int_env("RECORDING_RETENTION_DAYS_FREE", 7),
             signup_credits=_nonnegative_int_env("SIGNUP_CREDITS", 0),
             account_deletion_grace_days=_nonnegative_int_env("ACCOUNT_DELETION_GRACE_DAYS", 0),
+            # On in staging/production; local and the docker e2e stack ("test")
+            # record without verification unless this is set.
+            channel_verification_enforced=_bool_env(
+                "CHANNEL_VERIFICATION_ENFORCED", environment_raw in {"staging", "production"}
+            ),
+            channel_verification_code_ttl_seconds=_int_env(
+                "CHANNEL_VERIFICATION_CODE_TTL_SECONDS", 1800
+            ),
+            channel_verification_max_checks=_int_env("CHANNEL_VERIFICATION_MAX_CHECKS", 20),
+            channel_verification_check_interval_seconds=_int_env(
+                "CHANNEL_VERIFICATION_CHECK_INTERVAL_SECONDS", 10
+            ),
             retention_check_seconds=_int_env("RETENTION_CHECK_SECONDS", 3600),
             recording_source_backend=recording_source_backend,
             e2e_stream_base_url=e2e_stream_base_url,

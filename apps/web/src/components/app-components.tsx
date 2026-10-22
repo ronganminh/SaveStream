@@ -50,6 +50,7 @@ import {
   EyeOff,
   LogOut,
 } from "lucide-react";
+import { ChannelVerificationCard } from "@/components/app/channel-verification";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -1135,6 +1136,40 @@ function channelStatusLine(channel: ChannelModel, on: boolean): string {
   }
 }
 
+/** "Verify to record" / "Verify by …" until the owner verified the channel. */
+export function ChannelVerificationBadge({
+  channel,
+  className,
+}: {
+  channel: ChannelModel;
+  className?: string | undefined;
+}) {
+  if (channel.ownerVerifiedAt) return null;
+  if (channel.verificationRequired) {
+    return (
+      <span
+        className={cn(
+          "inline-flex h-5 w-fit items-center rounded-full bg-warning-subtle px-2 text-[11px] font-bold text-warning",
+          className,
+        )}
+      >
+        Verify to record
+      </span>
+    );
+  }
+  if (!channel.verificationDueAt) return null;
+  return (
+    <span
+      className={cn(
+        "inline-flex h-5 w-fit items-center rounded-full bg-surface-2 px-2 text-[11px] font-bold text-muted-foreground",
+        className,
+      )}
+    >
+      Verify by {formatDate(channel.verificationDueAt, "en", { month: "short", day: "numeric" })}
+    </span>
+  );
+}
+
 export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
   const c = useChannelControls(channel);
   if (c.removed) return null;
@@ -1164,6 +1199,7 @@ export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
         >
           <b className="block truncate">{channel.handle}</b>
           <span className="block truncate text-xs text-muted-foreground">{channel.name}</span>
+          <ChannelVerificationBadge channel={channel} className="mt-1" />
         </Link>
         <StatusBadge status={status} pulse={status === "Recording"} />
       </div>
@@ -1642,6 +1678,8 @@ export function AddChannelDialog({
   const [autoRecord, setAutoRecord] = useState(true);
   // Optional; stored with the time so support can see it.
   const [ownerAttested, setOwnerAttested] = useState(false);
+  // New channels must be verified (code in the TikTok bio) before recording.
+  const [createdNeedsVerification, setCreatedNeedsVerification] = useState(false);
   const channelLimit =
     entitlement?.limits.max_watches ?? publicPricingQuery.data?.free_max_channels_per_user ?? null;
   const preview = useCreatorPreview(open && parsed ? parsed.source : null);
@@ -1690,6 +1728,7 @@ export function AddChannelDialog({
     setErrorText(null);
     setAutoRecord(true);
     setOwnerAttested(false);
+    setCreatedNeedsVerification(false);
   };
 
   const submit = async () => {
@@ -1703,6 +1742,7 @@ export function AddChannelDialog({
         ...(ownerAttested ? { owner_attested: true } : {}),
       });
       setCreatedWatchId(watch.id);
+      setCreatedNeedsVerification(Boolean(watch.verification_required));
       setPhase("success");
     } catch (error) {
       setPhase("form");
@@ -1748,16 +1788,30 @@ export function AddChannelDialog({
             <Check className="size-3.5" strokeWidth={3} />
           </span>
         </div>
-        <DialogTitle className="text-xl font-extrabold">{handle} is being watched</DialogTitle>
+        <DialogTitle className="text-xl font-extrabold">
+          {createdNeedsVerification
+            ? `${handle} added — one more step`
+            : `${handle} is being watched`}
+        </DialogTitle>
         <DialogDescription className="max-w-[360px] text-sm text-muted-foreground">
-          {recordsAutomatically
-            ? autoRecordState.trial
-              ? "We’ll start recording about a minute after the LIVE begins, using your free trial minutes — nothing to keep open."
-              : "We’ll start recording about a minute after the LIVE begins on our servers — nothing to keep open."
-            : !canAutoRecord && isFree
-              ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} ${autoRecordBlockedText(autoRecordState)}`
-              : "Auto-record is off. Turn it on from the channel page whenever you want LIVEs recorded."}
+          {createdNeedsVerification
+            ? "Confirm it’s your channel below. Once verified, we record each LIVE on our servers about a minute after it starts."
+            : recordsAutomatically
+              ? autoRecordState.trial
+                ? "We’ll start recording about a minute after the LIVE begins, using your free trial minutes — nothing to keep open."
+                : "We’ll start recording about a minute after the LIVE begins on our servers — nothing to keep open."
+              : !canAutoRecord && isFree
+                ? `${freeWebSentence(publicPricingQuery.data, entitlement?.limits.max_watches)} ${autoRecordBlockedText(autoRecordState)}`
+                : "Auto-record is off. Turn it on from the channel page whenever you want LIVEs recorded."}
         </DialogDescription>
+        {createdNeedsVerification && createdWatchId && (
+          <ChannelVerificationCard
+            watchId={createdWatchId}
+            handle={handle ?? "your channel"}
+            startOpen
+            className="w-full text-left"
+          />
+        )}
         <div className="flex flex-wrap justify-center gap-2">
           <StatusBadge status="Waiting" />
           <span

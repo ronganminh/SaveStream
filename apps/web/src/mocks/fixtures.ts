@@ -235,10 +235,12 @@ export type NotificationType =
   | "recording_failed"
   | "quota_warning"
   | "cloud_minutes_exhausted"
-  | "credits_low";
+  | "credits_low"
+  | "channel_verification_needed";
 export type NotificationLink =
   | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
   | { to: "/usage" }
+  | { to: "/channels" }
   | { to: "/billing" };
 export type Notification = {
   id: string;

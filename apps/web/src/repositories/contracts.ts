@@ -70,6 +70,12 @@ export type ChannelModel = {
   liveReason?: string | null;
   /** Backend auto-record state, used to pick the fix for "LIVE · not recording". */
   autoRecordState?: "off" | "active" | "paused_no_cloud_minutes" | "waiting_for_cloud_slot" | null;
+  /** Owner proved the channel is theirs (code in the TikTok bio). */
+  ownerVerifiedAt?: string | null;
+  /** Grace deadline for channels added before verification existed. */
+  verificationDueAt?: string | null;
+  /** SaveStream won't record this channel until it is verified. */
+  verificationRequired?: boolean;
 };
 
 export type RecordingModel = {
@@ -130,11 +136,13 @@ export type NotificationType =
   | "recording_failed"
   | "quota_warning"
   | "cloud_minutes_exhausted"
-  | "credits_low";
+  | "credits_low"
+  | "channel_verification_needed";
 
 export type NotificationLink =
   | { to: "/recordings/$id" | "/channels/$id"; params: { id: string } }
   | { to: "/usage" }
+  | { to: "/channels" }
   | { to: "/billing" };
 
 export type NotificationModel = {

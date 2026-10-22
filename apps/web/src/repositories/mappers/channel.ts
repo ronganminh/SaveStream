@@ -124,5 +124,8 @@ export function mapWatchToChannel(
     activeRecordingId: watch.active_recording_id ?? null,
     liveReason: liveReasonFor(watch),
     autoRecordState: watch.auto_record_state ?? null,
+    ownerVerifiedAt: watch.owner_verified_at ?? null,
+    verificationDueAt: watch.verification_due_at ?? null,
+    verificationRequired: watch.verification_required ?? false,
   };
 }

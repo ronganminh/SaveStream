@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 from app.api.schemas.recordings import Source
 from app.application.watches.service import CreatorMetadata
+from app.application.watches.verification import ChannelProfile
 from core.tiktok_api import TikTokAPI
 
 
@@ -23,6 +24,20 @@ class TikTokCreatorMetadataLookup:
             username=profile.username,
             display_name=profile.display_name,
             avatar_url=profile.avatar_url,
+        )
+
+
+class TikTokChannelProfileLookup:
+    """Reads a channel's public bio for ownership verification."""
+
+    async def fetch(self, username: str) -> ChannelProfile | None:
+        profile = await asyncio.to_thread(_get_profile, username)
+        if profile is None:
+            return None
+        return ChannelProfile(
+            username=profile.username,
+            bio=profile.signature,
+            tiktok_user_id=profile.user_id,
         )
 
 

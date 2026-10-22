@@ -1761,6 +1761,11 @@ const notificationTone: Record<string, { icon: typeof Bell; className: string; l
     className: "bg-warning-subtle text-warning",
     label: "Credits",
   },
+  channel_verification_needed: {
+    icon: ShieldCheck,
+    className: "bg-warning-subtle text-warning",
+    label: "Verify channel",
+  },
 };
 
 function NotificationRow({ notification: n }: { notification: NotificationModel }) {

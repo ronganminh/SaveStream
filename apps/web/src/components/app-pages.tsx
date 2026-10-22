@@ -119,6 +119,7 @@ import {
   AppShell,
   ChannelCard,
   ChannelGridCard,
+  ChannelVerificationBadge,
   ChannelLimitMeter,
   ChannelRow,
   ConfirmDeleteDialog,
@@ -150,6 +151,7 @@ import {
 } from "@/components/app-components";
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
+import { ChannelVerificationCard } from "@/components/app/channel-verification";
 import { cn } from "@/lib/utils";
 import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { usePreferences, type Language } from "@/lib/preferences";
@@ -2680,6 +2682,7 @@ function ProductionOverviewPage() {
                                 <span className="text-xs text-muted-foreground">
                                   {channel.name}
                                 </span>
+                                <ChannelVerificationBadge channel={channel} className="mt-1" />
                               </span>
                             </Link>
                           </td>
@@ -7196,6 +7199,15 @@ function ChannelDetail({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
+        {!channel.ownerVerifiedAt &&
+          (channel.verificationRequired || channel.verificationDueAt) && (
+            <ChannelVerificationCard
+              watchId={channel.id}
+              handle={channel.handle}
+              dueAt={channel.verificationRequired ? null : channel.verificationDueAt}
+              startOpen={channel.verificationRequired}
+            />
+          )}
 
         {banner}
 

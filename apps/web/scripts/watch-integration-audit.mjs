@@ -124,6 +124,18 @@ must("src/hooks/use-domain-data.ts", "repositories.recordings.getLiveStatus");
 must("src/components/admin/recordings-d3.tsx", "recording.creator?.avatar_url");
 must("src/components/admin/user-support.tsx", "item.creator?.avatar_url");
 
+// Channel ownership verification (code in the TikTok bio).
+must("src/hooks/use-channel-verification.ts", "/v1/watches/${watchId}/verification");
+must("src/hooks/use-channel-verification.ts", "/v1/watches/${watchId}/verification/check");
+must("src/components/app/channel-verification.tsx", "Check my bio");
+must("src/components/app/channel-verification.tsx", "VERIFICATION_EXPIRED");
+must("src/components/app-components.tsx", "<ChannelVerificationCard");
+must("src/components/app-pages.tsx", "<ChannelVerificationCard");
+must("src/components/app-components.tsx", "Verify to record");
+must("src/components/app-components.tsx", "<ChannelVerificationBadge channel={channel}");
+must("src/repositories/mappers/channel.ts", "verificationRequired: watch.verification_required ?? false");
+must("src/components/admin/user-support.tsx", "verifyWatchOwner(item.id, reason)");
+
 if (failures.length) {
   console.error("Watch integration audit failed:\n- " + failures.join("\n- "));
   process.exit(1);

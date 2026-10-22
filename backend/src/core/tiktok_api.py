@@ -16,6 +16,10 @@ class TikTokProfile:
     username: str
     display_name: str
     avatar_url: str | None
+    # Bio text; None when the page did not include it (not the same as "").
+    signature: str | None = None
+    # TikTok's numeric account id; stays the same when the username changes.
+    user_id: str | None = None
 
 
 class TikTokAPI:
@@ -231,10 +235,14 @@ class TikTokAPI:
                 or candidate.get("avatarThumb")
                 or candidate.get("avatar_url")
             )
+            signature = candidate.get("signature")
+            user_id = candidate.get("id") or candidate.get("uid")
             return TikTokProfile(
                 username=raw_username.strip(),
                 display_name=display_name.strip()[:160],
                 avatar_url=avatar_url,
+                signature=signature if isinstance(signature, str) else None,
+                user_id=str(user_id) if isinstance(user_id, (str, int)) and user_id else None,
             )
         return None
 
