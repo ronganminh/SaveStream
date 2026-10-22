@@ -97,6 +97,9 @@ void main() {
   }
 
   Future<void> tapKey(WidgetTester tester, String key) async {
+    // On a device, a field left focused by enterText keeps the selection
+    // toolbar and keyboard insets up, and the tap lands on those instead.
+    await settleForCapture(tester);
     final Finder target = find.byKey(ValueKey<String>(key));
     if (target.evaluate().isEmpty) {
       // Not built yet in a lazy list.
