@@ -1376,5 +1376,154 @@
   "v2ChannelGone": "This channel isn’t in your list anymore.",
   "v2ChannelLoadError": "Couldn’t load this channel",
   "v2ActionFailed": "That didn’t work. Try again.",
-  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens."
+  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens.",
+  "v2RecSearch": "Search your recordings",
+  "v2RecSearchHint": "Search by channel",
+  "v2RecSearchClose": "Close search",
+  "v2RecFilters": "Filter recordings",
+  "v2RecFilterAll": "All",
+  "v2RecFilterRecording": "Recording",
+  "v2RecFilterProcessing": "Processing",
+  "v2RecFilterFailed": "Failed",
+  "v2RecFilterExpiring": "Expiring soon",
+  "v2RecChipRec": "REC",
+  "v2RecChipStarting": "Starting",
+  "v2RecChipExpired": "Expired",
+  "v2RecDaysLeft": "{count, plural, =1{1 day left} other{{count} days left}}",
+  "@v2RecDaysLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2RecLiveNow": "{handle} · LIVE now",
+  "@v2RecLiveNow": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RecStartingSub": "Starting…",
+  "v2RecProcessingPercent": "Processing {percent}%",
+  "@v2RecProcessingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "v2RecProcessing": "Processing…",
+  "v2RecCouldntSave": "Couldn’t save",
+  "v2RecMinutesCharged": "{count} min charged",
+  "@v2RecMinutesCharged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2RecFailedGeneric": "The recording stopped with an error.",
+  "v2RecMissedNoSlot": "No cloud slot was free when the LIVE started.",
+  "v2RecProcessingIntro": "Usually ready within 10 minutes after the LIVE ends.",
+  "v2RecExpiringBanner": "Recordings are deleted automatically after the retention period. Save the ones you want to keep to your device.",
+  "v2RecFailedBannerTitle": "Failed recordings are never charged.",
+  "v2RecFailedBannerBody": "Any minutes held for them went back to your balance.",
+  "v2RecWhy": "Why:",
+  "v2RecWhatToDo": "What to do:",
+  "v2RecAdviceStream": "nothing — very short LIVEs (under about a minute) may not be captured.",
+  "v2RecAdviceService": "nothing — this was on our side. If it keeps happening, report a problem.",
+  "v2RecEmptyTitle": "No recordings yet",
+  "v2RecEmptyBody": "When a verified channel goes LIVE with auto-record on, the recording appears here.",
+  "v2RecGoToChannels": "Go to Channels",
+  "v2RecNoneRecording": "Nothing is recording right now.",
+  "v2RecNoneProcessing": "Nothing is processing right now.",
+  "v2RecNoneFailed": "No failed recordings.",
+  "v2RecNoneExpiring": "Nothing expires in the next 3 days.",
+  "v2RecSearchEmpty": "No recordings match “{query}”.",
+  "@v2RecSearchEmpty": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RecErrorTitle": "Couldn’t load your recordings",
+  "v2RecErrorBody": "Check your connection and try again. Recording keeps running in the cloud.",
+  "v2PlayerVideo": "Video player",
+  "v2PlayerPlay": "Play",
+  "v2PlayerPause": "Pause",
+  "v2PlayerMore": "More options",
+  "v2PlayerSave": "Save to device",
+  "v2PlayerPlaySaved": "Play saved copy",
+  "v2PlayerKeptBefore": "Kept for ",
+  "v2PlayerKeptDays": "{count, plural, =1{1 more day} other{{count} more days}}",
+  "@v2PlayerKeptDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2PlayerKeptAfter": " · then deleted automatically",
+  "v2PlayerKeptToday": "Deleted automatically within a day",
+  "v2PlayerOnServers": "recorded on SaveStream servers",
+  "v2PlayerSavingTitle": "Saving to Downloads…",
+  "v2PlayerSavingTitleInApp": "Saving to your device…",
+  "v2PlayerSavingDetail": "{done} of {total} · keep the app open until it finishes",
+  "@v2PlayerSavingDetail": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "v2PlayerSaved": "Saved to Downloads",
+  "v2PlayerSavedInApp": "Saved on this device",
+  "v2PlayerOpen": "Open",
+  "v2PlayerSaveFailed": "Couldn’t save the video. Try again.",
+  "v2PlayerPlaybackFailed": "Couldn’t play the video. Try again.",
+  "v2PlayerProcessingTitle": "Processing your recording…",
+  "v2PlayerProcessingSub": "usually under 10 minutes",
+  "v2PlayerProcessingPercent": "{percent}% · usually under 10 minutes",
+  "@v2PlayerProcessingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "v2PlayerProcessingBanner": "Save to device unlocks when processing finishes. We’ll notify you.",
+  "v2PlayerRecordingTitle": "Recording now",
+  "v2PlayerWaitingTitle": "Waiting for the LIVE…",
+  "v2PlayerRecordingBanner": "You can watch and save it once the LIVE ends and processing finishes.",
+  "v2PlayerFailedTitle": "This recording couldn’t be saved",
+  "v2PlayerMinutesCharged": "{count, plural, =0{0 minutes were charged.} =1{1 minute was charged.} other{{count} minutes were charged.}}",
+  "@v2PlayerMinutesCharged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2PlayerFailedAdvice": "If this keeps happening, report a problem.",
+  "v2PlayerReport": "Report a problem",
+  "v2Delete": "Delete",
+  "v2PlayerDeleteTitle": "Delete this recording?",
+  "v2PlayerDeleteBody": "“{name}” will be removed from SaveStream for good. Copies you saved to your device aren’t affected.",
+  "@v2PlayerDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "v2PlayerExpired": "This recording passed its retention period and is no longer available.",
+  "v2PlayerNotFound": "This recording isn’t available anymore.",
+  "v2PlayerLoadError": "Couldn’t load this recording",
+  "v2PlayerShortLiveNote": "Very short LIVEs (under about a minute) may not be captured."
 }

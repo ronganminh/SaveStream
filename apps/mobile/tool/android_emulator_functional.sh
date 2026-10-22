@@ -50,7 +50,8 @@ flutter test integration_test/native_media_test.dart \
   --dart-define=CI_MEDIA_HOST=127.0.0.1 \
   --dart-define=CI_MEDIA_PORT=18095 2>&1 | tee build/ci/android-media.txt
 
-# v2 screens (Auth + Home, Channels) rendered on the emulator, pulled next
+# v2 screens (Auth + Home, Channels, Recordings + Player) rendered on the
+# emulator, pulled next
 # to the artboards for review (artifact android-emulator-screens).
 flutter test integration_test/auth_home_screenshots_test.dart \
   -d "$android_device" --reporter expanded \
@@ -60,9 +61,14 @@ flutter test integration_test/channels_screenshots_test.dart \
   -d "$android_device" --reporter expanded \
   --dart-define=SAVESTREAM_SCREENSHOT_DIR=device 2>&1 | tee build/ci/android-screens-channels.txt
 python3 tool/decode_screens.py build/ci/android-screens-channels.txt build/screens
+flutter test integration_test/recordings_screenshots_test.dart \
+  -d "$android_device" --reporter expanded \
+  --dart-define=SAVESTREAM_SCREENSHOT_DIR=device 2>&1 | tee build/ci/android-screens-recordings.txt
+python3 tool/decode_screens.py build/ci/android-screens-recordings.txt build/screens
 python3 -m pip install --quiet --user pillow
 python3 tool/compare_screens.py build/screens \
   ../../docs/mobile-v2/screens/auth-home \
   ../../docs/mobile-v2/screens/channels \
+  ../../docs/mobile-v2/screens/recordings \
   build/screens/compare
 ls -l build/screens build/screens/compare

@@ -316,6 +316,15 @@ GoRouter createAppRouter({
           );
         },
       ),
+      // The v2 player is full screen (no bottom bar), as drawn.
+      GoRoute(
+        path: '/recordings/:id',
+        builder: (BuildContext context, GoRouterState state) {
+          return RecordingDetailScreen(
+            recordingId: state.pathParameters['id']!,
+          );
+        },
+      ),
       GoRoute(
         path: AppRoutes.componentGallery,
         builder: (BuildContext context, GoRouterState state) {
@@ -391,16 +400,6 @@ GoRouter createAppRouter({
                 builder: (BuildContext context, GoRouterState state) {
                   return const RecordingsScreen();
                 },
-                routes: <RouteBase>[
-                  GoRoute(
-                    path: ':id',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return RecordingDetailScreen(
-                        recordingId: state.pathParameters['id']!,
-                      );
-                    },
-                  ),
-                ],
               ),
             ],
           ),

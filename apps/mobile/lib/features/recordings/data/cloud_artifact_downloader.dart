@@ -18,6 +18,15 @@ final class CloudDownloadResult {
   final bool resumed;
 }
 
+/// Thrown when the caller cancelled the download. The partial file stays so
+/// a later download resumes it.
+final class CloudDownloadCancelledException implements Exception {
+  const CloudDownloadCancelledException();
+
+  @override
+  String toString() => 'Cloud download cancelled.';
+}
+
 final class CloudDownloadStorageException implements IOException {
   const CloudDownloadStorageException({
     required this.freeBytes,
@@ -50,6 +59,7 @@ final class CloudArtifactDownloader {
     required Uri uri,
     required File destination,
     CloudDownloadProgress? onProgress,
+    bool Function()? isCancelled,
   }) async {
     await destination.parent.create(recursive: true);
 
@@ -108,6 +118,10 @@ final class CloudArtifactDownloader {
         : existingBytes + remainingBytes;
     try {
       await for (final List<int> chunk in response) {
+        if (isCancelled?.call() ?? false) {
+          await output.flush();
+          throw const CloudDownloadCancelledException();
+        }
         await output.writeFrom(chunk);
         receivedBytes += chunk.length;
         onProgress?.call(receivedBytes: receivedBytes, totalBytes: totalBytes);

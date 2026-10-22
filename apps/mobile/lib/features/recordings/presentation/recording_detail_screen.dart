@@ -1,26 +1,35 @@
+/// APlayer · APlayerSaving · APlayerSaved · APlayerDelete · APlayerProcessing
+/// · APlayerFailed — one cloud recording: playback, save, retention, delete.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
-import '../../../core/widgets/savestream_widgets.dart';
+import '../../../core/widgets/ss_feedback.dart';
+import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/platform_providers.dart';
-import '../../entitlement/domain/models/entitlement.dart';
-import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../../platform/video_player_ss_controller.dart';
+import '../../channels/presentation/channel_v2_parts.dart';
+import '../../home/presentation/controllers/home_dashboard_controller.dart';
+import '../data/cloud_artifact_downloader.dart';
+import '../data/cloud_recording_file_service.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_file_providers.dart';
 import 'controllers/recording_providers.dart';
-import 'recording_detail_components.dart';
-import 'recording_thumbnail.dart';
-import 'recording_ui_helpers.dart';
+import 'recording_v2_parts.dart';
+
+const double _heroHeight = 440;
+const Color _heroProcessing = Color(0xFF3B2F6E);
+const Color _heroFailed = Color(0xFF5A1A28);
+const List<Color> _heroGradient = <Color>[Color(0xFF8B6CFF), Color(0xFF3B2F6E)];
+const Color _toastBackground = Color(0xFF2B2840);
+const Color _toastAction = Color(0xFFCFC4FF);
 
 class RecordingDetailScreen extends ConsumerStatefulWidget {
   const RecordingDetailScreen({required this.recordingId, super.key});
@@ -34,9 +43,17 @@ class RecordingDetailScreen extends ConsumerStatefulWidget {
 
 class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     with WidgetsBindingObserver {
-  bool _isMutating = false;
-  Object? _mutationError;
   bool _isForeground = true;
+  bool _busy = false;
+
+  SavedRecordingCopy? _saved;
+  bool _checkedSaved = false;
+  bool _saving = false;
+  bool _cancelSave = false;
+  int _received = 0;
+  int? _total;
+  bool _showSavedToast = false;
+  Timer? _toastTimer;
 
   @override
   void initState() {
@@ -49,899 +66,787 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final bool foreground = state == AppLifecycleState.resumed;
-    if (foreground == _isForeground) {
-      return;
+    if (foreground != _isForeground) {
+      setState(() => _isForeground = foreground);
     }
-    setState(() {
-      _isForeground = foreground;
-    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _toastTimer?.cancel();
+    _cancelSave = true;
     super.dispose();
   }
 
-  Future<void> _runMutation(Future<void> Function() action) async {
-    setState(() {
-      _isMutating = true;
-      _mutationError = null;
-    });
-    try {
-      await action();
-    } on Object catch (error) {
-      if (mounted) {
-        setState(() {
-          _mutationError = error;
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isMutating = false;
-        });
-      }
-    }
-  }
+  RecordingFileStore get _store => ref.read(cloudRecordingFileServiceProvider);
 
-  Future<void> _retry(RecordingSummary recording) async {
-    RecordingSummary? retried;
-    await _runMutation(() async {
-      retried = await ref.read(recordingControllerProvider).retry(recording.id);
-    });
-    if (_mutationError == null &&
-        retried != null &&
-        retried!.id != recording.id &&
-        mounted) {
-      context.go(AppRoutes.recordingDetail(retried!.id));
-    }
-  }
-
-  Future<void> _stop(RecordingSummary recording) async {
-    if (recording.engine == Engine.cloud) {
-      final bool? confirmed = await SsConfirmDialog.show(
-        context,
-        title: context.l10n.cloudRecordingStopConfirmTitle,
-        message: context.l10n.cloudRecordingStopConfirmBody,
-        cancelLabel: context.l10n.cancelAction,
-        confirmLabel: context.l10n.stopRecordingAction,
-      );
-      if (confirmed != true || !mounted) return;
-    }
-    await _runMutation(
-      () => ref.read(recordingControllerProvider).stop(recording.id),
-    );
-  }
-
-  Future<void> _delete(RecordingSummary recording) async {
-    final AppLocalizations l10n = context.l10n;
-    final bool? confirmed = await SsConfirmDialog.show(
-      context,
-      title: l10n.deleteRecordingTitle,
-      message: l10n.deleteRecordingMessage,
-      cancelLabel: l10n.cancelAction,
-      confirmLabel: l10n.deleteRecordingAction,
-    );
-    if (confirmed != true || !mounted) {
-      return;
-    }
-
-    await _runMutation(() async {
-      await ref.read(recordingControllerProvider).delete(recording.id);
-      if (recording.engine == Engine.cloud) {
-        await ref.read(cloudRecordingFileServiceProvider).delete(recording.id);
-      }
-    });
-    if (_mutationError == null && mounted) {
+  void _back() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
       context.go(AppRoutes.recordings);
     }
   }
 
+  Future<RecordingArtifactSummary?> _artifact(String id) async {
+    final List<RecordingArtifactSummary> items = await ref.read(
+      recordingArtifactsProvider(id).future,
+    );
+    return items.isEmpty ? null : items.first;
+  }
+
+  Future<void> _checkSaved(RecordingSummary recording) async {
+    try {
+      final RecordingArtifactSummary? artifact = await _artifact(recording.id);
+      final SavedRecordingCopy? copy = await _store.existingCopy(
+        recording.id,
+        expectedSizeBytes: artifact?.sizeBytes,
+      );
+      if (mounted && copy != null) setState(() => _saved = copy);
+    } on Object {
+      // No saved copy (or no storage on this platform): offer Save.
+    }
+  }
+
+  Future<void> _save(RecordingSummary recording) async {
+    final AppLocalizations l10n = context.l10n;
+    setState(() {
+      _saving = true;
+      _cancelSave = false;
+      _received = 0;
+      _total = null;
+    });
+    try {
+      final RecordingArtifactSummary? artifact = await _artifact(recording.id);
+      if (artifact == null) throw StateError('No artifact to save.');
+      if (mounted) setState(() => _total = artifact.sizeBytes);
+      final SavedRecordingCopy copy = await _store.download(
+        recordingId: recording.id,
+        artifactId: artifact.id,
+        isCancelled: () => _cancelSave,
+        onProgress: ({required int receivedBytes, required int? totalBytes}) {
+          if (!mounted) return;
+          setState(() {
+            _received = receivedBytes;
+            _total = totalBytes ?? artifact.sizeBytes;
+          });
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _saved = copy;
+        _showSavedToast = true;
+      });
+      _toastTimer?.cancel();
+      _toastTimer = Timer(const Duration(seconds: 6), () {
+        if (mounted) setState(() => _showSavedToast = false);
+      });
+    } on CloudDownloadCancelledException {
+      if (mounted) setState(() => _saving = false);
+    } on Object {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      SsSnackbar.show(context, l10n.v2PlayerSaveFailed);
+    }
+  }
+
+  void _openSaved(RecordingSummary recording) {
+    final SavedRecordingCopy? copy = _saved;
+    if (copy == null) return;
+    final Uri uri = Uri.parse(AppRoutes.recordingPlayer(recording.id)).replace(
+      queryParameters: <String, String>{
+        'title': recordingHandle(recording),
+        'duration': recording.durationSeconds.toString(),
+        if (recording.startedAt != null)
+          'started': recording.startedAt!.toIso8601String(),
+        'path': copy.location,
+      },
+    );
+    context.push(uri.toString());
+  }
+
+  Future<void> _delete(RecordingSummary recording) async {
+    final bool confirmed =
+        await showDeleteRecordingDialog(
+          context,
+          name: recordingHandle(recording),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+    final AppLocalizations l10n = context.l10n;
+    setState(() => _busy = true);
+    try {
+      _cancelSave = true;
+      // Only the cloud recording goes: a copy the user saved to the device
+      // is theirs and stays.
+      await ref.read(recordingControllerProvider).delete(recording.id);
+      if (mounted) context.go(AppRoutes.recordings);
+    } on Object {
+      if (mounted) SsSnackbar.show(context, l10n.v2ActionFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _stop(RecordingSummary recording) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await SsConfirmDialog.show(
+      context,
+      title: l10n.cloudRecordingStopConfirmTitle,
+      message: l10n.cloudRecordingStopConfirmBody,
+      cancelLabel: l10n.v2Cancel,
+      confirmLabel: l10n.v2StopRecording,
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(recordingControllerProvider).stop(recording.id);
+    } on Object {
+      if (mounted) SsSnackbar.show(context, l10n.v2ActionFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final SsV2Palette palette = SsV2Palette.of(context);
     final AsyncValue<RecordingSummary?> recording = _isForeground
         ? ref.watch(recordingRealtimeProvider(widget.recordingId))
         : ref.watch(recordingDetailProvider(widget.recordingId));
-    final int? cloudMinutesAvailable = ref
-        .watch(entitlementProvider)
-        .value
-        ?.cloudMinutesAvailable;
+    final DateTime Function() clock = ref.watch(homeClockProvider);
 
-    return Scaffold(
-      appBar: AppBar(),
-      body: SafeArea(
-        child: SsAsyncRefreshFrame(
-          isRefreshing: recording.isRefreshing,
-          child: recording.when(
-            loading: () => const _RecordingDetailSkeleton(),
-            error: (Object error, StackTrace stackTrace) => Center(
-              child: SsAsyncErrorState(
-                error: error,
-                onRetry: () {
-                  ref.invalidate(recordingDetailProvider(widget.recordingId));
-                  ref.invalidate(recordingRealtimeProvider(widget.recordingId));
+    Widget message(String title, {VoidCallback? onRetry}) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ChannelsTopBar(onBack: _back),
+          Expanded(
+            child: ChannelsCenteredMessage(
+              glyph: SsV2IconGlyph.alert,
+              title: title,
+              body: onRetry == null ? '' : l10n.v2RecErrorBody,
+              actionWidth: 200,
+              action: onRetry == null
+                  ? SsV2Button(
+                      label: l10n.v2NavRecordings,
+                      variant: SsV2ButtonVariant.outlined,
+                      onPressed: () => context.go(AppRoutes.recordings),
+                    )
+                  : SsV2Button(
+                      label: l10n.v2RetryShort,
+                      variant: SsV2ButtonVariant.outlined,
+                      onPressed: onRetry,
+                    ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final Widget body = recording.when(
+      skipLoadingOnRefresh: true,
+      skipLoadingOnReload: true,
+      loading: () => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ChannelsTopBar(onBack: _back),
+          const Expanded(child: Center(child: SsV2Spinner())),
+        ],
+      ),
+      error: (Object error, StackTrace stackTrace) => message(
+        l10n.v2PlayerLoadError,
+        onRetry: () {
+          ref.invalidate(recordingDetailProvider(widget.recordingId));
+          ref.invalidate(recordingRealtimeProvider(widget.recordingId));
+        },
+      ),
+      data: (RecordingSummary? value) {
+        if (value == null) return message(l10n.v2PlayerNotFound);
+        final RecordingGroup group = recordingGroupOf(value);
+        if (group == RecordingGroup.ready && !_checkedSaved) {
+          _checkedSaved = true;
+          unawaited(_checkSaved(value));
+        }
+        return _content(context, value, group, clock());
+      },
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: recording.value == null
+          ? SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+            )
+          : SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+            ),
+      child: Scaffold(
+        backgroundColor: palette.background,
+        body: DefaultTextStyle(
+          style: ssV2BaseText(palette),
+          child: recording.value == null ? SafeArea(child: body) : body,
+        ),
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    RecordingSummary recording,
+    RecordingGroup group,
+    DateTime now,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final bool expired =
+        group == RecordingGroup.ready && isExpired(recording, now);
+    final bool playable = group == RecordingGroup.ready && !expired;
+    final Widget hero = SizedBox(
+      height: _heroHeight,
+      child: switch (group) {
+        RecordingGroup.ready => _PlayerSurface(
+          recording: recording,
+          savedLocation: _saved?.location,
+          enabled: playable,
+        ),
+        RecordingGroup.processing => _StateHero(
+          color: _heroProcessing,
+          spinner: true,
+          title: l10n.v2PlayerProcessingTitle,
+          subtitle: recording.progress == null
+              ? l10n.v2PlayerProcessingSub
+              : l10n.v2PlayerProcessingPercent(
+                  (recording.progress! * 100).round(),
+                ),
+        ),
+        RecordingGroup.live => _LiveHero(
+          recording: recording,
+          clock: ref.watch(homeClockProvider),
+        ),
+        RecordingGroup.failed => _StateHero(
+          color: _heroFailed,
+          title: l10n.v2PlayerFailedTitle,
+        ),
+      },
+    );
+
+    return Stack(
+      children: <Widget>[
+        Positioned.fill(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                hero,
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _Info(
+                    recording: recording,
+                    group: group,
+                    expired: expired,
+                    now: now,
+                    saved: _saved != null,
+                    saving: _saving,
+                    busy: _busy,
+                    onSave: () => _save(recording),
+                    onOpenSaved: () => _openSaved(recording),
+                    onDelete: () => _delete(recording),
+                    onStop: () => _stop(recording),
+                  ),
+                ),
+                // Room for the saving panel and the toast.
+                if (_saving || _showSavedToast) const SizedBox(height: 200),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          child: SafeArea(
+            bottom: false,
+            child: _PlayerHeader(
+              onBack: _back,
+              onDelete: recording.actions.canDelete && !_busy
+                  ? () => _delete(recording)
+                  : null,
+            ),
+          ),
+        ),
+        if (_saving)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _SavingPanel(
+              toDownloads: _store.savesToDownloads,
+              received: _received,
+              total: _total,
+              onCancel: () => setState(() => _cancelSave = true),
+            ),
+          ),
+        if (_showSavedToast && !_saving)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 24,
+            child: SafeArea(
+              top: false,
+              child: _SavedToast(
+                toDownloads: _store.savesToDownloads,
+                onOpen: () {
+                  setState(() => _showSavedToast = false);
+                  _openSaved(recording);
                 },
               ),
             ),
-            data: (RecordingSummary? value) {
-              if (value == null) {
-                return Center(
-                  child: SsEmptyState(
-                    title: l10n.recordingNotFoundTitle,
-                    message: l10n.recordingNotFoundBody,
-                  ),
-                );
-              }
-
-              final DateTime now = DateTime.now();
-              final bool cloudExpired =
-                  value.engine == Engine.cloud &&
-                  value.expiresAt != null &&
-                  !value.expiresAt!.isAfter(now);
-              final bool isTerminalCloud =
-                  value.engine == Engine.cloud &&
-                  switch (value.status) {
-                    RecordingStatus.completed ||
-                    RecordingStatus.partial ||
-                    RecordingStatus.recovered ||
-                    RecordingStatus.stopped => true,
-                    _ => false,
-                  };
-              final bool missingCloudArtifact =
-                  isTerminalCloud && !value.artifactReady && !cloudExpired;
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(recordingDetailProvider(widget.recordingId));
-                  ref.invalidate(recordingRealtimeProvider(widget.recordingId));
-                  await ref.read(
-                    recordingDetailProvider(widget.recordingId).future,
-                  );
-                },
-                child: ListView(
-                  scrollCacheExtent: const ScrollCacheExtent.pixels(1200),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(
-                    SsSpacing.lg,
-                    SsSpacing.md,
-                    SsSpacing.lg,
-                    SsSpacing.xxl,
-                  ),
-                  children: <Widget>[
-                    AspectRatio(
-                      aspectRatio: 16 / 9,
-                      child: RecordingThumbnail(
-                        recordingId: value.id,
-                        enabled: value.artifactReady,
-                        borderRadius: SsRadii.lg,
-                        onTap: () {
-                          final Uri uri =
-                              Uri.parse(
-                                AppRoutes.recordingPlayer(value.id),
-                              ).replace(
-                                queryParameters: <String, String>{
-                                  'title': value.creatorDisplayName,
-                                  'duration': value.durationSeconds.toString(),
-                                  if (value.startedAt != null)
-                                    'started': value.startedAt!
-                                        .toIso8601String(),
-                                },
-                              );
-                          context.push(uri.toString());
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: SsSpacing.lg),
-                    RecordingDetailHeading(
-                      name: value.creatorDisplayName,
-                      startedAt: value.startedAt,
-                      durationSeconds: value.durationSeconds,
-                      sizeBytes: value.sizeBytes ?? value.bytesRecorded ?? 0,
-                      status: value.status,
-                      engine: value.engine,
-                    ),
-                    if (value.engine == Engine.cloud &&
-                        value.expiresAt != null) ...<Widget>[
-                      const SizedBox(height: SsSpacing.md),
-                      _CloudRetentionNotice(
-                        expiresAt: value.expiresAt!,
-                        now: now,
-                      ),
-                    ],
-                    if (!isTerminalCloud) ...<Widget>[
-                      const SizedBox(height: SsSpacing.lg),
-                      value.engine == Engine.cloud
-                          ? CloudRecordingLifecycleCard(
-                              recording: value,
-                              cloudMinutesAvailable: cloudMinutesAvailable,
-                            )
-                          : _LifecycleCard(recording: value),
-                    ],
-                    if (value.status == RecordingStatus.partial) ...<Widget>[
-                      const SizedBox(height: SsSpacing.md),
-                      SsInlineAlert(
-                        title: l10n.recordingStatusPartial,
-                        message: l10n.recordingPartialBody,
-                        tone: SsInlineAlertTone.warning,
-                      ),
-                    ],
-                    if (_mutationError != null) ...<Widget>[
-                      const SizedBox(height: SsSpacing.md),
-                      SsInlineAsyncError(
-                        error: _mutationError!,
-                        messageOverride: _recordingMutationMessage(
-                          l10n,
-                          _mutationError!,
-                        ),
-                      ),
-                    ],
-                    if (value.status == RecordingStatus.failed &&
-                        value.engine != Engine.cloud) ...<Widget>[
-                      const SizedBox(height: SsSpacing.lg),
-                      _FailureCard(recording: value),
-                    ],
-                    const SizedBox(height: SsSpacing.lg),
-                    _MetadataCard(recording: value),
-                    const SizedBox(height: SsSpacing.lg),
-                    _ArtifactCard(
-                      recording: value,
-                      cloudExpired: cloudExpired,
-                      missingTerminalArtifact: missingCloudArtifact,
-                      isMutating: _isMutating,
-                      onDelete: () => _delete(value),
-                    ),
-                    if (!isTerminalCloud) ...<Widget>[
-                      const SizedBox(height: SsSpacing.lg),
-                      _ActionsCard(
-                        recording: value,
-                        isMutating: _isMutating,
-                        onStop: () => _stop(value),
-                        onRetry: () => _retry(value),
-                        onDelete: () => _delete(value),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-            },
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CloudRetentionNotice extends StatelessWidget {
-  const _CloudRetentionNotice({required this.expiresAt, required this.now});
-
-  final DateTime expiresAt;
-  final DateTime now;
-
-  @override
-  Widget build(BuildContext context) {
-    final bool expired = !expiresAt.isAfter(now);
-    final bool expiringSoon =
-        !expired && expiresAt.difference(now) <= const Duration(days: 3);
-    final String date = MaterialLocalizations.of(
-      context,
-    ).formatShortDate(expiresAt.toLocal());
-
-    if (!expired && !expiringSoon) return const SizedBox.shrink();
-    return SsInlineAlert(
-      icon: Icons.schedule_rounded,
-      title: context.l10n.recordingCloudExpiringTitle,
-      message: expired
-          ? context.l10n.cloudRecordingExpiredBody
-          : context.l10n.recordingCloudExpiringBody(date),
-      tone: SsInlineAlertTone.warning,
-    );
-  }
-}
-
-class CloudRecordingLifecycleCard extends StatelessWidget {
-  const CloudRecordingLifecycleCard({
-    required this.recording,
-    this.cloudMinutesAvailable,
-    super.key,
-  });
-
-  final RecordingSummary recording;
-  final int? cloudMinutesAvailable;
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (recording.status) {
-      RecordingStatus.recording => _cloudRecording(context),
-      RecordingStatus.stopRequested ||
-      RecordingStatus.processing ||
-      RecordingStatus.uploading ||
-      RecordingStatus.finalizing => _cloudProcessing(context),
-      RecordingStatus.failed => _cloudFailed(context),
-      _ => _LifecycleCard(recording: recording),
-    };
-  }
-
-  Widget _cloudRecording(BuildContext context) {
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              SsLocationChip(
-                engine: Engine.cloud,
-                label: context.l10n.cloudLabel,
-              ),
-              const Spacer(),
-              const SsLiveBadge(isLive: true),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          Text(
-            context.l10n.recordingElapsedValue(
-              formatDuration(recording.durationSeconds),
-            ),
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: SsSpacing.sm),
-          Text(context.l10n.cloudRecordingServerBody),
-          if (cloudMinutesAvailable case final int minutes) ...<Widget>[
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              context.l10n.cloudTimeRemainingValue(
-                formatMinutesAsHoursMinutes(
-                  minutes,
-                  hoursLabel: context.l10n.timeHoursUnit,
-                  minutesLabel: context.l10n.timeMinutesUnit,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: SsSpacing.md),
-          SsInlineAlert(
-            title: context.l10n.recordingPlaybackNotReadyTitle,
-            message: context.l10n.recordingPlaybackNotReadyBody,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _cloudProcessing(BuildContext context) {
-    final int currentStep = switch (recording.status) {
-      RecordingStatus.stopRequested => 0,
-      RecordingStatus.processing => 1,
-      RecordingStatus.uploading => 2,
-      RecordingStatus.finalizing => 3,
-      _ => 0,
-    };
-    final List<String> labels = <String>[
-      context.l10n.cloudRecordingProcessStopStep,
-      context.l10n.cloudRecordingProcessMergeStep,
-      context.l10n.cloudRecordingProcessPreviewStep,
-      context.l10n.cloudRecordingProcessReadyStep,
-    ];
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            context.l10n.cloudRecordingProcessingTitle,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: SsSpacing.md),
-          SsChecklist(
-            items: <SsChecklistItem>[
-              for (int index = 0; index < labels.length; index += 1)
-                SsChecklistItem(
-                  label: labels[index],
-                  done: index < currentStep,
-                  active: index == currentStep,
-                ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          SsInlineAlert(
-            title: context.l10n.cloudLabel,
-            message: context.l10n.cloudRecordingProcessingBody,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _cloudFailed(BuildContext context) {
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(Icons.cloud_off_outlined),
-              const SizedBox(width: SsSpacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      context.l10n.recordingFailureTitle,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    Text(context.l10n.cloudRecordingFailedTitle),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          if (recording.errorMessage != null) Text(recording.errorMessage!),
-          if (recording.durationSeconds > 0) ...<Widget>[
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              context.l10n.recordingElapsedValue(
-                formatDuration(recording.durationSeconds),
-              ),
-            ),
-          ],
-          const SizedBox(height: SsSpacing.md),
-          SsInlineAlert(
-            title: context.l10n.cloudLabel,
-            message: context.l10n.cloudRecordingFailedRefundBody,
-            tone: SsInlineAlertTone.warning,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LifecycleCard extends StatelessWidget {
-  const _LifecycleCard({required this.recording});
-
-  final RecordingSummary recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    final bool isRecording = recording.status == RecordingStatus.recording;
-    final IconData icon = _statusIcon(recording.status);
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: isRecording
-                      ? colors.errorContainer
-                      : colors.primaryContainer,
-                  borderRadius: BorderRadius.circular(SsRadii.md),
-                ),
-                child: Icon(
-                  icon,
-                  color: isRecording
-                      ? colors.onErrorContainer
-                      : colors.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: SsSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      recordingStatusLabel(l10n, recording.status),
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: SsSpacing.xs),
-                    Text(
-                      recordingStatusDescription(l10n, recording.status),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (recording.status == RecordingStatus.recording) ...<Widget>[
-            const SizedBox(height: SsSpacing.lg),
-            Text(
-              l10n.recordingElapsedValue(
-                formatDuration(recording.durationSeconds),
-              ),
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: SsSpacing.xs),
-            Text(
-              l10n.recordingBytesValue(formatBytes(recording.bytesRecorded)),
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-          if (recording.progress != null &&
-              recording.status != RecordingStatus.completed &&
-              recording.status != RecordingStatus.failed &&
-              recording.status != RecordingStatus.stopped) ...<Widget>[
-            const SizedBox(height: SsSpacing.lg),
-            LinearProgressIndicator(value: recording.progress),
-            const SizedBox(height: SsSpacing.xs),
-            Text(
-              l10n.recordingProgressValue((recording.progress! * 100).round()),
-              textAlign: TextAlign.end,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FailureCard extends StatelessWidget {
-  const _FailureCard({required this.recording});
-
-  final RecordingSummary recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ColorScheme colors = Theme.of(context).colorScheme;
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Icon(Icons.error_outline_rounded, color: colors.error),
-              const SizedBox(width: SsSpacing.sm),
-              Text(
-                l10n.recordingFailureTitle,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          if (recording.errorCode != null)
-            Text(
-              recording.errorCode!,
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-          if (recording.errorMessage != null) ...<Widget>[
-            const SizedBox(height: SsSpacing.xs),
-            Text(recording.errorMessage!),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _MetadataCard extends StatelessWidget {
-  const _MetadataCard({required this.recording});
-
-  final RecordingSummary recording;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final DateTime now = DateTime.now();
-    final DateTime? expiresAt = recording.expiresAt;
-    final int daysLeft = expiresAt == null
-        ? 0
-        : (expiresAt.difference(now).inHours / 24).ceil().clamp(0, 999);
-    final String? retention = expiresAt == null
-        ? null
-        : daysLeft <= 1
-        ? l10n.recordingCloudRetentionTomorrow(
-            MaterialLocalizations.of(context).formatShortDate(expiresAt),
-          )
-        : l10n.recordingCloudRetentionValue(
-            MaterialLocalizations.of(context).formatShortDate(expiresAt),
-            daysLeft,
-          );
-
-    return RecordingDetailInfoCard(
-      rows: <RecordingDetailInfoRow>[
-        RecordingDetailInfoRow(
-          l10n.recordingStorageLabel,
-          recording.engine == Engine.cloud
-              ? l10n.recordingCloudStorageValue
-              : l10n.localLabel,
-        ),
-        if (retention != null)
-          RecordingDetailInfoRow(
-            l10n.recordingCloudRetentionLabel,
-            retention,
-            emphasize: daysLeft <= 3,
-          ),
-        RecordingDetailInfoRow(
-          l10n.recordingQualityLabel,
-          l10n.recordingQualitySourceValue,
-        ),
-        RecordingDetailInfoRow(
-          l10n.recordingStartedByLabel,
-          recording.watchId == null
-              ? l10n.recordingStartedManuallyValue
-              : l10n.recordingStartedAutomaticallyValue,
-        ),
       ],
     );
   }
 }
 
-class _ArtifactCard extends ConsumerStatefulWidget {
-  const _ArtifactCard({
-    required this.recording,
-    required this.cloudExpired,
-    required this.missingTerminalArtifact,
-    required this.isMutating,
-    required this.onDelete,
-  });
+class _PlayerHeader extends StatelessWidget {
+  const _PlayerHeader({required this.onBack, required this.onDelete});
 
-  final RecordingSummary recording;
-  final bool cloudExpired;
-  final bool missingTerminalArtifact;
-  final bool isMutating;
-  final VoidCallback onDelete;
-
-  @override
-  ConsumerState<_ArtifactCard> createState() => _ArtifactCardState();
-}
-
-class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
-  File? _downloadedFile;
-  int _downloadedBytes = 0;
-  int? _downloadTotalBytes;
-  bool _isDownloading = false;
-  bool _isSharing = false;
-  bool _checkedExistingDownload = false;
-
-  Future<void> _loadExistingDownload(RecordingArtifactSummary? artifact) async {
-    final service = ref.read(cloudRecordingFileServiceProvider);
-    final File? file = await service.existingFile(
-      widget.recording.id,
-      expectedSizeBytes: artifact?.sizeBytes,
-    );
-    final int existingBytes =
-        file?.lengthSync() ?? await service.existingBytes(widget.recording.id);
-    if (!mounted) return;
-    setState(() {
-      _downloadedFile = file;
-      _downloadedBytes = existingBytes;
-      _downloadTotalBytes = artifact?.sizeBytes;
-    });
-  }
-
-  Future<void> _downloadArtifact(RecordingArtifactSummary artifact) async {
-    setState(() {
-      _isDownloading = true;
-      _downloadTotalBytes = artifact.sizeBytes;
-    });
-    try {
-      final File file = await ref
-          .read(cloudRecordingFileServiceProvider)
-          .download(
-            recordingId: widget.recording.id,
-            artifactId: artifact.id,
-            onProgress:
-                ({required int receivedBytes, required int? totalBytes}) {
-                  if (!mounted) return;
-                  setState(() {
-                    _downloadedBytes = receivedBytes;
-                    _downloadTotalBytes = totalBytes ?? artifact.sizeBytes;
-                  });
-                },
-          );
-      if (!mounted) return;
-      setState(() {
-        _downloadedFile = file;
-        _downloadedBytes = file.lengthSync();
-        _downloadTotalBytes = _downloadedBytes;
-      });
-    } on Object {
-      if (mounted) {
-        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isDownloading = false);
-      }
-    }
-  }
-
-  Future<void> _shareArtifact(RecordingArtifactSummary? artifact) async {
-    setState(() => _isSharing = true);
-    try {
-      if (_downloadedFile case final File file) {
-        await ref
-            .read(shareServiceProvider)
-            .shareFile(
-              filePath: file.path,
-              displayName: widget.recording.creatorDisplayName,
-            );
-      } else if (artifact != null) {
-        await ref
-            .read(cloudRecordingShareCoordinatorProvider)
-            .share(
-              artifactId: artifact.id,
-              displayName: widget.recording.creatorDisplayName,
-            );
-      }
-    } on Object {
-      if (mounted) {
-        SsSnackbar.show(context, context.l10n.artifactOpenFailedMessage);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSharing = false);
-      }
-    }
-  }
+  final VoidCallback onBack;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final AsyncValue<List<RecordingArtifactSummary>> artifacts = ref.watch(
-      recordingArtifactsProvider(widget.recording.id),
-    );
-
-    return artifacts.when(
-      loading: () => const SsSkeleton(height: 96, radius: SsRadii.md),
-      error: (Object error, StackTrace stackTrace) => SsInlineAsyncError(
-        error: error,
-        onRetry: () =>
-            ref.invalidate(recordingArtifactsProvider(widget.recording.id)),
-      ),
-      data: (List<RecordingArtifactSummary> items) {
-        final RecordingArtifactSummary? artifact = items.isEmpty
-            ? null
-            : items.first;
-        if (!_checkedExistingDownload) {
-          _checkedExistingDownload = true;
-          unawaited(_loadExistingDownload(artifact));
-        }
-        final int totalBytes = _downloadTotalBytes ?? artifact?.sizeBytes ?? 0;
-        final double? progress = totalBytes <= 0
-            ? null
-            : (_downloadedBytes / totalBytes).clamp(0.0, 1.0);
-
-        if (artifact == null && _downloadedFile == null) {
-          if (widget.missingTerminalArtifact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SsInlineAlert(
-                  icon: Icons.error_outline_rounded,
-                  title: l10n.recordingArtifactMissingTitle,
-                  message: l10n.recordingArtifactMissingBody,
-                  tone: SsInlineAlertTone.error,
-                ),
-                const SizedBox(height: SsSpacing.sm),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => ref.invalidate(
-                          recordingArtifactsProvider(widget.recording.id),
-                        ),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: Text(l10n.retryAction),
-                      ),
-                    ),
-                    const SizedBox(width: SsSpacing.sm),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: widget.isMutating ? null : widget.onDelete,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context).colorScheme.error,
-                        ),
-                        icon: const Icon(Icons.delete_outline_rounded),
-                        label: Text(l10n.deleteRecordingAction),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
-          return SsInlineAlert(
-            title: widget.cloudExpired
-                ? l10n.recordingNotFoundTitle
-                : l10n.artifactPendingLabel,
-            message: widget.cloudExpired
-                ? l10n.cloudRecordingExpiredBody
-                : l10n.recordingPlaybackNotReadyBody,
-            tone: widget.cloudExpired
-                ? SsInlineAlertTone.warning
-                : SsInlineAlertTone.info,
-          );
-        }
-
-        void openPlayer() {
-          final File? local = _downloadedFile;
-          final Uri uri =
-              Uri.parse(AppRoutes.recordingPlayer(widget.recording.id)).replace(
-                queryParameters: <String, String>{
-                  'title': widget.recording.creatorDisplayName,
-                  'duration': widget.recording.durationSeconds.toString(),
-                  if (widget.recording.startedAt != null)
-                    'started': widget.recording.startedAt!.toIso8601String(),
-                  if (local != null) 'path': local.path,
-                },
-              );
-          context.push(uri.toString());
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SizedBox(
+      height: 64,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
           children: <Widget>[
-            if (_isDownloading || _downloadedBytes > 0) ...<Widget>[
-              SsInlineAlert(
-                icon: _downloadedFile == null
-                    ? Icons.downloading_rounded
-                    : Icons.download_done_rounded,
-                title: _downloadedFile == null
-                    ? l10n.downloadRecordingAction
-                    : l10n.recordingDownloadedTitle,
-                message: _downloadedFile == null
-                    ? l10n.recordingDownloadingBytes(
-                        formatBytes(_downloadedBytes),
-                        formatBytes(totalBytes),
+            SizedBox.square(
+              dimension: 48,
+              child: IconButton(
+                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                onPressed: onBack,
+                icon: const SsV2Icon(SsV2IconGlyph.back, color: Colors.white),
+              ),
+            ),
+            const Spacer(),
+            if (onDelete != null)
+              PopupMenuButton<String>(
+                key: const ValueKey<String>('player-more'),
+                tooltip: l10n.v2PlayerMore,
+                icon: const SsV2Icon(SsV2IconGlyph.more, color: Colors.white),
+                onSelected: (_) => onDelete!(),
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  PopupMenuItem<String>(
+                    key: const ValueKey<String>('player-delete'),
+                    value: 'delete',
+                    child: Text(l10n.v2Delete),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Plain hero for processing and failed recordings.
+class _StateHero extends StatelessWidget {
+  const _StateHero({
+    required this.color,
+    required this.title,
+    this.subtitle,
+    this.spinner = false,
+  });
+
+  final Color color;
+  final String title;
+  final String? subtitle;
+  final bool spinner;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: context.l10n.v2PlayerVideo,
+      container: true,
+      child: ColoredBox(
+        color: color,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: ssV2Gap(<Widget>[
+                if (spinner)
+                  const RecordingRingSpinner(
+                    track: Color(0xFFEEE9FF),
+                    arc: Colors.white,
+                    size: 40,
+                    stroke: 4,
+                  )
+                else
+                  const SsV2Icon(
+                    SsV2IconGlyph.alert,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.85),
+                    ),
+                  ),
+              ], spinner ? 12 : 10),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A recording still waiting for (or capturing) its LIVE.
+class _LiveHero extends StatelessWidget {
+  const _LiveHero({required this.recording, required this.clock});
+
+  final RecordingSummary recording;
+  final DateTime Function() clock;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final SsV2Palette palette = SsV2Palette.of(context);
+    if (!isCapturing(recording)) {
+      return _StateHero(
+        color: _heroProcessing,
+        spinner: true,
+        title: l10n.v2PlayerWaitingTitle,
+      );
+    }
+    final DateTime? started = recording.startedAt;
+    const TextStyle sub = TextStyle(
+      fontSize: 13,
+      color: Colors.white,
+      fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+    );
+    return ColoredBox(
+      color: _heroProcessing,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ssV2Gap(<Widget>[
+            RecordingThumbChip(
+              label: l10n.v2RecChipRec,
+              dot: true,
+              background: palette.error,
+              foreground: Colors.white,
+            ),
+            Text(
+              l10n.v2PlayerRecordingTitle,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            if (started == null)
+              Text(formatRecordingClock(recording.durationSeconds), style: sub)
+            else
+              RecordingElapsedBuilder(
+                startedAt: started,
+                now: clock,
+                builder: (BuildContext context, int seconds) =>
+                    Text(formatRecordingClock(seconds), style: sub),
+              ),
+          ], 12),
+        ),
+      ),
+    );
+  }
+}
+
+/// The video area: poster (server thumbnail or the artboard gradient) with
+/// a Play button; playback starts only when tapped, inline.
+class _PlayerSurface extends ConsumerStatefulWidget {
+  const _PlayerSurface({
+    required this.recording,
+    required this.savedLocation,
+    required this.enabled,
+  });
+
+  final RecordingSummary recording;
+  final String? savedLocation;
+  final bool enabled;
+
+  @override
+  ConsumerState<_PlayerSurface> createState() => _PlayerSurfaceState();
+}
+
+class _PlayerSurfaceState extends ConsumerState<_PlayerSurface> {
+  VideoPlayerSsController? _controller;
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  Future<VideoPlayerSsController> _create() async {
+    final String? saved = widget.savedLocation;
+    if (saved != null && saved.isNotEmpty) {
+      return VideoPlayerSsController.saved(saved);
+    }
+    final List<RecordingArtifactSummary> artifacts = await ref.read(
+      recordingArtifactsProvider(widget.recording.id).future,
+    );
+    if (artifacts.isEmpty) {
+      throw StateError('Cloud recording artifact is unavailable.');
+    }
+    final ArtifactDownloadUrl download = await ref
+        .read(recordingControllerProvider)
+        .createArtifactDownloadUrl(artifacts.first.id);
+    if (download.isExpired) {
+      throw StateError('Cloud recording URL expired before playback.');
+    }
+    return VideoPlayerSsController.network(download.uri);
+  }
+
+  Future<void> _toggle() async {
+    final VideoPlayerSsController? controller = _controller;
+    if (controller != null) {
+      controller.isPlaying ? await controller.pause() : await controller.play();
+      return;
+    }
+    if (_loading || !widget.enabled) return;
+    final String failed = context.l10n.v2PlayerPlaybackFailed;
+    setState(() => _loading = true);
+    VideoPlayerSsController? next;
+    try {
+      next = await _create();
+      await next.initialize();
+      if (!mounted) {
+        next.dispose();
+        return;
+      }
+      setState(() {
+        _controller = next;
+        _loading = false;
+      });
+      await next.play();
+    } on Object {
+      next?.dispose();
+      if (!mounted) return;
+      setState(() => _loading = false);
+      SsSnackbar.show(context, failed);
+    }
+  }
+
+  void _seekTo(double fraction, Duration duration) {
+    final VideoPlayerSsController? controller = _controller;
+    if (controller == null || duration <= Duration.zero) return;
+    controller.seekTo(duration * fraction.clamp(0.0, 1.0));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final VideoPlayerSsController? controller = _controller;
+    if (controller == null) return _frame(context, null);
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (BuildContext context, Widget? child) =>
+          _frame(context, controller),
+    );
+  }
+
+  Widget _frame(BuildContext context, VideoPlayerSsController? controller) {
+    final AppLocalizations l10n = context.l10n;
+    final Duration reported = controller?.duration ?? Duration.zero;
+    final Duration duration = reported >= const Duration(seconds: 2)
+        ? reported
+        : Duration(seconds: widget.recording.durationSeconds);
+    final Duration position = controller == null
+        ? Duration.zero
+        : controller.position > duration
+        ? duration
+        : controller.position;
+    final double fraction = duration.inMilliseconds <= 0
+        ? 0
+        : position.inMilliseconds / duration.inMilliseconds;
+    final bool playing = controller?.isPlaying ?? false;
+    String clock(Duration value) => duration.inHours > 0
+        ? formatRecordingClock(value.inSeconds)
+        : recordingClock(value.inSeconds);
+
+    return Semantics(
+      label: l10n.v2PlayerVideo,
+      container: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: playing ? _toggle : null,
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            if (controller != null && controller.isInitialized)
+              ColoredBox(
+                color: Colors.black,
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: controller.aspectRatio,
+                    child: VideoPlayer(controller.player),
+                  ),
+                ),
+              )
+            else
+              RecordingThumbnailFill(
+                recording: widget.recording,
+                colors: _heroGradient,
+              ),
+            if (!playing && widget.enabled)
+              Center(
+                child: _loading
+                    ? const SizedBox.square(
+                        dimension: 72,
+                        child: Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
                       )
-                    : l10n.recordingDownloadedBody,
+                    : Semantics(
+                        button: true,
+                        label: l10n.v2PlayerPlay,
+                        child: Material(
+                          key: const ValueKey<String>('player-play'),
+                          color: Colors.white.withValues(alpha: 0.95),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: _toggle,
+                            child: const SizedBox.square(
+                              dimension: 72,
+                              child: Center(
+                                child: SsV2Icon(
+                                  SsV2IconGlyph.play,
+                                  size: 30,
+                                  color: Color(0xFF15122B),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
               ),
-              const SizedBox(height: SsSpacing.sm),
-              LinearProgressIndicator(
-                value: _downloadedFile != null ? 1 : progress,
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints box) {
+                      void seek(Offset local) =>
+                          _seekTo(local.dx / box.maxWidth, duration);
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (TapDownDetails d) => seek(d.localPosition),
+                        onHorizontalDragUpdate: (DragUpdateDetails d) =>
+                            seek(d.localPosition),
+                        child: SizedBox(
+                          height: 14,
+                          child: _ProgressTrack(fraction: fraction),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 3),
+                  DefaultTextStyle.merge(
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontFeatures: <FontFeature>[FontFeature.tabularFigures()],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: <Widget>[
+                        Text(clock(position)),
+                        Text(clock(duration)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: SsSpacing.lg),
-            ],
-            RecordingDetailActions(
-              actions: <RecordingDetailActionData>[
-                RecordingDetailActionData(
-                  label: l10n.playRecordingAction,
-                  icon: Icons.play_arrow_rounded,
-                  onPressed: openPlayer,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 4px track with the white fill and a 14px thumb.
+class _ProgressTrack extends StatelessWidget {
+  const _ProgressTrack({required this.fraction});
+
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints box) {
+        final double x = box.maxWidth * fraction.clamp(0.0, 1.0);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: <Widget>[
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 5,
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                RecordingDetailActionData(
-                  label: l10n.shareRecordingAction,
-                  icon: Icons.ios_share_rounded,
-                  loading: _isSharing,
-                  onPressed: () => _shareArtifact(artifact),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              top: 5,
+              width: x,
+              child: Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                RecordingDetailActionData(
-                  label: _downloadedFile == null
-                      ? l10n.recordingDownloadDeviceAction
-                      : l10n.recordingDownloadedLabel,
-                  icon: _downloadedFile == null
-                      ? Icons.download_rounded
-                      : Icons.download_done_rounded,
-                  loading: _isDownloading,
-                  onPressed:
-                      _downloadedFile == null &&
-                          artifact != null &&
-                          !widget.cloudExpired
-                      ? () => _downloadArtifact(artifact)
-                      : null,
+              ),
+            ),
+            Positioned(
+              left: x - 7,
+              top: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
                 ),
-                RecordingDetailActionData(
-                  label: l10n.deleteRecordingAction,
-                  icon: Icons.delete_outline_rounded,
-                  destructive: true,
-                  loading: widget.isMutating,
-                  onPressed: widget.onDelete,
-                ),
-              ],
+              ),
             ),
           ],
         );
@@ -950,144 +855,607 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
   }
 }
 
-class _ActionsCard extends StatelessWidget {
-  const _ActionsCard({
+class _Info extends ConsumerWidget {
+  const _Info({
     required this.recording,
-    required this.isMutating,
-    required this.onStop,
-    required this.onRetry,
+    required this.group,
+    required this.expired,
+    required this.now,
+    required this.saved,
+    required this.saving,
+    required this.busy,
+    required this.onSave,
+    required this.onOpenSaved,
     required this.onDelete,
+    required this.onStop,
   });
 
   final RecordingSummary recording;
-  final bool isMutating;
-  final VoidCallback onStop;
-  final VoidCallback onRetry;
+  final RecordingGroup group;
+  final bool expired;
+  final DateTime now;
+  final bool saved;
+  final bool saving;
+  final bool busy;
+  final VoidCallback onSave;
+  final VoidCallback onOpenSaved;
   final VoidCallback onDelete;
+  final VoidCallback onStop;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final List<Widget> actions = <Widget>[];
-
-    final bool canStopActive =
-        recording.actions.canStop &&
-        (recording.status == RecordingStatus.recording ||
-            recording.status == RecordingStatus.reconnecting);
-
-    if (canStopActive) {
-      actions.add(
-        SsPrimaryButton(
-          label: l10n.stopRecordingAction,
-          icon: Icons.stop_rounded,
-          isLoading: isMutating,
-          onPressed: onStop,
-        ),
-      );
-    }
-    if (recording.actions.canRetry) {
-      actions.add(
-        SsPrimaryButton(
-          label: l10n.retryRecordingAction,
-          icon: Icons.replay_rounded,
-          isLoading: isMutating,
-          onPressed: onRetry,
-        ),
-      );
-    }
-    if (recording.actions.canDelete) {
-      actions.add(
-        TextButton.icon(
-          onPressed: isMutating ? null : onDelete,
-          icon: Icon(
-            Icons.delete_outline_rounded,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          label: Text(
-            recording.engine == Engine.cloud
-                ? l10n.deleteCloudRecordingAction
-                : l10n.deleteRecordingAction,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
+    final SsV2Palette palette = SsV2Palette.of(context);
+    final DateTime? started = recording.startedAt;
+    final List<String> meta = <String>[
+      recordingHandle(recording),
+      if (started != null) recordingDayTime(context, started),
+      if (group != RecordingGroup.failed && recording.durationSeconds > 0)
+        recordingClock(recording.durationSeconds),
+    ];
+    // LIVE titles aren't in the API yet: the handle is the title and the
+    // line under it carries the date and length.
+    final Widget heading = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Semantics(
+          header: true,
+          child: Text(
+            meta.first,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
           ),
         ),
-      );
-    }
-
-    if (actions.isEmpty) {
-      return SsCard(
-        child: Text(
-          l10n.recordingNoActionsBody,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
-    }
-
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
+        if (meta.length > 1) ...<Widget>[
+          const SizedBox(height: 4),
           Text(
-            l10n.recordingActionsTitle,
-            style: Theme.of(context).textTheme.titleMedium,
+            meta.skip(1).join(' · '),
+            style: TextStyle(fontSize: 14, color: palette.textMuted),
           ),
-          const SizedBox(height: SsSpacing.md),
-          for (int index = 0; index < actions.length; index++) ...<Widget>[
-            actions[index],
-            if (index < actions.length - 1)
-              const SizedBox(height: SsSpacing.sm),
-          ],
         ],
-      ),
+      ],
+    );
+
+    final List<Widget> children = <Widget>[heading];
+    switch (group) {
+      case RecordingGroup.ready:
+        if (expired) {
+          children.add(
+            SsV2Banner(
+              tone: SsV2Tone.warning,
+              child: Text(l10n.v2PlayerExpired),
+            ),
+          );
+          break;
+        }
+        children.add(
+          saved
+              ? SsV2Button(
+                  key: const ValueKey<String>('player-play-saved'),
+                  label: l10n.v2PlayerPlaySaved,
+                  variant: SsV2ButtonVariant.outlined,
+                  leading: SsV2Icon(
+                    SsV2IconGlyph.play,
+                    size: 20,
+                    color: palette.text,
+                  ),
+                  onPressed: onOpenSaved,
+                )
+              : SsV2Button(
+                  key: const ValueKey<String>('player-save'),
+                  label: l10n.v2PlayerSave,
+                  leading: const SsV2Icon(
+                    SsV2IconGlyph.download,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                  onPressed: saving || busy ? null : onSave,
+                ),
+        );
+        final DateTime? expiresAt = recording.expiresAt;
+        if (expiresAt != null) {
+          final int days = daysUntil(expiresAt, now);
+          final TextStyle bold = TextStyle(
+            fontWeight: FontWeight.w700,
+            color: palette.text,
+          );
+          children.add(
+            _InfoRow(
+              glyph: SsV2IconGlyph.clock,
+              child: Text.rich(
+                days < 1
+                    ? TextSpan(text: l10n.v2PlayerKeptToday)
+                    : TextSpan(
+                        children: <InlineSpan>[
+                          TextSpan(text: l10n.v2PlayerKeptBefore),
+                          TextSpan(
+                            text: l10n.v2PlayerKeptDays(days),
+                            style: bold,
+                          ),
+                          TextSpan(text: l10n.v2PlayerKeptAfter),
+                        ],
+                      ),
+              ),
+            ),
+          );
+        }
+        final RecordingArtifactSummary? artifact = ref
+            .watch(recordingArtifactsProvider(recording.id))
+            .value
+            ?.firstOrNull;
+        final int? width = artifact?.width;
+        final int? height = artifact?.height;
+        final List<String> details = <String>[
+          if (width != null && height != null)
+            '${width < height ? width : height}p',
+          if (artifact != null && artifact.sizeBytes > 0)
+            formatFileSize(artifact.sizeBytes),
+          l10n.v2PlayerOnServers,
+        ];
+        final String line = details.join(' · ');
+        children.add(
+          _InfoRow(
+            glyph: SsV2IconGlyph.cloud,
+            child: Text(line[0].toUpperCase() + line.substring(1)),
+          ),
+        );
+      case RecordingGroup.processing:
+      case RecordingGroup.live:
+        children.add(
+          SsV2Banner(
+            tone: SsV2Tone.info,
+            glyph: SsV2IconGlyph.clock,
+            child: Text(
+              group == RecordingGroup.processing
+                  ? l10n.v2PlayerProcessingBanner
+                  : l10n.v2PlayerRecordingBanner,
+            ),
+          ),
+        );
+        if (group == RecordingGroup.live &&
+            recording.actions.canStop &&
+            isCapturing(recording)) {
+          children.add(
+            _OutlinedDangerButton(
+              key: const ValueKey<String>('player-stop'),
+              label: l10n.v2StopRecording,
+              onPressed: busy ? null : onStop,
+            ),
+          );
+        } else {
+          children.add(_DisabledSaveButton(label: l10n.v2PlayerSave));
+        }
+      case RecordingGroup.failed:
+        children.add(
+          SsV2Banner(
+            tone: SsV2Tone.error,
+            title: l10n.v2RecWhy,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(failureReason(l10n, recording)),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.v2PlayerMinutesCharged(recording.minutesCharged),
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        );
+        final bool shortLive = (recording.errorCode ?? '').startsWith(
+          'STREAM_',
+        );
+        children.add(
+          Text(
+            shortLive
+                ? '${l10n.v2PlayerShortLiveNote} ${l10n.v2PlayerFailedAdvice}'
+                : l10n.v2PlayerFailedAdvice,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: palette.textMuted,
+            ),
+          ),
+        );
+        children.add(
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: SsV2Button(
+                  label: l10n.v2PlayerReport,
+                  variant: SsV2ButtonVariant.outlined,
+                  onPressed: () => context.push(AppRoutes.reportIssue),
+                ),
+              ),
+              if (recording.actions.canDelete) ...<Widget>[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _OutlinedDangerButton(
+                    key: const ValueKey<String>('player-delete-button'),
+                    label: l10n.v2Delete,
+                    onPressed: busy ? null : onDelete,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: ssV2Gap(children, 14),
     );
   }
 }
 
-class _RecordingDetailSkeleton extends StatelessWidget {
-  const _RecordingDetailSkeleton();
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.glyph, required this.child});
+
+  final SsV2IconGlyph glyph;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(SsSpacing.lg),
-      children: const <Widget>[
-        SsSkeleton(height: 120, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 200, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 180, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 160, radius: SsRadii.lg),
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return Row(
+      children: <Widget>[
+        SsV2Icon(glyph, size: 18, color: palette.textMuted),
+        const SizedBox(width: 10),
+        Expanded(
+          child: DefaultTextStyle.merge(
+            style: TextStyle(fontSize: 14, color: palette.textMuted),
+            child: child,
+          ),
+        ),
       ],
     );
   }
 }
 
-IconData _statusIcon(RecordingStatus status) {
-  return switch (status) {
-    RecordingStatus.starting => Icons.play_circle_outline_rounded,
-    RecordingStatus.queued => Icons.schedule_rounded,
-    RecordingStatus.resolving => Icons.search_rounded,
-    RecordingStatus.waitingLive => Icons.sensors_rounded,
-    RecordingStatus.waitingForCloudSlot => Icons.hourglass_top_rounded,
-    RecordingStatus.recording => Icons.fiber_manual_record_rounded,
-    RecordingStatus.reconnecting => Icons.sync_rounded,
-    RecordingStatus.processing => Icons.settings_rounded,
-    RecordingStatus.uploading => Icons.cloud_upload_outlined,
-    RecordingStatus.finalizing => Icons.save_outlined,
-    RecordingStatus.completed => Icons.check_circle_outline_rounded,
-    RecordingStatus.partial => Icons.warning_amber_rounded,
-    RecordingStatus.recovered => Icons.restore_rounded,
-    RecordingStatus.failed => Icons.error_outline_rounded,
-    RecordingStatus.stopRequested => Icons.stop_circle_outlined,
-    RecordingStatus.stopped => Icons.stop_rounded,
-    RecordingStatus.missedNoCloudSlot => Icons.event_busy_rounded,
-  };
+/// White button with red label and border (Delete, Stop recording).
+class _OutlinedDangerButton extends StatelessWidget {
+  const _OutlinedDangerButton({
+    required this.label,
+    required this.onPressed,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: palette.surface,
+        foregroundColor: palette.errorText,
+        fixedSize: const Size.fromHeight(52),
+        minimumSize: const Size(double.infinity, 52),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        side: BorderSide(color: palette.errorBorder),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        textStyle: const TextStyle(
+          fontFamily: SsTypography.uiFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+    );
+  }
 }
 
-String? _recordingMutationMessage(AppLocalizations l10n, Object error) {
-  if (error is ApiException &&
-      error.kind == ApiExceptionKind.insufficientCredits) {
-    return l10n.recordingInsufficientCreditMessage;
+/// Grey "Save to device" while the video is not ready.
+class _DisabledSaveButton extends StatelessWidget {
+  const _DisabledSaveButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return Semantics(
+      button: true,
+      enabled: false,
+      label: label,
+      excludeSemantics: true,
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: palette.skeleton,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            SsV2Icon(SsV2IconGlyph.download, size: 20, color: palette.disabled),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: palette.disabled,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
-  return null;
+}
+
+/// APlayerSaving: the bottom panel while the video downloads.
+class _SavingPanel extends StatelessWidget {
+  const _SavingPanel({
+    required this.toDownloads,
+    required this.received,
+    required this.total,
+    required this.onCancel,
+  });
+
+  final bool toDownloads;
+  final int received;
+  final int? total;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final SsV2Palette palette = SsV2Palette.of(context);
+    final int? size = total;
+    final double? fraction = size == null || size <= 0
+        ? null
+        : (received / size).clamp(0.0, 1.0);
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Container(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          18,
+          20,
+          28 + MediaQuery.viewPaddingOf(context).bottom,
+        ),
+        decoration: BoxDecoration(
+          color: palette.surface,
+          border: Border(top: BorderSide(color: palette.divider)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x5915122B),
+              offset: Offset(0, -12),
+              blurRadius: 30,
+              spreadRadius: -16,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: ssV2Gap(<Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    toDownloads
+                        ? l10n.v2PlayerSavingTitle
+                        : l10n.v2PlayerSavingTitleInApp,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (fraction != null)
+                  Text(
+                    '${(fraction * 100).round()}%',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: palette.link,
+                      fontFeatures: const <FontFeature>[
+                        FontFeature.tabularFigures(),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            fraction == null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: LinearProgressIndicator(
+                      minHeight: 8,
+                      backgroundColor: palette.divider,
+                      color: palette.primary,
+                    ),
+                  )
+                : SsV2ProgressBar(
+                    value: fraction,
+                    track: palette.divider,
+                    fill: palette.primary,
+                  ),
+            if (size != null)
+              Text(
+                l10n.v2PlayerSavingDetail(
+                  formatFileSize(received),
+                  formatFileSize(size),
+                ),
+                style: TextStyle(fontSize: 13, color: palette.textMuted),
+              ),
+            SsV2Button(
+              key: const ValueKey<String>('player-save-cancel'),
+              label: l10n.v2Cancel,
+              variant: SsV2ButtonVariant.text,
+              size: SsV2ButtonSize.small,
+              onPressed: onCancel,
+            ),
+          ], 12),
+        ),
+      ),
+    );
+  }
+}
+
+/// APlayerSaved: "Saved to Downloads · Open" ("Saved on this device" on
+/// iOS, where the copy stays in the app's storage).
+class _SavedToast extends StatelessWidget {
+  const _SavedToast({required this.toDownloads, required this.onOpen});
+
+  final bool toDownloads;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+        decoration: BoxDecoration(
+          color: _toastBackground,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: Color(0x8015122B),
+              offset: Offset(0, 10),
+              blurRadius: 30,
+              spreadRadius: -10,
+            ),
+          ],
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                toDownloads ? l10n.v2PlayerSaved : l10n.v2PlayerSavedInApp,
+                style: const TextStyle(fontSize: 14, color: Colors.white),
+              ),
+            ),
+            TextButton(
+              key: const ValueKey<String>('player-saved-open'),
+              onPressed: onOpen,
+              style: TextButton.styleFrom(
+                foregroundColor: _toastAction,
+                minimumSize: const Size(48, 40),
+                textStyle: const TextStyle(
+                  fontFamily: SsTypography.uiFamily,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: Text(l10n.v2PlayerOpen),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// APlayerDelete: "Delete this recording?". Completes with true on Delete.
+Future<bool?> showDeleteRecordingDialog(
+  BuildContext context, {
+  required String name,
+}) {
+  final SsV2Palette palette = SsV2Palette.of(context);
+  return showDialog<bool>(
+    context: context,
+    useRootNavigator: true,
+    barrierColor: palette.scrim,
+    builder: (BuildContext dialogContext) {
+      final AppLocalizations l10n = dialogContext.l10n;
+      ButtonStyle style(Color background, Color foreground) =>
+          TextButton.styleFrom(
+            backgroundColor: background,
+            foregroundColor: foreground,
+            fixedSize: const Size.fromHeight(52),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: SsTypography.uiFamily,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          );
+      return Dialog(
+        backgroundColor: palette.surface,
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        child: DefaultTextStyle(
+          style: ssV2BaseText(palette),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: ssV2Gap(<Widget>[
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: palette.errorBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SsV2Icon(
+                      SsV2IconGlyph.trash,
+                      size: 22,
+                      color: palette.errorText,
+                    ),
+                  ),
+                ),
+                Semantics(
+                  header: true,
+                  child: Text(
+                    l10n.v2PlayerDeleteTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  l10n.v2PlayerDeleteBody(name),
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.5,
+                    color: palette.textMuted,
+                  ),
+                ),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      style: style(Colors.transparent, palette.link),
+                      child: Text(l10n.v2Cancel),
+                    ),
+                    TextButton(
+                      key: const ValueKey<String>('recording-delete-confirm'),
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      style: style(palette.error, Colors.white),
+                      child: Text(l10n.v2Delete),
+                    ),
+                  ],
+                ),
+              ], 16),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
