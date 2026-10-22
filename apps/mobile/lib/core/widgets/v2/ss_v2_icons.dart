@@ -36,7 +36,9 @@ enum SsV2IconGlyph {
   ),
   more('M12 5h.01M12 12h.01M12 19h.01'),
   trash('M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3'),
+  search('M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5'),
   play('M7 4v16l13-8z'),
+  download('M12 3v12M7 10l5 5 5-5M5 21h14'),
   ad(
     'M4 5h16v14H4zM9 15l2-6 2 6M9.7 13h2.6M15 9v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2z',
   ),

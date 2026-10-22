@@ -133,30 +133,27 @@ void registerDeviceJourneys() {
     await tester.pumpWidget(SaveStreamApp(config: config()));
     await _waitFor(tester, find.text('Recordings'));
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await _waitFor(tester, find.text('Ada Live'));
-    await tester.tap(find.text('Ada Live').first);
+    // The REC card opens the channel; the recording's own player (reached
+    // from notifications) can stop it too.
+    await _waitFor(tester, find.text('@ada_live · LIVE now'));
+    GoRouter.of(
+      tester.element(find.text('@ada_live · LIVE now')),
+    ).push(AppRoutes.recordingDetail('rec_001'));
     await _waitFor(tester, find.byType(RecordingDetailScreen));
-    await tester.scrollUntilVisible(
-      find.text('Stop recording'),
-      300,
-      scrollable: find.byType(Scrollable).last,
-    );
-    final Finder stop = find.widgetWithText(FilledButton, 'Stop recording');
+    final Finder stop = find.byKey(const ValueKey<String>('player-stop'));
+    await _waitFor(tester, stop);
     await tester.ensureVisible(stop);
-    // Lay out the scrolled list before tapping, or the tap uses the button's
-    // pre-scroll position, which can fall on the bottom navigation bar.
     await tester.pumpAndSettle();
     await tester.tap(stop);
     await _waitFor(tester, find.text('Stop cloud recording?'));
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording').last);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
+    // The processing spinner keeps animating, so pump instead of settling.
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
     await tester.pump();
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, 800));
-    await tester.pumpAndSettle();
-    await _waitFor(tester, find.text('Stop requested'));
-    expect(find.widgetWithText(FilledButton, 'Stop recording'), findsNothing);
+    await _waitFor(tester, find.text('Processing your recording…'));
+    expect(find.byKey(const ValueKey<String>('player-stop')), findsNothing);
   });
 
   testWidgets('device: settings -> Vietnamese -> dark theme', (

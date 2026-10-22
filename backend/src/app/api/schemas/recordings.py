@@ -76,6 +76,10 @@ class RecordingResponse(StrictModel):
     credit_reservation_id: str | None
     actions: RecordingActions
     error: RecordingError | None
+    # Plain-English explanation for failed and missed recordings (null
+    # otherwise). Show these to users; `error` keeps the technical detail.
+    failure_reason: str | None = None
+    failure_guidance: str | None = None
     created_at: datetime
     updated_at: datetime
     expires_at: datetime | None = None
