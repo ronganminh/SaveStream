@@ -217,6 +217,15 @@ jobs:
           working-directory: apps/mobile
           script: bash tool/android_emulator_functional.sh
 
+      - name: Upload Android emulator screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-screens
+          path: apps/mobile/build/screens/
+          if-no-files-found: ignore
+          retention-days: 14
+
       - name: Upload Android emulator diagnostics if a test fails
         if: failure()
         uses: actions/upload-artifact@v4

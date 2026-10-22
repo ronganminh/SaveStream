@@ -49,3 +49,16 @@ flutter test integration_test/native_media_test.dart \
   -d "$android_device" --reporter expanded \
   --dart-define=CI_MEDIA_HOST=127.0.0.1 \
   --dart-define=CI_MEDIA_PORT=18095 2>&1 | tee build/ci/android-media.txt
+
+# Auth + Home v2 screens rendered on the emulator, pulled next to the
+# artboards for review (artifact android-emulator-screens).
+flutter test integration_test/auth_home_screenshots_test.dart \
+  -d "$android_device" --reporter expanded \
+  --dart-define=SAVESTREAM_SCREENSHOT_DIR=device 2>&1 | tee build/ci/android-screens.txt
+mkdir -p build/screens
+for name in $(adb -s "$android_device" shell run-as com.savestream.app ls cache/screens | tr -d '\r'); do
+  adb -s "$android_device" exec-out run-as com.savestream.app cat "cache/screens/$name" > "build/screens/$name"
+done
+python3 -m pip install --quiet --user pillow
+python3 tool/compare_screens.py build/screens ../../docs/mobile-v2/screens/auth-home build/screens/compare
+ls -l build/screens build/screens/compare

@@ -4,6 +4,10 @@
 //   SAVESTREAM_SCREENSHOT_DIR=../../docs/mobile-v2/screens/auth-home \
 //     flutter test test/screenshots
 // Without it the tests still render every screen and fail on layout errors.
+//
+// On the Android emulator (integration_test/auth_home_screenshots_test.dart)
+// pass --dart-define=SAVESTREAM_SCREENSHOT_DIR=device: PNGs go to the app's
+// cache folder and CI pulls them with `adb run-as`.
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -18,12 +22,22 @@ const ValueKey<String> screenshotBoundaryKey = ValueKey<String>(
   'screenshot-boundary',
 );
 
+const String _definedScreenshotDir = String.fromEnvironment(
+  'SAVESTREAM_SCREENSHOT_DIR',
+);
+
 String? get screenshotDir {
+  if (_definedScreenshotDir == 'device') {
+    return '${Directory.systemTemp.path}/screens';
+  }
+  if (_definedScreenshotDir.isNotEmpty) return _definedScreenshotDir;
   final String? dir = Platform.environment['SAVESTREAM_SCREENSHOT_DIR'];
   return dir == null || dir.isEmpty ? null : dir;
 }
 
 Future<void> loadBundledFonts() async {
+  // On a device the fonts come from the app bundle.
+  if (Platform.isAndroid || Platform.isIOS) return;
   Future<void> load(String family, List<String> files) async {
     final FontLoader loader = FontLoader(family);
     for (final String file in files) {
