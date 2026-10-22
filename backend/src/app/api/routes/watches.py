@@ -16,6 +16,7 @@ from app.api.schemas.watches import (
     WatchResponse,
 )
 from app.api.serializers.watches import active_recording_for, watch_response
+from app.application.watches.channel_stats import watch_extras
 from app.application.creators.avatar_cache import remove_avatar_copy
 from app.application.watches.service import WatchService
 from app.application.watches.verification import (
@@ -24,8 +25,40 @@ from app.application.watches.verification import (
     verification_required,
 )
 from app.domain.identity.types import AuthPrincipal
+from app.infrastructure.db.watch_models import Watch
 
 router = APIRouter(prefix="/v1/watches", tags=["Watches"])
+
+
+async def _watch_responses(
+    service: WatchService,
+    principal: AuthPrincipal,
+    watches: list[Watch],
+) -> list[WatchResponse]:
+    """Serialize Watches with a fixed number of queries, however many there are."""
+    entitlement = await service.entitlement_for(principal.user_id)
+    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
+    active_recordings = await service.active_recordings(principal.user_id)
+    extras = await watch_extras(
+        service.session,
+        service.settings,
+        user_id=principal.user_id,
+        watches=watches,
+    )
+    return [
+        watch_response(
+            watch,
+            entitlement=entitlement,
+            waiting_for_cloud_slot=(
+                watch.resolved_room_id is not None
+                and watch.resolved_room_id in waiting_room_ids
+            ),
+            active_recording=active_recording_for(watch, active_recordings),
+            settings=service.settings,
+            extras=extras.get(watch.id),
+        )
+        for watch in watches
+    ]
 
 
 @router.post(
@@ -40,19 +73,7 @@ async def create_watch(
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
     watch = await service.create(principal, payload)
-    entitlement = await service.entitlement_for(principal.user_id)
-    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
-    active_recordings = await service.active_recordings(principal.user_id)
-    return watch_response(
-        watch,
-        entitlement=entitlement,
-        waiting_for_cloud_slot=(
-            watch.resolved_room_id is not None
-            and watch.resolved_room_id in waiting_room_ids
-        ),
-        active_recording=active_recording_for(watch, active_recordings),
-        settings=service.settings,
-    )
+    return (await _watch_responses(service, principal, [watch]))[0]
 
 
 @router.get(
@@ -73,23 +94,8 @@ async def list_watches(
         cursor=cursor,
         status=status_filter,
     )
-    entitlement = await service.entitlement_for(principal.user_id)
-    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
-    active_recordings = await service.active_recordings(principal.user_id)
     return WatchListResponse(
-        items=[
-            watch_response(
-                item,
-                entitlement=entitlement,
-                waiting_for_cloud_slot=(
-                    item.resolved_room_id is not None
-                    and item.resolved_room_id in waiting_room_ids
-                ),
-                active_recording=active_recording_for(item, active_recordings),
-                settings=service.settings,
-            )
-            for item in page.items
-        ],
+        items=await _watch_responses(service, principal, page.items),
         pagination=Pagination(next_cursor=page.next_cursor, has_more=page.has_more),
     )
 
@@ -105,19 +111,7 @@ async def get_watch(
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
     watch = await service.get(principal, watch_id)
-    entitlement = await service.entitlement_for(principal.user_id)
-    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
-    active_recordings = await service.active_recordings(principal.user_id)
-    return watch_response(
-        watch,
-        entitlement=entitlement,
-        waiting_for_cloud_slot=(
-            watch.resolved_room_id is not None
-            and watch.resolved_room_id in waiting_room_ids
-        ),
-        active_recording=active_recording_for(watch, active_recordings),
-        settings=service.settings,
-    )
+    return (await _watch_responses(service, principal, [watch]))[0]
 
 
 @router.patch(
@@ -132,19 +126,7 @@ async def update_watch(
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
     watch = await service.update(principal, watch_id, payload)
-    entitlement = await service.entitlement_for(principal.user_id)
-    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
-    active_recordings = await service.active_recordings(principal.user_id)
-    return watch_response(
-        watch,
-        entitlement=entitlement,
-        waiting_for_cloud_slot=(
-            watch.resolved_room_id is not None
-            and watch.resolved_room_id in waiting_room_ids
-        ),
-        active_recording=active_recording_for(watch, active_recordings),
-        settings=service.settings,
-    )
+    return (await _watch_responses(service, principal, [watch]))[0]
 
 
 @router.delete(
@@ -177,19 +159,7 @@ async def resume_watch(
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
     watch = await service.resume(principal, watch_id)
-    entitlement = await service.entitlement_for(principal.user_id)
-    waiting_room_ids = await service.waiting_room_ids(principal.user_id)
-    active_recordings = await service.active_recordings(principal.user_id)
-    return watch_response(
-        watch,
-        entitlement=entitlement,
-        waiting_for_cloud_slot=(
-            watch.resolved_room_id is not None
-            and watch.resolved_room_id in waiting_room_ids
-        ),
-        active_recording=active_recording_for(watch, active_recordings),
-        settings=service.settings,
-    )
+    return (await _watch_responses(service, principal, [watch]))[0]
 
 
 def _verification_response(

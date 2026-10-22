@@ -10,6 +10,7 @@ from app.api.schemas.watches import (
     WatchStatusValue,
 )
 from app.application.entitlements.service import EntitlementSnapshot
+from app.application.watches.channel_stats import WatchExtras
 from app.application.watches.verification import verification_required
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
@@ -62,7 +63,9 @@ def watch_response(
     waiting_for_cloud_slot: bool = False,
     active_recording: Recording | None = None,
     settings: AppSettings | None = None,
+    extras: WatchExtras | None = None,
 ) -> WatchResponse:
+    verified = watch.owner_verified_at is not None
     creator = None
     if watch.resolved_username:
         creator = Creator(
@@ -112,5 +115,20 @@ def watch_response(
         verification_due_at=watch.verification_due_at,
         verification_required=(
             verification_required(watch, settings) if settings is not None else False
+        ),
+        pending_verification_code=(
+            extras.pending_verification_code if extras is not None and not verified else None
+        ),
+        pending_verification_expires_at=(
+            extras.pending_verification_expires_at
+            if extras is not None and not verified
+            else None
+        ),
+        recording_count=extras.recording_count if extras is not None else None,
+        total_recorded_seconds=(
+            extras.total_recorded_seconds if extras is not None else None
+        ),
+        last_live_duration_seconds=(
+            extras.last_live_duration_seconds if extras is not None else None
         ),
     )

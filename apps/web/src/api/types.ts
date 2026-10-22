@@ -43,6 +43,14 @@ export type WatchResponse = {
   verification_due_at?: string | null;
   /** True when SaveStream won't record this channel until it is verified. */
   verification_required?: boolean;
+  /** Bio code waiting to be checked; null once verified or with no unexpired code. */
+  pending_verification_code?: string | null;
+  pending_verification_expires_at?: string | null;
+  /** The user's non-deleted recordings of this channel and their total length. */
+  recording_count?: number | null;
+  total_recorded_seconds?: number | null;
+  /** Length of the most recent completed or stopped recording of this channel. */
+  last_live_duration_seconds?: number | null;
 };
 
 export type ChannelVerificationResponse = {
