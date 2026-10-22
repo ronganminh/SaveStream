@@ -4,7 +4,9 @@ import '../../../app/app_settings_controller.dart';
 import '../../../l10n/l10n.dart';
 import 'settings_choice_list.dart';
 
-/// Language (Account → App): follow the system, English or Vietnamese.
+/// Language: follow the system, English or Vietnamese. Not linked from the
+/// Account tab while [AppSettingsController.releaseLocales] holds only English
+/// (v2.1.0); a language the release does not enable is not offered.
 class LanguageScreen extends StatelessWidget {
   const LanguageScreen({required this.settings, super.key});
 
@@ -32,11 +34,14 @@ class LanguageScreen extends StatelessWidget {
               selected: !system && code == 'en',
               onTap: () => settings.setLocale(const Locale('en')),
             ),
-            SettingsChoice(
-              label: l10n.languageVietnamese,
-              selected: !system && code == 'vi',
-              onTap: () => settings.setLocale(const Locale('vi')),
-            ),
+            if (AppSettingsController.releaseLocales.contains(
+              const Locale('vi'),
+            ))
+              SettingsChoice(
+                label: l10n.languageVietnamese,
+                selected: !system && code == 'vi',
+                onTap: () => settings.setLocale(const Locale('vi')),
+              ),
           ],
         );
       },

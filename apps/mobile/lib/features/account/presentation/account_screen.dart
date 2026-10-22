@@ -184,17 +184,20 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     ),
                   ],
                 ),
-                // Not drawn: language and theme stay reachable, below what is.
+                // Not drawn: theme stays reachable, below what is. Language is
+                // offered only when the release enables more than English
+                // (v2.1.0 ships English only).
                 AccountSection(
                   label: l10n.acSectionApp,
                   children: <Widget>[
-                    AccountRow(
-                      key: const ValueKey<String>('account-language'),
-                      glyph: SsV2IconGlyph.globe,
-                      title: l10n.languageTitle,
-                      subtitle: _languageLabel(l10n, widget.settings),
-                      onTap: () => context.push(AppRoutes.language),
-                    ),
+                    if (AppSettingsController.languageChoiceEnabled)
+                      AccountRow(
+                        key: const ValueKey<String>('account-language'),
+                        glyph: SsV2IconGlyph.globe,
+                        title: l10n.languageTitle,
+                        subtitle: _languageLabel(l10n, widget.settings),
+                        onTap: () => context.push(AppRoutes.language),
+                      ),
                     AccountRow(
                       key: const ValueKey<String>('account-theme'),
                       glyph: SsV2IconGlyph.moon,

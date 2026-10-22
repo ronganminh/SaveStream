@@ -576,7 +576,7 @@ void main() {
   });
 
   test(
-    'persists theme and locale across settings controller recreation',
+    'persists theme across settings controller recreation, locale stays en',
     () async {
       final Map<String, String> values = <String, String>{};
       final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
@@ -585,19 +585,31 @@ void main() {
       first.setLocale(const Locale('vi'));
       first.setThemeMode(ThemeMode.dark);
       await Future<void>.delayed(Duration.zero);
+      expect(first.locale.languageCode, 'en');
 
       final AppSettingsController restored = AppSettingsController(
         store: store,
       );
       await restored.initialize();
 
-      expect(restored.locale.languageCode, 'vi');
+      expect(restored.locale.languageCode, 'en');
       expect(restored.themeMode, ThemeMode.dark);
 
       first.dispose();
       restored.dispose();
     },
   );
+
+  test('ignores a stored Vietnamese preference (English only)', () async {
+    final MemoryAppSettingsStore store = MemoryAppSettingsStore(
+      <String, String>{'settings.locale': 'vi'},
+    );
+    final AppSettingsController settings = AppSettingsController(store: store);
+    await settings.initialize();
+    expect(settings.locale, const Locale('en'));
+    expect(settings.useSystemLocale, isFalse);
+    settings.dispose();
+  });
 
   testWidgets('renders the profile with display name and email', (
     WidgetTester tester,
@@ -615,7 +627,7 @@ void main() {
     expect(find.text('Signed in with email'), findsOneWidget);
   });
 
-  testWidgets('changes language and theme from the Account tab', (
+  testWidgets('changes theme from the Account tab (no Language row)', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -628,27 +640,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey<String>('account-language')),
+      find.byKey(const ValueKey<String>('account-theme')),
       200,
       scrollable: find.descendant(
         of: find.byKey(const ValueKey<String>('account-list')),
         matching: find.byType(Scrollable),
       ),
     );
-    await tester.ensureVisible(
+    expect(
       find.byKey(const ValueKey<String>('account-language')),
+      findsNothing,
     );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey<String>('account-language')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Vietnamese'));
-    await tester.pumpAndSettle();
-
-    expect(settings.locale.languageCode, 'vi');
-    expect(find.text('Ngôn ngữ'), findsWidgets);
-
-    GoRouter.of(tester.element(find.text('Ngôn ngữ').first)).pop();
-    await tester.pumpAndSettle();
 
     await tester.ensureVisible(
       find.byKey(const ValueKey<String>('account-theme')),
@@ -656,7 +658,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('account-theme')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tối'));
+    await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
 
     expect(settings.themeMode, ThemeMode.dark);
@@ -762,7 +764,7 @@ void main() {
     expect(find.text('No channels yet'), findsOneWidget);
   });
 
-  testWidgets('switches locale and theme at runtime', (
+  testWidgets('switches theme at runtime and stays English', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -777,13 +779,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Trang chủ'), findsWidgets);
-    expect(find.text('Kênh'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Trang chủ'), findsNothing);
 
     final MaterialApp app = tester.widget<MaterialApp>(
       find.byType(MaterialApp),
     );
     expect(app.themeMode, ThemeMode.dark);
+    expect(app.locale, const Locale('en'));
+    expect(app.supportedLocales, const <Locale>[Locale('en')]);
   });
 }
 

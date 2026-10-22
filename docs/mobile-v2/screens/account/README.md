@@ -37,8 +37,8 @@ Notification preferences, Purchases & usage and Ad privacy choices were built ea
 
 The Account tab is `/settings` (bottom nav "Account" active). Its screens are full screen (no
 bottom bar), as drawn: `/settings/profile`, `/settings/help`, `/settings/legal`,
-`/settings/report` (+ `/settings/report/sent`), `/settings/delete`, `/settings/language`,
-`/settings/theme`, and the existing `/settings/notifications`, `/usage`, `/usage/purchases`,
+`/settings/report` (+ `/settings/report/sent`), `/settings/delete`, `/settings/theme`
+(`/settings/language` is not linked in v2.1.0), and the existing `/settings/notifications`, `/usage`, `/usage/purchases`,
 `/usage/ad-privacy`. Signed-out routes: `/auth/account-suspended`, `/auth/account-closed`,
 `/auth/account-deleted`.
 
@@ -86,9 +86,12 @@ recording now opens a mail to support with the recording id.
 
 ## Intentional differences
 
-**Account tab (AAccount).** An "App" section (Language, Theme) follows the Account section: they are
-not drawn but stay reachable (Vietnamese users depend on it). It pushes the version footer below
-the 1180px frame; the test scrolls to it. Avatars of the signed-in user use the brand color pair.
+**Account tab (AAccount).** An "App" section with Theme follows the Account section (not drawn, but
+kept reachable). There is no Language row: v2.1.0 ships English only, so the app always runs in
+English whatever the device locale or a stored preference (the Vietnamese strings stay in
+`lib/l10n`, disabled; `/settings/language` still exists but is not linked). With one row the version
+line just fits at the bottom of the 1180px frame (the not-affiliated line is below it); the test scrolls
+to the footer. Avatars of the signed-in user use the brand color pair.
 
 **Profile (AProfile).** The email note reads "Your sign-in email can’t be changed in the app yet…"
 instead of the verification line (see gaps). Google sign-in shows "Sign-in method · Signed in with

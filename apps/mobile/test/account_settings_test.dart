@@ -1,5 +1,6 @@
 // The Account tab and its screens with the mock repositories: rows open
-// the right screens, theme and language switch, delete can be cancelled,
+// the right screens, theme switches (language is hidden: v2.1.0 ships
+// English only), delete can be cancelled,
 // help search filters locally, the report form posts and confirms.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -97,23 +98,29 @@ void main() {
     expect(settings.themeMode, ThemeMode.system);
   });
 
-  testWidgets('switches Vietnamese and English from Language screen', (
+  testWidgets('English only: no Language row, Vietnamese not offered', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
 
     await openAccount(tester, settings: settings);
+    expect(
+      find.byKey(const ValueKey<String>('account-language')),
+      findsNothing,
+    );
+
+    // The screen stays routable (for a later release) but offers English only.
     await push(tester, AppRoutes.language);
-
-    await tester.tap(find.text('Vietnamese'));
-    await tester.pumpAndSettle();
-    expect(settings.locale.languageCode, 'vi');
-    expect(find.text('Ngôn ngữ'), findsOneWidget);
-
-    await tester.tap(find.text('Tiếng Anh'));
+    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Vietnamese'), findsNothing);
+    await tester.tap(find.text('English'));
     await tester.pumpAndSettle();
     expect(settings.locale.languageCode, 'en');
-    expect(find.text('Language'), findsOneWidget);
+
+    settings.setLocale(const Locale('vi'));
+    await tester.pumpAndSettle();
+    expect(settings.locale.languageCode, 'en');
+    expect(find.text('Ngôn ngữ'), findsNothing);
   });
 
   testWidgets('rows open Notifications, Help center and Legal', (

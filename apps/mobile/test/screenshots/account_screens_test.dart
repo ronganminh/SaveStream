@@ -81,7 +81,7 @@ void main() {
           notificationsRepository: _FakeNotifications(),
           extraOverrides: <Override>[
             entitlementRepositoryProvider.overrideWithValue(_FakeEntitlement()),
-            appVersionProvider.overrideWith((_) async => '2.0.1'),
+            appVersionProvider.overrideWith((_) async => '2.1.0'),
             deviceRepositoryProvider.overrideWithValue(f.devices),
             reportRepositoryProvider.overrideWithValue(f.reports),
           ],
@@ -122,6 +122,11 @@ void main() {
     expect(find.text('Report content or request removal'), findsOneWidget);
     expect(find.text('Terms, Privacy & Acceptable Use'), findsOneWidget);
     expect(find.text('Delete account'), findsOneWidget);
+    // v2.1.0 ships English only: the App section keeps Theme, no Language.
+    expect(
+      find.byKey(const ValueKey<String>('account-language')),
+      findsNothing,
+    );
     await captureScreen(tester, 'AAccount');
 
     // The footer: the installed version and the not-affiliated line.
@@ -133,7 +138,7 @@ void main() {
         matching: find.byType(Scrollable),
       ),
     );
-    expect(find.text('SaveStream for Android · version 2.0.1'), findsOneWidget);
+    expect(find.text('SaveStream for Android · version 2.1.0'), findsOneWidget);
     expect(
       find.text(
         'SaveStream is not affiliated with, endorsed or sponsored by TikTok '

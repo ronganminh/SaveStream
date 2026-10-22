@@ -129,7 +129,7 @@ For production delivery, configure `SAVESTREAM_PUSH_PROVIDER=fcm` and provide `S
 
 ## C9 production configuration
 
-The release version started at `2.0.0+1`; the v1.x cleanup build is `2.0.1+9`. Increment the build number for every store upload.
+The release version started at `2.0.0+1`; the v1.x cleanup build is `2.0.1+9`; the first v2 release is `2.1.0+10` (English only). Increment the build number for every store upload.
 
 Supported production Dart defines:
 
@@ -138,7 +138,7 @@ APP_ENV=production
 API_BASE_URL=https://api.savestream.online
 PRIVACY_POLICY_URL=https://savestream.online/privacy
 TERMS_OF_USE_URL=https://savestream.online/terms
-APP_VERSION=2.0.1
+APP_VERSION=2.1.0
 ```
 
 Firebase app files and signing material remain outside Git.

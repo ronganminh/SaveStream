@@ -386,11 +386,14 @@ class _PreferenceCard extends StatelessWidget {
                 selected: settings.locale.languageCode == 'en',
                 onSelected: (_) => settings.setLocale(const Locale('en')),
               ),
-              ChoiceChip(
-                label: Text(l10n.languageVietnamese),
-                selected: settings.locale.languageCode == 'vi',
-                onSelected: (_) => settings.setLocale(const Locale('vi')),
-              ),
+              if (AppSettingsController.releaseLocales.contains(
+                const Locale('vi'),
+              ))
+                ChoiceChip(
+                  label: Text(l10n.languageVietnamese),
+                  selected: settings.locale.languageCode == 'vi',
+                  onSelected: (_) => settings.setLocale(const Locale('vi')),
+                ),
             ],
           ),
         ],
