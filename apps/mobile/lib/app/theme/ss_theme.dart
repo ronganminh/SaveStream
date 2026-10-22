@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'ss_semantic_colors.dart';
 import 'ss_tokens.dart';
+import 'ss_v2_palette.dart';
 
 abstract final class SsTheme {
   static ThemeData light() => _build(Brightness.light);
@@ -12,31 +13,31 @@ abstract final class SsTheme {
     brightness: Brightness.light,
     primary: SsColors.brandPrimary,
     onPrimary: Color(0xFFFFFFFF),
-    primaryContainer: Color(0xFFF0F0FF),
-    onPrimaryContainer: Color(0xFF3A1FB0),
-    secondary: Color(0xFF626671),
+    primaryContainer: Color(0xFFEEE9FF),
+    onPrimaryContainer: Color(0xFF3D1FD0),
+    secondary: Color(0xFF56526F),
     onSecondary: Color(0xFFFFFFFF),
-    secondaryContainer: Color(0xFFF2F3F7),
-    onSecondaryContainer: Color(0xFF0E111A),
-    tertiary: Color(0xFF8A5D00),
+    secondaryContainer: Color(0xFFF4F1FF),
+    onSecondaryContainer: Color(0xFF15122B),
+    tertiary: Color(0xFF8A4F00),
     onTertiary: Color(0xFFFFFFFF),
-    tertiaryContainer: Color(0xFFFDF4E1),
-    onTertiaryContainer: Color(0xFF8A5D00),
+    tertiaryContainer: Color(0xFFFFF1D9),
+    onTertiaryContainer: Color(0xFF8A4F00),
     error: SsColors.error,
     onError: Color(0xFFFFFFFF),
-    errorContainer: Color(0xFFFDECEE),
-    onErrorContainer: Color(0xFF9F0B1D),
+    errorContainer: Color(0xFFFDE7EB),
+    onErrorContainer: Color(0xFFB0102E),
     surface: Color(0xFFFFFFFF),
-    onSurface: Color(0xFF0E111A),
-    surfaceContainerLowest: Color(0xFFF9FAFC),
+    onSurface: Color(0xFF15122B),
+    surfaceContainerLowest: Color(0xFFFBFAFE),
     surfaceContainerLow: Color(0xFFFFFFFF),
-    surfaceContainer: Color(0xFFF6F7FA),
-    surfaceContainerHigh: Color(0xFFF2F3F7),
-    surfaceContainerHighest: Color(0xFFF2F3F7),
-    onSurfaceVariant: Color(0xFF626671),
-    outline: Color(0xFFDBDEE4),
-    outlineVariant: Color(0xFFEEF0F4),
-    scrim: Color(0x80090B10),
+    surfaceContainer: Color(0xFFF4F1FF),
+    surfaceContainerHigh: Color(0xFFF1EEF8),
+    surfaceContainerHighest: Color(0xFFECE9F3),
+    onSurfaceVariant: Color(0xFF56526F),
+    outline: Color(0xFFD3CDE6),
+    outlineVariant: Color(0xFFE6E1F4),
+    scrim: Color(0x8015122B),
   );
 
   static const ColorScheme _darkScheme = ColorScheme(
@@ -248,6 +249,7 @@ abstract final class SsTheme {
         shape: const RoundedRectangleBorder(borderRadius: SsRadii.field),
       ),
       extensions: <ThemeExtension<dynamic>>[
+        isDark ? SsV2Palette.dark : SsV2Palette.light,
         SsSemanticColors(
           success: isDark ? SsColors.successDark : SsColors.success,
           warning: isDark ? SsColors.warningDark : SsColors.warning,

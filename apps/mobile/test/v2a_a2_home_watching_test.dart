@@ -29,8 +29,8 @@ void main() {
     state: EntitlementMockState.pro,
   );
 
-  test('A2 keeps the product primary color frozen', () {
-    expect(SsColors.brandPrimary, const Color(0xFF4F46E5));
+  test('A2 keeps the product primary color frozen (v2 artboards)', () {
+    expect(SsColors.brandPrimary, const Color(0xFF6D4AFF));
   });
 
   testWidgets('Free legacy over-limit list is kept but add is blocked', (
@@ -40,11 +40,10 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Cloud time available'), findsOneWidget);
-    expect(find.text('Watching 8/3'), findsOneWidget);
+    expect(find.text('Recording time left'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
 
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
@@ -66,7 +65,7 @@ void main() {
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: config()));
     await tester.pump();
-    await tester.tap(find.byIcon(Icons.visibility_outlined));
+    await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
@@ -114,10 +113,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Cloud time available'), findsOneWidget);
-    expect(find.text('133 hours'), findsOneWidget);
-    expect(find.textContaining('Cloud slots'), findsOneWidget);
-    expect(find.textContaining('Watching 8/20'), findsOneWidget);
+    expect(find.text('Recording time left'), findsOneWidget);
+    expect(find.text('133 h'), findsOneWidget);
+    expect(
+      find.text('Purchased minutes · billed per started minute'),
+      findsOneWidget,
+    );
     expect(find.text('Advertisement'), findsNothing);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
   });
@@ -255,8 +256,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Giờ cloud còn lại'), findsOneWidget);
-    expect(find.text('Theo dõi 8/3'), findsOneWidget);
+    expect(find.text('Thời gian ghi còn lại'), findsOneWidget);
+    expect(find.text('Kênh của bạn'), findsOneWidget);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
   });
 }

@@ -410,7 +410,7 @@ class SsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SafeArea(
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(SsSpacing.lg),
       child: Column(
         mainAxisSize: MainAxisSize.min,

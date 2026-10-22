@@ -1,3 +1,4 @@
+import '../../../../core/legal/legal_consent.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 enum AuthMockScenario {
@@ -35,12 +36,19 @@ class MockAuthRepository implements AuthRepository, SocialAuthRepository {
   }
 
   @override
-  Future<void> signInSocial(SocialAuthProvider provider) {
+  Future<void> signInSocial(
+    SocialAuthProvider provider, {
+    LegalConsent? consent,
+  }) {
     return _respond(_AuthOperation.signIn);
   }
 
   @override
-  Future<void> register({required String email, required String password}) {
+  Future<void> register({
+    required String email,
+    required String password,
+    LegalConsent? consent,
+  }) {
     return _respond(_AuthOperation.register);
   }
 

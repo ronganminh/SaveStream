@@ -868,5 +868,297 @@
   "cloudHoursExhaustedBody": "Cloud auto-recording is paused until you buy more hours. Your channels stay added and auto-record resumes when cloud hours are available again.",
   "cloudHoursExhaustedRecordingBody": "No cloud hours remain. The active cloud recording will stop safely when the server reaches the available limit. Buy more hours to resume auto-recording.",
   "autoRecordPausedNoCloudHoursLabel": "Auto-record paused · no cloud hours",
-  "autoRecordPausedNoCloudHoursBody": "This channel stays added. Auto-record turns back on automatically after more cloud hours are credited."
+  "autoRecordPausedNoCloudHoursBody": "This channel stays added. Auto-record turns back on automatically after more cloud hours are credited.",
+  "v2NotAffiliated": "SaveStream is not affiliated with, endorsed or sponsored by TikTok or ByteDance.",
+  "v2SplashTagline": "Cloud backup for your own LIVEs",
+  "v2LoadingLabel": "Loading",
+  "v2Skip": "Skip",
+  "v2Next": "Next",
+  "v2SlideLabel": "Slide {index} of {count}",
+  "@v2SlideLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2Onboard1Title": "Your LIVEs, backed up automatically.",
+  "v2Onboard1Body": "SaveStream records your broadcasts on our cloud servers. Nothing is captured on your phone — the app is your dashboard and player.",
+  "v2Onboard1Saved": "Saved in the cloud",
+  "v2ChipRec": "● REC",
+  "v2Onboard2Title": "Add the channels you own.",
+  "v2Onboard2Body": "Watch your own channels from one place. When one goes LIVE, recording starts in the cloud and you get a notification.",
+  "v2Onboard2SampleRecording": "Recording · 0:42:18",
+  "v2Onboard2SampleWaiting": "Waiting for next LIVE",
+  "v2ChipWaiting": "Waiting",
+  "v2Onboard3Title": "Prove it’s yours with a bio code.",
+  "v2Onboard3Body": "We only record channels you own or manage. Put a short code in your profile bio once and we’ll verify it. Start with 10 free minutes.",
+  "v2Onboard3CodeLabel": "Add this code to your profile bio",
+  "v2Onboard3Verified": "Ownership verified",
+  "v2CreateAccount": "Create account",
+  "v2HaveAccountPrompt": "Already have an account?",
+  "v2SignIn": "Sign in",
+  "v2SignInTitle": "Welcome back",
+  "v2SignInSubtitle": "Sign in to see your channels and recordings.",
+  "v2ContinueWithGoogle": "Continue with Google",
+  "v2Or": "or",
+  "v2EmailLabel": "Email",
+  "v2PasswordLabel": "Password",
+  "v2ShowPassword": "Show password",
+  "v2HidePassword": "Hide password",
+  "v2ForgotPassword": "Forgot password?",
+  "v2NoAccountPrompt": "New to SaveStream?",
+  "v2CreateAnAccount": "Create an account",
+  "v2WrongCredentialsTitle": "Wrong email or password.",
+  "v2WrongCredentialsBody": "Check them and try again, or reset your password.",
+  "v2IncorrectPassword": "Incorrect password",
+  "v2EmailRequired": "Enter your email",
+  "v2EmailInvalid": "Enter a valid email address",
+  "v2PasswordRequired": "Enter your password",
+  "v2EmailNotVerifiedTitle": "Verify your email first.",
+  "v2EmailNotVerifiedBody": "Open the link we sent when you signed up, then sign in.",
+  "v2ResendLink": "Resend link",
+  "v2AccountLinkRequired": "This email already has a SaveStream account. Sign in with your password to link Google.",
+  "v2SocialUnavailable": "Google sign-in isn’t available right now. Use your email instead.",
+  "v2ConsentRequiredSocial": "New to SaveStream? Create your account first and accept the terms, then continue with Google.",
+  "v2LegalOutdated": "Our Terms, Privacy Policy or Acceptable Use Policy changed. Update the app to continue.",
+  "v2SignUpTitle": "Create your account",
+  "v2SignUpSubtitleLead": "Verify your email to get ",
+  "v2SignUpSubtitleEmphasis": "10 free recording minutes",
+  "v2SignUpSubtitleTail": ".",
+  "v2PasswordHelper": "At least 8 characters",
+  "v2PasswordTooShort": "Use at least 8 characters",
+  "v2ConsentLead": "I am 18 or older and agree to the ",
+  "v2TermsOfUse": "Terms of Use",
+  "v2ConsentComma": ", ",
+  "v2PrivacyPolicy": "Privacy Policy",
+  "v2ConsentAnd": " and ",
+  "v2AcceptableUsePolicy": "Acceptable Use Policy",
+  "v2ConsentTail": ".",
+  "v2ConsentError": "You must be 18+ and accept the Terms, Privacy Policy and Acceptable Use Policy to continue.",
+  "v2ForgotTitle": "Reset your password",
+  "v2ForgotSubtitle": "Enter your account email and we’ll send you a reset link.",
+  "v2SendResetLink": "Send reset link",
+  "v2ForgotSentTitle": "Check your inbox",
+  "v2ForgotSentBody": "If an account exists for {email}, a reset link is on its way. It expires in 30 minutes.",
+  "@v2ForgotSentBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "v2ForgotSentBodyGeneric": "If an account exists for that email, a reset link is on its way. It expires in 30 minutes.",
+  "v2OpenEmailApp": "Open email app",
+  "v2BackToSignIn": "Back to sign in",
+  "v2ResetTitle": "Choose a new password",
+  "v2NewPassword": "New password",
+  "v2ConfirmPassword": "Confirm password",
+  "v2PasswordsDontMatch": "Passwords don’t match",
+  "v2SavePassword": "Save password",
+  "v2ResetLinkInvalid": "This reset link is wrong or expired. Request a new one.",
+  "v2RequestNewLink": "Request a new link",
+  "v2ResetDoneTitle": "Password updated",
+  "v2ResetDoneBody": "You’re signed out on other devices. Sign in with your new password.",
+  "v2VerifyTitle": "Check your email",
+  "v2VerifyBodyLead": "We sent a verification link to ",
+  "v2VerifyBodyTail": ". Open it on this phone to finish.",
+  "v2VerifyBodyGeneric": "We sent a verification link to your email. Open it on this phone to finish.",
+  "v2DidntGetIt": "Didn’t get it?",
+  "v2Resend": "Resend",
+  "v2ResendIn": "Resend in {time}",
+  "@v2ResendIn": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "v2VerifyLinkError": "That link is wrong or expired. Request a new one.",
+  "v2UseDifferentEmail": "Use a different email",
+  "v2Verifying": "Verifying your email…",
+  "v2VerificationSent": "We sent you a new link.",
+  "v2VerifiedTitle": "Email verified",
+  "v2VerifiedBody": "Your 10 free trial minutes are ready. Billing is per started minute.",
+  "v2FreeMinutesChip": "+10 free minutes",
+  "v2AddFirstChannel": "Add your first channel",
+  "v2GoToHome": "Go to Home",
+  "v2GoogleLoadingTitle": "Signing in with Google…",
+  "v2GoogleLoadingBody": "Finish choosing your account in the Google window. This only takes a moment.",
+  "v2Cancel": "Cancel",
+  "v2GoogleErrorTitle": "Google sign-in didn’t finish",
+  "v2GoogleErrorBody": "You closed the Google window or the connection dropped. Nothing was changed.",
+  "v2TryGoogleAgain": "Try Google again",
+  "v2UseEmailInstead": "Use email instead",
+  "v2HomeGreeting": "Hi, {name}",
+  "@v2HomeGreeting": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "v2HomeTitle": "Home",
+  "v2NotificationsLabel": "{count, plural, =0{Notifications} other{Notifications, {count} unread}}",
+  "@v2NotificationsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "v2CreditsLabel": "Recording time left",
+  "v2DurationHoursMinutes": "{hours} h {minutes} min",
+  "@v2DurationHoursMinutes": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2DurationHours": "{hours} h",
+  "@v2DurationHours": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "v2DurationMinutes": "{minutes} min",
+  "@v2DurationMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2CreditsPurchased": "Purchased minutes · billed per started minute",
+  "v2CreditsTrial": "Free trial · billed per started minute",
+  "v2CreditsTrialUsed": "Free trial · {used} of {total} minutes used",
+  "@v2CreditsTrialUsed": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "v2CreditsPaused": "Recording paused",
+  "v2CreditsUnverified": "Verify your email to unlock 10 free minutes",
+  "v2LowTitleTrial": "{minutes, plural, =1{Only 1 trial minute left.} other{Only {minutes} trial minutes left.}}",
+  "@v2LowTitleTrial": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2LowTitle": "{minutes, plural, =1{Only 1 minute left.} other{Only {minutes} minutes left.}}",
+  "@v2LowTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2LowBody": "Recording stops when you run out. Buy a pack to keep recording.",
+  "v2GetMinutes": "Get minutes",
+  "v2OutTitle": "You’re out of recording minutes.",
+  "v2OutBody": "Auto-record is paused on all channels. Your saved recordings are still here.",
+  "v2BuyMinutes": "Buy minutes",
+  "v2RefundDebtTitle": "{minutes} min are owed after a store refund.",
+  "@v2RefundDebtTitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2RefundDebtBody": "Recording is paused until your next purchase covers it. Your saved recordings are still here.",
+  "v2YourChannels": "Your channels",
+  "v2LastLive": "Last LIVE {when}",
+  "@v2LastLive": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "v2Today": "today",
+  "v2Yesterday": "yesterday",
+  "v2NoLiveYet": "No LIVE yet",
+  "v2LiveNotRecording": "LIVE now — not recording",
+  "v2ChipLiveNotRecording": "LIVE · not recording",
+  "v2PausedNoMinutes": "Paused — no minutes",
+  "v2PausedByYou": "Paused",
+  "v2ChipPaused": "Paused",
+  "v2ChipVerify": "Verify",
+  "v2VerifyOwnershipToRecord": "Verify ownership to record",
+  "v2RecordingInCloud": "Recording in the cloud",
+  "v2RecentRecordings": "Recent recordings",
+  "v2SeeAll": "See all",
+  "v2RecordingThumbnail": "Recording thumbnail",
+  "v2LiveNow": "Live now",
+  "v2IsLive": "{name} is LIVE",
+  "@v2IsLive": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RecordingStarted": "Recording in the cloud · started {time}",
+  "@v2RecordingStarted": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "v2MinutesUsedSoFar": "{minutes} min used so far",
+  "@v2MinutesUsedSoFar": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2GetSetUp": "Get set up",
+  "v2StepsDone": "{done} of {total} done",
+  "@v2StepsDone": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "v2StepVerifyEmail": "Verify your email",
+  "v2StepVerifyEmailHint": "Unlocks 10 free minutes",
+  "v2StepAddChannel": "Add a channel",
+  "v2StepAddChannelHint": "The TikTok username you go LIVE on",
+  "v2StepVerifyOwnership": "Verify ownership",
+  "v2StepVerifyOwnershipHint": "Put a short code in your bio",
+  "v2StepFirstRecording": "Get your first recording",
+  "v2StepFirstRecordingHint": "Go LIVE — we record in the cloud",
+  "v2Start": "Start",
+  "v2ServerInfoTitle": "Recording happens on our servers",
+  "v2ServerInfoBody": "You don’t need to keep this app open. We never record your screen or capture streams on your phone.",
+  "v2HomeErrorTitle": "Couldn’t load Home",
+  "v2HomeErrorBody": "Check your connection and try again.",
+  "v2Retry": "Try again",
+  "v2NavHome": "Home",
+  "v2NavChannels": "Channels",
+  "v2NavRecordings": "Recordings",
+  "v2NavAccount": "Account"
 }

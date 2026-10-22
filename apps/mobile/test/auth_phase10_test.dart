@@ -12,6 +12,7 @@ import 'package:savestream_mobile/core/api/api_session_refresh_interceptor.dart'
 import 'package:savestream_mobile/core/api/memory_access_token_store.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/core/legal/legal_consent.dart';
 import 'package:savestream_mobile/features/auth/data/remote/auth_protected_api.dart';
 import 'package:savestream_mobile/features/auth/data/remote/auth_public_api.dart';
 import 'package:savestream_mobile/features/auth/data/remote/auth_tokens.dart';
@@ -427,6 +428,7 @@ final class _StubPublicApi implements AuthPublicApi {
   Future<void> register({
     required String email,
     required String password,
+    LegalConsent? consent,
   }) async {}
 
   @override

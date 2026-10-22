@@ -28,6 +28,7 @@ final class MockEntitlementRepository extends MockRepositoryBase
       EntitlementMockState.free => Entitlement(
         plan: Plan.free,
         hasPurchased: false,
+        emailVerified: true,
         cloudMinutesAvailable: 0,
         limits: const EntitlementLimits(
           maxWatches: 3,
@@ -51,6 +52,7 @@ final class MockEntitlementRepository extends MockRepositoryBase
       EntitlementMockState.freeExhausted => Entitlement(
         plan: Plan.free,
         hasPurchased: false,
+        emailVerified: true,
         cloudMinutesAvailable: 0,
         limits: const EntitlementLimits(
           maxWatches: 3,
@@ -74,6 +76,7 @@ final class MockEntitlementRepository extends MockRepositoryBase
       EntitlementMockState.pro => Entitlement(
         plan: Plan.pro,
         hasPurchased: true,
+        emailVerified: true,
         cloudMinutesAvailable: 7980,
         limits: const EntitlementLimits(
           maxWatches: 20,
@@ -97,6 +100,7 @@ final class MockEntitlementRepository extends MockRepositoryBase
       EntitlementMockState.proExhausted => Entitlement(
         plan: Plan.free,
         hasPurchased: true,
+        emailVerified: true,
         cloudMinutesAvailable: 0,
         limits: const EntitlementLimits(
           maxWatches: 3,

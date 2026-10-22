@@ -51,10 +51,19 @@ class Entitlement {
     required this.watchCount,
     required this.local,
     required this.updatedAt,
+    this.emailVerified = false,
+    this.canAutoRecord = false,
+    this.trialRecording = false,
   });
 
   final Plan plan;
   final bool hasPurchased;
+
+  /// From `/v1/me/entitlement`: the free trial minutes unlock on a verified
+  /// email, and auto-record needs purchased or trial credit.
+  final bool emailVerified;
+  final bool canAutoRecord;
+  final bool trialRecording;
   final int cloudMinutesAvailable;
   final EntitlementLimits limits;
   final int watchCount;

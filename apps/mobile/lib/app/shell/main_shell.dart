@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/savestream_widgets.dart';
+import '../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../features/app_status/presentation/a6_app_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
@@ -23,14 +24,16 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final double textScale = MediaQuery.textScalerOf(context).scale(1);
     final String location = GoRouterState.of(context).matchedLocation;
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
     );
-    final bool hideRecordingBar = activeRecordings.any(
-      (ActiveRecordingBarItem item) => item.route == location,
-    );
+    // Home already shows each recording in its "Live now" card.
+    final bool hideRecordingBar =
+        location == AppRoutes.home ||
+        activeRecordings.any(
+          (ActiveRecordingBarItem item) => item.route == location,
+        );
     final bool isOnline = ref.watch(appOnlineProvider).value ?? true;
     final A6GlobalGate gate =
         ref.watch(a6GlobalGateProvider).value ?? A6GlobalGate.none;
@@ -176,36 +179,34 @@ class MainShell extends ConsumerWidget {
           children: <Widget>[
             if (!hideRecordingBar && activeRecordings.isNotEmpty)
               ActiveRecordingBar(items: activeRecordings),
-            NavigationBar(
-              height: textScale >= 1.4 ? 64 : null,
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            SsV2BottomNav(
               selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: (int index) {
+              onSelected: (int index) {
                 navigationShell.goBranch(
                   index,
                   initialLocation: index == navigationShell.currentIndex,
                 );
               },
-              destinations: <NavigationDestination>[
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home_rounded),
-                  label: l10n.navHome,
+              items: <SsV2NavItem>[
+                SsV2NavItem(
+                  id: 'home',
+                  label: l10n.v2NavHome,
+                  glyph: SsV2IconGlyph.home,
                 ),
-                NavigationDestination(
-                  icon: const Icon(Icons.visibility_outlined),
-                  selectedIcon: const Icon(Icons.visibility_rounded),
-                  label: l10n.navChannels,
+                SsV2NavItem(
+                  id: 'channels',
+                  label: l10n.v2NavChannels,
+                  glyph: SsV2IconGlyph.channels,
                 ),
-                NavigationDestination(
-                  icon: const Icon(Icons.video_library_outlined),
-                  selectedIcon: const Icon(Icons.video_library_rounded),
-                  label: l10n.navRecordings,
+                SsV2NavItem(
+                  id: 'recordings',
+                  label: l10n.v2NavRecordings,
+                  glyph: SsV2IconGlyph.recordings,
                 ),
-                NavigationDestination(
-                  icon: const Icon(Icons.settings_outlined),
-                  selectedIcon: const Icon(Icons.settings_rounded),
-                  label: l10n.navSettings,
+                SsV2NavItem(
+                  id: 'account',
+                  label: l10n.v2NavAccount,
+                  glyph: SsV2IconGlyph.person,
                 ),
               ],
             ),

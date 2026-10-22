@@ -1,4 +1,5 @@
 import '../../../../core/api/api_exception.dart';
+import '../../../../core/legal/legal_consent.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../firebase_social_identity_client.dart';
 import '../remote/auth_protected_api.dart';
@@ -61,7 +62,10 @@ final class ApiAuthRepository
   }
 
   @override
-  Future<void> signInSocial(SocialAuthProvider provider) async {
+  Future<void> signInSocial(
+    SocialAuthProvider provider, {
+    LegalConsent? consent,
+  }) async {
     try {
       final publicApi = _publicApi;
       if (publicApi is! SocialAuthPublicApi) {
@@ -72,6 +76,7 @@ final class ApiAuthRepository
       try {
         final tokens = await (publicApi as SocialAuthPublicApi).socialLogin(
           idToken: idToken,
+          consent: consent,
         );
         await _sessionManager.storeAuthenticatedTokens(tokens);
       } on ApiException catch (error) {
@@ -93,9 +98,14 @@ final class ApiAuthRepository
   Future<void> register({
     required String email,
     required String password,
+    LegalConsent? consent,
   }) async {
     try {
-      await _publicApi.register(email: email, password: password);
+      await _publicApi.register(
+        email: email,
+        password: password,
+        consent: consent,
+      );
     } on ApiException catch (error) {
       throw AuthException(_mapFailure(error));
     } on Object {
@@ -194,6 +204,12 @@ final class ApiAuthRepository
     }
     if (error.code == 'AUTH_EMAIL_NOT_VERIFIED') {
       return AuthFailureCode.emailNotVerified;
+    }
+    if (error.code == 'LEGAL_CONSENT_REQUIRED') {
+      return AuthFailureCode.consentRequired;
+    }
+    if (error.code == 'LEGAL_VERSION_OUTDATED') {
+      return AuthFailureCode.legalOutdated;
     }
     if (error.code == 'AUTH_SESSION_REVOKED') {
       return AuthFailureCode.sessionExpired;

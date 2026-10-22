@@ -86,6 +86,10 @@ final class WatchApiModel {
     this.lastCheckedAt,
     this.nextCheckAt,
     this.lastLiveAt,
+    this.activeRecordingId,
+    this.verificationRequired = false,
+    this.verificationDueAt,
+    this.ownerVerifiedAt,
   });
 
   final String id;
@@ -102,6 +106,10 @@ final class WatchApiModel {
   final DateTime? lastCheckedAt;
   final DateTime? nextCheckAt;
   final DateTime? lastLiveAt;
+  final String? activeRecordingId;
+  final bool verificationRequired;
+  final DateTime? verificationDueAt;
+  final DateTime? ownerVerifiedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -174,6 +182,24 @@ final class WatchApiModel {
       ),
       nextCheckAt: _optionalDateTime(map['next_check_at'], 'next_check_at'),
       lastLiveAt: _optionalDateTime(map['last_live_at'], 'last_live_at'),
+      activeRecordingId: _optionalString(
+        map['active_recording_id'],
+        'active_recording_id',
+      ),
+      verificationRequired:
+          _optionalBool(
+            map['verification_required'],
+            'verification_required',
+          ) ??
+          false,
+      verificationDueAt: _optionalDateTime(
+        map['verification_due_at'],
+        'verification_due_at',
+      ),
+      ownerVerifiedAt: _optionalDateTime(
+        map['owner_verified_at'],
+        'owner_verified_at',
+      ),
       createdAt: _requiredDateTime(map['created_at'], 'created_at'),
       updatedAt: _requiredDateTime(map['updated_at'], 'updated_at'),
     );
@@ -195,6 +221,10 @@ final class WatchApiModel {
       lastCheckedAt: lastCheckedAt,
       nextCheckAt: nextCheckAt,
       lastLiveAt: lastLiveAt,
+      activeRecordingId: activeRecordingId,
+      verificationRequired: verificationRequired,
+      verificationDueAt: verificationDueAt,
+      ownerVerifiedAt: ownerVerifiedAt,
     );
   }
 }

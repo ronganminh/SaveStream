@@ -1,15 +1,14 @@
-/// A05b — Set a new password from an email link.
+/// AReset · AResetDone — choose a new password from the emailed link.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/session/app_session_controller.dart';
-import '../../../app/theme/ss_tokens.dart';
-import '../../../core/widgets/savestream_widgets.dart';
+import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../domain/repositories/auth_repository.dart';
 import 'controllers/auth_controller.dart';
-import 'widgets/auth_scaffold.dart';
+import 'widgets/auth_v2_parts.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({
@@ -28,10 +27,11 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmController = TextEditingController();
   late final AuthController _controller;
+  String? _passwordError;
+  String? _confirmError;
   bool _completed = false;
 
   bool get _hasUsableToken => (widget.initialToken ?? '').trim().isNotEmpty;
@@ -54,40 +54,44 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Future<void> _submit() async {
+    final AppLocalizations l10n = context.l10n;
     FocusScope.of(context).unfocus();
-    if (!_hasUsableToken || !_formKey.currentState!.validate()) return;
+    final String password = _passwordController.text;
+    setState(() {
+      _passwordError = password.isEmpty
+          ? l10n.v2PasswordRequired
+          : password.length < 8
+          ? l10n.v2PasswordTooShort
+          : null;
+      _confirmError = _confirmController.text != password
+          ? l10n.v2PasswordsDontMatch
+          : null;
+    });
+    if (!_hasUsableToken || _passwordError != null || _confirmError != null) {
+      return;
+    }
     final bool reset = await _controller.resetPassword(
       token: widget.initialToken!.trim(),
-      password: _passwordController.text,
+      password: password,
     );
     if (reset && mounted) {
-      setState(() {
-        _completed = true;
-      });
+      setState(() => _completed = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool expired =
-        !_hasUsableToken || _controller.failure == AuthFailureCode.invalidToken;
-
     if (_completed) {
-      return AuthScaffold(
-        title: l10n.resetPasswordSuccessTitle,
-        subtitle: l10n.resetPasswordSuccessBody,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsPrimaryButton(
-              label: l10n.continueAction,
+      return SsV2Page(
+        child: SsV2StatusBody(
+          glyph: SsV2IconGlyph.lock,
+          tone: SsV2TileTone.success,
+          title: l10n.v2ResetDoneTitle,
+          body: l10n.v2ResetDoneBody,
+          actions: <Widget>[
+            SsV2Button(
+              label: l10n.v2SignIn,
               onPressed: () => context.go(AppRoutes.signIn),
             ),
           ],
@@ -95,116 +99,78 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       );
     }
 
-    if (expired) {
-      return AuthScaffold(
-        title: l10n.resetLinkExpiredTitle,
-        subtitle: l10n.resetLinkExpiredBody,
-        showBackButton: true,
-        onBack: () => context.go(AppRoutes.signIn),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Icon(
-              Icons.link_off_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: SsSpacing.xl),
-            SsPrimaryButton(
-              label: l10n.sendNewLinkAction,
-              onPressed: () => context.go(AppRoutes.forgotPassword),
-            ),
-            const SizedBox(height: SsSpacing.sm),
-            SsSecondaryButton(
-              label: l10n.backToSignIn,
-              onPressed: () => context.go(AppRoutes.signIn),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return AuthScaffold(
-      title: l10n.resetPasswordTitle,
-      subtitle: l10n.resetPasswordAccountBody,
-      showBackButton: true,
-      onBack: () => context.go(AppRoutes.signIn),
+    return SsV2Page(
       child: AnimatedBuilder(
         animation: _controller,
         builder: (BuildContext context, Widget? child) {
-          return Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (_controller.failure != null) ...<Widget>[
-                  SsInlineAlert(
-                    title: l10n.authServerErrorMessage,
-                    tone: SsInlineAlertTone.error,
-                  ),
-                  const SizedBox(height: SsSpacing.lg),
-                ],
-                SsPasswordField(
-                  label: l10n.newPasswordLabel,
-                  controller: _passwordController,
-                  autofillHints: const <String>[AutofillHints.newPassword],
-                  textInputAction: TextInputAction.next,
-                  validator: (String? value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.passwordRequiredMessage;
-                    }
-                    if (value.length < 8) {
-                      return l10n.passwordMinLengthMessage;
-                    }
-                    return null;
-                  },
+          final AuthFailureCode? failure = _controller.failure;
+          final bool badLink =
+              !_hasUsableToken || failure == AuthFailureCode.invalidToken;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              SsV2Header(title: l10n.v2ResetTitle),
+              Expanded(
+                child: SsV2FillScroll(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+                  gap: 20,
+                  children: <Widget>[
+                    if (badLink)
+                      SsV2Banner(
+                        tone: SsV2Tone.error,
+                        actions: <Widget>[
+                          SsV2Button(
+                            label: l10n.v2RequestNewLink,
+                            size: SsV2ButtonSize.small,
+                            expand: false,
+                            onPressed: () =>
+                                context.go(AppRoutes.forgotPassword),
+                          ),
+                        ],
+                        child: Text(l10n.v2ResetLinkInvalid),
+                      )
+                    else if (failure != null)
+                      AuthErrorBanner(failure: failure),
+                    SsV2PasswordField(
+                      label: l10n.v2NewPassword,
+                      controller: _passwordController,
+                      errorText: _passwordError,
+                      helperText: l10n.v2PasswordHelper,
+                      showLabel: l10n.v2ShowPassword,
+                      hideLabel: l10n.v2HidePassword,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const <String>[AutofillHints.newPassword],
+                      onChanged: (_) {
+                        if (_passwordError != null) {
+                          setState(() => _passwordError = null);
+                        }
+                      },
+                    ),
+                    SsV2PasswordField(
+                      label: l10n.v2ConfirmPassword,
+                      controller: _confirmController,
+                      errorText: _confirmError,
+                      showLabel: l10n.v2ShowPassword,
+                      hideLabel: l10n.v2HidePassword,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const <String>[AutofillHints.newPassword],
+                      onSubmitted: (_) => _submit(),
+                      onChanged: (_) {
+                        if (_confirmError != null) {
+                          setState(() => _confirmError = null);
+                        }
+                      },
+                    ),
+                    const Spacer(),
+                    SsV2Button(
+                      label: l10n.v2SavePassword,
+                      isLoading: _controller.isLoading,
+                      onPressed: badLink ? null : _submit,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: SsSpacing.sm),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _passwordController,
-                  builder: (BuildContext context, TextEditingValue value, _) {
-                    final bool met = value.text.length >= 8;
-                    return Row(
-                      children: <Widget>[
-                        Icon(
-                          met
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          size: 20,
-                          color: met
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: SsSpacing.sm),
-                        Expanded(child: Text(l10n.passwordRuleMin8)),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: SsSpacing.md),
-                SsPasswordField(
-                  label: l10n.confirmNewPasswordLabel,
-                  controller: _confirmController,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
-                  validator: (String? value) {
-                    if (value == null || value.isEmpty) {
-                      return l10n.confirmPasswordRequiredMessage;
-                    }
-                    if (value != _passwordController.text) {
-                      return l10n.passwordMismatchMessage;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: SsSpacing.xl),
-                SsPrimaryButton(
-                  label: l10n.savePasswordAction,
-                  isLoading: _controller.isLoading,
-                  onPressed: _submit,
-                ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),

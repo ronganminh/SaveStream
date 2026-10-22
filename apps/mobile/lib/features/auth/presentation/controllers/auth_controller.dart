@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../../app/session/app_session_controller.dart';
+import '../../../../core/legal/legal_consent.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthController extends ChangeNotifier {
@@ -14,10 +15,26 @@ class AuthController extends ChangeNotifier {
   final AppSessionController _session;
 
   bool _isLoading = false;
+  bool _socialInProgress = false;
+  bool _socialCancelled = false;
   AuthFailureCode? _failure;
 
   bool get isLoading => _isLoading;
+
+  /// True while a Google/Apple sign-in is running (the full-screen state).
+  bool get socialInProgress => _socialInProgress;
   AuthFailureCode? get failure => _failure;
+
+  /// Leave the Google sign-in screen. If the provider still finishes, the
+  /// new session is signed out again so Cancel really cancels.
+  void cancelSocial() {
+    if (!_socialInProgress) return;
+    _socialCancelled = true;
+    _socialInProgress = false;
+    _isLoading = false;
+    _failure = null;
+    notifyListeners();
+  }
 
   void clearFailure() {
     if (_failure == null) return;
@@ -41,19 +58,41 @@ class AuthController extends ChangeNotifier {
     }
   }
 
-  Future<bool> signInSocial(SocialAuthProvider provider) async {
+  Future<bool> signInSocial(
+    SocialAuthProvider provider, {
+    LegalConsent? consent,
+  }) async {
     _start();
+    _socialInProgress = true;
+    _socialCancelled = false;
+    notifyListeners();
     try {
       final repository = _repository;
       if (repository is! SocialAuthRepository) {
         throw const AuthException(AuthFailureCode.socialUnavailable);
       }
-      await (repository as SocialAuthRepository).signInSocial(provider);
+      await (repository as SocialAuthRepository).signInSocial(
+        provider,
+        consent: consent,
+      );
+      if (_socialCancelled) {
+        _socialCancelled = false;
+        try {
+          await _repository.logout();
+        } on AuthException {
+          // Local credentials are cleared by logout even if revoke fails.
+        }
+        return false;
+      }
+      _socialInProgress = false;
       _finish();
       _session.markAuthenticated();
       return true;
     } on AuthException catch (error) {
-      if (error.code == AuthFailureCode.cancelled) {
+      final bool cancelledByUser = _socialCancelled;
+      _socialCancelled = false;
+      _socialInProgress = false;
+      if (cancelledByUser || error.code == AuthFailureCode.cancelled) {
         _finish();
         return false;
       }
@@ -65,10 +104,15 @@ class AuthController extends ChangeNotifier {
   Future<bool> register({
     required String email,
     required String password,
+    required LegalConsent consent,
   }) async {
     _start();
     try {
-      await _repository.register(email: email, password: password);
+      await _repository.register(
+        email: email,
+        password: password,
+        consent: consent,
+      );
       _session.setPendingVerificationEmail(email);
       _finish();
       return true;

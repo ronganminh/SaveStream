@@ -157,6 +157,8 @@ GoRouter createAppRouter({
               return RegisterScreen(
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
+                config: config,
+                onSignedIn: () => ref.invalidate(entitlementProvider),
               );
             },
           );
@@ -171,6 +173,7 @@ GoRouter createAppRouter({
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
                 initialToken: state.uri.queryParameters['token'],
+                justSent: state.uri.queryParameters['sent'] == '1',
               );
             },
           );
@@ -192,15 +195,8 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.checkEmail,
         builder: (BuildContext context, GoRouterState state) {
-          final String email = state.uri.queryParameters['email'] ?? '';
-          return Consumer(
-            builder: (BuildContext context, WidgetRef ref, Widget? child) {
-              return CheckEmailScreen(
-                repository: ref.watch(authRepositoryProvider),
-                session: session,
-                email: email,
-              );
-            },
+          return CheckEmailScreen(
+            email: state.uri.queryParameters['email'] ?? '',
           );
         },
       ),
