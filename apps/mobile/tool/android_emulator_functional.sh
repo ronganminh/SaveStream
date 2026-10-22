@@ -86,7 +86,7 @@ run_android_suite media 600 integration_test/native_media_test.dart \
   --dart-define=CI_MEDIA_PORT=18095
 
 # v2 screens (Auth + Home, Channels, Recordings + Player, Notifications,
-# Credits) rendered on the emulator, pulled next to the artboards for review
+# Credits, Account, System) rendered on the emulator, pulled next to the artboards for review
 # (artifact android-emulator-screens).
 run_android_suite screens 600 integration_test/auth_home_screenshots_test.dart \
   --dart-define=SAVESTREAM_SCREENSHOT_DIR=device
@@ -103,6 +103,12 @@ python3 tool/decode_screens.py build/ci/android-screens-notifications.txt build/
 run_android_suite screens-credits 600 integration_test/credits_screenshots_test.dart \
   --dart-define=SAVESTREAM_SCREENSHOT_DIR=device
 python3 tool/decode_screens.py build/ci/android-screens-credits.txt build/screens
+run_android_suite screens-account 600 integration_test/account_screenshots_test.dart \
+  --dart-define=SAVESTREAM_SCREENSHOT_DIR=device
+python3 tool/decode_screens.py build/ci/android-screens-account.txt build/screens
+run_android_suite screens-system 600 integration_test/system_screenshots_test.dart \
+  --dart-define=SAVESTREAM_SCREENSHOT_DIR=device
+python3 tool/decode_screens.py build/ci/android-screens-system.txt build/screens
 python3 -m pip install --quiet --user pillow
 python3 tool/compare_screens.py build/screens \
   ../../docs/mobile-v2/screens/auth-home \
@@ -110,5 +116,7 @@ python3 tool/compare_screens.py build/screens \
   ../../docs/mobile-v2/screens/recordings \
   ../../docs/mobile-v2/screens/notifications \
   ../../docs/mobile-v2/screens/credits \
+  ../../docs/mobile-v2/screens/account \
+  ../../docs/mobile-v2/screens/system \
   build/screens/compare
 ls -l build/screens build/screens/compare
