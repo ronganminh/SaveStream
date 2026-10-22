@@ -8,6 +8,7 @@ from app.api.schemas.recordings import (
     RecordingResponse,
     Source,
 )
+from app.application.recordings.failure_reasons import explain_recording_failure
 from app.application.recordings.retention import expires_at
 from app.domain.recordings.state import (
     TERMINAL_RECORDING_STATUSES,
@@ -43,6 +44,12 @@ def recording_response(
             message=recording.error_message,
             retryable=bool(recording.error_retryable),
         )
+    failure = explain_recording_failure(
+        status,
+        error_code=recording.error_code,
+        error_message=recording.error_message,
+        charged=(recording.actual_cost or 0) > 0,
+    )
     return RecordingResponse(
         id=str(recording.id),
         source=Source.model_validate(
@@ -63,6 +70,8 @@ def recording_response(
             can_delete=actions.can_delete,
         ),
         error=error,
+        failure_reason=failure.reason if failure else None,
+        failure_guidance=failure.guidance if failure else None,
         created_at=recording.created_at,
         queue_position=queue_position,
         expires_at=(

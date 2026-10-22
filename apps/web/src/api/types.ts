@@ -145,6 +145,10 @@ export type RecordingResponse = {
   credit_reservation_id: string | null;
   actions: RecordingActions;
   error: RecordingError | null;
+  /** Plain-English reason for a failed or missed recording; show instead of error.message. */
+  failure_reason?: string | null;
+  /** Optional next step that goes with failure_reason. */
+  failure_guidance?: string | null;
   created_at: string;
   updated_at: string;
   engine?: "cloud";

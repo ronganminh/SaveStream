@@ -141,7 +141,12 @@ export function mapRecordingToModel(
         displayHandle.replace(/^@/, ""),
     ),
     tone: toneFor(matchedWatch?.id ?? recording.id),
-    ...(recording.error ? { error: recording.error.message } : {}),
+    ...(recording.failure_reason
+      ? { error: recording.failure_reason }
+      : recording.error
+        ? { error: recording.error.message }
+        : {}),
+    ...(recording.failure_guidance ? { failureGuidance: recording.failure_guidance } : {}),
     ...(recording.error && recording.duration_seconds > 0
       ? { partialDuration: formatDuration(recording.duration_seconds) }
       : {}),

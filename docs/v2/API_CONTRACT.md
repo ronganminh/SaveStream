@@ -86,6 +86,10 @@ Thêm trường vào `RecordingResponse`:
 | `expires_at` | datetime \| null | Thời điểm file cloud bị xoá theo thời hạn lưu. |
 | `minutes_charged` | int | Số phút đã trừ. Bản ghi lỗi: 0 (hoàn toàn bộ). |
 | `queue_position` | int \| null | Vị trí trong hàng chờ khi `waiting_for_cloud_slot`. |
+| `failure_reason` | string \| null | Lý do thất bại bằng tiếng Anh dễ hiểu, ánh xạ từ `error.code` (hoặc trạng thái `missed_no_cloud_slot`). Chỉ có khi `failed` hoặc `missed_no_cloud_slot`, còn lại `null`. Ứng dụng hiển thị trường này thay cho `error.message`. |
+| `failure_guidance` | string \| null | Gợi ý bước tiếp theo đi kèm `failure_reason` (có câu báo không bị trừ phút khi `minutes_charged` = 0). |
+
+`error` giữ nguyên (mã và thông điệp kỹ thuật) để tương thích ngược. Bảng ánh xạ nằm ở `backend/src/app/application/recordings/failure_reasons.py` và `docs/api/recordings.md`.
 
 `actions.can_retry` chỉ `true` khi kênh còn LIVE và lỗi có thể thử lại.
 

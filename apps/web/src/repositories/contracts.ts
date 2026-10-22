@@ -100,7 +100,10 @@ export type RecordingModel = {
   avatarUrl?: string | null;
   initials?: string;
   tone?: string;
+  /** User-facing failure text: the backend's failure_reason, else error.message. */
   error?: string;
+  /** Backend failure_guidance for a failed or missed recording. */
+  failureGuidance?: string;
   partialDuration?: string;
   backendStatus: RecordingStatusValue;
   source: Source;
