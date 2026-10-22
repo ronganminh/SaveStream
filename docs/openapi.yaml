@@ -2482,7 +2482,7 @@
         ],
         "summary": "Create rewarded-ad intent",
         "operationId": "createReward",
-        "description": "Implemented in B4. ",
+        "description": "Implemented in B4. Reward intents (including the install device id and the AdMob transaction id) are deleted after SAVESTREAM_REWARD_RETENTION_DAYS (default 365) by a daily job; the credits a reward granted stay in the credit ledger.",
         "security": [
           {
             "bearerAuth": []
@@ -11456,7 +11456,6 @@
         "required": [
           "platform",
           "push_token",
-          "device_name",
           "app_version",
           "locale"
         ],
@@ -11471,7 +11470,13 @@
             ]
           },
           "device_name": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 160,
+            "deprecated": true,
+            "description": "Deprecated and ignored. Apps no longer send the device name (manufacturer/model); the server accepts it from older clients but does not store it."
           },
           "app_version": {
             "type": "string"

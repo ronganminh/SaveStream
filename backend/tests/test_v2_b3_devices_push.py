@@ -213,6 +213,105 @@ def test_v2_b3_device_registration_and_session_revoke_cleanup(tmp_path) -> None:
         asyncio.run(assert_none())
 
 
+def test_device_registration_without_device_name_and_name_is_not_stored(tmp_path) -> None:
+    database_url = f"sqlite+aiosqlite:///{tmp_path / 'b3-no-name.db'}"
+    settings = identity_settings(database_url)
+    create_schema(database_url)
+    app = create_app(settings)
+
+    with TestClient(app, base_url="https://testserver") as client:
+        app.state.rate_limiter = InMemoryRateLimiter()
+        token = _register_verify_login(client, settings, "b3-no-name@example.com")
+
+        # Current Android app: no device_name at all.
+        assert client.put(
+            "/v1/me/devices/install-new",
+            headers=_auth(token),
+            json={
+                "platform": "android",
+                "push_token": "token-new",
+                "app_version": "2.1.0",
+                "locale": "en",
+            },
+        ).status_code == 204
+        # Older app versions still send it (or null); accepted, never stored.
+        assert client.put(
+            "/v1/me/devices/install-old",
+            headers=_auth(token),
+            json={
+                "platform": "android",
+                "push_token": "token-old",
+                "device_name": "Pixel 8",
+                "app_version": "2.0.0",
+                "locale": "vi",
+            },
+        ).status_code == 204
+        assert client.put(
+            "/v1/me/devices/install-null",
+            headers=_auth(token),
+            json={
+                "platform": "ios",
+                "push_token": None,
+                "device_name": None,
+                "app_version": "2.0.0",
+                "locale": "en",
+            },
+        ).status_code == 204
+
+        async def assert_names_null() -> None:
+            database = Database(database_url)
+            try:
+                async with database.session() as session:
+                    # A legacy row with a stored name is cleared on the next upsert.
+                    legacy = await session.scalar(
+                        select(DeviceRegistration).where(
+                            DeviceRegistration.device_id == "install-new"
+                        )
+                    )
+                    assert legacy is not None
+                    legacy.device_name = "Legacy Phone"
+                    await session.commit()
+                async with database.session() as session:
+                    rows = list((await session.scalars(select(DeviceRegistration))).all())
+                assert len(rows) == 3
+                assert {row.device_id for row in rows if row.device_name is None} == {
+                    "install-old",
+                    "install-null",
+                }
+            finally:
+                await database.close()
+
+        asyncio.run(assert_names_null())
+
+        assert client.put(
+            "/v1/me/devices/install-new",
+            headers=_auth(token),
+            json={
+                "platform": "android",
+                "push_token": "token-new-2",
+                "app_version": "2.1.0",
+                "locale": "en",
+            },
+        ).status_code == 204
+
+        async def assert_cleared() -> None:
+            database = Database(database_url)
+            try:
+                async with database.session() as session:
+                    row = await session.scalar(
+                        select(DeviceRegistration).where(
+                            DeviceRegistration.device_id == "install-new"
+                        )
+                    )
+                    assert row is not None
+                    assert row.device_name is None
+                    assert row.push_token == "token-new-2"
+            finally:
+                await database.close()
+
+        asyncio.run(assert_cleared())
+
+
 def test_v2_b3_creator_live_dedupe_and_switches(tmp_path) -> None:
     database_url = f"sqlite+aiosqlite:///{tmp_path / 'b3-live.db'}"
     settings = identity_settings(database_url)

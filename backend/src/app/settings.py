@@ -55,6 +55,18 @@ def _nonnegative_int_env(name: str, default: int) -> int:
     return value
 
 
+MIN_REWARD_RETENTION_DAYS = 31
+
+
+def _reward_retention_days_env() -> int:
+    value = int(_env("REWARD_RETENTION_DAYS", "365"))
+    if value < MIN_REWARD_RETENTION_DAYS:
+        raise ValueError(
+            f"SAVESTREAM_REWARD_RETENTION_DAYS must be at least {MIN_REWARD_RETENTION_DAYS}"
+        )
+    return value
+
+
 def _optional_datetime_env(name: str) -> datetime | None:
     raw = _env(name, "")
     if not raw:
@@ -292,6 +304,12 @@ class AppSettings:
     reward_cloud_device_daily_cap: int = 6
     reward_cloud_intent_seconds: int = 3_600
     reward_intents_per_hour: int = 20
+    # reward_intents rows (install device id, AdMob transaction id) older than
+    # this are deleted by the daily savestream.rewards.retention job. Credit
+    # ledger grants are kept. At least 31 so the 30-day shared-device alert
+    # and the UTC-day caps always see the rows they count.
+    reward_retention_days: int = 365
+    reward_retention_batch_size: int = 1000
     # AdMob rewarded ad unit ids accepted by SSV. Empty keeps rewarded ads
     # off: creating one is refused with REWARDED_ADS_UNAVAILABLE.
     admob_reward_ad_units: tuple[str, ...] = ()
@@ -821,6 +839,8 @@ class AppSettings:
             ),
             reward_cloud_intent_seconds=_int_env("REWARD_CLOUD_INTENT_SECONDS", 3_600),
             reward_intents_per_hour=_nonnegative_int_env("REWARD_INTENTS_PER_HOUR", 20),
+            reward_retention_days=_reward_retention_days_env(),
+            reward_retention_batch_size=_int_env("REWARD_RETENTION_BATCH_SIZE", 1000),
             admob_reward_ad_units=tuple(
                 unit.strip()
                 for unit in _env("ADMOB_REWARD_AD_UNITS", "").split(",")
