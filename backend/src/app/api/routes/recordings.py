@@ -50,7 +50,7 @@ async def live_status(
     # TikTok temporarily blocks the profile page.
     from app.infrastructure.creators.tiktok_profile import TikTokCreatorMetadataLookup
 
-    profile_task = TikTokCreatorMetadataLookup().lookup(payload.source)
+    profile_task = TikTokCreatorMetadataLookup().resolve(payload.source)
     status_task = asyncio.to_thread(
         runtime.resolver.live_status,
         payload.source,
@@ -70,6 +70,17 @@ async def live_status(
         ) from exc
 
     if isinstance(status_result, BaseException):
+        # The LIVE page of an unknown handle looks like that of a creator who
+        # never went LIVE, so only TikTok's profile page can say the account
+        # does not exist.  Anything less certain (room-id sources, WAF/login
+        # pages, timeouts) stays a retryable 503.
+        if not isinstance(profile_result, BaseException) and profile_result.not_found:
+            raise ApplicationError(
+                "CHANNEL_NOT_FOUND",
+                "No TikTok account with this username",
+                status_code=404,
+                retryable=False,
+            ) from status_result
         raise ApplicationError(
             "STREAM_UNAVAILABLE",
             "Unable to resolve live status",
@@ -78,7 +89,9 @@ async def live_status(
         ) from status_result
 
     resolved, is_live = status_result
-    metadata = profile_result if not isinstance(profile_result, BaseException) else None
+    metadata = (
+        profile_result.metadata if not isinstance(profile_result, BaseException) else None
+    )
     from app.api.schemas.recordings import Creator
 
     return LiveStatusResponse(

@@ -22,7 +22,7 @@ Every Recording DTO includes `actions.can_stop`, `actions.can_retry`, and `actio
 
 ## Endpoints
 
-- `POST /v1/live-status`
+- `POST /v1/live-status` — `404 CHANNEL_NOT_FOUND` when TikTok's profile page says the username does not exist (username and profile-URL sources only); `503 STREAM_UNAVAILABLE` when TikTok can't be read or doesn't say.
 - `POST /v1/recordings` — requires `Idempotency-Key`, returns `202`.
 - `GET /v1/recordings` — cursor pagination.
 - `GET /v1/recordings/{recording_id}`

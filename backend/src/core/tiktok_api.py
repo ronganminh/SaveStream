@@ -22,6 +22,28 @@ class TikTokProfile:
     user_id: str | None = None
 
 
+@dataclass(frozen=True)
+class TikTokProfileLookup:
+    """Outcome of a profile page read.
+
+    ``not_found`` is True only when TikTok's own page payload says the account
+    does not exist (or is banned, which TikTok reports the same way).  A WAF or
+    login shell, a network error or a payload without that marker leaves it
+    False: "we could not tell" is never reported as "does not exist".
+    """
+
+    profile: TikTokProfile | None
+    not_found: bool = False
+
+
+# ``webapp.user-detail.statusCode`` values meaning "no such account".  10221 is
+# what https://www.tiktok.com/@<unknown> serves today (statusMsg "" or
+# "user banned"; checked 2026-10-22 against several random handles, while
+# real handles return a ``userInfo`` object instead).  10202 is the older
+# "user not exist" code from TikTok's user-detail API.
+TIKTOK_USER_NOT_FOUND_STATUS_CODES = frozenset({10202, 10221})
+
+
 class TikTokAPI:
 
     def __init__(self, proxy, cookies):
@@ -178,17 +200,23 @@ class TikTokAPI:
         accepts both SIGI_STATE and the newer universal-data script.  Metadata
         is optional: callers must keep the Watch usable when TikTok omits it.
         """
+        return self.lookup_user_profile(user).profile
+
+    def lookup_user_profile(self, user: str) -> TikTokProfileLookup:
+        """Like :meth:`get_user_profile`, also reporting a definite "no such
+        account" answer from the profile page (see TikTokProfileLookup)."""
         username = user.lstrip("@").strip()
         if not username:
-            return None
+            return TikTokProfileLookup(profile=None)
         # TikTok occasionally serves a WAF/login shell for the profile page
         # (with no SIGI/universal payload at all) while the public LIVE page
         # still contains the creator object. Try the normal profile first,
-        # then use the LIVE page as a metadata-only fallback.
-        for url in (
-            f"{self.BASE_URL}/@{username}",
-            f"{self.BASE_URL}/@{username}/live/",
-        ):
+        # then use the LIVE page as a metadata-only fallback.  Only the profile
+        # page carries the not-found marker: the LIVE page of an unknown handle
+        # looks the same as that of a real creator who never went LIVE.
+        profile_url = f"{self.BASE_URL}/@{username}"
+        not_found = False
+        for url in (profile_url, f"{self.BASE_URL}/@{username}/live/"):
             try:
                 response = self.http_client.get(url)
                 response.raise_for_status()
@@ -197,8 +225,25 @@ class TikTokAPI:
             for payload in self._page_json_payloads(response.text):
                 profile = self._profile_from_payload(payload, username)
                 if profile is not None:
-                    return profile
-        return None
+                    return TikTokProfileLookup(profile=profile)
+                if url == profile_url and self._payload_says_user_not_found(payload):
+                    not_found = True
+        return TikTokProfileLookup(profile=None, not_found=not_found)
+
+    @staticmethod
+    def _payload_says_user_not_found(payload: object) -> bool:
+        if not isinstance(payload, dict):
+            return False
+        scope = payload.get("__DEFAULT_SCOPE__")
+        detail = scope.get("webapp.user-detail") if isinstance(scope, dict) else None
+        if not isinstance(detail, dict) or detail.get("userInfo"):
+            return False
+        status_code = detail.get("statusCode")
+        return (
+            isinstance(status_code, int)
+            and not isinstance(status_code, bool)
+            and status_code in TIKTOK_USER_NOT_FOUND_STATUS_CODES
+        )
 
     @staticmethod
     def _page_json_payloads(content: str) -> list[object]:

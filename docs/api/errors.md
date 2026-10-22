@@ -18,6 +18,8 @@ Clients MUST branch on `error.code`, not `message`. Frozen codes:
 
 `AUTH_INVALID_CREDENTIALS`, `AUTH_EMAIL_NOT_VERIFIED`, `AUTH_SESSION_REVOKED`, `FORBIDDEN`, `RESOURCE_NOT_FOUND`, `VALIDATION_ERROR`, `RATE_LIMITED`, `IDEMPOTENCY_KEY_REUSED`, `STREAM_OFFLINE`, `STREAM_UNAVAILABLE`, `RECORDING_ALREADY_ACTIVE`, `RECORDING_NOT_STOPPABLE`, `INSUFFICIENT_CREDITS`, `PAYMENT_PENDING`, `PAYMENT_FAILED`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`.
 
+Additive codes: `CHANNEL_NOT_FOUND` (`404`, not retryable) from `POST /v1/live-status` when TikTok's profile page says no account has the username; a TikTok outage, timeout or unclear answer stays `503 STREAM_UNAVAILABLE`.
+
 ## Pagination
 
 Every list endpoint that can grow uses:
