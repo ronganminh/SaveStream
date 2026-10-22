@@ -239,7 +239,16 @@ def handle_outbox_event(
     payload: dict[str, Any],
 ) -> None:
     del self
-    if topic in {"identity.email.verify_email", "identity.email.password_reset"}:
+    if topic == "identity.account_deletion_requested":
+        from app.infrastructure.notifications.email_delivery import run_account_deleted_email
+
+        run_account_deleted_email({key: str(value) for key, value in payload.items()})
+        return
+    if topic in {
+        "identity.email.verify_email",
+        "identity.email.password_reset",
+        "identity.email.account_deletion",
+    }:
         from app.infrastructure.email.smtp import deliver_one_time_token_email
 
         token_id = str(payload.get("token_id", ""))

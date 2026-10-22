@@ -16,6 +16,7 @@ import { Route as BillingRouteImport } from './routes/billing'
 import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CopyrightRouteImport } from './routes/copyright'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
@@ -57,6 +58,7 @@ import { Route as BillingCanceledRouteImport } from './routes/billing.canceled'
 import { Route as BillingSuccessRouteImport } from './routes/billing.success'
 import { Route as ChannelsIndexRouteImport } from './routes/channels.index'
 import { Route as ChannelsIdRouteImport } from './routes/channels.$id'
+import { Route as DeleteAccountConfirmRouteImport } from './routes/delete-account_.confirm'
 import { Route as GuidesIndexRouteImport } from './routes/guides.index'
 import { Route as GuidesGuideRouteImport } from './routes/guides.$guide'
 import { Route as HelpIndexRouteImport } from './routes/help.index'
@@ -111,6 +113,11 @@ const ContactRoute = ContactRouteImport.update({
 const CopyrightRoute = CopyrightRouteImport.update({
   id: '/copyright',
   path: '/copyright',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -318,6 +325,11 @@ const ChannelsIdRoute = ChannelsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ChannelsRoute,
 } as any)
+const DeleteAccountConfirmRoute = DeleteAccountConfirmRouteImport.update({
+  id: '/delete-account_/confirm',
+  path: '/delete-account/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuidesIndexRoute = GuidesIndexRouteImport.update({
   id: '/guides/',
   path: '/guides/',
@@ -427,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -465,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/delete-account/confirm': typeof DeleteAccountConfirmRoute
   '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
@@ -495,6 +509,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -528,6 +543,7 @@ export interface FileRoutesByTo {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/delete-account/confirm': typeof DeleteAccountConfirmRoute
   '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
@@ -561,6 +577,7 @@ export interface FileRoutesById {
   '/channels': typeof ChannelsRouteWithChildren
   '/contact': typeof ContactRoute
   '/copyright': typeof CopyrightRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
@@ -599,6 +616,7 @@ export interface FileRoutesById {
   '/billing/canceled': typeof BillingCanceledRoute
   '/billing/success': typeof BillingSuccessRoute
   '/channels/$id': typeof ChannelsIdRoute
+  '/delete-account_/confirm': typeof DeleteAccountConfirmRoute
   '/guides/$guide': typeof GuidesGuideRoute
   '/help/$article': typeof HelpArticleRoute
   '/partners/apply': typeof PartnersApplyRoute
@@ -633,6 +651,7 @@ export interface FileRouteTypes {
     | '/channels'
     | '/contact'
     | '/copyright'
+    | '/delete-account'
     | '/forgot-password'
     | '/notifications'
     | '/onboarding'
@@ -671,6 +690,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/delete-account/confirm'
     | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
@@ -701,6 +721,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/contact'
     | '/copyright'
+    | '/delete-account'
     | '/forgot-password'
     | '/notifications'
     | '/onboarding'
@@ -734,6 +755,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/delete-account/confirm'
     | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
@@ -766,6 +788,7 @@ export interface FileRouteTypes {
     | '/channels'
     | '/contact'
     | '/copyright'
+    | '/delete-account'
     | '/forgot-password'
     | '/notifications'
     | '/onboarding'
@@ -804,6 +827,7 @@ export interface FileRouteTypes {
     | '/billing/canceled'
     | '/billing/success'
     | '/channels/$id'
+    | '/delete-account_/confirm'
     | '/guides/$guide'
     | '/help/$article'
     | '/partners/apply'
@@ -837,6 +861,7 @@ export interface RootRouteChildren {
   ChannelsRoute: typeof ChannelsRouteWithChildren
   ContactRoute: typeof ContactRoute
   CopyrightRoute: typeof CopyrightRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -871,6 +896,7 @@ export interface RootRouteChildren {
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminWorkersRoute: typeof AdminWorkersRoute
   AuthErrorRoute: typeof AuthErrorRoute
+  DeleteAccountConfirmRoute: typeof DeleteAccountConfirmRoute
   GuidesGuideRoute: typeof GuidesGuideRoute
   HelpArticleRoute: typeof HelpArticleRoute
   PartnersApplyRoute: typeof PartnersApplyRoute
@@ -928,6 +954,13 @@ declare module '@tanstack/react-router' {
       path: '/copyright'
       fullPath: '/copyright'
       preLoaderRoute: typeof CopyrightRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -1217,6 +1250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChannelsIdRouteImport
       parentRoute: typeof ChannelsRoute
     }
+    '/delete-account_/confirm': {
+      id: '/delete-account_/confirm'
+      path: '/delete-account/confirm'
+      fullPath: '/delete-account/confirm'
+      preLoaderRoute: typeof DeleteAccountConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guides/': {
       id: '/guides/'
       path: '/guides'
@@ -1479,6 +1519,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChannelsRoute: ChannelsRouteWithChildren,
   ContactRoute: ContactRoute,
   CopyrightRoute: CopyrightRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
@@ -1513,6 +1554,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminWorkersRoute: AdminWorkersRoute,
   AuthErrorRoute: AuthErrorRoute,
+  DeleteAccountConfirmRoute: DeleteAccountConfirmRoute,
   GuidesGuideRoute: GuidesGuideRoute,
   HelpArticleRoute: HelpArticleRoute,
   PartnersApplyRoute: PartnersApplyRoute,

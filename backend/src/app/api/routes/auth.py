@@ -88,7 +88,9 @@ async def register(
         client_ip=_client_ip(request),
         request_id=_request_id(request),
         consent=_consent(payload),
-        consent_required=payload.client_type == "web",
+        consent_required=(
+            payload.client_type == "web" or request.app.state.settings.mobile_consent_required
+        ),
         user_agent=request.headers.get("user-agent"),
     )
     return AuthMessage(message=message)
@@ -282,5 +284,42 @@ async def reset_password(
         token=payload.token,
         password=payload.password,
         request_id=_request_id(request),
+    )
+    return AuthMessage(message=message)
+
+
+@router.post(
+    "/account-deletion/request",
+    response_model=AuthMessage,
+    operation_id="requestAccountDeletionLink",
+)
+async def request_account_deletion_link(
+    payload: EmailRequest,
+    request: Request,
+    service: IdentityService = Depends(get_identity_service),
+) -> AuthMessage:
+    """Public deletion request (savestream.online/delete-account): emails a
+    one-time link to the account's address; the reply is the same either way."""
+    message = await service.request_account_deletion_link(
+        email=payload.email,
+        client_ip=_client_ip(request),
+        request_id=_request_id(request),
+    )
+    return AuthMessage(message=message)
+
+
+@router.post(
+    "/account-deletion/confirm",
+    response_model=AuthMessage,
+    status_code=202,
+    operation_id="confirmAccountDeletion",
+)
+async def confirm_account_deletion(
+    payload: VerifyEmailRequest,
+    request: Request,
+    service: IdentityService = Depends(get_identity_service),
+) -> AuthMessage:
+    message = await service.confirm_account_deletion(
+        token=payload.token, request_id=_request_id(request)
     )
     return AuthMessage(message=message)

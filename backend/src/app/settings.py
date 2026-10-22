@@ -230,6 +230,13 @@ class AppSettings:
     recording_retention_days_free: int = 7
     signup_credits: int = 0
     account_deletion_grace_days: int = 0
+    # On-device recording (Android v1 LocalRecordingService) is retired: the
+    # app no longer records on the device and the API stops handing out raw
+    # stream URLs. Kept switchable for tests of the old endpoints.
+    local_recording_enabled: bool = True
+    # Mobile sign-up must send the 18+/Terms/Privacy/AUP consent like the web.
+    # Off until the v2 app (which sends it) replaces older builds.
+    mobile_consent_required: bool = False
     # Only channels whose owner verified a bio code may be recorded (after
     # each channel's verification_due_at). From the environment: on in
     # staging/production (SAVESTREAM_CHANNEL_VERIFICATION_ENFORCED overrides).
@@ -736,6 +743,10 @@ class AppSettings:
             recording_retention_days_free=_nonnegative_int_env("RECORDING_RETENTION_DAYS_FREE", 7),
             signup_credits=_nonnegative_int_env("SIGNUP_CREDITS", 0),
             account_deletion_grace_days=_nonnegative_int_env("ACCOUNT_DELETION_GRACE_DAYS", 0),
+            local_recording_enabled=_bool_env(
+                "LOCAL_RECORDING_ENABLED", environment_raw not in {"staging", "production"}
+            ),
+            mobile_consent_required=_bool_env("MOBILE_CONSENT_REQUIRED", False),
             # On in staging/production; local and the docker e2e stack ("test")
             # record without verification unless this is set.
             channel_verification_enforced=_bool_env(
