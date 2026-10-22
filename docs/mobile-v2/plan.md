@@ -341,7 +341,7 @@ Mỗi hạng mục một PR, CI xanh, QA duyệt, deploy backend bằng drain.
 |---|---|---|---|---|
 | Email, tên hiển thị (Personal info) | Có | Không | Tài khoản | |
 | User ID (Personal info) | Có | Không | Tài khoản, chống gian lận | Khi mua, app gửi Google `obfuscatedAccountId` = SHA-256 của user id (không phải email) |
-| Lịch sử mua (Financial info › Purchase history) | Có | Không | Thanh toán | Google Play xử lý thanh toán; server nhận purchase token, order id, product id, trạng thái. Không nhận số thẻ |
+| Lịch sử mua (Financial info › Purchase history) | Có | Không | Thanh toán | Google Play xử lý thanh toán; server nhận purchase token, order id, product id, trạng thái, và giá Google Play đã hiện cho người dùng (`price_amount_micros` + mã tiền tệ, chỉ để hiển thị trong Purchases). Không nhận số thẻ |
 | Tương tác trong app (kênh, bản ghi) (App activity) | Có | Không | Chức năng app | |
 | **Advertising ID** (Device or other IDs) | **Có** | **Có — Google AdMob** | **Quảng cáo; chống gian lận, bảo mật** | Do SDK Google Mobile Ads thu thập (rewarded + banner). Quyền `com.google.android.gms.permission.AD_ID` do SDK merge vào manifest (không `tools:node="remove"`). App không tự đọc hay gửi Advertising ID về server SaveStream |
 | **Device or other IDs**: install id của app (`device_id`, chuỗi ngẫu nhiên 128 bit `dev_…` sinh khi cài, lưu trong secure storage) | Có | Không | Chống gian lận, bảo mật | Gửi kèm `POST /v1/rewards` khi tạo lượt xem quảng cáo thưởng: cap 6 lượt/ngày/thiết bị, cảnh báo một máy có hơn 3 tài khoản. Cũng là khoá đăng ký thiết bị cho push. Xoá cùng tài khoản |

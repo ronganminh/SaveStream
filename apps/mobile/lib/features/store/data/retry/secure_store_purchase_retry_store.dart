@@ -66,6 +66,8 @@ final class SecureStorePurchaseRetryStore implements StorePurchaseRetryStore {
       'product_id': request.productId,
       'transaction_id': request.transactionId,
       'receipt': request.receipt,
+      'price_amount_micros': ?request.priceAmountMicros,
+      'price_currency_code': ?request.priceCurrencyCode,
     };
   }
 
@@ -74,6 +76,8 @@ final class SecureStorePurchaseRetryStore implements StorePurchaseRetryStore {
     final Object? productId = json['product_id'];
     final Object? transactionId = json['transaction_id'];
     final Object? receipt = json['receipt'];
+    final Object? micros = json['price_amount_micros'];
+    final Object? currency = json['price_currency_code'];
     if (platform is! String ||
         productId is! String ||
         transactionId is! String ||
@@ -89,6 +93,8 @@ final class SecureStorePurchaseRetryStore implements StorePurchaseRetryStore {
       productId: productId,
       transactionId: transactionId,
       receipt: receipt,
+      priceAmountMicros: micros is int ? micros : null,
+      priceCurrencyCode: currency is String ? currency : null,
     );
   }
 }

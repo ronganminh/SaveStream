@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/mock/mock_providers.dart';
+import '../../../platform/contracts/purchase_service.dart';
 import '../../../platform/platform_providers.dart';
 import '../../devices/domain/models/device_registration.dart';
 import '../data/repositories/mock_store_repository.dart';
@@ -14,11 +15,15 @@ class CloudHoursOffer {
     required this.package,
     required this.productId,
     required this.localizedPrice,
+    this.priceAmountMicros,
+    this.currencyCode,
   });
 
   final StorePackage package;
   final String productId;
   final String localizedPrice;
+  final int? priceAmountMicros;
+  final String? currencyCode;
 
   int get hours => package.cloudMinutes ~/ 60;
 }
@@ -57,8 +62,12 @@ final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =
       final products = await ref
           .watch(purchaseServiceProvider)
           .loadProducts(sellable.map(productIdOf));
+      final Map<String, StoreProductInfo> details = <String, StoreProductInfo>{
+        for (final StoreProductInfo product in products) product.id: product,
+      };
       final Map<String, String> prices = <String, String>{
-        for (final product in products) product.id: product.localizedPrice,
+        for (final StoreProductInfo product in products)
+          product.id: product.localizedPrice,
       };
 
       // Prices only ever come from the store: a pack the store doesn't
@@ -70,6 +79,9 @@ final FutureProvider<List<CloudHoursOffer>> cloudHoursOffersProvider =
               package: package,
               productId: productIdOf(package),
               localizedPrice: prices[productIdOf(package)]!,
+              priceAmountMicros:
+                  details[productIdOf(package)]?.priceAmountMicros,
+              currencyCode: details[productIdOf(package)]?.currencyCode,
             ),
       ];
     });

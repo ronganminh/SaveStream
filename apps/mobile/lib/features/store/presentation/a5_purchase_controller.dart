@@ -187,6 +187,13 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
     final DevicePlatform platform = ref
         .read(deviceInfoServiceProvider)
         .platform;
+    // The price Play showed for this product, sent for display only.
+    CloudHoursOffer? offer;
+    for (final CloudHoursOffer item
+        in ref.read(cloudHoursOffersProvider).value ??
+            const <CloudHoursOffer>[]) {
+      if (item.productId == event.productId) offer = item;
+    }
     final StorePurchaseRequest request = StorePurchaseRequest(
       platform: platform == DevicePlatform.ios
           ? StorePurchasePlatform.appStore
@@ -194,6 +201,8 @@ class CloudHoursPurchaseController extends Notifier<CloudHoursPurchaseState> {
       productId: event.productId,
       transactionId: event.transactionId!,
       receipt: event.receipt!,
+      priceAmountMicros: offer?.priceAmountMicros,
+      priceCurrencyCode: offer?.currencyCode,
     );
     await ref.read(storePurchaseRetryStoreProvider).put(request);
     if (event.status == PurchaseEventStatus.restored) {

@@ -12,6 +12,10 @@ class CreditTransaction {
     required this.createdAt,
     this.referenceId,
     this.releasedCredits,
+    this.storeOrderId,
+    this.packageName,
+    this.recordingChannelUsername,
+    this.recordingDurationSeconds,
   });
 
   final String id;
@@ -28,6 +32,14 @@ class CreditTransaction {
 
   /// For a `release`: minutes returned from a recording hold.
   final int? releasedCredits;
+
+  /// Payment-order entries: Google Play's order id (`GPA.…`) and pack name.
+  final String? storeOrderId;
+  final String? packageName;
+
+  /// Recording entries: the channel and how long it recorded.
+  final String? recordingChannelUsername;
+  final int? recordingDurationSeconds;
   final DateTime createdAt;
 }
 
@@ -58,6 +70,9 @@ class PaymentOrder {
     required this.credits,
     required this.createdAt,
     this.provider,
+    this.storeOrderId,
+    this.clientPriceAmountMicros,
+    this.clientPriceCurrency,
   });
 
   final String id;
@@ -67,6 +82,13 @@ class PaymentOrder {
 
   /// `google_play`, `app_store`, `paypal`, …
   final String? provider;
+
+  /// Google Play's order id (`GPA.…`); null for promo codes and web orders.
+  final String? storeOrderId;
+
+  /// The store price the app reported when it bought (display only).
+  final int? clientPriceAmountMicros;
+  final String? clientPriceCurrency;
   final DateTime createdAt;
 }
 

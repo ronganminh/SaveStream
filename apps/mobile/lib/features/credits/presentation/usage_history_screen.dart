@@ -237,13 +237,18 @@ class _HistoryBody extends ConsumerWidget {
 
     switch (item.type) {
       case CreditTransactionType.charge:
-        final String details =
-            recording != null && recording.durationSeconds > 0
-            ? '$date · ${_duration(l10n, recording.durationSeconds)}'
+        // The ledger names the channel and length; older servers don't, so
+        // the recordings list fills in.
+        final int seconds =
+            item.recordingDurationSeconds ?? recording?.durationSeconds ?? 0;
+        final String channel =
+            item.recordingChannelUsername ?? recording?.creatorUsername ?? '';
+        final String details = seconds > 0
+            ? '$date · ${_duration(l10n, seconds)}'
             : date;
         return LedgerLine(
-          title: recording != null && recording.creatorUsername.isNotEmpty
-              ? l10n.crLedgerRecordingChannel(recording.creatorUsername)
+          title: channel.isNotEmpty
+              ? l10n.crLedgerRecordingChannel(channel)
               : l10n.crLedgerRecording,
           subtitle: l10n.crLedgerBilled(details),
           amount: amount,
@@ -278,12 +283,16 @@ class _HistoryBody extends ConsumerWidget {
             final PaymentOrder? order = item.referenceId == null
                 ? null
                 : orders[item.referenceId!];
-            final String? name = order == null
-                ? null
-                : packNames[order.packageId];
+            final String? name =
+                item.packageName ??
+                (order == null ? null : packNames[order.packageId]);
             title = name != null
                 ? l10n.crLedgerPack(name)
                 : l10n.crLedgerPurchase;
+            final String? orderId = item.storeOrderId ?? order?.storeOrderId;
+            if (orderId != null && orderId.startsWith('GPA.')) {
+              subtitle = '$date · $orderId';
+            }
           case 'refund':
           case 'store_refund':
           case 'store_refund_debt':

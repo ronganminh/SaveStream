@@ -240,6 +240,30 @@ void main() {
       expect(owed.minutes, 0);
       expect(owed.refundDebt, 30);
     });
+
+    test('the bar compares the balance with the server cycle total', () {
+      HomeCredits credits(
+        int minutes,
+        int? cycleTotal, {
+        bool purchased = true,
+      }) {
+        return HomeCredits.from(
+          _entitlement(
+            minutes: minutes,
+            purchased: purchased,
+            cycleTotal: cycleTotal,
+          ),
+          null,
+        );
+      }
+
+      expect(credits(760, 1520).progress, 0.5);
+      expect(credits(760, 700).progress, 1);
+      // Older servers send no total: only the trial has a known size.
+      expect(credits(760, null).progress, isNull);
+      expect(credits(5, null, purchased: false).progress, 0.5);
+      expect(credits(15, 20, purchased: false).progress, 0.75);
+    });
   });
 
   test('SVG path parser handles relative arcs and implicit commands', () {
@@ -253,8 +277,13 @@ void main() {
   });
 }
 
-Entitlement _entitlement({required int minutes, required bool purchased}) {
+Entitlement _entitlement({
+  required int minutes,
+  required bool purchased,
+  int? cycleTotal,
+}) {
   return Entitlement(
+    cloudMinutesCycleTotal: cycleTotal,
     plan: purchased ? Plan.pro : Plan.free,
     hasPurchased: purchased,
     emailVerified: true,

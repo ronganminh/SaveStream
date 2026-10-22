@@ -79,6 +79,9 @@ class Entitlement {
     this.canAutoRecord = false,
     this.trialRecording = false,
     this.ads,
+    this.cloudMinutesCycleTotal,
+    this.lastPackName,
+    this.trialUsed = false,
   });
 
   final Plan plan;
@@ -97,4 +100,15 @@ class Entitlement {
 
   /// Null when the server predates the ads block (no ads then).
   final AdsEntitlement? ads;
+
+  /// `cloud_minutes_cycle_total`: the N in "X minutes left of N" (balance
+  /// right after the latest top-up plus minutes granted since). Null before
+  /// any top-up or on an older server.
+  final int? cloudMinutesCycleTotal;
+
+  /// `last_pack_name`: the latest paid pack, null before the first purchase.
+  final String? lastPackName;
+
+  /// `trial_used`: the one-time free trial grant was ever made.
+  final bool trialUsed;
 }

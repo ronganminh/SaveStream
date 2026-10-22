@@ -51,8 +51,15 @@ final class InAppPurchaseService implements PurchaseService {
 
     return response.productDetails
         .map(
-          (ProductDetails product) =>
-              StoreProductInfo(id: product.id, localizedPrice: product.price),
+          (ProductDetails product) => StoreProductInfo(
+            id: product.id,
+            localizedPrice: product.price,
+            // On Android rawPrice is Play's priceAmountMicros / 1e6.
+            priceAmountMicros: (product.rawPrice * 1000000).round(),
+            currencyCode: product.currencyCode.isEmpty
+                ? null
+                : product.currencyCode,
+          ),
         )
         .toList(growable: false);
   }

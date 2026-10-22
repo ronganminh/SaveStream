@@ -100,6 +100,12 @@ CreditTransaction _transaction(Object? json) {
     referenceType: _string(map['reference_type'], 'reference_type'),
     referenceId: referenceId is String ? referenceId : null,
     releasedCredits: released is int ? released : null,
+    storeOrderId: _text(map['store_order_id']),
+    packageName: _text(map['package_name']),
+    recordingChannelUsername: _text(map['recording_channel_username']),
+    recordingDurationSeconds: map['recording_duration_seconds'] is int
+        ? map['recording_duration_seconds']! as int
+        : null,
     createdAt: _date(map['created_at'], 'created_at'),
   );
 }
@@ -130,6 +136,11 @@ List<PaymentOrder> decodePaymentOrders(Object? json) {
           },
           credits: _int(order['credits'], 'credits'),
           provider: provider is String ? provider : null,
+          storeOrderId: _text(order['store_order_id']),
+          clientPriceAmountMicros: order['client_price_amount_micros'] is int
+              ? order['client_price_amount_micros']! as int
+              : null,
+          clientPriceCurrency: _text(order['client_price_currency']),
           createdAt: _date(order['created_at'], 'created_at'),
         );
       })
@@ -145,6 +156,9 @@ RewardIntent decodeRewardIntent(Object? json) {
     expiresAt: _date(map['expires_at'], 'expires_at'),
   );
 }
+
+String? _text(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
 
 Map<Object?, Object?> _map(Object? value, String name) {
   if (value is! Map) throw FormatException('Expected $name object.');

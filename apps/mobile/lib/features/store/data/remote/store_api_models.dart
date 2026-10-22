@@ -29,6 +29,7 @@ StorePackage storePackageFromJson(Object? json) {
       appStore: _optionalString(productIds['app_store']),
       googlePlay: _optionalString(productIds['google_play']),
     ),
+    featured: map['featured'] == true,
   );
 }
 

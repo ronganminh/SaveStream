@@ -24,6 +24,7 @@ final class MockStoreRepository extends MockRepositoryBase
         appStore: 'savestream.hours.150',
         googlePlay: 'savestream.hours.150',
       ),
+      featured: true,
     ),
     StorePackage(
       id: 'premium',

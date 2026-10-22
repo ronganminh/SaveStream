@@ -45,13 +45,27 @@ void main() {
                   },
                   'cloud_minutes': 3000,
                 },
+                <String, Object?>{
+                  'id': 'pkg_150',
+                  'name': 'Standard',
+                  'credits': 9000,
+                  'active': true,
+                  'store_product_ids': <String, Object?>{
+                    'google_play': 'savestream.hours.150',
+                  },
+                  'cloud_minutes': 9000,
+                  'featured': true,
+                },
               ],
             });
           }),
         ),
       );
 
-      final List<StorePackage> packages = await repository.listPackages();
+      final List<StorePackage> all = await repository.listPackages();
+      // "Most popular" comes from the server's featured flag.
+      expect(all.map((StorePackage p) => p.featured), <bool>[false, true]);
+      final List<StorePackage> packages = all.take(1).toList();
 
       expect(packages, hasLength(1));
       expect(packages.single.cloudMinutes, 3000);
@@ -98,6 +112,43 @@ void main() {
       expect(result.cloudMinutesAvailable, 4200);
     },
   );
+
+  test('C6 sends the Play price along when it is known', () async {
+    Object? sent;
+    final ApiStoreRepository repository = ApiStoreRepository(
+      apiClient: _clientFor(
+        _FakeAdapter((RequestOptions options) {
+          sent = options.data;
+          return _jsonResponse(200, <String, Object?>{
+            'status': 'credited',
+            'payment_order_id': 'ord_1',
+            'cloud_minutes_added': 9000,
+            'cloud_minutes_available': 9000,
+          });
+        }),
+      ),
+    );
+
+    await repository.submitPurchase(
+      const StorePurchaseRequest(
+        platform: StorePurchasePlatform.googlePlay,
+        productId: 'savestream.hours.150',
+        transactionId: 'GPA.1',
+        receipt: 'token',
+        priceAmountMicros: 24990000,
+        priceCurrencyCode: 'USD',
+      ),
+    );
+
+    expect(sent, <String, Object?>{
+      'platform': 'google_play',
+      'product_id': 'savestream.hours.150',
+      'transaction_id': 'GPA.1',
+      'receipt': 'token',
+      'price_amount_micros': 24990000,
+      'price_currency_code': 'USD',
+    });
+  });
 
   test('C6 maps backend pending without granting success locally', () async {
     final ApiStoreRepository repository = ApiStoreRepository(

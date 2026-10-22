@@ -186,11 +186,13 @@ class RewardedAdController extends Notifier<RewardState> {
         final Object? until = error.apiError?.details['locked_until'];
         final Object? after = error.apiError?.details['retry_after_seconds'];
         final DateTime now = ref.read(creditsClockProvider)();
+        // retry_after_seconds is the server's real window (both codes);
+        // locked_until and the 5-minute default cover older servers.
         DateTime cooldownUntil = now.add(defaultRewardCooldown);
-        if (until is String && DateTime.tryParse(until) != null) {
-          cooldownUntil = DateTime.parse(until).toLocal();
-        } else if (after is int && after > 0) {
+        if (after is int && after > 0) {
           cooldownUntil = now.add(Duration(seconds: after));
+        } else if (until is String && DateTime.tryParse(until) != null) {
+          cooldownUntil = DateTime.parse(until).toLocal();
         }
         state = RewardState(
           phase: RewardPhase.cooldown,

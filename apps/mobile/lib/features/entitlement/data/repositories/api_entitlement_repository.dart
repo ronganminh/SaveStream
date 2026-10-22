@@ -89,6 +89,11 @@ final class ApiEntitlementRepository implements EntitlementRepository {
       canAutoRecord: _optionalBool(map['can_auto_record']),
       trialRecording: _optionalBool(map['trial_recording']),
       ads: _decodeAds(map['ads']),
+      cloudMinutesCycleTotal: _optionalPositiveInt(
+        map['cloud_minutes_cycle_total'],
+      ),
+      lastPackName: _optionalText(map['last_pack_name']),
+      trialUsed: _optionalBool(map['trial_used']),
     );
   }
 
@@ -167,6 +172,12 @@ bool _requiredBool(Object? value, String name) {
 }
 
 bool _optionalBool(Object? value) => value is bool && value;
+
+int? _optionalPositiveInt(Object? value) =>
+    value is int && value > 0 ? value : null;
+
+String? _optionalText(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
 
 int _requiredInt(Object? value, String name) {
   if (value is! int || value < 0) {

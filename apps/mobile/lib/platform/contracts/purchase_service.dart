@@ -1,10 +1,19 @@
 class StoreProductInfo {
-  const StoreProductInfo({required this.id, required this.localizedPrice});
+  const StoreProductInfo({
+    required this.id,
+    required this.localizedPrice,
+    this.priceAmountMicros,
+    this.currencyCode,
+  });
 
   final String id;
 
   /// Price as Google Play formats it for the user's country and currency.
   final String localizedPrice;
+
+  /// The same price in micros (24990000 = 24.99) and its ISO 4217 code.
+  final int? priceAmountMicros;
+  final String? currencyCode;
 }
 
 enum PurchaseEventStatus {

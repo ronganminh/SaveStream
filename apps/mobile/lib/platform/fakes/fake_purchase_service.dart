@@ -42,7 +42,12 @@ final class FakePurchaseService implements PurchaseService {
     return ids
         .where(prices.containsKey)
         .map(
-          (String id) => StoreProductInfo(id: id, localizedPrice: prices[id]!),
+          (String id) => StoreProductInfo(
+            id: id,
+            localizedPrice: prices[id]!,
+            priceAmountMicros: _micros(prices[id]!),
+            currencyCode: prices[id]!.startsWith(r'$') ? 'USD' : null,
+          ),
         )
         .toList(growable: false);
   }
@@ -93,4 +98,12 @@ final class FakePurchaseService implements PurchaseService {
   }
 
   Future<void> dispose() => _events.close();
+
+  /// "$24.99" → 24990000 (null when the preview price has no number).
+  static int? _micros(String price) {
+    final double? value = double.tryParse(
+      price.replaceAll(RegExp(r'[^0-9.]'), ''),
+    );
+    return value == null ? null : (value * 1000000).round();
+  }
 }

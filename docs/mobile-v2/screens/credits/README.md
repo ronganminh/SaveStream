@@ -43,11 +43,13 @@ channel "Buy minutes", the watch-limit and upsell sheets, notification routes th
 
 - Balance: `GET /v1/me/entitlement` (`cloud_minutes_available`, `ads`) and
   `GET /v1/credits/balance` (refund debt).
-- Packs: `GET /v1/billing/packages` (name, minutes, `store_product_ids.google_play`). Prices are
-  only ever Google Play's `ProductDetails.price`; a pack Play doesn't return is not offered.
+- Packs: `GET /v1/billing/packages` (name, minutes, `store_product_ids.google_play`, `featured`).
+  Prices are only ever Google Play's `ProductDetails.price`; a pack Play doesn't return is not
+  offered.
 - Purchase: Play Billing via `in_app_purchase` with `obfuscatedAccountId = sha256(user id)`
   (user id from `GET /v1/me`), then `POST /v1/billing/store-purchases` (`transaction_id` = Play
-  order id, or the purchase token when Play has none; `receipt` = purchase token). `credited` →
+  order id, or the purchase token when Play has none; `receipt` = purchase token; optional
+  `price_amount_micros` / `price_currency_code` from Play's ProductDetails, display only). `credited` →
   the pack is consumed on the device and the success screen opens; `pending`/`payment_pending`
   (or Play's own PENDING) → Payment pending; Play errors → the failed dialog. Unconfirmed
   purchases stay in the durable retry queue.
@@ -58,25 +60,27 @@ channel "Buy minutes", the watch-limit and upsell sheets, notification routes th
   `RewardedAd` with `ServerSideVerificationOptions(userId: ssv_user_id, customData:
   ssv_custom_data)` → poll `GET /v1/rewards/{id}` until `valid` (AdMob SSV reached the server),
   then refresh entitlement, balance and ledger. UMP consent is gathered before the first ad.
-- Usage history: `GET /v1/credits/transactions` (last 14 days, up to 5 pages); channel names and
-  lengths from the user's recordings; pack names via `GET /v1/billing/payment-orders` +
-  packages.
-- Purchases & usage: `GET /v1/billing/payment-orders` filtered to `provider = google_play`.
+- Usage history: `GET /v1/credits/transactions` (last 14 days, up to 5 pages) with the ledger's
+  `recording_channel_username` / `recording_duration_seconds` and `package_name` /
+  `store_order_id`; older servers without them fall back to the user's recordings and
+  `GET /v1/billing/payment-orders` + packages.
+- Purchases & usage: `GET /v1/billing/payment-orders` filtered to `provider = google_play`
+  (`store_order_id`, `client_price_amount_micros` / `client_price_currency`).
 
 ## Intentional differences
 
 **Prices (all).** The artboards' `[PRICE]` is the Play-formatted price; screenshots use the
 fake store's `$9.99 / $24.99 / $59.99`. The app never contains a price.
 
-**Balance bar (ACredits and the dialogs behind it).** As on Home (#236), the bar shows only for the
-free trial: the entitlement has no "total minutes" to compare a purchased balance with.
+**Balance bar (ACredits and the dialogs behind it, and Home).** The bar compares the balance with
+the entitlement's `cloud_minutes_cycle_total`. When the server sends none (no top-up yet, or an
+older server) it shows only for the free trial (out of 10 minutes).
 
-**Most popular.** The server has no featured flag; with three or more packs the middle one is
-marked.
+**Most popular.** The pack the server marks `featured`; none is marked when no pack is featured.
 
 **Cooldown (ARewardCooldown).** The server has no cooldown between ads. The countdown is shown when
-`POST /v1/rewards` answers 429 (`REWARD_LOCKED` uses `locked_until`; `RATE_LIMITED` has no time,
-so the app waits 5 minutes).
+`POST /v1/rewards` answers 429, for `details.retry_after_seconds` (`RATE_LIMITED` and
+`REWARD_LOCKED`); older servers: `locked_until`, else 5 minutes.
 
 **Rewarded card states.** `REWARDED_ADS_UNAVAILABLE` (409) or `SERVICE_UNAVAILABLE` hides the card;
 the daily cap (`REWARD_DAILY_CAP_REACHED` or `rewards_left_today = 0`) shows the limit line; an
@@ -95,13 +99,15 @@ have none).
 
 **Usage history (AUsageHistory).** The chart sums recording charges per local day for 14 days; the
 list shows every fetched ledger entry (the drawn "Free trial · Oct 2" is older than the chart).
-The pack row has no `GPA.` order id (the ledger has none). A recording's hold release is hidden
-when the recording was charged; an uncharged one is "Failed recording · refunded · 0 min".
-Recordings no longer in the first page of the list show "Recording" without the channel.
+The pack row shows the `GPA.` order id when the ledger has one (not for promo codes). A
+recording's hold release is hidden when the recording was charged; an uncharged one is "Failed
+recording · refunded · 0 min". On older servers, recordings no longer in the first page of the
+list show "Recording" without the channel.
 
-**Purchases (APurchases).** Rows show pack, hours, date and status (Added / Pending / Refunded /
-Not completed) but no order id or price: payment orders store the token hash and the web list
-price, not Play's order id or the charged local price.
+**Purchases (APurchases).** Rows show pack, hours, date, Play's order id (`store_order_id`) and
+the Play price the app reported when it bought (`client_price_*`, formatted for the device
+locale), and the status (Added / Pending / Refunded / Not completed). Orders without them (older
+purchases, promo codes) show only what they have.
 
 **Ad privacy (AAdPrivacy).** "Personalized ads" is stored on the device and **on by default** (the
 owner's decision; the artboard draws it off); off sends non-personalized ad requests (npa=1). In

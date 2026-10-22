@@ -183,10 +183,12 @@ void main() {
           message: 'Reward verification is temporarily locked',
           retryable: true,
           details: <String, Object?>{
+            // An older field; retry_after_seconds wins.
             'locked_until': _now
-                .add(const Duration(minutes: 4, seconds: 32))
+                .add(const Duration(minutes: 9))
                 .toUtc()
                 .toIso8601String(),
+            'retry_after_seconds': 272,
           },
         ),
       ),
@@ -260,6 +262,9 @@ void main() {
       'ca010ec7feb32be7e30002f602d7c2ab062fb7a2be105ae6b8b1fb739cb72c77',
     );
     expect(harness.submitted.single.receipt, 'fake-token-savestream.hours.150');
+    // Play's price goes along, display only.
+    expect(harness.submitted.single.priceAmountMicros, 24990000);
+    expect(harness.submitted.single.priceCurrencyCode, 'USD');
     // Consumed only after the server credited it.
     expect(harness.store.completedTransactions, <String>['GPA.0000-1']);
     expect(find.text('150 hours added'), findsOneWidget);
@@ -363,6 +368,7 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('Standard pack · Google Play'), findsOneWidget);
+    expect(find.text('Oct 15 · GPA.3312-4507-8812-34567'), findsOneWidget);
     expect(find.text('+150 h'), findsOneWidget);
     expect(find.text('Free trial'), findsOneWidget);
     expect(find.text('Oct 2 · after email verification'), findsOneWidget);
@@ -374,6 +380,12 @@ void main() {
     expect(find.text('Standard · 150 h'), findsOneWidget);
     expect(find.text('Starter · 50 h'), findsOneWidget);
     expect(find.text('Added'), findsNWidgets(2));
+    expect(
+      find.text(r'Oct 15, 2026 · GPA.3312-4507-8812-34567 · $24.99'),
+      findsOneWidget,
+    );
+    // An order from before the app sent prices shows what it has.
+    expect(find.text('Sep 2, 2026 · GPA.3301-2290-1174-56012'), findsOneWidget);
     await captureScreen(tester, 'APurchases');
   });
 
@@ -495,6 +507,9 @@ class _FakeApi
     emailVerified: true,
     canAutoRecord: true,
     cloudMinutesAvailable: h.minutes,
+    cloudMinutesCycleTotal: h.purchased ? 1580 : null,
+    lastPackName: h.purchased ? 'Standard' : null,
+    trialUsed: true,
     limits: const EntitlementLimits(
       maxWatches: 5,
       maxConcurrentCloudRecordings: 1,
@@ -579,6 +594,9 @@ class _FakeApi
       status: PaymentOrderStatus.paid,
       credits: 9000,
       provider: 'google_play',
+      storeOrderId: 'GPA.3312-4507-8812-34567',
+      clientPriceAmountMicros: 24990000,
+      clientPriceCurrency: 'USD',
       createdAt: DateTime(2026, 10, 15, 12),
     ),
     PaymentOrder(
@@ -595,6 +613,7 @@ class _FakeApi
       status: PaymentOrderStatus.paid,
       credits: 3000,
       provider: 'google_play',
+      storeOrderId: 'GPA.3301-2290-1174-56012',
       createdAt: DateTime(2026, 9, 2, 12),
     ),
   ];
@@ -611,6 +630,10 @@ class _FakeApi
       String reference,
       DateTime at, {
       String? referenceId,
+      String? channel,
+      int? seconds,
+      String? storeOrderId,
+      String? packageName,
     }) => CreditTransaction(
       id: id,
       type: type,
@@ -618,6 +641,10 @@ class _FakeApi
       balanceAfter: 0,
       referenceType: reference,
       referenceId: referenceId,
+      recordingChannelUsername: channel,
+      recordingDurationSeconds: seconds,
+      storeOrderId: storeOrderId,
+      packageName: packageName,
       createdAt: at,
     );
     const CreditTransactionType charge = CreditTransactionType.charge;
@@ -629,7 +656,10 @@ class _FakeApi
           -99,
           'recording',
           DateTime(2026, 10, 21, 21),
-          referenceId: 'r-shop',
+          // From the ledger (r-gaming below falls back to the recordings).
+          referenceId: 'r-ledger-only',
+          channel: 'my_shop_live',
+          seconds: 5940,
         ),
         tx(
           't1r',
@@ -637,7 +667,7 @@ class _FakeApi
           0,
           'recording',
           DateTime(2026, 10, 21, 21),
-          referenceId: 'r-shop',
+          referenceId: 'r-ledger-only',
         ),
         tx(
           't2',
@@ -686,6 +716,8 @@ class _FakeApi
           'payment_order',
           DateTime(2026, 10, 15, 12),
           referenceId: 'ord_std',
+          storeOrderId: 'GPA.3312-4507-8812-34567',
+          packageName: 'Standard',
         ),
         tx(
           't6',

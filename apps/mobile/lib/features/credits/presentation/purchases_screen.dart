@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../core/config/app_config.dart';
@@ -221,9 +222,28 @@ class _PurchasesScreenState extends ConsumerState<PurchasesScreen> {
       title: name == null
           ? formatRecordingMinutes(l10n, order.credits)
           : l10n.crPackLabel(name, hours),
-      subtitle: creditsLongDate(context, order.createdAt),
+      subtitle: <String>[
+        creditsLongDate(context, order.createdAt),
+        ?order.storeOrderId,
+        ?_price(context, order),
+      ].join(' · '),
       trailing: status,
       trailingColor: color,
     );
+  }
+
+  /// The Play price the app reported when it bought, in the user's locale.
+  static String? _price(BuildContext context, PaymentOrder order) {
+    final int? micros = order.clientPriceAmountMicros;
+    final String? currency = order.clientPriceCurrency;
+    if (micros == null || currency == null) return null;
+    try {
+      return NumberFormat.simpleCurrency(
+        locale: Localizations.localeOf(context).toLanguageTag(),
+        name: currency,
+      ).format(micros / 1000000);
+    } on Object {
+      return null;
+    }
   }
 }

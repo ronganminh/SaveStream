@@ -545,16 +545,13 @@ class _Packs extends ConsumerWidget {
         final bool busy =
             purchase.phase == CloudHoursPurchasePhase.processing ||
             purchase.phase == CloudHoursPurchasePhase.restoring;
-        // The server has no "featured" flag; with three or more packs the
-        // middle one is marked, as drawn.
-        final int popular = items.length >= 3 ? items.length ~/ 2 : -1;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: ssV2Gap(<Widget>[
             for (int i = 0; i < items.length; i++)
               _PackTile(
                 offer: items[i],
-                popular: i == popular,
+                popular: items[i].package.featured,
                 processing:
                     purchase.phase == CloudHoursPurchasePhase.processing &&
                     purchase.selectedProductId == items[i].productId,

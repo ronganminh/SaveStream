@@ -32,6 +32,8 @@ final class ApiStoreRepository implements StoreRepository {
         'product_id': request.productId,
         'transaction_id': request.transactionId,
         'receipt': request.receipt,
+        'price_amount_micros': ?request.priceAmountMicros,
+        'price_currency_code': ?request.priceCurrencyCode,
       },
       decoder: storePurchaseResultFromJson,
     );

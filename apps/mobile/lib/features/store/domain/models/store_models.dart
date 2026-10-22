@@ -13,12 +13,16 @@ class StorePackage {
     required this.name,
     required this.cloudMinutes,
     required this.productIds,
+    this.featured = false,
   });
 
   final String id;
   final String name;
   final int cloudMinutes;
   final StoreProductIds productIds;
+
+  /// `featured`: the server's "Most popular" pack.
+  final bool featured;
 }
 
 class StorePurchaseRequest {
@@ -27,12 +31,19 @@ class StorePurchaseRequest {
     required this.productId,
     required this.transactionId,
     required this.receipt,
+    this.priceAmountMicros,
+    this.priceCurrencyCode,
   });
 
   final StorePurchasePlatform platform;
   final String productId;
   final String transactionId;
   final String receipt;
+
+  /// The price the store showed (ProductDetails), display only: the server
+  /// stores it on the payment order and never uses it for accounting.
+  final int? priceAmountMicros;
+  final String? priceCurrencyCode;
 }
 
 enum StorePurchaseStatus { credited, pending, rejected }
