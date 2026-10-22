@@ -437,5 +437,6 @@ Khai báo ngoài bảng:
 8. **Tên trên store và câu "not affiliated"**: chọn tên app (không có chữ TikTok).
 9. **Download/Share** trên app: giữ Download, bỏ Share ở bản đầu?
 10. **iOS**: để sau hoàn toàn? Nếu có, sẽ cần Sign in with Apple và StoreKit (code backend đã có, đang tắt).
-11. **Privacy Policy mobile**: bổ sung FCM, AdMob, Play Billing. Tôi sẽ soạn câu chữ để duyệt trước khi merge, giống lần PostHog.
+11. ~~**Privacy Policy mobile**: bổ sung FCM, AdMob, Play Billing.~~ **Đã quyết:** mục "SaveStream Android app" trong Privacy, Terms (thanh toán Google Play) và Refund Policy (PR #244); bản ghi rewarded giữ 12 tháng (job `savestream.rewards.retention`) và không thu tên thiết bị; tên thiết bị đã lưu được xoá bằng migration `0036_device_name_optional` (PR #245).
 12. **Firebase**: dùng project Firebase hiện tại (đang dùng cho Google sign-in web) cho app Android luôn không?
+13. **`local_recording_sessions.device_name` (v1 ghi trên máy)**: các phiên ghi on-device cũ của v1 vẫn còn tên model thiết bị (cột NOT NULL, có trong API). **Chưa xoá lúc này.** Đề xuất: sau khi v2 lên Production và không còn client v1 gọi API local recording, bỏ hẳn cột này (hoặc thay bằng device id) bằng một migration riêng, cùng lúc gỡ API local recording của v1.
