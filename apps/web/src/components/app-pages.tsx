@@ -3787,9 +3787,11 @@ function failureCopy(recording: RecordingModel) {
   }
   return {
     why: recording.error || "Something went wrong while recording this LIVE.",
-    todo: recording.partialDuration
-      ? `${recording.partialDuration} was saved — open the recording to download the partial file.`
-      : "If it keeps happening on this channel, report a problem so we can look into it.",
+    todo: recording.failureGuidance
+      ? recording.failureGuidance
+      : recording.partialDuration
+        ? `${recording.partialDuration} was saved — open the recording to download the partial file.`
+        : "If it keeps happening on this channel, report a problem so we can look into it.",
   };
 }
 
