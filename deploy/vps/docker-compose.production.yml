@@ -60,6 +60,10 @@ x-app-env: &app-env
   # stored in the deployment.
   SAVESTREAM_REWARD_PROVIDER: ${SAVESTREAM_REWARD_PROVIDER:-admob}
   SAVESTREAM_ADMOB_SSV_KEYS_URL: https://www.gstatic.com/admob/reward/verifier-keys.json
+  # Rewarded ad units accepted by SSV (not secret): the existing Android
+  # rewarded unit from v1 (same app com.savestream.app). Empty turns rewarded
+  # ads off (REWARDED_ADS_UNAVAILABLE).
+  SAVESTREAM_ADMOB_REWARD_AD_UNITS: ${SAVESTREAM_ADMOB_REWARD_AD_UNITS-ca-app-pub-2078852906622512/5155016450}
 
   # Web checkout supports PayPal Business. Keep disabled until LIVE credentials
   # are installed and the release payment smoke has passed.

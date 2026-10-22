@@ -292,7 +292,8 @@ class AppSettings:
     reward_cloud_device_daily_cap: int = 6
     reward_cloud_intent_seconds: int = 3_600
     reward_intents_per_hour: int = 20
-    # AdMob rewarded ad unit ids accepted by SSV (empty: any unit of the app).
+    # AdMob rewarded ad unit ids accepted by SSV. Empty keeps rewarded ads
+    # off: creating one is refused with REWARDED_ADS_UNAVAILABLE.
     admob_reward_ad_units: tuple[str, ...] = ()
     admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
 

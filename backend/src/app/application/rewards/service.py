@@ -36,6 +36,18 @@ def aware(value: datetime) -> datetime:
     return value
 
 
+def cloud_rewards_enabled(settings: AppSettings) -> bool:
+    """Rewarded ads stay off until an AdMob ad unit is configured
+    (SAVESTREAM_ADMOB_REWARD_AD_UNITS); the API then refuses them cleanly."""
+    return settings.reward_provider != "disabled" and bool(settings.admob_reward_ad_units)
+
+
+def ad_unit_key(value: str | None) -> str:
+    """AdMob SSV sends the ad unit's numeric part (``5155016450``); config
+    may hold the full id (``ca-app-pub-…/5155016450``)."""
+    return (value or "").strip().rsplit("/", 1)[-1]
+
+
 def reward_day(now: datetime) -> tuple[datetime, datetime]:
     """The UTC day rewarded-ad caps count in (resets at 00:00 UTC)."""
     start = datetime.combine(now.date(), time.min, tzinfo=timezone.utc)
@@ -149,6 +161,13 @@ class RewardService:
         payload: CreateRewardRequest,
         now: datetime,
     ) -> RewardIntent:
+        if not cloud_rewards_enabled(self.settings):
+            raise ApplicationError(
+                "REWARDED_ADS_UNAVAILABLE",
+                "Rewarded ads are not available right now",
+                status_code=409,
+                retryable=False,
+            )
         user = await self.session.get(User, user_id)
         if user is None or user.email_verified_at is None:
             raise ApplicationError(
@@ -420,9 +439,9 @@ class RewardService:
         reward.transaction_id = callback.transaction_id
         reward.verified_at = now
         reward.ad_unit = callback.ad_unit
-        if (units and callback.ad_unit not in units) or (
-            callback.reward_amount is not None and callback.reward_amount != minutes
-        ):
+        # The reward amount set in AdMob is ignored: every valid callback from
+        # an allowed ad unit adds the configured cloud minutes.
+        if ad_unit_key(callback.ad_unit) not in {ad_unit_key(unit) for unit in units}:
             reward.status = "invalid"
             await self.session.commit()
             return reward

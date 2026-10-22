@@ -9,6 +9,7 @@ import asyncio
 import base64
 import uuid
 from dataclasses import replace
+from datetime import timedelta
 
 import httpx
 import pytest
@@ -36,6 +37,7 @@ DEVICE = "install-0001"
 
 
 def _settings(tmp_path, name: str, **changes):
+    changes.setdefault("admob_reward_ad_units", ("ca-app-pub-1/2",))
     return replace(
         identity_settings(f"sqlite+aiosqlite:///{tmp_path / name}"),
         reward_provider="fake",
@@ -197,7 +199,7 @@ def test_unverified_email_missing_device_and_rate_limit(tmp_path) -> None:
     _run(settings, body)
 
 
-def test_forged_wrong_unit_wrong_amount_and_expired_callbacks(tmp_path) -> None:
+def test_forged_wrong_unit_any_amount_and_expired_callbacks(tmp_path) -> None:
     settings = _settings(tmp_path, "forged.db", admob_reward_ad_units=("ca-app-pub-1/2",))
 
     async def body(session) -> None:
@@ -220,11 +222,15 @@ def test_forged_wrong_unit_wrong_amount_and_expired_callbacks(tmp_path) -> None:
         )
         assert result.status == "invalid"
 
-        wrong_amount = await service.create(
+        # Whatever reward amount AdMob reports (v1 used 10), the server adds
+        # its own 5 minutes; SSV sends only the numeric part of the ad unit.
+        any_amount = await service.create(
             user.id, CreateRewardRequest(purpose="cloud_minutes", device_id=DEVICE)
         )
-        result = await service.apply_callback(_callback(wrong_amount, "amount", reward_amount=50))
-        assert result.status == "invalid"
+        result = await service.apply_callback(
+            _callback(any_amount, "amount", reward_amount=10, ad_unit="2")
+        )
+        assert result.status == "valid" and result.credits_granted == 5
 
         late = await service.create(
             user.id, CreateRewardRequest(purpose="cloud_minutes", device_id=DEVICE)
@@ -239,7 +245,7 @@ def test_forged_wrong_unit_wrong_amount_and_expired_callbacks(tmp_path) -> None:
         )
         with pytest.raises(ApplicationError):
             await service.apply_callback(_callback(other, "real"))
-        assert (await CreditService(session).balance(user.id)).posted == 5
+        assert (await CreditService(session).balance(user.id)).posted == 10
 
     _run(settings, body)
 
@@ -322,3 +328,32 @@ def test_unknown_admob_key_refreshes_the_key_set() -> None:
         assert callback.ad_unit == "ca-app-pub-1/2" and callback.reward_amount == 5
 
     asyncio.run(run())
+
+
+def test_rewarded_ads_stay_off_without_an_ad_unit(tmp_path) -> None:
+    """Until the owner sends the AdMob ad unit id, the API refuses cleanly."""
+    settings = _settings(tmp_path, "off.db", admob_reward_ad_units=())
+
+    async def body(session) -> None:
+        user = await _user(session, "early@example.com")
+        with pytest.raises(ApplicationError) as off:
+            await RewardService(session, settings).create(
+                user.id, CreateRewardRequest(purpose="cloud_minutes", device_id=DEVICE)
+            )
+        assert off.value.code == "REWARDED_ADS_UNAVAILABLE"
+        assert off.value.status_code == 409
+        ads = (await EntitlementService(session, settings).get(user.id)).ads
+        assert ads.rewarded_available is False and ads.show_banners is True
+
+        # A callback for an old intent can't credit anything either.
+        intent = RewardIntent(
+            user_id=user.id, purpose="cloud_minutes", status="pending",
+            device_id=DEVICE, expires_at=utcnow() + timedelta(hours=1),
+        )
+        session.add(intent)
+        await session.commit()
+        result = await RewardService(session, settings).apply_callback(_callback(intent, "t"))
+        assert result.status == "invalid"
+        assert (await CreditService(session).balance(user.id)).posted == 0
+
+    _run(settings, body)

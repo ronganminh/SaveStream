@@ -8,6 +8,7 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.rewards.service import cloud_rewards_enabled
 from app.application.runtime_settings import RuntimeSettingsService
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
@@ -240,7 +241,7 @@ class EntitlementService:
         rewards_left = max(cloud_cap - cloud_used, 0)
         ads = AdsEntitlementSnapshot(
             rewarded_available=(
-                self.settings.reward_provider != "disabled"
+                cloud_rewards_enabled(self.settings)
                 and email_verified
                 and cloud_minutes > 0
                 and rewards_left > 0
