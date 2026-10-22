@@ -2,27 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../entitlement/domain/models/entitlement.dart';
 import '../../domain/models/recording_summary.dart';
-import '../models/recording_library_item.dart';
 import 'recording_providers.dart';
 
-/// The recordings library lists cloud recordings only.
-final FutureProvider<List<RecordingLibraryItem>> recordingLibraryProvider =
-    FutureProvider<List<RecordingLibraryItem>>((Ref ref) async {
-      final List<RecordingSummary> cloud = await ref
-          .watch(recordingRepositoryProvider)
-          .listRecordings();
-
-      final List<RecordingLibraryItem> items = cloud
-          .where((RecordingSummary item) => item.engine == Engine.cloud)
-          .map(libraryItemFromCloud)
-          .toList();
-
-      items.sort((RecordingLibraryItem a, RecordingLibraryItem b) {
-        final DateTime aDate =
-            a.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-        final DateTime bDate =
-            b.startedAt ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-        return bDate.compareTo(aDate);
-      });
-      return List<RecordingLibraryItem>.unmodifiable(items);
+/// Every cloud recording of the account, newest first. The library filters
+/// it on the device because the API filters by one status at a time.
+final FutureProvider<List<RecordingSummary>> recordingLibraryProvider =
+    FutureProvider<List<RecordingSummary>>((Ref ref) async {
+      // Stop, delete and other mutations bump the revision.
+      ref.watch(recordingRevisionProvider);
+      final List<RecordingSummary> items =
+          (await ref.watch(recordingRepositoryProvider).listRecordings())
+              .where((RecordingSummary item) => item.engine == Engine.cloud)
+              .toList();
+      // Not started yet (queued, waiting for the LIVE) sorts first.
+      final DateTime notStarted = DateTime.utc(9999);
+      items.sort(
+        (RecordingSummary a, RecordingSummary b) =>
+            (b.startedAt ?? notStarted).compareTo(a.startedAt ?? notStarted),
+      );
+      return List<RecordingSummary>.unmodifiable(items);
     });

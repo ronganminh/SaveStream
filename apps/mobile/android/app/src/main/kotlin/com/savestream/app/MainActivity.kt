@@ -11,10 +11,15 @@ import android.os.StatFs
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.io.File
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : FlutterActivity() {
     private val deviceInfoChannel = "savestream/device_info"
     private val pushChannel = "savestream/push"
+    private val downloadsChannel = "savestream/downloads"
+    private val ioExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -89,6 +94,54 @@ class MainActivity : FlutterActivity() {
                     result.success(stats.availableBytes)
                 }
                 else -> result.notImplemented()
+            }
+        }
+
+        // "Save to device": copies a finished download into Downloads/SaveStream.
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            downloadsChannel,
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "save" -> {
+                    val sourcePath = call.argument<String>("source_path")
+                    val displayName = call.argument<String>("display_name")
+                    val mimeType = call.argument<String>("mime_type") ?: "video/mp4"
+                    if (sourcePath == null || displayName == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing source or name.", null)
+                    } else {
+                        runOffMainThread(result) {
+                            SaveStreamDownloads.save(applicationContext, File(sourcePath), displayName, mimeType)
+                        }
+                    }
+                }
+                "find" -> {
+                    val displayName = call.argument<String>("display_name")
+                    if (displayName == null) {
+                        result.error("INVALID_ARGUMENTS", "Missing name.", null)
+                    } else {
+                        runOffMainThread(result) {
+                            SaveStreamDownloads.find(applicationContext, displayName)
+                        }
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        ioExecutor.shutdown()
+        super.onDestroy()
+    }
+
+    private fun runOffMainThread(result: MethodChannel.Result, work: () -> Any?) {
+        ioExecutor.execute {
+            try {
+                val value = work()
+                runOnUiThread { result.success(value) }
+            } catch (error: Exception) {
+                runOnUiThread { result.error("DOWNLOADS_FAILED", error.message, null) }
             }
         }
     }

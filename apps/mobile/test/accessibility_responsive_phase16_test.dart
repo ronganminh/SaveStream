@@ -101,7 +101,9 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-      await tester.pumpAndSettle();
+      // Spinners and timers on the Recordings tab never settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byKey(const ValueKey<String>('nav-account')));

@@ -128,41 +128,31 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Ada Live'), findsOneWidget);
-    await tester.tap(find.text('Ada Live'));
+    expect(find.text('@ada_live · LIVE now'), findsOneWidget);
+    await tester.tap(find.text('@ada_live · LIVE now'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byType(RecordingDetailScreen), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Stop recording'),
-      320,
-      scrollable: find.byType(Scrollable).last,
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('player-stop')),
     );
-
-    final Finder stopButton = find.widgetWithText(
-      FilledButton,
-      'Stop recording',
-    );
-    await tester.ensureVisible(stopButton);
     await tester.pump();
-    await tester.tap(stopButton);
+    await tester.tap(find.byKey(const ValueKey<String>('player-stop')));
     await tester.pumpAndSettle();
 
     expect(find.text('Stop cloud recording?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording').last);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
+    // The processing spinner keeps animating, so pump instead of settling.
+    for (int i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
     await tester.pump();
 
     expect(repository.stopCalls, 1);
     expect(find.text('Stop recording'), findsNothing);
-
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Stopped'), findsWidgets);
+    // Stopped on the server; the video is still being prepared.
+    expect(find.text('Processing your recording…'), findsOneWidget);
   });
 }
 

@@ -67,6 +67,8 @@ class RecordingArtifactSummary {
     required this.sizeBytes,
     required this.checksumSha256,
     required this.createdAt,
+    this.width,
+    this.height,
   });
 
   final String id;
@@ -74,6 +76,10 @@ class RecordingArtifactSummary {
   final int sizeBytes;
   final String checksumSha256;
   final DateTime createdAt;
+
+  /// Video size probed by the server; null for older artifacts.
+  final int? width;
+  final int? height;
 }
 
 class ArtifactDownloadUrl {
@@ -135,10 +141,13 @@ class RecordingSummary {
     this.thumbnailReady = false,
     this.errorCode,
     this.errorMessage,
+    this.failureReason,
+    this.failureGuidance,
     this.engine = Engine.cloud,
     this.expiresAt,
     this.minutesCharged = 0,
     this.queuePosition,
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -160,10 +169,22 @@ class RecordingSummary {
   final bool thumbnailReady;
   final String? errorCode;
   final String? errorMessage;
+
+  /// The server's plain-English reason a recording failed or was missed
+  /// (`failure_reason`), preferred over the raw `error.message`.
+  final String? failureReason;
+
+  /// The server's suggested next step that goes with [failureReason]
+  /// (`failure_guidance`).
+  final String? failureGuidance;
   final Engine engine;
   final DateTime? expiresAt;
   final int minutesCharged;
   final int? queuePosition;
+
+  /// Signed URL of one frame of the finished video (`thumbnail_url`); null
+  /// until the server has one.
+  final String? thumbnailUrl;
 
   bool get isActiveLifecycle {
     return switch (status) {
@@ -201,10 +222,13 @@ class RecordingSummary {
     bool? thumbnailReady,
     String? errorCode,
     String? errorMessage,
+    String? failureReason,
+    String? failureGuidance,
     Engine? engine,
     DateTime? expiresAt,
     int? minutesCharged,
     int? queuePosition,
+    String? thumbnailUrl,
   }) {
     return RecordingSummary(
       id: id,
@@ -226,10 +250,13 @@ class RecordingSummary {
       thumbnailReady: thumbnailReady ?? this.thumbnailReady,
       errorCode: errorCode ?? this.errorCode,
       errorMessage: errorMessage ?? this.errorMessage,
+      failureReason: failureReason ?? this.failureReason,
+      failureGuidance: failureGuidance ?? this.failureGuidance,
       engine: engine ?? this.engine,
       expiresAt: expiresAt ?? this.expiresAt,
       minutesCharged: minutesCharged ?? this.minutesCharged,
       queuePosition: queuePosition ?? this.queuePosition,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 }

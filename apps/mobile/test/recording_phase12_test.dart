@@ -3,15 +3,19 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/core/api/access_token_provider.dart';
 import 'package:savestream_mobile/core/api/api_client.dart';
 import 'package:savestream_mobile/core/api/idempotency.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/features/recordings/data/remote/recording_api_models.dart';
 import 'package:savestream_mobile/features/recordings/data/remote/recording_event_source.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
+import 'package:savestream_mobile/features/recordings/presentation/recording_v2_parts.dart';
+import 'package:savestream_mobile/l10n/l10n.dart';
 
 void main() {
   AppConfig config() {
@@ -330,6 +334,86 @@ void main() {
     expect(artifacts.single.sizeBytes, 1234);
     expect(first.uri, isNot(second.uri));
     expect(downloadCalls, 2);
+  });
+
+  test('prefers failure_reason and failure_guidance over error.message', () {
+    final AppLocalizations l10n = lookupAppLocalizations(const Locale('en'));
+    final RecordingSummary explained = RecordingApiModel.fromJson(
+      <String, Object?>{
+        ..._recordingJson(id: 'rec-1', status: 'failed', canStop: false),
+        'error': <String, Object?>{
+          'code': 'INTERNAL_ERROR',
+          'message': 'Artifact upload failed: s3 timeout',
+          'retryable': false,
+        },
+        'failure_reason': ' We couldn’t save this recording. ',
+        'failure_guidance': 'Try recording the next LIVE.',
+      },
+    ).toDomain();
+    expect(explained.failureReason, 'We couldn’t save this recording.');
+    expect(explained.failureGuidance, 'Try recording the next LIVE.');
+    expect(failureReason(l10n, explained), 'We couldn’t save this recording.');
+    expect(failureAdvice(l10n, explained), 'Try recording the next LIVE.');
+
+    // Localized advice for a known error code still wins over the guidance.
+    expect(
+      failureAdvice(l10n, explained.copyWith(errorCode: 'STREAM_OFFLINE')),
+      l10n.v2RecAdviceStream,
+    );
+
+    // Older servers (or unusable values) fall back to error.message.
+    final RecordingSummary legacy =
+        RecordingApiModel.fromJson(<String, Object?>{
+          ..._recordingJson(id: 'rec-2', status: 'failed', canStop: false),
+          'failure_reason': 42,
+          'failure_guidance': '  ',
+        }).toDomain();
+    expect(legacy.failureReason, isNull);
+    expect(legacy.failureGuidance, isNull);
+    expect(failureReason(l10n, legacy), 'Stream ended.');
+  });
+
+  test('decodes thumbnail_url, expiry, failure and artifact video size', () {
+    final RecordingSummary recording = RecordingApiModel.fromJson(
+      <String, Object?>{
+        ..._recordingJson(id: 'rec-1', status: 'failed', canStop: false),
+        'thumbnail_url': 'https://media.example.com/o/thumb.jpg?s=1',
+        'expires_at': '2026-11-14T20:01:00Z',
+        'minutes_charged': 0,
+        'error': <String, Object?>{
+          'code': 'STREAM_OFFLINE',
+          'message': 'The source is currently offline',
+          'retryable': false,
+        },
+      },
+    ).toDomain();
+    expect(recording.thumbnailUrl, 'https://media.example.com/o/thumb.jpg?s=1');
+    expect(recording.expiresAt, DateTime.utc(2026, 11, 14, 20, 1));
+    expect(recording.errorCode, 'STREAM_OFFLINE');
+    expect(recording.errorMessage, 'The source is currently offline');
+
+    // A missing or unusable thumbnail only drops the image.
+    final RecordingSummary bare = RecordingApiModel.fromJson(<String, Object?>{
+      ..._recordingJson(id: 'rec-2'),
+      'thumbnail_url': 'javascript:alert(1)',
+    }).toDomain();
+    expect(bare.thumbnailUrl, isNull);
+
+    final RecordingArtifactSummary artifact =
+        RecordingArtifactApiModel.fromJson(<String, Object?>{
+          'id': 'artifact-1',
+          'recording_id': 'rec-1',
+          'kind': 'video',
+          'container': 'mp4',
+          'size_bytes': 1234,
+          'checksum_sha256': 'abc123',
+          'width': 1080,
+          'height': 1920,
+          'duration_ms': 5942000,
+          'created_at': '2026-10-01T04:00:00Z',
+        }).toDomain();
+    expect(artifact.width, 1080);
+    expect(artifact.height, 1920);
   });
 
   test('SSE supplies bearer and Last-Event-ID and decodes progress', () async {

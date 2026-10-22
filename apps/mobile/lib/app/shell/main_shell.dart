@@ -28,10 +28,12 @@ class MainShell extends ConsumerWidget {
     final List<ActiveRecordingBarItem> activeRecordings = ref.watch(
       activeRecordingBarItemsProvider,
     );
-    // Home already shows each recording in its "Live now" card, and the
-    // Channels list and channel screens show it on the channel itself.
+    // Home already shows each recording in its "Live now" card, the
+    // Channels list and channel screens show it on the channel itself, and
+    // the Recordings library shows it as a REC card.
     final bool hideRecordingBar =
         location == AppRoutes.home ||
+        location == AppRoutes.recordings ||
         location == AppRoutes.channels ||
         location.startsWith('${AppRoutes.channels}/') ||
         activeRecordings.any(

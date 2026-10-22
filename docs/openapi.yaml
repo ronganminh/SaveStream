@@ -9510,6 +9510,22 @@
               }
             ]
           },
+          "failure_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "description": "Short plain-English explanation of why the recording failed, mapped from error.code (or the missed_no_cloud_slot status). Set only for failed and missed_no_cloud_slot; null otherwise. Show this to users instead of error.message, which stays technical and unchanged for compatibility."
+          },
+          "failure_guidance": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "default": null,
+            "description": "Optional plain-English next step that goes with failure_reason, including a note when nothing was charged. Null when there is no guidance or the recording did not fail."
+          },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"
           },
