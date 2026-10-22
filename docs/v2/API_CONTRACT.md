@@ -61,6 +61,11 @@ Thêm trường vào `WatchResponse`:
 |---|---|---|
 | `notify_on_live` | bool | Gửi push khi kênh LIVE. Mặc định `true`. Tắt chỉ tắt push, backend vẫn theo dõi. |
 | `auto_record_state` | `"off"` \| `"active"` \| `"paused_no_cloud_minutes"` \| `"waiting_for_cloud_slot"` | Trạng thái tự động ghi để hiển thị. |
+| `pending_verification_code` | string \| null | Mã xác minh bio đang chờ kiểm tra (giống `GET /v1/watches/{id}/verification`). `null` khi kênh đã xác minh hoặc không còn mã chưa hết hạn. Đọc kênh không bao giờ tạo mã mới. |
+| `pending_verification_expires_at` | datetime \| null | Lúc `pending_verification_code` hết hạn. |
+| `recording_count` | int \| null | Số bản ghi chưa xoá của người dùng cho kênh này (như danh sách `GET /v1/recordings`, mọi trạng thái), khớp theo username hoặc room id. `/v1/watches` luôn trả số; `null` ở chỗ không tính (admin). |
+| `total_recorded_seconds` | int \| null | Tổng `duration_seconds` của các bản ghi trên. |
+| `last_live_duration_seconds` | int \| null | `duration_seconds` của bản ghi `completed`/`stopped` kết thúc gần nhất của kênh. `null` khi chưa có. |
 
 - `CreateWatchRequest` và `UpdateWatchRequest` nhận thêm `notify_on_live` (tuỳ chọn).
 - Bật `auto_record = true` với tài khoản Free: trả `403` mã `PLAN_REQUIRED`.
@@ -299,6 +304,7 @@ Trả `201`: `{ "report_id": "rpt_123" }`. Không bao giờ gửi file video.
 | `NOT_IMPLEMENTED` | 501 | Route V2 đã được B0 đóng băng contract nhưng phase sở hữu chưa triển khai; chỉ dùng trong giai đoạn rollout |
 | `CREATOR_BLOCKED` | 403 | Kênh bị chặn toàn hệ thống (khiếu nại) |
 | `PROMO_CODE_INVALID` | 409 | Mã khuyến mãi không dùng được |
+| `CHANNEL_NOT_FOUND` | 404 | `POST /v1/live-status`: trang hồ sơ TikTok báo không có tài khoản với username này. TikTok lỗi, hết giờ hoặc không trả lời rõ vẫn là `503 STREAM_UNAVAILABLE`. Kênh có thật nhưng không LIVE (kể cả chưa từng LIVE) trả `200` với `live_status: "offline"`, `room_id: null` |
 
 ## 11. Không thay đổi
 

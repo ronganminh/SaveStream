@@ -54,6 +54,17 @@ class WatchResponse(StrictModel):
     verification_due_at: datetime | None = None
     # True when this channel can't be recorded until it is verified.
     verification_required: bool = False
+    # The bio code currently waiting to be checked and when it expires; null
+    # once verified or when no unexpired code exists (never created by a read).
+    pending_verification_code: str | None = None
+    pending_verification_expires_at: datetime | None = None
+    # The user's recordings of this channel that are not deleted (as listed by
+    # GET /v1/recordings) and their total length.  Null where not computed.
+    recording_count: int | None = None
+    total_recorded_seconds: int | None = None
+    # Length of the most recent finished (completed or stopped) recording of
+    # this channel; null when there is none.
+    last_live_duration_seconds: int | None = None
 
 
 class ChannelVerificationResponse(StrictModel):

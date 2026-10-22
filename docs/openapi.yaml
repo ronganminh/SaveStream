@@ -634,7 +634,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK. A creator who is not LIVE now (including one who never went LIVE) is live_status \"offline\" with room_id null and the profile's creator metadata.",
             "content": {
               "application/json": {
                 "schema": {
@@ -645,6 +645,16 @@
           },
           "400": {
             "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CHANNEL_NOT_FOUND (not retryable): TikTok's profile page says no account has this username (unknown or banned handle). Only for username and profile-URL sources; room-id lookups and unclear TikTok answers stay 503 STREAM_UNAVAILABLE.",
             "content": {
               "application/json": {
                 "schema": {
@@ -664,7 +674,7 @@
             }
           },
           "503": {
-            "description": "Error",
+            "description": "STREAM_UNAVAILABLE (retryable): TikTok could not be read (outage, timeout, WAF/login page) or did not say whether the account exists.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8949,7 +8959,8 @@
           "STORE_RECEIPT_INVALID",
           "NOT_SOURCE_DEVICE",
           "LOCAL_RECORDING_DISABLED",
-          "NOT_IMPLEMENTED"
+          "NOT_IMPLEMENTED",
+          "CHANNEL_NOT_FOUND"
         ]
       },
       "ApiError": {
@@ -9883,6 +9894,32 @@
             "type": ["string", "null"],
             "default": null,
             "description": "Status of the in-flight Recording job (queued, resolving, waiting_live, recording, stop_requested)."
+          },
+          "pending_verification_code": {
+            "type": ["string", "null"],
+            "default": null,
+            "description": "The bio code currently waiting to be checked (as GET /watches/{watch_id}/verification shows it). Null once the channel is verified or when no unexpired code with checks left exists. Reading a Watch never creates a code."
+          },
+          "pending_verification_expires_at": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "default": null,
+            "description": "When pending_verification_code expires; null with it."
+          },
+          "recording_count": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "The user's recordings of this channel that are not deleted (as GET /recordings lists them, any status), matched by creator username or room id. Always set by the /watches endpoints; null where not computed (admin views)."
+          },
+          "total_recorded_seconds": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "Sum of duration_seconds over the recordings counted in recording_count."
+          },
+          "last_live_duration_seconds": {
+            "type": ["integer", "null"],
+            "default": null,
+            "description": "duration_seconds of the user's most recently ended completed or stopped recording of this channel (the media length from ffprobe when available). Null when there is none."
           }
         },
         "additionalProperties": false

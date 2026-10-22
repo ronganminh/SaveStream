@@ -14,6 +14,8 @@ from app.api.schemas.recordings import Source
 from app.settings import AppSettings
 from core.tiktok_api import TikTokAPI
 from engine.ports import LiveStreamGateway
+from utils.custom_exceptions import UserLiveError
+from utils.enums import TikTokError
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,7 +48,20 @@ class TikTokSourceResolver:
 
     def live_status(self, source: Source) -> tuple[ResolvedSource, bool]:
         resolved = self.resolve(source)
+        if not resolved.room_id:
+            # TikTok's LIVE page had no room: the creator is not LIVE now (or
+            # never was), or the handle does not exist; the page can't tell.
+            raise NoLiveRoomError(TikTokError.USER_NOT_CURRENTLY_LIVE)
         return resolved, self.api.is_room_alive(resolved.room_id)
+
+
+class NoLiveRoomError(UserLiveError):
+    """The LIVE page resolved to no room id.
+
+    A UserLiveError like the one ``is_room_alive("")`` raised before, so
+    existing callers are unaffected; POST /v1/live-status uses the profile
+    page to turn it into "offline" or CHANNEL_NOT_FOUND.
+    """
 
 
 class FakeHttpSourceResolver:
