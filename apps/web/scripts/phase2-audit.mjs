@@ -26,6 +26,7 @@ must("src/lib/route-metadata.ts", '"noindex,nofollow"');
 must("src/lib/route-metadata.ts", 'rel: "canonical"');
 must("public/robots.txt", "Sitemap:");
 must("public/sitemap.xml", "/pricing");
+must("public/app-ads.txt", "google.com, pub-2078852906622512, DIRECT, f08c47fec0942fa0");
 for (const file of [
   "src/routes/index.tsx",
   "src/routes/pricing.tsx",

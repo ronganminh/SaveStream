@@ -2524,7 +2524,16 @@
             }
           },
           "429": {
-            "description": "REWARD_LOCKED",
+            "description": "REWARD_LOCKED (too many invalid ad callbacks) or RATE_LIMITED (too many ads started in the last hour). error.details.retry_after_seconds is the wait computed from the lock or the sliding 1-hour window, also sent as the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a new rewarded ad may start.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -10078,6 +10087,35 @@
           },
           "created_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "store_order_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For entries of a payment order (purchase grant, store refund): Google Play's orderId (GPA.…). Null for promo-code purchases, web orders and orders not re-verified since it was added."
+          },
+          "package_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For entries of a payment order: the pack's name."
+          },
+          "recording_channel_username": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For recording entries (hold, charge, release): the recorded channel's username, when known."
+          },
+          "recording_duration_seconds": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "For recording entries: how long the recording ran, in seconds."
           }
         },
         "additionalProperties": false
@@ -10257,6 +10295,11 @@
             "type": "integer",
             "minimum": 1,
             "description": "Cloud minutes granted by this one-time package. 1 credit = 1 minute; purchased minutes do not expire."
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false,
+            "description": "Highlight this pack (\"Most popular\"). Server config (SAVESTREAM_FEATURED_PACKAGE_CODES; staging/production default: standard). Never affects the price."
           }
         },
         "additionalProperties": false
@@ -10334,6 +10377,30 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "store_order_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Google Play orderId (GPA.…) as Play reported it. provider_reference stays the opaque order reference (for Google Play a hash of the purchase token). Null for web orders, promo-code purchases and older orders until re-verified."
+          },
+          "client_price_amount_micros": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Display only: the price Google Play showed the user, in micros (24990000 = 24.99), as the app reported it in POST /billing/store-purchases. Not verified with Google; `amount` is the catalog list price."
+          },
+          "client_price_currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 3,
+            "maxLength": 3,
+            "description": "Display only: ISO 4217 currency of client_price_amount_micros."
           }
         },
         "additionalProperties": false
@@ -10720,6 +10787,11 @@
             ],
             "minimum": 0,
             "description": "Recording time the credits buy at the active recording rate."
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false,
+            "description": "Highlight this pack (\"Most popular\"). Server config; never affects the price."
           }
         },
         "additionalProperties": false
@@ -10940,6 +11012,34 @@
           },
           "updated_at": {
             "$ref": "#/components/schemas/UtcDateTime"
+          },
+          "last_pack_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the latest paid (or partly refunded) pack; null before the first purchase."
+          },
+          "last_pack_minutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "Cloud minutes of that pack."
+          },
+          "cloud_minutes_cycle_total": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "The N in \"X minutes left of N\": posted minutes right after the latest top-up (pack purchase, else the free trial grant) plus minutes granted since (rewarded ads, promo codes, support grants). Recording charges only lower the balance, so the balance never exceeds it. Null before any top-up."
+          },
+          "trial_used": {
+            "type": "boolean",
+            "default": false,
+            "description": "The one-time free trial grant was ever made (whether or not it is used up)."
           }
         },
         "additionalProperties": false
@@ -11296,6 +11396,24 @@
           "receipt": {
             "type": "string",
             "minLength": 1
+          },
+          "price_amount_micros": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Optional, display only: Google Play ProductDetails priceAmountMicros the user saw. Stored as client_price_amount_micros on the payment order; never verified or used for accounting."
+          },
+          "price_currency_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 3,
+            "maxLength": 3,
+            "pattern": "^[A-Za-z]{3}$",
+            "description": "Optional, display only: Google Play priceCurrencyCode (ISO 4217)."
           }
         },
         "additionalProperties": false

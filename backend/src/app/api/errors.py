@@ -18,6 +18,18 @@ def _request_id(request: Request) -> str:
     return str(getattr(request.state, "request_id", "unknown"))
 
 
+def retry_after_headers(
+    status_code: int, details: Mapping[str, Any] | None
+) -> dict[str, str] | None:
+    """``Retry-After`` for a 429 whose details carry retry_after_seconds."""
+    if status_code != 429 or not details:
+        return None
+    value = details.get("retry_after_seconds")
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return {"Retry-After": str(value)}
+
+
 def error_response(
     request: Request,
     *,
@@ -29,6 +41,7 @@ def error_response(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
+        headers=retry_after_headers(status_code, details),
         content={
             "error": {
                 "code": code,

@@ -85,6 +85,10 @@ async def get_entitlement(
             if snapshot.ads is not None
             else None
         ),
+        last_pack_name=snapshot.last_pack_name,
+        last_pack_minutes=snapshot.last_pack_minutes,
+        cloud_minutes_cycle_total=snapshot.cloud_minutes_cycle_total,
+        trial_used=snapshot.trial_used,
         updated_at=snapshot.updated_at,
     )
 

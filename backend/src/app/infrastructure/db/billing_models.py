@@ -6,6 +6,7 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -226,6 +227,17 @@ class PaymentOrder(Base):
     # Google Play purchase token (provider_reference holds its hash): kept to
     # retry acknowledge/consume and to re-check pending purchases.
     store_token: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Google Play orderId (GPA.…) as Play's purchases.products.get returned it.
+    # Empty for promo codes and some test purchases, so it is not the order
+    # reference (provider_reference is); kept for receipts and support.
+    store_order_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Price the app saw in Google Play's ProductDetails when it bought, as the
+    # app reported it. Display only: not verified by Google, never used for
+    # accounting (amount_minor/currency are the catalog list price).
+    client_price_amount_micros: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+    client_price_currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
     checkout_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     return_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     refunded_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

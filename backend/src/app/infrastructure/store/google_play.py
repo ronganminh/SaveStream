@@ -187,6 +187,7 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             account_reference=(
                 str(payload.get("obfuscatedExternalAccountId") or "") or None
             ),
+            store_order_id=order_id or None,
         )
 
     async def finalize_purchase(

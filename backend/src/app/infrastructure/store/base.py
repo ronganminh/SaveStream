@@ -18,6 +18,8 @@ class VerifiedStorePurchase:
     pending: bool = False
     # Google Play obfuscatedExternalAccountId the app set when buying.
     account_reference: str | None = None
+    # Google Play orderId (GPA.…); None when Play has none (promo codes).
+    store_order_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

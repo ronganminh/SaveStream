@@ -79,6 +79,13 @@ export type EntitlementResponse = {
   can_auto_record?: boolean;
   trial_recording?: boolean;
   cloud_minutes_available: number;
+  /** Latest paid pack; null before the first purchase (older API builds omit). */
+  last_pack_name?: string | null;
+  last_pack_minutes?: number | null;
+  /** The N in "X minutes left of N" since the latest top-up; null before any. */
+  cloud_minutes_cycle_total?: number | null;
+  /** The one-time free trial grant was ever made. */
+  trial_used?: boolean;
   limits: {
     max_watches: number;
     max_concurrent_cloud_recordings: number;
@@ -248,6 +255,12 @@ export type CreditTransactionResponse = {
   reference_id: string | null;
   /** For a `release` entry: credits returned from the recording hold. */
   released_credits?: number | null;
+  /** Payment-order entries: Google Play order id (GPA.…) and pack name. */
+  store_order_id?: string | null;
+  package_name?: string | null;
+  /** Recording entries: channel and recorded length. */
+  recording_channel_username?: string | null;
+  recording_duration_seconds?: number | null;
   created_at: string;
 };
 
@@ -287,6 +300,8 @@ export type CreditPackageResponse = {
     google_play: string | null;
   } | null;
   cloud_minutes: number | null;
+  /** Highlighted pack ("Most popular"); config driven, never affects price. */
+  featured?: boolean;
 };
 
 export type CreditPackageListResponse = {
@@ -306,6 +321,7 @@ export type PublicCreditPackageResponse = {
   credits: number;
   price: Money;
   recording_minutes: number | null;
+  featured?: boolean;
 };
 
 export type PublicPricingResponse = {
@@ -339,6 +355,11 @@ export type PaymentOrderResponse = {
   amount: Money;
   provider: string | null;
   provider_reference: string | null;
+  /** Google Play order id (GPA.…); null when Play has none or for web orders. */
+  store_order_id?: string | null;
+  /** Display only: store price the app reported (micros + ISO 4217). */
+  client_price_amount_micros?: number | null;
+  client_price_currency?: string | null;
   created_at: string;
   updated_at: string;
 };

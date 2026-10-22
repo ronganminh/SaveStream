@@ -2,6 +2,10 @@ from app.api.schemas.credits import (
     CreditReservationResponse,
     CreditTransactionResponse,
 )
+from app.application.credits.service import (
+    PAYMENT_ORDER_REFERENCE_TYPES,
+    LedgerContext,
+)
 from app.infrastructure.db.credit_models import CreditLedgerEntry, CreditReservation
 
 
@@ -12,7 +16,15 @@ def _released_credits(entry: CreditLedgerEntry) -> int | None:
     return value if isinstance(value, int) and value >= 0 else None
 
 
-def transaction_response(entry: CreditLedgerEntry) -> CreditTransactionResponse:
+def transaction_response(
+    entry: CreditLedgerEntry, context: LedgerContext | None = None
+) -> CreditTransactionResponse:
+    order = recording = None
+    if context is not None and entry.reference_id:
+        if entry.reference_type in PAYMENT_ORDER_REFERENCE_TYPES:
+            order = context.orders.get(entry.reference_id)
+        elif entry.reference_type == "recording":
+            recording = context.recordings.get(entry.reference_id)
     return CreditTransactionResponse.model_validate(
         {
             "id": str(entry.id),
@@ -22,6 +34,14 @@ def transaction_response(entry: CreditLedgerEntry) -> CreditTransactionResponse:
             "reference_type": entry.reference_type,
             "reference_id": entry.reference_id,
             "released_credits": _released_credits(entry),
+            "store_order_id": order.store_order_id if order else None,
+            "package_name": order.package_name if order else None,
+            "recording_channel_username": (
+                recording.channel_username if recording else None
+            ),
+            "recording_duration_seconds": (
+                recording.duration_seconds if recording else None
+            ),
             "created_at": entry.created_at,
         }
     )

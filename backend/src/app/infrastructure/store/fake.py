@@ -58,6 +58,7 @@ class FakeStoreReceiptVerifier(StoreReceiptVerifier):
             product_id=verified_product,
             transaction_id=verified_transaction,
             purchased_at=purchased_at,
+            store_order_id=str(payload.get("order_id") or "") or None,
         )
 
     async def finalize_purchase(

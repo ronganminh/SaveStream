@@ -52,4 +52,14 @@ class EntitlementResponse(StrictModel):
     watch_count: int
     local: LocalEntitlementResponse
     ads: AdsEntitlementResponse | None = None
+    # Latest paid (or partly refunded) pack; null before the first purchase.
+    last_pack_name: str | None = None
+    last_pack_minutes: int | None = None
+    # The N in "X minutes left of N": posted minutes right after the latest
+    # top-up (pack purchase, else the free trial grant) plus minutes granted
+    # since (rewarded ads, promo codes). Never below the posted balance;
+    # null before any top-up.
+    cloud_minutes_cycle_total: int | None = None
+    # The one-time free trial grant was ever made (whether or not used up).
+    trial_used: bool = False
     updated_at: datetime

@@ -16,6 +16,7 @@ from app.api.schemas.billing import (
     PublicPricingResponse,
     PublicRecordingRate,
 )
+from app.api.serializers.billing import package_featured
 from app.application.billing.service import BillingService
 from app.application.creators.avatar_cache import avatar_key
 from app.application.pricing.service import PricingService
@@ -110,6 +111,7 @@ async def get_public_pricing(
                 credits=package.credits,
                 price=Money(amount_minor=package.amount_minor, currency=package.currency),
                 recording_minutes=_recording_minutes(package.credits, rate),
+                featured=package_featured(package, settings.featured_package_codes),
             )
             for package in packages
         ],

@@ -296,6 +296,9 @@ class AppSettings:
     # off: creating one is refused with REWARDED_ADS_UNAVAILABLE.
     admob_reward_ad_units: tuple[str, ...] = ()
     admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
+    # Credit package codes the apps highlight ("Most popular"). Empty by
+    # default; staging/production default to the middle "standard" pack.
+    featured_package_codes: tuple[str, ...] = ()
 
     @classmethod
     def from_env(cls) -> "AppSettings":
@@ -824,6 +827,10 @@ class AppSettings:
                 if unit.strip()
             ),
             admob_ssv_keys_url=admob_ssv_keys_url,
+            featured_package_codes=_csv_env(
+                "FEATURED_PACKAGE_CODES",
+                "standard" if environment_raw in {"staging", "production"} else "",
+            ),
         )
 
 

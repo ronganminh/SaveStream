@@ -17,6 +17,8 @@ Backend invariant: `available = posted - active reservations`. The ledger is app
 - `GET /v1/credits/reservations`
 - `GET /v1/pricing`
 
+Transaction items may carry context for the entry's reference: `store_order_id` and `package_name` for payment-order entries, `recording_channel_username` and `recording_duration_seconds` for recording entries; `null` otherwise.
+
 Pricing formula decisions such as per-minute vs storage, rounding, minimum charge, expiration, refund policy, currency, and tax remain backend policy and are not encoded into the public v0.1 DTO.
 
 ## Phase 6 implementation
