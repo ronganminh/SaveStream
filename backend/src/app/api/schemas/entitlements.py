@@ -30,6 +30,15 @@ class LocalEntitlementResponse(StrictModel):
     second_slot_expires_at: datetime | None
 
 
+class AdsEntitlementResponse(StrictModel):
+    rewarded_available: bool
+    rewards_left_today: int
+    rewards_cap_per_day: int
+    minutes_per_reward: int
+    resets_at: datetime
+    show_banners: bool
+
+
 class EntitlementResponse(StrictModel):
     plan: Literal["free", "pro"]
     has_purchased: bool
@@ -42,4 +51,5 @@ class EntitlementResponse(StrictModel):
     limits: EntitlementLimitsResponse
     watch_count: int
     local: LocalEntitlementResponse
+    ads: AdsEntitlementResponse | None = None
     updated_at: datetime

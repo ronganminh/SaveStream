@@ -31,6 +31,8 @@ class OperationalSnapshot:
     reward_validity_ratio: float = 0.0
     store_transactions: int = 0
     stuck_upload_recordings: int = 0
+    # Devices that earned ad rewards for more than 3 accounts in 30 days.
+    reward_shared_devices: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,6 +180,19 @@ class OperationsService:
                 older_than_seconds=self.settings.recording_stuck_upload_seconds,
             )
         )
+        shared_devices = (
+            select(RewardIntent.device_id)
+            .where(
+                RewardIntent.device_id.is_not(None),
+                RewardIntent.created_at >= utcnow() - timedelta(days=30),
+            )
+            .group_by(RewardIntent.device_id)
+            .having(func.count(func.distinct(RewardIntent.user_id)) > 3)
+            .subquery()
+        )
+        reward_shared_devices = int(
+            await self.session.scalar(select(func.count()).select_from(shared_devices)) or 0
+        )
         return OperationalSnapshot(
             active_recordings=active_recordings,
             failed_recordings_recent=failed_recordings_recent,
@@ -191,6 +206,7 @@ class OperationsService:
             reward_validity_ratio=reward_validity_ratio,
             store_transactions=store_transactions,
             stuck_upload_recordings=stuck_upload_recordings,
+            reward_shared_devices=reward_shared_devices,
         )
 
 
@@ -229,6 +245,12 @@ def evaluate_alerts(
             1,
             "Recordings have been processing/uploading for longer than "
             f"{settings.recording_stuck_upload_seconds // 60} minutes",
+        ),
+        (
+            "reward_shared_devices",
+            snapshot.reward_shared_devices,
+            1,
+            "A device earned ad rewards for more than 3 accounts in 30 days",
         ),
     ]
     alerts: list[OperationalAlert] = []

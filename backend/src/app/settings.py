@@ -286,6 +286,15 @@ class AppSettings:
     reward_invalid_lock_threshold: int = 3
     reward_lock_seconds: int = 3_600
     reward_verifier_timeout_seconds: float = 10.0
+    # Android v2 rewarded ads: cloud recording minutes (credits) per ad.
+    reward_cloud_minutes: int = 5
+    reward_cloud_daily_cap: int = 6
+    reward_cloud_device_daily_cap: int = 6
+    reward_cloud_intent_seconds: int = 3_600
+    reward_intents_per_hour: int = 20
+    # AdMob rewarded ad unit ids accepted by SSV. Empty keeps rewarded ads
+    # off: creating one is refused with REWARDED_ADS_UNAVAILABLE.
+    admob_reward_ad_units: tuple[str, ...] = ()
     admob_ssv_keys_url: str = "https://www.gstatic.com/admob/reward/verifier-keys.json"
 
     @classmethod
@@ -802,6 +811,18 @@ class AppSettings:
             reward_invalid_lock_threshold=reward_invalid_lock_threshold,
             reward_lock_seconds=reward_lock_seconds,
             reward_verifier_timeout_seconds=reward_verifier_timeout_seconds,
+            reward_cloud_minutes=_nonnegative_int_env("REWARD_CLOUD_MINUTES", 5),
+            reward_cloud_daily_cap=_nonnegative_int_env("REWARD_CLOUD_DAILY_CAP", 6),
+            reward_cloud_device_daily_cap=_nonnegative_int_env(
+                "REWARD_CLOUD_DEVICE_DAILY_CAP", 6
+            ),
+            reward_cloud_intent_seconds=_int_env("REWARD_CLOUD_INTENT_SECONDS", 3_600),
+            reward_intents_per_hour=_nonnegative_int_env("REWARD_INTENTS_PER_HOUR", 20),
+            admob_reward_ad_units=tuple(
+                unit.strip()
+                for unit in _env("ADMOB_REWARD_AD_UNITS", "").split(",")
+                if unit.strip()
+            ),
             admob_ssv_keys_url=admob_ssv_keys_url,
         )
 

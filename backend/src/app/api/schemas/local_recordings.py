@@ -70,13 +70,15 @@ class LocalRecordingListResponse(StrictModel):
     pagination: Pagination
 
 
-RewardPurpose = Literal["local_minutes", "local_slot"]
+RewardPurpose = Literal["local_minutes", "local_slot", "cloud_minutes"]
 RewardStatus = Literal["pending", "valid", "invalid", "expired"]
 
 
 class CreateRewardRequest(StrictModel):
     purpose: RewardPurpose
     session_id: str | None = None
+    # App install id; required for cloud_minutes (per-device daily cap).
+    device_id: str | None = Field(default=None, min_length=8, max_length=128)
 
 
 class RewardCreateResponse(StrictModel):

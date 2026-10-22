@@ -23,6 +23,8 @@ class FakeRewardVerifier:
                 "Invalid fake reward callback",
                 status_code=400,
             ) from exc
+        ad_unit = values.get("ad_unit", [""])[0] or None
+        raw_amount = values.get("reward_amount", [""])[0]
         valid = values.get("valid", ["1"])[0].lower() not in {
             "0",
             "false",
@@ -33,4 +35,6 @@ class FakeRewardVerifier:
             user_id=user_id,
             transaction_id=transaction_id,
             valid=valid,
+            ad_unit=ad_unit,
+            reward_amount=int(raw_amount) if raw_amount.isdigit() else None,
         )

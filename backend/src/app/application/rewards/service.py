@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.local_recordings import CreateRewardRequest
+from app.application.billing.credits import BillingCreditService
 from app.application.rewards.ports import VerifiedRewardCallback
 from app.application.runtime_settings import RuntimeSettingsService
 from app.domain.common.errors import ApplicationError
@@ -16,7 +17,13 @@ from app.infrastructure.db.local_recording_models import (
     RewardIntent,
     RewardUserState,
 )
+from app.infrastructure.db.models import User
 from app.settings import AppSettings
+
+CLOUD_MINUTES = "cloud_minutes"
+LOCAL_PURPOSES = frozenset({"local_minutes", "local_slot"})
+# A device used by more accounts than this is flagged to admins.
+SHARED_DEVICE_ACCOUNTS = 3
 
 
 def utcnow() -> datetime:
@@ -27,6 +34,24 @@ def aware(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value
+
+
+def cloud_rewards_enabled(settings: AppSettings) -> bool:
+    """Rewarded ads stay off until an AdMob ad unit is configured
+    (SAVESTREAM_ADMOB_REWARD_AD_UNITS); the API then refuses them cleanly."""
+    return settings.reward_provider != "disabled" and bool(settings.admob_reward_ad_units)
+
+
+def ad_unit_key(value: str | None) -> str:
+    """AdMob SSV sends the ad unit's numeric part (``5155016450``); config
+    may hold the full id (``ca-app-pub-…/5155016450``)."""
+    return (value or "").strip().rsplit("/", 1)[-1]
+
+
+def reward_day(now: datetime) -> tuple[datetime, datetime]:
+    """The UTC day rewarded-ad caps count in (resets at 00:00 UTC)."""
+    start = datetime.combine(now.date(), time.min, tzinfo=timezone.utc)
+    return start, start + timedelta(days=1)
 
 
 class RewardService:
@@ -46,6 +71,12 @@ class RewardService:
                 status_code=503,
                 retryable=True,
             )
+        if payload.purpose in LOCAL_PURPOSES and not self.settings.local_recording_enabled:
+            raise ApplicationError(
+                "REWARD_PURPOSE_RETIRED",
+                "On-device recording rewards are no longer available",
+                status_code=410,
+            )
         now = utcnow()
         state = await self.session.get(RewardUserState, user_id)
         if (
@@ -60,8 +91,10 @@ class RewardService:
                 details={"locked_until": aware(state.locked_until).isoformat()},
             )
 
-        start = datetime.combine(now.date(), time.min, tzinfo=timezone.utc)
-        end = start + timedelta(days=1)
+        if payload.purpose == CLOUD_MINUTES:
+            return await self._create_cloud(user_id, payload, now)
+
+        start, end = reward_day(now)
         valid_today = int(
             await self.session.scalar(
                 select(func.count())
@@ -121,6 +154,128 @@ class RewardService:
         await self.session.commit()
         await self.session.refresh(reward)
         return reward
+
+    async def _create_cloud(
+        self,
+        user_id: uuid.UUID,
+        payload: CreateRewardRequest,
+        now: datetime,
+    ) -> RewardIntent:
+        if not cloud_rewards_enabled(self.settings):
+            raise ApplicationError(
+                "REWARDED_ADS_UNAVAILABLE",
+                "Rewarded ads are not available right now",
+                status_code=409,
+                retryable=False,
+            )
+        user = await self.session.get(User, user_id)
+        if user is None or user.email_verified_at is None:
+            raise ApplicationError(
+                "EMAIL_NOT_VERIFIED",
+                "Verify your email to earn minutes from ads",
+                status_code=403,
+            )
+        if not payload.device_id:
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "device_id is required for cloud minute rewards",
+                status_code=400,
+            )
+        recent = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(
+                    RewardIntent.user_id == user_id,
+                    RewardIntent.created_at >= now - timedelta(hours=1),
+                )
+            )
+            or 0
+        )
+        if recent >= self.settings.reward_intents_per_hour:
+            raise ApplicationError(
+                "RATE_LIMITED",
+                "Too many rewarded ads started. Try again later.",
+                status_code=429,
+            )
+        await self._check_cloud_caps(user_id, payload.device_id, now)
+
+        reward = RewardIntent(
+            user_id=user_id,
+            purpose=CLOUD_MINUTES,
+            status="pending",
+            device_id=payload.device_id,
+            expires_at=now + timedelta(seconds=self.settings.reward_cloud_intent_seconds),
+        )
+        self.session.add(reward)
+        await self.session.commit()
+        await self.session.refresh(reward)
+        return reward
+
+    async def cloud_rewards_today(self, user_id: uuid.UUID, now: datetime | None = None) -> int:
+        start, end = reward_day(now or utcnow())
+        return int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(
+                    RewardIntent.user_id == user_id,
+                    RewardIntent.purpose == CLOUD_MINUTES,
+                    RewardIntent.status == "valid",
+                    RewardIntent.verified_at >= start,
+                    RewardIntent.verified_at < end,
+                )
+            )
+            or 0
+        )
+
+    async def _check_cloud_caps(
+        self,
+        user_id: uuid.UUID,
+        device_id: str | None,
+        now: datetime,
+        *,
+        exclude: uuid.UUID | None = None,
+    ) -> None:
+        """Daily cap per user and per device (UTC day)."""
+        start, end = reward_day(now)
+        cap = await RuntimeSettingsService(self.session, self.settings).integer(
+            "reward_cloud_daily_cap"
+        )
+        today = select(func.count()).select_from(RewardIntent).where(
+            RewardIntent.purpose == CLOUD_MINUTES,
+            RewardIntent.status == "valid",
+            RewardIntent.verified_at >= start,
+            RewardIntent.verified_at < end,
+        )
+        if exclude is not None:
+            today = today.where(RewardIntent.id != exclude)
+        user_count = int(
+            await self.session.scalar(today.where(RewardIntent.user_id == user_id)) or 0
+        )
+        if user_count >= cap:
+            raise ApplicationError(
+                "REWARD_DAILY_CAP_REACHED",
+                "Daily rewarded-ad limit reached",
+                status_code=409,
+                details={"limit": cap, "resets_at": end.isoformat()},
+            )
+        if device_id:
+            device_count = int(
+                await self.session.scalar(today.where(RewardIntent.device_id == device_id))
+                or 0
+            )
+            if device_count >= self.settings.reward_cloud_device_daily_cap:
+                raise ApplicationError(
+                    "REWARD_DAILY_CAP_REACHED",
+                    "Daily rewarded-ad limit reached on this device",
+                    status_code=409,
+                    details={
+                        "limit": self.settings.reward_cloud_device_daily_cap,
+                        "resets_at": end.isoformat(),
+                        "scope": "device",
+                    },
+                )
 
     async def get(
         self,
@@ -193,6 +348,9 @@ class RewardService:
             self.session.add(state)
             await self.session.flush()
 
+        if reward.purpose == CLOUD_MINUTES:
+            return await self._apply_cloud_callback(reward, callback, now)
+
         if aware(reward.expires_at) <= now and reward.status != "valid":
             reward.status = "expired"
             reward.transaction_id = callback.transaction_id
@@ -253,6 +411,55 @@ class RewardService:
         if reward.purpose == "local_slot":
             await self._activate_second_slot(reward.user_id, now)
 
+        await self.session.commit()
+        await self.session.refresh(reward)
+        return reward
+
+    async def _apply_cloud_callback(
+        self,
+        reward: RewardIntent,
+        callback: VerifiedRewardCallback,
+        now: datetime,
+    ) -> RewardIntent:
+        if not callback.valid:
+            # A forged callback must not burn the user's real intent: leave it
+            # untouched (the webhook answers 400 and the attempt is logged).
+            return reward
+        if reward.status == "valid":
+            return reward  # AdMob retry of a callback already credited
+        if reward.status != "pending" or aware(reward.expires_at) <= now:
+            reward.status = "expired" if reward.status == "pending" else reward.status
+            await self.session.commit()
+            return reward
+
+        units = self.settings.admob_reward_ad_units
+        minutes = await RuntimeSettingsService(self.session, self.settings).integer(
+            "reward_cloud_minutes"
+        )
+        reward.transaction_id = callback.transaction_id
+        reward.verified_at = now
+        reward.ad_unit = callback.ad_unit
+        # The reward amount set in AdMob is ignored: every valid callback from
+        # an allowed ad unit adds the configured cloud minutes.
+        if ad_unit_key(callback.ad_unit) not in {ad_unit_key(unit) for unit in units}:
+            reward.status = "invalid"
+            await self.session.commit()
+            return reward
+        try:
+            await self._check_cloud_caps(reward.user_id, reward.device_id, now, exclude=reward.id)
+        except ApplicationError:
+            reward.status = "expired"
+            await self.session.commit()
+            return reward
+
+        reward.status = "valid"
+        reward.valid_until = now
+        reward.consumed_at = now
+        reward.credits_granted = minutes
+        if minutes > 0:
+            await BillingCreditService(self.session).grant_reward(
+                user_id=reward.user_id, reward_id=reward.id, credits=minutes
+            )
         await self.session.commit()
         await self.session.refresh(reward)
         return reward

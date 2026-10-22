@@ -40,10 +40,14 @@ class AdMobRewardVerifier:
         self.settings = settings
         self.client = client
 
-    async def _keys(self) -> dict[int, ec.EllipticCurvePublicKey]:
+    async def _keys(self, *, refresh: bool = False) -> dict[int, ec.EllipticCurvePublicKey]:
         global _KEY_CACHE
         now = time.monotonic()
-        if _KEY_CACHE is not None and now - _KEY_CACHE[0] < _KEY_CACHE_SECONDS:
+        if (
+            not refresh
+            and _KEY_CACHE is not None
+            and now - _KEY_CACHE[0] < _KEY_CACHE_SECONDS
+        ):
             return _KEY_CACHE[1]
 
         owns_client = self.client is None
@@ -111,6 +115,9 @@ class AdMobRewardVerifier:
             transaction_id = values["transaction_id"][0]
             signature = _decode_signature(values["signature"][0])
             key_id = int(values["key_id"][0])
+            ad_unit = (values.get("ad_unit") or [""])[0] or None
+            raw_amount = (values.get("reward_amount") or [""])[0]
+            reward_amount = int(raw_amount) if raw_amount else None
         except (KeyError, IndexError, ValueError) as exc:
             raise ApplicationError(
                 "VALIDATION_ERROR",
@@ -119,6 +126,9 @@ class AdMobRewardVerifier:
             ) from exc
 
         key = (await self._keys()).get(key_id)
+        if key is None:
+            # Google rotated its keys since they were cached.
+            key = (await self._keys(refresh=True)).get(key_id)
         if key is None:
             raise ApplicationError(
                 "VALIDATION_ERROR",
@@ -139,4 +149,6 @@ class AdMobRewardVerifier:
             user_id=user_id,
             transaction_id=transaction_id,
             valid=valid,
+            ad_unit=ad_unit,
+            reward_amount=reward_amount,
         )

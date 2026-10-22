@@ -107,6 +107,22 @@ def _setting_definitions() -> tuple[RuntimeSettingDefinition, ...]:
             maximum=1_440,
         ),
         RuntimeSettingDefinition(
+            "reward_cloud_minutes",
+            "int",
+            "Cloud recording minutes granted per rewarded ad (Android app).",
+            lambda settings: settings.reward_cloud_minutes,
+            minimum=0,
+            maximum=60,
+        ),
+        RuntimeSettingDefinition(
+            "reward_cloud_daily_cap",
+            "int",
+            "Maximum rewarded ads per user per day (UTC) for cloud minutes.",
+            lambda settings: settings.reward_cloud_daily_cap,
+            minimum=0,
+            maximum=50,
+        ),
+        RuntimeSettingDefinition(
             "free_max_watches",
             "int",
             "Maximum watched channels for Free accounts.",

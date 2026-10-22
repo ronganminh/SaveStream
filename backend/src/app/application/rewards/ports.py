@@ -11,6 +11,8 @@ class VerifiedRewardCallback:
     user_id: uuid.UUID
     transaction_id: str
     valid: bool
+    ad_unit: str | None = None
+    reward_amount: int | None = None
 
 
 class RewardVerifier(Protocol):

@@ -95,6 +95,37 @@ class BillingCreditService:
         await resume_credit_paused_watches(self.session, user_id)
         return entry
 
+    async def grant_reward(
+        self,
+        *,
+        user_id: uuid.UUID,
+        reward_id: uuid.UUID,
+        credits: int,
+    ) -> CreditLedgerEntry:
+        """Credits for a verified rewarded ad (idempotent per reward)."""
+        reference_key = f"reward:{reward_id}:grant"
+        existing = await self.session.scalar(
+            select(CreditLedgerEntry).where(CreditLedgerEntry.reference_key == reference_key)
+        )
+        if existing is not None:
+            return existing
+        account = await self._account(user_id)
+        account.posted_balance += credits
+        entry = CreditLedgerEntry(
+            account_id=account.id,
+            user_id=user_id,
+            entry_type="grant",
+            amount=credits,
+            balance_after=account.posted_balance,
+            reference_type="reward",
+            reference_id=str(reward_id),
+            reference_key=reference_key,
+            details={"source": "rewarded_ad"},
+        )
+        self.session.add(entry)
+        await self.session.flush()
+        return entry
+
     async def hold_refund(
         self,
         *,

@@ -8,6 +8,7 @@ from typing import Literal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.application.rewards.service import cloud_rewards_enabled
 from app.application.runtime_settings import RuntimeSettingsService
 from app.application.credits.service import CreditService
 from app.application.recordings.retention import has_paid_purchase
@@ -39,6 +40,19 @@ class LocalEntitlementSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class AdsEntitlementSnapshot:
+    """What the Android app may show: rewarded ads for cloud minutes, and a
+    small banner for accounts that never bought a pack."""
+
+    rewarded_available: bool
+    rewards_left_today: int
+    rewards_cap_per_day: int
+    minutes_per_reward: int
+    resets_at: datetime
+    show_banners: bool
+
+
+@dataclass(frozen=True, slots=True)
 class EntitlementSnapshot:
     plan: EntitlementPlan
     has_purchased: bool
@@ -55,6 +69,7 @@ class EntitlementSnapshot:
     watch_count: int
     local: LocalEntitlementSnapshot
     updated_at: datetime
+    ads: AdsEntitlementSnapshot | None = None
 
     @property
     def is_pro(self) -> bool:
@@ -206,6 +221,39 @@ class EntitlementService:
             ),
         )
 
+        cloud_cap = await runtime.integer("reward_cloud_daily_cap")
+        cloud_minutes = await runtime.integer("reward_cloud_minutes")
+        cloud_used = int(
+            await self.session.scalar(
+                select(func.count())
+                .select_from(RewardIntent)
+                .where(
+                    RewardIntent.user_id == user_id,
+                    RewardIntent.purpose == "cloud_minutes",
+                    RewardIntent.status == "valid",
+                    RewardIntent.verified_at
+                    >= datetime.combine(now.date(), time.min, tzinfo=timezone.utc),
+                    RewardIntent.verified_at < resets_at,
+                )
+            )
+            or 0
+        )
+        rewards_left = max(cloud_cap - cloud_used, 0)
+        ads = AdsEntitlementSnapshot(
+            rewarded_available=(
+                cloud_rewards_enabled(self.settings)
+                and email_verified
+                and cloud_minutes > 0
+                and rewards_left > 0
+            ),
+            rewards_left_today=rewards_left,
+            rewards_cap_per_day=cloud_cap,
+            minutes_per_reward=cloud_minutes,
+            resets_at=resets_at,
+            # Any pack bought (ever) turns banners off for good.
+            show_banners=not has_purchased,
+        )
+
         return EntitlementSnapshot(
             plan=plan,
             has_purchased=has_purchased,
@@ -231,4 +279,5 @@ class EntitlementService:
             watch_count=watch_count,
             local=local,
             updated_at=now,
+            ads=ads,
         )

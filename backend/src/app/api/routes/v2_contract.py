@@ -10,6 +10,7 @@ from app.api.schemas.app_status import (
     MinimumSupportedVersions,
 )
 from app.api.schemas.entitlements import (
+    AdsEntitlementResponse,
     EntitlementLimitsResponse,
     EntitlementResponse,
     LocalEntitlementResponse,
@@ -71,6 +72,18 @@ async def get_entitlement(
             extensions_cap_per_recording=snapshot.local.extensions_cap_per_recording,
             max_concurrent_sessions=snapshot.local.max_concurrent_sessions,
             second_slot_expires_at=snapshot.local.second_slot_expires_at,
+        ),
+        ads=(
+            AdsEntitlementResponse(
+                rewarded_available=snapshot.ads.rewarded_available,
+                rewards_left_today=snapshot.ads.rewards_left_today,
+                rewards_cap_per_day=snapshot.ads.rewards_cap_per_day,
+                minutes_per_reward=snapshot.ads.minutes_per_reward,
+                resets_at=snapshot.ads.resets_at,
+                show_banners=snapshot.ads.show_banners,
+            )
+            if snapshot.ads is not None
+            else None
         ),
         updated_at=snapshot.updated_at,
     )
