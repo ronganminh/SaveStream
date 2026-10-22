@@ -109,6 +109,7 @@ class RewardIntent(Base):
     __table_args__ = (
         Index("ix_reward_intents_user_created", "user_id", "created_at"),
         Index("ix_reward_intents_user_status", "user_id", "status"),
+        Index("ix_reward_intents_device_verified", "device_id", "verified_at"),
         UniqueConstraint(
             "transaction_id",
             name="uq_reward_intents_transaction_id",
@@ -141,6 +142,11 @@ class RewardIntent(Base):
     consumed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Android v2 cloud-minute rewards: app install id (per-device cap), the
+    # AdMob ad unit reported by SSV, and the credits added.
+    device_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    ad_unit: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    credits_granted: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
