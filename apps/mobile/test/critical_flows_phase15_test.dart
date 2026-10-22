@@ -81,7 +81,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add channel').first);
+    await tester.tap(find.byKey(const ValueKey<String>('channels-add')).first);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '@phase15_creator');
 
@@ -93,19 +93,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
 
-    expect(find.byType(Checkbox), findsNothing);
-    expect(find.text('Use recordings responsibly'), findsOneWidget);
-
-    final Finder addButton = find.widgetWithText(FilledButton, 'Add channel');
-    await tester.ensureVisible(addButton);
-    await tester.tap(addButton);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Is this your channel?'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey<String>('add-channel-owner')));
     await tester.pump();
 
-    expect(find.text('Channel detail'), findsOneWidget);
-    expect(find.textContaining('@phase15_creator'), findsOneWidget);
-    expect(find.text('Notify when LIVE'), findsOneWidget);
+    final Finder confirm = find.widgetWithText(
+      FilledButton,
+      'Yes, verify ownership',
+    );
+    await tester.ensureVisible(confirm);
+    await tester.tap(confirm);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+
+    expect(find.text('Verify ownership'), findsOneWidget);
+    expect(find.text('@phase15_creator'), findsOneWidget);
+    expect(find.text('SS-7K4Q'), findsOneWidget);
   });
 
   testWidgets('critical flow active recording -> stop -> stopped', (

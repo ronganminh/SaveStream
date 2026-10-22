@@ -359,6 +359,8 @@ class SsV2TextField extends StatelessWidget {
     this.onSubmitted,
     this.enabled = true,
     this.fieldKey,
+    this.hintText,
+    this.autocorrect,
     super.key,
   });
 
@@ -366,6 +368,8 @@ class SsV2TextField extends StatelessWidget {
   final TextEditingController controller;
   final String? errorText;
   final String? helperText;
+  final String? hintText;
+  final bool? autocorrect;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final Iterable<String>? autofillHints;
@@ -396,8 +400,8 @@ class SsV2TextField extends StatelessWidget {
           textInputAction: textInputAction,
           autofillHints: autofillHints,
           obscureText: obscureText,
-          autocorrect: !obscureText,
-          enableSuggestions: !obscureText,
+          autocorrect: autocorrect ?? !obscureText,
+          enableSuggestions: autocorrect ?? !obscureText,
           onChanged: onChanged,
           onFieldSubmitted: onSubmitted,
           cursorColor: palette.primary,
@@ -409,6 +413,13 @@ class SsV2TextField extends StatelessWidget {
           ),
           decoration: InputDecoration(
             labelText: label,
+            hintText: hintText,
+            hintStyle: TextStyle(
+              fontFamily: SsTypography.uiFamily,
+              fontSize: 16,
+              height: 1.26,
+              color: palette.disabled,
+            ),
             floatingLabelBehavior: FloatingLabelBehavior.always,
             floatingLabelStyle: TextStyle(
               fontFamily: SsTypography.uiFamily,
@@ -639,6 +650,7 @@ class SsV2Banner extends StatelessWidget {
     required this.child,
     this.title,
     this.actions = const <Widget>[],
+    this.glyph,
     super.key,
   });
 
@@ -647,13 +659,16 @@ class SsV2Banner extends StatelessWidget {
   final Widget child;
   final List<Widget> actions;
 
+  /// Overrides the tone's default icon.
+  final SsV2IconGlyph? glyph;
+
   @override
   Widget build(BuildContext context) {
     final SsV2Palette palette = SsV2Palette.of(context);
     final (
       Color background,
       Color iconColor,
-      SsV2IconGlyph glyph,
+      SsV2IconGlyph defaultGlyph,
     ) = switch (tone) {
       SsV2Tone.error => (
         palette.errorBackground,
@@ -691,7 +706,11 @@ class SsV2Banner extends StatelessWidget {
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.only(top: 1),
-              child: SsV2Icon(glyph, size: 20, color: iconColor),
+              child: SsV2Icon(
+                glyph ?? defaultGlyph,
+                size: 20,
+                color: iconColor,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -727,19 +746,32 @@ class SsV2Banner extends StatelessWidget {
   }
 }
 
-enum SsV2ChipTone { waiting, recording, liveNotRecording, paused, brand, alert }
+enum SsV2ChipTone {
+  waiting,
+  recording,
+  liveNotRecording,
+  paused,
+  brand,
+  alert,
+  success,
+  neutral,
+}
 
 class SsV2StatusChip extends StatelessWidget {
   const SsV2StatusChip({
     required this.label,
     required this.tone,
     this.fontSize = 12,
+    this.dot = false,
     super.key,
   });
 
   final String label;
   final SsV2ChipTone tone;
   final double fontSize;
+
+  /// Leading 7px dot in the text color.
+  final bool dot;
 
   @override
   Widget build(BuildContext context) {
@@ -755,7 +787,27 @@ class SsV2StatusChip extends StatelessWidget {
       SsV2ChipTone.paused => (palette.warningBackground, palette.warning, null),
       SsV2ChipTone.brand => (palette.tint, palette.link, null),
       SsV2ChipTone.alert => (palette.errorBackground, palette.errorText, null),
+      SsV2ChipTone.success => (
+        palette.successBackground,
+        palette.success,
+        null,
+      ),
+      SsV2ChipTone.neutral => (
+        palette.neutralBackground,
+        palette.neutralText,
+        null,
+      ),
     };
+    final Widget text = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        color: fg,
+      ),
+    );
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: border == null ? 10 : 8.5,
@@ -766,16 +818,20 @@ class SsV2StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(99),
         border: border == null ? null : Border.all(color: border, width: 1.5),
       ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.w700,
-          color: fg,
-        ),
-      ),
+      child: dot
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Flexible(child: text),
+              ],
+            )
+          : text,
     );
   }
 }
@@ -786,12 +842,16 @@ class SsV2Avatar extends StatelessWidget {
     required this.name,
     this.size = 44,
     this.liveRing = false,
+    this.fontSize,
     super.key,
   });
 
   final String name;
   final double size;
   final bool liveRing;
+
+  /// Initials size; defaults to 17 from 48px and 15 below.
+  final double? fontSize;
 
   static const List<(Color, Color)> _pairs = <(Color, Color)>[
     (Color(0xFFCFC4FF), Color(0xFF3D1FD0)),
@@ -846,7 +906,7 @@ class SsV2Avatar extends StatelessWidget {
         child: Text(
           initialsFor(name),
           style: TextStyle(
-            fontSize: size >= 48 ? 17 : 15,
+            fontSize: fontSize ?? (size >= 48 ? 17 : 15),
             fontWeight: FontWeight.w800,
             color: fg,
           ),
@@ -1184,6 +1244,24 @@ class SsV2StatusBody extends StatelessWidget {
       SsV2TileTone.success => (palette.successBackground, palette.success),
       SsV2TileTone.error => (palette.errorBackground, palette.errorText),
     };
+    // The body is at most 310 wide. A ConstrainedBox would report its
+    // intrinsic height at the full width (fewer lines), and the
+    // IntrinsicHeight in SsV2FillScroll would then clip it on short
+    // screens, so the inset is computed as padding instead.
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) =>
+          _build(context, palette, bg, fg, constraints.maxWidth),
+    );
+  }
+
+  Widget _build(
+    BuildContext context,
+    SsV2Palette palette,
+    Color bg,
+    Color fg,
+    double maxWidth,
+  ) {
+    final double bodyInset = math.max(0, (maxWidth - 48 - 310) / 2);
     return SsV2FillScroll(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
       children: <Widget>[
@@ -1216,8 +1294,8 @@ class SsV2StatusBody extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 310),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: bodyInset),
                   child: Text(
                     body,
                     textAlign: TextAlign.center,
@@ -1379,4 +1457,181 @@ class SsV2Checkbox extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 52×32 artboard switch: brand track with a 24px white thumb when on, grey
+/// outlined track with a 16px thumb when off. [onChanged] null disables it.
+class SsV2Switch extends StatelessWidget {
+  const SsV2Switch({
+    required this.value,
+    required this.onChanged,
+    required this.semanticLabel,
+    super.key,
+  });
+
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+  final String semanticLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final SsV2Palette palette = SsV2Palette.of(context);
+    final bool enabled = onChanged != null;
+    return Semantics(
+      toggled: value,
+      enabled: enabled,
+      label: semanticLabel,
+      onTap: enabled ? () => onChanged!(!value) : null,
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: enabled ? () => onChanged!(!value) : null,
+          child: SizedBox(
+            width: 52,
+            height: 48,
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 52,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: value
+                      ? palette.primary.withValues(alpha: enabled ? 1 : 0.45)
+                      : palette.skeleton,
+                  borderRadius: BorderRadius.circular(99),
+                  border: value
+                      ? null
+                      : Border.all(color: palette.disabled, width: 2),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 150),
+                  alignment: value
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Container(
+                      width: value ? 24 : 16,
+                      height: value ? 24 : 16,
+                      decoration: BoxDecoration(
+                        color: value ? Colors.white : palette.disabled,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Settings row: bold 15px title, optional muted subtitle, trailing switch.
+class SsV2SwitchRow extends StatelessWidget {
+  const SsV2SwitchRow({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+    super.key,
+  });
+
+  final String title;
+  final String? subtitle;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 60),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (subtitle != null) ...<Widget>[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(fontSize: 13, color: palette.textMuted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          SsV2Switch(value: value, onChanged: onChanged, semanticLabel: title),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet in the artboard style: page background, 28px top corners,
+/// 36×4 handle, 12/20/28 padding, over the whole screen (bottom bar too).
+Future<T?> showSsV2Sheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  final SsV2Palette palette = SsV2Palette.of(context);
+  return showModalBottomSheet<T>(
+    context: context,
+    useRootNavigator: true,
+    isScrollControlled: true,
+    showDragHandle: false,
+    backgroundColor: palette.background,
+    barrierColor: palette.scrim,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
+    builder: (BuildContext sheetContext) {
+      final MediaQueryData media = MediaQuery.of(sheetContext);
+      return DefaultTextStyle(
+        style: ssV2BaseText(palette),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              28 + media.viewPadding.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: palette.border,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                builder(sheetContext),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

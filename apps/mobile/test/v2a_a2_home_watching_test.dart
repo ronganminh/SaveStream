@@ -8,6 +8,8 @@ import 'package:savestream_mobile/app/theme/ss_tokens.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
+import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
+import 'package:savestream_mobile/features/channels/presentation/channels_screen.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
@@ -47,20 +49,21 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Channels 8/3 · FREE'), findsOneWidget);
+    // All eight legacy channels stay listed.
+    expect(find.byType(ChannelListCard), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey<String>('channels-add')).first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Watching is full'), findsOneWidget);
     expect(
       find.textContaining('You already have 8 channels from an older plan'),
       findsWidgets,
     );
-
-    await tester.tap(find.byTooltip('Add channel').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Watching is full'), findsOneWidget);
     expect(find.byType(Checkbox), findsNothing);
   });
 
-  testWidgets('per-creator LIVE notification switch persists in repository', (
+  testWidgets('per-creator LIVE alerts switch persists in repository', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: config()));
@@ -68,35 +71,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
-
-    final Finder notifyTile = find
-        .widgetWithText(SwitchListTile, 'Notify when LIVE')
-        .first;
-    await tester.scrollUntilVisible(
-      notifyTile,
-      260,
-      scrollable: find.byType(Scrollable).last,
-    );
-    final Finder notifySwitch = find.descendant(
-      of: notifyTile,
-      matching: find.byType(Switch),
-    );
-    expect(notifySwitch, findsOneWidget);
-    final Switch switchWidget = tester.widget<Switch>(notifySwitch);
-    switchWidget.onChanged!(false);
+    await tester.tap(find.text('@nora_shop'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
 
-    final Switch updatedSwitch = tester.widget<Switch>(
-      find
-          .descendant(
-            of: find.widgetWithText(SwitchListTile, 'Notify when LIVE').first,
-            matching: find.byType(Switch),
-          )
-          .first,
+    SsV2Switch alerts() => tester.widget<SsV2Switch>(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is SsV2Switch && widget.semanticLabel == 'LIVE alerts',
+      ),
     );
-    expect(updatedSwitch.value, isFalse);
+    expect(alerts().value, isTrue);
+    alerts().onChanged!(false);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(alerts().value, isFalse);
   });
 
   testWidgets('Pro Home shows hours/minutes and never credit or ads', (
@@ -123,7 +114,7 @@ void main() {
     expect(find.textContaining('credit', findRichText: true), findsNothing);
   });
 
-  testWidgets('queue and missed cloud-slot states render on creator detail', (
+  testWidgets('waiting for a cloud slot renders on channel detail', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -144,22 +135,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Waiting for a cloud slot'), findsOneWidget);
-    expect(find.text('Queue position 1'), findsOneWidget);
-
-    router.go(AppRoutes.channelDetail('watch_008'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 250));
-
-    expect(find.text('Missed'), findsOneWidget);
+    expect(find.text('LIVE · not recording'), findsOneWidget);
     expect(
-      find.textContaining('No cloud minutes were charged'),
+      find.text(
+        'Waiting for a free cloud slot. Recording starts as soon as one '
+        'opens.',
+      ),
       findsOneWidget,
     );
+    await tester.pump(const Duration(milliseconds: 250));
   });
 
   testWidgets(
-    'Pro add creator covers lookup failure then success without checkbox',
+    'Pro add channel covers lookup failure, then ownership and verify',
     (WidgetTester tester) async {
       await tester.pumpWidget(
         SaveStreamApp(
@@ -182,26 +170,35 @@ void main() {
       await tester.enterText(field, '@notfound_creator');
       await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Channel not found'), findsOneWidget);
+      expect(
+        find.text('We couldn’t find a public profile with this username.'),
+        findsOneWidget,
+      );
 
       await tester.enterText(field, '@fresh_creator');
       await tester.pump();
-      await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
+      await tester.tap(find.widgetWithText(FilledButton, 'Try again'));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Found'), findsOneWidget);
-      expect(find.text('Use recordings responsibly'), findsOneWidget);
-      expect(find.byType(Checkbox), findsNothing);
-
-      final Finder add = find.widgetWithText(FilledButton, 'Add channel');
-      await tester.ensureVisible(add);
-      await tester.tap(add);
-      await tester.pump(const Duration(milliseconds: 200));
-      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Is this your channel?'), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey<String>('add-channel-owner')));
       await tester.pump();
 
-      expect(find.text('Channel detail'), findsOneWidget);
-      expect(find.textContaining('@fresh_creator'), findsOneWidget);
+      final Finder confirm = find.widgetWithText(
+        FilledButton,
+        'Yes, verify ownership',
+      );
+      await tester.ensureVisible(confirm);
+      await tester.tap(confirm);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.text('Verify ownership'), findsOneWidget);
+      expect(find.text('@fresh_creator'), findsOneWidget);
     },
   );
 

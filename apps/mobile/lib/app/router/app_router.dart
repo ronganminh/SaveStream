@@ -11,11 +11,11 @@ import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/reset_password_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/verify_email_screen.dart';
-import '../../features/channels/presentation/add_channel_screen.dart';
 import '../../features/channels/presentation/auto_record_settings_screen.dart';
 import '../../features/channels/presentation/channel_detail_screen.dart';
 import '../../features/channels/presentation/channels_screen.dart';
 import '../../features/channels/presentation/live_notification_screen.dart';
+import '../../features/channels/presentation/verify_ownership_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/home/presentation/home_screen.dart';
@@ -292,6 +292,13 @@ GoRouter createAppRouter({
           );
         },
       ),
+      // Full screen (no bottom bar), as drawn.
+      GoRoute(
+        path: '/channels/:id/verify',
+        builder: (BuildContext context, GoRouterState state) {
+          return VerifyOwnershipScreen(watchId: state.pathParameters['id']!);
+        },
+      ),
       GoRoute(
         path: '/recordings/player/:id',
         builder: (BuildContext context, GoRouterState state) {
@@ -349,10 +356,11 @@ GoRouter createAppRouter({
                   return const ChannelsScreen();
                 },
                 routes: <RouteBase>[
+                  // The Add channel sheet over the list.
                   GoRoute(
                     path: 'add',
                     builder: (BuildContext context, GoRouterState state) {
-                      return const AddChannelScreen();
+                      return const ChannelsScreen(openAddSheet: true);
                     },
                   ),
                   GoRoute(

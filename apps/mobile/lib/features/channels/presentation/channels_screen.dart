@@ -1,587 +1,417 @@
-/// W01/W03 — V2 Watching list.
+/// AChannels · AChannelsEmpty · AChannelsError — the v2 Channels tab.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
-import '../../../app/theme/ss_tokens.dart';
-import '../../../core/widgets/savestream_widgets.dart';
+import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
+import '../../home/presentation/controllers/home_dashboard_controller.dart';
+import '../../home/presentation/home_screen.dart' show relativeDay;
 import '../../recordings/domain/models/recording_summary.dart';
-import '../../recordings/presentation/controllers/recording_providers.dart';
-import '../../settings/presentation/notification_action_button.dart';
+import '../domain/models/channel_verification.dart';
 import '../domain/models/watch_summary.dart';
-import 'cloud_hours_upsell_sheet.dart';
+import 'add_channel_sheet.dart';
+import 'channel_v2_parts.dart';
 import 'controllers/watch_providers.dart';
-import 'pro_manual_record_sheet.dart';
 import 'watch_limit_sheet.dart';
 
-enum _WatchFilter { all, live, offline }
-
 class ChannelsScreen extends ConsumerStatefulWidget {
-  const ChannelsScreen({super.key});
+  const ChannelsScreen({this.openAddSheet = false, super.key});
+
+  /// Opens the Add channel sheet right away (route `/channels/add`).
+  final bool openAddSheet;
 
   @override
   ConsumerState<ChannelsScreen> createState() => _ChannelsScreenState();
 }
 
 class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
-  _WatchFilter _filter = _WatchFilter.all;
-  final Set<String> _mutating = <String>{};
-
-  Future<void> _startRecording(
-    WatchSummary watch,
-    Entitlement entitlement,
-  ) async {
-    if (_mutating.contains(watch.id)) return;
-    setState(() => _mutating.add(watch.id));
-    try {
-      if (entitlement.cloudMinutesAvailable <= 0) {
-        await showCloudHoursUpsellSheet(context);
-        return;
-      }
-      final Engine? engine = await showProManualRecordSheet(
-        context: context,
-        creatorName: watch.creatorDisplayName,
-        entitlement: entitlement,
-      );
-      if (engine != Engine.cloud || !mounted) return;
-      final RecordingSummary created = await ref
-          .read(recordingControllerProvider)
-          .create(
-            CreateRecordingCommand(
-              sourceType: RecordingSourceType.username,
-              sourceValue: watch.creatorUsername,
-            ),
-          );
-      if (mounted) context.push(AppRoutes.recordingDetail(created.id));
-    } on Object {
-      if (mounted) {
-        SsToast.show(context, context.l10n.cloudRecordingStartError);
-      }
-    } finally {
-      if (mounted) setState(() => _mutating.remove(watch.id));
-    }
-  }
-
-  Future<void> _toggleNotify(WatchSummary watch, bool enabled) async {
-    setState(() => _mutating.add(watch.id));
-    try {
-      await ref
-          .read(watchControllerProvider)
-          .setNotifyOnLive(watch.id, enabled: enabled);
-      if (mounted) {
-        SsToast.show(context, context.l10n.notificationSavedMessage);
-      }
-    } finally {
-      if (mounted) setState(() => _mutating.remove(watch.id));
-    }
-  }
-
-  Future<void> _toggleAutoRecord(WatchSummary watch, bool enabled) async {
-    setState(() => _mutating.add(watch.id));
-    try {
-      await ref
-          .read(watchControllerProvider)
-          .setAutoRecord(watch.id, enabled: enabled);
-    } finally {
-      if (mounted) setState(() => _mutating.remove(watch.id));
-    }
-  }
-
-  void _add(Entitlement entitlement, int count) {
-    final int limit = entitlement.limits.maxWatches;
-    if (count >= limit) {
-      showWatchLimitSheet(context, count: count, limit: limit);
-      return;
-    }
-    context.push(AppRoutes.addChannel);
-  }
+  bool _sheetOpen = false;
 
   @override
-  Widget build(BuildContext context) {
-    final AsyncValue<List<WatchSummary>> watches = ref.watch(watchListProvider);
-    final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
-    final AsyncValue<List<RecordingSummary>> recordings = ref.watch(
-      watchRecordingsProvider,
-    );
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.channelsTitle),
-        actions: <Widget>[
-          const NotificationActionButton(),
-          IconButton(
-            tooltip: context.l10n.addChannelAction,
-            onPressed: watches.hasValue && entitlement.hasValue
-                ? () => _add(
-                    entitlement.requireValue,
-                    watches.requireValue.length,
-                  )
-                : null,
-            icon: const Icon(Icons.add_rounded),
-          ),
-        ],
-      ),
-      body: SafeArea(child: _buildBody(watches, entitlement, recordings)),
-    );
+  void initState() {
+    super.initState();
+    if (widget.openAddSheet) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        final GoRouter router = GoRouter.of(context);
+        _sheetOpen = true;
+        final WatchSummary? created = await showAddChannelSheet(context);
+        _sheetOpen = false;
+        // Leave the /channels/add page once the sheet is gone.
+        if (router.canPop()) {
+          router.pop();
+        } else {
+          router.go(AppRoutes.channels);
+        }
+        if (created != null) {
+          router.push(AppRoutes.channelVerify(created.id));
+        }
+      });
+    }
   }
 
-  Widget _buildBody(
-    AsyncValue<List<WatchSummary>> watches,
-    AsyncValue<Entitlement> entitlement,
-    AsyncValue<List<RecordingSummary>> recordings,
-  ) {
-    if (watches.isLoading || entitlement.isLoading || recordings.isLoading) {
-      return const _ChannelsSkeleton();
+  Future<void> _add(List<WatchSummary> watches) async {
+    Entitlement? entitlement;
+    try {
+      entitlement = await ref.read(entitlementProvider.future);
+    } on Object {
+      // The server enforces the limit too; let the user try.
     }
-    if (watches.hasError || entitlement.hasError || recordings.hasError) {
-      final Object error =
-          watches.error ?? entitlement.error ?? recordings.error!;
-      return Center(
-        child: SsAsyncErrorState(
-          error: error,
-          onRetry: () {
-            ref.invalidate(watchListProvider);
-            ref.invalidate(entitlementProvider);
-            ref.invalidate(watchRecordingsProvider);
-          },
-        ),
+    if (!mounted) return;
+    if (entitlement != null &&
+        watches.length >= entitlement.limits.maxWatches) {
+      await showWatchLimitSheet(
+        context,
+        count: watches.length,
+        limit: entitlement.limits.maxWatches,
       );
+      return;
     }
-
-    final List<WatchSummary> all = watches.requireValue;
-    final Entitlement access = entitlement.requireValue;
-    final List<RecordingSummary> recs = recordings.requireValue;
-    if (all.isEmpty) {
-      return _EmptyChannels(onAdd: () => _add(access, 0));
-    }
-
-    final List<WatchSummary> filtered = all
-        .where(
-          (WatchSummary item) => switch (_filter) {
-            _WatchFilter.all => true,
-            _WatchFilter.live => item.isLive,
-            _WatchFilter.offline =>
-              !item.isLive && item.status == WatchStatus.active,
-          },
-        )
-        .toList(growable: false);
-    final int liveCount = all.where((WatchSummary item) => item.isLive).length;
-    final int offlineCount = all
-        .where(
-          (WatchSummary item) =>
-              !item.isLive && item.status == WatchStatus.active,
-        )
-        .length;
-    return RefreshIndicator(
-      onRefresh: () async {
-        ref.invalidate(watchListProvider);
-        ref.invalidate(entitlementProvider);
-        ref.invalidate(watchRecordingsProvider);
-        await ref.read(watchListProvider.future);
-      },
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          SsSpacing.lg,
-          SsSpacing.md,
-          SsSpacing.lg,
-          SsSpacing.xxl,
-        ),
-        children: <Widget>[
-          _WatchingHeader(
-            entitlement: access,
-            count: all.length,
-            liveCount: liveCount,
-            offlineCount: offlineCount,
-            filter: _filter,
-            onFilter: (_WatchFilter value) => setState(() => _filter = value),
-          ),
-          if (filtered.isEmpty) ...<Widget>[
-            const SizedBox(height: SsSpacing.xl),
-            SsEmptyState(
-              icon: Icons.filter_alt_off_rounded,
-              title: context.l10n.emptyChannelsTitle,
-              message: context.l10n.emptyChannelsBody,
-            ),
-          ] else
-            for (final WatchSummary watch in filtered) ...<Widget>[
-              const SizedBox(height: SsSpacing.md),
-              _WatchTile(
-                watch: watch,
-                recording: _recordingForWatch(recs, watch.id),
-                entitlement: access,
-                mutating: _mutating.contains(watch.id),
-                onNotify: (bool enabled) => _toggleNotify(watch, enabled),
-                onAutoRecord: (bool enabled) =>
-                    _toggleAutoRecord(watch, enabled),
-                onRecord: watch.isLive
-                    ? () => _startRecording(watch, access)
-                    : null,
-              ),
-            ],
-          if (all.length < access.limits.maxWatches) ...<Widget>[
-            const SizedBox(height: SsSpacing.md),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _add(access, all.length),
-                icon: const Icon(Icons.person_add_alt_1_rounded),
-                label: Text(
-                  '${context.l10n.addChannelAction} · '
-                  '${context.l10n.watchCapacityRemaining(access.limits.maxWatches - all.length)}',
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+    await _openSheet();
   }
-}
 
-class _WatchingHeader extends StatelessWidget {
-  const _WatchingHeader({
-    required this.entitlement,
-    required this.count,
-    required this.liveCount,
-    required this.offlineCount,
-    required this.filter,
-    required this.onFilter,
-  });
-
-  final Entitlement entitlement;
-  final int count;
-  final int liveCount;
-  final int offlineCount;
-  final _WatchFilter filter;
-  final ValueChanged<_WatchFilter> onFilter;
+  Future<void> _openSheet() async {
+    if (_sheetOpen) return;
+    _sheetOpen = true;
+    final WatchSummary? created = await showAddChannelSheet(context);
+    _sheetOpen = false;
+    if (!mounted || created == null) return;
+    context.push(AppRoutes.channelVerify(created.id));
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final int limit = entitlement.limits.maxWatches;
-    final int remaining = (limit - count).clamp(0, limit).toInt();
-    final bool overLegacyLimit = count > limit;
+    final AsyncValue<List<WatchSummary>> watches = ref.watch(watchListProvider);
+    final List<RecordingSummary> recordings =
+        ref.watch(watchRecordingsProvider).value ?? const <RecordingSummary>[];
+    final DateTime Function() now = ref.watch(homeClockProvider);
+    // Loaded up front so Add channel can check the channel limit at once.
+    ref.watch(entitlementProvider);
+    final List<WatchSummary>? items = watches.value;
+    final bool populated = items != null && items.isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        Text(
-          l10n.watchingHeader(
-            count,
-            limit,
-            entitlement.plan == Plan.pro
-                ? l10n.proPlanLabel
-                : l10n.freePlanLabel,
+    return SsV2Page(
+      safeBottom: false,
+      child: Stack(
+        children: <Widget>[
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              ChannelsTopBar(
+                title: l10n.v2NavChannels,
+                actions: <Widget>[
+                  if (watches.hasValue && populated) const ChannelsBellButton(),
+                ],
+              ),
+              Expanded(
+                child: watches.when(
+                  skipLoadingOnRefresh: true,
+                  skipLoadingOnReload: true,
+                  loading: () => const _ChannelsSkeleton(),
+                  error: (Object error, StackTrace stackTrace) =>
+                      ChannelsCenteredMessage(
+                        glyph: SsV2IconGlyph.alert,
+                        title: l10n.v2ChannelsErrorTitle,
+                        body: l10n.v2ChannelsErrorBody,
+                        actionWidth: 200,
+                        action: SsV2Button(
+                          label: l10n.v2RetryShort,
+                          variant: SsV2ButtonVariant.outlined,
+                          leading: SsV2Icon(
+                            SsV2IconGlyph.refresh,
+                            size: 20,
+                            color: SsV2Palette.of(context).text,
+                          ),
+                          onPressed: () => ref.invalidate(watchListProvider),
+                        ),
+                      ),
+                  data: (List<WatchSummary> data) => data.isEmpty
+                      ? ChannelsCenteredMessage(
+                          glyph: SsV2IconGlyph.channels,
+                          title: l10n.v2ChannelsEmptyTitle,
+                          body: l10n.v2ChannelsEmptyBody,
+                          actionWidth: 240,
+                          action: SsV2Button(
+                            key: const ValueKey<String>('channels-add-empty'),
+                            label: l10n.v2AddChannel,
+                            leading: const SsV2Icon(
+                              SsV2IconGlyph.plus,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                            onPressed: () => _add(data),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            ref.invalidate(watchListProvider);
+                            ref.invalidate(watchRecordingsProvider);
+                            await ref.read(watchListProvider.future);
+                          },
+                          child: _ChannelList(
+                            watches: data,
+                            recordings: recordings,
+                            now: now,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: SsSpacing.xs),
-        Text(
-          overLegacyLimit
-              ? l10n.watchCapacityLegacyExceeded(count)
-              : remaining > 0
-              ? l10n.watchCapacityRemaining(remaining)
-              : l10n.watchCapacityFull,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        if (overLegacyLimit) ...<Widget>[
-          const SizedBox(height: SsSpacing.md),
-          SsInlineAlert(
-            title: l10n.watchCapacityFull,
-            message: l10n.watchCapacityLegacyExceeded(count),
-            tone: SsInlineAlertTone.warning,
-          ),
+          if (populated)
+            Positioned(
+              right: 16,
+              bottom: 16,
+              child: _AddChannelFab(onPressed: () => _add(items)),
+            ),
         ],
-        const SizedBox(height: SsSpacing.md),
-        SsFilterChips(
-          items: <String>[
-            '${l10n.watchFilterAll} · $count',
-            '${l10n.watchFilterLive} · $liveCount',
-            '${l10n.watchFilterOffline} · $offlineCount',
-          ],
-          selectedIndex: filter.index,
-          onSelected: (int index) => onFilter(_WatchFilter.values[index]),
-        ),
-        const SizedBox(height: SsSpacing.sm),
-        _WatchCapacityIndicator(count: count, limit: limit),
-      ],
+      ),
     );
   }
 }
 
-class _WatchCapacityIndicator extends StatelessWidget {
-  const _WatchCapacityIndicator({required this.count, required this.limit});
+class _ChannelList extends StatelessWidget {
+  const _ChannelList({
+    required this.watches,
+    required this.recordings,
+    required this.now,
+  });
 
-  final int count;
-  final int limit;
+  final List<WatchSummary> watches;
+  final List<RecordingSummary> recordings;
+  final DateTime Function() now;
 
   @override
   Widget build(BuildContext context) {
-    final Color active = Theme.of(context).colorScheme.primary;
-    final Color inactive = Theme.of(
-      context,
-    ).colorScheme.surfaceContainerHighest;
-    if (limit > 5) {
-      return LinearProgressIndicator(
-        value: limit == 0 ? 0 : (count / limit).clamp(0, 1),
-        minHeight: 4,
-        borderRadius: BorderRadius.circular(999),
-      );
-    }
-    return Row(
-      children: <Widget>[
-        for (int index = 0; index < limit; index++) ...<Widget>[
-          if (index > 0) const SizedBox(width: SsSpacing.xs),
-          Expanded(
-            child: Container(
-              height: 4,
-              decoration: BoxDecoration(
-                color: index < count ? active : inactive,
-                borderRadius: BorderRadius.circular(999),
-              ),
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      // Room under the last card for the floating button.
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 96),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: ssV2Gap(<Widget>[
+          Text(
+            context.l10n.v2ChannelsIntro,
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: palette.textMuted,
             ),
           ),
-        ],
-      ],
+          for (final WatchSummary watch in watches)
+            ChannelListCard(
+              watch: watch,
+              recording: activeRecordingFor(watch, recordings),
+              now: now,
+            ),
+        ], 12),
+      ),
     );
   }
 }
 
-class _WatchTile extends StatelessWidget {
-  const _WatchTile({
+/// One channel in the list: avatar, handle, status line and chip.
+class ChannelListCard extends ConsumerWidget {
+  const ChannelListCard({
     required this.watch,
     required this.recording,
-    required this.entitlement,
-    required this.mutating,
-    required this.onNotify,
-    required this.onAutoRecord,
-    required this.onRecord,
+    required this.now,
+    super.key,
   });
 
   final WatchSummary watch;
   final RecordingSummary? recording;
-  final Entitlement entitlement;
-  final bool mutating;
-  final ValueChanged<bool> onNotify;
-  final ValueChanged<bool> onAutoRecord;
-  final VoidCallback? onRecord;
+  final DateTime Function() now;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final bool pro = entitlement.plan == Plan.pro;
-    final bool cloudExhausted = pro && entitlement.cloudMinutesAvailable <= 0;
-    final bool pausedNoCloudMinutes =
-        watch.autoRecordState == AutoRecordState.pausedNoCloudMinutes ||
-        cloudExhausted;
-    final RecordingStatus? recordingStatus = recording?.status;
+    final SsV2Palette palette = SsV2Palette.of(context);
+    final String handle = channelHandle(watch);
+    final ChannelState state = channelStateOf(watch, recording: recording);
+    final TextStyle subtitleStyle = TextStyle(
+      fontSize: 13,
+      color: palette.textMuted,
+    );
 
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          InkWell(
-            onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SsAvatar(
-                  label: watch.creatorDisplayName,
-                  imageUrl: watch.creatorAvatarUrl,
-                  radius: 24,
-                  isLive: watch.isLive,
+    Widget subtitle(String text) => Text(
+      text,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: subtitleStyle,
+    );
+
+    final Widget line;
+    final (String chip, SsV2ChipTone tone) = switch (state) {
+      ChannelState.recording => (l10n.v2ChipRec, SsV2ChipTone.recording),
+      ChannelState.unverified => (l10n.v2ChipUnverified, SsV2ChipTone.paused),
+      ChannelState.paused => (l10n.v2ChipPaused, SsV2ChipTone.paused),
+      ChannelState.liveNotRecording => (
+        l10n.v2ChipLiveNotRecording,
+        SsV2ChipTone.liveNotRecording,
+      ),
+      ChannelState.noMinutes => (l10n.v2ChipPaused, SsV2ChipTone.paused),
+      ChannelState.waiting => (l10n.v2ChipWaiting, SsV2ChipTone.waiting),
+    };
+    switch (state) {
+      case ChannelState.recording:
+        final DateTime? started = recording?.startedAt;
+        line = started == null
+            ? subtitle(l10n.v2RecordingInCloud)
+            : RecordingElapsedBuilder(
+                startedAt: started,
+                now: now,
+                builder: (BuildContext context, int seconds) => subtitle(
+                  l10n.v2RowRecording(formatRecordingClock(seconds)),
                 ),
-                const SizedBox(width: SsSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        watch.creatorDisplayName,
-                        style: Theme.of(context).textTheme.titleMedium,
+              );
+      case ChannelState.unverified:
+        final ChannelVerification? pending = ref
+            .watch(channelVerificationProvider(watch.id))
+            .value;
+        final String? code = pending == null || pending.isExpiredAt(now())
+            ? null
+            : pending.code;
+        line = subtitle(
+          code == null
+              ? l10n.v2VerifyOwnershipToRecord
+              : l10n.v2RowAddCode(code),
+        );
+      case ChannelState.paused:
+        line = subtitle(l10n.v2PausedByYou);
+      case ChannelState.liveNotRecording:
+        line = subtitle(
+          channelOutOfMinutes(watch)
+              ? l10n.v2PausedNoMinutes
+              : watch.autoRecord
+              ? l10n.v2LiveNotRecording
+              : l10n.v2RowLiveAutoOff,
+        );
+      case ChannelState.noMinutes:
+        line = subtitle(l10n.v2PausedNoMinutes);
+      case ChannelState.waiting:
+        final DateTime? last = watch.lastLiveAt?.toLocal();
+        final String? when = last == null
+            ? null
+            : relativeDay(context, last, now());
+        line = subtitle(switch ((watch.autoRecord, when)) {
+          (true, final String w) => l10n.v2RowAutoOnLastLive(w),
+          (false, final String w) => l10n.v2RowAutoOffLastLive(w),
+          (true, null) => l10n.v2RowAutoOnNoLive,
+          (false, null) => l10n.v2RowAutoOffNoLive,
+        });
+    }
+
+    return Material(
+      color: palette.surface,
+      textStyle: ssV2BaseText(palette),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: palette.divider),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: ValueKey<String>('channel-${watch.id}'),
+        onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: <Widget>[
+              SsV2Avatar(
+                name: handle,
+                size: 48,
+                liveRing: state == ChannelState.recording,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      handle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
-                      Text(watch.creatorUsername),
-                      const SizedBox(height: SsSpacing.sm),
-                      Wrap(
-                        spacing: SsSpacing.sm,
-                        runSpacing: SsSpacing.sm,
-                        children: <Widget>[
-                          _liveChip(context, watch),
-                          if (recordingStatus ==
-                              RecordingStatus.waitingForCloudSlot)
-                            SsStatusChip(
-                              label: l10n.watchWaitingCloudSlot,
-                              icon: Icons.hourglass_top_rounded,
-                              tone: SsStatusTone.warning,
-                            ),
-                          if (recordingStatus ==
-                              RecordingStatus.missedNoCloudSlot)
-                            SsStatusChip(
-                              label: l10n.watchMissedNoCloudSlot,
-                              icon: Icons.event_busy_rounded,
-                              tone: SsStatusTone.warning,
-                            ),
-                          if (pausedNoCloudMinutes)
-                            SsStatusChip(
-                              label: l10n.autoRecordPausedNoCloudHoursLabel,
-                              icon: Icons.pause_circle_outline_rounded,
-                              tone: SsStatusTone.warning,
-                            )
-                          else if (watch.status == WatchStatus.paused)
-                            SsStatusChip(
-                              label: l10n.watchPausedStatus,
-                              icon: Icons.pause_rounded,
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 3),
+                    line,
+                  ],
                 ),
-                const Icon(Icons.chevron_right_rounded),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 150),
+                child: SsV2StatusChip(label: chip, tone: tone),
+              ),
+            ],
           ),
-          if (!watch.isLive && watch.nextCheckAt != null) ...<Widget>[
-            const SizedBox(height: SsSpacing.sm),
-            Text(
-              l10n.watchNextCheckAt(
-                MaterialLocalizations.of(context).formatTimeOfDay(
-                  TimeOfDay.fromDateTime(watch.nextCheckAt!.toLocal()),
-                ),
-              ),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          if (watch.isLive) ...<Widget>[
-            const SizedBox(height: SsSpacing.md),
-            SsPrimaryButton(
-              label: l10n.recordNowAction,
-              icon: Icons.radio_button_checked_rounded,
-              onPressed: mutating ? null : onRecord,
-            ),
-          ],
-          const Divider(height: SsSpacing.xl),
-          Semantics(
-            label: l10n.watchNotifyOnLive,
-            child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: watch.notifyOnLive,
-              title: Text(l10n.watchNotifyOnLive),
-              secondary: const Icon(Icons.notifications_active_outlined),
-              onChanged: mutating ? null : onNotify,
-            ),
-          ),
-          if (pro) ...<Widget>[
-            Semantics(
-              label: l10n.watchAutoRecordCloud,
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: watch.autoRecord,
-                title: Text(l10n.watchAutoRecordCloud),
-                subtitle: pausedNoCloudMinutes
-                    ? Text(l10n.autoRecordPausedNoCloudHoursBody)
-                    : null,
-                secondary: const Icon(Icons.cloud_outlined),
-                onChanged: mutating || pausedNoCloudMinutes
-                    ? null
-                    : onAutoRecord,
-              ),
-            ),
-            if (pausedNoCloudMinutes)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () =>
-                      context.push(AppRoutes.cloudHoursLocation('auto_record')),
-                  icon: const Icon(Icons.add_card_rounded),
-                  label: Text(l10n.buyMoreCloudHoursAction),
-                ),
-              ),
-          ] else
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.lock_outline_rounded),
-              title: Text(l10n.watchAutoRecordCloud),
-              subtitle: Text(l10n.watchAutoRecordLocked),
-              onTap: () => showCloudHoursUpsellSheet(context),
-            ),
-        ],
+        ),
       ),
     );
   }
-
-  Widget _liveChip(BuildContext context, WatchSummary watch) {
-    final AppLocalizations l10n = context.l10n;
-    if (watch.status == WatchStatus.paused ||
-        watch.status == WatchStatus.disabled) {
-      return SsStatusChip(label: l10n.watchPausedStatus);
-    }
-    if (watch.isLive) {
-      return SsStatusChip(
-        label: l10n.liveStatus,
-        icon: Icons.fiber_manual_record_rounded,
-        tone: SsStatusTone.recording,
-      );
-    }
-    if (watch.lastCheckedAt == null) {
-      return SsStatusChip(
-        label: l10n.watchUnknownStatus,
-        icon: Icons.help_outline_rounded,
-      );
-    }
-    return SsStatusChip(
-      label: l10n.offlineStatus,
-      icon: Icons.cloud_off_outlined,
-    );
-  }
 }
 
-RecordingSummary? _recordingForWatch(
-  List<RecordingSummary> recordings,
-  String watchId,
-) {
-  for (final RecordingSummary item in recordings) {
-    if (item.watchId == watchId &&
-        (item.isActiveLifecycle ||
-            item.status == RecordingStatus.missedNoCloudSlot)) {
-      return item;
-    }
-  }
-  return null;
-}
+class _AddChannelFab extends StatelessWidget {
+  const _AddChannelFab({required this.onPressed});
 
-class _EmptyChannels extends StatelessWidget {
-  const _EmptyChannels({required this.onAdd});
-
-  final VoidCallback onAdd;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(SsSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            SsEmptyState(
-              title: context.l10n.homeEmptyCreatorTitle,
-              message: context.l10n.addFirstCreatorBody,
-              icon: Icons.person_add_alt_1_rounded,
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: palette.primary.withValues(alpha: 0.6),
+            offset: const Offset(0, 10),
+            blurRadius: 24,
+            spreadRadius: -8,
+          ),
+        ],
+      ),
+      child: Material(
+        color: palette.primary,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          key: const ValueKey<String>('channels-add'),
+          onTap: onPressed,
+          child: SizedBox(
+            height: 56,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SsV2Icon(
+                    SsV2IconGlyph.plus,
+                    size: 22,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    context.l10n.v2AddChannel,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: SsSpacing.lg),
-            SsPrimaryButton(
-              label: context.l10n.addChannelAction,
-              icon: Icons.add_rounded,
-              onPressed: onAdd,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -593,17 +423,35 @@ class _ChannelsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(SsSpacing.lg),
-      children: const <Widget>[
-        SsSkeleton(height: 132, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 44, radius: SsRadii.pill),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 260, radius: SsRadii.lg),
-        SizedBox(height: SsSpacing.md),
-        SsSkeleton(height: 260, radius: SsRadii.lg),
-      ],
+    return Semantics(
+      label: context.l10n.v2LoadingLabel,
+      child: ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+        children: ssV2Gap(<Widget>[
+          const SsV2Skeleton(height: 14, widthFactor: 0.8),
+          for (int i = 0; i < 3; i++)
+            const SsV2Card(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: <Widget>[
+                  SsV2Skeleton(width: 48, height: 48, radius: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        SsV2Skeleton(height: 16, widthFactor: 0.6),
+                        SizedBox(height: 8),
+                        SsV2Skeleton(height: 12, widthFactor: 0.8),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ], 12),
+      ),
     );
   }
 }

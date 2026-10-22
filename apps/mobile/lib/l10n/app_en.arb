@@ -1160,5 +1160,221 @@
   "v2NavHome": "Home",
   "v2NavChannels": "Channels",
   "v2NavRecordings": "Recordings",
-  "v2NavAccount": "Account"
+  "v2NavAccount": "Account",
+  "v2ChannelsIntro": "Only channels you own or manage, verified with a bio code.",
+  "v2AddChannel": "Add channel",
+  "v2ChannelsEmptyTitle": "No channels yet",
+  "v2ChannelsEmptyBody": "Add the TikTok username you go LIVE on. You’ll verify it’s yours with a short bio code.",
+  "v2ChannelsErrorTitle": "Couldn’t load your channels",
+  "v2ChannelsErrorBody": "Check your connection and try again. Recording keeps running in the cloud.",
+  "v2RetryShort": "Retry",
+  "v2RowRecording": "Recording · {time}",
+  "@v2RowRecording": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RowAutoOnLastLive": "Auto-record on · last LIVE {when}",
+  "@v2RowAutoOnLastLive": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RowAutoOffLastLive": "Auto-record off · last LIVE {when}",
+  "@v2RowAutoOffLastLive": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RowAutoOnNoLive": "Auto-record on · no LIVE yet",
+  "v2RowAutoOffNoLive": "Auto-record off · no LIVE yet",
+  "v2RowAddCode": "Add {code} to your bio to finish",
+  "@v2RowAddCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RowLiveAutoOff": "LIVE now — auto-record is off",
+  "v2ChipUnverified": "Unverified",
+  "v2AddChannelTitle": "Add a channel",
+  "v2AddChannelBody": "Enter the TikTok username of a channel you own or manage. You’ll prove ownership in the next step.",
+  "v2TikTokUsername": "TikTok username",
+  "v2UsernameHint": "e.g. my_shop_live",
+  "v2UsernameHelper": "Without the @ · we only look up public profile info",
+  "v2FindChannel": "Find channel",
+  "v2Close": "Close",
+  "v2UsernameRequired": "Enter a TikTok username",
+  "v2UsernameInvalid": "Use 2–24 letters, numbers, periods or underscores",
+  "v2ChannelNotFound": "We couldn’t find a public profile with this username.",
+  "v2ChannelNotFoundHelp": "Check the spelling, and make sure the profile is public. Private profiles can’t be verified.",
+  "v2LookupUnavailable": "We couldn’t reach TikTok just now. Try again in a moment.",
+  "v2IsThisYourChannel": "Is this your channel?",
+  "v2ChipFound": "Found",
+  "v2OwnershipConsentLead": "I own or manage this TikTok account and I’m allowed to record its LIVEs (",
+  "v2OwnershipConsentTail": ").",
+  "v2OwnershipConsentError": "Confirm you own or manage this account to continue.",
+  "v2YesVerifyOwnership": "Yes, verify ownership",
+  "v2NotMyChannel": "Not my channel",
+  "v2ChannelAlreadyAdded": "This channel is already in your list.",
+  "v2AddChannelFailed": "We couldn’t add this channel. Try again.",
+  "v2VerifyOwnershipTitle": "Verify ownership",
+  "v2VerifyIntroLead": "To keep SaveStream for owners only, add this code to the bio of ",
+  "v2VerifyIntroTail": ".",
+  "v2YourVerificationCode": "Your verification code",
+  "v2CopyCode": "Copy code",
+  "v2CodeCopied": "Code copied",
+  "v2ExpiresIn": "{minutes, plural, =1{Expires in 1 min} other{Expires in {minutes} min}}",
+  "@v2ExpiresIn": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2Expired": "Expired",
+  "v2VerifyStep1Lead": "Open your TikTok profile and tap ",
+  "v2VerifyStep1Bold": "Edit profile",
+  "v2VerifyStep1Tail": ".",
+  "v2VerifyStep2Lead": "Paste the code anywhere in your ",
+  "v2VerifyStep2Bold": "Bio",
+  "v2VerifyStep2Tail": " and save.",
+  "v2VerifyStep3Lead": "Come back and tap ",
+  "v2VerifyStep3Bold": "Check my bio",
+  "v2VerifyStep3Tail": ". You can remove the code after you’re verified.",
+  "v2CheckMyBio": "Check my bio",
+  "v2DoItLater": "I’ll do it later",
+  "v2CheckingBioTitle": "Checking your bio…",
+  "v2CheckingBioBody": "This usually takes a few seconds.",
+  "v2Checking": "Checking…",
+  "v2CodeNotFoundTitle": "We didn’t find {code} in your bio yet.",
+  "@v2CodeNotFoundTitle": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "v2CodeNotFoundBody": "Profile changes can take a minute to show. Make sure you saved your bio, then check again.",
+  "v2CheckAgain": "Check again",
+  "v2CodeExpiredTitle": "This code has expired.",
+  "v2CodeExpiredBody": "Get a new code and put it in your bio instead.",
+  "v2GetNewCode": "Get a new code",
+  "v2RetryLaterTitle": "We couldn’t read your bio just now.",
+  "v2RetryLaterBody": "{seconds, plural, =1{Try again in 1 second.} other{Try again in {seconds} seconds.}}",
+  "@v2RetryLaterBody": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "v2VerifyLoadError": "We couldn’t get a verification code. Check your connection and try again.",
+  "v2TooManyCodes": "Too many verification codes. Try again in an hour.",
+  "v2ChannelVerifiedTitle": "{handle} is verified",
+  "@v2ChannelVerifiedTitle": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "v2ChannelVerifiedBody": "We’ll watch this channel and record every LIVE in the cloud. You can remove {code} from your bio now.",
+  "@v2ChannelVerifiedBody": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "v2ChannelVerifiedBodyNoCode": "We’ll watch this channel and record every LIVE in the cloud. You can remove the code from your bio now.",
+  "v2AutoRecordWhenLive": "Auto-record when LIVE",
+  "v2UsesRecordingMinutes": "Uses your recording minutes",
+  "v2GoToChannel": "Go to channel",
+  "v2AddAnotherChannel": "Add another channel",
+  "v2AutoRecordNeedsMinutes": "Auto-record needs recording minutes. Buy a pack to turn it on.",
+  "v2ChannelOptions": "Channel options",
+  "v2ChipLiveRecording": "● LIVE · Recording",
+  "v2ChipOwnerVerified": "Owner verified",
+  "v2ChipWaitingForLive": "Waiting for LIVE",
+  "v2ChipNotVerifiedYet": "Not verified yet",
+  "v2RecordingInTheCloud": "Recording in the cloud",
+  "v2SafeToClose": "Safe to close the app. We’ll notify you when it’s ready.",
+  "v2MinutesUsedLeft": "{used, plural, =1{1 minute used} other{{used} minutes used}} · {left} left",
+  "@v2MinutesUsedLeft": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "v2StopRecording": "Stop recording",
+  "v2StatRecordings": "Recordings",
+  "v2StatRecorded": "Recorded",
+  "v2StatLastLive": "Last LIVE",
+  "v2StatNone": "—",
+  "v2LiveAlerts": "LIVE alerts",
+  "v2AvailableAfterVerification": "Available after verification",
+  "v2RemoveChannel": "Remove channel",
+  "v2WaitingTitle": "Waiting for the next LIVE",
+  "v2WaitingBody": "We check this channel about every 30 seconds. Checking is free — minutes are only used while recording.",
+  "v2LiveNotRecordingTitle": "{handle} is LIVE but we’re not recording.",
+  "@v2LiveNotRecordingTitle": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "v2LiveNotRecordingNoMinutes": "You’re out of minutes. Add minutes and recording starts again within about a minute.",
+  "v2LiveNotRecordingAutoOff": "Auto-record is off for this channel. Turn it on to record its next LIVE.",
+  "v2LiveNotRecordingStarting": "Recording should start within about a minute.",
+  "v2FinishVerifyingTitle": "Finish verifying to start recording.",
+  "v2FinishVerifyingBodyCode": "Add {code} to your TikTok bio, then check again. We don’t record unverified channels.",
+  "@v2FinishVerifyingBodyCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "v2FinishVerifyingBody": "Put your verification code in your TikTok bio, then check again. We don’t record unverified channels.",
+  "v2VerifyByDate": "Verify by {date} to keep recording.",
+  "@v2VerifyByDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "v2ContinueVerification": "Continue verification",
+  "v2PausedTitle": "Watching is paused",
+  "v2PausedBody": "We’re not checking this channel for LIVEs. Resume to start again.",
+  "v2ResumeWatching": "Resume watching",
+  "v2PauseWatching": "Pause watching",
+  "v2RemoveChannelTitle": "Remove {handle}?",
+  "@v2RemoveChannelTitle": {
+    "placeholders": {
+      "handle": {
+        "type": "String"
+      }
+    }
+  },
+  "v2RemoveChannelBody": "We’ll stop watching this channel. Recordings you already have stay in your library until they expire.",
+  "v2RemoveChannelNote": "To add it again later you’ll need to verify ownership again.",
+  "v2Remove": "Remove",
+  "v2ChannelGone": "This channel isn’t in your list anymore.",
+  "v2ChannelLoadError": "Couldn’t load this channel",
+  "v2ActionFailed": "That didn’t work. Try again.",
+  "v2LiveWaitingForSlot": "Waiting for a free cloud slot. Recording starts as soon as one opens."
 }
