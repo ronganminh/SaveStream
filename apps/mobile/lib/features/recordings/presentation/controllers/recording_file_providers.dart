@@ -15,8 +15,8 @@ final Provider<CloudArtifactDownloader> cloudArtifactDownloaderProvider =
       return downloader;
     });
 
-final Provider<CloudRecordingFileService> cloudRecordingFileServiceProvider =
-    Provider<CloudRecordingFileService>((Ref ref) {
+final Provider<RecordingFileStore> cloudRecordingFileServiceProvider =
+    Provider<RecordingFileStore>((Ref ref) {
       return CloudRecordingFileService(
         createDownloadUrl: ref
             .watch(recordingRepositoryProvider)

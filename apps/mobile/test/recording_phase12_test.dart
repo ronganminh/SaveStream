@@ -9,6 +9,7 @@ import 'package:savestream_mobile/core/api/api_client.dart';
 import 'package:savestream_mobile/core/api/idempotency.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/features/recordings/data/remote/recording_api_models.dart';
 import 'package:savestream_mobile/features/recordings/data/remote/recording_event_source.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
@@ -330,6 +331,49 @@ void main() {
     expect(artifacts.single.sizeBytes, 1234);
     expect(first.uri, isNot(second.uri));
     expect(downloadCalls, 2);
+  });
+
+  test('decodes thumbnail_url, expiry, failure and artifact video size', () {
+    final RecordingSummary recording = RecordingApiModel.fromJson(
+      <String, Object?>{
+        ..._recordingJson(id: 'rec-1', status: 'failed', canStop: false),
+        'thumbnail_url': 'https://media.example.com/o/thumb.jpg?s=1',
+        'expires_at': '2026-11-14T20:01:00Z',
+        'minutes_charged': 0,
+        'error': <String, Object?>{
+          'code': 'STREAM_OFFLINE',
+          'message': 'The source is currently offline',
+          'retryable': false,
+        },
+      },
+    ).toDomain();
+    expect(recording.thumbnailUrl, 'https://media.example.com/o/thumb.jpg?s=1');
+    expect(recording.expiresAt, DateTime.utc(2026, 11, 14, 20, 1));
+    expect(recording.errorCode, 'STREAM_OFFLINE');
+    expect(recording.errorMessage, 'The source is currently offline');
+
+    // A missing or unusable thumbnail only drops the image.
+    final RecordingSummary bare = RecordingApiModel.fromJson(<String, Object?>{
+      ..._recordingJson(id: 'rec-2'),
+      'thumbnail_url': 'javascript:alert(1)',
+    }).toDomain();
+    expect(bare.thumbnailUrl, isNull);
+
+    final RecordingArtifactSummary artifact =
+        RecordingArtifactApiModel.fromJson(<String, Object?>{
+          'id': 'artifact-1',
+          'recording_id': 'rec-1',
+          'kind': 'video',
+          'container': 'mp4',
+          'size_bytes': 1234,
+          'checksum_sha256': 'abc123',
+          'width': 1080,
+          'height': 1920,
+          'duration_ms': 5942000,
+          'created_at': '2026-10-01T04:00:00Z',
+        }).toDomain();
+    expect(artifact.width, 1080);
+    expect(artifact.height, 1920);
   });
 
   test('SSE supplies bearer and Last-Event-ID and decodes progress', () async {

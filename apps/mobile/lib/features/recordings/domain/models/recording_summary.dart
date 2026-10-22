@@ -67,6 +67,8 @@ class RecordingArtifactSummary {
     required this.sizeBytes,
     required this.checksumSha256,
     required this.createdAt,
+    this.width,
+    this.height,
   });
 
   final String id;
@@ -74,6 +76,10 @@ class RecordingArtifactSummary {
   final int sizeBytes;
   final String checksumSha256;
   final DateTime createdAt;
+
+  /// Video size probed by the server; null for older artifacts.
+  final int? width;
+  final int? height;
 }
 
 class ArtifactDownloadUrl {
@@ -139,6 +145,7 @@ class RecordingSummary {
     this.expiresAt,
     this.minutesCharged = 0,
     this.queuePosition,
+    this.thumbnailUrl,
   });
 
   final String id;
@@ -164,6 +171,10 @@ class RecordingSummary {
   final DateTime? expiresAt;
   final int minutesCharged;
   final int? queuePosition;
+
+  /// Signed URL of one frame of the finished video (`thumbnail_url`); null
+  /// until the server has one.
+  final String? thumbnailUrl;
 
   bool get isActiveLifecycle {
     return switch (status) {
@@ -205,6 +216,7 @@ class RecordingSummary {
     DateTime? expiresAt,
     int? minutesCharged,
     int? queuePosition,
+    String? thumbnailUrl,
   }) {
     return RecordingSummary(
       id: id,
@@ -230,6 +242,7 @@ class RecordingSummary {
       expiresAt: expiresAt ?? this.expiresAt,
       minutesCharged: minutesCharged ?? this.minutesCharged,
       queuePosition: queuePosition ?? this.queuePosition,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
     );
   }
 }

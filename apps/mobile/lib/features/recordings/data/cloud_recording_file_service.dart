@@ -5,7 +5,26 @@ import 'package:path_provider/path_provider.dart';
 import '../domain/models/recording_summary.dart';
 import 'cloud_artifact_downloader.dart';
 
-final class CloudRecordingFileService {
+/// Copies of cloud recordings saved on this device.
+abstract interface class RecordingFileStore {
+  /// The saved copy of [recordingId], when it is complete.
+  Future<File?> existingFile(String recordingId, {int? expectedSizeBytes});
+
+  /// Bytes already saved for [recordingId] (a partial download included).
+  Future<int> existingBytes(String recordingId);
+
+  /// Downloads (or resumes) the artifact into the device copy.
+  Future<File> download({
+    required String recordingId,
+    required String artifactId,
+    CloudDownloadProgress? onProgress,
+    bool Function()? isCancelled,
+  });
+
+  Future<void> delete(String recordingId);
+}
+
+final class CloudRecordingFileService implements RecordingFileStore {
   CloudRecordingFileService({
     required Future<ArtifactDownloadUrl> Function(String artifactId)
     createDownloadUrl,
@@ -25,6 +44,7 @@ final class CloudRecordingFileService {
     return Directory('${support.path}/cloud_recordings');
   }
 
+  @override
   Future<File?> existingFile(
     String recordingId, {
     int? expectedSizeBytes,
@@ -39,15 +59,18 @@ final class CloudRecordingFileService {
     return file;
   }
 
+  @override
   Future<int> existingBytes(String recordingId) async {
     final File file = await _destination(recordingId);
     return await file.exists() ? file.length() : 0;
   }
 
+  @override
   Future<File> download({
     required String recordingId,
     required String artifactId,
     CloudDownloadProgress? onProgress,
+    bool Function()? isCancelled,
   }) async {
     final ArtifactDownloadUrl download = await _createDownloadUrl(artifactId);
     if (download.isExpired) {
@@ -58,10 +81,12 @@ final class CloudRecordingFileService {
       uri: download.uri,
       destination: destination,
       onProgress: onProgress,
+      isCancelled: isCancelled,
     );
     return destination;
   }
 
+  @override
   Future<void> delete(String recordingId) async {
     final File file = await _destination(recordingId);
     if (await file.exists()) {
