@@ -17,11 +17,7 @@ import 'package:savestream_mobile/features/home/presentation/controllers/home_da
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_library_controller.dart';
-import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_providers.dart';
-import 'package:savestream_mobile/features/recordings/presentation/models/recording_library_item.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
-import 'package:savestream_mobile/features/recordings/presentation/recording_thumbnail.dart';
-import 'package:savestream_mobile/features/recordings/presentation/recording_ui_helpers.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
 import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
 
@@ -357,7 +353,7 @@ void main() {
     expect(find.text('@ada_live'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
 
@@ -391,7 +387,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     await tester.tap(find.byKey(const ValueKey<String>('channels-add')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
     expect(find.text('Watching is full'), findsOneWidget);
     expect(
@@ -418,7 +414,7 @@ void main() {
     expect(find.text('LIVE alerts'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Channel options'));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
     await tester.tap(find.text('Pause watching'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
@@ -434,22 +430,22 @@ void main() {
     expect(find.text('Waiting for the next LIVE'), findsOneWidget);
   });
 
-  testWidgets('Recordings merged library exposes cloud lifecycle statuses', (
+  testWidgets('Recordings library exposes cloud lifecycle statuses', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
     final ProviderContainer container = ProviderScope.containerOf(
       tester.element(find.byType(RecordingsScreen)),
     );
-    final List<RecordingLibraryItem> items = await container.read(
+    final List<RecordingSummary> items = await container.read(
       recordingLibraryProvider.future,
     );
     final Set<RecordingStatus> statuses = items
-        .map((RecordingLibraryItem item) => item.status)
+        .map((RecordingSummary item) => item.status)
         .toSet();
 
     expect(
@@ -469,88 +465,36 @@ void main() {
         RecordingStatus.missedNoCloudSlot,
       ]),
     );
+    expect(find.text('@ada_live · LIVE now'), findsOneWidget);
   });
 
-  testWidgets('Recordings library supports search and issue filter', (
+  testWidgets('Recordings library supports search and the Failed filter', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
-    await tester.enterText(find.byType(TextField), 'Studio North');
+    await tester.tap(find.byKey(const ValueKey<String>('recordings-search')));
+    await pumpFrames(tester);
+    await tester.enterText(find.byType(TextField), 'studio');
     await tester.pump();
-    expect(find.text('Studio North'), findsWidgets);
-    expect(find.text('Minh Streams'), findsNothing);
+    expect(find.text('@studio_north'), findsWidgets);
+    expect(find.text('@minh_streams'), findsNothing);
 
-    await tester.enterText(find.byType(TextField), '');
-    await tester.pump();
-    expect(find.widgetWithText(ChoiceChip, 'Local'), findsNothing);
-    expect(find.text('Cloud'), findsWidgets);
+    await tester.tap(find.byTooltip('Close search'));
+    await pumpFrames(tester);
+    expect(find.text('@minh_streams'), findsWidgets);
 
-    expect(find.widgetWithText(ChoiceChip, 'Error'), findsOneWidget);
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Error'));
-    await tester.pump();
-    expect(find.text('Studio North'), findsWidgets);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('recordings-filter-failed')),
+    );
+    await pumpFrames(tester);
+    expect(find.text('Failed recordings are never charged.'), findsOneWidget);
+    expect(find.text('@studio_north'), findsWidgets);
+    expect(find.text('@minh_streams'), findsNothing);
   });
-
-  testWidgets(
-    'Recordings switches between content thumbnails and compact list',
-    (WidgetTester tester) async {
-      await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-      await tester.pump();
-      await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-      await tester.pumpAndSettle();
-
-      final Finder allFilter = find.widgetWithText(ChoiceChip, 'All');
-      final Finder errorFilter = find.widgetWithText(ChoiceChip, 'Error');
-      expect(find.widgetWithText(ChoiceChip, 'Local'), findsNothing);
-      expect(tester.getCenter(errorFilter).dy, tester.getCenter(allFilter).dy);
-
-      final double searchCenter = tester.getCenter(find.byType(TextField)).dy;
-      expect(
-        tester.getCenter(find.byIcon(Icons.tune_rounded)).dy,
-        closeTo(searchCenter, 1),
-      );
-      expect(
-        tester.getCenter(find.byIcon(Icons.view_list_rounded)).dy,
-        closeTo(searchCenter, 1),
-      );
-
-      final BuildContext context = tester.element(
-        find.byType(RecordingsScreen),
-      );
-      final String dateGroupLabel = MaterialLocalizations.of(
-        context,
-      ).formatMediumDate(DateTime(2026, 9, 30));
-      expect(find.text(dateGroupLabel), findsOneWidget);
-      expect(find.text('Swipe left for Play, Share and Delete'), findsNothing);
-
-      expect(find.byType(RecordingThumbnail), findsWidgets);
-      await tester.tap(find.byIcon(Icons.view_list_rounded));
-      await tester.pumpAndSettle();
-      expect(find.byType(RecordingThumbnail), findsNothing);
-      expect(find.byIcon(Icons.video_file_outlined), findsWidgets);
-      final String visibleDate = recordingTimestamp(
-        tester.element(find.byType(RecordingsScreen)),
-        DateTime.utc(2026, 9, 30, 13, 42),
-      );
-      expect(find.textContaining(visibleDate), findsWidgets);
-
-      await tester.tap(find.byTooltip('Filter recordings'));
-      await tester.pumpAndSettle();
-      expect(find.text('Newest first'), findsOneWidget);
-      expect(find.text('Expiring first'), findsOneWidget);
-      expect(find.text('Largest first'), findsOneWidget);
-      expect(find.text('Name A–Z'), findsOneWidget);
-      await tester.tapAt(const Offset(8, 8));
-      await tester.pumpAndSettle();
-
-      await tester.drag(find.text('Ada Live').first, const Offset(-260, 0));
-      await tester.pumpAndSettle();
-    },
-  );
 
   testWidgets('active recording Stop action follows canStop flag', (
     WidgetTester tester,
@@ -558,80 +502,76 @@ void main() {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
-    await tester.tap(find.text('Ada Live'));
+    GoRouter.of(
+      tester.element(find.byType(RecordingsScreen)),
+    ).push(AppRoutes.recordingDetail('rec_001'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.scrollUntilVisible(
-      find.text('Stop recording'),
-      320,
-      scrollable: find.byType(Scrollable).last,
+    expect(find.text('Recording now'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('player-stop')),
     );
-    expect(find.text('Stop recording'), findsOneWidget);
-    expect(find.text('Retry recording'), findsNothing);
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Stop recording'));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
+    await tester.tap(find.byKey(const ValueKey<String>('player-stop')));
+    await pumpFrames(tester);
 
     expect(find.text('Stop cloud recording?'), findsOneWidget);
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording').last);
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, 1000));
-    await tester.pumpAndSettle();
-    expect(find.text('Stop requested'), findsWidgets);
-    expect(find.widgetWithText(FilledButton, 'Stop recording'), findsNothing);
+    expect(find.text('Processing your recording…'), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('player-stop')), findsNothing);
   });
 
-  testWidgets('failed recording exposes Retry and Delete action flags', (
+  testWidgets('failed recording shows why and can be deleted', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
-    await tester.pumpAndSettle();
+    await pumpFrames(tester);
 
-    final GoRouter router = GoRouter.of(
+    GoRouter.of(
       tester.element(find.byType(RecordingsScreen)),
-    );
-    router.go(AppRoutes.recordingDetail('rec_003'));
-    await tester.pumpAndSettle();
+    ).push(AppRoutes.recordingDetail('rec_003'));
+    await pumpFrames(tester);
 
-    await tester.scrollUntilVisible(
-      find.text('Recording error'),
-      320,
-      scrollable: find.byType(Scrollable).last,
+    expect(find.text('This recording couldn’t be saved'), findsOneWidget);
+    expect(
+      find.text('The source connection ended before recording completed.'),
+      findsOneWidget,
     );
-    expect(find.text('Recording error'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Retry recording'),
-      320,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('Retry recording'), findsOneWidget);
-    expect(find.text('Delete cloud recording'), findsOneWidget);
+    expect(find.text('Report a problem'), findsOneWidget);
     expect(find.text('Stop recording'), findsNothing);
 
-    await tester.drag(find.byType(Scrollable).last, const Offset(0, -120));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Retry recording'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    final ProviderContainer container = ProviderScope.containerOf(
-      tester.element(find.byType(RecordingDetailScreen)),
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('player-delete-button')),
     );
-    final RecordingSummary? updated = container
-        .read(recordingRealtimeProvider('rec_003'))
-        .value;
+    await pumpFrames(tester);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('player-delete-button')),
+    );
+    await pumpFrames(tester);
+    expect(find.text('Delete this recording?'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey<String>('recording-delete-confirm')),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    await pumpFrames(tester);
 
-    expect(updated?.status, RecordingStatus.queued);
-    expect(updated?.actions.canRetry, isFalse);
+    expect(find.byType(RecordingDetailScreen), findsNothing);
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(RecordingsScreen)),
+    );
+    final List<RecordingSummary> items = await container.read(
+      recordingLibraryProvider.future,
+    );
+    expect(items.where((RecordingSummary r) => r.id == 'rec_003'), isEmpty);
   });
 
   test(
@@ -825,4 +765,13 @@ void main() {
     );
     expect(app.themeMode, ThemeMode.dark);
   });
+}
+
+/// Pumps a few frames. The Recordings tab has spinners and running timers
+/// (as drawn), so it never "settles".
+Future<void> pumpFrames(WidgetTester tester) async {
+  await tester.pump();
+  for (int i = 0; i < 4; i++) {
+    await tester.pump(const Duration(milliseconds: 250));
+  }
 }
