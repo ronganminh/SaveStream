@@ -102,7 +102,9 @@ Future<void> captureScreen(WidgetTester tester, String name) async {
       final String data = base64Encode(png!.buffer.asUint8List());
       for (int i = 0; i < data.length; i += 800) {
         // ignore: avoid_print
-        print('SS-SCREEN $name ${data.substring(i, math.min(i + 800, data.length))}');
+        print(
+          'SS-SCREEN $name ${data.substring(i, math.min(i + 800, data.length))}',
+        );
       }
       return;
     }
