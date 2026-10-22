@@ -40,7 +40,6 @@ class DeviceService:
                 device_id=normalized_id,
                 platform=payload.platform,
                 push_token=payload.push_token,
-                device_name=payload.device_name,
                 app_version=payload.app_version,
                 locale=payload.locale,
             )
@@ -49,7 +48,7 @@ class DeviceService:
             row.session_id = principal.session_id
             row.platform = payload.platform
             row.push_token = payload.push_token
-            row.device_name = payload.device_name
+            row.device_name = None
             row.app_version = payload.app_version
             row.locale = payload.locale
             row.updated_at = utcnow()

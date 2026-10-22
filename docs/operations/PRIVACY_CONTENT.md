@@ -27,6 +27,10 @@ Operators must choose and document `SAVESTREAM_ACCOUNT_DELETION_GRACE_DAYS` for 
 
 Financial ledger/payment records are not automatically purged by the recording retention worker.
 
+Rewarded-ad intents (`reward_intents`: app install id, AdMob transaction id, ad unit) are deleted after `SAVESTREAM_REWARD_RETENTION_DAYS` (default 365, minimum 31) by the daily Celery beat job `savestream.rewards.retention` (schedule entry `reward-intent-retention`), in batches of `SAVESTREAM_REWARD_RETENTION_BATCH_SIZE` (default 1000). The credit ledger grants those rewards produced are kept; the ledger refers to a reward only by id string, so balances are unchanged.
+
+Device registrations no longer store a device name (manufacturer/model); migration `0036_device_name_optional` cleared existing values.
+
 Retention periods must be selected by product/legal/operations for the actual jurisdictions and contractual requirements.
 
 ## Content policy implementation checklist

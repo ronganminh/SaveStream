@@ -203,6 +203,8 @@ Trả `201`: `{ "reward_id": "rwd_123", "ssv_user_id": "usr_1", "ssv_custom_data
 - `purpose = cloud_minutes`: bắt đầu quá `SAVESTREAM_REWARD_INTENTS_PER_HOUR` quảng cáo trong 1 giờ trượt: `429` mã `RATE_LIMITED`, `error.details = {"retry_after_seconds": 600, "limit": 20, "window_seconds": 3600}`. `retry_after_seconds` tính từ lúc ý định cũ nhất cần thiết ra khỏi cửa sổ.
 - Mọi phản hồi `429` có `error.details.retry_after_seconds` đều kèm header `Retry-After` (giây) cùng giá trị.
 
+Lưu trữ: ý định nhận thưởng (gồm `device_id` cài đặt app và mã giao dịch AdMob) bị xoá sau `SAVESTREAM_REWARD_RETENTION_DAYS` ngày (mặc định 365) bởi job hằng ngày `savestream.rewards.retention`. Số phút đã cộng vẫn giữ nguyên trong sổ credit. Giới hạn theo ngày UTC, giới hạn 1 giờ và cảnh báo thiết bị dùng chung 30 ngày chỉ đọc các dòng gần đây nên không bị ảnh hưởng.
+
 ### `GET /v1/rewards/{reward_id}`
 
 `{ "reward_id": "rwd_123", "status": "pending" }`, với `status` là `pending`, `valid`, `invalid`, `expired`. App hỏi lại mỗi 2 giây, tối đa khoảng 15 giây, rồi hiện trạng thái "xác nhận chậm".
@@ -272,10 +274,12 @@ Mỗi dòng thêm `store_order_id`, `package_name` (dòng của đơn mua/hoàn 
 ### `PUT /v1/me/devices/{device_id}`
 
 ```json
-{ "platform": "android", "push_token": "fcm-token", "device_name": "Pixel 8", "app_version": "2.0.0", "locale": "vi" }
+{ "platform": "android", "push_token": "fcm-token", "app_version": "2.0.0", "locale": "vi" }
 ```
 
 Tạo hoặc cập nhật. `push_token` có thể null khi người dùng chưa cấp quyền. Thành công trả `204` không có body.
+
+`device_name` (hãng/kiểu máy) đã bỏ: app không gửi nữa. Máy chủ vẫn nhận trường này (chuỗi hoặc `null`, tối đa 160 ký tự) từ bản app cũ nhưng không lưu; giá trị đã lưu trước đây đã được xoá.
 
 ### `DELETE /v1/me/devices/{device_id}`
 
