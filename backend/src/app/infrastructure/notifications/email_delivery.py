@@ -310,6 +310,7 @@ async def send_account_email(
     if user is None:
         return "skipped"
     kind = payload.get("kind", "")
+    email: templates.RenderedEmail | None
     if kind == "channel_verification_needed":
         # Required service notice: recording stops for unverified channels.
         email = templates.message_email(
