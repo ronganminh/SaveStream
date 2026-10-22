@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// SaveStream Mobile V2 design tokens (design handoff, Phase 7 final).
+/// SaveStream Mobile V2 design tokens. Brand, status and type values follow
+/// the Android v2 artboards (see also `ss_v2_palette.dart`).
 abstract final class SsColors {
-  static const Color brandPrimary = Color(0xFF4F46E5);
-  static const Color brandPrimaryDark = Color(0xFF818CF8);
+  static const Color brandPrimary = Color(0xFF6D4AFF);
+  static const Color brandPrimaryDark = Color(0xFFA996FF);
   static const Color brandAccent = Color(0xFFC4B5FD);
 
-  static const Color success = Color(0xFF007742);
+  static const Color success = Color(0xFF0B7F57);
   static const Color successDark = Color(0xFF3FD18A);
   static const Color warning = Color(0xFF8A5D00);
   static const Color warningDark = Color(0xFFF0B43C);
-  static const Color error = Color(0xFFE31029);
+  static const Color error = Color(0xFFD7193A);
   static const Color errorDark = Color(0xFFFF5468);
-  static const Color recording = Color(0xFFE31029);
+  static const Color recording = Color(0xFFD7193A);
   static const Color recordingDark = Color(0xFFFF5468);
-  static const Color info = Color(0xFF0074C8);
+  static const Color info = Color(0xFF1D5FC4);
   static const Color infoDark = Color(0xFF5BB0FF);
 
   static const Color successSubtle = Color(0xFFE6F4EC);
@@ -47,7 +48,7 @@ abstract final class SsSpacing {
 }
 
 abstract final class SsTypography {
-  static const String uiFamily = 'Geist';
+  static const String uiFamily = 'Plus Jakarta Sans';
   static const String monoFamily = 'Geist Mono';
 
   static const TextStyle timer = TextStyle(
