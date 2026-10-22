@@ -14,6 +14,14 @@ final class VideoPlayerSsController extends ChangeNotifier
     _player.addListener(_relay);
   }
 
+  /// A saved copy: a `content://` URI (Android Downloads) or a file path.
+  VideoPlayerSsController.saved(String location)
+    : _player = location.startsWith('content://')
+          ? VideoPlayerController.contentUri(Uri.parse(location))
+          : VideoPlayerController.file(File(location)) {
+    _player.addListener(_relay);
+  }
+
   VideoPlayerSsController.network(Uri uri)
     : _player = VideoPlayerController.networkUrl(uri) {
     _player.addListener(_relay);

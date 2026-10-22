@@ -68,14 +68,33 @@ sheet are left out and **Save to device** is full width. The processing banner d
 **Retry processing (ARecordingsFailed).** There is no endpoint to re-process a failed recording,
 so the button is left out.
 
-**Saving / saved (APlayerSaving, APlayerSaved).** The video is saved into the app's own storage
-(the existing v1 download, resumable), not `Downloads/SaveStream`, and the download runs only
-while the app is open; the copy says so ("Saved on this device", "keep the app open until it
-finishes"). **Cancel** stops the download (the part already fetched is kept for a later resume).
-**Open** and **Play saved copy** play the saved file in the full-screen player.
+**Saving / saved (APlayerSaving, APlayerSaved).** As drawn, **Save to device** puts the video in
+the public **Downloads/SaveStream** folder and the toast says "Saved to Downloads". The video first
+downloads into a resumable file in the app's cache (the v1 download), then the Android host
+(`MainActivity` → `SaveStreamDownloads.kt`, channel `savestream/downloads`) copies it into
+`MediaStore.Downloads` with `RELATIVE_PATH = Download/SaveStream` and `IS_PENDING = 1` while
+writing, clears `IS_PENDING`, and the cache file is deleted. Android 10+ needs no storage
+permission for this, and the manifest asks for none (no `READ_/WRITE_EXTERNAL_STORAGE`, no
+`MANAGE_EXTERNAL_STORAGE`; no plugin in use adds them). The file is named
+`SaveStream_<recording id>.mp4`; when the player opens it looks the name up in MediaStore, so a
+copy the user has since deleted or moved shows **Save to device** again. The download runs only
+while the app is open, so the panel still says "keep the app open until it finishes".
+**Cancel** stops the download (the part already fetched stays in the cache for a later resume).
+**Open** and **Play saved copy** play the saved file (its `content://` URI) in the full-screen
+player.
 
-**Delete (APlayerDelete).** Deleting also removes the copy saved in the app (it lives in app
-storage), so the body says that instead of "Copies you saved to your device aren't affected".
+*Android 7–9 (minSdk 24).* There is no permission-free way to write to the public Downloads folder
+before Android 10, and the app does not ask for storage permission. The same flow and copy are
+used, but the file goes to the app-specific `getExternalFilesDir(DIRECTORY_DOWNLOADS)/SaveStream`
+(`Android/data/com.savestream.app/files/Download/SaveStream`), which needs no permission, is
+visible over USB and in file managers, and is removed if the app is uninstalled.
+
+*iOS.* Unchanged: the copy stays in the app's own storage, and the copy reads "Saving to your
+device…" / "Saved on this device".
+
+**Delete (APlayerDelete).** Deleting removes only the cloud recording. A copy saved to the device
+belongs to the user and is never deleted by the app, so the body says "Copies you saved to your
+device aren’t affected", as drawn.
 
 **Player progress (APlayer).** Before playback starts the bar is at 0:00:00; the artboard shows a
 position mid-video. Playback is inline in the 440 px area (tap to pause, drag or tap the bar to

@@ -28,7 +28,8 @@ class RecordingPlayerScreen extends ConsumerStatefulWidget {
   final int durationSeconds;
   final DateTime? startedAt;
 
-  /// Path of a cloud recording already downloaded to this device.
+  /// A cloud recording saved on this device: a file path or, on Android, the
+  /// `content://` URI of the copy in Downloads/SaveStream.
   final String? localPath;
 
   @override
@@ -69,7 +70,7 @@ class _RecordingPlayerScreenState extends ConsumerState<RecordingPlayerScreen> {
       final String? localPath = widget.localPath;
       final VideoPlayerSsController controller =
           localPath != null && localPath.isNotEmpty
-          ? VideoPlayerSsController.file(localPath)
+          ? VideoPlayerSsController.saved(localPath)
           : await _cloudController();
       await controller.initialize();
       if (!mounted) {

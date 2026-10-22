@@ -1,7 +1,6 @@
 /// APlayer · APlayerSaving · APlayerSaved · APlayerDelete · APlayerProcessing
 /// · APlayerFailed — one cloud recording: playback, save, retention, delete.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -47,7 +46,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
   bool _isForeground = true;
   bool _busy = false;
 
-  File? _saved;
+  SavedRecordingCopy? _saved;
   bool _checkedSaved = false;
   bool _saving = false;
   bool _cancelSave = false;
@@ -100,11 +99,11 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
   Future<void> _checkSaved(RecordingSummary recording) async {
     try {
       final RecordingArtifactSummary? artifact = await _artifact(recording.id);
-      final File? file = await _store.existingFile(
+      final SavedRecordingCopy? copy = await _store.existingCopy(
         recording.id,
         expectedSizeBytes: artifact?.sizeBytes,
       );
-      if (mounted && file != null) setState(() => _saved = file);
+      if (mounted && copy != null) setState(() => _saved = copy);
     } on Object {
       // No saved copy (or no storage on this platform): offer Save.
     }
@@ -122,7 +121,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
       final RecordingArtifactSummary? artifact = await _artifact(recording.id);
       if (artifact == null) throw StateError('No artifact to save.');
       if (mounted) setState(() => _total = artifact.sizeBytes);
-      final File file = await _store.download(
+      final SavedRecordingCopy copy = await _store.download(
         recordingId: recording.id,
         artifactId: artifact.id,
         isCancelled: () => _cancelSave,
@@ -137,7 +136,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saved = file;
+        _saved = copy;
         _showSavedToast = true;
       });
       _toastTimer?.cancel();
@@ -154,15 +153,15 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
   }
 
   void _openSaved(RecordingSummary recording) {
-    final File? file = _saved;
-    if (file == null) return;
+    final SavedRecordingCopy? copy = _saved;
+    if (copy == null) return;
     final Uri uri = Uri.parse(AppRoutes.recordingPlayer(recording.id)).replace(
       queryParameters: <String, String>{
         'title': recordingHandle(recording),
         'duration': recording.durationSeconds.toString(),
         if (recording.startedAt != null)
           'started': recording.startedAt!.toIso8601String(),
-        'path': file.path,
+        'path': copy.location,
       },
     );
     context.push(uri.toString());
@@ -180,11 +179,9 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
     setState(() => _busy = true);
     try {
       _cancelSave = true;
-      final RecordingFileStore store = _store;
+      // Only the cloud recording goes: a copy the user saved to the device
+      // is theirs and stays.
       await ref.read(recordingControllerProvider).delete(recording.id);
-      // The server copy is gone; removing the saved copy can finish in the
-      // background (a leftover file would only take space).
-      unawaited(store.delete(recording.id).catchError((Object _) {}));
       if (mounted) context.go(AppRoutes.recordings);
     } on Object {
       if (mounted) SsSnackbar.show(context, l10n.v2ActionFailed);
@@ -311,7 +308,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
       child: switch (group) {
         RecordingGroup.ready => _PlayerSurface(
           recording: recording,
-          localPath: _saved?.path,
+          savedLocation: _saved?.location,
           enabled: playable,
         ),
         RecordingGroup.processing => _StateHero(
@@ -385,6 +382,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
             right: 0,
             bottom: 0,
             child: _SavingPanel(
+              toDownloads: _store.savesToDownloads,
               received: _received,
               total: _total,
               onCancel: () => setState(() => _cancelSave = true),
@@ -398,6 +396,7 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
             child: SafeArea(
               top: false,
               child: _SavedToast(
+                toDownloads: _store.savesToDownloads,
                 onOpen: () {
                   setState(() => _showSavedToast = false);
                   _openSaved(recording);
@@ -585,12 +584,12 @@ class _LiveHero extends StatelessWidget {
 class _PlayerSurface extends ConsumerStatefulWidget {
   const _PlayerSurface({
     required this.recording,
-    required this.localPath,
+    required this.savedLocation,
     required this.enabled,
   });
 
   final RecordingSummary recording;
-  final String? localPath;
+  final String? savedLocation;
   final bool enabled;
 
   @override
@@ -608,9 +607,9 @@ class _PlayerSurfaceState extends ConsumerState<_PlayerSurface> {
   }
 
   Future<VideoPlayerSsController> _create() async {
-    final String? local = widget.localPath;
-    if (local != null && local.isNotEmpty) {
-      return VideoPlayerSsController.file(local);
+    final String? saved = widget.savedLocation;
+    if (saved != null && saved.isNotEmpty) {
+      return VideoPlayerSsController.saved(saved);
     }
     final List<RecordingArtifactSummary> artifacts = await ref.read(
       recordingArtifactsProvider(widget.recording.id).future,
@@ -1193,11 +1192,13 @@ class _DisabledSaveButton extends StatelessWidget {
 /// APlayerSaving: the bottom panel while the video downloads.
 class _SavingPanel extends StatelessWidget {
   const _SavingPanel({
+    required this.toDownloads,
     required this.received,
     required this.total,
     required this.onCancel,
   });
 
+  final bool toDownloads;
   final int received;
   final int? total;
   final VoidCallback onCancel;
@@ -1241,7 +1242,9 @@ class _SavingPanel extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: Text(
-                    l10n.v2PlayerSavingTitle,
+                    toDownloads
+                        ? l10n.v2PlayerSavingTitle
+                        : l10n.v2PlayerSavingTitleInApp,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -1298,10 +1301,12 @@ class _SavingPanel extends StatelessWidget {
   }
 }
 
-/// APlayerSaved: "Saved on this device · Open".
+/// APlayerSaved: "Saved to Downloads · Open" ("Saved on this device" on
+/// iOS, where the copy stays in the app's storage).
 class _SavedToast extends StatelessWidget {
-  const _SavedToast({required this.onOpen});
+  const _SavedToast({required this.toDownloads, required this.onOpen});
 
+  final bool toDownloads;
   final VoidCallback onOpen;
 
   @override
@@ -1328,7 +1333,7 @@ class _SavedToast extends StatelessWidget {
           children: <Widget>[
             Expanded(
               child: Text(
-                l10n.v2PlayerSaved,
+                toDownloads ? l10n.v2PlayerSaved : l10n.v2PlayerSavedInApp,
                 style: const TextStyle(fontSize: 14, color: Colors.white),
               ),
             ),

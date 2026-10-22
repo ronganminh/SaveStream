@@ -1469,7 +1469,8 @@
   "v2PlayerKeptAfter": " · then deleted automatically",
   "v2PlayerKeptToday": "Deleted automatically within a day",
   "v2PlayerOnServers": "recorded on SaveStream servers",
-  "v2PlayerSavingTitle": "Saving to your device…",
+  "v2PlayerSavingTitle": "Saving to Downloads…",
+  "v2PlayerSavingTitleInApp": "Saving to your device…",
   "v2PlayerSavingDetail": "{done} of {total} · keep the app open until it finishes",
   "@v2PlayerSavingDetail": {
     "placeholders": {
@@ -1481,7 +1482,8 @@
       }
     }
   },
-  "v2PlayerSaved": "Saved on this device",
+  "v2PlayerSaved": "Saved to Downloads",
+  "v2PlayerSavedInApp": "Saved on this device",
   "v2PlayerOpen": "Open",
   "v2PlayerSaveFailed": "Couldn’t save the video. Try again.",
   "v2PlayerPlaybackFailed": "Couldn’t play the video. Try again.",
@@ -1512,7 +1514,7 @@
   "v2PlayerReport": "Report a problem",
   "v2Delete": "Delete",
   "v2PlayerDeleteTitle": "Delete this recording?",
-  "v2PlayerDeleteBody": "“{name}” will be removed from SaveStream for good, along with the copy saved in this app.",
+  "v2PlayerDeleteBody": "“{name}” will be removed from SaveStream for good. Copies you saved to your device aren’t affected.",
   "@v2PlayerDeleteBody": {
     "placeholders": {
       "name": {

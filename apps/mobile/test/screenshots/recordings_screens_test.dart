@@ -3,7 +3,6 @@
 // for writing the PNGs. Video playback is never started: the player shows
 // its poster until Play is tapped.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -221,7 +220,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey<String>('player-save')));
     await settle(tester);
-    expect(find.text('Saving to your device…'), findsOneWidget);
+    expect(find.text('Saving to Downloads…'), findsOneWidget);
     expect(find.text('58%'), findsOneWidget);
     expect(
       find.text('1.4 GB of 2.4 GB · keep the app open until it finishes'),
@@ -234,7 +233,7 @@ void main() {
     files.release();
     await settle(tester);
     expect(files.cancelled, isTrue);
-    expect(find.text('Saving to your device…'), findsNothing);
+    expect(find.text('Saving to Downloads…'), findsNothing);
     expect(find.text('Save to device'), findsOneWidget);
   });
 
@@ -249,7 +248,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('player-save')));
     await settle(tester);
     expect(files.downloads, <String>['art-weekend']);
-    expect(find.text('Saved on this device'), findsOneWidget);
+    expect(find.text('Saved to Downloads'), findsOneWidget);
     expect(find.text('Open'), findsOneWidget);
     expect(find.text('Play saved copy'), findsOneWidget);
     await captureScreen(tester, 'APlayerSaved');
@@ -266,6 +265,10 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('player-delete')));
     await settle(tester);
     expect(find.text('Delete this recording?'), findsOneWidget);
+    expect(
+      find.textContaining('Copies you saved to your device aren’t affected.'),
+      findsOneWidget,
+    );
     await captureScreen(tester, 'APlayerDelete');
 
     await tester.tap(
@@ -536,7 +539,7 @@ class _FakeRecordings implements RecordingRepository {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
-/// Saved copies without touching the disk. With [hang] the download stops
+/// Saves to Downloads without touching the disk. With [hang] the download stops
 /// at 58% until [release].
 class _FakeFileStore implements RecordingFileStore {
   _FakeFileStore({this.hang = false});
@@ -551,7 +554,10 @@ class _FakeFileStore implements RecordingFileStore {
   }
 
   @override
-  Future<File?> existingFile(
+  bool get savesToDownloads => true;
+
+  @override
+  Future<SavedRecordingCopy?> existingCopy(
     String recordingId, {
     int? expectedSizeBytes,
   }) async => null;
@@ -560,7 +566,7 @@ class _FakeFileStore implements RecordingFileStore {
   Future<int> existingBytes(String recordingId) async => 0;
 
   @override
-  Future<File> download({
+  Future<SavedRecordingCopy> download({
     required String recordingId,
     required String artifactId,
     CloudDownloadProgress? onProgress,
@@ -577,11 +583,11 @@ class _FakeFileStore implements RecordingFileStore {
       }
     }
     onProgress?.call(receivedBytes: total, totalBytes: total);
-    return File('/saved/$recordingId.mp4');
+    return SavedRecordingCopy(
+      location: 'content://media/external/downloads/$recordingId',
+      sizeBytes: total,
+    );
   }
-
-  @override
-  Future<void> delete(String recordingId) async {}
 }
 
 class _FakeWatches implements WatchRepository {
