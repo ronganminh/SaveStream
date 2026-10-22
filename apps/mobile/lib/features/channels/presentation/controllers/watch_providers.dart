@@ -5,6 +5,7 @@ import '../../../recordings/domain/models/recording_summary.dart';
 import '../../../recordings/presentation/controllers/recording_providers.dart';
 import '../../data/repositories/mock_watch_repository.dart';
 import '../../domain/models/channel_detail_view_model.dart';
+import '../../domain/models/channel_verification.dart';
 import '../../domain/models/watch_summary.dart';
 import '../../domain/repositories/watch_repository.dart';
 
@@ -12,6 +13,43 @@ final Provider<WatchRepository> watchRepositoryProvider =
     Provider<WatchRepository>(
       (ref) => MockWatchRepository(ref.watch(mockBehaviorProvider)),
     );
+
+/// The watch repository's creator lookup (`POST /v1/live-status`).
+final Provider<CreatorLookupRepository> creatorLookupRepositoryProvider =
+    Provider<CreatorLookupRepository>((ref) {
+      final WatchRepository repository = ref.watch(watchRepositoryProvider);
+      if (repository is CreatorLookupRepository) {
+        return repository as CreatorLookupRepository;
+      }
+      throw UnsupportedError('This watch repository cannot look up creators.');
+    });
+
+/// The watch repository's bio-code verification endpoints.
+final Provider<ChannelVerificationRepository>
+channelVerificationRepositoryProvider = Provider<ChannelVerificationRepository>(
+  (ref) {
+    final WatchRepository repository = ref.watch(watchRepositoryProvider);
+    if (repository is ChannelVerificationRepository) {
+      return repository as ChannelVerificationRepository;
+    }
+    throw UnsupportedError('This watch repository cannot verify channels.');
+  },
+);
+
+/// Pending verification (code and expiry) of an unverified channel, read
+/// without creating a code. Null when it cannot be loaded; screens then fall
+/// back to copy without the code.
+final channelVerificationProvider =
+    FutureProvider.family<ChannelVerification?, String>((ref, id) async {
+      ref.watch(watchRevisionProvider);
+      try {
+        return await ref
+            .watch(channelVerificationRepositoryProvider)
+            .getVerification(id);
+      } on Object {
+        return null;
+      }
+    });
 
 final NotifierProvider<WatchRevisionNotifier, int> watchRevisionProvider =
     NotifierProvider<WatchRevisionNotifier, int>(WatchRevisionNotifier.new);
@@ -124,6 +162,10 @@ class WatchController {
   Future<void> delete(String id) {
     return _runMutation(id, () => _repository.deleteWatch(id));
   }
+
+  /// Reloads a channel after something changed on the server (for example
+  /// its ownership was verified).
+  void refresh(String id) => _invalidate(id);
 
   Future<void> _runMutation<T>(String id, Future<T> Function() action) async {
     try {

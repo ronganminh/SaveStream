@@ -1,3 +1,4 @@
+import '../models/channel_verification.dart';
 import '../models/watch_summary.dart';
 
 abstract interface class WatchRepository {
@@ -22,4 +23,18 @@ abstract interface class WatchRepository {
 /// offline test doubles do not have to implement a network-only operation.
 abstract interface class CreatorLookupRepository {
   Future<CreatorLookupResult> lookupCreator(CreateWatchCommand command);
+}
+
+/// Ownership verification with a code in the channel's TikTok bio
+/// (`/v1/watches/{id}/verification`). Separate for the same reason as
+/// [CreatorLookupRepository].
+abstract interface class ChannelVerificationRepository {
+  /// Current state, without creating a code.
+  Future<ChannelVerification> getVerification(String watchId);
+
+  /// The channel's current code, or a new one when none is valid.
+  Future<ChannelVerification> startVerification(String watchId);
+
+  /// Asks the server to look for the code in the bio.
+  Future<ChannelVerification> checkVerification(String watchId);
 }
