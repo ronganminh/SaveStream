@@ -26,7 +26,16 @@ enum SsV2IconGlyph {
   recordings(
     'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM10 9l5 3-5 3z',
   ),
-  refresh('M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6');
+  refresh('M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6'),
+  plus('M12 5v14M5 12h14'),
+  close('M6 6l12 12M18 6L6 18'),
+  copy('M8 8h11v11H8zM5 16V5h11'),
+  shield('M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z'),
+  help(
+    'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01',
+  ),
+  more('M12 5h.01M12 12h.01M12 19h.01'),
+  trash('M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3');
 
   const SsV2IconGlyph(this.pathData);
 

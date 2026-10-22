@@ -37,12 +37,16 @@ class CreateWatchCommand {
     required this.sourceValue,
     required this.autoRecord,
     this.notifyOnLive = true,
+    this.ownerAttested = false,
   });
 
   final WatchSourceType sourceType;
   final String sourceValue;
   final bool autoRecord;
   final bool notifyOnLive;
+
+  /// "I own or manage this account and I'm allowed to record its LIVEs."
+  final bool ownerAttested;
 }
 
 enum CreatorLiveStatus {
@@ -120,6 +124,9 @@ class WatchSummary {
   final DateTime? verificationDueAt;
   final DateTime? ownerVerifiedAt;
 
+  /// True once the owner proved the channel is theirs (code in the bio).
+  bool get isOwnerVerified => ownerVerifiedAt != null;
+
   WatchSummary copyWith({
     String? creatorDisplayName,
     String? creatorUsername,
@@ -134,6 +141,7 @@ class WatchSummary {
     DateTime? lastCheckedAt,
     DateTime? nextCheckAt,
     DateTime? lastLiveAt,
+    DateTime? ownerVerifiedAt,
   }) {
     return WatchSummary(
       id: id,
@@ -153,7 +161,7 @@ class WatchSummary {
       activeRecordingId: activeRecordingId,
       verificationRequired: verificationRequired,
       verificationDueAt: verificationDueAt,
-      ownerVerifiedAt: ownerVerifiedAt,
+      ownerVerifiedAt: ownerVerifiedAt ?? this.ownerVerifiedAt,
     );
   }
 }

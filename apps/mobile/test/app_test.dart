@@ -10,7 +10,6 @@ import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/storage/app_settings_store.dart';
-import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
@@ -349,12 +348,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Ada Live'), findsOneWidget);
-    await tester.tap(find.text('Ada Live'));
+    expect(find.text('@ada_live'), findsOneWidget);
+    await tester.tap(find.text('@ada_live'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Channel detail'), findsOneWidget);
+    expect(find.text('Remove channel'), findsOneWidget);
     expect(find.text('@ada_live'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey<String>('nav-recordings')));
@@ -362,28 +361,24 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
 
-    expect(find.text('Channel detail'), findsOneWidget);
+    expect(find.text('Remove channel'), findsOneWidget);
   });
 
-  testWidgets('renders V2 Watching filters and legacy Free limit', (
-    WidgetTester tester,
-  ) async {
+  testWidgets('renders the v2 Channels list', (WidgetTester tester) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Ada Live'), findsOneWidget);
-    expect(find.text('All · 8'), findsOneWidget);
-    expect(find.text('LIVE'), findsWidgets);
-    expect(find.text('Offline · 2'), findsOneWidget);
-    expect(find.text('Paused · 4'), findsNothing);
-    expect(find.text('Record now'), findsWidgets);
     expect(
-      find.textContaining('You already have 8 channels from an older plan'),
-      findsWidgets,
+      find.text('Only channels you own or manage, verified with a bio code.'),
+      findsOneWidget,
     );
+    expect(find.text('@ada_live'), findsOneWidget);
+    expect(find.text('LIVE · not recording'), findsWidgets);
+    expect(find.text('Paused'), findsWidgets);
+    expect(find.byKey(const ValueKey<String>('channels-add')), findsOneWidget);
   });
 
   testWidgets('legacy Free creator list is preserved but adding is blocked', (
@@ -395,7 +390,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add channel').first);
+    await tester.tap(find.byKey(const ValueKey<String>('channels-add')));
     await tester.pumpAndSettle();
 
     expect(find.text('Watching is full'), findsOneWidget);
@@ -406,7 +401,7 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
   });
 
-  testWidgets('Channel detail can pause and resume monitoring', (
+  testWidgets('Channel detail can pause and resume watching', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
@@ -415,38 +410,28 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.text('Ada Live'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.text('Channel detail'), findsOneWidget);
-    expect(find.text('Pause monitoring'), findsOneWidget);
-    expect(find.text('Notify when LIVE'), findsOneWidget);
-
-    final Finder pause = find.widgetWithText(
-      OutlinedButton,
-      'Pause monitoring',
-    );
-    final OutlinedButton pauseButton = tester.widget<OutlinedButton>(pause);
-    pauseButton.onPressed!();
+    await tester.tap(find.text('@nora_shop'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
 
-    expect(find.text('PAUSED'), findsWidgets);
+    expect(find.text('Waiting for the next LIVE'), findsOneWidget);
+    expect(find.text('LIVE alerts'), findsOneWidget);
 
-    final Finder resume = find.widgetWithText(
-      OutlinedButton,
-      'Resume monitoring',
-    );
-    final OutlinedButton resumeButton = tester.widget<OutlinedButton>(resume);
-    resumeButton.onPressed!();
+    await tester.tap(find.byTooltip('Channel options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pause watching'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('LIVE'), findsWidgets);
-    expect(find.text('Recent recording'), findsOneWidget);
+    expect(find.text('Watching is paused'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Resume watching'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Waiting for the next LIVE'), findsOneWidget);
   });
 
   testWidgets('Recordings merged library exposes cloud lifecycle statuses', (
@@ -800,7 +785,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
     await tester.pump();
 
-    expect(find.byType(SsSkeleton), findsWidgets);
+    expect(find.byType(SsV2Skeleton), findsWidgets);
 
     await tester.pumpWidget(
       SaveStreamApp(
@@ -814,7 +799,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add your channel to get started'), findsOneWidget);
+    expect(find.text('No channels yet'), findsOneWidget);
   });
 
   testWidgets('switches locale and theme at runtime', (

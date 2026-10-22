@@ -32,6 +32,11 @@ class SsV2Palette extends ThemeExtension<SsV2Palette> {
     required this.warningCard,
     required this.liveText,
     required this.thumbOverlay,
+    required this.neutralBackground,
+    required this.neutralText,
+    required this.disabled,
+    required this.errorBorder,
+    required this.scrim,
   });
 
   final Color background;
@@ -67,6 +72,19 @@ class SsV2Palette extends ThemeExtension<SsV2Palette> {
   final Color liveText;
   final Color thumbOverlay;
 
+  /// Grey chip ("Not verified yet").
+  final Color neutralBackground;
+  final Color neutralText;
+
+  /// Disabled button label and switch outline (#8E8AA6).
+  final Color disabled;
+
+  /// Outline of the "Stop recording" button on the pink card.
+  final Color errorBorder;
+
+  /// Barrier behind sheets and dialogs (rgba(21,18,43,.45)).
+  final Color scrim;
+
   static const SsV2Palette light = SsV2Palette(
     background: Color(0xFFFBFAFE),
     surface: Color(0xFFFFFFFF),
@@ -94,6 +112,11 @@ class SsV2Palette extends ThemeExtension<SsV2Palette> {
     warningCard: Color(0xFF9A5800),
     liveText: Color(0xFF6B2A37),
     thumbOverlay: Color(0xB315122B),
+    neutralBackground: Color(0xFFEFEDF5),
+    neutralText: Color(0xFF47435E),
+    disabled: Color(0xFF8E8AA6),
+    errorBorder: Color(0xFFF3B6C1),
+    scrim: Color(0x7315122B),
   );
 
   static const SsV2Palette dark = SsV2Palette(
@@ -123,6 +146,11 @@ class SsV2Palette extends ThemeExtension<SsV2Palette> {
     warningCard: Color(0xFF9A5800),
     liveText: Color(0xFFFFB8C4),
     thumbOverlay: Color(0xB3000000),
+    neutralBackground: Color(0xFF2A2640),
+    neutralText: Color(0xFFCFCBE3),
+    disabled: Color(0xFF7A7594),
+    errorBorder: Color(0xFF6A2534),
+    scrim: Color(0x99000000),
   );
 
   static SsV2Palette of(BuildContext context) {

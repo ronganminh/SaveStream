@@ -1,15 +1,46 @@
 import '../../../../core/api/api_client.dart';
 import '../../../../core/api/api_exception.dart';
+import '../../domain/models/channel_verification.dart';
 import '../../domain/models/watch_summary.dart';
 import '../../domain/repositories/watch_repository.dart';
 import '../remote/watch_api_models.dart';
 
 final class ApiWatchRepository
-    implements WatchRepository, CreatorLookupRepository {
+    implements
+        WatchRepository,
+        CreatorLookupRepository,
+        ChannelVerificationRepository {
   const ApiWatchRepository({required ApiClient apiClient})
     : _apiClient = apiClient;
 
   static const int _pageSize = 100;
+
+  @override
+  Future<ChannelVerification> getVerification(String watchId) async {
+    final response = await _apiClient.get<ChannelVerification>(
+      '/v1/watches/$watchId/verification',
+      decoder: decodeChannelVerification,
+    );
+    return response.data;
+  }
+
+  @override
+  Future<ChannelVerification> startVerification(String watchId) async {
+    final response = await _apiClient.post<ChannelVerification>(
+      '/v1/watches/$watchId/verification',
+      decoder: decodeChannelVerification,
+    );
+    return response.data;
+  }
+
+  @override
+  Future<ChannelVerification> checkVerification(String watchId) async {
+    final response = await _apiClient.post<ChannelVerification>(
+      '/v1/watches/$watchId/verification/check',
+      decoder: decodeChannelVerification,
+    );
+    return response.data;
+  }
 
   final ApiClient _apiClient;
 
@@ -88,6 +119,7 @@ final class ApiWatchRepository
         },
         'auto_record': command.autoRecord,
         'notify_on_live': command.notifyOnLive,
+        if (command.ownerAttested) 'owner_attested': true,
       },
       decoder: WatchApiModel.fromJson,
     );

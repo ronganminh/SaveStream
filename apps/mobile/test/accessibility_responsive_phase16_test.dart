@@ -125,13 +125,16 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byTooltip('Add channel'), findsNothing);
+      expect(find.byKey(const ValueKey<String>('channels-add')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byTooltip('Add channel'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('channels-add')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

@@ -1,4 +1,46 @@
+import '../../domain/models/channel_verification.dart';
 import '../../domain/models/watch_summary.dart';
+
+/// Decodes `ChannelVerificationResponse`.
+ChannelVerification decodeChannelVerification(Object? json) {
+  final Map<Object?, Object?> map = _requiredMap(json, 'verification');
+  final String? result = _optionalString(map['result'], 'result');
+  final Object? checksLeft = map['checks_left'];
+  final Object? retryAfter = map['retry_after_seconds'];
+  if (checksLeft is! int) {
+    throw const FormatException('Expected checks_left integer.');
+  }
+  if (retryAfter != null && retryAfter is! int) {
+    throw const FormatException('Expected nullable retry_after_seconds.');
+  }
+  final String? code = _optionalString(map['code'], 'code');
+  return ChannelVerification(
+    watchId: _requiredString(map['watch_id'], 'watch_id'),
+    verified: _requiredBool(map['verified'], 'verified'),
+    ownerVerifiedAt: _optionalDateTime(
+      map['owner_verified_at'],
+      'owner_verified_at',
+    ),
+    verificationDueAt: _optionalDateTime(
+      map['verification_due_at'],
+      'verification_due_at',
+    ),
+    verificationRequired:
+        _optionalBool(map['verification_required'], 'verification_required') ??
+        false,
+    code: code == null || code.isEmpty ? null : code,
+    expiresAt: _optionalDateTime(map['expires_at'], 'expires_at'),
+    checksLeft: checksLeft,
+    result: switch (result) {
+      null => null,
+      'verified' => VerificationCheckResult.verified,
+      'code_not_found' => VerificationCheckResult.codeNotFound,
+      'retry_later' => VerificationCheckResult.retryLater,
+      _ => throw FormatException('Unsupported verification result: $result'),
+    },
+    retryAfterSeconds: retryAfter as int?,
+  );
+}
 
 enum WatchLiveStatus {
   unknown('unknown'),

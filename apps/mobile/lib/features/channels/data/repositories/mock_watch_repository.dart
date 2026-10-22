@@ -1,12 +1,94 @@
 import '../../../../core/api/api_exception.dart';
 import '../../../../core/mock/mock_repository_base.dart';
 import '../../../../core/mock/mock_scenario.dart';
+import '../../domain/models/channel_verification.dart';
 import '../../domain/models/watch_summary.dart';
 import '../../domain/repositories/watch_repository.dart';
 
 final class MockWatchRepository extends MockRepositoryBase
-    implements WatchRepository, CreatorLookupRepository {
-  MockWatchRepository(super.behavior) : _items = List<WatchSummary>.of(_seed);
+    implements
+        WatchRepository,
+        CreatorLookupRepository,
+        ChannelVerificationRepository {
+  // Seed channels are verified; channels added in the mock app are not
+  // until their bio check passes.
+  MockWatchRepository(super.behavior)
+    : _items = <WatchSummary>[
+        for (final WatchSummary watch in _seed)
+          watch.copyWith(ownerVerifiedAt: DateTime.utc(2026, 9, 1)),
+      ];
+
+  static const String _mockCode = 'SS-7K4Q';
+  final Map<String, int> _checks = <String, int>{};
+  final Map<String, DateTime> _codeExpiry = <String, DateTime>{};
+
+  @override
+  Future<ChannelVerification> getVerification(String watchId) {
+    return respond<ChannelVerification>(
+      success: () => _verification(watchId),
+      empty: () => _verification(watchId),
+    );
+  }
+
+  @override
+  Future<ChannelVerification> startVerification(String watchId) {
+    return respond<ChannelVerification>(
+      success: () {
+        final DateTime? expiry = _codeExpiry[watchId];
+        if (expiry == null || !expiry.isAfter(DateTime.now())) {
+          _codeExpiry[watchId] = DateTime.now().toUtc().add(
+            const Duration(minutes: 30),
+          );
+        }
+        return _verification(watchId);
+      },
+      empty: () => _verification(watchId),
+    );
+  }
+
+  /// The first check misses the code, the next one finds it.
+  @override
+  Future<ChannelVerification> checkVerification(String watchId) {
+    return respond<ChannelVerification>(
+      success: () {
+        final int checks = (_checks[watchId] ?? 0) + 1;
+        _checks[watchId] = checks;
+        if (checks < 2) {
+          return _verification(
+            watchId,
+            result: VerificationCheckResult.codeNotFound,
+          );
+        }
+        _update(
+          watchId,
+          (WatchSummary current) =>
+              current.copyWith(ownerVerifiedAt: DateTime.now().toUtc()),
+        );
+        _codeExpiry.remove(watchId);
+        return _verification(watchId, result: VerificationCheckResult.verified);
+      },
+      empty: () => _verification(watchId),
+    );
+  }
+
+  ChannelVerification _verification(
+    String watchId, {
+    VerificationCheckResult? result,
+  }) {
+    final WatchSummary? watch = _find(watchId);
+    final bool verified = watch?.ownerVerifiedAt != null;
+    final DateTime? expiry = verified ? null : _codeExpiry[watchId];
+    return ChannelVerification(
+      watchId: watchId,
+      verified: verified,
+      ownerVerifiedAt: watch?.ownerVerifiedAt,
+      verificationRequired: !verified,
+      code: expiry == null ? null : _mockCode,
+      expiresAt: expiry,
+      checksLeft: expiry == null ? 0 : 20 - (_checks[watchId] ?? 0),
+      result: result,
+    );
+  }
 
   static final List<WatchSummary> _seed = <WatchSummary>[
     WatchSummary(

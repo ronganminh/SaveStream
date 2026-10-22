@@ -74,7 +74,7 @@ void registerDeviceJourneys() {
     expect(find.text('Home'), findsWidgets);
   });
 
-  testWidgets('device: watching -> add creator -> channel detail', (
+  testWidgets('device: channels -> add channel -> verify -> channel detail', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -95,19 +95,36 @@ void registerDeviceJourneys() {
     );
     await _waitFor(tester, find.byKey(const ValueKey<String>('nav-channels')));
     await tester.tap(find.byKey(const ValueKey<String>('nav-channels')));
-    await _waitFor(tester, find.text('Ada Live'));
-    await tester.tap(find.byTooltip('Add channel').first);
+    // The sheet and the verify screen scroll on short screens; lay out the
+    // scrolled position before each tap.
+    Future<void> tapVisible(Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      await tester.tap(finder);
+    }
+
+    await _waitFor(tester, find.text('@ada_live'));
+    await tester.tap(find.byKey(const ValueKey<String>('channels-add')).first);
     await _waitFor(tester, find.byType(TextFormField));
     await tester.enterText(find.byType(TextFormField), '@ci_creator');
-    await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
-    await _waitFor(tester, find.text('Use recordings responsibly'));
+    await tapVisible(find.widgetWithText(FilledButton, 'Find channel'));
+    await _waitFor(tester, find.text('Is this your channel?'));
+    await tapVisible(find.byKey(const ValueKey<String>('add-channel-owner')));
+    await tester.pump();
+    await tapVisible(
+      find.widgetWithText(FilledButton, 'Yes, verify ownership'),
+    );
+    await _waitFor(tester, find.text('SS-7K4Q'));
+    expect(find.text('Verify ownership'), findsOneWidget);
 
-    final Finder add = find.widgetWithText(FilledButton, 'Add channel');
-    await tester.ensureVisible(add);
-    await tester.tap(add);
-    await _waitFor(tester, find.text('Channel detail'));
-    await _waitFor(tester, find.textContaining('@ci_creator'));
-    expect(find.text('Notify when LIVE'), findsWidgets);
+    // The mock misses the code on the first check and finds it on the next.
+    await tapVisible(find.widgetWithText(FilledButton, 'Check my bio'));
+    await _waitFor(tester, find.text('Check again'));
+    await tapVisible(find.widgetWithText(FilledButton, 'Check again'));
+    await _waitFor(tester, find.text('@ci_creator is verified'));
+    await tapVisible(find.widgetWithText(FilledButton, 'Go to channel'));
+    await _waitFor(tester, find.text('Owner verified'));
+    expect(find.text('LIVE alerts'), findsWidgets);
   });
 
   testWidgets('device: recordings -> stop -> lifecycle acknowledgement', (

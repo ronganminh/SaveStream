@@ -41,6 +41,7 @@ abstract final class AppRoutes {
   static const String componentGallery = '/dev/components';
 
   static String channelDetail(String id) => '/channels/' + id;
+  static String channelVerify(String id) => '/channels/' + id + '/verify';
   static String autoRecordSettings(String id) =>
       '/channels/' + id + '/auto-record';
   static String recordingDetail(String id) => '/recordings/' + id;
