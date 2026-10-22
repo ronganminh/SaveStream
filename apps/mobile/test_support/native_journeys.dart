@@ -126,6 +126,9 @@ void registerDeviceJourneys() {
     );
     final Finder stop = find.widgetWithText(FilledButton, 'Stop recording');
     await tester.ensureVisible(stop);
+    // Lay out the scrolled list before tapping, or the tap uses the button's
+    // pre-scroll position, which can fall on the bottom navigation bar.
+    await tester.pumpAndSettle();
     await tester.tap(stop);
     await _waitFor(tester, find.text('Stop cloud recording?'));
     await tester.tap(find.widgetWithText(FilledButton, 'Stop recording').last);
