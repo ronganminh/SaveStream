@@ -16,6 +16,9 @@ class CreditBalanceResponse(StrictModel):
     posted: int
     reserved: int
     available: int
+    # Store refund that came after the credits were spent; recording is
+    # blocked until a purchase pays it off.
+    refund_debt: int = 0
 
 
 class CreditTransactionResponse(StrictModel):

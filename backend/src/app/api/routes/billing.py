@@ -222,7 +222,11 @@ async def create_store_purchase(
         request.app.state.settings,
         payload.platform,
     )
-    result = await StorePurchaseService(session, verifier).purchase(
+    result = await StorePurchaseService(
+        session,
+        verifier,
+        require_account_reference=request.app.state.settings.google_play_require_account_id,
+    ).purchase(
         user_id=principal.user_id,
         product_id=payload.product_id,
         transaction_id=payload.transaction_id,

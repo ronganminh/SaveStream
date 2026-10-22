@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping
@@ -13,9 +14,24 @@ from google.oauth2 import id_token, service_account
 from app.domain.common.errors import ApplicationError
 from app.settings import AppSettings
 
-from .base import StoreReceiptVerifier, VerifiedStorePurchase, VerifiedStoreRefund
+from .base import (
+    StoreNotification,
+    StoreReceiptVerifier,
+    VerifiedStorePurchase,
+    VerifiedStoreRefund,
+)
 
 _ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher"
+# purchases.products purchaseState
+_PURCHASED = 0
+_PENDING = 2
+# oneTimeProductNotification.notificationType
+_ONE_TIME_PRODUCT_PURCHASED = 1
+
+
+def voided_event_id(store_token: str) -> str:
+    """Stable id for a voided purchase found by reconciliation (not by RTDN)."""
+    return "voided:" + hashlib.sha256(store_token.encode("utf-8")).hexdigest()[:40]
 
 
 def _invalid(message: str) -> ApplicationError:
@@ -128,10 +144,13 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
 
         order_id = str(payload.get("orderId") or "")
         verified_product_id = str(payload.get("productId") or "")
+        state = int(payload.get("purchaseState", -1))
+        # orderId is empty for promo codes, so the app may send the purchase
+        # token as its transaction id instead.
         if (
-            int(payload.get("purchaseState", -1)) != 0
+            state not in {_PURCHASED, _PENDING}
             or verified_product_id != product_id
-            or order_id != transaction_id
+            or (order_id and transaction_id not in {order_id, receipt})
             or int(payload.get("quantity", 1)) != 1
         ):
             raise _invalid(
@@ -164,6 +183,10 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
                 payload.get("acknowledgementState", 0)
             ) == 0,
             needs_consume=int(payload.get("consumptionState", 0)) == 0,
+            pending=state == _PENDING,
+            account_reference=(
+                str(payload.get("obfuscatedExternalAccountId") or "") or None
+            ),
         )
 
     async def finalize_purchase(
@@ -226,11 +249,17 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             raise _invalid("Google Play RTDN sender is not authorized")
         return claims
 
-    async def verify_refund_notification(
+    async def parse_notification(
         self,
         raw_body: bytes,
         headers: Mapping[str, str],
-    ) -> VerifiedStoreRefund:
+    ) -> StoreNotification:
+        """Verify a Real-time developer notification (Pub/Sub push).
+
+        Test, subscription and cancelled-purchase notifications are valid but
+        need no action, so they come back as ``ignored`` and are acknowledged
+        with 204; answering them with an error makes Pub/Sub retry for days.
+        """
         authorization = (
             headers.get("authorization")
             or headers.get("Authorization")
@@ -251,7 +280,8 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             data = json.loads(
                 base64.b64decode(encoded_data, validate=True).decode("utf-8")
             )
-            voided = data["voidedPurchaseNotification"]
+            if not isinstance(data, dict):
+                raise TypeError("RTDN data is not an object")
         except (
             UnicodeDecodeError,
             json.JSONDecodeError,
@@ -261,17 +291,93 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
         ) as exc:
             raise _invalid("Google Play RTDN payload is invalid") from exc
 
-        if (
-            str(data.get("packageName") or "")
-            != self.settings.google_play_package_name
-            or int(voided.get("productType", 0)) != 2
-        ):
+        if str(data.get("packageName") or "") != self.settings.google_play_package_name:
             raise _invalid("Google Play RTDN does not match this app")
-        order_id = str(voided.get("orderId") or "")
-        if not order_id or not message_id:
-            raise _invalid("Google Play refund notification is incomplete")
-        return VerifiedStoreRefund(
-            platform=self.platform,
-            transaction_id=order_id,
-            event_id=message_id,
+
+        voided = data.get("voidedPurchaseNotification")
+        if isinstance(voided, dict):
+            if int(voided.get("productType", 0)) != 2:
+                # Subscriptions are not sold.
+                return StoreNotification(kind="ignored")
+            order_id = str(voided.get("orderId") or "")
+            token = str(voided.get("purchaseToken") or "")
+            if not (order_id or token) or not message_id:
+                raise _invalid("Google Play refund notification is incomplete")
+            return StoreNotification(
+                kind="refund",
+                refund=VerifiedStoreRefund(
+                    platform=self.platform,
+                    transaction_id=order_id or token,
+                    event_id=message_id,
+                    store_token=token or None,
+                ),
+            )
+
+        one_time = data.get("oneTimeProductNotification")
+        if isinstance(one_time, dict):
+            token = str(one_time.get("purchaseToken") or "")
+            sku = str(one_time.get("sku") or "")
+            if (
+                int(one_time.get("notificationType", 0)) == _ONE_TIME_PRODUCT_PURCHASED
+                and token
+                and sku
+            ):
+                return StoreNotification(
+                    kind="purchased", product_id=sku, store_token=token
+                )
+        # testNotification, subscriptionNotification, cancelled purchases.
+        return StoreNotification(kind="ignored")
+
+    async def verify_refund_notification(
+        self,
+        raw_body: bytes,
+        headers: Mapping[str, str],
+    ) -> VerifiedStoreRefund:
+        notification = await self.parse_notification(raw_body, headers)
+        if notification.refund is None:
+            raise _invalid("Google Play RTDN is not a refund")
+        return notification.refund
+
+    async def list_voided(self, since: datetime) -> list[VerifiedStoreRefund]:
+        """Refunds and chargebacks since ``since`` (Voided Purchases API).
+
+        Daily reconciliation in case a refund notification was lost.
+        """
+        refunds: list[VerifiedStoreRefund] = []
+        page_token = ""
+        start = int(since.timestamp() * 1000)
+        base = (
+            f"/androidpublisher/v3/applications/"
+            f"{self.settings.google_play_package_name}/purchases/voidedpurchases"
+            f"?type=0&startTime={start}&maxResults=1000"
         )
+        for _ in range(20):
+            response = await self._request(
+                "GET", base + (f"&token={page_token}" if page_token else "")
+            )
+            if response.status_code >= 400:
+                raise ApplicationError(
+                    "SERVICE_UNAVAILABLE",
+                    "Google Play voided purchases are temporarily unavailable",
+                    status_code=503,
+                    retryable=True,
+                )
+            payload = response.json()
+            for item in payload.get("voidedPurchases") or []:
+                token = str(item.get("purchaseToken") or "")
+                if not token:
+                    continue
+                refunds.append(
+                    VerifiedStoreRefund(
+                        platform=self.platform,
+                        transaction_id=str(item.get("orderId") or "") or token,
+                        event_id=voided_event_id(token),
+                        store_token=token,
+                    )
+                )
+            page_token = str(
+                (payload.get("tokenPagination") or {}).get("nextPageToken") or ""
+            )
+            if not page_token:
+                break
+        return refunds

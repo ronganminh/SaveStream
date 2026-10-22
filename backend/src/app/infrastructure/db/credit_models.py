@@ -66,6 +66,7 @@ class CreditAccount(Base):
     __table_args__ = (
         UniqueConstraint("user_id", name="uq_credit_accounts_user_id"),
         CheckConstraint("posted_balance >= 0", name="posted_balance_nonnegative"),
+        CheckConstraint("refund_debt >= 0", name="refund_debt_nonnegative"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -73,6 +74,11 @@ class CreditAccount(Base):
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     posted_balance: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Store refunds that came after the credits were spent: paid off by the
+    # next purchase; recording is blocked while this is above zero.
+    refund_debt: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

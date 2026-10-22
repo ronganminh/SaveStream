@@ -223,6 +223,8 @@ export type CreditBalanceResponse = {
   posted: number;
   reserved: number;
   available: number;
+  /** Store refund that came after the credits were spent; blocks recording. */
+  refund_debt?: number;
 };
 
 export type CreditTransactionResponse = {
@@ -269,8 +271,8 @@ export type CreditPackageResponse = {
   price: Money;
   active: boolean;
   store_product_ids: {
-    app_store: string;
-    google_play: string;
+    app_store: string | null;
+    google_play: string | null;
   } | null;
   cloud_minutes: number | null;
 };

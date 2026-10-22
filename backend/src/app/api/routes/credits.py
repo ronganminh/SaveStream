@@ -34,6 +34,7 @@ async def get_credit_balance(
         posted=balance.posted,
         reserved=balance.reserved,
         available=balance.available,
+        refund_debt=balance.refund_debt,
     )
 
 

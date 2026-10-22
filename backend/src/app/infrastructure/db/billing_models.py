@@ -223,6 +223,9 @@ class PaymentOrder(Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     provider: Mapped[str | None] = mapped_column(String(80), nullable=True)
     provider_reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Google Play purchase token (provider_reference holds its hash): kept to
+    # retry acknowledge/consume and to re-check pending purchases.
+    store_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     checkout_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     return_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
     refunded_credits: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

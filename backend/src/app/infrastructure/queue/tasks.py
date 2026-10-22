@@ -102,6 +102,57 @@ def watch_verification_reminders() -> int:
     return asyncio.run(run())
 
 
+@celery_app.task(name="savestream.billing.google_play_retry")
+def google_play_retry() -> dict[str, int]:
+    """Re-check Google Play orders still pending payment or not acknowledged."""
+    from app.application.billing.store import StorePurchaseService
+    from app.infrastructure.db.session import Database
+    from app.infrastructure.store.factory import store_receipt_verifier_for_platform
+    from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
+    from app.settings import get_app_settings
+
+    async def run() -> dict[str, int]:
+        settings = get_app_settings()
+        verifier = store_receipt_verifier_for_platform(settings, "google_play")
+        if not isinstance(verifier, GooglePlayReceiptVerifier):
+            return {"checked": 0, "credited": 0, "failed": 0}
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                return await StorePurchaseService(session, verifier).retry_unfinished()
+        finally:
+            await database.close()
+
+    return asyncio.run(run())
+
+
+@celery_app.task(name="savestream.billing.google_play_voided")
+def google_play_voided() -> int:
+    """Daily check of Google Play refunds, in case a notification was lost."""
+    from datetime import datetime, timedelta, timezone
+
+    from app.application.billing.store import StorePurchaseService
+    from app.infrastructure.db.session import Database
+    from app.infrastructure.store.factory import store_receipt_verifier_for_platform
+    from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
+    from app.settings import get_app_settings
+
+    async def run() -> int:
+        settings = get_app_settings()
+        verifier = store_receipt_verifier_for_platform(settings, "google_play")
+        if not isinstance(verifier, GooglePlayReceiptVerifier):
+            return 0
+        refunds = await verifier.list_voided(datetime.now(timezone.utc) - timedelta(days=3))
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                return await StorePurchaseService(session, verifier).reconcile_voided(refunds)
+        finally:
+            await database.close()
+
+    return asyncio.run(run())
+
+
 @celery_app.task(name="savestream.creators.avatar_refresh")
 def creator_avatar_refresh() -> int:
     from app.infrastructure.creators.avatar_worker import run_creator_avatar_refresh

@@ -264,6 +264,9 @@ class AppSettings:
     google_play_service_account_json: str = field(default="", repr=False)
     google_play_rtdn_audience: str = ""
     google_play_rtdn_service_account_email: str = ""
+    # Reject Google Play purchases without the obfuscated account id. Off
+    # until every build on the track sets it (v1 builds don't).
+    google_play_require_account_id: bool = False
     store_purchase_timeout_seconds: float = 15.0
     app_min_supported_android: str = "1.0.0"
     app_min_supported_ios: str = "1.0.0"
@@ -779,6 +782,7 @@ class AppSettings:
             google_play_service_account_json=google_play_service_account_json,
             google_play_rtdn_audience=google_play_rtdn_audience,
             google_play_rtdn_service_account_email=(google_play_rtdn_service_account_email),
+            google_play_require_account_id=_bool_env("GOOGLE_PLAY_REQUIRE_ACCOUNT_ID", False),
             store_purchase_timeout_seconds=store_purchase_timeout_seconds,
             app_min_supported_android=app_min_supported_android,
             app_min_supported_ios=app_min_supported_ios,
