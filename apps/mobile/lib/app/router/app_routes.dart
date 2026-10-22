@@ -11,6 +11,13 @@ abstract final class AppRoutes {
   static const String checkEmail = '/auth/check-email';
   static const String resetPassword = '/auth/reset';
 
+  /// Sign-in refused (ACCOUNT_SUSPENDED / ACCOUNT_TERMINATED), and the
+  /// confirmation after the account was deleted. Under /auth/ so they show
+  /// while signed out.
+  static const String accountSuspended = '/auth/account-suspended';
+  static const String accountClosed = '/auth/account-closed';
+  static const String accountDeleted = '/auth/account-deleted';
+
   static const String introWatchDetect = '/onboarding/intro/watch-detect';
   static const String onboardingNotifications = '/onboarding/notifications';
   static const String onboardingAddCreator = '/onboarding/add-creator';
@@ -32,6 +39,7 @@ abstract final class AppRoutes {
   static const String purchaseSuccess = '/usage/purchase/success';
   static const String purchasePending = '/usage/purchase/pending';
 
+  /// The Account tab (hub).
   static const String settings = '/settings';
   static const String profile = '/settings/profile';
   static const String language = '/settings/language';
@@ -42,15 +50,13 @@ abstract final class AppRoutes {
 
   /// Per-event Push / Email switches (Settings → Notifications).
   static const String notificationPreferences = '/settings/notifications';
-  static const String securityAccount = '/settings/security';
-  static const String signedInDevices = '/settings/security/devices';
   static const String help = '/settings/help';
-  static const String reportIssue = '/settings/help/report';
+
+  /// Report content or request removal, and its confirmation.
+  static const String report = '/settings/report';
+  static const String reportSent = '/settings/report/sent';
   static const String legalHub = '/settings/legal';
-  static const String responsibleUse = '/settings/legal/responsible-use';
-  static const String deleteAccount = '/settings/security/delete';
-  static const String privacy = '/settings/privacy';
-  static const String terms = '/settings/terms';
+  static const String deleteAccount = '/settings/delete';
 
   static const String componentGallery = '/dev/components';
 
@@ -64,6 +70,47 @@ abstract final class AppRoutes {
     return Uri(
       path: '/live/' + id,
       queryParameters: <String, String>{'state': state},
+    ).toString();
+  }
+
+  static String accountStatusLocation({
+    required bool closed,
+    String reason = '',
+    String reference = '',
+  }) {
+    final Map<String, String> query = <String, String>{
+      if (reason.isNotEmpty) 'reason': reason,
+      if (reference.isNotEmpty) 'ref': reference,
+    };
+    return Uri(
+      path: closed ? accountClosed : accountSuspended,
+      queryParameters: query.isEmpty ? null : query,
+    ).toString();
+  }
+
+  static String accountDeletedLocation(String email) {
+    return Uri(
+      path: accountDeleted,
+      queryParameters: email.isEmpty ? null : <String, String>{'email': email},
+    ).toString();
+  }
+
+  static String reportSentLocation({
+    required String reference,
+    required String email,
+  }) {
+    return Uri(
+      path: reportSent,
+      queryParameters: <String, String>{'ref': reference, 'email': email},
+    ).toString();
+  }
+
+  static String forgotPasswordLocation({String? email}) {
+    return Uri(
+      path: forgotPassword,
+      queryParameters: email == null || email.isEmpty
+          ? null
+          : <String, String>{'email': email},
     ).toString();
   }
 

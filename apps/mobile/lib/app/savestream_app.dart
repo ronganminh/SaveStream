@@ -192,7 +192,7 @@ class _SaveStreamAppState extends State<SaveStreamApp> {
             themeMode: _settings.themeMode,
             locale: _settings.locale,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
+            supportedLocales: AppSettingsController.releaseLocales,
             routerConfig: _router,
           );
         },

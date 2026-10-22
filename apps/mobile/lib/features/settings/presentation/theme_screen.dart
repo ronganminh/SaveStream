@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/app_settings_controller.dart';
-import '../../../app/theme/ss_tokens.dart';
-import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
+import 'settings_choice_list.dart';
 
+/// Theme (Account → App): System, Light or Dark, stored on the device.
 class ThemeScreen extends StatelessWidget {
   const ThemeScreen({required this.settings, super.key});
 
@@ -12,78 +12,32 @@ class ThemeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.themeLabel)),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(SsSpacing.lg),
-          children: <Widget>[
-            Text(
-              l10n.themeDescription,
-              style: Theme.of(context).textTheme.bodyMedium,
+    return AnimatedBuilder(
+      animation: settings,
+      builder: (BuildContext context, Widget? child) {
+        final AppLocalizations l10n = context.l10n;
+        return SettingsChoiceScreen(
+          title: l10n.themeLabel,
+          description: l10n.themeDescription,
+          choices: <SettingsChoice>[
+            SettingsChoice(
+              label: l10n.themeSystem,
+              selected: settings.themeMode == ThemeMode.system,
+              onTap: () => settings.setThemeMode(ThemeMode.system),
             ),
-            const SizedBox(height: SsSpacing.lg),
-            SsCard(
-              child: Column(
-                children: <Widget>[
-                  _ThemeOption(
-                    icon: Icons.settings_suggest_outlined,
-                    label: l10n.themeSystem,
-                    selected: settings.themeMode == ThemeMode.system,
-                    onTap: () => settings.setThemeMode(ThemeMode.system),
-                  ),
-                  const Divider(),
-                  _ThemeOption(
-                    icon: Icons.light_mode_outlined,
-                    label: l10n.themeLight,
-                    selected: settings.themeMode == ThemeMode.light,
-                    onTap: () => settings.setThemeMode(ThemeMode.light),
-                  ),
-                  const Divider(),
-                  _ThemeOption(
-                    icon: Icons.dark_mode_outlined,
-                    label: l10n.themeDark,
-                    selected: settings.themeMode == ThemeMode.dark,
-                    onTap: () => settings.setThemeMode(ThemeMode.dark),
-                  ),
-                ],
-              ),
+            SettingsChoice(
+              label: l10n.themeLight,
+              selected: settings.themeMode == ThemeMode.light,
+              onTap: () => settings.setThemeMode(ThemeMode.light),
+            ),
+            SettingsChoice(
+              label: l10n.themeDark,
+              selected: settings.themeMode == ThemeMode.dark,
+              onTap: () => settings.setThemeMode(ThemeMode.dark),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(label),
-      trailing: selected
-          ? Icon(
-              Icons.check_circle_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            )
-          : const Icon(Icons.circle_outlined),
-      onTap: onTap,
+        );
+      },
     );
   }
 }

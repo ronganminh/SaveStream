@@ -190,7 +190,11 @@
   "recordingFiltersSortTitle": "SORT",
   "recordingFiltersApplyAction": "View {count} recordings",
   "@recordingFiltersApplyAction": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "recordingFiltersActiveSubtitle": "Filtering",
   "recordingStatusGroupCompleted": "Completed",
@@ -200,8 +204,12 @@
   "recordingSearchResults": "{count} results for “{query}”",
   "@recordingSearchResults": {
     "placeholders": {
-      "count": {"type": "int"},
-      "query": {"type": "String"}
+      "count": {
+        "type": "int"
+      },
+      "query": {
+        "type": "String"
+      }
     }
   },
   "recordingSearchCancelAction": "Cancel",
@@ -709,18 +717,30 @@
   "recordingCloudRetentionValue": "{date} · {days} days left",
   "@recordingCloudRetentionValue": {
     "placeholders": {
-      "date": {"type": "String"},
-      "days": {"type": "int"}
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
     }
   },
   "recordingCloudRetentionTomorrow": "{date} · expires tomorrow",
   "@recordingCloudRetentionTomorrow": {
-    "placeholders": {"date": {"type": "String"}}
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "recordingCloudExpiringTitle": "Storage expires soon",
   "recordingCloudExpiringBody": "This cloud recording will be deleted on {date}. Pro keeps recordings for 30 days; Free + Cloud Pack for 7 days.",
   "@recordingCloudExpiringBody": {
-    "placeholders": {"date": {"type": "String"}}
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "recordingDownloadDeviceAction": "Download to device",
   "recordingDownloadedTitle": "Downloaded to this device",
@@ -1894,5 +1914,256 @@
         "type": "int"
       }
     }
-  }
+  },
+  "acTitle": "Account",
+  "acEdit": "Edit",
+  "acSectionRecording": "Recording",
+  "acRecordingTime": "Recording time",
+  "acTimeLeft": "{time} left",
+  "@acTimeLeft": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "acPurchasesSubtitle": "Google Play orders, usage history",
+  "acNotificationsSubtitle": "Choose what we tell you about",
+  "acSectionPrivacy": "Privacy & safety",
+  "acAdPrivacySubtitle": "Personalized ads and consent",
+  "acReport": "Report content or request removal",
+  "acSectionHelp": "Help & legal",
+  "acHelpTitle": "Help center",
+  "acLegalRow": "Terms, Privacy & Acceptable Use",
+  "acSectionApp": "App",
+  "acSectionAccount": "Account",
+  "acSignOut": "Sign out",
+  "acDeleteAccount": "Delete account",
+  "acDeleteAccountSubtitle": "Permanently delete your account and data",
+  "acVersion": "SaveStream for Android · version {version}",
+  "@acVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "acSignOutTitle": "Sign out?",
+  "acSignOutBody": "Your channels keep being watched and recorded in the cloud while you’re signed out.",
+  "acDisplayName": "Display name",
+  "acEmailReadOnlyNote": "Your sign-in email can’t be changed in the app yet. Contact support if you need to change it.",
+  "acPassword": "Password",
+  "acSignedInWithEmail": "Signed in with email",
+  "acChange": "Change",
+  "acSignInMethod": "Sign-in method",
+  "acSignedInWithGoogle": "Signed in with Google",
+  "acSaveChanges": "Save changes",
+  "acProfileSaved": "Profile saved",
+  "acProfileSaveFailed": "Couldn’t save your changes. Try again.",
+  "acProfileLoadFailed": "Couldn’t load your profile.",
+  "acSearchHelp": "Search help",
+  "acSearchHelpHint": "Search help articles",
+  "acHelpChannelTitle": "Adding and verifying a channel",
+  "acHelpChannelBody": "Bio code, ownership rules",
+  "acHelpCloudTitle": "How cloud recording works",
+  "acHelpCloudBody": "Nothing is recorded on your phone",
+  "acHelpBillingTitle": "Recording time and billing",
+  "acHelpBillingBody": "Per started minute, packs, rewarded ads",
+  "acHelpSavingTitle": "Saving and sharing recordings",
+  "acHelpSavingBody": "Retention and share links",
+  "acHelpFailedTitle": "Why did a recording fail?",
+  "acHelpFailedBody": "Common reasons and fixes",
+  "acHelpNoResults": "No articles match “{query}”.",
+  "@acHelpNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "acStillNeedHelp": "Still need help?",
+  "acHelpFooter": "Articles open on savestream.online/help in your browser.",
+  "acLegalTitle": "Legal",
+  "acAcceptableUse": "Acceptable Use Policy",
+  "acCopyrightPolicy": "Copyright & Takedown Policy",
+  "acRefundPolicy": "Refund Policy",
+  "acOpenSourceLicences": "Open-source licences",
+  "acReportTitle": "Report or request removal",
+  "acReportIntro": "Tell us about content on SaveStream that you believe was recorded without permission or infringes your rights. We review every report.",
+  "acReportQuestion": "What do you want to report?",
+  "acReportLive": "Someone is recording my LIVE without permission",
+  "acReportCopyright": "Copyright infringement",
+  "acReportRemoveMe": "Remove a recording of me",
+  "acReportOther": "Something else",
+  "acReportTarget": "TikTok username or SaveStream link",
+  "acReportDetails": "Details",
+  "acReportDetailsHint": "What happened, and when?",
+  "acReportEmail": "Your email",
+  "acReportSend": "Send report",
+  "acReportFootPrefix": "Copyright notices need the details in our ",
+  "acReportFootLink": "Copyright Policy",
+  "acReportFootSuffix": ". You can also email {email}.",
+  "@acReportFootSuffix": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "acReportCopyrightWeb": "Copyright notices are sent from the form on savestream.online, which asks for everything the notice needs.",
+  "acReportContinueWeb": "Continue on the web",
+  "acReportTargetRequired": "Enter the TikTok username or link.",
+  "acReportDetailsRequired": "Tell us what happened.",
+  "acReportFailed": "We couldn’t send your report. Try again, or email {email}.",
+  "@acReportFailed": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "acReportWebNeeded": "Please finish your report on savestream.online. It opened in your browser.",
+  "acReportSentTitle": "Report received",
+  "acReportSentBody": "Thanks — our team will review it and reply to {email}. Reference {reference}.",
+  "@acReportSentBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      },
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "acDone": "Done",
+  "acDeleteWarning": "This can’t be undone.",
+  "acDeleteListTitle": "Deleting your account will:",
+  "acDeleteItemChannels": "Stop watching and recording all your channels",
+  "acDeleteItemRecordings": "Delete all your recordings and share links",
+  "acDeleteItemTime": "Remove your remaining recording time ({time}) — it can’t be refunded or transferred",
+  "@acDeleteItemTime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "acDeleteItemProfile": "Delete your profile and settings. Some records are kept as our Privacy Policy describes.",
+  "acDeletePlayNote": "Google Play purchases stay in your Google account history.",
+  "acDeleteConfirmWord": "DELETE",
+  "acDeleteConfirmLabel": "Type {word} to confirm",
+  "@acDeleteConfirmLabel": {
+    "placeholders": {
+      "word": {
+        "type": "String"
+      }
+    }
+  },
+  "acDeleteButton": "Delete my account",
+  "acDeleteWebNote": "You can also delete your account on the web at {url}.",
+  "@acDeleteWebNote": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "acDeletedTitle": "Your account is deleted",
+  "acDeletedBody": "We’ve stopped all monitoring and started deleting your data. You’ll get a confirmation email at {email}.",
+  "@acDeletedBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "acDeletedBodyGeneric": "We’ve stopped all monitoring and started deleting your data. You’ll get a confirmation email.",
+  "sysOfflineTitle": "No connection",
+  "sysOfflineBody": "Check your Wi-Fi or mobile data. Your channels are still watched and recorded in the cloud.",
+  "sysTryAgain": "Try again",
+  "sysServerTitle": "Something went wrong",
+  "sysServerBody": "That’s on us. Try again in a moment — any recording in progress keeps going.",
+  "sysErrorId": "Error ID: {id}",
+  "@sysErrorId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "sysRetry": "Retry",
+  "sysContactSupport": "Contact support",
+  "sysMaintenanceTitle": "Down for maintenance",
+  "sysMaintenanceBody": "We’re upgrading SaveStream. Recordings already saved are safe.",
+  "sysMaintenanceBodyEta": "We’re upgrading SaveStream. Expected back by {eta}. Recordings already saved are safe.",
+  "@sysMaintenanceBodyEta": {
+    "placeholders": {
+      "eta": {
+        "type": "String"
+      }
+    }
+  },
+  "sysMaintenanceEta": "{time} UTC",
+  "@sysMaintenanceEta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "sysCheckStatus": "Check status",
+  "sysUpdateTitle": "Update required",
+  "sysUpdateBody": "This version of SaveStream is no longer supported. Update from Google Play to keep using the app.",
+  "sysUpdateVersions": "Installed {installed} · required {required}",
+  "@sysUpdateVersions": {
+    "placeholders": {
+      "installed": {
+        "type": "String"
+      },
+      "required": {
+        "type": "String"
+      }
+    }
+  },
+  "sysUpdateAction": "Update on Google Play",
+  "sysSuspendedTitle": "Account suspended",
+  "sysSuspendedBody": "We paused your account. Monitoring is paused and recordings are unavailable for now.",
+  "sysSuspendedBodyRef": "We paused your account (ref {reference}). Monitoring is paused and recordings are unavailable for now.",
+  "@sysSuspendedBodyRef": {
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "sysStatusReason": "Reason: {reason}",
+  "@sysStatusReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "sysAppeals": "Appeals: {email}",
+  "@sysAppeals": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "sysReadAup": "Read the Acceptable Use Policy",
+  "sysAppealByEmail": "Appeal by email",
+  "sysAppealSubject": "Account appeal",
+  "sysTerminatedTitle": "Account closed",
+  "sysTerminatedBody": "This account was closed for serious or repeated violations of our Terms of Use. You can’t sign in or record with it.",
+  "sysMistake": "Think this is a mistake? {email}",
+  "@sysMistake": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "sysReadTerms": "Read the Terms of Use"
 }

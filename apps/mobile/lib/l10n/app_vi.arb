@@ -190,7 +190,11 @@
   "recordingFiltersSortTitle": "SẮP XẾP",
   "recordingFiltersApplyAction": "Xem {count} bản ghi",
   "@recordingFiltersApplyAction": {
-    "placeholders": {"count": {"type": "int"}}
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "recordingFiltersActiveSubtitle": "Đang lọc",
   "recordingStatusGroupCompleted": "Hoàn tất",
@@ -200,8 +204,12 @@
   "recordingSearchResults": "{count} kết quả cho “{query}”",
   "@recordingSearchResults": {
     "placeholders": {
-      "count": {"type": "int"},
-      "query": {"type": "String"}
+      "count": {
+        "type": "int"
+      },
+      "query": {
+        "type": "String"
+      }
     }
   },
   "recordingSearchCancelAction": "Huỷ",
@@ -709,18 +717,30 @@
   "recordingCloudRetentionValue": "{date} · còn {days} ngày",
   "@recordingCloudRetentionValue": {
     "placeholders": {
-      "date": {"type": "String"},
-      "days": {"type": "int"}
+      "date": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
     }
   },
   "recordingCloudRetentionTomorrow": "{date} · hết hạn ngày mai",
   "@recordingCloudRetentionTomorrow": {
-    "placeholders": {"date": {"type": "String"}}
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "recordingCloudExpiringTitle": "Sắp hết hạn lưu trữ",
   "recordingCloudExpiringBody": "Bản ghi cloud sẽ bị xoá ngày {date}. Pro lưu 30 ngày; Free + Cloud Pack lưu 7 ngày.",
   "@recordingCloudExpiringBody": {
-    "placeholders": {"date": {"type": "String"}}
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "recordingDownloadDeviceAction": "Tải về thiết bị",
   "recordingDownloadedTitle": "Đã tải xuống thiết bị này",
@@ -1370,5 +1390,124 @@
   "crSettingsPurchases": "Giao dịch & sử dụng",
   "crSettingsAdPrivacy": "Lựa chọn quyền riêng tư quảng cáo",
   "crAdLabel": "Quảng cáo",
-  "crDurationMinutesSeconds": "{minutes} phút {seconds} giây"
+  "crDurationMinutesSeconds": "{minutes} phút {seconds} giây",
+  "acTitle": "Tài khoản",
+  "acEdit": "Sửa",
+  "acSectionRecording": "Ghi hình",
+  "acRecordingTime": "Thời gian ghi",
+  "acTimeLeft": "Còn {time}",
+  "acPurchasesSubtitle": "Đơn hàng Google Play, lịch sử sử dụng",
+  "acNotificationsSubtitle": "Chọn những gì chúng tôi báo cho bạn",
+  "acSectionPrivacy": "Quyền riêng tư & an toàn",
+  "acAdPrivacySubtitle": "Quảng cáo cá nhân hóa và sự đồng ý",
+  "acReport": "Báo cáo nội dung hoặc yêu cầu gỡ bỏ",
+  "acSectionHelp": "Trợ giúp & pháp lý",
+  "acHelpTitle": "Trung tâm trợ giúp",
+  "acLegalRow": "Điều khoản, Quyền riêng tư & Sử dụng được chấp nhận",
+  "acSectionApp": "Ứng dụng",
+  "acSectionAccount": "Tài khoản",
+  "acSignOut": "Đăng xuất",
+  "acDeleteAccount": "Xóa tài khoản",
+  "acDeleteAccountSubtitle": "Xóa vĩnh viễn tài khoản và dữ liệu của bạn",
+  "acVersion": "SaveStream cho Android · phiên bản {version}",
+  "acSignOutTitle": "Đăng xuất?",
+  "acSignOutBody": "Các kênh của bạn vẫn được theo dõi và ghi trên đám mây khi bạn đã đăng xuất.",
+  "acDisplayName": "Tên hiển thị",
+  "acEmailReadOnlyNote": "Chưa thể đổi email đăng nhập trong ứng dụng. Liên hệ bộ phận hỗ trợ nếu bạn cần đổi.",
+  "acPassword": "Mật khẩu",
+  "acSignedInWithEmail": "Đăng nhập bằng email",
+  "acChange": "Đổi",
+  "acSignInMethod": "Cách đăng nhập",
+  "acSignedInWithGoogle": "Đăng nhập bằng Google",
+  "acSaveChanges": "Lưu thay đổi",
+  "acProfileSaved": "Đã lưu hồ sơ",
+  "acProfileSaveFailed": "Không lưu được thay đổi. Hãy thử lại.",
+  "acProfileLoadFailed": "Không tải được hồ sơ của bạn.",
+  "acSearchHelp": "Tìm trợ giúp",
+  "acSearchHelpHint": "Tìm bài viết trợ giúp",
+  "acHelpChannelTitle": "Thêm và xác minh kênh",
+  "acHelpChannelBody": "Mã trong tiểu sử, quy định về quyền sở hữu",
+  "acHelpCloudTitle": "Cách ghi trên đám mây hoạt động",
+  "acHelpCloudBody": "Không có gì được ghi trên điện thoại của bạn",
+  "acHelpBillingTitle": "Thời gian ghi và thanh toán",
+  "acHelpBillingBody": "Tính theo phút bắt đầu, gói, quảng cáo có thưởng",
+  "acHelpSavingTitle": "Lưu và chia sẻ bản ghi",
+  "acHelpSavingBody": "Thời gian lưu giữ và liên kết chia sẻ",
+  "acHelpFailedTitle": "Vì sao bản ghi bị lỗi?",
+  "acHelpFailedBody": "Nguyên nhân thường gặp và cách khắc phục",
+  "acHelpNoResults": "Không có bài viết nào khớp với “{query}”.",
+  "acStillNeedHelp": "Vẫn cần trợ giúp?",
+  "acHelpFooter": "Bài viết mở trên savestream.online/help trong trình duyệt.",
+  "acLegalTitle": "Pháp lý",
+  "acAcceptableUse": "Chính sách sử dụng được chấp nhận",
+  "acCopyrightPolicy": "Chính sách bản quyền & gỡ bỏ",
+  "acRefundPolicy": "Chính sách hoàn tiền",
+  "acOpenSourceLicences": "Giấy phép mã nguồn mở",
+  "acReportTitle": "Báo cáo hoặc yêu cầu gỡ bỏ",
+  "acReportIntro": "Cho chúng tôi biết về nội dung trên SaveStream mà bạn cho là đã được ghi khi chưa được phép hoặc xâm phạm quyền của bạn. Chúng tôi xem xét mọi báo cáo.",
+  "acReportQuestion": "Bạn muốn báo cáo điều gì?",
+  "acReportLive": "Có người đang ghi LIVE của tôi khi chưa được phép",
+  "acReportCopyright": "Vi phạm bản quyền",
+  "acReportRemoveMe": "Gỡ bản ghi có tôi",
+  "acReportOther": "Vấn đề khác",
+  "acReportTarget": "Tên người dùng TikTok hoặc liên kết SaveStream",
+  "acReportDetails": "Chi tiết",
+  "acReportDetailsHint": "Chuyện gì đã xảy ra, và khi nào?",
+  "acReportEmail": "Email của bạn",
+  "acReportSend": "Gửi báo cáo",
+  "acReportFootPrefix": "Thông báo bản quyền cần các thông tin trong ",
+  "acReportFootLink": "Chính sách bản quyền",
+  "acReportFootSuffix": " của chúng tôi. Bạn cũng có thể gửi email tới {email}.",
+  "acReportCopyrightWeb": "Thông báo bản quyền được gửi từ biểu mẫu trên savestream.online, nơi hỏi đủ thông tin mà thông báo cần.",
+  "acReportContinueWeb": "Tiếp tục trên web",
+  "acReportTargetRequired": "Nhập tên người dùng TikTok hoặc liên kết.",
+  "acReportDetailsRequired": "Cho chúng tôi biết chuyện gì đã xảy ra.",
+  "acReportFailed": "Không gửi được báo cáo. Hãy thử lại hoặc gửi email tới {email}.",
+  "acReportWebNeeded": "Vui lòng hoàn tất báo cáo trên savestream.online. Trang đã mở trong trình duyệt.",
+  "acReportSentTitle": "Đã nhận báo cáo",
+  "acReportSentBody": "Cảm ơn bạn — đội ngũ của chúng tôi sẽ xem xét và trả lời tới {email}. Mã tham chiếu {reference}.",
+  "acDone": "Xong",
+  "acDeleteWarning": "Không thể hoàn tác.",
+  "acDeleteListTitle": "Xóa tài khoản sẽ:",
+  "acDeleteItemChannels": "Dừng theo dõi và ghi tất cả các kênh của bạn",
+  "acDeleteItemRecordings": "Xóa tất cả bản ghi và liên kết chia sẻ của bạn",
+  "acDeleteItemTime": "Xóa thời gian ghi còn lại ({time}) — không thể hoàn tiền hay chuyển nhượng",
+  "acDeleteItemProfile": "Xóa hồ sơ và cài đặt của bạn. Một số dữ liệu được giữ lại như Chính sách quyền riêng tư mô tả.",
+  "acDeletePlayNote": "Các giao dịch Google Play vẫn nằm trong lịch sử tài khoản Google của bạn.",
+  "acDeleteConfirmWord": "DELETE",
+  "acDeleteConfirmLabel": "Nhập {word} để xác nhận",
+  "acDeleteButton": "Xóa tài khoản của tôi",
+  "acDeleteWebNote": "Bạn cũng có thể xóa tài khoản trên web tại {url}.",
+  "acDeletedTitle": "Tài khoản của bạn đã bị xóa",
+  "acDeletedBody": "Chúng tôi đã dừng mọi việc theo dõi và bắt đầu xóa dữ liệu của bạn. Bạn sẽ nhận email xác nhận tại {email}.",
+  "acDeletedBodyGeneric": "Chúng tôi đã dừng mọi việc theo dõi và bắt đầu xóa dữ liệu của bạn. Bạn sẽ nhận email xác nhận.",
+  "sysOfflineTitle": "Không có kết nối",
+  "sysOfflineBody": "Kiểm tra Wi-Fi hoặc dữ liệu di động. Các kênh của bạn vẫn được theo dõi và ghi trên đám mây.",
+  "sysTryAgain": "Thử lại",
+  "sysServerTitle": "Đã xảy ra lỗi",
+  "sysServerBody": "Lỗi từ phía chúng tôi. Hãy thử lại sau giây lát — bản ghi đang chạy vẫn tiếp tục.",
+  "sysErrorId": "Mã lỗi: {id}",
+  "sysRetry": "Thử lại",
+  "sysContactSupport": "Liên hệ hỗ trợ",
+  "sysMaintenanceTitle": "Đang bảo trì",
+  "sysMaintenanceBody": "Chúng tôi đang nâng cấp SaveStream. Các bản ghi đã lưu vẫn an toàn.",
+  "sysMaintenanceBodyEta": "Chúng tôi đang nâng cấp SaveStream. Dự kiến hoạt động lại lúc {eta}. Các bản ghi đã lưu vẫn an toàn.",
+  "sysMaintenanceEta": "{time} UTC",
+  "sysCheckStatus": "Xem trạng thái",
+  "sysUpdateTitle": "Cần cập nhật",
+  "sysUpdateBody": "Phiên bản SaveStream này không còn được hỗ trợ. Hãy cập nhật từ Google Play để tiếp tục dùng ứng dụng.",
+  "sysUpdateVersions": "Đã cài {installed} · yêu cầu {required}",
+  "sysUpdateAction": "Cập nhật trên Google Play",
+  "sysSuspendedTitle": "Tài khoản bị tạm ngưng",
+  "sysSuspendedBody": "Chúng tôi đã tạm ngưng tài khoản của bạn. Việc theo dõi bị tạm dừng và các bản ghi tạm thời không khả dụng.",
+  "sysSuspendedBodyRef": "Chúng tôi đã tạm ngưng tài khoản của bạn (mã {reference}). Việc theo dõi bị tạm dừng và các bản ghi tạm thời không khả dụng.",
+  "sysStatusReason": "Lý do: {reason}",
+  "sysAppeals": "Khiếu nại: {email}",
+  "sysReadAup": "Đọc Chính sách sử dụng được chấp nhận",
+  "sysAppealByEmail": "Khiếu nại qua email",
+  "sysAppealSubject": "Khiếu nại tài khoản",
+  "sysTerminatedTitle": "Tài khoản đã bị đóng",
+  "sysTerminatedBody": "Tài khoản này đã bị đóng do vi phạm nghiêm trọng hoặc nhiều lần Điều khoản sử dụng. Bạn không thể đăng nhập hay ghi hình bằng tài khoản này.",
+  "sysMistake": "Bạn cho rằng đây là nhầm lẫn? {email}",
+  "sysReadTerms": "Đọc Điều khoản sử dụng"
 }

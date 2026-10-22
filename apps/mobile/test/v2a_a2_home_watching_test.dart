@@ -13,6 +13,7 @@ import 'package:savestream_mobile/features/channels/presentation/channels_screen
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
 import 'package:savestream_mobile/features/home/presentation/home_screen.dart';
+import 'package:savestream_mobile/l10n/l10n.dart';
 
 void main() {
   AppConfig config() {
@@ -239,7 +240,14 @@ void main() {
     expect(find.text('Livestream ended'), findsOneWidget);
   });
 
-  testWidgets('Vietnamese locale contains A2 Home and Watching copy', (
+  test('Vietnamese strings keep the A2 Home and Watching copy', () {
+    // Kept for a later release; v2.1.0 does not enable Vietnamese.
+    final AppLocalizations vi = lookupAppLocalizations(const Locale('vi'));
+    expect(vi.v2CreditsLabel, 'Thời gian ghi còn lại');
+    expect(vi.v2YourChannels, 'Kênh của bạn');
+  });
+
+  testWidgets('a Vietnamese preference still renders Home in English', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController(
@@ -253,8 +261,9 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    expect(find.text('Thời gian ghi còn lại'), findsOneWidget);
-    expect(find.text('Kênh của bạn'), findsOneWidget);
+    expect(find.text('Recording time left'), findsOneWidget);
+    expect(find.text('Your channels'), findsOneWidget);
+    expect(find.text('Thời gian ghi còn lại'), findsNothing);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
   });
 }

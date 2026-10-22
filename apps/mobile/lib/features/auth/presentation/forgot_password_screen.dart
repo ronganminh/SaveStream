@@ -14,11 +14,15 @@ class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({
     required this.repository,
     required this.session,
+    this.initialEmail,
     super.key,
   });
 
   final AuthRepository repository;
   final AppSessionController session;
+
+  /// Prefilled when a signed-in user changes the password from Profile.
+  final String? initialEmail;
 
   @override
   State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
@@ -36,6 +40,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       repository: widget.repository,
       session: widget.session,
     );
+    _emailController.text = widget.initialEmail ?? '';
   }
 
   @override

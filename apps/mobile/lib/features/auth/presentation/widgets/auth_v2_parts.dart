@@ -2,12 +2,40 @@ import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../../l10n/l10n.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../auth_validation.dart';
+import '../controllers/auth_controller.dart';
+
+/// Opens Account suspended / Account closed when sign-in was refused for
+/// that reason (ACCOUNT_SUSPENDED / ACCOUNT_TERMINATED). Returns whether it
+/// did.
+bool openAccountStatusIfBlocked(
+  BuildContext context,
+  AuthController controller,
+) {
+  final AuthFailureCode? failure = controller.failure;
+  if (failure != AuthFailureCode.accountSuspended &&
+      failure != AuthFailureCode.accountTerminated) {
+    return false;
+  }
+  final AccountStatusDetails details =
+      controller.accountStatus ?? const AccountStatusDetails();
+  controller.clearFailure();
+  context.push(
+    AppRoutes.accountStatusLocation(
+      closed: failure == AuthFailureCode.accountTerminated,
+      reason: details.reason,
+      reference: details.reference,
+    ),
+  );
+  return true;
+}
 
 /// Bold lead + body copy for an auth failure banner.
 (String?, String) authFailureText(AppLocalizations l10n, AuthFailureCode code) {
@@ -31,6 +59,8 @@ import '../auth_validation.dart';
     AuthFailureCode.sessionExpired => (null, l10n.authSessionExpiredMessage),
     AuthFailureCode.server => (null, l10n.authServerErrorMessage),
     AuthFailureCode.offlineLike => (null, l10n.offlineErrorBody),
+    AuthFailureCode.accountSuspended => (null, l10n.sysSuspendedTitle),
+    AuthFailureCode.accountTerminated => (null, l10n.sysTerminatedTitle),
   };
 }
 

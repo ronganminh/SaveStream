@@ -8,7 +8,7 @@ SaveStream V2 is Android-first. Production bootstrap uses real authenticated rep
 
 Current V2 mobile implementation includes:
 
-- Material 3 Light / Dark / System themes and VI / EN localization from Phase 1;
+- Material 3 Light / Dark / System themes and VI / EN localization from Phase 1 (v2.1.0 runs English only: the VI strings are kept but not enabled, see `AppSettingsController.releaseLocales`);
 - `MaterialApp.router` with `go_router`;
 - complete onboarding UI with cloud-recording explanation and authorization consent;
 - Sign in, Register, Verify Email, and Forgot Password flows backed by an AuthRepository;
@@ -38,7 +38,7 @@ Current V2 mobile implementation includes:
 - native App Store / Google Play one-time purchase flow for cloud hours, with backend verification and backend-authoritative crediting; no external hosted checkout is exposed in the mobile release;
 - Settings sections for Profile, Credits/Billing, Preferences, Legal, Account actions, and Developer tools;
 - Profile screen backed by `ProfileRepository`, including email and verified/unverified state;
-- dedicated Language screen for English / Vietnamese and Theme screen for Light / Dark / System;
+- Theme screen for Light / Dark / System; the Language screen (English / Vietnamese) is not linked from the Account tab in v2.1.0, which ships English only and ignores a stored or device language;
 - `AppSettingsStore` abstraction for local preferences, with production persistence via `SharedPreferencesAsync`;
 - bootstrap restores persisted theme/language before `runApp` so preferences survive app restart;
 - notification preferences, Firebase Messaging permission/token lifecycle, Android Creator LIVE/Recording channels, foreground in-app notifications, and push deep links are wired to the real backend/device contracts;

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
@@ -12,20 +11,14 @@ import '../../../l10n/l10n.dart';
 import '../../home/domain/models/home_credits.dart';
 import '../../home/presentation/home_screen.dart' show formatRecordingMinutes;
 
+export '../../../core/external_links.dart' show openExternalUrl;
+
 /// Back from a Credits screen; Recording time when it was opened directly.
 void creditsBack(BuildContext context, {String fallback = AppRoutes.home}) {
   if (context.canPop()) {
     context.pop();
   } else {
     context.go(fallback);
-  }
-}
-
-Future<void> openExternalUrl(Uri url) async {
-  try {
-    await launchUrl(url, mode: LaunchMode.externalApplication);
-  } on Object {
-    // Nothing to open it with; the screen stays as it is.
   }
 }
 

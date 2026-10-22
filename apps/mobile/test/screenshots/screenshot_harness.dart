@@ -100,12 +100,22 @@ Future<void> captureScreen(WidgetTester tester, String name) async {
     );
     image.dispose();
     if (_printToLog) {
+      // Inside a test, print() travels to the host as VM Service extension
+      // events over the emulator's single adb connection. A whole PNG sent
+      // in one burst (150–250 KB) can overrun adbd while the emulator is
+      // busy ("host-N: connection terminated: write failed"): adb drops the
+      // transport, the VM Service goes with it and every test in the file
+      // reports "did not complete". Pause between batches so it drains.
       final String data = base64Encode(png!.buffer.asUint8List());
+      int lines = 0;
       for (int i = 0; i < data.length; i += 800) {
         // ignore: avoid_print
         print(
           'SS-SCREEN $name ${data.substring(i, math.min(i + 800, data.length))}',
         );
+        if (++lines % 16 == 0) {
+          await Future<void>.delayed(const Duration(milliseconds: 40));
+        }
       }
       return;
     }

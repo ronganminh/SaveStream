@@ -18,4 +18,15 @@ final class MockProfileRepository extends MockRepositoryBase
           const UserProfile(email: 'alex@example.com', emailVerified: false),
     );
   }
+
+  @override
+  Future<UserProfile> updateDisplayName(String? displayName) {
+    final String? value = displayName?.trim();
+    UserProfile updated() => UserProfile(
+      email: 'alex@example.com',
+      emailVerified: true,
+      displayName: value == null || value.isEmpty ? null : value,
+    );
+    return respond<UserProfile>(success: updated, empty: updated);
+  }
 }

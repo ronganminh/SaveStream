@@ -156,7 +156,8 @@ void registerDeviceJourneys() {
     expect(find.byKey(const ValueKey<String>('player-stop')), findsNothing);
   });
 
-  testWidgets('device: settings -> Vietnamese -> dark theme', (
+  // v2.1.0 ships English only: no Language row, and the app stays English.
+  testWidgets('device: settings -> dark theme (English only)', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -166,23 +167,22 @@ void registerDeviceJourneys() {
     );
     await _waitFor(tester, find.byKey(const ValueKey<String>('nav-account')));
     await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await _waitFor(tester, find.text('Settings'));
-    final BuildContext context = tester.element(find.text('Settings').first);
-    GoRouter.of(context).push(AppRoutes.language);
-    await _waitFor(tester, find.text('Vietnamese'));
-    await tester.tap(find.text('Vietnamese'));
-    await _waitFor(tester, find.text('Ngôn ngữ'));
-    expect(settings.locale.languageCode, 'vi');
-
-    GoRouter.of(tester.element(find.text('Ngôn ngữ').first)).pop();
-    await _waitFor(tester, find.text('Cài đặt'));
-    GoRouter.of(
-      tester.element(find.text('Cài đặt').first),
-    ).push(AppRoutes.theme);
-    await _waitFor(tester, find.text('Tối'));
-    await tester.tap(find.text('Tối'));
+    await _waitFor(tester, find.text('Account'));
+    expect(
+      find.byKey(const ValueKey<String>('account-language')),
+      findsNothing,
+    );
+    final BuildContext context = tester.element(find.text('Account').first);
+    GoRouter.of(context).push(AppRoutes.theme);
+    await _waitFor(tester, find.text('Dark'));
+    await tester.tap(find.text('Dark'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(settings.themeMode, ThemeMode.dark);
+    expect(settings.locale.languageCode, 'en');
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).locale,
+      const Locale('en'),
+    );
     expect(
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
       ThemeMode.dark,

@@ -38,7 +38,8 @@ void main() {
       final DeviceRegistration device = repository.registered.single;
       expect(device.deviceId, 'dev-1');
       expect(device.pushToken, 'fcm-token-1');
-      expect(device.locale, 'vi');
+      // v2.1.0 is English only: a Vietnamese preference registers as en.
+      expect(device.locale, 'en');
       expect(device.appVersion, '2.0.0');
 
       await coordinator.dispose();

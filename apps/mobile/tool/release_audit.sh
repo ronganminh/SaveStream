@@ -105,8 +105,8 @@ git check-ignore -q android/app/google-services.json ||
 git check-ignore -q ios/Runner/GoogleService-Info.plist ||
   fail "GoogleService-Info.plist must stay outside Git"
 
-grep -q '^version: 2\.0\.[0-9][0-9]*[+][0-9][0-9]*$' pubspec.yaml ||
-  fail "C9 app version must be 2.0.x+<build>"
+grep -q '^version: 2\.[0-9][0-9]*\.[0-9][0-9]*[+][0-9][0-9]*$' pubspec.yaml ||
+  fail "C9 app version must be 2.x.y+<build>"
 grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts ||
   fail "Android release R8 minification must be enabled"
 grep -q 'isShrinkResources = true' android/app/build.gradle.kts ||

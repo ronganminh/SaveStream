@@ -10,6 +10,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
+import '../../../core/config/app_config.dart';
+import '../../../core/external_links.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/ss_feedback.dart';
 import '../../../core/widgets/v2/ss_v2_widgets.dart';
@@ -1064,7 +1066,11 @@ class _Info extends ConsumerWidget {
                 child: SsV2Button(
                   label: l10n.v2PlayerReport,
                   variant: SsV2ButtonVariant.outlined,
-                  onPressed: () => context.push(AppRoutes.reportIssue),
+                  // A message to support about this recording.
+                  onPressed: () => openMail(
+                    AppConfig.supportEmail,
+                    subject: 'Recording ${recording.id}',
+                  ),
                 ),
               ),
               if (recording.actions.canDelete) ...<Widget>[

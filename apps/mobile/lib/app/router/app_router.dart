@@ -4,6 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/widgets/savestream_widgets.dart';
+import '../../features/account/presentation/account_screen.dart';
+import '../../features/account/presentation/account_status_screens.dart';
+import '../../features/account/presentation/delete_account_screen.dart';
+import '../../features/account/presentation/help_center_screen.dart';
+import '../../features/account/presentation/legal_screen.dart';
+import '../../features/account/presentation/profile_screen.dart';
+import '../../features/account/presentation/report_screen.dart';
 import '../../features/auth/data/auth_providers.dart';
 import '../../features/auth/presentation/check_email_screen.dart';
 import '../../features/auth/presentation/forgot_password_screen.dart';
@@ -32,19 +39,9 @@ import '../../features/onboarding/presentation/welcome_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recording_player_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
-import '../../features/settings/presentation/delete_account_screen.dart';
-import '../../features/settings/presentation/help_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
-import '../../features/settings/presentation/legal_link_screen.dart';
-import '../../features/settings/presentation/legal_privacy_screen.dart';
 import '../../features/settings/presentation/notification_preferences_screen.dart';
 import '../../features/settings/presentation/notifications_screen.dart';
-import '../../features/settings/presentation/profile_screen.dart';
-import '../../features/settings/presentation/report_issue_screen.dart';
-import '../../features/settings/presentation/responsible_use_screen.dart';
-import '../../features/settings/presentation/security_account_screen.dart';
-import '../../features/settings/presentation/settings_screen.dart';
-import '../../features/settings/presentation/signed_in_devices_screen.dart';
 import '../../features/settings/presentation/theme_screen.dart';
 import '../../l10n/l10n.dart';
 import '../app_settings_controller.dart';
@@ -74,6 +71,11 @@ GoRouter createAppRouter({
       final bool isAuth = location.startsWith('/auth/');
       final bool isSplash = location == AppRoutes.splash;
       final bool isIntro = location.startsWith('/onboarding/');
+      // Signed in, Profile → Change password uses the reset flow.
+      final bool isPasswordFlow =
+          location == AppRoutes.forgotPassword ||
+          location == AppRoutes.checkEmail ||
+          location == AppRoutes.resetPassword;
 
       final bool needsWelcome =
           !session.isAuthenticated &&
@@ -100,7 +102,7 @@ GoRouter createAppRouter({
       }
 
       if (isWelcome ||
-          isAuth ||
+          (isAuth && !isPasswordFlow) ||
           isSplash ||
           (isIntro && location != AppRoutes.onboardingCreatorAdded)) {
         return AppRoutes.home;
@@ -147,6 +149,7 @@ GoRouter createAppRouter({
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
                 onSignedIn: () => ref.invalidate(entitlementProvider),
+                onSignInMethod: settings.setSignInMethod,
               );
             },
           );
@@ -162,6 +165,7 @@ GoRouter createAppRouter({
                 session: session,
                 config: config,
                 onSignedIn: () => ref.invalidate(entitlementProvider),
+                onSignInMethod: settings.setSignInMethod,
               );
             },
           );
@@ -190,6 +194,7 @@ GoRouter createAppRouter({
               return ForgotPasswordScreen(
                 repository: ref.watch(authRepositoryProvider),
                 session: session,
+                initialEmail: state.uri.queryParameters['email'],
               );
             },
           );
@@ -214,6 +219,31 @@ GoRouter createAppRouter({
                 initialToken: state.uri.queryParameters['token'],
               );
             },
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.accountSuspended,
+        builder: (BuildContext context, GoRouterState state) {
+          return AccountSuspendedScreen(
+            reason: state.uri.queryParameters['reason'] ?? '',
+            reference: state.uri.queryParameters['ref'] ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.accountClosed,
+        builder: (BuildContext context, GoRouterState state) {
+          return AccountClosedScreen(
+            reason: state.uri.queryParameters['reason'] ?? '',
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.accountDeleted,
+        builder: (BuildContext context, GoRouterState state) {
+          return AccountDeletedScreen(
+            email: state.uri.queryParameters['email'] ?? '',
           );
         },
       ),
@@ -358,6 +388,60 @@ GoRouter createAppRouter({
           return const NotificationPreferencesScreen();
         },
       ),
+      // The Account tab's screens are full screen (no bottom bar), as drawn.
+      GoRoute(
+        path: AppRoutes.profile,
+        builder: (BuildContext context, GoRouterState state) {
+          return ProfileScreen(settings: settings);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.language,
+        builder: (BuildContext context, GoRouterState state) {
+          return LanguageScreen(settings: settings);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.theme,
+        builder: (BuildContext context, GoRouterState state) {
+          return ThemeScreen(settings: settings);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.help,
+        builder: (BuildContext context, GoRouterState state) {
+          return const HelpCenterScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.report,
+        builder: (BuildContext context, GoRouterState state) {
+          return const ReportScreen();
+        },
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'sent',
+            builder: (BuildContext context, GoRouterState state) {
+              return ReportSentScreen(
+                reference: state.uri.queryParameters['ref'] ?? '',
+                email: state.uri.queryParameters['email'] ?? '',
+              );
+            },
+          ),
+        ],
+      ),
+      GoRoute(
+        path: AppRoutes.legalHub,
+        builder: (BuildContext context, GoRouterState state) {
+          return const LegalScreen();
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.deleteAccount,
+        builder: (BuildContext context, GoRouterState state) {
+          return DeleteAccountScreen(session: session);
+        },
+      ),
       // The v2 player is full screen (no bottom bar), as drawn.
       GoRoute(
         path: '/recordings/:id',
@@ -451,100 +535,12 @@ GoRouter createAppRouter({
               GoRoute(
                 path: AppRoutes.settings,
                 builder: (BuildContext context, GoRouterState state) {
-                  return SettingsScreen(
+                  return AccountScreen(
                     settings: settings,
                     session: session,
                     config: config,
                   );
                 },
-                routes: <RouteBase>[
-                  GoRoute(
-                    path: 'profile',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return const ProfileScreen();
-                    },
-                  ),
-                  GoRoute(
-                    path: 'language',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return LanguageScreen(settings: settings);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'theme',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return ThemeScreen(settings: settings);
-                    },
-                  ),
-                  GoRoute(
-                    path: 'security',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return SecurityAccountScreen(session: session);
-                    },
-                    routes: <RouteBase>[
-                      GoRoute(
-                        path: 'devices',
-                        builder: (BuildContext context, GoRouterState state) {
-                          return const SignedInDevicesScreen();
-                        },
-                      ),
-                      GoRoute(
-                        path: 'delete',
-                        builder: (BuildContext context, GoRouterState state) {
-                          return DeleteAccountScreen(session: session);
-                        },
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'help',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return const HelpScreen();
-                    },
-                    routes: <RouteBase>[
-                      GoRoute(
-                        path: 'report',
-                        builder: (BuildContext context, GoRouterState state) {
-                          return const ReportIssueScreen();
-                        },
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'legal',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return const LegalPrivacyScreen();
-                    },
-                    routes: <RouteBase>[
-                      GoRoute(
-                        path: 'responsible-use',
-                        builder: (BuildContext context, GoRouterState state) {
-                          return const ResponsibleUseScreen();
-                        },
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'privacy',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return LegalLinkScreen(
-                        title: context.l10n.privacyPolicyTitle,
-                        url: config.privacyPolicyUrl,
-                        openLabel: context.l10n.openLegalDocumentAction,
-                      );
-                    },
-                  ),
-                  GoRoute(
-                    path: 'terms',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return LegalLinkScreen(
-                        title: context.l10n.termsOfUseTitle,
-                        url: config.termsOfUseUrl,
-                        openLabel: context.l10n.openLegalDocumentAction,
-                      );
-                    },
-                  ),
-                ],
               ),
             ],
           ),

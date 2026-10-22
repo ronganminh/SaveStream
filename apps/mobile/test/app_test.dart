@@ -11,6 +11,8 @@ import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
+import 'package:savestream_mobile/features/account/presentation/account_screen.dart';
+import 'package:savestream_mobile/features/account/presentation/profile_screen.dart';
 import 'package:savestream_mobile/features/auth/data/repositories/mock_auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
 import 'package:savestream_mobile/features/home/presentation/controllers/home_dashboard_controller.dart';
@@ -19,7 +21,6 @@ import 'package:savestream_mobile/features/recordings/domain/models/recording_su
 import 'package:savestream_mobile/features/recordings/presentation/controllers/recording_library_controller.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recordings_screen.dart';
-import 'package:savestream_mobile/features/settings/presentation/profile_screen.dart';
 
 void main() {
   AppConfig testConfig() {
@@ -575,7 +576,7 @@ void main() {
   });
 
   test(
-    'persists theme and locale across settings controller recreation',
+    'persists theme across settings controller recreation, locale stays en',
     () async {
       final Map<String, String> values = <String, String>{};
       final MemoryAppSettingsStore store = MemoryAppSettingsStore(values);
@@ -584,13 +585,14 @@ void main() {
       first.setLocale(const Locale('vi'));
       first.setThemeMode(ThemeMode.dark);
       await Future<void>.delayed(Duration.zero);
+      expect(first.locale.languageCode, 'en');
 
       final AppSettingsController restored = AppSettingsController(
         store: store,
       );
       await restored.initialize();
 
-      expect(restored.locale.languageCode, 'vi');
+      expect(restored.locale.languageCode, 'en');
       expect(restored.themeMode, ThemeMode.dark);
 
       first.dispose();
@@ -598,26 +600,34 @@ void main() {
     },
   );
 
-  testWidgets('renders Phase 8 profile verification state', (
+  test('ignores a stored Vietnamese preference (English only)', () async {
+    final MemoryAppSettingsStore store = MemoryAppSettingsStore(
+      <String, String>{'settings.locale': 'vi'},
+    );
+    final AppSettingsController settings = AppSettingsController(store: store);
+    await settings.initialize();
+    expect(settings.locale, const Locale('en'));
+    expect(settings.useSystemLocale, isFalse);
+    settings.dispose();
+  });
+
+  testWidgets('renders the profile with display name and email', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await tester.pump();
-    final BuildContext settingsContext = tester.element(
-      find.text('Settings').first,
-    );
-    GoRouter.of(settingsContext).push(AppRoutes.profile);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<String>('account-edit')));
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileScreen), findsOneWidget);
-    expect(find.text('Alex Nguyen'), findsOneWidget);
+    expect(find.text('Alex Nguyen'), findsWidgets);
     expect(find.text('alex@example.com'), findsWidgets);
-    expect(find.text('Email verified'), findsOneWidget);
+    expect(find.text('Signed in with email'), findsOneWidget);
   });
 
-  testWidgets('changes language and theme through Phase 8 settings UI', (
+  testWidgets('changes theme from the Account tab (no Language row)', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -627,31 +637,28 @@ void main() {
     );
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    final BuildContext settingsContext = tester.element(
-      find.text('Settings').first,
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey<String>('account-theme')),
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey<String>('account-list')),
+        matching: find.byType(Scrollable),
+      ),
     );
-    GoRouter.of(settingsContext).push(AppRoutes.language);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Vietnamese'));
-    await tester.pumpAndSettle();
-
-    expect(settings.locale.languageCode, 'vi');
-    expect(find.text('Ngôn ngữ'), findsWidgets);
-
-    final BuildContext languageContext = tester.element(
-      find.text('Ngôn ngữ').first,
+    expect(
+      find.byKey(const ValueKey<String>('account-language')),
+      findsNothing,
     );
-    GoRouter.of(languageContext).pop();
-    await tester.pumpAndSettle();
 
-    final BuildContext localizedSettingsContext = tester.element(
-      find.text('Cài đặt').first,
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('account-theme')),
     );
-    GoRouter.of(localizedSettingsContext).push(AppRoutes.theme);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tối'));
+    await tester.tap(find.byKey(const ValueKey<String>('account-theme')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dark'));
     await tester.pumpAndSettle();
 
     expect(settings.themeMode, ThemeMode.dark);
@@ -661,58 +668,73 @@ void main() {
     expect(app.themeMode, ThemeMode.dark);
   });
 
-  testWidgets('logs out through Phase 8 settings account action', (
+  testWidgets('signs out from the Account tab after confirming', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
     await tester.pump();
     await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    final BuildContext settingsContext = tester.element(
-      find.text('Settings').first,
+    final Finder signOut = find.byKey(
+      const ValueKey<String>('account-sign-out'),
     );
-    GoRouter.of(settingsContext).push(AppRoutes.securityAccount);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Log out'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Log out'));
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Sign in'), findsWidgets);
-  });
-
-  testWidgets('delete account requires destructive confirmation', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(SaveStreamApp(config: testConfig()));
-    await tester.pump();
-    await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
-    await tester.pump();
-
-    final BuildContext settingsContext = tester.element(
-      find.text('Settings').first,
+    await tester.scrollUntilVisible(
+      signOut,
+      200,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey<String>('account-list')),
+        matching: find.byType(Scrollable),
+      ),
     );
-    GoRouter.of(settingsContext).push(AppRoutes.deleteAccount);
+    await tester.ensureVisible(signOut);
     await tester.pumpAndSettle();
-
-    expect(find.text('What will be deleted'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await tester.tap(signOut);
     await tester.pumpAndSettle();
-
-    expect(find.text('Confirm permanent deletion'), findsOneWidget);
-    await tester.tap(find.byType(CheckboxListTile));
-    await tester.pumpAndSettle();
+    expect(find.text('Sign out?'), findsOneWidget);
     await tester.tap(
-      find.widgetWithText(FilledButton, 'Delete account permanently'),
+      find.byKey(const ValueKey<String>('account-sign-out-confirm')),
     );
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
     expect(find.text('Sign in'), findsWidgets);
   });
+
+  testWidgets(
+    'delete account needs DELETE typed, then shows the confirmation',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(SaveStreamApp(config: testConfig()));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
+      await tester.pumpAndSettle();
+      GoRouter.of(
+        tester.element(find.byType(AccountScreen)),
+      ).push(AppRoutes.deleteAccount);
+      await tester.pumpAndSettle();
+
+      final Finder delete = find.byKey(
+        const ValueKey<String>('delete-account-confirm'),
+      );
+      expect(tester.widget<SsV2Button>(delete).onPressed, isNull);
+      await tester.enterText(
+        find.byKey(const ValueKey<String>('delete-confirm-field')),
+        'delete',
+      );
+      await tester.pump();
+      await tester.tap(delete);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Your account is deleted'), findsOneWidget);
+      expect(find.textContaining('alex@example.com'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey<String>('account-deleted-close')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Sign in'), findsWidgets);
+    },
+  );
 
   testWidgets('supports loading and empty mock scenarios', (
     WidgetTester tester,
@@ -742,7 +764,7 @@ void main() {
     expect(find.text('No channels yet'), findsOneWidget);
   });
 
-  testWidgets('switches locale and theme at runtime', (
+  testWidgets('switches theme at runtime and stays English', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController();
@@ -757,13 +779,15 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Trang chủ'), findsWidgets);
-    expect(find.text('Kênh'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Trang chủ'), findsNothing);
 
     final MaterialApp app = tester.widget<MaterialApp>(
       find.byType(MaterialApp),
     );
     expect(app.themeMode, ThemeMode.dark);
+    expect(app.locale, const Locale('en'));
+    expect(app.supportedLocales, const <Locale>[Locale('en')]);
   });
 }
 

@@ -55,7 +55,7 @@ final class ApiAuthRepository
         }
       }
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -88,7 +88,7 @@ final class ApiAuthRepository
     } on AuthException {
       rethrow;
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -107,7 +107,7 @@ final class ApiAuthRepository
         consent: consent,
       );
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -118,7 +118,7 @@ final class ApiAuthRepository
     try {
       await _publicApi.verifyEmail(token: token);
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error, tokenOperation: true));
+      throw _failure(error, tokenOperation: true);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -129,7 +129,7 @@ final class ApiAuthRepository
     try {
       await _publicApi.resendVerification(email: email);
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -140,7 +140,7 @@ final class ApiAuthRepository
     try {
       await _publicApi.forgotPassword(email: email);
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -154,7 +154,7 @@ final class ApiAuthRepository
     try {
       await _publicApi.resetPassword(token: token, password: password);
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error, tokenOperation: true));
+      throw _failure(error, tokenOperation: true);
     } on Object {
       throw const AuthException(AuthFailureCode.server);
     }
@@ -181,7 +181,7 @@ final class ApiAuthRepository
       await _protectedApi.deleteAccount();
       await _sessionManager.clearLocalSession();
     } on ApiException catch (error) {
-      throw AuthException(_mapFailure(error));
+      throw _failure(error);
     } on AuthException {
       rethrow;
     } on Object {
@@ -189,10 +189,42 @@ final class ApiAuthRepository
     }
   }
 
+  AuthException _failure(ApiException error, {bool tokenOperation = false}) {
+    final AuthFailureCode code = _mapFailure(
+      error,
+      tokenOperation: tokenOperation,
+    );
+    if (code != AuthFailureCode.accountSuspended &&
+        code != AuthFailureCode.accountTerminated) {
+      return AuthException(code);
+    }
+    final Map<String, Object?> details =
+        error.apiError?.details ?? const <String, Object?>{};
+    String text(String key) {
+      final Object? value = details[key];
+      return value is String ? value.trim() : '';
+    }
+
+    return AuthException(
+      code,
+      accountStatus: AccountStatusDetails(
+        reason: text('reason'),
+        reference: text('reference'),
+        email: text('email'),
+      ),
+    );
+  }
+
   AuthFailureCode _mapFailure(
     ApiException error, {
     bool tokenOperation = false,
   }) {
+    if (error.code == 'ACCOUNT_SUSPENDED') {
+      return AuthFailureCode.accountSuspended;
+    }
+    if (error.code == 'ACCOUNT_TERMINATED') {
+      return AuthFailureCode.accountTerminated;
+    }
     if (error.code == 'AUTH_ACCOUNT_LINK_REQUIRED') {
       return AuthFailureCode.accountLinkRequired;
     }

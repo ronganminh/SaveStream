@@ -108,7 +108,7 @@ void main() {
 
       await tester.tap(find.byKey(const ValueKey<String>('nav-account')));
       await tester.pumpAndSettle();
-      expect(find.text('Quality'), findsOneWidget);
+      expect(find.text('Recording time'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
