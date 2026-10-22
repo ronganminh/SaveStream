@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from app.api.schemas.billing import (
     CreditPackageResponse,
     Money,
@@ -7,7 +9,13 @@ from app.api.schemas.billing import (
 from app.infrastructure.db.billing_models import CreditPackage, PaymentOrder
 
 
-def package_response(package: CreditPackage) -> CreditPackageResponse:
+def package_featured(package: CreditPackage, featured_codes: Iterable[str]) -> bool:
+    return package.code.casefold() in {code.casefold() for code in featured_codes}
+
+
+def package_response(
+    package: CreditPackage, *, featured_codes: Iterable[str] = ()
+) -> CreditPackageResponse:
     return CreditPackageResponse(
         id=str(package.id),
         name=package.name,
@@ -27,6 +35,7 @@ def package_response(package: CreditPackage) -> CreditPackageResponse:
             else None
         ),
         cloud_minutes=package.credits,
+        featured=package_featured(package, featured_codes),
     )
 
 
@@ -43,6 +52,9 @@ def payment_order_response(order: PaymentOrder) -> PaymentOrderResponse:
             },
             "provider": order.provider,
             "provider_reference": order.provider_reference,
+            "store_order_id": order.store_order_id,
+            "client_price_amount_micros": order.client_price_amount_micros,
+            "client_price_currency": order.client_price_currency,
             "created_at": order.created_at,
             "updated_at": order.updated_at,
         }

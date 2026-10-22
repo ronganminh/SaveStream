@@ -55,6 +55,16 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _record_client_price(
+    order: PaymentOrder, amount_micros: int | None, currency: str | None
+) -> None:
+    """Keep the first price the app reported for this order (display only)."""
+    if amount_micros is None or not currency or order.client_price_amount_micros is not None:
+        return
+    order.client_price_amount_micros = amount_micros
+    order.client_price_currency = currency.upper()
+
+
 @dataclass(frozen=True, slots=True)
 class StorePurchaseResult:
     status: Literal["credited", "pending", "payment_pending", "rejected"]
@@ -89,7 +99,12 @@ class StorePurchaseService:
         product_id: str,
         transaction_id: str,
         receipt: str,
+        client_price_amount_micros: int | None = None,
+        client_price_currency: str | None = None,
     ) -> StorePurchaseResult:
+        """``client_price_*`` is the store price the app showed, as the app
+        reports it: kept for display on the order, never verified or used for
+        accounting."""
         verified = await self.verifier.verify_purchase(
             product_id=product_id,
             transaction_id=transaction_id,
@@ -118,6 +133,9 @@ class StorePurchaseService:
                 raise self._invalid_receipt(
                     "Store transaction is already linked to another purchase"
                 )
+            _record_client_price(
+                existing, client_price_amount_micros, client_price_currency
+            )
             return await self._settle(existing, verified)
 
         paid = not verified.pending
@@ -135,8 +153,10 @@ class StorePurchaseService:
             store_token=verified.store_token
             if self.verifier.platform == "google_play"
             else None,
+            store_order_id=verified.store_order_id,
             paid_at=(verified.purchased_at or utcnow()) if paid else None,
         )
+        _record_client_price(order, client_price_amount_micros, client_price_currency)
         self.session.add(order)
         await self.session.flush()
         return await self._settle(order, verified, new=True)
@@ -261,6 +281,9 @@ class StorePurchaseService:
     ) -> StorePurchaseResult:
         if order.store_token is None and verified.store_token and order.provider == "google_play":
             order.store_token = verified.store_token
+        if order.store_order_id is None and verified.store_order_id:
+            # Older orders (before 0035) get it the next time Play is asked.
+            order.store_order_id = verified.store_order_id
         if verified.pending:
             await self.session.commit()
             balance = await CreditService(self.session).balance(order.user_id)

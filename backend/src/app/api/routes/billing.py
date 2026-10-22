@@ -57,12 +57,17 @@ async def _require_payment_channel(
     operation_id="listCreditPackages",
 )
 async def list_packages(
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("billing:read")),
     service: BillingService = Depends(get_billing_service),
 ) -> CreditPackageListResponse:
     del principal
+    featured = request.app.state.settings.featured_package_codes
     return CreditPackageListResponse(
-        items=[package_response(item) for item in await service.packages()]
+        items=[
+            package_response(item, featured_codes=featured)
+            for item in await service.packages()
+        ]
     )
 
 
@@ -231,6 +236,8 @@ async def create_store_purchase(
         product_id=payload.product_id,
         transaction_id=payload.transaction_id,
         receipt=payload.receipt,
+        client_price_amount_micros=payload.price_amount_micros,
+        client_price_currency=payload.price_currency_code,
     )
     return StorePurchaseResponse(
         status=result.status,

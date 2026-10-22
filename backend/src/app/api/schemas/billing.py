@@ -31,6 +31,9 @@ class CreditPackageResponse(StrictModel):
     active: bool
     store_product_ids: StoreProductIds | None = None
     cloud_minutes: int | None = Field(default=None, ge=1)
+    # Highlight this pack ("Most popular"). Config driven
+    # (SAVESTREAM_FEATURED_PACKAGE_CODES); never changes the price.
+    featured: bool = False
 
 
 class CreditPackageListResponse(StrictModel):
@@ -60,7 +63,17 @@ class PaymentOrderResponse(StrictModel):
     credits: int = Field(ge=1)
     amount: Money
     provider: str | None = None
+    # Opaque order reference. For Google Play it is a hash of the purchase
+    # token ("token:<sha256>"), not Play's order id: see store_order_id.
     provider_reference: str | None = None
+    # Google Play orderId ("GPA.…") as Play reported it; null for web orders,
+    # promo-code purchases and older orders not re-verified since.
+    store_order_id: str | None = None
+    # The store price the app showed when it bought, as the app reported it
+    # (micros, e.g. 24990000 = 24.99, and ISO 4217 currency). Display only:
+    # not verified with Google; amount is the catalog list price.
+    client_price_amount_micros: int | None = Field(default=None, ge=0)
+    client_price_currency: str | None = Field(default=None, min_length=3, max_length=3)
     created_at: datetime
     updated_at: datetime
 
@@ -108,6 +121,13 @@ class StorePurchaseRequest(StrictModel):
     product_id: str = Field(min_length=1, max_length=160)
     transaction_id: str = Field(min_length=1, max_length=255)
     receipt: str = Field(min_length=1)
+    # Optional, display only: the price Google Play showed the user
+    # (ProductDetails priceAmountMicros / priceCurrencyCode). Stored on the
+    # payment order as client_price_*; never verified or used for accounting.
+    price_amount_micros: int | None = Field(default=None, ge=0, le=10**13)
+    price_currency_code: str | None = Field(
+        default=None, min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$"
+    )
 
 
 class StorePurchaseResponse(StrictModel):
@@ -130,6 +150,7 @@ class PublicCreditPackage(StrictModel):
     credits: int = Field(ge=1)
     price: Money
     recording_minutes: int | None = Field(default=None, ge=0)
+    featured: bool = False
 
 
 class PublicCheckoutChannels(StrictModel):

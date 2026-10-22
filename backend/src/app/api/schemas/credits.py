@@ -31,6 +31,15 @@ class CreditTransactionResponse(StrictModel):
     # For a `release` entry: credits returned from the recording hold. The
     # entry's own amount is 0 because held credits never left the balance.
     released_credits: int | None = None
+    # Entries for a payment order (purchase grant, store refund): Google
+    # Play's orderId ("GPA.…", null for promo codes / web orders) and the
+    # pack name.
+    store_order_id: str | None = None
+    package_name: str | None = None
+    # Entries for a recording (hold, charge, release): the channel and how
+    # long it recorded, so clients need not page through recordings.
+    recording_channel_username: str | None = None
+    recording_duration_seconds: int | None = Field(default=None, ge=0)
     created_at: datetime
 
 

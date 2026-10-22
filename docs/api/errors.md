@@ -20,6 +20,8 @@ Clients MUST branch on `error.code`, not `message`. Frozen codes:
 
 Additive codes: `CHANNEL_NOT_FOUND` (`404`, not retryable) from `POST /v1/live-status` when TikTok's profile page says no account has the username; a TikTok outage, timeout or unclear answer stays `503 STREAM_UNAVAILABLE`.
 
+`429` responses whose `details` include `retry_after_seconds` (the global API limiter, `RATE_LIMITED` and `REWARD_LOCKED` from `POST /v1/rewards`) also send a `Retry-After` header with the same number of seconds.
+
 ## Pagination
 
 Every list endpoint that can grow uses:

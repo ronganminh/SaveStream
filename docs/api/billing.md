@@ -19,6 +19,8 @@
 
 A successful browser redirect is never proof that payment succeeded. The client must read/poll the payment-order status. Credits are posted only after verified webhook/reconciliation confirms a valid payment.
 
+Each package has a `featured` flag (highlight in the apps), set by `SAVESTREAM_FEATURED_PACKAGE_CODES`; it never changes the price. A payment order carries `store_order_id` (Google Play `orderId`, `null` when Play has none) and display-only `client_price_amount_micros` / `client_price_currency` (the store price the app reported, not verified). `provider_reference` stays the opaque order reference. See `docs/api/v2.md` (Credits screens API additions).
+
 Provider and currency are deployment/product decisions, so the contract exposes `provider` as an opaque string and `Money.currency` as an ISO-4217 code rather than hardcoding a provider or currency.
 
 ## Phase 7 implementation
