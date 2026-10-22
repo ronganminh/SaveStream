@@ -1,6 +1,8 @@
 import '../../../channels/domain/models/watch_summary.dart';
+import '../../../credits/domain/credit_balance.dart';
 import '../../../entitlement/domain/models/entitlement.dart';
 import '../../../recordings/domain/models/recording_summary.dart';
+import 'home_credits.dart';
 
 class HomeAccountMetrics {
   const HomeAccountMetrics({
@@ -31,12 +33,19 @@ class HomeDashboardViewModel {
     required this.watches,
     required this.recordings,
     required this.entitlement,
+    this.credits,
   });
 
   final HomeAccountMetrics metrics;
   final List<WatchSummary> watches;
   final List<RecordingSummary> recordings;
   final Entitlement entitlement;
+
+  /// `/v1/credits/balance`; null when it could not be loaded (Home still
+  /// shows minutes from the entitlement).
+  final CreditBalance? credits;
+
+  HomeCredits get creditsSummary => HomeCredits.from(entitlement, credits);
 
   List<RecordingSummary> get activeRecordings => recordings
       .where(

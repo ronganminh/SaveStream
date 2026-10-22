@@ -1,7 +1,14 @@
+import '../../../../core/legal/legal_consent.dart';
+
 enum SocialAuthProvider { google, apple }
 
 abstract interface class SocialAuthRepository {
-  Future<void> signInSocial(SocialAuthProvider provider);
+  /// [consent] is sent when the user accepted the terms on the sign-up
+  /// screen; the server needs it when this sign-in creates an account.
+  Future<void> signInSocial(
+    SocialAuthProvider provider, {
+    LegalConsent? consent,
+  });
 }
 
 abstract interface class SocialLinkFeedback {
@@ -15,6 +22,8 @@ enum AuthFailureCode {
   socialUnavailable,
   cancelled,
   emailNotVerified,
+  consentRequired,
+  legalOutdated,
   invalidToken,
   validation,
   rateLimited,
@@ -32,7 +41,11 @@ class AuthException implements Exception {
 abstract interface class AuthRepository {
   Future<void> signIn({required String email, required String password});
 
-  Future<void> register({required String email, required String password});
+  Future<void> register({
+    required String email,
+    required String password,
+    LegalConsent? consent,
+  });
 
   Future<void> verifyEmail({required String token});
 

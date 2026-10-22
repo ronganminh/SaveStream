@@ -91,6 +91,10 @@ class WatchSummary {
     this.lastCheckedAt,
     this.nextCheckAt,
     this.lastLiveAt,
+    this.activeRecordingId,
+    this.verificationRequired = false,
+    this.verificationDueAt,
+    this.ownerVerifiedAt,
   });
 
   final String id;
@@ -107,6 +111,14 @@ class WatchSummary {
   final DateTime? lastCheckedAt;
   final DateTime? nextCheckAt;
   final DateTime? lastLiveAt;
+
+  /// Set while a recording job for this channel is in flight.
+  final String? activeRecordingId;
+
+  /// True when this channel can't be recorded until ownership is verified.
+  final bool verificationRequired;
+  final DateTime? verificationDueAt;
+  final DateTime? ownerVerifiedAt;
 
   WatchSummary copyWith({
     String? creatorDisplayName,
@@ -138,6 +150,10 @@ class WatchSummary {
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
       nextCheckAt: nextCheckAt ?? this.nextCheckAt,
       lastLiveAt: lastLiveAt ?? this.lastLiveAt,
+      activeRecordingId: activeRecordingId,
+      verificationRequired: verificationRequired,
+      verificationDueAt: verificationDueAt,
+      ownerVerifiedAt: ownerVerifiedAt,
     );
   }
 }

@@ -85,6 +85,9 @@ final class ApiEntitlementRepository implements EntitlementRepository {
         ),
       ),
       updatedAt: _requiredDateTime(map['updated_at'], 'updated_at'),
+      emailVerified: _optionalBool(map['email_verified']),
+      canAutoRecord: _optionalBool(map['can_auto_record']),
+      trialRecording: _optionalBool(map['trial_recording']),
     );
   }
 
@@ -136,6 +139,8 @@ bool _requiredBool(Object? value, String name) {
   if (value is! bool) throw FormatException('Expected $name boolean.');
   return value;
 }
+
+bool _optionalBool(Object? value) => value is bool && value;
 
 int _requiredInt(Object? value, String name) {
   if (value is! int || value < 0) {

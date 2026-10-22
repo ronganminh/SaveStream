@@ -6,16 +6,24 @@ class AppConfig {
     required this.apiBaseUrl,
     Uri? privacyPolicyUrl,
     Uri? termsOfUseUrl,
+    Uri? acceptableUseUrl,
   }) : privacyPolicyUrl =
            privacyPolicyUrl ?? Uri.parse('https://savestream.online/privacy'),
        termsOfUseUrl =
-           termsOfUseUrl ?? Uri.parse('https://savestream.online/terms');
+           termsOfUseUrl ?? Uri.parse('https://savestream.online/terms'),
+       acceptableUseUrl =
+           acceptableUseUrl ??
+           (termsOfUseUrl ?? Uri.parse('https://savestream.online/terms'))
+               .replace(path: '/acceptable-use');
 
   final AppEnvironment environment;
   final Uri apiBaseUrl;
 
   final Uri privacyPolicyUrl;
   final Uri termsOfUseUrl;
+
+  /// Acceptable Use Policy, on the same site as the Terms of Use.
+  final Uri acceptableUseUrl;
 
   bool get isProduction => environment == AppEnvironment.production;
   bool get developerToolsEnabled => environment != AppEnvironment.production;

@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
+import 'package:savestream_mobile/core/legal/legal_consent.dart';
 import 'package:savestream_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
@@ -178,6 +179,7 @@ final class _FakeAuthRepository implements AuthRepository {
   Future<void> register({
     required String email,
     required String password,
+    LegalConsent? consent,
   }) async {}
 
   @override

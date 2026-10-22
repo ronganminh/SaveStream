@@ -1,8 +1,13 @@
 import '../../../../core/api/api_client.dart';
+import '../../../../core/legal/legal_consent.dart';
 import 'auth_tokens.dart';
 
 abstract interface class AuthPublicApi {
-  Future<void> register({required String email, required String password});
+  Future<void> register({
+    required String email,
+    required String password,
+    LegalConsent? consent,
+  });
   Future<void> verifyEmail({required String token});
   Future<void> resendVerification({required String email});
   Future<AuthTokenPair> login({
@@ -15,7 +20,10 @@ abstract interface class AuthPublicApi {
 }
 
 abstract interface class SocialAuthPublicApi {
-  Future<AuthTokenPair> socialLogin({required String idToken});
+  Future<AuthTokenPair> socialLogin({
+    required String idToken,
+    LegalConsent? consent,
+  });
 }
 
 final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
@@ -27,6 +35,7 @@ final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
   Future<void> register({
     required String email,
     required String password,
+    LegalConsent? consent,
   }) async {
     await _client.post<String>(
       '/v1/auth/register',
@@ -34,6 +43,8 @@ final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
         'email': email,
         'password': password,
         'display_name': null,
+        'client_type': 'mobile',
+        if (consent != null) 'consent': consent.toJson(),
       },
       decoder: _decodeMessage,
     );
@@ -75,10 +86,17 @@ final class DioAuthPublicApi implements AuthPublicApi, SocialAuthPublicApi {
   }
 
   @override
-  Future<AuthTokenPair> socialLogin({required String idToken}) async {
+  Future<AuthTokenPair> socialLogin({
+    required String idToken,
+    LegalConsent? consent,
+  }) async {
     final response = await _client.post<AuthTokenPair>(
       '/v1/auth/social',
-      data: <String, Object?>{'id_token': idToken, 'client_type': 'mobile'},
+      data: <String, Object?>{
+        'id_token': idToken,
+        'client_type': 'mobile',
+        if (consent != null) 'consent': consent.toJson(),
+      },
       decoder: AuthTokenPair.fromJson,
     );
     return response.data;

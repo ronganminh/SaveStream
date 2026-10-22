@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/mock/mock_providers.dart';
 import '../../../channels/domain/models/watch_summary.dart';
 import '../../../channels/presentation/controllers/watch_providers.dart';
+import '../../../credits/domain/credit_balance.dart';
+import '../../../credits/presentation/credits_providers.dart';
 import '../../../entitlement/domain/models/entitlement.dart';
 import '../../../entitlement/presentation/entitlement_providers.dart';
 import '../../../recordings/domain/models/recording_summary.dart';
@@ -16,17 +18,25 @@ final Provider<HomeMetricsRepository> homeMetricsRepositoryProvider =
       (ref) => MockHomeMetricsRepository(ref.watch(mockBehaviorProvider)),
     );
 
+/// Clock for Home's relative dates and LIVE timer (overridden in tests).
+final Provider<DateTime Function()> homeClockProvider =
+    Provider<DateTime Function()>((ref) => DateTime.now);
+
 final FutureProvider<HomeDashboardViewModel> homeDashboardProvider =
     FutureProvider<HomeDashboardViewModel>((ref) async {
       ref.watch(watchRevisionProvider);
       ref.watch(recordingRevisionProvider);
 
+      final Future<CreditBalance?> creditsFuture = _balanceOrNull(
+        ref.watch(creditsRepositoryProvider),
+      );
       final List<Object> results = await Future.wait<Object>(<Future<Object>>[
         ref.watch(watchRepositoryProvider).listWatches(),
         ref.watch(recordingRepositoryProvider).listRecordings(),
         ref.watch(homeMetricsRepositoryProvider).getMetrics(),
         ref.watch(entitlementRepositoryProvider).getEntitlement(),
       ], eagerError: false);
+      final CreditBalance? credits = await creditsFuture;
 
       final HomeAccountMetrics metrics = results[2] as HomeAccountMetrics;
       final Entitlement entitlement = results[3] as Entitlement;
@@ -37,5 +47,14 @@ final FutureProvider<HomeDashboardViewModel> homeDashboardProvider =
         watches: results[0] as List<WatchSummary>,
         recordings: results[1] as List<RecordingSummary>,
         entitlement: entitlement,
+        credits: credits,
       );
     });
+
+Future<CreditBalance?> _balanceOrNull(CreditsRepository repository) async {
+  try {
+    return await repository.getBalance();
+  } on Object {
+    return null;
+  }
+}
