@@ -185,7 +185,7 @@ class EntitlementService:
             or pro_local_recording == "unlimited"
         )
         local = LocalEntitlementSnapshot(
-            enabled=pro_local_enabled,
+            enabled=pro_local_enabled and self.settings.local_recording_enabled,
             unlimited=(
                 is_pro
                 and pro_local_recording == "unlimited"

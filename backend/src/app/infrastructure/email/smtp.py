@@ -118,6 +118,22 @@ async def deliver_one_time_token_email(
                     subject_override=subject_override,
                     intro_override=body_override,
                 )
+            elif token_row.purpose == "account_deletion":
+                email = templates.action_email(
+                    subject="Confirm your SaveStream account deletion",
+                    heading="Delete your SaveStream account?",
+                    intro=(
+                        "We received a request to delete your SaveStream account. "
+                        "Confirming signs you out everywhere, deletes your recordings and channels, "
+                        "and removes your personal data. Purchase records are kept as the law requires. "
+                        "This can't be undone."
+                    ),
+                    button_label="Review and delete",
+                    link=f"{cfg.frontend_base_url}/delete-account/confirm?token={encoded}",
+                    expires_in_seconds=expires_in,
+                    ignore_note="If you didn't ask for this, ignore this email and nothing changes.",
+                    site_url=cfg.frontend_base_url,
+                )
             else:
                 return
 

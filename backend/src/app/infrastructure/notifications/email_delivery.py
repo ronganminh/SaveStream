@@ -353,3 +353,49 @@ def run_partner_email(application_id: str, kind: str) -> str:
 
 def run_account_email(payload: dict[str, str]) -> str:
     return asyncio.run(_with_session(lambda s, c: send_account_email(s, c, payload), None))
+
+
+async def send_account_deleted_email(
+    session: AsyncSession,
+    settings: AppSettings,
+    payload: dict[str, str],
+    *,
+    send: Sender | None = None,
+) -> str:
+    """Required notice that the account deletion request was received.
+
+    The address comes from the outbox payload: the account row is anonymized
+    shortly after the request.
+    """
+    recipient = (payload.get("email") or "").strip()
+    user_id = payload.get("user_id", "")
+    if not recipient or recipient.endswith("@deleted.savestream.invalid"):
+        return "skipped"
+    site = settings.frontend_base_url.rstrip("/")
+    email = templates.message_email(
+        subject="Your SaveStream account is being deleted",
+        body=(
+            "We received your request and are deleting your SaveStream account now. "
+            "You've been signed out on every device, and your recordings, channels and "
+            "personal data are being removed. Purchase records are kept as the law requires.\n\n"
+            "If you didn't ask for this, reply to this email right away."
+        ),
+        site_url=site,
+    )
+    log = await _log(
+        session,
+        dedupe_key=f"account:{user_id}:deletion_requested",
+        user_id=None,
+        recipient=recipient,
+        kind="account_deletion_requested",
+        subject=email.subject,
+    )
+    if log is None:
+        return "duplicate"
+    return await _send(session, log, send or _smtp_sender(settings), to=recipient, email=email)
+
+
+def run_account_deleted_email(payload: dict[str, str]) -> str:
+    return asyncio.run(
+        _with_session(lambda s, c: send_account_deleted_email(s, c, payload), None)
+    )

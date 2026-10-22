@@ -8,7 +8,14 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.application.recordings.retention import effective_retention_days, paid_customer_clause
-from app.infrastructure.db.admin_models import AdminEmailLog
+from app.infrastructure.db.admin_models import AdminEmailLog, PartnerApplication
+from app.infrastructure.db.local_recording_models import (
+    LocalDailyUsage,
+    LocalRecordingSession,
+    LocalSlotGrant,
+    RewardIntent,
+    RewardUserState,
+)
 from app.application.recordings.service import utcnow
 from app.infrastructure.db.billing_models import PaymentOrder, Refund
 from app.infrastructure.db.credit_models import CreditLedgerEntry, CreditReservation
@@ -20,6 +27,7 @@ from app.infrastructure.db.models import (
     NotificationPreference,
     OneTimeToken,
     PasswordCredential,
+    SocialIdentity,
     User,
     UserNotification,
 )
@@ -388,6 +396,7 @@ class PrivacyService:
                 .where(AuditLog.actor_user_id == user.id)
                 .values(ip_address=None, user_agent=None)
             )
+            await self._erase_linked_personal_data(user, now)
             user.email = f"deleted+{user.id.hex}@deleted.savestream.invalid"
             user.normalized_email = user.email
             user.display_name = None
@@ -404,6 +413,53 @@ class PrivacyService:
                 )
             )
         return len(users)
+
+    async def _erase_linked_personal_data(self, user: User, now) -> None:
+        """Personal data outside the user row that account deletion also removes.
+
+        Runs before the email is replaced (Partner applications are matched
+        by email). Financial records and the consent log stay, as the
+        Privacy Policy says.
+        """
+        # Google/Apple sign-in link: without this a deleted user could never
+        # sign up again with the same Google account.
+        await self.session.execute(delete(SocialIdentity).where(SocialIdentity.user_id == user.id))
+        for model in (
+            LocalRecordingSession,
+            LocalDailyUsage,
+            RewardIntent,
+            RewardUserState,
+            LocalSlotGrant,
+        ):
+            await self.session.execute(delete(model).where(model.user_id == user.id))
+        await self.session.execute(
+            update(Watch)
+            .where(Watch.user_id == user.id)
+            .values(
+                creator_display_name=None,
+                creator_avatar_url=None,
+                creator_avatar_cached_url=None,
+                owner_attested_at=None,
+            )
+        )
+        await self.session.execute(
+            update(AdminEmailLog)
+            .where(AdminEmailLog.user_id == user.id)
+            .values(recipient_email="deleted@deleted.savestream.invalid")
+        )
+        await self.session.execute(
+            update(PartnerApplication)
+            .where(PartnerApplication.email == user.email)
+            .values(
+                name="Deleted user",
+                email="deleted@deleted.savestream.invalid",
+                other_channel_url=None,
+                consent_ip=None,
+                consent_user_agent=None,
+                published_at=None,
+                consent_withdrawn_at=now,
+            )
+        )
 
     async def anonymize_user(self, user_id: uuid.UUID) -> bool:
         user = await self.session.get(User, user_id)
@@ -467,6 +523,7 @@ class PrivacyService:
             .where(AuditLog.actor_user_id == user.id)
             .values(ip_address=None, user_agent=None)
         )
+        await self._erase_linked_personal_data(user, now)
         user.email = f"deleted+{user.id.hex}@deleted.savestream.invalid"
         user.normalized_email = user.email
         user.display_name = None

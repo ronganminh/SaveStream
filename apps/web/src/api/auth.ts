@@ -103,6 +103,22 @@ export const authApi = {
     });
   },
 
+  requestAccountDeletion(email: string) {
+    return apiClient.post<AuthMessage>("/v1/auth/account-deletion/request", {
+      json: { email },
+      skipAuth: true,
+      skipAuthRefresh: true,
+    });
+  },
+
+  confirmAccountDeletion(token: string) {
+    return apiClient.post<AuthMessage>("/v1/auth/account-deletion/confirm", {
+      json: { token },
+      skipAuth: true,
+      skipAuthRefresh: true,
+    });
+  },
+
   resetPassword(token: string, password: string) {
     return apiClient.post<AuthMessage>("/v1/auth/reset-password", {
       json: { token, password },

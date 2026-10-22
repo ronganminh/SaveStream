@@ -33,6 +33,9 @@ from app.settings import AppSettings
 REGISTER_MESSAGE = "If the address can be registered, verification instructions have been sent."
 RESEND_MESSAGE = "If the account exists, verification instructions have been sent."
 FORGOT_MESSAGE = "If the account exists, password reset instructions have been sent."
+ACCOUNT_DELETION_LINK_MESSAGE = (
+    "If an account uses this address, we sent a link to confirm the deletion."
+)
 
 
 def utcnow() -> datetime:
@@ -468,7 +471,11 @@ class IdentityService:
         # A first web sign-in creates an account, so it needs the same 18+ and
         # Terms/Privacy acceptance as email sign-up. The client shows the
         # consent step on LEGAL_CONSENT_REQUIRED and retries with it.
-        if client_type == "web" or consent is not None:
+        if (
+            client_type == "web"
+            or self.settings.mobile_consent_required
+            or consent is not None
+        ):
             consent = validate_consent(consent)
 
         user = User(
@@ -838,6 +845,55 @@ class IdentityService:
         request_id: str | None,
     ) -> str:
         user = await self.get_user(principal)
+        return await self._delete_account(user, request_id=request_id, via="app")
+
+    async def request_account_deletion_link(
+        self,
+        *,
+        email: str,
+        client_ip: str,
+        request_id: str | None,
+    ) -> str:
+        """Public /delete-account form: email a one-time confirmation link.
+
+        The answer never says whether the address has an account.
+        """
+        normalized = self.normalize_email(email)
+        await self._rate_limit_auth_write("account_deletion", f"{client_ip}|{normalized}")
+        user = await self.session.scalar(select(User).where(User.normalized_email == normalized))
+        if user is not None and user.is_active and user.deletion_requested_at is None:
+            await self._issue_one_time_token(user, "account_deletion")
+            await self._audit(
+                action="user.account_deletion_link_requested",
+                user_id=user.id,
+                request_id=request_id,
+                ip_address=client_ip,
+            )
+            await self.session.commit()
+        return ACCOUNT_DELETION_LINK_MESSAGE
+
+    async def confirm_account_deletion(self, *, token: str, request_id: str | None) -> str:
+        claims = self._decode_one_time(token, "account_deletion")
+        row = await self.session.get(OneTimeToken, claims.token_id)
+        user = await self.session.get(User, claims.user_id)
+        if (
+            row is None
+            or user is None
+            or row.user_id != claims.user_id
+            or row.purpose != "account_deletion"
+            or row.consumed_at is not None
+            or aware(row.expires_at) <= utcnow()
+            or not user.is_active
+        ):
+            raise ApplicationError(
+                "VALIDATION_ERROR",
+                "This deletion link is invalid or has expired. Request a new one.",
+                status_code=400,
+            )
+        row.consumed_at = utcnow()
+        return await self._delete_account(user, request_id=request_id, via="email_link")
+
+    async def _delete_account(self, user: User, *, request_id: str | None, via: str) -> str:
         now = utcnow()
         user.deletion_requested_at = now
         user.is_active = False
@@ -855,12 +911,14 @@ class IdentityService:
             topic="identity.account_deletion_requested",
             aggregate_type="user",
             aggregate_id=str(user.id),
-            payload={"user_id": str(user.id)},
+            # The email goes in the payload: the account is anonymized soon after.
+            payload={"user_id": str(user.id), "email": user.email},
         )
         await self._audit(
             action="user.account_deletion_requested",
             user_id=user.id,
             request_id=request_id,
+            details={"via": via},
         )
         await self.session.commit()
         return "Account deletion requested"

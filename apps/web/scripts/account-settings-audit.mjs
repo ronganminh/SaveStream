@@ -105,6 +105,15 @@ for (const text of [
 ])
   forbidIn("ProductionSecuritySettings", security, text);
 
+// Google Play account-deletion URL: public page + emailed confirmation link.
+must("src/routes/delete-account.tsx", '"/delete-account"');
+must("src/routes/delete-account_.confirm.tsx", "DeleteAccountConfirmPage");
+must("src/api/auth.ts", '"/v1/auth/account-deletion/request"');
+must("src/api/auth.ts", '"/v1/auth/account-deletion/confirm"');
+must("src/components/public/delete-account.tsx", "Settings → Account → Delete account");
+must("src/lib/app-config.ts", '"/delete-account"');
+must("public/sitemap.xml", "https://savestream.online/delete-account");
+
 if (failures.length) {
   console.error("Account settings audit failed:\n- " + failures.join("\n- "));
   process.exit(1);

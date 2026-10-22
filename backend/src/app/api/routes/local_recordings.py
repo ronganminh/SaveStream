@@ -18,9 +18,27 @@ from app.api.schemas.local_recordings import (
 )
 from app.api.schemas.recordings import Creator, Pagination
 from app.application.local_recordings.service import LocalRecordingService
+from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 
-router = APIRouter(prefix="/v1", tags=["Local Recordings"])
+
+def _require_local_recording(request: Request) -> None:
+    """On-device recording is retired; old app builds get a clear error."""
+    if not request.app.state.settings.local_recording_enabled:
+        raise ApplicationError(
+            "LOCAL_RECORDING_RETIRED",
+            "Recording on this device is no longer available. SaveStream records in the cloud; "
+            "update the app.",
+            status_code=410,
+            retryable=False,
+        )
+
+
+router = APIRouter(
+    prefix="/v1",
+    tags=["Local Recordings"],
+    dependencies=[Depends(_require_local_recording)],
+)
 
 
 @router.post(

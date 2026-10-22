@@ -111,6 +111,7 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/refund",
   "/report",
   "/partners/apply",
+  "/delete-account",
 ];
 
 /** Shown to signed-out users after sign-in is refused (suspended/closed accounts). */
