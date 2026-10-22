@@ -8,29 +8,14 @@ import 'package:video_player/video_player.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/flv_timestamp_normalizer.dart';
 import '../../../platform/video_player_ss_controller.dart';
-import '../../local_recordings/domain/models/local_recording_models.dart';
-import 'controllers/recording_library_controller.dart';
 import 'controllers/recording_providers.dart';
 import 'recording_ui_helpers.dart';
-
-enum RecordingPlaybackSource {
-  local,
-  cloud;
-
-  static RecordingPlaybackSource fromValue(String? value) {
-    return value == 'local'
-        ? RecordingPlaybackSource.local
-        : RecordingPlaybackSource.cloud;
-  }
-}
 
 /// L08 / L08-landscape — Player controls backed by video_player.
 class RecordingPlayerScreen extends ConsumerStatefulWidget {
   const RecordingPlayerScreen({
     required this.recordingId,
-    required this.source,
     required this.title,
     required this.durationSeconds,
     this.startedAt,
@@ -39,10 +24,11 @@ class RecordingPlayerScreen extends ConsumerStatefulWidget {
   });
 
   final String recordingId;
-  final RecordingPlaybackSource source;
   final String title;
   final int durationSeconds;
   final DateTime? startedAt;
+
+  /// Path of a cloud recording already downloaded to this device.
   final String? localPath;
 
   @override
@@ -80,10 +66,11 @@ class _RecordingPlayerScreenState extends ConsumerState<RecordingPlayerScreen> {
     }
 
     try {
-      final VideoPlayerSsController controller = switch (widget.source) {
-        RecordingPlaybackSource.local => await _localController(),
-        RecordingPlaybackSource.cloud => await _cloudController(),
-      };
+      final String? localPath = widget.localPath;
+      final VideoPlayerSsController controller =
+          localPath != null && localPath.isNotEmpty
+          ? VideoPlayerSsController.file(localPath)
+          : await _cloudController();
       await controller.initialize();
       if (!mounted) {
         controller.dispose();
@@ -101,22 +88,6 @@ class _RecordingPlayerScreenState extends ConsumerState<RecordingPlayerScreen> {
         });
       }
     }
-  }
-
-  Future<VideoPlayerSsController> _localController() async {
-    if (widget.localPath case final String path when path.isNotEmpty) {
-      await normalizeFlvTimestamps(path);
-      return VideoPlayerSsController.file(path);
-    }
-    final LocalRecordingSummary? recording = await ref.read(
-      localRecordingLibraryDetailProvider(widget.recordingId).future,
-    );
-    final String? path = recording?.filePath;
-    if (recording == null || !recording.fileAvailable || path == null) {
-      throw StateError('Local recording file is unavailable.');
-    }
-    await normalizeFlvTimestamps(path);
-    return VideoPlayerSsController.file(path);
   }
 
   Future<VideoPlayerSsController> _cloudController() async {
@@ -179,7 +150,6 @@ class _RecordingPlayerScreenState extends ConsumerState<RecordingPlayerScreen> {
                 controller: controller,
                 title: widget.title,
                 durationSeconds: widget.durationSeconds,
-                source: widget.source,
                 startedAt: widget.startedAt,
               ),
       ),
@@ -192,14 +162,12 @@ class _RecordingPlayerView extends StatefulWidget {
     required this.controller,
     required this.title,
     required this.durationSeconds,
-    required this.source,
     required this.startedAt,
   });
 
   final VideoPlayerSsController controller;
   final String title;
   final int durationSeconds;
-  final RecordingPlaybackSource source;
   final DateTime? startedAt;
 
   @override
@@ -398,21 +366,9 @@ class _RecordingPlayerViewState extends State<_RecordingPlayerView> {
                                   ),
                                 ),
                                 SsStatusChip(
-                                  label:
-                                      widget.source ==
-                                          RecordingPlaybackSource.local
-                                      ? context.l10n.localLabel
-                                      : context.l10n.cloudLabel,
-                                  tone:
-                                      widget.source ==
-                                          RecordingPlaybackSource.local
-                                      ? SsStatusTone.local
-                                      : SsStatusTone.cloud,
-                                  icon:
-                                      widget.source ==
-                                          RecordingPlaybackSource.local
-                                      ? Icons.smartphone_rounded
-                                      : Icons.cloud_rounded,
+                                  label: context.l10n.cloudLabel,
+                                  tone: SsStatusTone.cloud,
+                                  icon: Icons.cloud_rounded,
                                 ),
                               ],
                             ),

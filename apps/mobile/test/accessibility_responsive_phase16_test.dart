@@ -125,13 +125,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byTooltip('Add creator'), findsNothing);
+      expect(find.byTooltip('Add channel'), findsNothing);
 
       await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      expect(find.byTooltip('Add creator'), findsOneWidget);
+      expect(find.byTooltip('Add channel'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );

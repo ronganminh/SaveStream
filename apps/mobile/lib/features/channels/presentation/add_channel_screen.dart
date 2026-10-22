@@ -227,7 +227,6 @@ class _AddChannelScreenState extends ConsumerState<AddChannelScreen> {
                       icon: Icons.music_note_rounded,
                       tone: SsStatusTone.success,
                     ),
-                    SsStatusChip(label: l10n.douyinComingSoonLabel),
                   ],
                 ),
                 const SizedBox(height: SsSpacing.xl),

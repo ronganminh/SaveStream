@@ -10,11 +10,6 @@ import 'package:savestream_mobile/features/devices/data/repositories/mock_device
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
-import 'package:savestream_mobile/features/local_recordings/data/repositories/mock_local_recording_repository.dart';
-import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
-import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
-import 'package:savestream_mobile/features/rewards/data/repositories/mock_reward_repository.dart';
-import 'package:savestream_mobile/features/rewards/domain/models/reward.dart';
 import 'package:savestream_mobile/features/store/data/repositories/mock_store_repository.dart';
 import 'package:savestream_mobile/features/store/domain/models/store_models.dart';
 
@@ -39,38 +34,6 @@ void main() {
     expect(pro.plan, Plan.pro);
     expect(pro.local.unlimited, isTrue);
     expect(pro.limits.maxConcurrentCloudRecordings, 3);
-  });
-
-  test('A0 local recording mock starts, extends, finishes and lists', () async {
-    final MockLocalRecordingRepository repository =
-        MockLocalRecordingRepository(behavior);
-    final session = await repository.start(
-      watchId: 'watch_1',
-      deviceId: 'dev_1',
-    );
-    final extended = await repository.extend(session.sessionId);
-    expect(extended.grantedSeconds, greaterThan(session.grantedSeconds));
-
-    await repository.finish(
-      session.sessionId,
-      recordedSeconds: 120,
-      sizeBytes: 1024,
-      endReason: RecordingEndReason.userStopped,
-      status: RecordingStatus.completed,
-    );
-    expect(await repository.list(), hasLength(1));
-  });
-
-  test('A0 reward mock validates created reward on status poll', () async {
-    final MockRewardRepository repository = MockRewardRepository(behavior);
-    final Reward reward = await repository.create(
-      purpose: RewardPurpose.localMinutes,
-    );
-    expect(reward.status, RewardStatus.pending);
-    expect(
-      (await repository.getStatus(reward.rewardId)).status,
-      RewardStatus.valid,
-    );
   });
 
   test('A0 store packages match V2 purchased-hour products', () async {

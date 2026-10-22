@@ -82,25 +82,14 @@ class A5UsageScreen extends ConsumerWidget {
                           data.limits.cloudRetentionDays,
                         ),
                       ),
-                      Text(
-                        !data.local.enabled
-                            ? context.l10n.settingsLocalRecordingDisabledValue
-                            : data.local.unlimited
-                            ? context.l10n.settingsLocalRecordingUnlimitedValue
-                            : context.l10n.settingsLocalRecordingAvailableValue,
-                      ),
                     ] else ...<Widget>[
                       Text(
-                        context.l10n.freeMinutesToday(
-                          data.local.minutesRemaining,
-                          data.local.dailyMinutes,
+                        formatMinutesAsHoursMinutes(
+                          data.cloudMinutesAvailable,
+                          hoursLabel: context.l10n.timeHoursUnit,
+                          minutesLabel: context.l10n.timeMinutesUnit,
                         ),
-                      ),
-                      Text(
-                        context.l10n.rewardUsageToday(
-                          data.local.rewardsUsedToday,
-                          data.local.rewardsCapPerDay,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       Text(
                         context.l10n.watchUsage(

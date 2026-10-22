@@ -6,15 +6,13 @@ import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/core/api/api_client.dart';
+import 'package:savestream_mobile/core/api/idempotency.dart';
 import 'package:savestream_mobile/core/api/memory_access_token_store.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/features/auth/data/remote/auth_public_api.dart';
-import 'package:savestream_mobile/features/billing/data/repositories/api_billing_repository.dart';
-import 'package:savestream_mobile/features/billing/domain/models/billing_models.dart';
 import 'package:savestream_mobile/features/channels/data/repositories/api_watch_repository.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
-import 'package:savestream_mobile/features/credits/data/repositories/api_credits_repository.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/api_entitlement_repository.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/recordings/data/repositories/api_recording_repository.dart';
@@ -87,7 +85,6 @@ void main() {
         expect(initialEntitlement.plan, Plan.free);
         expect(initialEntitlement.limits.maxWatches, 3);
         expect(initialEntitlement.limits.maxConcurrentCloudRecordings, 0);
-        expect(initialEntitlement.local.enabled, isTrue);
 
         watchRepository = ApiWatchRepository(apiClient: authenticatedClient);
         final watch = await watchRepository.createWatch(
@@ -100,46 +97,46 @@ void main() {
         watchId = watch.id;
         expect(watch.status, WatchStatus.active);
 
-        final billingRepository = ApiBillingRepository(
-          apiClient: authenticatedClient,
+        // The app no longer ships the web checkout repositories; fund the
+        // E2E account through the same backend endpoints directly.
+        final ApiClient client = authenticatedClient;
+        final Map<Object?, Object?> packages = await _getJson(
+          client,
+          '/v1/billing/packages',
         );
-        final creditsRepository = ApiCreditsRepository(
-          apiClient: authenticatedClient,
+        final Map<Object?, Object?> package = (packages['items']! as List)
+            .cast<Map<Object?, Object?>>()
+            .firstWhere((Map<Object?, Object?> item) => item['active'] == true);
+        final int packageCredits = package['credits']! as int;
+
+        expect(await _postedBalance(client), 0);
+
+        final Map<Object?, Object?> created = await _postJson(
+          client,
+          '/v1/billing/payment-orders',
+          <String, Object?>{'package_id': package['id']},
         );
-        final BillingSnapshot billing = await billingRepository.getSnapshot();
-        expect(billing.packages, isNotEmpty);
-        final CreditPackage package = billing.packages.first;
-
-        final initialBalance = await creditsRepository.getBalance();
-        expect(initialBalance.posted, 0);
-
-        final PaymentOrder? created = await billingRepository
-            .createPaymentOrder(package.id);
-        expect(created, isNotNull);
-        final CheckoutSession? checkout = await billingRepository
-            .createCheckout(
-              orderId: created!.id,
-              returnUri: Uri.parse('https://example.test/payment-return'),
-            );
-        expect(checkout, isNotNull);
-        expect(checkout!.paymentOrder.status, PaymentOrderStatus.pending);
-
-        final pendingBalance = await creditsRepository.getBalance();
-        expect(pendingBalance.posted, 0);
-
-        await _markPaymentPaid(
-          rawDio,
-          apiBaseUrl,
-          paymentSecret,
-          checkout.paymentOrder,
+        final Map<Object?, Object?> checkout = await _postJson(
+          client,
+          '/v1/billing/payment-orders/${created['id']}/checkout',
+          <String, Object?>{
+            'return_url': 'https://example.test/payment-return',
+          },
         );
-        final PaymentOrder? paid = await billingRepository.refreshPaymentOrder(
-          created.id,
-        );
-        expect(paid?.status, PaymentOrderStatus.paid);
+        final Map<Object?, Object?> pendingOrder =
+            checkout['payment_order']! as Map<Object?, Object?>;
+        expect(pendingOrder['status'], 'pending');
 
-        final fundedBalance = await creditsRepository.getBalance();
-        expect(fundedBalance.posted, package.credits);
+        expect(await _postedBalance(client), 0);
+
+        await _markPaymentPaid(rawDio, apiBaseUrl, paymentSecret, pendingOrder);
+        final Map<Object?, Object?> paid = await _getJson(
+          client,
+          '/v1/billing/payment-orders/${created['id']}',
+        );
+        expect(paid['status'], 'paid');
+
+        expect(await _postedBalance(client), packageCredits);
 
         final Entitlement paidEntitlement = await entitlementRepository
             .getEntitlement();
@@ -173,8 +170,7 @@ void main() {
         );
         expect(download.uri.hasScheme, isTrue);
 
-        final settledBalance = await creditsRepository.getBalance();
-        expect(settledBalance.posted, package.credits - 1);
+        expect(await _postedBalance(authenticatedClient), packageCredits - 1);
       } finally {
         if (recordingId != null && recordingRepository != null) {
           try {
@@ -263,19 +259,21 @@ Future<void> _markPaymentPaid(
   Dio dio,
   Uri apiBaseUrl,
   String secret,
-  PaymentOrder order,
+  Map<Object?, Object?> order,
 ) async {
-  final String? paymentReference = order.providerReference;
-  if (paymentReference == null || paymentReference.isEmpty) {
+  final Object? paymentReference = order['provider_reference'];
+  if (paymentReference is! String || paymentReference.isEmpty) {
     throw StateError('Checkout did not provide a payment reference.');
   }
+  final Map<Object?, Object?> amount =
+      order['amount']! as Map<Object?, Object?>;
 
   final Map<String, Object?> event = <String, Object?>{
     'id': 'mobile-e2e-${DateTime.now().microsecondsSinceEpoch}',
     'type': 'payment.paid',
     'payment_reference': paymentReference,
-    'amount_minor': order.amount.amountMinor,
-    'currency': order.amount.currency,
+    'amount_minor': amount['amount_minor'],
+    'currency': amount['currency'],
   };
   final String raw = jsonEncode(event);
   final String signature = Hmac(
@@ -315,4 +313,30 @@ Future<RecordingSummary> _waitForTerminalRecording(
   }
 
   throw TimeoutException('Recording did not reach a terminal state.');
+}
+
+Map<Object?, Object?> _jsonMap(Object? json) => json! as Map<Object?, Object?>;
+
+Future<Map<Object?, Object?>> _getJson(ApiClient client, String path) async {
+  return (await client.get<Map<Object?, Object?>>(
+    path,
+    decoder: _jsonMap,
+  )).data;
+}
+
+Future<Map<Object?, Object?>> _postJson(
+  ApiClient client,
+  String path,
+  Map<String, Object?> body,
+) async {
+  return (await client.post<Map<Object?, Object?>>(
+    path,
+    data: body,
+    idempotency: IdempotencyContext.create(SecureIdempotencyKeyGenerator()),
+    decoder: _jsonMap,
+  )).data;
+}
+
+Future<int> _postedBalance(ApiClient client) async {
+  return (await _getJson(client, '/v1/credits/balance'))['posted']! as int;
 }

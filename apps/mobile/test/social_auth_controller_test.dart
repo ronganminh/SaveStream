@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:savestream_mobile/app/session/app_session_controller.dart';
 import 'package:savestream_mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:savestream_mobile/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:savestream_mobile/features/auth/presentation/widgets/social_auth_buttons.dart';
 
 void main() {
   group('social auth controller', () {
@@ -63,6 +65,29 @@ void main() {
       expect(controller.failure, AuthFailureCode.accountLinkRequired);
       expect(session.authStatus, AppAuthStatus.unauthenticated);
       controller.dispose();
+    });
+  });
+
+  group('social auth buttons', () {
+    Widget host(bool showApple) => MaterialApp(
+      home: Scaffold(
+        body: SocialAuthButtons(
+          isLoading: false,
+          onProvider: (_) {},
+          showApple: showApple,
+        ),
+      ),
+    );
+
+    testWidgets('hides Apple sign-in outside iOS', (WidgetTester tester) async {
+      await tester.pumpWidget(host(false));
+      expect(find.text('Continue with Google'), findsOneWidget);
+      expect(find.text('Continue with Apple'), findsNothing);
+    });
+
+    testWidgets('keeps Apple sign-in on iOS', (WidgetTester tester) async {
+      await tester.pumpWidget(host(true));
+      expect(find.text('Continue with Apple'), findsOneWidget);
     });
   });
 }

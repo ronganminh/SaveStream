@@ -1,4 +1,4 @@
-/// A07 — Intro · Watch & Detect · step 1/3.
+/// A07 — Intro · Watch & Detect · step 1/2.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,14 +15,14 @@ class IntroWatchDetectScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return OnboardingStepScaffold(
-      stepLabel: l10n.onboardingStepLabel(1, 3),
+      stepLabel: l10n.onboardingStepLabel(1, 2),
       title: l10n.introWatchTitle,
       body: l10n.introWatchBody,
       icon: Icons.visibility_outlined,
       skipLabel: l10n.onboardingSkipAction,
       onSkip: () => context.go(AppRoutes.onboardingNotifications),
       primaryLabel: l10n.continueAction,
-      onPrimary: () => context.go(AppRoutes.introLocalCloud),
+      onPrimary: () => context.go(AppRoutes.onboardingNotifications),
       child: Column(
         children: <Widget>[
           SsCreatorTile(

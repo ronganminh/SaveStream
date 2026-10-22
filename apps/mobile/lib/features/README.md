@@ -9,6 +9,5 @@ Planned modules:
 - home
 - channels
 - recordings
-- credits
-- billing
+- store
 - settings

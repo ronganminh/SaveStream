@@ -123,17 +123,8 @@ void main() {
     await tester.tap(watchContinue);
     await tester.pumpAndSettle();
 
-    expect(find.text('Record on your device or in the cloud'), findsOneWidget);
-    final Finder storageContinue = find.widgetWithText(
-      FilledButton,
-      'Continue',
-    );
-    await tester.ensureVisible(storageContinue);
-    await tester.tap(storageContinue);
-    await tester.pumpAndSettle();
-
     expect(
-      find.text('Turn on notifications to know when a creator is LIVE'),
+      find.text('Turn on notifications to know when your channel is LIVE'),
       findsOneWidget,
     );
     final Finder enableNotifications = find.widgetWithText(
@@ -144,15 +135,9 @@ void main() {
     await tester.tap(enableNotifications);
     await tester.pumpAndSettle();
 
-    expect(find.text('Allow recording while you switch apps'), findsOneWidget);
-    final Finder androidLater = find.widgetWithText(OutlinedButton, 'Later');
-    await tester.ensureVisible(androidLater);
-    await tester.tap(androidLater);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Add your first creator'), findsOneWidget);
+    expect(find.text('Add your TikTok channel'), findsOneWidget);
     expect(find.byType(Checkbox), findsNothing);
-    final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
+    final Finder add = find.widgetWithText(FilledButton, 'Add channel');
     await tester.ensureVisible(add);
     await tester.tap(add);
     await tester.pump(const Duration(milliseconds: 200));
@@ -167,7 +152,7 @@ void main() {
     expect(find.text('Home'), findsOneWidget);
   });
 
-  testWidgets('A09 follows the iOS onboarding branch', (
+  testWidgets('A09 skips platform recording screens on iOS', (
     WidgetTester tester,
   ) async {
     final AppSettingsController settings = AppSettingsController(
@@ -196,7 +181,7 @@ void main() {
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Turn on notifications to know when a creator is LIVE'),
+      find.text('Turn on notifications to know when your channel is LIVE'),
       findsOneWidget,
     );
     final Finder iosLater = find.widgetWithText(OutlinedButton, 'Later');
@@ -204,9 +189,6 @@ void main() {
     await tester.tap(iosLater);
     await tester.pumpAndSettle();
 
-    expect(
-      find.text('On iPhone, keep SaveStream open while recording'),
-      findsOneWidget,
-    );
+    expect(find.text('Add your TikTok channel'), findsOneWidget);
   });
 }

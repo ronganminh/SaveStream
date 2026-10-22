@@ -1,6 +1,6 @@
 // Runs inside a real Android emulator or iOS simulator, not Flutter's desktop
 // widget-test runner. Real app routes/widgets run with deterministic fake
-// providers: NO external Apple/Google purchases, ad impressions, or production
+// providers: NO external Apple/Google purchases or production
 // accounts are touched by this suite.
 import 'dart:async';
 import 'dart:io';
@@ -19,9 +19,7 @@ import 'package:savestream_mobile/core/mock/mock_scenario.dart';
 import 'package:savestream_mobile/core/widgets/savestream_widgets.dart';
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/entitlement/data/repositories/mock_entitlement_repository.dart';
-import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
 import 'package:savestream_mobile/features/entitlement/presentation/entitlement_providers.dart';
-import 'package:savestream_mobile/features/local_recordings/presentation/local_recording_reward_sheet.dart';
 import 'package:savestream_mobile/features/recordings/presentation/recording_detail_screen.dart';
 import 'package:savestream_mobile/features/store/data/repositories/mock_store_repository.dart';
 import 'package:savestream_mobile/features/store/domain/models/store_models.dart';
@@ -29,7 +27,6 @@ import 'package:savestream_mobile/features/store/domain/repositories/store_repos
 import 'package:savestream_mobile/features/store/presentation/a5_purchase_controller.dart';
 import 'package:savestream_mobile/features/store/presentation/a5_store_providers.dart';
 import 'package:savestream_mobile/features/store/presentation/cloud_hours_purchase_screen.dart';
-import 'package:savestream_mobile/l10n/l10n.dart';
 import 'package:savestream_mobile/platform/contracts/purchase_service.dart';
 import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
 import 'package:savestream_mobile/platform/platform_providers.dart';
@@ -97,13 +94,13 @@ void registerDeviceJourneys() {
     await _waitFor(tester, find.byIcon(Icons.visibility_outlined));
     await tester.tap(find.byIcon(Icons.visibility_outlined));
     await _waitFor(tester, find.text('Ada Live'));
-    await tester.tap(find.byTooltip('Add creator').first);
+    await tester.tap(find.byTooltip('Add channel').first);
     await _waitFor(tester, find.byType(TextFormField));
     await tester.enterText(find.byType(TextFormField), '@ci_creator');
-    await tester.tap(find.widgetWithText(FilledButton, 'Find creator'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Find channel'));
     await _waitFor(tester, find.text('Use recordings responsibly'));
 
-    final Finder add = find.widgetWithText(FilledButton, 'Add & follow');
+    final Finder add = find.widgetWithText(FilledButton, 'Add channel');
     await tester.ensureVisible(add);
     await tester.tap(add);
     await _waitFor(tester, find.text('Channel detail'));
@@ -138,42 +135,6 @@ void registerDeviceJourneys() {
     await tester.pumpAndSettle();
     await _waitFor(tester, find.text('Stop requested'));
     expect(find.widgetWithText(FilledButton, 'Stop recording'), findsNothing);
-  });
-
-  testWidgets('device: rewarded ad offer and daily reward cap UI', (
-    WidgetTester tester,
-  ) async {
-    Widget sheet(int used) => ProviderScope(
-      key: ValueKey<int>(used),
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: RewardedMinutesSheet(
-            entitlement: LocalEntitlement(
-              enabled: true,
-              unlimited: false,
-              dailyMinutes: 10,
-              minutesRemaining: 1,
-              resetsAt: DateTime.utc(2026, 10, 10),
-              rewardsUsedToday: used,
-              rewardsCapPerDay: 8,
-              minutesPerReward: 10,
-              extensionsCapPerRecording: 4,
-            ),
-            extensionsUsed: 1,
-          ),
-        ),
-      ),
-    );
-    await tester.pumpWidget(sheet(2));
-    expect(find.text('+10 minutes for this recording'), findsOneWidget);
-    expect(find.text('Rewarded ads today 2/8'), findsOneWidget);
-    expect(find.text('Watch ad'), findsOneWidget);
-    await tester.pumpWidget(sheet(8));
-    await tester.pump();
-    expect(find.text('Daily rewarded-ad limit reached'), findsWidgets);
-    expect(find.text('Watch ad'), findsNothing);
   });
 
   testWidgets('device: settings -> Vietnamese -> dark theme', (

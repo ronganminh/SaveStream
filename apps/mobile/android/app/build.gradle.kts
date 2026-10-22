@@ -8,10 +8,6 @@ val releaseKeystorePath = System.getenv("SAVESTREAM_ANDROID_KEYSTORE_PATH")
 val releaseKeystorePassword = System.getenv("SAVESTREAM_ANDROID_KEYSTORE_PASSWORD")
 val releaseKeyAlias = System.getenv("SAVESTREAM_ANDROID_KEY_ALIAS")
 val releaseKeyPassword = System.getenv("SAVESTREAM_ANDROID_KEY_PASSWORD")
-val productionAdmobAppId =
-    System.getenv("SAVESTREAM_ADMOB_ANDROID_APP_ID")
-        ?: "ca-app-pub-2078852906622512~2464439785"
-val testAdmobAppId = "ca-app-pub-3940256099942544~3347511713"
 val hasReleaseSigning =
     !releaseKeystorePath.isNullOrBlank() &&
     !releaseKeystorePassword.isNullOrBlank() &&
@@ -31,9 +27,6 @@ android {
     defaultConfig {
         applicationId = "com.savestream.app"
         minSdk = 24
-        // Debug/profile builds use Google's sample app so local testing never
-        // generates traffic against the production AdMob account.
-        manifestPlaceholders["admobAppId"] = testAdmobAppId
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -54,7 +47,6 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            manifestPlaceholders["admobAppId"] = productionAdmobAppId
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -74,13 +66,6 @@ kotlin {
 
 dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.19.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    // Google Mobile Ads pulls WorkManager 2.7.0 transitively. Its bundled
-    // Room 2.2.5 database fails during startup after AGP 9/R8 optimization.
-    // Keep the AndroidX runtime current so release builds can initialize on
-    // Android 10 as well as newer devices.
-    implementation("androidx.work:work-runtime:2.12.0")
 }
 
 flutter {

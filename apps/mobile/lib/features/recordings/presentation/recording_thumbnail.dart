@@ -5,17 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../app/theme/ss_tokens.dart';
-import 'controllers/recording_library_controller.dart';
 import 'controllers/recording_providers.dart';
-import 'models/recording_library_item.dart';
 
 /// Loads only the first frame and keeps playback paused, so a recording looks
 /// like familiar video content without maintaining a second thumbnail store.
 class RecordingThumbnail extends ConsumerStatefulWidget {
   const RecordingThumbnail({
     required this.recordingId,
-    required this.storage,
-    this.filePath,
     this.enabled = true,
     this.showPlayOverlay = true,
     this.onTap,
@@ -24,8 +20,6 @@ class RecordingThumbnail extends ConsumerStatefulWidget {
   });
 
   final String recordingId;
-  final RecordingLibraryStorage storage;
-  final String? filePath;
   final bool enabled;
   final bool showPlayOverlay;
   final VoidCallback? onTap;
@@ -50,8 +44,6 @@ class _RecordingThumbnailState extends ConsumerState<RecordingThumbnail> {
   void didUpdateWidget(covariant RecordingThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.recordingId != widget.recordingId ||
-        oldWidget.storage != widget.storage ||
-        oldWidget.filePath != widget.filePath ||
         oldWidget.enabled != widget.enabled) {
       _disposeController();
       if (widget.enabled && !Platform.environment.containsKey('FLUTTER_TEST')) {
@@ -63,25 +55,15 @@ class _RecordingThumbnailState extends ConsumerState<RecordingThumbnail> {
   Future<void> _load() async {
     VideoPlayerController? next;
     try {
-      if (widget.storage == RecordingLibraryStorage.local) {
-        final String? path =
-            widget.filePath ??
-            (await ref.read(
-              localRecordingLibraryDetailProvider(widget.recordingId).future,
-            ))?.filePath;
-        if (path == null || !File(path).existsSync()) return;
-        next = VideoPlayerController.file(File(path));
-      } else {
-        final artifacts = await ref.read(
-          recordingArtifactsProvider(widget.recordingId).future,
-        );
-        if (artifacts.isEmpty) return;
-        final download = await ref
-            .read(recordingControllerProvider)
-            .createArtifactDownloadUrl(artifacts.first.id);
-        if (download.isExpired) return;
-        next = VideoPlayerController.networkUrl(download.uri);
-      }
+      final artifacts = await ref.read(
+        recordingArtifactsProvider(widget.recordingId).future,
+      );
+      if (artifacts.isEmpty) return;
+      final download = await ref
+          .read(recordingControllerProvider)
+          .createArtifactDownloadUrl(artifacts.first.id);
+      if (download.isExpired) return;
+      next = VideoPlayerController.networkUrl(download.uri);
       await next.initialize();
       await next.pause();
       if (!mounted) {

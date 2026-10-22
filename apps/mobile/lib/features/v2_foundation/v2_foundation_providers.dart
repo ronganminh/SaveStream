@@ -7,27 +7,12 @@ import '../devices/data/repositories/mock_device_repository.dart';
 import '../devices/domain/repositories/device_repository.dart';
 import '../entitlement/data/repositories/mock_entitlement_repository.dart';
 import '../entitlement/domain/repositories/entitlement_repository.dart';
-import '../local_recordings/data/repositories/mock_local_recording_repository.dart';
-import '../local_recordings/domain/repositories/local_recording_repository.dart';
-import '../rewards/data/repositories/mock_reward_repository.dart';
-import '../rewards/domain/repositories/reward_repository.dart';
 import '../store/data/repositories/mock_store_repository.dart';
 import '../store/domain/repositories/store_repository.dart';
 
 final Provider<EntitlementRepository> entitlementRepositoryProvider =
     Provider<EntitlementRepository>(
       (Ref ref) => MockEntitlementRepository(ref.watch(mockBehaviorProvider)),
-    );
-
-final Provider<LocalRecordingRepository> localRecordingRepositoryProvider =
-    Provider<LocalRecordingRepository>(
-      (Ref ref) =>
-          MockLocalRecordingRepository(ref.watch(mockBehaviorProvider)),
-    );
-
-final Provider<RewardRepository> rewardRepositoryProvider =
-    Provider<RewardRepository>(
-      (Ref ref) => MockRewardRepository(ref.watch(mockBehaviorProvider)),
     );
 
 final Provider<StoreRepository> storeRepositoryProvider =

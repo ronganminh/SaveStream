@@ -173,7 +173,7 @@ void main() {
     expect(find.text('Settings'), findsWidgets);
   });
 
-  testWidgets('Pro settings show cloud balance and unlimited Local recording', (
+  testWidgets('Pro settings show cloud balance without Local recording', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -199,8 +199,8 @@ void main() {
     expect(find.text('SaveStream Pro'), findsOneWidget);
     expect(find.textContaining('133 hours'), findsOneWidget);
     expect(find.textContaining('ads'), findsNothing);
-    expect(find.text('Local recording'), findsOneWidget);
-    expect(find.text('Unlimited on this device'), findsWidgets);
+    expect(find.text('Local recording'), findsNothing);
+    expect(find.textContaining('on this device'), findsNothing);
 
     final Text email = tester.widget<Text>(find.text('alex@example.com').first);
     expect(email.maxLines, 1);
