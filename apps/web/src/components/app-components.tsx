@@ -1170,6 +1170,50 @@ export function ChannelVerificationBadge({
   );
 }
 
+/** Account-level reminder: lists channels that still need the bio-code
+ * check, with the earliest grace deadline. Hidden when all are verified. */
+export function ChannelVerificationNotice({ channels }: { channels: ChannelModel[] }) {
+  const pending = channels.filter(
+    (c) => !c.ownerVerifiedAt && (c.verificationRequired || c.verificationDueAt),
+  );
+  const first = pending.find((c) => c.verificationRequired) ?? pending[0];
+  if (!first) return null;
+  const blocked = pending.filter((c) => c.verificationRequired).length;
+  const due = pending
+    .map((c) => c.verificationDueAt)
+    .filter((d): d is string => Boolean(d))
+    .sort()[0];
+  const shown = blocked ? pending.filter((c) => c.verificationRequired) : pending;
+  const names = shown
+    .slice(0, 3)
+    .map((c) => c.handle)
+    .join(", ");
+  const more = shown.length > 3 ? ` and ${shown.length - 3} more` : "";
+  return (
+    <StateBanner
+      tone={blocked ? "warning" : "info"}
+      icon={ShieldCheck}
+      title={
+        blocked
+          ? `Verify ${pluralize(blocked, "channel")} to keep recording`
+          : `Verify your ${pluralize(pending.length, "channel")}${due ? ` by ${formatDate(due, "en", { month: "short", day: "numeric" })}` : ""}`
+      }
+      body={`${names}${more}. Add a short code to the TikTok bio for a moment so we know the channel is yours. ${
+        blocked
+          ? "Recording is paused for these channels until they’re verified."
+          : "Recording keeps working until then."
+      }`}
+      action={
+        <Button asChild size="sm" variant="outline">
+          <Link to="/channels/$id" params={{ id: first.id }}>
+            Verify now
+          </Link>
+        </Button>
+      }
+    />
+  );
+}
+
 export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
   const c = useChannelControls(channel);
   if (c.removed) return null;

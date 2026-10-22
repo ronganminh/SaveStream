@@ -133,6 +133,9 @@ must("src/components/app-components.tsx", "<ChannelVerificationCard");
 must("src/components/app-pages.tsx", "<ChannelVerificationCard");
 must("src/components/app-components.tsx", "Verify to record");
 must("src/components/app-components.tsx", "<ChannelVerificationBadge channel={channel}");
+must("src/components/app-components.tsx", "export function ChannelVerificationNotice");
+must("src/components/app-pages.tsx", "<ChannelVerificationNotice channels={overviewChannels} />");
+must("src/components/app-pages.tsx", "<ChannelVerificationNotice channels={channelItems} />");
 must("src/repositories/mappers/channel.ts", "verificationRequired: watch.verification_required ?? false");
 must("src/components/admin/user-support.tsx", "verifyWatchOwner(item.id, reason)");
 

@@ -120,6 +120,7 @@ import {
   ChannelCard,
   ChannelGridCard,
   ChannelVerificationBadge,
+  ChannelVerificationNotice,
   ChannelLimitMeter,
   ChannelRow,
   ConfirmDeleteDialog,
@@ -2420,6 +2421,8 @@ function ProductionOverviewPage() {
           }
         />
 
+        <ChannelVerificationNotice channels={overviewChannels} />
+
         {showChecklist && (
           <OverviewChecklist
             emailVerified={user?.email_verified ?? true}
@@ -2967,6 +2970,7 @@ export function ChannelsPage() {
         </>
       ) : (
         <div className="flex flex-col gap-5">
+          <ChannelVerificationNotice channels={channelItems} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
               {channelFilters.map((f) => {
