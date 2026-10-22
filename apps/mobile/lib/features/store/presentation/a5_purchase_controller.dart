@@ -27,7 +27,6 @@ enum CloudHoursPurchaseContext {
   watchLimit,
   iosBackground,
   freeMinutesExhausted,
-  removeAds,
 }
 
 class CloudHoursPurchaseState {

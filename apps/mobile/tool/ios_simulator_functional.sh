@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Boot an iPhone Simulator and exercise the real app router, widgets and plugins.
-# Product, AdMob and auth provider calls are deterministic fakes; no paid events.
+# Product and auth provider calls are deterministic fakes; no paid events.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -104,14 +104,3 @@ run_ios_suite functional 420 integration_test/native_journeys_test.dart
 run_ios_suite media 420 integration_test/native_media_test.dart \
   --dart-define=CI_MEDIA_HOST=127.0.0.1 \
   --dart-define=CI_MEDIA_PORT=18095
-
-# Native test-unit SDK loading is network dependent; never creates real
-# advertising impressions, and failure here must not block app functionality.
-if python3 tool/ci_deadline.py --seconds 360 -- \
-  flutter test integration_test/native_admob_sdk_test.dart \
-  -d "$ios_device" --reporter expanded \
-  > build/ci/ios-admob-network.txt 2>&1; then
-  echo 'Google AdMob test-unit SDK load: PASS (iOS)'
-else
-  echo '::warning::Google TEST inventory unavailable on iOS runner; inspect ios-admob-network.txt'
-fi

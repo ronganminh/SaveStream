@@ -9,23 +9,15 @@ import '../../../app/theme/ss_tokens.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/ads_service.dart';
-import '../../../platform/contracts/local_recorder.dart';
-import '../../../platform/contracts/local_recovery_service.dart';
-import '../../../platform/platform_providers.dart';
 import '../../channels/domain/models/watch_summary.dart';
-import '../../channels/presentation/cloud_hours_upsell_sheet.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../local_recordings/presentation/controllers/local_recovery_providers.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../../settings/domain/models/user_profile.dart';
 import '../../settings/presentation/controllers/settings_providers.dart';
 import '../../settings/presentation/notification_action_button.dart';
 import '../domain/models/home_dashboard_view_model.dart';
 import 'controllers/home_dashboard_controller.dart';
-import 'home_recording_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -37,18 +29,6 @@ class HomeScreen extends ConsumerWidget {
       homeDashboardProvider,
     );
     final bool online = ref.watch(appOnlineProvider).value ?? true;
-    final LocalRecoveryCandidate? interrupted = ref
-        .watch(interruptedLocalRecordingProvider)
-        .value;
-    final LocalRecordingController localController = ref.watch(
-      localRecordingControllerProvider,
-    );
-    final LocalRecorderState? primaryLocalState = ref
-        .watch(localRecorderStateProvider)
-        .value;
-    final LocalRecorderState? secondaryLocalState = ref
-        .watch(secondaryLocalRecorderStateProvider)
-        .value;
     final UserProfile? profile = ref.watch(profileProvider).value;
     final String? profileName = profile?.displayName?.trim();
     final String? profileEmail = profile?.email.trim();
@@ -91,14 +71,7 @@ class HomeScreen extends ConsumerWidget {
                       ref.invalidate(homeDashboardProvider);
                       await ref.read(homeDashboardProvider.future);
                     },
-                    child: _HomeDashboard(
-                      data: data,
-                      online: online,
-                      interrupted: interrupted,
-                      localController: localController,
-                      primaryLocalState: primaryLocalState,
-                      secondaryLocalState: secondaryLocalState,
-                    ),
+                    child: _HomeDashboard(data: data, online: online),
                   ),
                 ),
               ),
@@ -110,25 +83,14 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _HomeDashboard extends ConsumerWidget {
-  const _HomeDashboard({
-    required this.data,
-    required this.online,
-    required this.interrupted,
-    required this.localController,
-    required this.primaryLocalState,
-    required this.secondaryLocalState,
-  });
+class _HomeDashboard extends StatelessWidget {
+  const _HomeDashboard({required this.data, required this.online});
 
   final HomeDashboardViewModel data;
   final bool online;
-  final LocalRecoveryCandidate? interrupted;
-  final LocalRecordingController localController;
-  final LocalRecorderState? primaryLocalState;
-  final LocalRecorderState? secondaryLocalState;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final Entitlement entitlement = data.entitlement;
     final bool isPro = entitlement.plan == Plan.pro;
 
@@ -153,46 +115,6 @@ class _HomeDashboard extends ConsumerWidget {
                     title: context.l10n.homeOfflineTitle,
                     message: context.l10n.homeOfflineBody,
                     tone: SsInlineAlertTone.warning,
-                  ),
-                ],
-                if (interrupted
-                    case final LocalRecoveryCandidate item) ...<Widget>[
-                  const SizedBox(height: SsSpacing.md),
-                  SsInlineAlert(
-                    title: context.l10n.localRecoveryInterruptedTitle,
-                    message: context.l10n.homeRecoveryAvailableBody(
-                      item.creatorDisplayName,
-                      formatDurationHms(
-                        Duration(seconds: item.recordedSeconds),
-                      ),
-                    ),
-                    tone: SsInlineAlertTone.warning,
-                  ),
-                  const SizedBox(height: SsSpacing.sm),
-                  SsSecondaryButton(
-                    label: context.l10n.localRecoveryRecoverAction,
-                    icon: Icons.restore_rounded,
-                    onPressed: () => context.push(AppRoutes.localRecovery),
-                  ),
-                  const SizedBox(height: SsSpacing.xs),
-                  SsTextAction(
-                    label: context.l10n.localRecoveryDeleteTempAction,
-                    icon: Icons.delete_outline_rounded,
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(localRecoveryServiceProvider)
-                            .deleteTemporary(item.tempId);
-                        ref.invalidate(interruptedLocalRecordingProvider);
-                      } on Object {
-                        if (context.mounted) {
-                          SsToast.show(
-                            context,
-                            context.l10n.localRecordingErrorTitle,
-                          );
-                        }
-                      }
-                    },
                   ),
                 ],
                 if (data.watches.isEmpty) ...<Widget>[
@@ -233,172 +155,22 @@ class _HomeDashboard extends ConsumerWidget {
 
   List<Widget> _buildFree(BuildContext context, Entitlement entitlement) {
     final AppLocalizations l10n = context.l10n;
-    final LocalEntitlement local = entitlement.local;
-    final WatchSummary? live = data.liveWatches.isEmpty
-        ? null
-        : data.liveWatches.first;
-    final WatchSummary? secondLive = data.liveWatches.length > 1
-        ? data.liveWatches[1]
-        : null;
-    final DateTime? secondSlotExpiresAt = local.secondSlotExpiresAt;
-    final bool secondSlotExpired =
-        secondSlotExpiresAt != null &&
-        !secondSlotExpiresAt.isAfter(DateTime.now());
-    final bool secondSlotOpen =
-        secondSlotExpiresAt != null &&
-        secondSlotExpiresAt.isAfter(DateTime.now());
-    final primarySession = localController.activeSession;
-    final secondarySession = localController.secondarySession;
-    WatchSummary? primaryWatch;
-    WatchSummary? secondaryWatch;
-    for (final WatchSummary watch in data.watches) {
-      if (watch.id == primarySession?.watchId) primaryWatch = watch;
-      if (watch.id == secondarySession?.watchId) secondaryWatch = watch;
-    }
-    final bool primaryActive =
-        primarySession != null && _isHomeActivePhase(primaryLocalState?.phase);
-    final bool secondaryActive =
-        secondarySession != null &&
-        _isHomeActivePhase(secondaryLocalState?.phase);
-    final bool primaryFinalizing =
-        primarySession != null &&
-        primaryLocalState?.phase == LocalRecorderPhase.finalizing;
-    final bool secondaryFinalizing =
-        secondarySession != null &&
-        secondaryLocalState?.phase == LocalRecorderPhase.finalizing;
-    final bool hasLocalActivity =
-        primaryActive ||
-        secondaryActive ||
-        primaryFinalizing ||
-        secondaryFinalizing;
-    final bool fullyExhausted =
-        local.minutesRemaining == 0 &&
-        local.rewardsUsedToday >= local.rewardsCapPerDay;
-    final int primaryRemainingRaw = primarySession == null
-        ? 0
-        : primarySession.grantedSeconds -
-              (primaryLocalState?.recordedSeconds ?? 0);
-    final int secondaryRemainingRaw = secondarySession == null
-        ? 0
-        : secondarySession.grantedSeconds -
-              (secondaryLocalState?.recordedSeconds ?? 0);
-    final int primaryRemaining = primaryRemainingRaw > 0
-        ? primaryRemainingRaw
-        : 0;
-    final int secondaryRemaining = secondaryRemainingRaw > 0
-        ? secondaryRemainingRaw
-        : 0;
-    final int limit = entitlement.limits.maxWatches;
-    final Duration resetIn = local.resetsAt.difference(DateTime.now().toUtc());
-    final String reset = formatResetCountdown(
-      resetIn,
+    final String cloudTime = formatMinutesAsHoursMinutes(
+      entitlement.cloudMinutesAvailable,
       hoursLabel: l10n.timeHoursUnit,
       minutesLabel: l10n.timeMinutesUnit,
     );
 
     return <Widget>[
-      if (secondSlotOpen && secondaryActive) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        HomeSecondSlotOpenCard(expiresAt: secondSlotExpiresAt),
-      ],
-      if (secondSlotExpired) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        SsInlineAlert(
-          title: l10n.secondLocalSlotExpiredTitle,
-          message: l10n.secondLocalSlotExpiredBody(
-            MaterialLocalizations.of(context).formatTimeOfDay(
-              TimeOfDay.fromDateTime(secondSlotExpiresAt.toLocal()),
-            ),
-          ),
-          tone: SsInlineAlertTone.warning,
-        ),
-        const SizedBox(height: SsSpacing.sm),
-        SsSecondaryButton(
-          label: l10n.secondLocalSlotReopenAction,
-          icon: Icons.layers_outlined,
-          onPressed: secondLive == null
-              ? null
-              : () => context.push(AppRoutes.channelDetail(secondLive.id)),
-        ),
-      ],
-      if (primaryFinalizing && primaryWatch != null) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        HomeFinalizingRecordingCard(
-          creatorName: primaryWatch.creatorDisplayName,
-          step: primaryLocalState?.finalizationStep,
-        ),
-      ],
-      if (secondaryFinalizing && secondaryWatch != null) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        HomeFinalizingRecordingCard(
-          creatorName: secondaryWatch.creatorDisplayName,
-          step: secondaryLocalState?.finalizationStep,
-        ),
-      ],
-      if (primaryActive &&
-          primaryWatch != null &&
-          primaryLocalState != null) ...<Widget>[
-        const SizedBox(height: SsSpacing.lg),
-        HomeLocalRecordingCard(
-          creatorName: primaryWatch.creatorDisplayName,
-          watchId: primaryWatch.id,
-          state: primaryLocalState!,
-          remainingSeconds: primaryRemaining,
-          unlimited: local.unlimited,
-        ),
-      ],
-      if (secondaryActive &&
-          secondaryWatch != null &&
-          secondaryLocalState != null) ...<Widget>[
-        const SizedBox(height: SsSpacing.md),
-        HomeLocalRecordingCard(
-          creatorName: secondaryWatch.creatorDisplayName,
-          watchId: secondaryWatch.id,
-          state: secondaryLocalState!,
-          remainingSeconds: secondaryRemaining,
-          unlimited: local.unlimited,
-        ),
-      ],
       const SizedBox(height: SsSpacing.lg),
-      _HomeFreeQuotaCard(
-        title: local.minutesRemaining > 0
-            ? l10n.homeFreeMinutesTitle
-            : l10n.homeMinutesExhaustedTitle,
-        minutesRemaining: local.minutesRemaining,
-        dailyMinutes: local.dailyMinutes,
-        resetLabel: l10n.homeResetAfter(reset),
-        rewardedLabel: l10n.homeRewardedMetricLabel,
-        rewardedValue: '${local.rewardsUsedToday}/${local.rewardsCapPerDay}',
-        slotLabel: l10n.homeSlotMetricLabel,
-        slotValue:
-            '${(primaryActive ? 1 : 0) + (secondaryActive ? 1 : 0)}/${local.maxConcurrentSessions}',
-        watchingLabel: l10n.homeWatchingMetricLabel,
-        watchingValue: '${data.watches.length}/$limit',
+      SsQuotaCard(
+        title: l10n.homeCloudTimeTitle,
+        value: cloudTime,
+        subtitle: l10n.homeWatchingCapacity(
+          data.watches.length,
+          entitlement.limits.maxWatches,
+        ),
       ),
-      if (fullyExhausted) ...<Widget>[
-        const SizedBox(height: SsSpacing.md),
-        HomeDailyRecordingExhaustedCard(
-          dailyMinutes: local.dailyMinutes,
-          rewardsUsed: local.rewardsUsedToday,
-          rewardsCap: local.rewardsCapPerDay,
-          resetLabel: reset,
-          onBuyCloudHours: () => showCloudHoursUpsellSheet(context),
-        ),
-      ] else if (local.minutesRemaining == 0) ...<Widget>[
-        const SizedBox(height: SsSpacing.md),
-        SsInlineAlert(
-          title: l10n.homeMinutesExhaustedTitle,
-          message: l10n.homeMinutesExhaustedBody,
-          tone: SsInlineAlertTone.warning,
-        ),
-        const SizedBox(height: SsSpacing.sm),
-        SsPrimaryButton(
-          label: l10n.watchAdMinutesAction(local.minutesPerReward),
-          onPressed: live == null || !online
-              ? null
-              : () => context.push(AppRoutes.channelDetail(live.id)),
-        ),
-      ],
       if (data.watches.isNotEmpty) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         SsSectionHeader(
@@ -423,43 +195,18 @@ class _HomeDashboard extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: SsSpacing.sm),
               child: _HomeLiveCreatorCard(
                 watch: watch,
-                onRecord: online && !hasLocalActivity && interrupted == null
+                onRecord: online
                     ? () => context.push(AppRoutes.channelDetail(watch.id))
                     : null,
                 onTap: () => context.push(AppRoutes.channelDetail(watch.id)),
               ),
             ),
       ],
-      if (data.watches.isNotEmpty &&
-          local.minutesRemaining > 0 &&
-          online &&
-          interrupted == null &&
-          !hasLocalActivity &&
-          !fullyExhausted) ...<Widget>[
+      if (data.watches.isNotEmpty && online) ...<Widget>[
         const SizedBox(height: SsSpacing.lg),
         _HomeProUpsellCard(onTap: () => context.push(AppRoutes.usage)),
       ],
-      if (data.watches.isNotEmpty &&
-          local.minutesRemaining > 0 &&
-          online &&
-          interrupted == null &&
-          !hasLocalActivity &&
-          !fullyExhausted &&
-          MediaQuery.textScalerOf(context).scale(1) < 1.8) ...<Widget>[
-        Consumer(
-          builder: (BuildContext context, WidgetRef ref, Widget? child) {
-            return ref.watch(adsServiceProvider).bannerFor(AdPlacement.home) ??
-                const SizedBox.shrink();
-          },
-        ),
-      ],
     ];
-  }
-
-  bool _isHomeActivePhase(LocalRecorderPhase? phase) {
-    return phase == LocalRecorderPhase.starting ||
-        phase == LocalRecorderPhase.recording ||
-        phase == LocalRecorderPhase.reconnecting;
   }
 
   List<Widget> _buildPro(BuildContext context, Entitlement entitlement) {
@@ -553,137 +300,6 @@ class _HomeDashboard extends ConsumerWidget {
   }
 }
 
-class _HomeFreeQuotaCard extends StatelessWidget {
-  const _HomeFreeQuotaCard({
-    required this.title,
-    required this.minutesRemaining,
-    required this.dailyMinutes,
-    required this.resetLabel,
-    required this.rewardedLabel,
-    required this.rewardedValue,
-    required this.slotLabel,
-    required this.slotValue,
-    required this.watchingLabel,
-    required this.watchingValue,
-  });
-
-  final String title;
-  final int minutesRemaining;
-  final int dailyMinutes;
-  final String resetLabel;
-  final String rewardedLabel;
-  final String rewardedValue;
-  final String slotLabel;
-  final String slotValue;
-  final String watchingLabel;
-  final String watchingValue;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final double progress = dailyMinutes == 0
-        ? 0
-        : (minutesRemaining / dailyMinutes).clamp(0, 1);
-    return SsCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: SsSpacing.xs,
-            spacing: SsSpacing.md,
-            children: <Widget>[
-              Text(title, style: theme.textTheme.titleMedium),
-              Text(
-                resetLabel,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: SsSpacing.md),
-          Text.rich(
-            TextSpan(
-              children: <InlineSpan>[
-                TextSpan(
-                  text: '$minutesRemaining',
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                TextSpan(
-                  text: context.l10n.homeFreeMinutesRemainingTail(dailyMinutes),
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: SsSpacing.md),
-          LinearProgressIndicator(value: progress),
-          const SizedBox(height: SsSpacing.md),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _HomeMetric(label: rewardedLabel, value: rewardedValue),
-              ),
-              const SizedBox(width: SsSpacing.sm),
-              Expanded(
-                child: _HomeMetric(label: slotLabel, value: slotValue),
-              ),
-              const SizedBox(width: SsSpacing.sm),
-              Expanded(
-                child: _HomeMetric(label: watchingLabel, value: watchingValue),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HomeMetric extends StatelessWidget {
-  const _HomeMetric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: SsRadii.field,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: SsSpacing.md,
-          vertical: SsSpacing.sm,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            Text(value, style: SsTypography.mono.copyWith(fontSize: 18)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _HomeLiveCreatorCard extends StatelessWidget {
   const _HomeLiveCreatorCard({
     required this.watch,
@@ -752,16 +368,16 @@ class _HomeLiveCreatorCard extends StatelessWidget {
                 final Widget storage = Row(
                   children: <Widget>[
                     Icon(
-                      Icons.smartphone_rounded,
+                      Icons.cloud_rounded,
                       size: 20,
-                      color: context.semanticColors.local,
+                      color: context.semanticColors.cloud,
                     ),
                     const SizedBox(width: SsSpacing.xs),
                     Flexible(
                       child: Text(
-                        context.l10n.homeLocalStorageLabel,
+                        context.l10n.cloudLabel,
                         style: theme.textTheme.labelLarge?.copyWith(
-                          color: context.semanticColors.local,
+                          color: context.semanticColors.cloud,
                         ),
                       ),
                     ),

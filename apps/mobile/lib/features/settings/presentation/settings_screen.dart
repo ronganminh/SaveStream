@@ -10,21 +10,12 @@ import '../../../core/config/app_config.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/contracts/recording_platform_service.dart';
-import '../../../platform/platform_providers.dart';
-import '../../devices/domain/models/device_registration.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
 import '../../store/presentation/a5_purchase_controller.dart';
 import '../domain/models/user_profile.dart';
 import 'controllers/settings_providers.dart';
-import 'device_storage_screen.dart';
 import 'notification_action_button.dart';
-
-final FutureProvider<AndroidRecordingPlatformState>
-androidRecordingStateProvider = FutureProvider<AndroidRecordingPlatformState>(
-  (Ref ref) => ref.watch(recordingPlatformServiceProvider).androidState,
-);
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({
@@ -46,21 +37,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final DevicePlatform platform = ref
-        .watch(deviceInfoServiceProvider)
-        .platform;
     final AsyncValue<Entitlement> entitlement = ref.watch(entitlementProvider);
     final AsyncValue<UserProfile> profile = ref.watch(profileProvider);
-    final AsyncValue<DeviceStorageSnapshot> storage = ref.watch(
-      deviceStorageSnapshotProvider,
-    );
     final Entitlement? access = entitlement.value;
     final bool isPro = access?.plan == Plan.pro;
-    final bool canRecordLocal = access?.local.enabled ?? true;
-    final AsyncValue<AndroidRecordingPlatformState>? androidRecording =
-        platform == DevicePlatform.android
-        ? ref.watch(androidRecordingStateProvider)
-        : null;
 
     return Scaffold(
       body: SafeArea(
@@ -86,7 +66,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onUsage: () => context.push(AppRoutes.usage),
                     onUpgrade: () => context.push(
                       AppRoutes.cloudHoursLocation(
-                        CloudHoursPurchaseContext.removeAds.name,
+                        CloudHoursPurchaseContext.autoRecord.name,
                       ),
                     ),
                   ),
@@ -111,60 +91,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             leading: const Icon(Icons.schedule_rounded),
                           ),
                           const Divider(),
-                          SsListTile(
-                            title: l10n.settingsLocalRecordingTitle,
-                            subtitle: !canRecordLocal
-                                ? l10n.settingsLocalRecordingDisabledValue
-                                : access.local.unlimited
-                                ? l10n.settingsLocalRecordingUnlimitedValue
-                                : l10n.settingsLocalRecordingAvailableValue,
-                            leading: const Icon(Icons.smartphone_rounded),
-                          ),
-                          const Divider(),
                         ],
                         SsListTile(
-                          title: l10n.deviceStorageTitle,
-                          subtitle: storage.value == null
-                              ? l10n.deviceStorageSubtitle
-                              : formatFileSize(storage.value!.localBytes),
-                          leading: const Icon(Icons.storage_rounded),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => context.push(AppRoutes.deviceStorage),
+                          title: l10n.settingsRecordingQualityTitle,
+                          subtitle: l10n.settingsRecordingQualityValue,
+                          leading: const Icon(Icons.high_quality_rounded),
                         ),
-                        if (canRecordLocal) ...<Widget>[
-                          const Divider(),
-                          SsListTile(
-                            title: l10n.settingsRecordingQualityTitle,
-                            subtitle: l10n.settingsRecordingQualityValue,
-                            leading: const Icon(Icons.high_quality_rounded),
-                          ),
-                          const Divider(),
-                          SsListTile(
-                            title: platform == DevicePlatform.android
-                                ? l10n.settingsAndroidRecordingTitle
-                                : l10n.settingsIosRecordingTitle,
-                            subtitle: _backgroundRecordingSubtitle(
-                              l10n,
-                              platform,
-                              androidRecording,
-                            ),
-                            leading: Icon(
-                              platform == DevicePlatform.android
-                                  ? Icons.battery_saver_rounded
-                                  : Icons.phone_iphone_rounded,
-                            ),
-                            trailing: _backgroundRecordingTrailing(
-                              context,
-                              platform,
-                              androidRecording,
-                            ),
-                            onTap: () => context.push(
-                              platform == DevicePlatform.android
-                                  ? AppRoutes.androidRecordingGuide
-                                  : AppRoutes.iosRecordingGuide,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
@@ -364,26 +296,12 @@ class _ProfileSummary extends StatelessWidget {
                 if (access.plan == Plan.pro)
                   _ProUsageSummary(access: access)
                 else
-                  Row(
-                    children: <Widget>[
-                      Text(l10n.settingsTodayLabel),
-                      const SizedBox(width: SsSpacing.sm),
-                      Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            l10n.settingsDailyUsageValue(
-                              access.local.minutesRemaining,
-                              access.local.dailyMinutes,
-                              access.local.rewardsUsedToday,
-                              access.local.rewardsCapPerDay,
-                            ),
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    l10n.watchUsage(
+                      access.watchCount,
+                      access.limits.maxWatches,
+                    ),
+                    style: Theme.of(context).textTheme.labelLarge,
                   ),
                 const SizedBox(height: SsSpacing.md),
                 Row(
@@ -438,49 +356,9 @@ class _ProUsageSummary extends StatelessWidget {
           ),
         ),
         Text(l10n.watchUsage(access.watchCount, access.limits.maxWatches)),
-        Text(
-          !access.local.enabled
-              ? l10n.settingsLocalRecordingDisabledValue
-              : access.local.unlimited
-              ? l10n.settingsLocalRecordingUnlimitedValue
-              : l10n.settingsLocalRecordingAvailableValue,
-        ),
       ],
     );
   }
-}
-
-String _backgroundRecordingSubtitle(
-  AppLocalizations l10n,
-  DevicePlatform platform,
-  AsyncValue<AndroidRecordingPlatformState>? state,
-) {
-  if (platform != DevicePlatform.android) {
-    return l10n.settingsIosRecordingSubtitle;
-  }
-  final AndroidBatteryMode? mode = state?.value?.batteryMode;
-  return mode == AndroidBatteryMode.unrestricted
-      ? l10n.androidBatteryOptimizationOff
-      : l10n.settingsAndroidRecordingSubtitle;
-}
-
-Widget _backgroundRecordingTrailing(
-  BuildContext context,
-  DevicePlatform platform,
-  AsyncValue<AndroidRecordingPlatformState>? state,
-) {
-  if (platform != DevicePlatform.android) {
-    return const Icon(Icons.chevron_right_rounded);
-  }
-  final bool unrestricted =
-      state?.value?.batteryMode == AndroidBatteryMode.unrestricted;
-  if (unrestricted) {
-    return Icon(
-      Icons.check_circle_rounded,
-      color: Theme.of(context).colorScheme.primary,
-    );
-  }
-  return const Icon(Icons.warning_amber_rounded);
 }
 
 class _SectionLabel extends StatelessWidget {

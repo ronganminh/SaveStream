@@ -261,6 +261,8 @@ class WatchService:
             # Optional "I own or manage this account, or have permission to
             # record it" on Add channel; kept for admin review.
             owner_attested_at=utcnow() if payload.owner_attested else None,
+            # New channels must be verified before their first recording.
+            verification_due_at=utcnow(),
         )
         self.session.add(watch)
         try:

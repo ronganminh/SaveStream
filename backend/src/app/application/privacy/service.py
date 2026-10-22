@@ -32,7 +32,7 @@ from app.infrastructure.db.models import (
     UserNotification,
 )
 from app.infrastructure.db.recording_models import Recording, RecordingArtifact
-from app.infrastructure.db.watch_models import Watch
+from app.infrastructure.db.watch_models import ChannelVerification, Watch
 from app.infrastructure.queue.outbox import OutboxWriter
 from app.settings import AppSettings
 
@@ -430,6 +430,7 @@ class PrivacyService:
             RewardIntent,
             RewardUserState,
             LocalSlotGrant,
+            ChannelVerification,
         ):
             await self.session.execute(delete(model).where(model.user_id == user.id))
         await self.session.execute(
@@ -440,6 +441,7 @@ class PrivacyService:
                 creator_avatar_url=None,
                 creator_avatar_cached_url=None,
                 owner_attested_at=None,
+                owner_verified_tiktok_id=None,
             )
         )
         await self.session.execute(

@@ -1679,6 +1679,7 @@ async def get_admin_user_detail(
             watch_response(
                 item,
                 entitlement=data.entitlement,
+                settings=request.app.state.settings,
             )
             for item in data.watches
         ],
@@ -1784,6 +1785,40 @@ async def force_admin_user_password_reset(
     )
     await session.commit()
     return AdminActionResponse(message="Password reset email queued")
+
+
+@router.post("/watches/{watch_id}/verify", response_model=AdminActionResponse)
+async def verify_admin_watch_owner(
+    watch_id: str,
+    payload: AdminSupportActionRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminActionResponse:
+    """Mark a channel as verified by hand (partners, or a bio TikTok locks)."""
+    _require_scope(principal, "admin:users:write")
+    from app.application.watches.verification import mark_watch_verified
+    from app.infrastructure.db.watch_models import Watch
+
+    try:
+        parsed = uuid.UUID(watch_id)
+    except ValueError as exc:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "Watch not found", status_code=404) from exc
+    watch = await session.get(Watch, parsed)
+    if watch is None or watch.deleted_at is not None:
+        raise ApplicationError("RESOURCE_NOT_FOUND", "Watch not found", status_code=404)
+    mark_watch_verified(watch, method="admin")
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.watch.owner_verified",
+        resource_type="watch",
+        resource_id=str(watch.id),
+        context=_context(request),
+        reason=payload.reason,
+    )
+    await session.commit()
+    return AdminActionResponse(message="Channel marked as verified")
 
 
 @router.post("/users/{user_id}/force-logout", response_model=AdminActionResponse)

@@ -76,14 +76,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Welcome back, Alex Nguyen'), findsOneWidget);
-    expect(find.text('Free minutes today'), findsOneWidget);
-    expect(find.text('6 / 10 minutes remaining'), findsOneWidget);
-    expect(find.text('Watching'), findsWidgets);
-    expect(find.text('8/3'), findsOneWidget);
+    expect(find.text('Cloud time available'), findsOneWidget);
+    expect(find.text('Watching 8/3'), findsOneWidget);
     expect(find.text('Available credit'), findsNothing);
     expect(find.textContaining('credit', findRichText: true), findsNothing);
     expect(find.text('Ada Live'), findsWidgets);
-    expect(find.text('Local · Saved on this device'), findsWidgets);
+    expect(find.text('Cloud'), findsWidgets);
+    expect(find.textContaining('on this device'), findsNothing);
     expect(find.text('Record now'), findsWidgets);
     expect(find.text('View Pro'), findsOneWidget);
     expect(
@@ -115,7 +114,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add a creator to get started'), findsOneWidget);
+    expect(find.text('Add your channel to get started'), findsOneWidget);
     expect(find.text('Advertisement'), findsNothing);
   });
 
@@ -370,7 +369,7 @@ void main() {
     expect(find.text('Paused · 4'), findsNothing);
     expect(find.text('Record now'), findsWidgets);
     expect(
-      find.textContaining('You already have 8 creators from an older plan'),
+      find.textContaining('You already have 8 channels from an older plan'),
       findsWidgets,
     );
   });
@@ -384,12 +383,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add creator').first);
+    await tester.tap(find.byTooltip('Add channel').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Watching is full'), findsOneWidget);
     expect(
-      find.textContaining('You already have 8 creators from an older plan'),
+      find.textContaining('You already have 8 channels from an older plan'),
       findsWidgets,
     );
     expect(find.byType(Checkbox), findsNothing);
@@ -475,7 +474,7 @@ void main() {
     );
   });
 
-  testWidgets('Recordings merged library supports search and storage filter', (
+  testWidgets('Recordings library supports search and issue filter', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(SaveStreamApp(config: testConfig()));
@@ -489,8 +488,8 @@ void main() {
     expect(find.text('Minh Streams'), findsNothing);
 
     await tester.enterText(find.byType(TextField), '');
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Cloud'));
     await tester.pump();
+    expect(find.widgetWithText(ChoiceChip, 'Local'), findsNothing);
     expect(find.text('Cloud'), findsWidgets);
 
     expect(find.widgetWithText(ChoiceChip, 'Error'), findsOneWidget);
@@ -508,10 +507,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final Finder allFilter = find.widgetWithText(ChoiceChip, 'All');
-      final Finder localFilter = find.widgetWithText(ChoiceChip, 'Local');
-      final Finder cloudFilter = find.widgetWithText(ChoiceChip, 'Cloud');
-      expect(tester.getCenter(localFilter).dy, tester.getCenter(allFilter).dy);
-      expect(tester.getCenter(cloudFilter).dy, tester.getCenter(allFilter).dy);
+      final Finder errorFilter = find.widgetWithText(ChoiceChip, 'Error');
+      expect(find.widgetWithText(ChoiceChip, 'Local'), findsNothing);
+      expect(tester.getCenter(errorFilter).dy, tester.getCenter(allFilter).dy);
 
       final double searchCenter = tester.getCenter(find.byType(TextField)).dy;
       expect(
@@ -804,7 +802,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('Add a creator to get started'), findsOneWidget);
+    expect(find.text('Add your channel to get started'), findsOneWidget);
   });
 
   testWidgets('switches locale and theme at runtime', (

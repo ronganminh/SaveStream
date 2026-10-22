@@ -213,6 +213,12 @@ export const adminFoundationApi = {
     });
   },
 
+  verifyWatchOwner(watchId: string, reason: string) {
+    return apiClient.post<{ message: string }>(`/v1/admin/watches/${watchId}/verify`, {
+      json: { reason },
+    });
+  },
+
   forcePasswordReset(userId: string, reason: string) {
     return apiClient.post<{ message: string }>(`/v1/admin/users/${userId}/force-password-reset`, {
       json: { reason },

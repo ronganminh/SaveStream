@@ -54,6 +54,22 @@ class Watch(Base):
     owner_attested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Channel ownership: the owner put a one-time code in the TikTok bio
+    # (or an admin verified it). Only verified channels may be recorded once
+    # verification_due_at has passed (channels added before verification
+    # existed got a grace period).
+    owner_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    owner_verified_tiktok_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    verification_method: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    verification_due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # 1 = "verify within 14 days", 2 = "7 days left", 3 = "recording paused".
+    verification_reminders_sent: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
     failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_error: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     scheduler_lease_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
@@ -66,4 +82,32 @@ class Watch(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class ChannelVerification(Base):
+    """A one-time bio code proving the user controls a TikTok channel."""
+
+    __tablename__ = "channel_verifications"
+    __table_args__ = (Index("ix_channel_verifications_watch", "watch_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    watch_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("watches.id", ondelete="CASCADE"), nullable=False
+    )
+    username: Mapped[str] = mapped_column(String(160), nullable=False)
+    code: Mapped[str] = mapped_column(String(16), nullable=False)
+    # pending | verified | expired
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_result: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    tiktok_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )

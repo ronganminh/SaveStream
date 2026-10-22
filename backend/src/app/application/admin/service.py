@@ -516,6 +516,8 @@ class AdminService:
                 }
             ),
             idempotency_key=idempotency_key,
+            # An admin retry of a failed job is a support action.
+            enforce_channel_verification=False,
         )
         return original, retry
 

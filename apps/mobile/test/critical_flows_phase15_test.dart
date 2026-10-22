@@ -80,13 +80,13 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
 
-    await tester.tap(find.byTooltip('Add creator').first);
+    await tester.tap(find.byTooltip('Add channel').first);
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '@phase15_creator');
 
     final Finder findCreator = find.widgetWithText(
       FilledButton,
-      'Find creator',
+      'Find channel',
     );
     await tester.tap(findCreator);
     await tester.pump(const Duration(milliseconds: 100));
@@ -95,7 +95,7 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
     expect(find.text('Use recordings responsibly'), findsOneWidget);
 
-    final Finder addButton = find.widgetWithText(FilledButton, 'Add & follow');
+    final Finder addButton = find.widgetWithText(FilledButton, 'Add channel');
     await tester.ensureVisible(addButton);
     await tester.tap(addButton);
     await tester.pump(const Duration(milliseconds: 200));

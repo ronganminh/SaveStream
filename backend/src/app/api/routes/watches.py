@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
-from app.api.dependencies import get_watch_service, require_scopes
+from app.api.dependencies import (
+    get_channel_verification_service,
+    get_watch_service,
+    require_scopes,
+)
 from app.api.schemas.recordings import Pagination
 from app.api.schemas.watches import (
+    ChannelVerificationResponse,
     CreateWatchRequest,
     UpdateWatchRequest,
     WatchListResponse,
@@ -13,6 +18,11 @@ from app.api.schemas.watches import (
 from app.api.serializers.watches import active_recording_for, watch_response
 from app.application.creators.avatar_cache import remove_avatar_copy
 from app.application.watches.service import WatchService
+from app.application.watches.verification import (
+    ChannelVerificationService,
+    VerificationState,
+    verification_required,
+)
 from app.domain.identity.types import AuthPrincipal
 
 router = APIRouter(prefix="/v1/watches", tags=["Watches"])
@@ -41,6 +51,7 @@ async def create_watch(
             and watch.resolved_room_id in waiting_room_ids
         ),
         active_recording=active_recording_for(watch, active_recordings),
+        settings=service.settings,
     )
 
 
@@ -75,6 +86,7 @@ async def list_watches(
                     and item.resolved_room_id in waiting_room_ids
                 ),
                 active_recording=active_recording_for(item, active_recordings),
+                settings=service.settings,
             )
             for item in page.items
         ],
@@ -104,6 +116,7 @@ async def get_watch(
             and watch.resolved_room_id in waiting_room_ids
         ),
         active_recording=active_recording_for(watch, active_recordings),
+        settings=service.settings,
     )
 
 
@@ -130,6 +143,7 @@ async def update_watch(
             and watch.resolved_room_id in waiting_room_ids
         ),
         active_recording=active_recording_for(watch, active_recordings),
+        settings=service.settings,
     )
 
 
@@ -174,4 +188,64 @@ async def resume_watch(
             and watch.resolved_room_id in waiting_room_ids
         ),
         active_recording=active_recording_for(watch, active_recordings),
+        settings=service.settings,
     )
+
+
+def _verification_response(
+    state: VerificationState, service: ChannelVerificationService
+) -> ChannelVerificationResponse:
+    watch = state.watch
+    return ChannelVerificationResponse(
+        watch_id=str(watch.id),
+        verified=watch.owner_verified_at is not None,
+        owner_verified_at=watch.owner_verified_at,
+        verification_due_at=watch.verification_due_at,
+        verification_required=verification_required(watch, service.settings),
+        code=state.code,
+        expires_at=state.expires_at,
+        checks_left=state.checks_left,
+        result=state.result,
+        retry_after_seconds=state.retry_after_seconds,
+    )
+
+
+@router.get(
+    "/{watch_id}/verification",
+    response_model=ChannelVerificationResponse,
+    operation_id="getChannelVerification",
+)
+async def get_channel_verification(
+    watch_id: str,
+    principal: AuthPrincipal = Depends(require_scopes("watches:read")),
+    service: ChannelVerificationService = Depends(get_channel_verification_service),
+) -> ChannelVerificationResponse:
+    return _verification_response(await service.state(principal, watch_id), service)
+
+
+@router.post(
+    "/{watch_id}/verification",
+    response_model=ChannelVerificationResponse,
+    operation_id="startChannelVerification",
+)
+async def start_channel_verification(
+    watch_id: str,
+    principal: AuthPrincipal = Depends(require_scopes("watches:write")),
+    service: ChannelVerificationService = Depends(get_channel_verification_service),
+) -> ChannelVerificationResponse:
+    """Get the bio code for this channel (the current one while it is valid)."""
+    return _verification_response(await service.start(principal, watch_id), service)
+
+
+@router.post(
+    "/{watch_id}/verification/check",
+    response_model=ChannelVerificationResponse,
+    operation_id="checkChannelVerification",
+)
+async def check_channel_verification(
+    watch_id: str,
+    principal: AuthPrincipal = Depends(require_scopes("watches:write")),
+    service: ChannelVerificationService = Depends(get_channel_verification_service),
+) -> ChannelVerificationResponse:
+    """Look for the code in the channel's TikTok bio."""
+    return _verification_response(await service.check(principal, watch_id), service)

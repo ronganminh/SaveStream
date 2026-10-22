@@ -128,7 +128,6 @@ class _AddFirstCreatorScreenState extends ConsumerState<AddFirstCreatorScreen> {
                           icon: Icons.music_note_rounded,
                           tone: SsStatusTone.success,
                         ),
-                        SsStatusChip(label: l10n.douyinComingSoonLabel),
                       ],
                     ),
                     if (_error != null) ...<Widget>[

@@ -2,60 +2,14 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:savestream_mobile/features/local_recordings/data/cloud_recording_share_coordinator.dart';
-import 'package:savestream_mobile/features/local_recordings/data/repositories/indexed_local_recording_repository.dart';
-import 'package:savestream_mobile/features/local_recordings/domain/models/local_recording_models.dart';
-import 'package:savestream_mobile/features/local_recordings/domain/repositories/local_recording_repository.dart';
 import 'package:savestream_mobile/features/recordings/data/cloud_artifact_downloader.dart';
 import 'package:savestream_mobile/features/recordings/data/cloud_recording_file_service.dart';
+import 'package:savestream_mobile/features/recordings/data/cloud_recording_share_coordinator.dart';
 import 'package:savestream_mobile/features/recordings/domain/models/recording_summary.dart';
 import 'package:savestream_mobile/platform/contracts/share_service.dart';
 import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
 
 void main() {
-  test(
-    'indexed repository exposes local file and deletes metadata plus file',
-    () async {
-      final Directory root = await Directory.systemTemp.createTemp(
-        'c5-indexed-',
-      );
-      addTearDown(() => root.delete(recursive: true));
-
-      final Directory deviceDirectory = Directory(
-        '${root.path}/user-1/device-1',
-      );
-      await deviceDirectory.create(recursive: true);
-      final File media = await File(
-        '${deviceDirectory.path}/local-1.flv',
-      ).writeAsBytes(<int>[1, 2, 3]);
-      final File sidecar = await File(
-        '${deviceDirectory.path}/local-1.json',
-      ).writeAsString('{}');
-
-      final _FakeLocalRecordingRepository delegate =
-          _FakeLocalRecordingRepository(<LocalRecordingSummary>[
-            _localSummary('local-1'),
-          ]);
-      final IndexedLocalRecordingRepository repository =
-          IndexedLocalRecordingRepository(
-            delegate: delegate,
-            currentUserId: () async => 'user-1',
-            currentDeviceId: () async => 'device-1',
-            rootDirectory: () async => root,
-          );
-
-      final List<LocalRecordingSummary> listed = await repository.list();
-      expect(listed.single.fileAvailable, isTrue);
-      expect(listed.single.filePath, media.path);
-
-      await repository.delete('local-1', deviceId: 'device-1');
-
-      expect(delegate.deleted, <String>['local-1@device-1']);
-      expect(await media.exists(), isFalse);
-      expect(await sidecar.exists(), isFalse);
-    },
-  );
-
   test('cloud file service resumes into app-private persistent file', () async {
     final HttpServer server = await HttpServer.bind(
       InternetAddress.loopbackIPv4,
@@ -168,59 +122,4 @@ void main() {
       expect(await File(sharedPath).exists(), isFalse);
     },
   );
-}
-
-LocalRecordingSummary _localSummary(String id) {
-  return LocalRecordingSummary(
-    id: id,
-    watchId: 'watch-1',
-    creatorDisplayName: 'Creator',
-    creatorHandle: '@creator',
-    deviceId: 'device-1',
-    deviceName: 'Pixel',
-    startedAt: DateTime.utc(2026, 10, 4),
-    recordedSeconds: 60,
-    sizeBytes: 1024,
-    status: RecordingStatus.completed,
-  );
-}
-
-final class _FakeLocalRecordingRepository implements LocalRecordingRepository {
-  _FakeLocalRecordingRepository(this.items);
-
-  final List<LocalRecordingSummary> items;
-  final List<String> deleted = <String>[];
-
-  @override
-  Future<List<LocalRecordingSummary>> list() async => items;
-
-  @override
-  Future<void> delete(String id, {required String deviceId}) async {
-    deleted.add('$id@$deviceId');
-  }
-
-  @override
-  Future<LocalRecordingSession> start({
-    required String watchId,
-    required String deviceId,
-    String? rewardId,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<LocalRecordingSession> extend(String sessionId, {String? rewardId}) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<LocalRecordingSummary> finish(
-    String sessionId, {
-    required int recordedSeconds,
-    required int sizeBytes,
-    required RecordingEndReason endReason,
-    required RecordingStatus status,
-  }) {
-    throw UnimplementedError();
-  }
 }

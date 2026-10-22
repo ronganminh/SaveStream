@@ -84,6 +84,24 @@ def recording_cleanup(recording_id: str) -> None:
     cleanup_recording(recording_id)
 
 
+@celery_app.task(name="savestream.watch.verification_reminders")
+def watch_verification_reminders() -> int:
+    from app.application.watches.verification_reminders import send_verification_reminders
+    from app.infrastructure.db.session import Database
+    from app.settings import get_app_settings
+
+    async def run() -> int:
+        settings = get_app_settings()
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                return await send_verification_reminders(session, settings)
+        finally:
+            await database.close()
+
+    return asyncio.run(run())
+
+
 @celery_app.task(name="savestream.creators.avatar_refresh")
 def creator_avatar_refresh() -> int:
     from app.infrastructure.creators.avatar_worker import run_creator_avatar_refresh

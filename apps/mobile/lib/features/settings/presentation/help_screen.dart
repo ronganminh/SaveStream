@@ -13,9 +13,6 @@ class HelpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<String> questions = <String>[
-      context.l10n.helpLocalCloudQuestion,
-      context.l10n.helpBackgroundQuestion,
-      context.l10n.helpFreeMinutesQuestion,
       context.l10n.helpCloudHoursQuestion,
     ];
     return Scaffold(

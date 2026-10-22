@@ -23,7 +23,7 @@ from app.infrastructure.db.models import (
     User,
 )
 from app.infrastructure.db.session import Database
-from app.infrastructure.db.watch_models import Watch
+from app.infrastructure.db.watch_models import ChannelVerification, Watch
 from app.infrastructure.notifications.email_delivery import send_account_deleted_email
 from app.infrastructure.rate_limit import InMemoryRateLimiter
 from app.main import create_app
@@ -143,6 +143,17 @@ def test_erasure_covers_social_login_partner_and_email_logs(tmp_path) -> None:
                 live_status="unknown",
             )
         )
+        await session.flush()
+        watch_id = (await session.scalar(select(Watch))).id
+        session.add(
+            ChannelVerification(
+                user_id=user.id,
+                watch_id=watch_id,
+                code="SS-ABCD",
+                username="my.channel",
+                expires_at=utcnow(),
+            )
+        )
         session.add(LocalDailyUsage(user_id=user.id, usage_day=date.today(), used_minutes=5))
         session.add(
             AdminEmailLog(
@@ -180,7 +191,8 @@ def test_erasure_covers_social_login_partner_and_email_logs(tmp_path) -> None:
         log = await session.scalar(select(AdminEmailLog))
         return (
             await session.scalar(select(func.count()).select_from(SocialIdentity)),
-            await session.scalar(select(func.count()).select_from(LocalDailyUsage)),
+            await session.scalar(select(func.count()).select_from(LocalDailyUsage))
+            + await session.scalar(select(func.count()).select_from(ChannelVerification)),
             (watch.creator_display_name, watch.creator_avatar_url, watch.owner_attested_at),
             (partner.email, partner.name, partner.consent_ip, partner.published_at),
             log.recipient_email,

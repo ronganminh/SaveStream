@@ -37,6 +37,25 @@ export type WatchResponse = {
   updated_at: string;
   /** When the user confirmed they own, manage or may record the channel. */
   owner_attested_at?: string | null;
+  /** Set once the owner proved the channel is theirs (code in the TikTok bio). */
+  owner_verified_at?: string | null;
+  /** Recording needs verification from this time (grace for older channels). */
+  verification_due_at?: string | null;
+  /** True when SaveStream won't record this channel until it is verified. */
+  verification_required?: boolean;
+};
+
+export type ChannelVerificationResponse = {
+  watch_id: string;
+  verified: boolean;
+  owner_verified_at: string | null;
+  verification_due_at: string | null;
+  verification_required: boolean;
+  code: string | null;
+  expires_at: string | null;
+  checks_left: number;
+  result?: "verified" | "code_not_found" | "retry_later" | null;
+  retry_after_seconds?: number | null;
 };
 
 export type WatchListResponse = {
@@ -427,7 +446,8 @@ export type NotificationTypeValue =
   | "recording_ready"
   | "recording_failed"
   | "cloud_minutes_exhausted"
-  | "credits_low";
+  | "credits_low"
+  | "channel_verification_needed";
 
 export type NotificationResponse = {
   id: string;
@@ -435,7 +455,7 @@ export type NotificationResponse = {
   title: string;
   body: string;
   read: boolean;
-  resource_type: "recording" | null;
+  resource_type: "recording" | "watch" | null;
   resource_id: string | null;
   created_at: string;
 };

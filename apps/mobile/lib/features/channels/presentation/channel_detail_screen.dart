@@ -5,18 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
-import '../../../core/api/api_exception.dart';
 import '../../../core/formatters/v2_formatters.dart';
 import '../../../core/widgets/savestream_widgets.dart';
 import '../../../l10n/l10n.dart';
-import '../../../platform/platform_providers.dart';
 import '../../entitlement/domain/models/entitlement.dart';
 import '../../entitlement/presentation/entitlement_providers.dart';
-import '../../local_recordings/presentation/controllers/local_recording_confirmation_controller.dart';
-import '../../local_recordings/presentation/controllers/local_recording_controller.dart';
-import '../../local_recordings/presentation/local_recording_reward_sheet.dart';
-import '../../local_recordings/presentation/local_recording_start_sheet.dart';
-import '../../local_recordings/presentation/second_local_slot_sheet.dart';
 import '../../recordings/domain/models/recording_summary.dart';
 import '../../recordings/presentation/controllers/recording_providers.dart';
 import '../domain/models/channel_detail_view_model.dart';
@@ -48,132 +41,12 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
     }
   }
 
-  Future<void> _startRewardedRecording(
-    WatchSummary watch,
-    Entitlement entitlement,
-  ) async {
-    final bool started = await showRewardedRecordingStartSheet(
-      context: context,
-      ref: ref,
-      watchId: watch.id,
-      entitlement: entitlement.local,
-    );
-    if (started && mounted) {
-      context.push(AppRoutes.localRecording(watch.id));
-    }
-  }
-
-  Future<void> _startLocalRecording(
-    WatchSummary watch,
-    Entitlement entitlement, {
-    bool skipConfirmation = false,
-  }) async {
-    if (!entitlement.local.enabled) return;
-
-    if (!entitlement.local.unlimited &&
-        entitlement.local.minutesRemaining <= 0) {
-      await _startRewardedRecording(watch, entitlement);
-      return;
-    }
-
-    final LocalRecordingController recordingController = ref.read(
-      localRecordingControllerProvider,
-    );
-    if (recordingController.hasActiveSession) {
-      if (entitlement.plan == Plan.pro) {
-        SsToast.show(context, context.l10n.secondLocalSlotBusy);
-        return;
-      }
-      if (recordingController.hasSecondarySession) {
-        SsToast.show(context, context.l10n.secondLocalSlotBusy);
-        return;
-      }
-      final bool startSecond = await showSecondLocalSlotSheet(
-        context: context,
-        ref: ref,
-        entitlement: entitlement.local,
-        targetCreatorName: watch.creatorDisplayName,
-      );
-      if (!startSecond || !mounted) return;
-
-      try {
-        await recordingController.startSecond(watchId: watch.id);
-        if (mounted) {
-          context.push(AppRoutes.localRecording(watch.id));
-        }
-      } on Object {
-        if (mounted) {
-          SsToast.show(context, context.l10n.localRecordingErrorTitle);
-        }
-      }
-      return;
-    }
-
-    final LocalRecordingConfirmationController confirmation = ref.read(
-      localRecordingConfirmationControllerProvider,
-    );
-    final bool shouldConfirm =
-        !skipConfirmation &&
-        await confirmation.shouldConfirm(
-          force:
-              !entitlement.local.unlimited &&
-              entitlement.local.minutesRemaining <= 0,
-        );
-    if (!mounted) return;
-
-    if (shouldConfirm) {
-      final deviceInfo = ref.read(deviceInfoServiceProvider);
-      final int freeStorageBytes = await deviceInfo.freeStorageBytes;
-      if (!mounted) return;
-
-      final bool confirmed = await showLocalRecordingStartSheet(
-        context: context,
-        creatorName: watch.creatorDisplayName,
-        entitlement: entitlement,
-        platform: deviceInfo.platform,
-        freeStorageBytes: freeStorageBytes,
-      );
-      if (!confirmed || !mounted) return;
-      await confirmation.markConfirmed();
-      if (!mounted) return;
-    }
-
-    try {
-      await recordingController.start(watchId: watch.id);
-      if (mounted) {
-        context.push(AppRoutes.localRecording(watch.id));
-      }
-    } on ApiException catch (error) {
-      if (error.code == 'FREE_MINUTES_EXHAUSTED') {
-        ref.invalidate(entitlementProvider);
-        final Entitlement refreshed = await ref.read(
-          entitlementProvider.future,
-        );
-        if (mounted) {
-          await _startRewardedRecording(watch, refreshed);
-        }
-        return;
-      }
-      if (mounted && error.code == 'LOCAL_SLOT_BUSY') {
-        SsToast.show(context, context.l10n.secondLocalSlotBusy);
-        return;
-      }
-      if (mounted) {
-        SsToast.show(context, context.l10n.localRecordingErrorTitle);
-      }
-    } on Object {
-      if (mounted) {
-        SsToast.show(context, context.l10n.localRecordingErrorTitle);
-      }
-    }
-  }
-
   Future<void> _startManualRecording(
     WatchSummary watch,
     Entitlement entitlement,
   ) async {
-    if (entitlement.plan == Plan.free) {
-      await _startLocalRecording(watch, entitlement);
+    if (entitlement.cloudMinutesAvailable <= 0) {
+      await showCloudHoursUpsellSheet(context);
       return;
     }
 
@@ -182,12 +55,7 @@ class _ChannelDetailScreenState extends ConsumerState<ChannelDetailScreen> {
       creatorName: watch.creatorDisplayName,
       entitlement: entitlement,
     );
-    if (engine == null || !mounted) return;
-
-    if (engine == Engine.local) {
-      await _startLocalRecording(watch, entitlement, skipConfirmation: true);
-      return;
-    }
+    if (engine != Engine.cloud || !mounted) return;
 
     try {
       final RecordingSummary created = await ref
@@ -505,7 +373,6 @@ class _LiveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool free = entitlement.plan == Plan.free;
     return SsCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -515,52 +382,32 @@ class _LiveCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: SsSpacing.sm),
-          if (free)
-            SsLocationChip(engine: Engine.local, label: context.l10n.localLabel)
-          else
-            Wrap(
-              spacing: SsSpacing.sm,
-              runSpacing: SsSpacing.sm,
-              children: <Widget>[
-                if (entitlement.local.enabled)
-                  SsLocationChip(
-                    engine: Engine.local,
-                    label: context.l10n.localLabel,
-                  ),
-                SsLocationChip(
-                  engine: Engine.cloud,
-                  label: context.l10n.cloudLabel,
-                ),
-              ],
-            ),
+          Wrap(
+            spacing: SsSpacing.sm,
+            runSpacing: SsSpacing.sm,
+            children: <Widget>[
+              SsLocationChip(
+                engine: Engine.cloud,
+                label: context.l10n.cloudLabel,
+              ),
+            ],
+          ),
           const SizedBox(height: SsSpacing.md),
-          if (free)
-            Text(
-              context.l10n.homeFreeMinutesRemaining(
-                entitlement.local.minutesRemaining,
-                entitlement.local.dailyMinutes,
-              ),
-            )
-          else
-            Text(
-              context.l10n.cloudTimeRemainingValue(
-                formatMinutesAsHoursMinutes(
-                  entitlement.cloudMinutesAvailable,
-                  hoursLabel: context.l10n.timeHoursUnit,
-                  minutesLabel: context.l10n.timeMinutesUnit,
-                ),
+          Text(
+            context.l10n.cloudTimeRemainingValue(
+              formatMinutesAsHoursMinutes(
+                entitlement.cloudMinutesAvailable,
+                hoursLabel: context.l10n.timeHoursUnit,
+                minutesLabel: context.l10n.timeMinutesUnit,
               ),
             ),
+          ),
           const SizedBox(height: SsSpacing.lg),
+          // Without cloud hours this opens the cloud-hours upsell.
           SsPrimaryButton(
             label: context.l10n.recordNowAction,
             icon: Icons.fiber_manual_record_rounded,
-            onPressed:
-                free ||
-                    entitlement.local.enabled ||
-                    entitlement.cloudMinutesAvailable > 0
-                ? onRecord
-                : null,
+            onPressed: onRecord,
           ),
         ],
       ),

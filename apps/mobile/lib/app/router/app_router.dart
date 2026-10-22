@@ -19,27 +19,16 @@ import '../../features/channels/presentation/live_notification_screen.dart';
 import '../../features/design_system/presentation/component_gallery_screen.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/home/presentation/home_screen.dart';
-import '../../features/local_recordings/presentation/local_recording_screen.dart';
-import '../../features/local_recordings/presentation/local_recovery_screen.dart';
-import '../../features/local_recordings/presentation/recording_platform_bridge.dart';
 import '../../features/onboarding/presentation/add_first_creator_screen.dart';
-import '../../features/onboarding/presentation/android_recording_info_screen.dart';
 import '../../features/onboarding/presentation/first_creator_added_screen.dart';
-import '../../features/onboarding/presentation/intro_local_cloud_screen.dart';
 import '../../features/onboarding/presentation/intro_watch_detect_screen.dart';
-import '../../features/onboarding/presentation/ios_recording_info_screen.dart';
 import '../../features/onboarding/presentation/notification_rationale_screen.dart';
 import '../../features/onboarding/presentation/welcome_screen.dart';
-import '../../features/recordings/presentation/local_recording_detail_screen.dart';
 import '../../features/recordings/presentation/recording_detail_screen.dart';
 import '../../features/recordings/presentation/recording_player_screen.dart';
 import '../../features/recordings/presentation/recordings_screen.dart';
-import '../../features/settings/presentation/android_oem_recording_guidance_screen.dart';
-import '../../features/settings/presentation/android_recording_background_screen.dart';
 import '../../features/settings/presentation/delete_account_screen.dart';
-import '../../features/settings/presentation/device_storage_screen.dart';
 import '../../features/settings/presentation/help_screen.dart';
-import '../../features/settings/presentation/ios_recording_guidance_screen.dart';
 import '../../features/settings/presentation/language_screen.dart';
 import '../../features/settings/presentation/legal_link_screen.dart';
 import '../../features/settings/presentation/legal_privacy_screen.dart';
@@ -236,27 +225,9 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
-        path: AppRoutes.introLocalCloud,
-        builder: (BuildContext context, GoRouterState state) {
-          return const IntroLocalCloudScreen();
-        },
-      ),
-      GoRoute(
         path: AppRoutes.onboardingNotifications,
         builder: (BuildContext context, GoRouterState state) {
           return const NotificationRationaleScreen();
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.onboardingAndroidPermission,
-        builder: (BuildContext context, GoRouterState state) {
-          return const AndroidRecordingInfoScreen();
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.onboardingIosLimits,
-        builder: (BuildContext context, GoRouterState state) {
-          return const IosRecordingInfoScreen();
         },
       ),
       GoRoute(
@@ -330,9 +301,6 @@ GoRouter createAppRouter({
         builder: (BuildContext context, GoRouterState state) {
           return RecordingPlayerScreen(
             recordingId: state.pathParameters['id']!,
-            source: RecordingPlaybackSource.fromValue(
-              state.uri.queryParameters['source'],
-            ),
             title:
                 state.uri.queryParameters['title'] ??
                 context.l10n.recordingDetailTitle,
@@ -343,48 +311,6 @@ GoRouter createAppRouter({
             ),
             localPath: state.uri.queryParameters['path'],
           );
-        },
-      ),
-      GoRoute(
-        path: '/recordings/local-file/:id',
-        builder: (BuildContext context, GoRouterState state) {
-          return LocalRecordingDetailScreen(
-            recordingId: state.pathParameters['id']!,
-          );
-        },
-      ),
-      GoRoute(
-        path: '/recordings/local/:watchId',
-        builder: (BuildContext context, GoRouterState state) {
-          return RecordingPlatformBridge(
-            child: LocalRecordingScreen(
-              watchId: state.pathParameters['watchId']!,
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.localRecovery,
-        builder: (BuildContext context, GoRouterState state) {
-          return const LocalRecoveryScreen();
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.androidRecordingGuide,
-        builder: (BuildContext context, GoRouterState state) {
-          return const AndroidRecordingBackgroundScreen();
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.androidOemRecordingGuide,
-        builder: (BuildContext context, GoRouterState state) {
-          return const AndroidOemRecordingGuidanceScreen();
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.iosRecordingGuide,
-        builder: (BuildContext context, GoRouterState state) {
-          return const IosRecordingGuidanceScreen();
         },
       ),
       GoRoute(
@@ -558,12 +484,6 @@ GoRouter createAppRouter({
                         },
                       ),
                     ],
-                  ),
-                  GoRoute(
-                    path: 'storage',
-                    builder: (BuildContext context, GoRouterState state) {
-                      return const DeviceStorageScreen();
-                    },
                   ),
                   GoRoute(
                     path: 'privacy',

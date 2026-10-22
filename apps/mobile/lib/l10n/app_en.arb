@@ -50,14 +50,10 @@
   "navChannels": "Watching",
   "navRecordings": "Recordings",
   "navSettings": "Settings",
-  "addChannelAction": "Add creator",
-  "homeFoundationTitle": "Mobile foundation is ready",
-  "homeFoundationBody": "The app shell, guarded router, stateful tabs, lifecycle hooks, and mock repositories are now wired.",
-  "mockFoundationTitle": "Mock foundation",
-  "mockFoundationBody": "Channels and recordings are backed by repository interfaces with success, loading, empty, error, and offline-like scenarios.",
+  "addChannelAction": "Add channel",
   "channelsTitle": "Watching",
   "recordingsTitle": "Recordings",
-  "recordingsRetentionSubtitle": "Cloud kept {days} days · Local on this device",
+  "recordingsRetentionSubtitle": "Cloud recordings kept {days} days",
   "@recordingsRetentionSubtitle": {
     "placeholders": {
       "days": {
@@ -68,7 +64,6 @@
   "settingsTitle": "Settings",
   "profileTitle": "Profile",
   "languageTitle": "Language",
-  "phaseRoutePlaceholderBody": "This route is wired and ready for its feature phase.",
   "onboardingPreviewTitle": "Onboarding",
   "onboardingPreviewBody": "The onboarding guard is active. Full onboarding UI arrives in Phase 3.",
   "continueAction": "Continue",
@@ -110,75 +105,30 @@
   "recordingStatusFailed": "Failed",
   "recordingStatusStopRequested": "Stop requested",
   "recordingStatusStopped": "Stopped",
-  "canStopLabel": "Can stop",
-  "canRetryLabel": "Can retry",
-  "canDeleteLabel": "Can delete",
-  "yesLabel": "Yes",
-  "noLabel": "No",
-  "addChannelPlaceholderBody": "The Add Channel route is ready. The full watch creation flow arrives in Phase 5.",
   "routeErrorTitle": "Page unavailable",
   "routeErrorBody": "SaveStream could not open this route.",
   "backHomeAction": "Back to Home",
-  "onboardingWelcomeTitle": "Welcome to SaveStream",
-  "onboardingWelcomeBody": "Automatically monitor the creators you manage and keep your permitted livestream recordings organized in one place.",
-  "onboardingCloudTitle": "Recording continues in the cloud",
-  "onboardingCloudBody": "Once a recording starts, you can close the app. SaveStream keeps the recording job running on the backend.",
-  "onboardingConsentTitle": "Record responsibly",
-  "onboardingConsentBody": "SaveStream is built for authorized recording and personal archiving.",
-  "onboardingConsentCheckbox": "I confirm I own, manage, have permission to record, or am otherwise legally permitted to save this stream.",
-  "getStartedAction": "Get started",
-  "backAction": "Back",
-  "signInSubtitle": "Sign in to manage monitored channels and recordings.",
   "signInAction": "Sign in",
   "forgotPasswordAction": "Forgot password?",
   "noAccountPrompt": "New to SaveStream?",
   "createAccountAction": "Create account",
   "registerSubtitle": "Create your SaveStream account to start monitoring authorized channels.",
-  "confirmPasswordLabel": "Confirm password",
-  "termsAcceptanceLabel": "I agree to the Terms of Use and Privacy Policy.",
   "haveAccountPrompt": "Already have an account?",
   "emailRequiredMessage": "Enter your email.",
   "emailInvalidMessage": "Enter a valid email address.",
   "passwordRequiredMessage": "Enter your password.",
   "confirmPasswordRequiredMessage": "Confirm your password.",
   "passwordMismatchMessage": "Passwords do not match.",
-  "termsRequiredMessage": "Accept the Terms of Use and Privacy Policy to continue.",
-  "verifyEmailSubtitle": "Open the verification link from your email or paste its verification token.",
-  "verificationCodeLabel": "Verification code",
-  "verificationCodeRequiredMessage": "Enter the verification code.",
-  "verificationCodeInvalidMessage": "Enter a valid 6-digit code.",
   "verifyEmailAction": "Verify email",
   "resendVerificationAction": "Resend verification email",
   "verificationResentMessage": "Verification email sent again.",
-  "noPendingVerificationMessage": "There is no email waiting for verification. Return to sign in and try again.",
   "forgotPasswordSubtitle": "Enter your account email and we will send password reset instructions.",
   "sendResetLinkAction": "Send reset link",
-  "passwordResetSentTitle": "Check your email",
-  "passwordResetSentBody": "If an account matches that email, password reset instructions have been sent.",
   "invalidCredentialsMessage": "The email or password is incorrect.",
   "emailNotVerifiedMessage": "Verify your email before signing in.",
   "rateLimitedMessage": "Too many attempts. Please try again later.",
   "authServerErrorMessage": "SaveStream could not complete this request. Please try again.",
   "homeGreeting": "Welcome back, {name}",
-  "homeGreetingSubtitle": "Here’s what SaveStream is doing for you right now.",
-  "homeAvailableCreditLabel": "Available credit",
-  "homeActiveRecordingsLabel": "Active recordings",
-  "homeMonitoredChannelsLabel": "Monitored channels",
-  "homeLowCreditTitle": "Credit is running low",
-  "homeLowCreditBody": "Add credit soon to avoid monitoring or recording interruptions.",
-  "homeViewCreditsAction": "View credits",
-  "homeRecordingFailedTitle": "A recording needs attention",
-  "homeRecordingFailedBody": "A recent recording failed. Review it before retrying.",
-  "homeReviewRecordingAction": "Review recording",
-  "homeUsageTitle": "Usage this month",
-  "homeViewUsageAction": "View usage",
-  "homeUsageHours": "{used} / {limit} recording hours",
-  "homeActiveRecordingTitle": "Recording now",
-  "homeCloudRecordingHint": "You can close the app — recording continues in the cloud.",
-  "homeMonitoredChannelsTitle": "Monitored channels",
-  "homeRecentRecordingsTitle": "Recent recordings",
-  "homeEmptyTitle": "Add your first channel",
-  "homeEmptyBody": "Start monitoring an authorized creator to see live status and recordings here.",
   "@homeGreeting": {
     "placeholders": {
       "name": {
@@ -186,57 +136,21 @@
       }
     }
   },
-  "@homeUsageHours": {
-    "placeholders": {
-      "used": {
-        "type": "String"
-      },
-      "limit": {
-        "type": "String"
-      }
-    }
-  },
-  "channelsSummaryTitle": "{count, plural, =1{1 monitored channel} other{{count} monitored channels}}",
-  "channelsSummaryBody": "SaveStream checks these creators for LIVE status and starts authorized recordings according to each Watch.",
   "autoRecordOnLabel": "Auto record on",
   "autoRecordOffLabel": "Auto record off",
-  "lastCheckedLabel": "Last checked",
-  "lastLiveLabel": "Last LIVE",
   "neverLabel": "Never",
   "watchReasonActive": "Monitoring is active.",
   "watchReasonPaused": "Monitoring is paused until you resume it.",
   "watchReasonInsufficientCredit": "Monitoring paused because available credit is insufficient.",
   "watchReasonError": "Monitoring paused after a Watch error. Review and resume when ready.",
   "watchReasonDisabled": "This Watch is disabled.",
-  "addChannelTitle": "Add channel",
-  "addChannelHeading": "Monitor a TikTok creator",
-  "addChannelBody": "Enter a TikTok username or profile URL. SaveStream will resolve the creator and begin monitoring through the Watch service.",
-  "channelSourceLabel": "TikTok username or profile URL",
-  "channelSourceHint": "@creator or https://www.tiktok.com/@creator",
+  "channelSourceHint": "@yourchannel or https://www.tiktok.com/@yourchannel",
   "channelSourceRequired": "Enter a TikTok username or profile URL.",
   "channelSourceInvalid": "Enter a valid username or profile URL without spaces.",
-  "autoRecordTitle": "Automatically record LIVE",
-  "autoRecordDescription": "When this Watch detects a LIVE session, SaveStream can start a recording automatically.",
-  "channelPermissionConfirmation": "I confirm I own, manage, have permission to record, or am otherwise legally permitted to save this stream.",
-  "channelPermissionRequired": "Confirm that you are authorized to record this stream before continuing.",
-  "addAndMonitorAction": "Add & start monitoring",
-  "monitoringSettingsTitle": "Monitoring settings",
   "pauseMonitoringAction": "Pause monitoring",
   "resumeMonitoringAction": "Resume monitoring",
-  "deleteChannelTitle": "Delete channel Watch?",
   "deleteChannelMessage": "Remove {name} from monitoring? Existing recordings are not deleted.",
   "deleteChannelAction": "Delete Watch",
-  "channelNoRecordingsTitle": "No recordings yet",
-  "channelNoRecordingsBody": "Recordings for this channel will appear here when they are created.",
-  "latestRecordingTitle": "Latest recording",
-  "recordingHistoryTitle": "Recording history",
-  "@channelsSummaryTitle": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "@deleteChannelMessage": {
     "placeholders": {
       "name": {
@@ -250,7 +164,7 @@
   "recordingFilterFailed": "Failed",
   "recordingQueuedBody": "This recording is queued and waiting for the backend to start resolving the source.",
   "recordingResolvingBody": "SaveStream is resolving the livestream source before recording can begin.",
-  "recordingWaitingLiveBody": "The Watch is ready and waiting for the creator to go LIVE.",
+  "recordingWaitingLiveBody": "The Watch is ready and waiting for the channel to go LIVE.",
   "recordingActiveBody": "Recording is active in the cloud. You can close the app and the backend keeps recording.",
   "recordingProcessingBody": "The captured stream is being finalized and processed.",
   "recordingUploadingBody": "The finalized recording is being uploaded to storage.",
@@ -258,28 +172,20 @@
   "recordingFailedBody": "Recording stopped because an error occurred. Retry is shown only when the backend allows it.",
   "recordingStopRequestedBody": "A stop command was accepted and the backend is finishing the recording.",
   "recordingStoppedBody": "Recording was stopped before the normal completion path.",
-  "recordingStartedLabel": "Started",
   "recordingDurationLabel": "Duration",
-  "recordingSizeLabel": "Size",
-  "recordingCostLabel": "Cost",
   "notStartedLabel": "Not started",
-  "artifactReadyLabel": "Artifact ready",
   "recordingArtifactMissingStatus": "Processing failed",
   "recordingArtifactMissingTitle": "Video file was not created",
   "recordingArtifactMissingBody": "The recording ended, but SaveStream could not create a playable cloud video. Retry the status check or delete this item.",
   "artifactPendingLabel": "Artifact pending",
-  "thumbnailReadyLabel": "Thumbnail ready",
-  "thumbnailPendingLabel": "Thumbnail pending",
   "recordingContentViewLabel": "Content",
   "recordingListViewLabel": "List",
-  "recordingSortTooltip": "Sort recordings",
   "recordingSortDate": "Newest first",
   "recordingSortSize": "Largest first",
   "recordingSortName": "Name A–Z",
   "recordingSortExpiring": "Expiring first",
   "recordingFiltersTitle": "Filter recordings",
   "recordingFiltersResetAction": "Reset",
-  "recordingFiltersStorageTitle": "STORAGE",
   "recordingFiltersStatusTitle": "STATUS",
   "recordingFiltersSortTitle": "SORT",
   "recordingFiltersApplyAction": "View {count} recordings",
@@ -302,37 +208,22 @@
   "recordingSearchHelpTitle": "Can't find it?",
   "recordingSearchHelpBody": "Cloud recordings expired for more than 7 days no longer appear in results.",
   "recordingSearchEmptyTitle": "No matching recordings",
-  "recordingSearchEmptyBody": "Try another creator name or live title.",
+  "recordingSearchEmptyBody": "Try another channel name or live title.",
   "recordingSearchClearAction": "Clear search",
   "recordingFilteredEmptyTitle": "No matching recordings",
   "recordingFilteredEmptyBody": "Try removing some filters.",
   "recordingClearFiltersAction": "Clear filters",
-  "recordingEmptyAddCreatorAction": "Add creator",
+  "recordingEmptyAddCreatorAction": "Add channel",
   "recordingEmptyRecordNowAction": "Record now",
   "recordingDateToday": "Today",
   "recordingDateYesterday": "Yesterday",
-  "recordingsStorageCount": "{localCount} Local · {cloudCount} Cloud",
-  "@recordingsStorageCount": {
-    "placeholders": {
-      "localCount": {"type": "int"},
-      "cloudCount": {"type": "int"}
-    }
-  },
-  "recordingEndOfListLabel": "You’re all caught up.",
-  "recordingLoadMoreFailed": "Couldn’t load more recordings.",
   "loadMoreAction": "Load more",
-  "emptyActiveRecordingsBody": "There are no active recordings right now.",
-  "emptyCompletedRecordingsBody": "No completed recordings match this filter.",
-  "emptyFailedRecordingsBody": "No failed recordings match this filter.",
   "recordingElapsedValue": "Elapsed · {duration}",
   "recordingBytesValue": "Captured · {bytes}",
   "recordingProgressValue": "{percent}% complete",
   "recordingFailureTitle": "Recording error",
-  "recordingMetadataTitle": "Recording metadata",
-  "recordingArtifactTitle": "Artifact",
   "playRecordingAction": "Play",
   "downloadRecordingAction": "Download",
-  "artifactMockActionMessage": "Artifact action is ready for backend integration in Phase 12.",
   "stopRecordingAction": "Stop recording",
   "retryRecordingAction": "Retry recording",
   "deleteRecordingTitle": "Delete recording?",
@@ -361,39 +252,14 @@
       }
     }
   },
-  "settingsCreditsSubtitle": "Balance, reservations, pricing, and transactions",
-  "settingsBillingSubtitle": "Buy credits and review payment orders",
-  "buyCreditsAction": "Buy credits",
-  "paymentStatusPending": "Pending",
-  "paymentStatusPaid": "Paid",
-  "paymentStatusFailed": "Failed",
-  "paymentStatusCancelled": "Cancelled",
-  "paymentStatusExpired": "Expired",
-  "paymentPendingBody": "Payment is still pending. Returning from checkout does not mark it paid; SaveStream waits for backend confirmation.",
-  "paymentPaidBody": "The backend confirmed this payment as paid.",
-  "paymentFailedBody": "The payment failed. No credit is added.",
-  "paymentCancelledBody": "This payment order was cancelled.",
-  "paymentExpiredBody": "This payment order expired before payment was confirmed.",
-  "settingsAccountSectionTitle": "Account",
-  "settingsPreferencesSectionTitle": "Preferences",
-  "settingsLegalSectionTitle": "Legal",
-  "settingsAccountActionsSectionTitle": "Account actions",
   "settingsDeveloperSectionTitle": "Developer",
   "settingsProfileSubtitle": "Email and verification status",
   "notificationsTitle": "Notifications",
-  "notificationsPlaceholderSubtitle": "Notification controls will be enabled when backend support is ready.",
-  "notificationsPlaceholderBody": "Notification preferences are a placeholder in Phase 8. They will be connected when the backend notification contract is available.",
   "privacyPolicyTitle": "Privacy Policy",
-  "privacyPolicyPlaceholderBody": "The published SaveStream Privacy Policy link will be connected before release.",
   "termsOfUseTitle": "Terms of Use",
-  "termsOfUsePlaceholderBody": "The published SaveStream Terms of Use link will be connected before release.",
   "logoutAction": "Log out",
-  "logoutDescription": "Sign out of SaveStream on this device.",
   "deleteAccountAction": "Delete account",
-  "deleteAccountDescription": "Permanently request deletion of your SaveStream account.",
   "deleteAccountTitle": "Delete your account?",
-  "deleteAccountMessage": "This is a destructive account action. When the real API is connected, the backend will be the source of truth for deletion.",
-  "accountActionError": "SaveStream could not complete that account action. Please try again.",
   "profileFallbackName": "SaveStream user",
   "profileEmailVerified": "Email verified",
   "profileEmailUnverified": "Email not verified",
@@ -404,35 +270,15 @@
   "languageDescription": "Choose the language used throughout SaveStream. This preference is stored on this device.",
   "themeDescription": "Choose Light, Dark, or follow the system appearance. This preference is stored on this device.",
   "passwordMinLengthMessage": "Use at least 8 characters.",
-  "verificationTokenLabel": "Verification token",
-  "verificationTokenHint": "Paste verification token",
-  "verificationTokenRequiredMessage": "Enter the verification token.",
-  "verificationTokenInvalidMessage": "Enter a valid verification token.",
   "resetPasswordTitle": "Reset password",
-  "resetPasswordSubtitle": "Paste the password reset token from your email and choose a new password.",
-  "resetTokenLabel": "Reset token",
-  "resetTokenHint": "Paste reset token",
-  "resetTokenRequiredMessage": "Enter the reset token.",
-  "resetTokenInvalidMessage": "Enter a valid reset token.",
   "newPasswordLabel": "New password",
-  "resetPasswordAction": "Reset password",
-  "passwordResetCompletedMessage": "Password reset. Sign in with your new password.",
-  "enterResetTokenAction": "I have a reset token",
   "authInvalidTokenMessage": "This verification or reset token is invalid or expired.",
   "authValidationErrorMessage": "Check the entered information and try again.",
   "authSessionExpiredMessage": "Your session has expired. Sign in again.",
-  "watchAlreadyExistsMessage": "A Watch for this creator already exists.",
-  "watchResumeInsufficientCreditMessage": "Available credit is insufficient to resume auto-record monitoring. Add credit and try again.",
+  "watchAlreadyExistsMessage": "This channel is already added.",
   "recordNowAction": "Record now",
   "recordingInsufficientCreditMessage": "Available credit is insufficient to start this recording.",
   "artifactOpenFailedMessage": "Couldn’t open the recording artifact. Try again to request a fresh link.",
-  "paymentStatusCreated": "Created",
-  "paymentStatusPartiallyRefunded": "Partially refunded",
-  "paymentStatusRefunded": "Refunded",
-  "paymentCreatedBody": "The payment order exists, but checkout has not started yet.",
-  "paymentPartiallyRefundedBody": "Part of this payment has been refunded.",
-  "paymentRefundedBody": "This payment has been refunded.",
-  "backToBillingAction": "Back to billing",
   "nonRetryableErrorTitle": "This can’t be completed",
   "nonRetryableErrorBody": "SaveStream can’t retry this request automatically. Try again later or contact support if the issue continues.",
   "requestIdLabel": "Request ID: {requestId}",
@@ -451,7 +297,6 @@
   "notificationRecordingReadyTitle": "Recording ready",
   "notificationRecordingFailedTitle": "Recording failed",
   "openLegalDocumentAction": "Open published document",
-  "billingPurchasesUnavailableTitle": "Purchases are temporarily unavailable",
   "notificationPreferencesTitle": "Notification preferences",
   "notificationHistoryTitle": "Notification history",
   "notificationHistoryEmptyTitle": "No notifications yet",
@@ -460,8 +305,8 @@
   "notificationPreferencesSaveFailed": "Couldn’t save your notification preferences. Your previous settings were kept.",
   "notificationLoadMoreFailed": "Couldn’t load more notifications.",
   "welcomeHeadline": "Never miss a LIVE.",
-  "welcomeBody": "SaveStream tells you when the creators you watch go LIVE. Tap Record to save it on your phone, or let Pro record automatically in the cloud.",
-  "welcomePreviewStatus": "Recording · Local · 00:06:12",
+  "welcomeBody": "SaveStream tells you when your TikTok channel goes LIVE and records it in the cloud with cloud hours.",
+  "welcomePreviewStatus": "Recording · Cloud · 00:06:12",
   "welcomeLegalNotice": "By continuing you agree to the Terms of Use and Privacy Policy. Only record streams you are permitted to save.",
   "welcomeThemeLabel": "Theme: {mode}",
   "@welcomeThemeLabel": {
@@ -471,13 +316,7 @@
       }
     }
   },
-  "nativeRecordingNotificationTitle": "SaveStream is recording",
-  "nativeRecordingNotificationBody": "Recording is active on this device.",
-  "nativeRecordingNotificationStop": "Stop recording",
-  "nativeRecordingChannelName": "Local recording",
-  "nativeKeepAppOpenReminderTitle": "Keep SaveStream open",
-  "nativeKeepAppOpenReminderBody": "Keep the app open while recording on this device.",
-  "nativePushChannelLiveName": "Creator LIVE alerts",
+  "nativePushChannelLiveName": "Channel LIVE alerts",
   "nativePushChannelRecordingName": "Recording alerts",
   "recordingStatusStarting": "Starting",
   "recordingStatusWaitingForCloudSlot": "Waiting for cloud slot",
@@ -486,12 +325,12 @@
   "recordingStatusPartial": "Partial",
   "recordingStatusRecovered": "Recovered",
   "recordingStatusMissedNoCloudSlot": "Missed",
-  "recordingStartingBody": "Preparing the recording on this device.",
-  "recordingWaitingForCloudSlotBody": "The creator is LIVE and this recording is waiting for an available cloud slot.",
+  "recordingStartingBody": "Preparing the recording.",
+  "recordingWaitingForCloudSlotBody": "The channel is LIVE and this recording is waiting for an available cloud slot.",
   "recordingReconnectingBody": "The stream connection dropped and SaveStream is reconnecting.",
-  "recordingFinalizingBody": "SaveStream is safely finalizing the local file.",
+  "recordingFinalizingBody": "SaveStream is safely finalizing the recording.",
   "recordingPartialBody": "The recording was saved, but part of the LIVE was not captured.",
-  "recordingRecoveredBody": "The local recording was recovered after an interruption.",
+  "recordingRecoveredBody": "The recording was recovered after an interruption.",
   "recordingMissedNoCloudSlotBody": "The LIVE ended before a cloud recording slot became available.",
   "fullNameLabel": "Full name",
   "fullNameHint": "Alex Nguyen",
@@ -519,62 +358,38 @@
   "resetPasswordSuccessTitle": "New password saved",
   "resetPasswordSuccessBody": "Your password was changed. Sign in again to continue.",
   "laterAction": "Later",
-  "gotItAction": "Got it",
   "onboardingSkipAction": "Skip",
   "onboardingStepLabel": "Step {step}/{total}",
-  "introWatchTitle": "Follow creators, know when they’re LIVE",
-  "introWatchBody": "Add up to 3 TikTok creators. SaveStream checks them and lets you know when a creator goes LIVE.",
+  "introWatchTitle": "Add your channel, know when it’s LIVE",
+  "introWatchBody": "Add your TikTok channel. SaveStream checks it and lets you know when it goes LIVE.",
   "onboardingSampleCreatorOneName": "Lina Studio",
   "onboardingSampleCreatorOneHandle": "@linastudio",
   "onboardingSampleCreatorTwoName": "Mike Fitness",
   "onboardingSampleCreatorTwoHandle": "@mikefitness",
   "introWatchMockNotificationTitle": "Lina Studio is LIVE",
   "introWatchMockNotificationBody": "Open SaveStream to Record now.",
-  "introStorageTitle": "Record on your device or in the cloud",
-  "introStorageBody": "Choose the recording location that fits how you want to save a LIVE.",
   "localLabel": "Local",
   "cloudLabel": "Cloud",
   "freePlanLabel": "FREE",
   "proPlanLabel": "PRO",
-  "introLocalTitle": "Saved on this device",
-  "introLocalBulletManual": "Tap Record when a creator is LIVE.",
-  "introLocalBulletMinutes": "10 free minutes each day.",
-  "introLocalBulletAndroid": "You can switch apps; Android shows a recording notification.",
-  "introLocalBulletIos": "Keep SaveStream open while recording.",
-  "introCloudTitle": "Recorded on the server",
-  "introCloudBulletServer": "Your phone does not need to stay online while the server records.",
-  "introCloudBulletAuto": "Automatically record when a followed creator goes LIVE.",
-  "notificationRationaleTitle": "Turn on notifications to know when a creator is LIVE",
-  "notificationRationaleBody": "You stay in control of which creators can alert you.",
-  "notificationRationaleFollowedOnly": "Only alert when a creator you follow starts a LIVE.",
-  "notificationRationalePerCreator": "Turn alerts off for any creator at any time.",
+  "notificationRationaleTitle": "Turn on notifications to know when your channel is LIVE",
+  "notificationRationaleBody": "You stay in control of which channels can alert you.",
+  "notificationRationaleFollowedOnly": "Only alert when a channel you added starts a LIVE.",
+  "notificationRationalePerCreator": "Turn alerts off for any channel at any time.",
   "enableNotificationsAction": "Turn on notifications",
-  "androidRecordingInfoTitle": "Allow recording while you switch apps",
-  "androidRecordingInfoBody": "During a Local recording, Android shows a persistent notification so the recording can keep running.",
-  "androidRecordingNotificationPreview": "Lina Studio · 00:03:12",
-  "androidBatteryWarningTitle": "Android may stop recording",
-  "androidBatteryWarningBody": "Battery saving or low storage can interrupt a Local recording. Disabling battery optimization can improve reliability.",
-  "disableBatteryOptimizationAction": "Turn off battery optimization",
-  "iosRecordingInfoTitle": "On iPhone, keep SaveStream open while recording",
-  "iosRecordingInfoBody": "iOS can stop a Local recording when SaveStream is in the background or the phone is locked.",
-  "iosRecordingBackgroundBody": "Keep SaveStream open in the foreground during a Local recording.",
-  "iosRecordingRecoveryBody": "If iOS stops the recording, the saved part is kept and SaveStream can guide recovery.",
-  "iosRecordingCloudTitle": "Cloud recording",
-  "iosRecordingCloudBody": "With cloud recording, the server keeps recording and your phone does not need to stay online.",
-  "addFirstCreatorTitle": "Add your first creator",
-  "addFirstCreatorBody": "Paste a TikTok username or link for the creator you want to follow.",
+  "addFirstCreatorTitle": "Add your TikTok channel",
+  "addFirstCreatorBody": "Paste your TikTok username or profile link.",
   "tiktokSupportedLabel": "TikTok · Supported",
-  "douyinComingSoonLabel": "Douyin · Coming soon",
   "onboardingCreatorSourceLabel": "TikTok username or link",
   "creatorFoundLabel": "Found",
   "responsibleUseReminderTitle": "Use recordings responsibly",
   "responsibleUseReminderBody": "You are responsible for using recordings in accordance with the law and the platform’s terms.",
-  "addAndFollowAction": "Add & follow",
+  "addAndFollowAction": "Add channel",
   "firstCreatorAddedTitle": "{creator} added",
-  "firstCreatorAddedBody": "SaveStream will alert you when {creator} is LIVE. Tap Record then to save it on this device.",
-  "firstCreatorFollowingValue": "{handle} · Following · {count}/{limit} creators",
+  "firstCreatorAddedBody": "SaveStream will alert you when {creator} is LIVE.",
+  "firstCreatorFollowingValue": "{handle} · Added · {count}/{limit} channels",
   "goHomeAction": "Go to Home",
-  "addAnotherCreatorAction": "Add another creator",
+  "addAnotherCreatorAction": "Add another channel",
   "@checkEmailBody": {
     "placeholders": {
       "email": {
@@ -626,16 +441,10 @@
       }
     }
   },
-  "advertisementLabel": "Advertisement",
   "timeHoursUnit": "hours",
   "timeMinutesUnit": "minutes",
-  "homeFreeMinutesTitle": "Free minutes today",
-  "homeFreeMinutesRemaining": "{remaining} / {daily} minutes remaining",
-  "homeResetAfter": "Resets in {duration}",
-  "homeRewardsUsed": "Rewarded {used}/{cap}",
   "homeWatchingCapacity": "Watching {count}/{limit}",
-  "homeLiveNowTitle": "Live now",
-  "homeNoLiveCreators": "No followed creators are LIVE right now.",
+  "homeNoLiveCreators": "None of your channels are LIVE right now.",
   "homeLiveSinceLabel": "LIVE since {time}",
   "@homeLiveSinceLabel": {
     "placeholders": {
@@ -644,81 +453,58 @@
       }
     }
   },
-  "homeLocalStorageLabel": "Local · Saved on this device",
-  "homeFreeMinutesRemainingTail": " / {daily} minutes remaining",
-  "@homeFreeMinutesRemainingTail": {
-    "placeholders": {
-      "daily": {
-        "type": "int"
-      }
-    }
-  },
   "viewProAction": "View Pro",
-  "homeRewardedMetricLabel": "Rewarded",
-  "homeSlotMetricLabel": "Slot",
-  "homeWatchingMetricLabel": "Watching",
   "homeCloudTimeTitle": "Cloud time available",
   "homeCloudSlots": "Cloud slots {used}/{limit}",
   "homeCloudRetention": "Cloud recordings kept {days} days",
-  "homeLiveCreatorTitle": "{name} is LIVE",
-  "homeLiveCreatorBody": "Open the creator to record now.",
-  "homeLocalSaveHint": "Local · Saved on this device",
-  "homeAutoRecordUpsellTitle": "Automatically record when a creator goes LIVE",
+  "homeAutoRecordUpsellTitle": "Automatically record when your channel goes LIVE",
   "homeAutoRecordUpsellBody": "Pro records in the cloud, so your phone doesn’t need to stay online.",
   "buyCloudHoursAction": "Buy cloud hours",
   "homeOfflineTitle": "No connection",
   "homeOfflineBody": "Showing saved data. LIVE status may have changed. Recording actions that need the network are unavailable.",
-  "homeEmptyCreatorTitle": "Add a creator to get started",
-  "homeEmptyCreatorBody": "SaveStream can alert you when a creator goes LIVE so you can Record now.",
-  "homeMinutesExhaustedTitle": "Free minutes used for today",
-  "homeMinutesExhaustedBody": "Free minutes reset daily. You can watch a rewarded ad for a new Local recording in the Recording flow.",
-  "watchAdMinutesAction": "Watch an ad · Record {minutes} minutes",
-  "watchingHeader": "Watching {count}/{limit} creators · {plan}",
+  "homeEmptyCreatorTitle": "Add your channel to get started",
+  "homeEmptyCreatorBody": "SaveStream can alert you when your channel goes LIVE.",
+  "watchingHeader": "Channels {count}/{limit} · {plan}",
   "watchFilterAll": "All",
   "watchFilterLive": "LIVE",
   "watchFilterOffline": "Offline",
-  "watchFilterPaused": "Paused",
   "watchCapacityRemaining": "{count} spots left",
-  "watchCapacityFull": "Creator limit reached",
-  "watchCapacityLegacyExceeded": "You already have {count} creators from an older plan. They stay here, but you cannot add another until you buy cloud hours or remove creators.",
+  "watchCapacityFull": "Channel limit reached",
+  "watchCapacityLegacyExceeded": "You already have {count} channels from an older plan. They stay here, but you cannot add another until you buy cloud hours or remove channels.",
   "watchLimitTitle": "Watching is full",
-  "watchLimitBody": "Free accounts can follow up to 3 creators. Your existing creators stay in place; adding more is blocked at the current limit.",
+  "watchLimitBody": "Free accounts can add up to 3 channels. Your existing channels stay in place; adding more is blocked at the current limit.",
   "manageWatchingAction": "Manage list",
   "watchNotifyOnLive": "Notify when LIVE",
   "watchAutoRecordCloud": "Auto-record on cloud",
   "watchAutoRecordLocked": "Buy cloud hours to enable auto-record",
-  "watchCheckingStatus": "CHECKING",
   "watchUnknownStatus": "UNKNOWN",
   "watchPausedStatus": "PAUSED",
   "watchWaitingCloudSlot": "Waiting for cloud slot",
   "watchMissedNoCloudSlot": "Missed · no cloud slot",
   "watchNextCheckAt": "Check again at {time}",
-  "watchWillCheckAgain": "SaveStream will check again",
-  "addCreatorTitle": "Add creator",
-  "addCreatorHeading": "Follow a TikTok creator",
-  "addCreatorBody": "Paste a TikTok username or profile link. SaveStream checks it before adding.",
-  "creatorLookupAction": "Find creator",
-  "creatorLookupChecking": "Checking on TikTok…",
-  "creatorNotFoundTitle": "Creator not found",
+  "addCreatorTitle": "Add channel",
+  "addCreatorHeading": "Add your TikTok channel",
+  "addCreatorBody": "Paste your TikTok username or profile link. SaveStream checks it before adding.",
+  "creatorLookupAction": "Find channel",
+  "creatorNotFoundTitle": "Channel not found",
   "creatorNotFoundBody": "We could not find {handle} on TikTok. Check the spelling and try again.",
   "creatorRestrictedTitle": "Private or restricted account",
-  "creatorRestrictedBody": "SaveStream can only follow public TikTok accounts. Douyin links are not supported yet.",
-  "creatorUnavailableTitle": "Creator unavailable",
+  "creatorRestrictedBody": "SaveStream can only add public TikTok accounts.",
+  "creatorUnavailableTitle": "Channel unavailable",
   "creatorUnavailableBody": "SaveStream cannot access this account right now. Try again later or check the username.",
   "tryAnotherCreatorAction": "Try another username",
-  "creatorLimitDirectBody": "You have reached the creator limit for this account. Existing creators are kept, but a new creator cannot be added.",
+  "creatorLimitDirectBody": "You have reached the channel limit for this account. Existing channels are kept, but a new channel cannot be added.",
   "cloudHoursUpsellTitle": "Unlock cloud auto-recording",
-  "cloudHoursUpsellBody": "Cloud hours are a one-time purchase. Buying hours unlocks cloud auto-recording, up to 20 creators, and removes ads.",
-  "cloudHoursBenefitAuto": "Automatically record when a creator goes LIVE",
+  "cloudHoursUpsellBody": "Cloud hours are a one-time purchase. Buying hours unlocks cloud auto-recording and up to 20 channels.",
+  "cloudHoursBenefitAuto": "Automatically record when your channel goes LIVE",
   "cloudHoursBenefitPhone": "Recording runs on the server; your phone does not need to stay online",
-  "cloudHoursBenefitCreators": "Follow up to 20 creators",
-  "cloudHoursBenefitNoAds": "No ads",
+  "cloudHoursBenefitCreators": "Add up to 20 channels",
   "creatorDetailStatusTitle": "Status",
   "creatorLiveSince": "LIVE now",
   "creatorOfflineBody": "Not LIVE right now",
-  "creatorPausedBody": "Monitoring is paused. This creator still counts toward your limit.",
+  "creatorPausedBody": "Monitoring is paused. This channel still counts toward your limit.",
   "creatorWaitingTitle": "Waiting for a cloud slot",
-  "creatorWaitingBody": "All {limit} cloud slots are in use. This creator will start recording when a slot opens, in FIFO order. Earlier LIVE time cannot be recovered.",
+  "creatorWaitingBody": "All {limit} cloud slots are in use. This channel will start recording when a slot opens, in FIFO order. Earlier LIVE time cannot be recovered.",
   "queuePositionLabel": "Queue position {position}",
   "activeCloudSlotsTitle": "Cloud recordings using slots",
   "creatorMissedTitle": "Missed",
@@ -731,39 +517,12 @@
   "cloudRetentionValue": "Kept for {days} days",
   "cloudConcurrentValue": "Cloud recordings {used}/{limit}",
   "cloudTimeRemainingValue": "{value} remaining",
-  "cloudQueueInfo": "When all cloud slots are in use, the next LIVE creator waits in FIFO order. Missed time is not recorded later.",
+  "cloudQueueInfo": "When all cloud slots are in use, the next LIVE channel waits in FIFO order. Missed time is not recorded later.",
   "liveCheckTitle": "Checking LIVE status…",
-  "liveCheckBody": "SaveStream verifies the creator is still LIVE before recording.",
+  "liveCheckBody": "SaveStream verifies the channel is still LIVE before recording.",
   "liveEndedTitle": "Livestream ended",
   "liveEndedBody": "{name} ended the LIVE before you opened the notification. SaveStream will alert you next time.",
   "backToHomeAction": "Back to Home",
-  "@homeFreeMinutesRemaining": {
-    "placeholders": {
-      "remaining": {
-        "type": "int"
-      },
-      "daily": {
-        "type": "int"
-      }
-    }
-  },
-  "@homeResetAfter": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "@homeRewardsUsed": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
   "@homeWatchingCapacity": {
     "placeholders": {
       "count": {
@@ -787,20 +546,6 @@
   "@homeCloudRetention": {
     "placeholders": {
       "days": {
-        "type": "int"
-      }
-    }
-  },
-  "@homeLiveCreatorTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "@watchAdMinutesAction": {
-    "placeholders": {
-      "minutes": {
         "type": "int"
       }
     }
@@ -891,401 +636,6 @@
       }
     }
   },
-  "localRecordingStartTitle": "Record {name}",
-  "@localRecordingStartTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingFreeStorage": "{value} free",
-  "@localRecordingFreeStorage": {
-    "placeholders": {
-      "value": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingSlot": "Local slot {used}/{limit}",
-  "@localRecordingSlot": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "limit": {
-        "type": "int"
-      }
-    }
-  },
-  "localRecordingAndroidStartTitle": "You can switch apps",
-  "localRecordingAndroidStartBody": "Android shows an ongoing recording notification until you stop.",
-  "localRecordingStartAction": "Start recording",
-  "localRecordingActiveTitle": "Active recording",
-  "localRecordingElapsedSemantics": "Recording time {duration}",
-  "@localRecordingElapsedSemantics": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingSavedHere": "Saved on this device · {size}",
-  "@localRecordingSavedHere": {
-    "placeholders": {
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingFreeRemainingTitle": "Free time remaining",
-  "localRecordingRewardCaps": "Extensions 0/{extensionsCap} · Rewarded ads today {rewardsUsed}/{rewardsCap}",
-  "@localRecordingRewardCaps": {
-    "placeholders": {
-      "extensionsCap": {
-        "type": "int"
-      },
-      "rewardsUsed": {
-        "type": "int"
-      },
-      "rewardsCap": {
-        "type": "int"
-      }
-    }
-  },
-  "localRecordingStopAction": "Stop recording",
-  "localRecordingConnectingBody": "Connecting to {name}'s LIVE…",
-  "@localRecordingConnectingBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingErrorTitle": "Recording failed",
-  "localRecordingStatusActive": "Recording",
-  "localRecordingAndroidActiveTitle": "Recording in the background",
-  "localRecordingAndroidActiveBody": "You can switch apps. Android keeps an ongoing recording notification until you stop.",
-  "localRecordingIosActiveBody": "Keep SaveStream in the foreground and do not lock the screen while recording.",
-  "localRecordingConnectingSlowBody": "Connecting is taking longer than usual…",
-  "localRecordingMinuteWarningTitle": "Less than 1 minute of Free time left",
-  "localRecordingMinuteWarningBody": "Recording will stop and save when your Free time runs out.",
-  "localRecordingRewardMinutesAction": "+{minutes} minutes (watch an ad)",
-  "@localRecordingRewardMinutesAction": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "genericErrorTitle": "Something went wrong",
-  "closeAction": "Close",
-  "rewardMinutesOfferTitle": "+{minutes} minutes for this recording",
-  "@rewardMinutesOfferTitle": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesOfferBody": "Watch 1 ad. {minutes} minutes are added only after SaveStream confirms the reward. Recording continues while you watch.",
-  "@rewardMinutesOfferBody": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardStartOfferTitle": "Record {minutes} minutes with an ad",
-  "@rewardStartOfferTitle": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardStartOfferBody": "Watch 1 ad. SaveStream starts a new Local recording after confirming the reward and grants {minutes} minutes.",
-  "@rewardStartOfferBody": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardStartSuccessTitle": "Reward confirmed",
-  "rewardStartSuccessBody": "Local recording started with {minutes} rewarded minutes.",
-  "@rewardStartSuccessBody": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesExtensionProgress": "Extensions for this recording {used}/{cap}",
-  "@rewardMinutesExtensionProgress": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesDailyProgress": "Rewarded ads today {used}/{cap}",
-  "@rewardMinutesDailyProgress": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesWatchAdAction": "Watch ad",
-  "rewardMinutesLoadingTitle": "Loading ad",
-  "rewardMinutesLoadingBody": "Recording continues while the ad loads.",
-  "rewardMinutesVerifyingTitle": "Confirming reward",
-  "rewardMinutesAdCompleteStep": "Ad completed",
-  "rewardMinutesVerifyStep": "Confirm with SaveStream",
-  "rewardMinutesGrantStep": "Add {minutes} minutes to recording",
-  "@rewardMinutesGrantStep": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesPendingTitle": "Reward confirmation is taking longer",
-  "rewardMinutesPendingBody": "Minutes will be added as soon as SaveStream confirms. Recording keeps running.",
-  "rewardMinutesSuccessTitle": "Added {minutes} minutes",
-  "@rewardMinutesSuccessTitle": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesSuccessBody": "Server confirmed. Extension {used}/{cap} for this recording.",
-  "@rewardMinutesSuccessBody": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesNoFillTitle": "No ad available right now",
-  "rewardMinutesNoFillBody": "Try again in a few minutes. Recording continues until your remaining Free time runs out.",
-  "rewardMinutesInvalidTitle": "Reward could not be confirmed",
-  "rewardMinutesInvalidBody": "The ad view was invalid or expired. No minutes were added.",
-  "rewardMinutesMaxTitle": "Maximum extensions reached",
-  "rewardMinutesMaxBody": "Each recording can be extended up to {cap} times. It will stop and save when the remaining Free time runs out.",
-  "@rewardMinutesMaxBody": {
-    "placeholders": {
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesDailyCapTitle": "Daily rewarded-ad limit reached",
-  "rewardMinutesDailyCapBody": "You have used {cap}/{cap} rewarded ads today. The daily limit resets automatically.",
-  "@rewardMinutesDailyCapBody": {
-    "placeholders": {
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardMinutesWorkingAction": "Working…",
-  "rewardMinutesLockedTitle": "Rewarded ads temporarily locked",
-  "rewardMinutesLockedBody": "Several rewards could not be confirmed. Try again later. Recording continues until your remaining Free time runs out.",
-  "timeUnknownLabel": "server confirmation",
-  "secondLocalSlotTitle": "Open Local slot #2 for 1 hour",
-  "secondLocalSlotOfferBody": "Watch 2 rewarded ads to record one more creator at the same time. The server confirms both rewards before the slot opens.",
-  "secondLocalSlotProgress": "Ads to open slot {used}/{required}",
-  "@secondLocalSlotProgress": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "required": {
-        "type": "int"
-      }
-    }
-  },
-  "secondLocalSlotSharedQuotaTitle": "Free minutes are shared",
-  "secondLocalSlotSharedQuotaBody": "Two Local recordings at the same time consume Free recording time twice as fast.",
-  "secondLocalSlotVerifyStep": "Confirm slot reward {current}/{required}",
-  "@secondLocalSlotVerifyStep": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "required": {
-        "type": "int"
-      }
-    }
-  },
-  "secondLocalSlotPendingBody": "Slot progress will update when SaveStream receives server confirmation.",
-  "secondLocalSlotUnlockedTitle": "Local slot #2 is open",
-  "secondLocalSlotUnlockedBody": "You can start one more Local recording until {time}. An active second recording is not stopped when the slot later expires.",
-  "@secondLocalSlotUnlockedBody": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "secondLocalSlotExpiredTitle": "Local slot #2 has closed",
-  "secondLocalSlotExpiredBody": "The slot closed at {time}. Opening it again requires 2 verified rewarded ads.",
-  "@secondLocalSlotExpiredBody": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "secondLocalSlotRecordNow": "Record {name} now",
-  "@secondLocalSlotRecordNow": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "secondLocalSlotWatchAdAction": "Watch ad {current}/{required}",
-  "@secondLocalSlotWatchAdAction": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "required": {
-        "type": "int"
-      }
-    }
-  },
-  "secondLocalSlotBusy": "Both Local recording slots are already in use.",
-  "secondLocalSlotReopenAction": "Open Local slot #2 again",
-  "localRecordingStorageLowTitle": "Storage is running low",
-  "localRecordingStorageLowBody": "{free} free · about {minutes} minutes of recording left. Recording will stop safely below 250 MB.",
-  "@localRecordingStorageLowBody": {
-    "placeholders": {
-      "free": {
-        "type": "String"
-      },
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "localRecordingStorageCriticalTitle": "Storage is almost full",
-  "localRecordingStorageCriticalBody": "Less than 250 MB remains. Recording is stopping safely and the recorded part is being saved.",
-  "localRecordingStopConfirmTitle": "Stop recording?",
-  "localRecordingStopConfirmBody": "The recorded part ({duration}) will be saved on this device. Unused Free minutes stay available.",
-  "@localRecordingStopConfirmBody": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingContinueAction": "Continue recording",
-  "localRecordingFinalizingTitle": "Finishing recording",
-  "localRecordingFinalizeStopStep": "Stop capture",
-  "localRecordingFinalizeFlushStep": "Write final data to file",
-  "localRecordingFinalizeVerifyStep": "Verify file",
-  "localRecordingFinalizeRegisterStep": "Add to Recordings",
-  "localRecordingFinalizingBody": "Keep SaveStream open until this finishes. The file is stored on this device.",
-  "localRecordingCompletedTitle": "Recording saved",
-  "localRecordingCompletedMeta": "{duration} · {size} · Stored on this device",
-  "@localRecordingCompletedMeta": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecordingOpenAction": "Open recording",
-  "localRecordingHomeAction": "Back to Home",
-  "localRecordingCleanStorageAction": "Clean up old recordings",
-  "localRecoveryTitle": "Recover recording",
-  "localRecoveryInterruptedTitle": "Recording was interrupted",
-  "localRecoveryInterruptedAndroidBody": "Android stopped SaveStream at {time}, possibly because of battery saving. The recorded part can still be recovered.",
-  "@localRecoveryInterruptedAndroidBody": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecoveryInterruptedIosBody": "iOS stopped SaveStream at {time} after the app left the foreground. The recorded part can still be recovered.",
-  "@localRecoveryInterruptedIosBody": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecoveryOfflineTitle": "Recovery stays on this device",
-  "localRecoveryOfflineBody": "Recovery does not need the internet and does not use Free recording minutes.",
-  "localRecoveryRecoveringBody": "Keep SaveStream open while it repairs and verifies the local file. No percentage is estimated.",
-  "localRecoveryRecoverAction": "Recover",
-  "localRecoveryCandidateMeta": "Started {time} · {duration} recorded · Local",
-  "@localRecoveryCandidateMeta": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      },
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecoveryRecoveringTitle": "Recovering recording",
-  "localRecoveryFindStep": "Find temporary file",
-  "localRecoveryRepairStep": "Repair file tail",
-  "localRecoveryVerifyStep": "Verify duration",
-  "localRecoveryRegisterStep": "Add to Recordings",
-  "localRecoveryPartialTitle": "Partially recovered",
-  "localRecoveryRecoveredTitle": "Recording recovered",
-  "localRecoveryKeptDuration": "Kept {duration} of recorded media.",
-  "@localRecoveryKeptDuration": {
-    "placeholders": {
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
-  "localRecoveryAndroidAdviceTitle": "Reduce interruptions on Android",
-  "localRecoveryAndroidAdviceBody": "Battery optimization can stop Local recording. Allow SaveStream to run without restriction to reduce interruptions.",
-  "localRecoveryAndroidGuideAction": "View Android recording guide",
-  "localRecoveryIosAdviceTitle": "Next time, keep SaveStream open",
-  "localRecoveryIosAdviceBody": "iOS can stop Local recording when SaveStream leaves the foreground. Cloud recording does not depend on the phone staying open.",
-  "localRecoveryViewProAction": "View cloud options",
-  "localRecoveryFailedTitle": "Could not recover recording",
-  "localRecoveryFailedAndroidBody": "The temporary file is damaged or no longer available after Android stopped SaveStream.",
-  "localRecoveryFailedIosBody": "The temporary file does not contain enough readable data after iOS stopped SaveStream.",
-  "localRecoveryDeleteTempAction": "Delete temporary file",
-  "localRecoveryNoneTitle": "No interrupted recording found",
-  "localRecoveryNoneBody": "There is no temporary Local recording waiting for recovery.",
-  "homeRecoveryAvailableBody": "{name} · {duration} recorded can be recovered.",
-  "@homeRecoveryAvailableBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "duration": {
-        "type": "String"
-      }
-    }
-  },
   "proManualRecordTitle": "Record {name}",
   "@proManualRecordTitle": {
     "placeholders": {
@@ -1294,10 +644,6 @@
       }
     }
   },
-  "proManualRecordLocalTitle": "Local · on this device",
-  "proManualRecordLocalUnlimitedBody": "Does not use cloud hours. Local recording is unlimited for this account.",
-  "proManualRecordLocalMeteredBody": "Does not use cloud hours. Local recording limits come from your account settings.",
-  "proManualRecordLocalDisabledBody": "Local recording is currently disabled for this account.",
   "proManualRecordCloudTitle": "Cloud · on SaveStream servers",
   "proManualRecordCloudBody": "Uses cloud hours. {remaining} available. Your phone does not need to stay online.",
   "@proManualRecordCloudBody": {
@@ -1308,7 +654,6 @@
     }
   },
   "proManualRecordCloudEmptyBody": "No cloud hours are available.",
-  "proManualRecordLocalAction": "Record Local",
   "proManualRecordCloudAction": "Record Cloud · use cloud hours",
   "cloudRecordingServerBody": "SaveStream is recording on the server. Your phone does not need to stay online.",
   "cloudRecordingProcessingTitle": "Processing on server",
@@ -1340,238 +685,25 @@
       }
     }
   },
-  "homeRecordingRemaining": "{remaining} remaining",
-  "@homeRecordingRemaining": {
-    "placeholders": {
-      "remaining": {
-        "type": "String"
-      }
-    }
-  },
-  "homeFinalizingTitle": "Finishing {name}",
-  "@homeFinalizingTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "homeFinalizingStep": "Step {current}/{total} · {label}",
-  "@homeFinalizingStep": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      },
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "homeSecondSlotOpenBody": "Local slot #2 is open until {time}.",
-  "@homeSecondSlotOpenBody": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDailyRecordingExhaustedTitle": "Free recording and rewarded ads are used up today",
-  "homeDailyRecordingExhaustedBody": "0 / {daily} Free minutes · {used}/{cap} rewarded ads. Resets in {reset}.",
-  "@homeDailyRecordingExhaustedBody": {
-    "placeholders": {
-      "daily": {
-        "type": "int"
-      },
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      },
-      "reset": {
-        "type": "String"
-      }
-    }
-  },
-  "doneAction": "Done",
-  "nativeRecordingActiveBody": "{name} · {elapsed} · Local · {remaining} Free remaining",
-  "@nativeRecordingActiveBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      },
-      "remaining": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingActiveUnlimitedBody": "{name} · {elapsed} · Local",
-  "@nativeRecordingActiveUnlimitedBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "elapsed": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingReconnectTitle": "Reconnecting · {name}",
-  "@nativeRecordingReconnectTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingReconnectBody": "Connection to the LIVE source was lost. The recorded part is still safe.",
-  "nativeRecordingMinuteWarningTitle": "Less than 1 minute Free · {name}",
-  "@nativeRecordingMinuteWarningTitle": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingMinuteWarningBody": "Open SaveStream to add 10 minutes. Rewarded ads only run inside the app.",
-  "nativeRecordingFinalizingTitle": "Finishing recording",
-  "nativeRecordingFinalizingBody": "{name} · saving on this device",
-  "@nativeRecordingFinalizingBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingSavedTitle": "Recording saved",
-  "nativeRecordingSavedBody": "{name} · {duration} · {size} · stored on this device",
-  "@nativeRecordingSavedBody": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "duration": {
-        "type": "String"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "nativeRecordingInterruptedTitle": "Recording was interrupted",
-  "nativeRecordingInterruptedBody": "Open SaveStream to recover the recorded part.",
-  "androidBackgroundGuideTitle": "Make Local recording more reliable",
-  "androidBatteryOptimizationTitle": "Battery optimization",
-  "androidBatteryOptimizationOn": "On",
-  "androidBatteryOptimizationOff": "Unrestricted",
-  "androidBatteryOptimizationBody": "Android can stop SaveStream while saving battery. Allow SaveStream to run without restriction to reduce interruptions.",
-  "androidBatteryStepOpen": "Open SaveStream battery settings",
-  "androidBatteryStepUnrestricted": "Choose “Unrestricted”",
-  "androidBatteryStepReturn": "Return to SaveStream",
-  "androidOpenBatterySettingsAction": "Open battery settings",
-  "androidOemGuideAction": "View device-specific guidance",
-  "androidOemGuideTitle": "Keep SaveStream running on {device}",
-  "@androidOemGuideTitle": {
-    "placeholders": {
-      "device": {
-        "type": "String"
-      }
-    }
-  },
-  "androidOemGenericBody": "Your Android version may have extra background restrictions. Review the app and battery settings for SaveStream.",
-  "androidOemXiaomiBody": "HyperOS can close SaveStream in the background even while a recording notification is visible.",
-  "androidOemSamsungBody": "Samsung can place apps into sleeping or deep-sleeping lists and interrupt Local recording.",
-  "androidOemOppoBody": "Oppo, Realme, and Vivo can apply additional background and auto-start restrictions.",
-  "androidOemHuaweiBody": "Huawei can manage app launch and background activity aggressively.",
-  "androidOemAutostartStep": "Allow SaveStream to auto-start",
-  "androidOemBatteryStep": "Set battery use to “Unrestricted”",
-  "androidOemRecentAppsStep": "Keep SaveStream available in recent apps",
-  "androidOemSamsungSleepStep": "Remove SaveStream from Sleeping apps",
-  "androidOemAppLaunchStep": "Allow automatic launch and background activity",
-  "androidOpenAppSettingsAction": "Open app settings",
-  "iosRecordingGuideTitle": "Record on iPhone",
-  "iosKeepOpenTitle": "Keep SaveStream open while recording",
-  "iosKeepOpenBody": "iOS can stop Local recording when SaveStream goes into the background.",
-  "iosScreenAwakeTitle": "Keep the screen awake while recording",
-  "iosScreenAwakeBody": "SaveStream keeps the screen awake during an active Local recording. Locking the phone yourself can still interrupt recording.",
-  "iosRecoveryGuideTitle": "Recover after an interruption",
-  "iosRecoveryGuideBody": "When SaveStream opens again, it automatically checks for an interrupted Local recording.",
-  "iosReturnReminderTitle": "Remind me to return to SaveStream",
-  "iosReturnReminderBody": "Schedule a local reminder when SaveStream goes to the background during Local recording.",
-  "iosCloudIndependentTitle": "No need to keep iPhone open",
-  "iosCloudIndependentBody": "Cloud recording runs on SaveStream servers and does not depend on the phone staying online.",
-  "settingsAndroidRecordingTitle": "Background recording",
-  "settingsAndroidRecordingSubtitle": "Battery and device guidance",
-  "settingsIosRecordingTitle": "Record on iPhone",
-  "settingsIosRecordingSubtitle": "Keep-open and recovery guidance",
   "settingsRecordingSectionTitle": "Recording",
   "settingsAutoRecordDefaultTitle": "Auto-record default",
   "settingsCloudRetentionTitle": "Cloud retention",
-  "settingsLocalRecordingTitle": "Local recording",
-  "settingsLocalRecordingUnlimitedValue": "Unlimited on this device",
-  "settingsLocalRecordingAvailableValue": "Available on this device",
-  "settingsLocalRecordingDisabledValue": "Unavailable for this account",
   "settingsRecordingQualityTitle": "Quality",
   "settingsRecordingQualityValue": "Auto / source",
   "settingsAppSectionTitle": "App",
   "settingsPurchasesSectionTitle": "Account & purchases",
-  "settingsTodayLabel": "Today",
-  "settingsDailyUsageValue": "{remaining}/{daily} min · {used}/{cap} ads",
-  "@settingsDailyUsageValue": {
-    "placeholders": {
-      "remaining": {"type": "int"},
-      "daily": {"type": "int"},
-      "used": {"type": "int"},
-      "cap": {"type": "int"}
-    }
-  },
   "upgradeToProAction": "Upgrade to Pro",
-  "recordingSearchHint": "Search by creator",
-  "recordingCrossDeviceValue": "Recorded on {device}",
-  "@recordingCrossDeviceValue": {
-    "placeholders": {
-      "device": {
-        "type": "String"
-      }
-    }
-  },
-  "recordingCrossDeviceUnavailable": "Not available on this device. Playback and sharing are disabled.",
-  "recordingLocalFileMissing": "The local file was moved or deleted. SaveStream cannot play or share it.",
+  "recordingSearchHint": "Search by channel",
   "shareRecordingAction": "Share recording",
-  "deleteLocalRecordingAction": "Delete from this device",
-  "cloudRecordingExpiresValue": "Kept until {date}",
-  "@cloudRecordingExpiresValue": {
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "cloudRecordingExpiringSoon": "This cloud recording expires within 3 days. Download it if you want to keep a local copy.",
   "cloudRecordingExpiredBody": "This cloud recording has expired and is no longer available to play or download.",
   "recordingDownloadedLabel": "Downloaded",
   "recordingDownloadedBody": "Saved on this device. You can play or share the local copy.",
-  "recordingLocalOnlyTitle": "Only on this device",
-  "recordingLocalOnlyBody": "The file is stored on {device}. Uninstalling the app or clearing storage may remove it.",
-  "@recordingLocalOnlyBody": {
-    "placeholders": {"device": {"type": "String"}}
-  },
   "recordingStorageLabel": "Storage",
   "recordingQualityLabel": "Quality",
   "recordingQualitySourceValue": "Automatic / source",
   "recordingStartedByLabel": "Started by",
   "recordingStartedManuallyValue": "You tapped Record now",
   "recordingStartedAutomaticallyValue": "Auto-record when LIVE",
-  "recordingLocalStorageValue": "Local · {device}",
-  "@recordingLocalStorageValue": {
-    "placeholders": {"device": {"type": "String"}}
-  },
   "recordingCloudStorageValue": "Cloud · SaveStream server",
   "recordingCloudRetentionLabel": "Kept until",
   "recordingCloudRetentionValue": "{date} · {days} days left",
@@ -1593,7 +725,6 @@
   "recordingDownloadDeviceAction": "Download to device",
   "recordingDownloadedTitle": "Downloaded to this device",
   "recordingDownloadedChip": "On this device",
-  "recordingLocalCopyLabel": "Local copy",
   "recordingPlayerSpeedTooltip": "Playback speed",
   "recordingDownloadingBytes": "Downloading {done} of {total}",
   "@recordingDownloadingBytes": {
@@ -1607,33 +738,10 @@
     }
   },
   "deleteCloudRecordingAction": "Delete cloud recording",
-  "deleteCloudAndDownloadedAction": "Delete cloud + downloaded copy",
   "usageTitle": "Plan & usage",
   "cloudHoursAvailableTitle": "Cloud hours available",
   "freeUsageTitle": "Free usage today",
-  "freeMinutesToday": "{remaining} / {daily} Free minutes remaining",
-  "@freeMinutesToday": {
-    "placeholders": {
-      "remaining": {
-        "type": "int"
-      },
-      "daily": {
-        "type": "int"
-      }
-    }
-  },
-  "rewardUsageToday": "Rewarded ads {used}/{cap}",
-  "@rewardUsageToday": {
-    "placeholders": {
-      "used": {
-        "type": "int"
-      },
-      "cap": {
-        "type": "int"
-      }
-    }
-  },
-  "watchUsage": "Creators {used}/{limit}",
+  "watchUsage": "Channels {used}/{limit}",
   "@watchUsage": {
     "placeholders": {
       "used": {
@@ -1664,7 +772,7 @@
     }
   },
   "cloudHoursOneTimeTitle": "One-time purchase",
-  "cloudHoursOneTimeBody": "Cloud hours do not expire. Buying hours unlocks cloud auto-recording, up to 20 creators, and removes ads.",
+  "cloudHoursOneTimeBody": "Cloud hours do not expire. Buying hours unlocks cloud auto-recording and up to 20 channels.",
   "restorePurchasesAction": "Restore purchases",
   "purchaseProcessingBody": "Waiting for the store to confirm your purchase.",
   "purchasePendingBody": "Purchase is pending. Cloud access is not granted until the server confirms credit.",
@@ -1674,18 +782,15 @@
   "restoreProcessingBody": "Checking previous purchases…",
   "restoreSuccessBody": "Restore finished.",
   "purchaseContextAutoRecordTitle": "Unlock cloud auto-recording",
-  "purchaseContextAutoRecordBody": "Buy cloud hours so SaveStream can record automatically when a creator goes LIVE.",
-  "purchaseContextWatchLimitTitle": "Follow up to 20 creators",
-  "purchaseContextWatchLimitBody": "Buy cloud hours to raise the creator limit from 3 to 20.",
+  "purchaseContextAutoRecordBody": "Buy cloud hours so SaveStream can record automatically when your channel goes LIVE.",
+  "purchaseContextWatchLimitTitle": "Add up to 20 channels",
+  "purchaseContextWatchLimitBody": "Buy cloud hours to raise the channel limit from 3 to 20.",
   "purchaseContextIosBackgroundTitle": "Record without keeping iPhone open",
   "purchaseContextIosBackgroundBody": "Cloud recording runs on the server, so your iPhone does not need to stay in the foreground.",
   "purchaseContextFreeMinutesTitle": "Keep recording after Free minutes run out",
   "purchaseContextFreeMinutesBody": "Buy cloud hours for server recording instead of waiting for Free minutes to reset.",
-  "purchaseContextRemoveAdsTitle": "Remove ads",
-  "purchaseContextRemoveAdsBody": "Buying cloud hours removes SaveStream ads.",
-  "settingsUsageSubtitle": "Cloud hours, creator limits, and restore purchases",
   "buyMoreCloudHoursAction": "Buy more cloud hours",
-  "notificationCreatorLiveTitle": "Creator goes LIVE",
+  "notificationCreatorLiveTitle": "Channel goes LIVE",
   "notificationRecordingExpiringTitle": "Cloud recording expiring soon",
   "notificationFreeMinutesLowTitle": "Free recording minutes running low",
   "globalUpdateRequiredTitle": "Update required",
@@ -1694,58 +799,13 @@
   "globalMaintenanceBody": "Recording data is safe. Try again after maintenance is complete.",
   "notificationPermissionTitle": "Notification permission",
   "notificationPermissionGrantedTitle": "Notifications are enabled",
-  "notificationPermissionGrantedBody": "SaveStream can alert you about LIVE creators and recording events.",
+  "notificationPermissionGrantedBody": "SaveStream can alert you about LIVE channels and recording events.",
   "notificationPermissionDeniedTitle": "Notifications are turned off",
   "notificationPermissionDeniedBody": "Enable notifications in system settings to receive alerts.",
-  "notificationPermissionPromptBody": "Allow SaveStream to send notifications for followed creators and recording events.",
+  "notificationPermissionPromptBody": "Allow SaveStream to send notifications for your channels and recording events.",
   "notificationPermissionEnableAction": "Enable notifications",
-  "deviceStorageTitle": "Device storage",
-  "deviceStorageSubtitle": "Local recording storage on this device",
-  "deviceStorageFreeLabel": "Free space",
-  "deviceStorageLocalLabel": "Local recordings",
-  "deviceStorageLocalValue": "{count} recordings · {size}",
-  "@deviceStorageLocalValue": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "deviceStorageScopeTitle": "Local files only",
-  "deviceStorageScopeBody": "Cloud recordings are not included in device storage usage.",
   "settingsPlanSectionTitle": "Plan & usage",
-  "settingsPlanUnknownTitle": "Plan unavailable",
-  "settingsPlanUnknownBody": "Open Plan & Usage to try again.",
   "settingsPlanProTitle": "SaveStream Pro",
-  "settingsPlanProBody": "{hours} cloud hours remaining · up to {watches} creators",
-  "@settingsPlanProBody": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      },
-      "watches": {
-        "type": "int"
-      }
-    }
-  },
-  "settingsPlanFreeTitle": "Free",
-  "settingsPlanFreeBody": "{minutes} Free minutes remaining · {watchCount}/{watchLimit} creators",
-  "@settingsPlanFreeBody": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      },
-      "watchCount": {
-        "type": "int"
-      },
-      "watchLimit": {
-        "type": "int"
-      }
-    }
-  },
   "securityAccountTitle": "Security & account",
   "securityAccountSubtitle": "Email, password, devices, logout and deletion",
   "securityEmailSubtitle": "View your account email",
@@ -1757,14 +817,9 @@
   "deviceSignedOutToast": "Device signed out",
   "otherDevicesSignedOutToast": "Other devices signed out",
   "logoutConfirmTitle": "Sign out of SaveStream?",
-  "logoutConfirmBody": "Local recordings stay on this device. Cloud recordings and purchased hours are not affected.",
-  "logoutLocalRecordingWarning": "A Local recording is running. SaveStream must stop and save it before signing out. Cloud recording continues on the server.",
-  "logoutStopSaveAction": "Stop, save and sign out",
-  "logoutFailedBody": "Could not safely finish sign out. Your Local recording was not discarded.",
+  "logoutConfirmBody": "Cloud recordings and purchased hours are not affected.",
+  "logoutFailedBody": "Could not safely finish sign out. Try again.",
   "helpTitle": "Help",
-  "helpLocalCloudQuestion": "How are Local and Cloud recording different?",
-  "helpBackgroundQuestion": "Why can Local recording stop when the screen is locked?",
-  "helpFreeMinutesQuestion": "How are Free recording minutes counted?",
   "helpCloudHoursQuestion": "Do purchased cloud hours expire?",
   "reportIssueTitle": "Report a problem",
   "reportIssuePrompt": "What happened?",
@@ -1793,8 +848,7 @@
       }
     }
   },
-  "deleteAccountLocalFilesItem": "Local recordings stay on this device until you delete the app or the files.",
-  "deleteAccountRecordingBlocked": "Stop all active recordings before deleting your account.",
+  "deleteAccountLocalFilesItem": "Recordings you downloaded stay on this device until you delete the app or the files.",
   "deleteAccountPermanentTitle": "Confirm permanent deletion",
   "deleteAccountPermanentBody": "This cannot be undone.",
   "deleteAccountUnderstandCheck": "I understand that Cloud recordings, Watch List and purchased cloud hours will be permanently deleted.",
@@ -1803,50 +857,16 @@
   "globalReconnectedToast": "Back online",
   "sessionExpiredTitle": "Session expired",
   "sessionExpiredBody": "Sign in again to continue using account features.",
-  "sessionExpiredRecordingBody": "Your Local recording is still running and will continue saving on this device. Sign in again to renew quota and sync.",
-  "sessionExpiredRecordingSafeBody": "SaveStream will not discard recorded segments while you sign in again.",
   "signInAgainAction": "Sign in again",
-  "deviceStorageCleanupTitle": "Cleanup",
-  "deviceStorageDeleteOldTitle": "Delete Local recordings older than 30 days",
-  "deviceStorageDeleteOldSubtitle": "Only removes Local files from this device",
-  "deviceStorageDeleteOldBody": "Delete {count} Local recordings and free {size}?",
-  "@deviceStorageDeleteOldBody": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "size": {
-        "type": "String"
-      }
-    }
-  },
-  "deviceStorageCleanupLockedBody": "Unavailable while a Local recording is running",
-  "deviceStorageNothingToCleanToast": "No old Local recordings to delete",
-  "deviceStorageCleanedToast": "Old Local recordings deleted",
-  "globalOpenLocalRecordingsAction": "Open Local recordings",
-  "globalOpenStoreAction": "Open app store",
   "signedDeviceIphoneTitle": "iPhone 15",
   "signedDeviceWebTitle": "Chrome on macOS",
   "signedDeviceWebDetail": "Web · 2 hours ago",
   "signedDeviceAndroidTitle": "Pixel 8",
   "signedDeviceAndroidDetail": "Android · 5 days ago",
-  "deleteAction": "Delete",
-  "notificationMarketingTitle": "Promotions and product news",
   "languageSystem": "Follow system",
-  "logoutCloudRecordingWarning": "Cloud recording is running. It will continue on the server after you sign out.",
-  "logoutLocalAndCloudRecordingWarning": "A Local recording will be stopped and saved before sign-out. Cloud recording will continue on the server.",
-  "deleteAccountPasswordLabel": "Password",
-  "sessionExpiredReloginFailed": "Could not sign in. Check your credentials and try again.",
-  "adConsentTitle": "Choose how ads work",
-  "adConsentBody": "SaveStream Free uses ads to support Local recording. Before the system permission prompt, review how consent affects ad personalization.",
-  "adConsentPrivacyTitle": "Your choice does not affect recording",
-  "adConsentPrivacyBody": "Declining personalized ads does not disable Local recording or remove your saved files.",
-  "adConsentContinueAction": "Continue to system choice",
   "cloudHoursExhaustedTitle": "Cloud hours used up",
-  "cloudHoursExhaustedBody": "Cloud auto-recording is paused until you buy more hours. Your creators stay followed and auto-record resumes when cloud hours are available again.",
+  "cloudHoursExhaustedBody": "Cloud auto-recording is paused until you buy more hours. Your channels stay added and auto-record resumes when cloud hours are available again.",
   "cloudHoursExhaustedRecordingBody": "No cloud hours remain. The active cloud recording will stop safely when the server reaches the available limit. Buy more hours to resume auto-recording.",
   "autoRecordPausedNoCloudHoursLabel": "Auto-record paused · no cloud hours",
-  "autoRecordPausedNoCloudHoursBody": "This creator stays followed. Auto-record turns back on automatically after more cloud hours are credited.",
-  "foreignLocalRecordingsTitle": "Local recordings from another account",
-  "foreignLocalRecordingsBody": "This device still contains Local recording files owned by another SaveStream account. They stay isolated and are not imported or reassigned to this account."
+  "autoRecordPausedNoCloudHoursBody": "This channel stays added. Auto-record turns back on automatically after more cloud hours are credited."
 }

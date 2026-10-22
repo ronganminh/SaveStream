@@ -15,7 +15,6 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		C70000000000000000000005 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = C70000000000000000000004 /* InfoPlist.strings */; };
-		C70000000000000000000007 /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C70000000000000000000006 /* AppTrackingTransparency.framework */; };
 		DB99EA5DCDE148E6BA1EB1CF /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7EF92FA82D1F6CBEF7716CEC /* Pods_Runner.framework */; };
 		F10000000000000000000001 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000002 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
@@ -53,7 +52,6 @@
 		A1CB40CDA5C7C2710D1EA94D /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		C70000000000000000000002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		C70000000000000000000003 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		C70000000000000000000006 /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
 		E83A898C83A4BB766EC465C7 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
 		F10000000000000000000002 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -63,7 +61,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C70000000000000000000007 /* AppTrackingTransparency.framework in Frameworks */,
 				DB99EA5DCDE148E6BA1EB1CF /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -141,7 +138,6 @@
 		CF3B75C9A7D2FA2A4C99F110 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				C70000000000000000000006 /* AppTrackingTransparency.framework */,
 				7EF92FA82D1F6CBEF7716CEC /* Pods_Runner.framework */,
 			);
 			name = Frameworks;

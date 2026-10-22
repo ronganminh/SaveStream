@@ -119,6 +119,8 @@ import {
   AppShell,
   ChannelCard,
   ChannelGridCard,
+  ChannelVerificationBadge,
+  ChannelVerificationNotice,
   ChannelLimitMeter,
   ChannelRow,
   ConfirmDeleteDialog,
@@ -150,6 +152,7 @@ import {
 } from "@/components/app-components";
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
+import { ChannelVerificationCard } from "@/components/app/channel-verification";
 import { cn } from "@/lib/utils";
 import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { usePreferences, type Language } from "@/lib/preferences";
@@ -2418,6 +2421,8 @@ function ProductionOverviewPage() {
           }
         />
 
+        <ChannelVerificationNotice channels={overviewChannels} />
+
         {showChecklist && (
           <OverviewChecklist
             emailVerified={user?.email_verified ?? true}
@@ -2680,6 +2685,7 @@ function ProductionOverviewPage() {
                                 <span className="text-xs text-muted-foreground">
                                   {channel.name}
                                 </span>
+                                <ChannelVerificationBadge channel={channel} className="mt-1" />
                               </span>
                             </Link>
                           </td>
@@ -2964,6 +2970,7 @@ export function ChannelsPage() {
         </>
       ) : (
         <div className="flex flex-col gap-5">
+          <ChannelVerificationNotice channels={channelItems} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-2">
               {channelFilters.map((f) => {
@@ -7196,6 +7203,15 @@ function ChannelDetail({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
+        {!channel.ownerVerifiedAt &&
+          (channel.verificationRequired || channel.verificationDueAt) && (
+            <ChannelVerificationCard
+              watchId={channel.id}
+              handle={channel.handle}
+              dueAt={channel.verificationRequired ? null : channel.verificationDueAt}
+              startOpen={channel.verificationRequired}
+            />
+          )}
 
         {banner}
 

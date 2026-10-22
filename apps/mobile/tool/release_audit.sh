@@ -53,10 +53,7 @@ grep -q 'fill="#4F46E5"' assets/branding/savestream_mark.svg ||
 grep -q "cairosvg.svg2png" tool/generate_brand_assets.py ||
   fail "official SVG rasterizer is missing"
 
-grep -q "billingPurchasesUnavailableTitle" lib/l10n/app_en.arb ||
-  fail "billing-disabled UX copy is missing"
-
-for plugin in connectivity_plus path_provider permission_handler device_info_plus package_info_plus share_plus wakelock_plus video_player in_app_purchase google_mobile_ads; do
+for plugin in connectivity_plus path_provider device_info_plus package_info_plus share_plus video_player in_app_purchase; do
   grep -q "^  ${plugin}:" pubspec.yaml || fail "missing C0 plugin ${plugin}"
 done
 
@@ -64,40 +61,23 @@ grep -q "minSdk = 24" android/app/build.gradle.kts ||
   fail "Android minSdk must be 24 for the C0 plugin set"
 grep -q "min_sdk_android: 24" pubspec.yaml ||
   fail "launcher icon minSdk must match Android minSdk"
-grep -q "SAVESTREAM_ADMOB_ANDROID_APP_ID" android/app/build.gradle.kts ||
-  fail "Android AdMob build variable is missing"
-grep -q "ca-app-pub-3940256099942544~3347511713" android/app/build.gradle.kts ||
-  fail "Android AdMob test app ID fallback is missing"
-grep -q 'android:name="com.google.android.gms.ads.APPLICATION_ID"' android/app/src/main/AndroidManifest.xml ||
-  fail "Android AdMob application metadata is missing"
-grep -q "GADApplicationIdentifier" ios/Runner/Info.plist ||
-  fail "iOS AdMob application metadata is missing"
-grep -q "ADMOB_APP_ID" ios/Runner/Info.plist ||
-  fail "iOS AdMob build variable is missing"
-grep -q "ca-app-pub-3940256099942544~1458002511" ios/Flutter/Debug.xcconfig ||
-  fail "iOS AdMob test app ID fallback is missing"
-grep -q "ADMOB_BANNER_HOME_ANDROID" lib/platform/google_mobile_ads_service.dart ||
-  fail "Android banner dart-define is missing"
-grep -q "ADMOB_REWARDED_ANDROID" lib/platform/google_mobile_ads_service.dart ||
-  fail "Android rewarded dart-define is missing"
-grep -q "ADMOB_BANNER_HOME_IOS" lib/platform/google_mobile_ads_service.dart ||
-  fail "iOS banner dart-define is missing"
-grep -q "ADMOB_REWARDED_IOS" lib/platform/google_mobile_ads_service.dart ||
-  fail "iOS rewarded dart-define is missing"
-grep -q "ServerSideVerificationOptions" lib/platform/google_mobile_ads_service.dart ||
-  fail "rewarded-ad SSV wiring is missing"
-grep -q "requestConsentInfoUpdate" lib/platform/google_mobile_ads_service.dart ||
-  fail "UMP consent refresh is missing"
-grep -q "canRequestAds" lib/platform/google_mobile_ads_service.dart ||
-  fail "UMP canRequestAds gate is missing"
-grep -q "NSUserTrackingUsageDescription" ios/Runner/Info.plist ||
-  fail "iOS ATT usage description is missing"
-grep -q "NSUserTrackingUsageDescription" ios/Runner/en.lproj/InfoPlist.strings ||
-  fail "English ATT localization is missing"
-grep -q "NSUserTrackingUsageDescription" ios/Runner/vi.lproj/InfoPlist.strings ||
-  fail "Vietnamese ATT localization is missing"
-grep -q "AppTrackingTransparency.framework" ios/Runner.xcodeproj/project.pbxproj ||
-  fail "iOS AppTrackingTransparency framework is missing"
+# v1.x cleanup build: no ads SDK, ad IDs or tracking prompt, and no on-device
+# recorder service. Ads return in v2 with IDs supplied by build config.
+if grep -q "^  google_mobile_ads:" pubspec.yaml; then
+  fail "google_mobile_ads must not ship in this build"
+fi
+if grep -rqs "ca-app-pub-" android/app/build.gradle.kts android/app/src/main ios/Runner ios/Flutter lib; then
+  fail "hardcoded AdMob IDs must not ship in this build"
+fi
+if grep -qs "com.google.android.gms.ads.APPLICATION_ID" android/app/src/main/AndroidManifest.xml; then
+  fail "AdMob application metadata must not ship in this build"
+fi
+if grep -qs "NSUserTrackingUsageDescription" ios/Runner/Info.plist; then
+  fail "iOS ATT usage description must not ship without ads"
+fi
+if grep -qs "LocalRecordingService" android/app/src/main/AndroidManifest.xml; then
+  fail "on-device recording service must not ship in this build"
+fi
 
 for plugin in firebase_core firebase_messaging; do
   grep -q "^  ${plugin}:" pubspec.yaml || fail "missing C8 plugin ${plugin}"
@@ -115,8 +95,8 @@ git check-ignore -q android/app/google-services.json ||
 git check-ignore -q ios/Runner/GoogleService-Info.plist ||
   fail "GoogleService-Info.plist must stay outside Git"
 
-grep -q '^version: 2\.0\.0[+][0-9][0-9]*$' pubspec.yaml ||
-  fail "C9 app version must be 2.0.0+<build>"
+grep -q '^version: 2\.0\.[0-9][0-9]*[+][0-9][0-9]*$' pubspec.yaml ||
+  fail "C9 app version must be 2.0.x+<build>"
 grep -q 'isMinifyEnabled = true' android/app/build.gradle.kts ||
   fail "Android release R8 minification must be enabled"
 grep -q 'isShrinkResources = true' android/app/build.gradle.kts ||
@@ -128,7 +108,7 @@ test -f android/app/proguard-rules.pro ||
 test -f ../../docs/v2/RELEASE_CHECKLIST_MOBILE.md ||
   fail "mobile owner release checklist is missing"
 
-for forbidden_permission in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION READ_CONTACTS WRITE_CONTACTS CAMERA RECORD_AUDIO READ_MEDIA_IMAGES READ_MEDIA_VIDEO READ_EXTERNAL_STORAGE WRITE_EXTERNAL_STORAGE; do
+for forbidden_permission in FOREGROUND_SERVICE ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION READ_CONTACTS WRITE_CONTACTS CAMERA RECORD_AUDIO READ_MEDIA_IMAGES READ_MEDIA_VIDEO READ_EXTERNAL_STORAGE WRITE_EXTERNAL_STORAGE; do
   if grep -q "android.permission.${forbidden_permission}" android/app/src/main/AndroidManifest.xml; then
     fail "unexpected Android permission ${forbidden_permission}"
   fi

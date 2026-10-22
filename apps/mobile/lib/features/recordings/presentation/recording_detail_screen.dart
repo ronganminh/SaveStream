@@ -18,7 +18,6 @@ import '../../entitlement/presentation/entitlement_providers.dart';
 import '../domain/models/recording_summary.dart';
 import 'controllers/recording_file_providers.dart';
 import 'controllers/recording_providers.dart';
-import 'models/recording_library_item.dart';
 import 'recording_detail_components.dart';
 import 'recording_thumbnail.dart';
 import 'recording_ui_helpers.dart';
@@ -215,7 +214,6 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                       aspectRatio: 16 / 9,
                       child: RecordingThumbnail(
                         recordingId: value.id,
-                        storage: RecordingLibraryStorage.cloud,
                         enabled: value.artifactReady,
                         borderRadius: SsRadii.lg,
                         onTap: () {
@@ -224,7 +222,6 @@ class _RecordingDetailScreenState extends ConsumerState<RecordingDetailScreen>
                                 AppRoutes.recordingPlayer(value.id),
                               ).replace(
                                 queryParameters: <String, String>{
-                                  'source': 'cloud',
                                   'title': value.creatorDisplayName,
                                   'duration': value.durationSeconds.toString(),
                                   if (value.startedAt != null)
@@ -875,7 +872,6 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
           final Uri uri =
               Uri.parse(AppRoutes.recordingPlayer(widget.recording.id)).replace(
                 queryParameters: <String, String>{
-                  'source': local == null ? 'cloud' : 'local',
                   'title': widget.recording.creatorDisplayName,
                   'duration': widget.recording.durationSeconds.toString(),
                   if (widget.recording.startedAt != null)

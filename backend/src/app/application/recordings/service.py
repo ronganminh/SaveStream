@@ -217,6 +217,7 @@ class RecordingService:
         payload: CreateRecordingRequest,
         *,
         idempotency_key: str,
+        enforce_channel_verification: bool = True,
     ) -> Recording:
         try:
             uuid.UUID(idempotency_key)
@@ -275,6 +276,13 @@ class RecordingService:
             source_type=source.type,
             source_value=source.value,
         )
+        if enforce_channel_verification:
+            # Imported here: the watches package imports this module.
+            from app.application.watches.verification import ensure_recording_source_verified
+
+            await ensure_recording_source_verified(
+                self.session, self.settings, user_id=user_id, source=source
+            )
         active_key = dedupe_key(user_id, source)
         active = await self.session.scalar(
             select(Recording).where(

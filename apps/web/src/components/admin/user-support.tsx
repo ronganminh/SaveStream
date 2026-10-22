@@ -1374,15 +1374,48 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                     <td className="px-4 py-3">{item.live_status}</td>
                     <td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td>
                     <td className="px-4 py-3">
-                      {item.owner_attested_at ? (
-                        <span title={`Confirmed ${dateTime(item.owner_attested_at)}`}>
+                      <div className="flex flex-col items-start gap-1">
+                        {item.owner_verified_at ? (
                           <AdminBadge tone="success">
-                            Confirmed {dateTime(item.owner_attested_at)}
+                            Verified {dateTime(item.owner_verified_at)}
                           </AdminBadge>
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Not confirmed</span>
-                      )}
+                        ) : (
+                          <>
+                            <AdminBadge tone="warning">
+                              {item.verification_required
+                                ? "Not verified · not recording"
+                                : item.verification_due_at
+                                  ? `Verify by ${dateTime(item.verification_due_at)}`
+                                  : "Not verified"}
+                            </AdminBadge>
+                            <button
+                              type="button"
+                              className="text-xs font-bold text-accent-ink hover:underline"
+                              onClick={() =>
+                                setReasonRequest({
+                                  title: "Mark this channel as verified?",
+                                  description:
+                                    "Only do this when you have confirmed the user owns or manages the channel (e.g. a partner). It is recorded in the audit log.",
+                                  audit: "watch.owner_verified",
+                                  confirmLabel: "Mark verified",
+                                  run: async (reason) => {
+                                    await adminFoundationApi.verifyWatchOwner(item.id, reason);
+                                    toast.success("Channel marked as verified");
+                                    await load();
+                                  },
+                                })
+                              }
+                            >
+                              Mark verified
+                            </button>
+                          </>
+                        )}
+                        {item.owner_attested_at ? (
+                          <span className="text-xs text-muted-foreground">
+                            Self-confirmed {dateTime(item.owner_attested_at)}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{dateTime(item.created_at)}</td>
                   </tr>

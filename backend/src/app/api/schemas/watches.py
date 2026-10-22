@@ -47,6 +47,26 @@ class WatchResponse(StrictModel):
     updated_at: datetime
     # Set when the user confirmed they own, manage or may record the channel.
     owner_attested_at: datetime | None = None
+    # Set once the owner proved the channel is theirs (code in the bio).
+    owner_verified_at: datetime | None = None
+    # Recording needs verification from this time (a grace period for
+    # channels added before verification existed).
+    verification_due_at: datetime | None = None
+    # True when this channel can't be recorded until it is verified.
+    verification_required: bool = False
+
+
+class ChannelVerificationResponse(StrictModel):
+    watch_id: str
+    verified: bool
+    owner_verified_at: datetime | None
+    verification_due_at: datetime | None
+    verification_required: bool
+    code: str | None
+    expires_at: datetime | None
+    checks_left: int
+    result: Literal["verified", "code_not_found", "retry_later"] | None = None
+    retry_after_seconds: int | None = None
 
 
 class CreateWatchRequest(StrictModel):
