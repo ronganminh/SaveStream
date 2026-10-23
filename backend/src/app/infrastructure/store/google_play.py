@@ -4,6 +4,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any, Callable, Mapping
 
@@ -20,6 +21,8 @@ from .base import (
     VerifiedStorePurchase,
     VerifiedStoreRefund,
 )
+
+logger = logging.getLogger(__name__)
 
 _ANDROID_PUBLISHER_SCOPE = "https://www.googleapis.com/auth/androidpublisher"
 # purchases.products purchaseState
@@ -119,6 +122,15 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             f"{product_id}/tokens/{receipt}"
         )
         response = await self._request("GET", path)
+        if response.status_code >= 400:
+            # 401/403: the service account can't read purchases (not invited
+            # in Play Console, or lacks the financial-data permission).
+            logger.warning(
+                "Google Play purchase lookup failed product=%s status=%s: %s",
+                product_id,
+                response.status_code,
+                response.text[:300].replace(receipt, "<token>"),
+            )
         # Google returns 400 for malformed/unknown purchase tokens and may
         # return 404 or 410 for tokens that no longer resolve.  All three are
         # terminal receipt failures; treating 400 as a transient 503 makes the
