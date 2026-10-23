@@ -189,6 +189,112 @@ sql "select key, value from admin_runtime_settings where key like 'payment%' ord
 sql "select provider, status, count(*) as orders, max(updated_at) as latest
      from payment_orders group by provider, status order by provider, status;"
 
+section "Google Play billing (read-only; purchase tokens and emails are not printed)"
+sql "select code, active, amount_minor, currency,
+            coalesce(google_play_product_id, '(empty)') as google_play_product_id
+     from credit_packages order by display_order, code;"
+echo "-- Google Play orders, last ${DAYS} day(s)"
+sql "select created_at, left(user_id::text, 8) as user_id, status, credits,
+            coalesce(store_order_id, '-') as order_id, store_token is not null as has_token,
+            coalesce(failure_code, '-') as failure_code, left(coalesce(failure_message, ''), 160) as failure
+     from payment_orders
+     where provider = 'google_play' and created_at >= now() - interval '${DAYS} days'
+     order by created_at;"
+echo "-- Google Play payment events (RTDN, refunds), last ${DAYS} day(s)"
+sql "select received_at, event_type, coalesce(payload->>'product_id', '-') as product,
+            coalesce(processing_error, '-') as processing_error
+     from payment_events
+     where provider = 'google_play' and received_at >= now() - interval '${DAYS} days'
+     order by received_at;"
+compose exec -T -e DAYS="$DAYS" api python - <<'PY' || echo "Google Play check could not run"
+# Read-only Android Publisher calls (GET only): can the service account sign
+# in and read the products, and what Play says about each purchase token the
+# server has seen. Nothing is acknowledged, consumed or written.
+import asyncio
+import hashlib
+import json
+import os
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select
+
+from app.infrastructure.db.billing_models import CreditPackage, PaymentEvent, PaymentOrder
+from app.infrastructure.db.session import Database
+from app.settings import get_app_settings
+
+s = get_app_settings()
+print(f"store_purchase_provider={s.store_purchase_provider} package={s.google_play_package_name or '(empty)'}"
+      f" service_account={'set' if s.google_play_service_account_json else 'MISSING'}"
+      f" rtdn_audience={'set' if s.google_play_rtdn_audience else 'MISSING'}"
+      f" require_account_id={s.google_play_require_account_id}")
+
+
+def short(token: str) -> str:
+    return "sha256:" + hashlib.sha256(token.encode()).hexdigest()[:12]
+
+
+async def main() -> None:
+    if not s.google_play_service_account_json:
+        return
+    from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
+
+    verifier = GooglePlayReceiptVerifier(s)
+    app = f"/androidpublisher/v3/applications/{s.google_play_package_name}"
+    try:
+        await verifier._access_token()
+        email = json.loads(s.google_play_service_account_json).get("client_email", "?")
+        print(f"service_account_oauth=ok ({email})")
+    except Exception as exc:  # noqa: BLE001
+        print(f"service_account_oauth=FAILED {type(exc).__name__}")
+        return
+    database = Database(s.database_url)
+    since = datetime.now(timezone.utc) - timedelta(days=int(os.environ.get("DAYS", "7")))
+    try:
+        async with database.session() as session:
+            packages = (await session.scalars(select(CreditPackage))).all()
+            for package in packages:
+                if package.google_play_product_id:
+                    r = await verifier._request("GET", f"{app}/inappproducts/{package.google_play_product_id}")
+                    print(f"product {package.google_play_product_id}: HTTP {r.status_code}"
+                          f" {r.text[:160] if r.status_code != 200 else ''}")
+            tokens = []
+            orders = (await session.scalars(select(PaymentOrder).where(
+                PaymentOrder.provider == "google_play", PaymentOrder.store_token.is_not(None),
+                PaymentOrder.created_at >= since))).all()
+            for order in orders:
+                package = await session.get(CreditPackage, order.package_id)
+                tokens.append(("order", package.google_play_product_id if package else "", order.store_token))
+            events = (await session.scalars(select(PaymentEvent).where(
+                PaymentEvent.provider == "google_play", PaymentEvent.event_type == "purchase.unclaimed",
+                PaymentEvent.received_at >= since))).all()
+            for event in events:
+                note = (event.payload or {}).get("notification") or {}
+                one_time = note.get("oneTimeProductNotification") or {}
+                tokens.append(("rtdn-unclaimed", str(one_time.get("sku") or ""),
+                               str(one_time.get("purchaseToken") or "")))
+            for source, product, token in tokens:
+                if not (product and token):
+                    continue
+                r = await verifier._request("GET", f"{app}/purchases/products/{product}/tokens/{token}")
+                body = r.json() if r.status_code == 200 else {}
+                account = str(body.get("obfuscatedExternalAccountId") or "")
+                print(f"{source} {product} {short(token)}: HTTP {r.status_code}"
+                      f" order={body.get('orderId', '-')} state={body.get('purchaseState', '-')}"
+                      f" consumed={body.get('consumptionState', '-')} acked={body.get('acknowledgementState', '-')}"
+                      f" account_ref={account[:12] or '-'} test_purchase={body.get('purchaseType') == 0}"
+                      f" {r.text[:160] if r.status_code != 200 else ''}")
+    finally:
+        await database.close()
+
+
+asyncio.run(main())
+PY
+echo "-- API requests to store purchases / Google Play webhook, last ${DAYS} day(s) (newest 60)"
+compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 \
+  | grep -E 'store-purchases|webhooks/google|androidpublisher|STORE_RECEIPT|Google Play' \
+  | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+/<email>/g; s/[A-Za-z0-9_.-]{80,}/<token>/g' \
+  | tail -n 60 || echo "(none)"
+
 section "Media links as the API signs them (latest completed recording; links are not printed)"
 compose exec -T api python - <<'PY' || echo "media link check could not run"
 import asyncio
