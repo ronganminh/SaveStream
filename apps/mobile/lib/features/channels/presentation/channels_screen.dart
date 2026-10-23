@@ -327,6 +327,7 @@ class ChannelListCard extends ConsumerWidget {
                 name: handle,
                 size: 48,
                 liveRing: state == ChannelState.recording,
+                imageUrl: watch.creatorAvatarUrl,
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -18,6 +18,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
+
+import 'fake_avatars.dart';
 
 const Size artboardSize = Size(390, 844);
 const double screenshotPixelRatio = 2;
@@ -71,6 +74,10 @@ void usePhoneView(WidgetTester tester, {Size size = artboardSize}) {
       const FakeAccessibilityFeatures(disableAnimations: true);
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  // Channel pictures come from local stand-ins (no network in tests).
+  final ImageProvider Function(String) appProvider = SsV2Avatar.imageProvider;
+  SsV2Avatar.imageProvider = fakeAvatarProvider;
+  addTearDown(() => SsV2Avatar.imageProvider = appProvider);
 }
 
 Widget screenshotFrame(Widget child) {
@@ -84,10 +91,27 @@ Future<void> settleForCapture(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
+/// Image decoding is real async work the test clock doesn't run: decode the
+/// in-memory pictures on screen (stand-in avatars) before drawing them.
+Future<void> _decodeLocalImages(WidgetTester tester) async {
+  final List<Element> images = find
+      .byWidgetPredicate((Widget w) => w is Image && w.image is MemoryImage)
+      .evaluate()
+      .toList();
+  if (images.isEmpty) return;
+  await tester.runAsync(() async {
+    for (final Element element in images) {
+      await precacheImage((element.widget as Image).image, element);
+    }
+  });
+  await tester.pump();
+}
+
 Future<void> captureScreen(WidgetTester tester, String name) async {
   expect(tester.takeException(), isNull);
   final String? dir = screenshotDir;
   if (dir == null) return;
+  await _decodeLocalImages(tester);
   final RenderRepaintBoundary boundary = tester.renderObject(
     find.byKey(screenshotBoundaryKey),
   );

@@ -33,6 +33,7 @@ import 'package:savestream_mobile/features/settings/domain/models/user_profile.d
 import 'package:savestream_mobile/features/settings/domain/repositories/notifications_repository.dart';
 import 'package:savestream_mobile/features/settings/domain/repositories/profile_repository.dart';
 
+import 'fake_avatars.dart';
 import 'screenshot_harness.dart';
 
 final DateTime _now = DateTime(2026, 10, 22, 20, 43, 18);
@@ -374,6 +375,12 @@ RecordingSummary _rec(
     watchId: watchId,
     creatorDisplayName: handle,
     creatorUsername: handle,
+    creatorAvatarUrl: switch (handle.replaceFirst('@', '')) {
+      'my_shop_live' => fakeAvatarA,
+      'my_gaming_stream' => fakeAvatarB,
+      'my_cooking_corner' => fakeAvatarC,
+      _ => null,
+    },
     status: status,
     actions: RecordingActions(
       canStop: status == RecordingStatus.recording,

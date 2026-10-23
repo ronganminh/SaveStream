@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/ss_tokens.dart';
@@ -868,7 +869,10 @@ class SsV2StatusChip extends StatelessWidget {
   }
 }
 
-/// Initials avatar with the artboard color pairs and optional LIVE ring.
+/// Channel avatar: the profile picture when [imageUrl] is set (SaveStream's
+/// own cached copy, see the backend avatar cache), over the initials circle
+/// with the artboard color pairs, which stays as placeholder and fallback.
+/// Optional LIVE ring.
 class SsV2Avatar extends StatelessWidget {
   const SsV2Avatar({
     required this.name,
@@ -876,12 +880,21 @@ class SsV2Avatar extends StatelessWidget {
     this.liveRing = false,
     this.fontSize,
     this.brand = false,
+    this.imageUrl,
     super.key,
   });
 
   final String name;
   final double size;
   final bool liveRing;
+
+  /// Profile picture URL; null or empty shows the initials only.
+  final String? imageUrl;
+
+  /// How [imageUrl] is loaded: cached on disk (cached_network_image) in the
+  /// app; tests and screenshots swap in a local image.
+  static ImageProvider Function(String url) imageProvider = (String url) =>
+      CachedNetworkImageProvider(url);
 
   /// The brand (purple) pair instead of one picked from [name] (the
   /// signed-in user's own avatar).
@@ -940,15 +953,40 @@ class SsV2Avatar extends StatelessWidget {
                 ]
               : null,
         ),
-        child: Text(
-          initialsFor(name),
-          style: TextStyle(
-            fontSize: fontSize ?? (size >= 48 ? 17 : 15),
-            fontWeight: FontWeight.w800,
-            color: fg,
+        child: _picture(
+          Text(
+            initialsFor(name),
+            style: TextStyle(
+              fontSize: fontSize ?? (size >= 48 ? 17 : 15),
+              fontWeight: FontWeight.w800,
+              color: fg,
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  /// The picture over the [initials]; the initials show while it loads and
+  /// when it fails.
+  Widget _picture(Widget initials) {
+    final String? url = imageUrl;
+    if (url == null || url.isEmpty) return initials;
+    return Stack(
+      alignment: Alignment.center,
+      children: <Widget>[
+        initials,
+        ClipOval(
+          child: Image(
+            image: imageProvider(url),
+            width: size,
+            height: size,
+            fit: BoxFit.cover,
+            gaplessPlayback: true,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        ),
+      ],
     );
   }
 }

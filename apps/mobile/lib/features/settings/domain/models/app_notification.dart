@@ -32,6 +32,7 @@ class AppNotification {
     this.resourceId,
     this.v2Type,
     this.kind = '',
+    this.avatarUrl,
   });
 
   final String id;
@@ -48,6 +49,10 @@ class AppNotification {
   /// without an enum value still get their own icon and link. Empty when the
   /// notification was built without one; see [effectiveKind].
   final String kind;
+
+  /// Profile picture of the user's own channel this is about (the server's
+  /// cached copy), or null.
+  final String? avatarUrl;
 
   /// [kind], or the wire name of [type] / [v2Type] when [kind] is empty.
   String get effectiveKind {
@@ -83,6 +88,7 @@ class AppNotification {
       resourceId: resourceId,
       v2Type: v2Type,
       kind: kind,
+      avatarUrl: avatarUrl,
     );
   }
 }

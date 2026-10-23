@@ -14,6 +14,7 @@ import 'package:savestream_mobile/core/api/api_error.dart';
 import 'package:savestream_mobile/core/api/api_exception.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
+import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
 import 'package:savestream_mobile/features/channels/domain/models/channel_verification.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/channels/domain/repositories/watch_repository.dart';
@@ -30,6 +31,7 @@ import 'package:savestream_mobile/features/settings/domain/models/user_profile.d
 import 'package:savestream_mobile/features/settings/domain/repositories/notifications_repository.dart';
 import 'package:savestream_mobile/features/settings/domain/repositories/profile_repository.dart';
 
+import 'fake_avatars.dart';
 import 'screenshot_harness.dart';
 
 final DateTime _now = DateTime(2026, 10, 22, 20, 43, 18);
@@ -161,6 +163,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Is this your channel?'), findsOneWidget);
     expect(find.text('My Shop Live'), findsOneWidget);
+    // The account's picture (our cached copy) so the user can confirm it.
+    expect(
+      find.byWidgetPredicate(
+        (Widget w) =>
+            w is SsV2Avatar && w.imageUrl == fakeAvatarA && w.size == 52,
+      ),
+      findsOneWidget,
+    );
 
     // Confirming without the ownership box shows the inline error.
     await tapButton(tester, 'Yes, verify ownership');
@@ -442,6 +452,7 @@ WatchSummary _shop({
     id: 'w-shop',
     creatorDisplayName: 'My Shop Live',
     creatorUsername: 'my_shop_live',
+    creatorAvatarUrl: fakeAvatarA,
     status: status,
     isLive: live,
     autoRecord: verified,
@@ -462,6 +473,7 @@ List<WatchSummary> _listWatches() {
       id: 'w-gaming',
       creatorDisplayName: 'My Gaming Stream',
       creatorUsername: 'my_gaming_stream',
+      creatorAvatarUrl: fakeAvatarB,
       status: WatchStatus.active,
       isLive: false,
       autoRecord: true,
@@ -489,6 +501,7 @@ RecordingSummary _liveRecording() {
     watchId: 'w-shop',
     creatorDisplayName: 'My Shop Live',
     creatorUsername: 'my_shop_live',
+    creatorAvatarUrl: fakeAvatarA,
     status: RecordingStatus.recording,
     actions: const RecordingActions(
       canStop: true,
@@ -506,6 +519,7 @@ RecordingSummary _recording(String id, DateTime started, int seconds) {
     watchId: 'w-shop',
     creatorDisplayName: 'My Shop Live',
     creatorUsername: 'my_shop_live',
+    creatorAvatarUrl: fakeAvatarA,
     status: RecordingStatus.completed,
     actions: const RecordingActions(
       canStop: false,
@@ -601,6 +615,7 @@ class _FakeWatches
       username: command.sourceValue,
       displayName: 'My Shop Live',
       liveStatus: CreatorLiveStatus.offline,
+      avatarUrl: fakeAvatarA,
     );
   }
 
@@ -611,6 +626,7 @@ class _FakeWatches
       id: 'w-new',
       creatorDisplayName: 'My Shop Live',
       creatorUsername: command.sourceValue,
+      creatorAvatarUrl: fakeAvatarA,
       status: WatchStatus.active,
       isLive: false,
       autoRecord: command.autoRecord,

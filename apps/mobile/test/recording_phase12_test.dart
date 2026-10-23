@@ -336,6 +336,34 @@ void main() {
     expect(downloadCalls, 2);
   });
 
+  test('reads the channel picture from creator.avatar_url', () {
+    final RecordingSummary withPicture = RecordingApiModel.fromJson(
+      <String, Object?>{
+        ..._recordingJson(id: 'rec-a'),
+        'creator': <String, Object?>{
+          'platform': 'tiktok',
+          'username': 'ada_live',
+          'display_name': 'Ada Live',
+          'avatar_url': 'https://media.savestream.online/a/0123',
+        },
+      },
+    ).toDomain();
+    expect(
+      withPicture.creatorAvatarUrl,
+      'https://media.savestream.online/a/0123',
+    );
+    expect(
+      withPicture.copyWith(progress: 0.5).creatorAvatarUrl,
+      withPicture.creatorAvatarUrl,
+    );
+    expect(
+      RecordingApiModel.fromJson(
+        _recordingJson(id: 'rec-b'),
+      ).toDomain().creatorAvatarUrl,
+      isNull,
+    );
+  });
+
   test('prefers failure_reason and failure_guidance over error.message', () {
     final AppLocalizations l10n = lookupAppLocalizations(const Locale('en'));
     final RecordingSummary explained = RecordingApiModel.fromJson(

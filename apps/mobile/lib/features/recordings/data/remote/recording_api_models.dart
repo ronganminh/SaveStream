@@ -27,6 +27,7 @@ final class RecordingApiModel {
     this.minutesCharged = 0,
     this.queuePosition,
     this.thumbnailUrl,
+    this.creatorAvatarUrl,
   });
 
   final String id;
@@ -55,6 +56,7 @@ final class RecordingApiModel {
   final int minutesCharged;
   final int? queuePosition;
   final String? thumbnailUrl;
+  final String? creatorAvatarUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -68,6 +70,7 @@ final class RecordingApiModel {
 
     String? creatorUsername;
     String? creatorDisplayName;
+    String? creatorAvatarUrl;
     final Object? rawCreator = map['creator'];
     if (rawCreator != null) {
       final Map<Object?, Object?> creator = _requiredMap(rawCreator, 'creator');
@@ -82,6 +85,10 @@ final class RecordingApiModel {
       creatorDisplayName = _requiredString(
         creator['display_name'],
         'creator.display_name',
+      );
+      creatorAvatarUrl = _optionalHttpUrl(
+        creator['avatar_url'],
+        'creator.avatar_url',
       );
     }
 
@@ -150,6 +157,7 @@ final class RecordingApiModel {
         'queue_position',
       ),
       thumbnailUrl: _optionalHttpUrl(map['thumbnail_url'], 'thumbnail_url'),
+      creatorAvatarUrl: creatorAvatarUrl,
       createdAt: _requiredDateTime(map['created_at'], 'created_at'),
       updatedAt: _requiredDateTime(map['updated_at'], 'updated_at'),
     );
@@ -178,6 +186,7 @@ final class RecordingApiModel {
       minutesCharged: minutesCharged,
       queuePosition: queuePosition,
       thumbnailUrl: thumbnailUrl,
+      creatorAvatarUrl: creatorAvatarUrl,
     );
   }
 }

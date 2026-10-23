@@ -32,6 +32,7 @@ import 'package:savestream_mobile/features/settings/domain/repositories/notifica
 import 'package:savestream_mobile/features/settings/domain/repositories/profile_repository.dart';
 import 'package:savestream_mobile/l10n/l10n.dart';
 
+import 'fake_avatars.dart';
 import 'screenshot_harness.dart';
 
 const String _email = 'alex.morgan@example.com';
@@ -452,6 +453,7 @@ class _HomeFixture {
       id: 'w-shop',
       creatorDisplayName: 'My Shop Live',
       creatorUsername: 'my_shop_live',
+      creatorAvatarUrl: fakeAvatarA,
       status: WatchStatus.active,
       isLive: live,
       autoRecordState: AutoRecordState.active,
@@ -465,6 +467,7 @@ class _HomeFixture {
       id: 'w-gaming',
       creatorDisplayName: 'My Gaming Stream',
       creatorUsername: 'my_gaming_stream',
+      creatorAvatarUrl: fakeAvatarB,
       status: status,
       isLive: false,
       lastLiveAt: DateTime(2026, 10, 20, 21, 0),
@@ -482,6 +485,7 @@ class _HomeFixture {
       watchId: watch.id,
       creatorDisplayName: watch.creatorDisplayName,
       creatorUsername: watch.creatorUsername,
+      creatorAvatarUrl: watch.creatorAvatarUrl,
       status: RecordingStatus.completed,
       actions: const RecordingActions(
         canStop: false,
@@ -528,6 +532,7 @@ class _HomeFixture {
           watchId: shop.id,
           creatorDisplayName: shop.creatorDisplayName,
           creatorUsername: shop.creatorUsername,
+          creatorAvatarUrl: shop.creatorAvatarUrl,
           status: RecordingStatus.recording,
           actions: const RecordingActions(
             canStop: true,

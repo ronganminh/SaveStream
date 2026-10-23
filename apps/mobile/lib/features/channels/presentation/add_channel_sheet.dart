@@ -274,7 +274,12 @@ class _AddChannelSheetState extends ConsumerState<AddChannelSheet> {
       SsV2Card(
         child: Row(
           children: <Widget>[
-            SsV2Avatar(name: handle, size: 52, fontSize: 18),
+            SsV2Avatar(
+              name: handle,
+              size: 52,
+              fontSize: 18,
+              imageUrl: found.avatarUrl,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
