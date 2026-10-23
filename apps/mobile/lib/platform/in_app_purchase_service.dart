@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/billing_client_wrappers.dart';
@@ -86,7 +87,31 @@ final class InAppPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<void> restore() => _client.restorePurchases();
+  Future<List<PurchaseServiceEvent>> unfinishedPurchases() async {
+    if (!Platform.isAndroid) {
+      return const <PurchaseServiceEvent>[];
+    }
+    // queryPurchasesAsync: what the account owns and has not consumed. A pack
+    // is consumed only after the server credited it, so anything here was
+    // paid (or is still pending) but never credited or never finished.
+    final QueryPurchaseDetailsResponse response = await _client
+        .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+        .queryPastPurchases();
+    if (response.error != null) {
+      throw StateError(response.error!.message);
+    }
+    return <PurchaseServiceEvent>[
+      for (final GooglePlayPurchaseDetails purchase in response.pastPurchases)
+        if (purchase.status == PurchaseStatus.purchased ||
+            purchase.status == PurchaseStatus.pending)
+          _eventFor(
+            purchase,
+            purchase.status == PurchaseStatus.pending
+                ? PurchaseEventStatus.pending
+                : PurchaseEventStatus.purchased,
+          ),
+    ];
+  }
 
   @override
   Future<void> completePurchase(String transactionId) async {
@@ -120,47 +145,44 @@ final class InAppPurchaseService implements PurchaseService {
 
   void _handlePurchases(List<PurchaseDetails> purchases) {
     for (final PurchaseDetails purchase in purchases) {
-      final String token = purchase.verificationData.serverVerificationData;
-      final String? orderId = purchase.purchaseID;
-      // Play leaves orderId empty for promo codes; the server then accepts
-      // the purchase token as the transaction id.
-      final String? transactionId = orderId != null && orderId.isNotEmpty
-          ? orderId
-          : (token.isEmpty ? null : token);
-      if (transactionId != null && transactionId.isNotEmpty) {
-        _purchasesByTransaction[transactionId] = purchase;
-      }
-
       final PurchaseEventStatus status = switch (purchase.status) {
         PurchaseStatus.purchased => PurchaseEventStatus.purchased,
         PurchaseStatus.pending => PurchaseEventStatus.pending,
         PurchaseStatus.canceled => PurchaseEventStatus.cancelled,
         PurchaseStatus.error => PurchaseEventStatus.failed,
-        PurchaseStatus.restored => PurchaseEventStatus.restored,
+        // Only restorePurchases() reports this, and the app never calls it
+        // (it uses unfinishedPurchases()).
+        PurchaseStatus.restored => PurchaseEventStatus.purchased,
       };
+      _events.add(_eventFor(purchase, status));
+    }
+  }
 
-      _events.add(
-        PurchaseServiceEvent(
-          productId: purchase.productID,
-          status: status,
-          transactionId: transactionId,
-          receipt: token,
-          errorMessage: purchase.error?.message,
-        ),
-      );
+  /// The event for [purchase]; remembers it for [completePurchase].
+  PurchaseServiceEvent _eventFor(
+    PurchaseDetails purchase,
+    PurchaseEventStatus status,
+  ) {
+    final String token = purchase.verificationData.serverVerificationData;
+    final String? orderId = purchase.purchaseID;
+    // Play leaves orderId empty for promo codes; the server then accepts
+    // the purchase token as the transaction id.
+    final String? transactionId = orderId != null && orderId.isNotEmpty
+        ? orderId
+        : (token.isEmpty ? null : token);
+    if (transactionId != null && transactionId.isNotEmpty) {
+      _purchasesByTransaction[transactionId] = purchase;
     }
-    // Only a restore delivers an empty batch or a batch of restored
-    // purchases; tell listeners the store has answered.
-    if (purchases.every(
-      (PurchaseDetails item) => item.status == PurchaseStatus.restored,
-    )) {
-      _events.add(
-        const PurchaseServiceEvent(
-          productId: 'restore',
-          status: PurchaseEventStatus.restoreCompleted,
-        ),
-      );
-    }
+    return PurchaseServiceEvent(
+      productId: purchase.productID,
+      status: status,
+      transactionId: transactionId,
+      receipt: token,
+      errorMessage: purchase.error?.message,
+      alreadyOwned:
+          purchase.error?.message ==
+          BillingResponse.itemAlreadyOwned.toString(),
+    );
   }
 
   void _handleStreamError(Object error, StackTrace stackTrace) {
