@@ -179,6 +179,13 @@ String? notificationRoute(AppNotification item) {
   };
 }
 
+const Set<String> _balanceKinds = <String>{
+  'credits_low',
+  'free_minutes_low',
+  'cloud_minutes_exhausted',
+  'purchase_completed',
+};
+
 enum _Tone { error, success, warning, brand }
 
 /// Icon and tile tone of each notification kind, as drawn.
@@ -292,6 +299,67 @@ class _InboxList extends StatelessWidget {
   }
 }
 
+/// The kind's icon tile; for a notification about one of the user's
+/// channels, that channel's picture with the icon as a small badge.
+class _NotificationLeading extends StatelessWidget {
+  const _NotificationLeading({
+    required this.avatarUrl,
+    required this.name,
+    required this.glyph,
+    required this.tileBg,
+    required this.tileFg,
+  });
+
+  final String? avatarUrl;
+  final String name;
+  final SsV2IconGlyph glyph;
+  final Color tileBg;
+  final Color tileFg;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? url = avatarUrl;
+    if (url == null || url.isEmpty) {
+      return Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: tileBg,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: SsV2Icon(glyph, size: 20, color: tileFg),
+      );
+    }
+    final SsV2Palette palette = SsV2Palette.of(context);
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: <Widget>[
+          SsV2Avatar(name: name, size: 40, fontSize: 14, imageUrl: url),
+          Positioned(
+            right: -3,
+            bottom: -3,
+            child: Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: tileBg,
+                shape: BoxShape.circle,
+                border: Border.all(color: palette.surface, width: 2),
+              ),
+              child: SsV2Icon(glyph, size: 11, color: tileFg),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NotificationRow extends StatelessWidget {
   const _NotificationRow({
     required this.item,
@@ -338,15 +406,16 @@ class _NotificationRow extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: tileBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: SsV2Icon(glyph, size: 20, color: tileFg),
+                _NotificationLeading(
+                  // Balance notices keep their icon even when they name the
+                  // recording that used the minutes.
+                  avatarUrl: _balanceKinds.contains(item.effectiveKind)
+                      ? null
+                      : item.avatarUrl,
+                  name: item.title,
+                  glyph: glyph,
+                  tileBg: tileBg,
+                  tileFg: tileFg,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

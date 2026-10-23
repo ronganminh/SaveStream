@@ -148,6 +148,7 @@ class RecordingSummary {
     this.minutesCharged = 0,
     this.queuePosition,
     this.thumbnailUrl,
+    this.creatorAvatarUrl,
   });
 
   final String id;
@@ -185,6 +186,9 @@ class RecordingSummary {
   /// Signed URL of one frame of the finished video (`thumbnail_url`); null
   /// until the server has one.
   final String? thumbnailUrl;
+
+  /// The channel's profile picture (the server's cached copy), or null.
+  final String? creatorAvatarUrl;
 
   bool get isActiveLifecycle {
     return switch (status) {
@@ -257,6 +261,7 @@ class RecordingSummary {
       minutesCharged: minutesCharged ?? this.minutesCharged,
       queuePosition: queuePosition ?? this.queuePosition,
       thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      creatorAvatarUrl: this.creatorAvatarUrl,
     );
   }
 }

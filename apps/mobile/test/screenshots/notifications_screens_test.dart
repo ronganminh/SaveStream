@@ -27,6 +27,7 @@ import 'package:savestream_mobile/features/settings/presentation/notifications_s
 import 'package:savestream_mobile/platform/contracts/push_service.dart';
 import 'package:savestream_mobile/platform/platform_providers.dart';
 
+import 'fake_avatars.dart';
 import 'screenshot_harness.dart';
 
 final DateTime _now = DateTime(2026, 10, 22, 20, 43, 18);
@@ -94,6 +95,28 @@ void main() {
     expect(find.text('Running low'), findsOneWidget);
     expect(find.text('Out of minutes'), findsOneWidget);
     expect(find.text('Expiring soon'), findsOneWidget);
+    // Channel notifications show the channel's picture; balance notices
+    // ("Running low", "Out of minutes") keep their icon.
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Channel is LIVE'),
+          matching: find.byType(InkWell),
+        ),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Out of minutes'),
+          matching: find.byType(InkWell),
+        ),
+        matching: find.byType(Image),
+      ),
+      findsNothing,
+    );
     expect(
       find.byKey(const ValueKey<String>('notification-unread-n-live')),
       findsOneWidget,
@@ -355,6 +378,8 @@ List<AppNotification> _seed() {
       createdAt: at,
       resourceType: type,
       resourceId: resource,
+      // The server sends the channel's picture for its notifications.
+      avatarUrl: type == 'watch' || type == 'recording' ? fakeAvatarA : null,
     );
   }
 
@@ -535,6 +560,7 @@ class _FakeWatches implements WatchRepository {
       id: 'w-shop',
       creatorDisplayName: 'My Shop Live',
       creatorUsername: 'my_shop_live',
+      creatorAvatarUrl: fakeAvatarA,
       status: WatchStatus.active,
       isLive: false,
       autoRecord: true,

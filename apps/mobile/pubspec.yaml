@@ -1,7 +1,7 @@
 name: savestream_mobile
 description: SaveStream mobile client.
 publish_to: "none"
-version: 2.1.0+10
+version: 2.1.1+11
 
 environment:
   sdk: ">=3.8.0 <4.0.0"
@@ -37,6 +37,7 @@ dependencies:
   firebase_auth: ^6.7.0
   google_sign_in: ^7.2.0
   firebase_messaging: ^16.7.0
+  cached_network_image: ^4.0.5
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

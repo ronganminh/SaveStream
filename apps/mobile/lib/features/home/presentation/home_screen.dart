@@ -455,7 +455,12 @@ class _LiveCard extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  SsV2Avatar(name: handle, size: 48, liveRing: true),
+                  SsV2Avatar(
+                    name: handle,
+                    size: 48,
+                    liveRing: true,
+                    imageUrl: watch.creatorAvatarUrl,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -649,7 +654,7 @@ class _ChannelRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: <Widget>[
-            SsV2Avatar(name: handle),
+            SsV2Avatar(name: handle, imageUrl: watch.creatorAvatarUrl),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

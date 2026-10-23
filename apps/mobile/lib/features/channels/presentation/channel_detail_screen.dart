@@ -324,6 +324,7 @@ class _DetailBody extends ConsumerWidget {
                   name: handle,
                   size: 88,
                   fontSize: 31,
+                  imageUrl: watch.creatorAvatarUrl,
                   liveRing:
                       state == ChannelState.recording ||
                       state == ChannelState.liveNotRecording,

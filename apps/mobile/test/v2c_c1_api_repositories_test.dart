@@ -438,6 +438,13 @@ void main() {
       expect(page.items[4].type, AppNotificationType.other);
       expect(page.items[4].v2Type, isNull);
       expect(page.items[4].kind, 'admin_system');
+      // The channel picture the server adds; anything but http(s) is ignored.
+      expect(
+        page.items[0].avatarUrl,
+        'https://api.savestream.online/v1/public/creator-avatars/n1',
+      );
+      expect(page.items[1].avatarUrl, isNull);
+      expect(page.items[4].avatarUrl, isNull);
     },
   );
 
@@ -600,6 +607,12 @@ Map<String, Object?> _notificationJson({
     'created_at': '2026-10-04T00:00:00Z',
     'resource_type': type == 'creator_live' ? 'watch' : 'recording',
     'resource_id': 'resource-$id',
+    'avatar_url': switch (type) {
+      'creator_live' =>
+        'https://api.savestream.online/v1/public/creator-avatars/$id',
+      'recording_expiring' => 'javascript:alert(1)',
+      _ => null,
+    },
   };
 }
 

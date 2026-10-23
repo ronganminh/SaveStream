@@ -655,11 +655,27 @@ class _RecordingCard extends StatelessWidget {
           children: <Widget>[
             tile,
             const SizedBox(height: 6),
-            Text(
-              title,
-              maxLines: ellipsize ? 1 : null,
-              overflow: ellipsize ? TextOverflow.ellipsis : null,
-              style: titleStyle,
+            Row(
+              crossAxisAlignment: ellipsize
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
+              children: <Widget>[
+                SsV2Avatar(
+                  name: handle,
+                  size: 22,
+                  fontSize: 9,
+                  imageUrl: recording.creatorAvatarUrl,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: ellipsize ? 1 : null,
+                    overflow: ellipsize ? TextOverflow.ellipsis : null,
+                    style: titleStyle,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             subtitle,

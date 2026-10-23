@@ -84,6 +84,17 @@ final class ApiNotificationsRepository implements NotificationsRepository {
       resourceType: map['resource_type'] as String?,
       resourceId: map['resource_id'] as String?,
       kind: rawType,
+      avatarUrl: _httpUrl(map['avatar_url']),
     );
   }
+}
+
+/// An http(s) URL, or null (missing, empty or anything else).
+String? _httpUrl(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  final Uri? uri = Uri.tryParse(value);
+  if (uri == null || !(uri.isScheme('https') || uri.isScheme('http'))) {
+    return null;
+  }
+  return value;
 }
