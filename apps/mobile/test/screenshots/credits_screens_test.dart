@@ -316,10 +316,10 @@ void main() {
   });
 
   testWidgets('ARestore', (WidgetTester tester) async {
-    final _Harness harness = _Harness(
-      restorable: <String>['savestream.hours.150'],
-    );
+    final _Harness harness = _Harness();
     await pumpCredits(tester, harness);
+    // Bought after the app started (recovery on start already ran).
+    harness.store.restorable = <String>['savestream.hours.150'];
     await tester.tap(find.text('Restore purchases'));
     await settle(tester);
     expect(find.text('Purchases restored'), findsOneWidget);

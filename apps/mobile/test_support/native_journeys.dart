@@ -301,7 +301,8 @@ final class _CiPurchaseService implements PurchaseService {
   }
 
   @override
-  Future<void> restore() async {}
+  Future<List<PurchaseServiceEvent>> unfinishedPurchases() async =>
+      const <PurchaseServiceEvent>[];
 
   @override
   Future<void> completePurchase(String transactionId) async {

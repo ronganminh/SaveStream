@@ -16,17 +16,7 @@ class StoreProductInfo {
   final String? currencyCode;
 }
 
-enum PurchaseEventStatus {
-  purchased,
-  pending,
-  cancelled,
-  failed,
-  restored,
-
-  /// Marker after the store answered a restore request (also when it found
-  /// nothing), emitted after that batch's `restored` events.
-  restoreCompleted,
-}
+enum PurchaseEventStatus { purchased, pending, cancelled, failed }
 
 class PurchaseServiceEvent {
   const PurchaseServiceEvent({
@@ -35,6 +25,7 @@ class PurchaseServiceEvent {
     this.transactionId,
     this.receipt,
     this.errorMessage,
+    this.alreadyOwned = false,
   });
 
   final String productId;
@@ -47,6 +38,10 @@ class PurchaseServiceEvent {
   /// The purchase token the server verifies with Google Play.
   final String? receipt;
   final String? errorMessage;
+
+  /// The store refused a purchase because the account still owns an
+  /// unconsumed one of this product (Play `ITEM_ALREADY_OWNED`).
+  final bool alreadyOwned;
 }
 
 abstract interface class PurchaseService {
@@ -57,7 +52,11 @@ abstract interface class PurchaseService {
   /// can refuse a purchase token from another account.
   Future<void> buy(String productId, {String? accountReference});
 
-  Future<void> restore();
+  /// Purchases the store still holds unfinished, without any UI: on Google
+  /// Play the in-app purchases that are bought (or pending) but not consumed
+  /// (`queryPurchasesAsync`), as `purchased` or `pending` events. Each can be
+  /// passed to [completePurchase] afterwards.
+  Future<List<PurchaseServiceEvent>> unfinishedPurchases();
 
   /// Finishes a purchase after the server credited it. On Google Play the
   /// pack is consumed so it can be bought again.

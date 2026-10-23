@@ -22,8 +22,12 @@ final class FakePurchaseService implements PurchaseService {
   /// What the store answers to [buy].
   PurchaseEventStatus buyStatus;
 
-  /// Product ids that [restore] reports as owned and not yet consumed.
+  /// Product ids the store still holds unfinished (bought, not consumed),
+  /// as [unfinishedPurchases] reports them. Completing one consumes it.
   List<String> restorable;
+
+  /// Of [restorable], the ones whose payment is still pending.
+  Set<String> pendingUnfinished = <String>{};
 
   final List<String> purchases = <String>[];
   final List<String?> accountReferences = <String?>[];
@@ -75,26 +79,25 @@ final class FakePurchaseService implements PurchaseService {
   @override
   Future<void> completePurchase(String transactionId) async {
     completedTransactions.add(transactionId);
+    restorable = <String>[
+      for (final String id in restorable)
+        if (transactionId != 'GPA.restored-$id') id,
+    ];
   }
 
   @override
-  Future<void> restore() async {
-    for (final String id in restorable) {
-      _events.add(
+  Future<List<PurchaseServiceEvent>> unfinishedPurchases() async {
+    return <PurchaseServiceEvent>[
+      for (final String id in restorable)
         PurchaseServiceEvent(
           productId: id,
-          status: PurchaseEventStatus.restored,
+          status: pendingUnfinished.contains(id)
+              ? PurchaseEventStatus.pending
+              : PurchaseEventStatus.purchased,
           transactionId: 'GPA.restored-$id',
           receipt: 'fake-token-$id',
         ),
-      );
-    }
-    _events.add(
-      const PurchaseServiceEvent(
-        productId: 'restore',
-        status: PurchaseEventStatus.restoreCompleted,
-      ),
-    );
+    ];
   }
 
   Future<void> dispose() => _events.close();

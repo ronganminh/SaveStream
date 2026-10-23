@@ -9,6 +9,7 @@ import '../../features/app_status/presentation/system_screens.dart';
 import '../../features/app_status/presentation/system_status_providers.dart';
 import '../../features/entitlement/presentation/entitlement_providers.dart';
 import '../../features/recordings/presentation/active_recording_bar.dart';
+import '../../features/store/presentation/a5_purchase_controller.dart';
 import '../../l10n/l10n.dart';
 import '../router/app_routes.dart';
 import '../session/app_session_controller.dart';
@@ -41,6 +42,9 @@ class MainShell extends ConsumerWidget {
         activeRecordings.any(
           (ActiveRecordingBarItem item) => item.route == location,
         );
+    // Signed in: finish any Google Play purchase that was paid but not
+    // credited (or not consumed) on an earlier run.
+    ref.watch(purchaseRecoveryProvider);
     final bool isOnline = ref.watch(appOnlineProvider).value ?? true;
     final SystemStatus status =
         ref.watch(systemStatusProvider).value ?? SystemStatus.open;

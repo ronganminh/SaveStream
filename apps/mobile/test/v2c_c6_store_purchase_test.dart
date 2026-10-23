@@ -307,6 +307,149 @@ void main() {
       expect(purchaseService.completedTransactions, isEmpty);
     },
   );
+
+  group('C6 recovery of purchases Google Play still holds', () {
+    late _TestPurchaseService purchaseService;
+    late _TestStoreRepository storeRepository;
+    late _TestRetryStore retryStore;
+    late ProviderContainer container;
+
+    const PurchaseServiceEvent stuck = PurchaseServiceEvent(
+      productId: 'savestream.hours.50',
+      status: PurchaseEventStatus.purchased,
+      transactionId: 'GPA.stuck',
+      receipt: 'stuck-token',
+    );
+
+    setUp(() {
+      purchaseService = _TestPurchaseService();
+      storeRepository = _TestStoreRepository(StorePurchaseStatus.credited);
+      retryStore = _TestRetryStore();
+      container = ProviderContainer(
+        overrides: [
+          purchaseServiceProvider.overrideWithValue(purchaseService),
+          storeRepositoryProvider.overrideWithValue(storeRepository),
+          storePurchaseRetryStoreProvider.overrideWithValue(retryStore),
+          deviceInfoServiceProvider.overrideWithValue(
+            const FakeDeviceInfoService(platform: DevicePlatform.android),
+          ),
+        ],
+      );
+    });
+
+    tearDown(() async {
+      container.dispose();
+      await purchaseService.dispose();
+    });
+
+    CloudHoursPurchaseController controller() =>
+        container.read(cloudHoursPurchaseControllerProvider.notifier);
+
+    test(
+      'on start: sends it to the server, consumes only once credited',
+      () async {
+        purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+        await container.read(purchaseRecoveryProvider.future);
+
+        expect(storeRepository.requests.single.transactionId, 'GPA.stuck');
+        expect(storeRepository.requests.single.receipt, 'stuck-token');
+        expect(purchaseService.completedTransactions, <String>['GPA.stuck']);
+        expect(await retryStore.load(), isEmpty);
+
+        // Once per session.
+        await controller().recoverOnStart();
+        expect(storeRepository.requests, hasLength(1));
+      },
+    );
+
+    test('server refuses it: not consumed, kept for the next try', () async {
+      purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+      storeRepository.error = StateError('422 Store product is not configured');
+      await controller().recoverOnStart();
+
+      expect(purchaseService.completedTransactions, isEmpty);
+      expect((await retryStore.load()).single.transactionId, 'GPA.stuck');
+    });
+
+    test('pending payment: reported to the server, never consumed', () async {
+      purchaseService.unfinished = <PurchaseServiceEvent>[
+        const PurchaseServiceEvent(
+          productId: 'savestream.hours.150',
+          status: PurchaseEventStatus.pending,
+          transactionId: 'GPA.pending',
+          receipt: 'pending-token',
+        ),
+      ];
+      storeRepository.status = StorePurchaseStatus.pending;
+      await controller().recoverOnStart();
+
+      expect(storeRepository.requests.single.transactionId, 'GPA.pending');
+      expect(purchaseService.completedTransactions, isEmpty);
+    });
+
+    test('Buy on a pack Play still holds finishes that one instead', () async {
+      purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+      await controller().buy(_starterOffer);
+
+      expect(purchaseService.buys, isEmpty);
+      final CloudHoursPurchaseState state = container.read(
+        cloudHoursPurchaseControllerProvider,
+      );
+      expect(state.phase, CloudHoursPurchasePhase.credited);
+      expect(state.minutesAdded, 3000);
+      expect(purchaseService.completedTransactions, <String>['GPA.stuck']);
+    });
+
+    test('ITEM_ALREADY_OWNED from Play finishes the owned purchase', () async {
+      await controller().buy(_starterOffer);
+      expect(purchaseService.buys, <String>['savestream.hours.50']);
+
+      // Play only now reports the owned purchase (e.g. bought on another
+      // device of the same account).
+      purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+      purchaseService.emit(
+        const PurchaseServiceEvent(
+          productId: '',
+          status: PurchaseEventStatus.failed,
+          errorMessage: 'BillingResponse.itemAlreadyOwned',
+          alreadyOwned: true,
+        ),
+      );
+      await _waitFor(
+        () =>
+            container.read(cloudHoursPurchaseControllerProvider).phase ==
+            CloudHoursPurchasePhase.credited,
+      );
+      expect(purchaseService.completedTransactions, <String>['GPA.stuck']);
+    });
+
+    test('Restore purchases reports the packs added', () async {
+      purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+      await controller().restore();
+
+      final CloudHoursPurchaseState state = container.read(
+        cloudHoursPurchaseControllerProvider,
+      );
+      expect(state.phase, CloudHoursPurchasePhase.restored);
+      expect(state.restored.single.productId, 'savestream.hours.50');
+      expect(state.restored.single.minutes, 3000);
+    });
+
+    test('one purchase found twice at once is sent once', () async {
+      purchaseService.unfinished = <PurchaseServiceEvent>[stuck];
+      purchaseService.emit(stuck);
+      await Future.wait(<Future<void>>[
+        controller().recoverOnStart(),
+        controller().restore(),
+      ]);
+      await _waitFor(() => purchaseService.completedTransactions.isNotEmpty);
+      expect(
+        storeRepository.requests.map((r) => r.transactionId).toSet(),
+        <String>{'GPA.stuck'},
+      );
+      expect(storeRepository.requests.length, lessThanOrEqualTo(2));
+    });
+  });
 }
 
 ApiClient _clientFor(HttpClientAdapter adapter) {
@@ -373,11 +516,17 @@ final class _TestPurchaseService implements PurchaseService {
       .map((String id) => StoreProductInfo(id: id, localizedPrice: r'$9.99'))
       .toList(growable: false);
 
-  @override
-  Future<void> buy(String productId, {String? accountReference}) async {}
+  final List<String> buys = <String>[];
 
   @override
-  Future<void> restore() async {}
+  Future<void> buy(String productId, {String? accountReference}) async {
+    buys.add(productId);
+  }
+
+  List<PurchaseServiceEvent> unfinished = <PurchaseServiceEvent>[];
+
+  @override
+  Future<List<PurchaseServiceEvent>> unfinishedPurchases() async => unfinished;
 
   @override
   Future<void> completePurchase(String transactionId) async {
@@ -390,7 +539,10 @@ final class _TestPurchaseService implements PurchaseService {
 final class _TestStoreRepository implements StoreRepository {
   _TestStoreRepository(this.status);
 
-  final StorePurchaseStatus status;
+  StorePurchaseStatus status;
+
+  /// When set, the server answers with this error (e.g. 422 not configured).
+  Object? error;
   final List<StorePurchaseRequest> requests = <StorePurchaseRequest>[];
 
   @override
@@ -401,6 +553,7 @@ final class _TestStoreRepository implements StoreRepository {
     StorePurchaseRequest request,
   ) async {
     requests.add(request);
+    if (error != null) throw error!;
     return StorePurchaseResult(
       status: status,
       paymentOrderId: 'ord_test',
@@ -428,3 +581,17 @@ final class _TestRetryStore implements StorePurchaseRetryStore {
     _items.remove(transactionId);
   }
 }
+
+const CloudHoursOffer _starterOffer = CloudHoursOffer(
+  package: StorePackage(
+    id: 'pkg_50',
+    name: 'Starter',
+    cloudMinutes: 3000,
+    productIds: StoreProductIds(
+      appStore: 'savestream.hours.50',
+      googlePlay: 'savestream.hours.50',
+    ),
+  ),
+  productId: 'savestream.hours.50',
+  localizedPrice: r'$11.49',
+);
