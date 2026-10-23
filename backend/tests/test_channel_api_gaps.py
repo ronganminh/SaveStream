@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
+from dataclasses import replace
 from datetime import timedelta
 
 from fastapi.testclient import TestClient
@@ -14,6 +15,7 @@ from sqlalchemy import event, func, select
 
 from app.api.dependencies import get_current_principal
 from app.api.schemas.recordings import Source
+from app.application.creators.avatar_cache import lookup_avatar_id
 from app.application.recordings.service import utcnow
 from app.application.watches.channel_stats import watch_extras
 from app.application.watches.service import CreatorMetadata
@@ -206,17 +208,35 @@ def test_live_status_answers_offline_creator_with_offline(tmp_path, monkeypatch)
     with _live_status_client(
         tmp_path, monkeypatch, error=NO_ROOM, lookup=CreatorLookupResult(metadata=CREATOR)
     ) as client:
+        stored: dict[str, bytes] = {}
+
+        class _Storage:
+            def upload_bytes(self, data, key, *, content_type, cache_control=None):
+                stored[key] = data
+
+        settings = client.app.state.settings
+        client.app.state.settings = replace(settings, public_api_base_url="https://api.test")
+        client.app.state.minio = _Storage()
+        from app.api.routes import recordings as recordings_routes
+
+        monkeypatch.setattr(
+            recordings_routes, "download_avatar", lambda url: (b"jpeg", "image/jpeg")
+        )
         response = _post_live_status(client, "creator")
+        client.app.state.settings = settings
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["live_status"] == "offline"
     assert body["room_id"] is None
+    # Our own copy of the avatar (to confirm the account), not TikTok's CDN.
+    avatar_id = lookup_avatar_id(settings, "creator")
     assert body["creator"] == {
         "platform": "tiktok",
         "username": "creator",
         "display_name": "Creator LIVE",
-        "avatar_url": "https://p16.tiktokcdn.com/avatar.jpeg",
+        "avatar_url": f"https://api.test/v1/public/creator-avatars/{avatar_id}",
     }
+    assert stored == {f"creator-avatars/{avatar_id}": b"jpeg"}
     assert body["source"] == {"type": "username", "value": "creator"}
 
 

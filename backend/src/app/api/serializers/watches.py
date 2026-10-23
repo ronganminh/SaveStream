@@ -18,13 +18,9 @@ from app.settings import AppSettings
 
 
 def creator_avatar_url(watch: Watch) -> str | None:
-    """Stable cached copy when available, else the raw TikTok URL while it is
-    still valid (it is signed and expires; an expired one only fails to load)."""
-    if watch.creator_avatar_cached_url:
-        return watch.creator_avatar_cached_url
-    if watch.creator_avatar_url and not tiktok_url_expired(watch.creator_avatar_url):
-        return watch.creator_avatar_url
-    return None
+    """Our cached copy only: TikTok's signed CDN URLs expire and are never
+    passed to clients (they show initials until the copy exists)."""
+    return watch.creator_avatar_cached_url or None
 
 
 def tiktok_url_expired(url: str, *, now: float | None = None) -> bool:

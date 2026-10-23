@@ -171,8 +171,8 @@ def test_failed_copy_keeps_raw_url_and_retries_within_the_hour(tmp_path) -> None
 
     watch = asyncio.run(run())
     assert watch.creator_avatar_key is None
-    # OLD_CDN has expired (x-expires=1), so clients get no URL and show
-    # initials instead of a broken image; a still-valid raw URL is passed on.
+    # No copy yet: clients get no URL and show initials (TikTok's CDN URL is
+    # never passed on).
     assert watch_response(watch).creator.avatar_url is None
     refreshed = watch.creator_avatar_refreshed_at
     assert refreshed is not None
@@ -279,3 +279,64 @@ def test_deleting_a_channel_removes_its_avatar_copy(tmp_path) -> None:
     assert storage.objects == {}
     assert watch.creator_avatar_key is None
     assert watch.creator_avatar_cached_url is None
+
+
+def test_a_new_channel_gets_its_avatar_copy_right_away(tmp_path, monkeypatch) -> None:
+    from types import SimpleNamespace
+
+    from app.api.routes import watches as watch_routes
+
+    settings = _settings(tmp_path)
+    _, watch_id = asyncio.run(_seed(settings))
+    storage = _Storage()
+    monkeypatch.setattr(watch_routes, "download_avatar", lambda url: (b"jpeg", "image/jpeg"))
+
+    async def run() -> Watch:
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                watch = await session.get(Watch, watch_id)
+                assert watch is not None
+                request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(minio=storage)))
+                service = SimpleNamespace(session=session, settings=settings)
+                await watch_routes._copy_avatar_now(request, service, watch)  # type: ignore[arg-type]
+                await session.refresh(watch)
+                return watch
+        finally:
+            await database.close()
+
+    watch = asyncio.run(run())
+    assert watch.creator_avatar_key in storage.objects
+    assert watch_response(watch).creator.avatar_url == watch.creator_avatar_cached_url
+    assert watch.creator_avatar_cached_url.startswith(
+        "https://api.savestream.test/v1/public/creator-avatars/"
+    )
+
+
+def test_lookup_avatar_copy_is_ours_and_keyed(tmp_path) -> None:
+    from app.application.creators.avatar_cache import cache_lookup_avatar, lookup_avatar_id
+
+    settings = _settings(tmp_path)
+    storage = _Storage()
+    url = asyncio.run(
+        cache_lookup_avatar(
+            settings,
+            storage,
+            lambda u: (b"jpeg", "image/jpeg"),
+            username="P.C.Dat25",
+            source_url=NEW_CDN,
+        )
+    )
+    avatar_id = lookup_avatar_id(settings, "p.c.dat25")
+    assert url == f"https://api.savestream.test/v1/public/creator-avatars/{avatar_id}"
+    assert list(storage.objects) == [avatar_key(avatar_id)]
+    # Not derivable from the handle without the server secret.
+    other = replace(settings, jwt_secret="another-secret")
+    assert lookup_avatar_id(other, "p.c.dat25") != avatar_id
+    # Nothing to copy, or the download fails: no URL (initials).
+    assert asyncio.run(
+        cache_lookup_avatar(settings, storage, lambda u: None, username="x", source_url=NEW_CDN)
+    ) is None
+    assert asyncio.run(
+        cache_lookup_avatar(settings, storage, lambda u: None, username="x", source_url=None)
+    ) is None

@@ -155,7 +155,7 @@ class AppSettings:
     # Public origin of this API (e.g. https://api.savestream.online). Used for
     # stable URLs of cached creator avatars; empty keeps the raw TikTok URLs.
     public_api_base_url: str = ""
-    creator_avatar_refresh_hours: int = 72
+    creator_avatar_refresh_hours: int = 24
     creator_avatar_batch_size: int = 25
     smtp_host: str = "localhost"
     smtp_port: int = 1025
@@ -688,7 +688,7 @@ class AppSettings:
                 if (public_api_base_url := _env("PUBLIC_API_BASE_URL", ""))
                 else ""
             ),
-            creator_avatar_refresh_hours=_int_env("CREATOR_AVATAR_REFRESH_HOURS", 72),
+            creator_avatar_refresh_hours=_int_env("CREATOR_AVATAR_REFRESH_HOURS", 24),
             creator_avatar_batch_size=_int_env("CREATOR_AVATAR_BATCH_SIZE", 25),
             smtp_host=smtp_host,
             smtp_port=smtp_port,
