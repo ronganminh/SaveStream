@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -26,6 +27,8 @@ from app.infrastructure.store.base import (
     VerifiedStorePurchase,
     VerifiedStoreRefund,
 )
+
+logger = logging.getLogger(__name__)
 
 # Google refunds a purchase that is not acknowledged within 3 days.
 PLAY_ACKNOWLEDGE_WINDOW = timedelta(days=3)
@@ -105,6 +108,37 @@ class StorePurchaseService:
         """``client_price_*`` is the store price the app showed, as the app
         reports it: kept for display on the order, never verified or used for
         accounting."""
+        try:
+            return await self._purchase(
+                user_id=user_id,
+                product_id=product_id,
+                transaction_id=transaction_id,
+                receipt=receipt,
+                client_price_amount_micros=client_price_amount_micros,
+                client_price_currency=client_price_currency,
+            )
+        except ApplicationError as exc:
+            # The app only shows a generic error; this line says why.
+            logger.warning(
+                "store purchase not credited platform=%s product=%s user=%s code=%s: %s",
+                self.verifier.platform,
+                product_id,
+                user_id,
+                exc.code,
+                exc.message,
+            )
+            raise
+
+    async def _purchase(
+        self,
+        *,
+        user_id: uuid.UUID,
+        product_id: str,
+        transaction_id: str,
+        receipt: str,
+        client_price_amount_micros: int | None,
+        client_price_currency: str | None,
+    ) -> StorePurchaseResult:
         verified = await self.verifier.verify_purchase(
             product_id=product_id,
             transaction_id=transaction_id,
