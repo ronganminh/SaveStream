@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, Query, Request, status
 
 from app.api.dependencies import (
@@ -17,7 +21,7 @@ from app.api.schemas.watches import (
 )
 from app.api.serializers.watches import active_recording_for, watch_response
 from app.application.watches.channel_stats import watch_extras
-from app.application.creators.avatar_cache import remove_avatar_copy
+from app.application.creators.avatar_cache import CreatorAvatarCache, remove_avatar_copy
 from app.application.watches.service import WatchService
 from app.application.watches.verification import (
     ChannelVerificationService,
@@ -25,7 +29,10 @@ from app.application.watches.verification import (
     verification_required,
 )
 from app.domain.identity.types import AuthPrincipal
+from app.infrastructure.creators.avatar_fetch import download_avatar
 from app.infrastructure.db.watch_models import Watch
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/v1/watches", tags=["Watches"])
 
@@ -69,11 +76,32 @@ async def _watch_responses(
 )
 async def create_watch(
     payload: CreateWatchRequest,
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
     watch = await service.create(principal, payload)
+    await _copy_avatar_now(request, service, watch)
     return (await _watch_responses(service, principal, [watch]))[0]
+
+
+async def _copy_avatar_now(request: Request, service: WatchService, watch: Watch) -> None:
+    """Copy a new channel's avatar right away so it shows at once (the
+    periodic task keeps it fresh). Best-effort and time-boxed."""
+    if not watch.creator_avatar_url or watch.creator_avatar_key:
+        return
+    cache = CreatorAvatarCache(
+        service.session, service.settings, request.app.state.minio, download_avatar
+    )
+    try:
+        await asyncio.wait_for(
+            cache.refresh_watch(watch, now=datetime.now(timezone.utc)), timeout=6.0
+        )
+    except Exception:
+        # refresh_watch records its own failures (retried within the hour);
+        # only a timeout lands here, and the periodic task catches up.
+        logger.info("Creator avatar copy on create failed", exc_info=True)
+    await service.session.commit()
 
 
 @router.get(

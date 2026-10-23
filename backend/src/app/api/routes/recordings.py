@@ -20,11 +20,12 @@ from app.api.schemas.recordings import (
     RecordingResponse,
 )
 from app.api.serializers.recordings import recording_response
-from app.application.creators.avatar_cache import recording_avatar_urls
+from app.application.creators.avatar_cache import cache_lookup_avatar, recording_avatar_urls
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import RecordingStatus, TERMINAL_RECORDING_STATUSES
+from app.infrastructure.creators.avatar_fetch import download_avatar
 from app.infrastructure.db.recording_models import Recording, RecordingEvent
 from app.infrastructure.recording.runtime import NoLiveRoomError, build_recording_runtime
 
@@ -73,6 +74,21 @@ async def live_status(
     metadata = lookup.metadata if lookup is not None else None
     from app.api.schemas.recordings import Creator
 
+    # Shown while adding a channel so the user can confirm it is theirs:
+    # our own copy, never TikTok's expiring CDN URL.
+    avatar_url = None
+    if metadata is not None and (
+        isinstance(status_result, NoLiveRoomError)
+        or not isinstance(status_result, BaseException)
+    ):
+        avatar_url = await cache_lookup_avatar(
+            request.app.state.settings,
+            request.app.state.minio,
+            download_avatar,
+            username=metadata.username,
+            source_url=metadata.avatar_url,
+        )
+
     if isinstance(status_result, NoLiveRoomError) and metadata is not None:
         # No LIVE room, but the profile page shows a real account: the
         # creator is simply not LIVE (most channels are added while offline).
@@ -81,7 +97,7 @@ async def live_status(
             creator=Creator(
                 username=metadata.username,
                 display_name=metadata.display_name,
-                avatar_url=metadata.avatar_url,
+                avatar_url=avatar_url,
             ),
             live_status="offline",
             room_id=None,
@@ -113,7 +129,7 @@ async def live_status(
         creator=Creator(
             username=metadata.username if metadata is not None else resolved.username,
             display_name=(metadata.display_name if metadata is not None else resolved.username),
-            avatar_url=metadata.avatar_url if metadata is not None else None,
+            avatar_url=avatar_url,
         ),
         live_status="live" if is_live else "offline",
         room_id=resolved.room_id,

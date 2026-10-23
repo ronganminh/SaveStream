@@ -101,7 +101,8 @@ def test_expired_tiktok_avatar_urls_are_not_sent_to_clients() -> None:
     watch = Watch(creator_avatar_url=stale)
     assert creator_avatar_url(watch) is None  # initials instead of a broken image
     watch.creator_avatar_url = fresh
-    assert creator_avatar_url(watch) == fresh
+    # Never TikTok's CDN, even while its URL is valid: only our own copy.
+    assert creator_avatar_url(watch) is None
     watch.creator_avatar_cached_url = "https://media.savestream.online/a/" + "0" * 32
     assert creator_avatar_url(watch) == watch.creator_avatar_cached_url
 

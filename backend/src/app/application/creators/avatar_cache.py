@@ -4,14 +4,18 @@ TikTok serves avatars from signed CDN URLs that expire after a few days, so
 clients showing the raw URL eventually get a broken image. A periodic task
 copies the image to object storage under a stable key and records a public
 API URL for it (`creator_avatar_cached_url`), which web and mobile receive as
-`creator.avatar_url`. Copies are refreshed every `creator_avatar_refresh_hours`;
-when the raw URL has expired, the TikTok profile is looked up again first.
+`creator.avatar_url`. A channel's copy is made when it is added and refreshed
+every `creator_avatar_refresh_hours`; when the raw URL has expired, the TikTok
+profile is looked up again first. The channel lookup shown while adding a
+channel gets its own copy too, so clients never load TikTok's CDN directly.
 Everything here is best-effort: clients fall back to initials.
 """
 
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import logging
 import uuid
 from collections.abc import Callable
@@ -62,6 +66,49 @@ def avatar_public_url(settings: AppSettings, avatar_id: str) -> str:
     if media_delivery_enabled(settings):
         return media_avatar_url(settings, avatar_id)
     return f"{settings.public_api_base_url.rstrip('/')}{AVATAR_PUBLIC_PATH}{avatar_id}"
+
+
+def lookup_avatar_id(settings: AppSettings, username: str) -> str:
+    """Id of the copy shown while a channel is being added: one per handle,
+    overwritten on each lookup, and not guessable from the handle (keyed)."""
+    message = f"lookup:tiktok:{username.strip().lower()}".encode()
+    return hmac.new(settings.jwt_secret.encode(), message, hashlib.sha256).hexdigest()[:32]
+
+
+async def cache_lookup_avatar(
+    settings: AppSettings,
+    storage: AvatarStorage,
+    fetch: AvatarFetcher,
+    *,
+    username: str,
+    source_url: str | None,
+    timeout_seconds: float = 5.0,
+) -> str | None:
+    """Copy a looked-up channel's avatar and return our URL for it; None when
+    there is none or it can't be copied in time (clients show initials)."""
+    if not source_url or not settings.public_api_base_url:
+        return None
+    try:
+        image = await asyncio.wait_for(asyncio.to_thread(fetch, source_url), timeout_seconds)
+    except Exception:
+        logger.info("Lookup avatar download failed", exc_info=True)
+        return None
+    if image is None:
+        return None
+    data, content_type = image
+    avatar_id = lookup_avatar_id(settings, username)
+    try:
+        await asyncio.to_thread(
+            storage.upload_bytes,
+            data,
+            avatar_key(avatar_id),
+            content_type=content_type,
+            cache_control="public, max-age=3600",
+        )
+    except Exception:
+        logger.warning("Lookup avatar upload failed", exc_info=True)
+        return None
+    return avatar_public_url(settings, avatar_id)
 
 
 class CreatorAvatarCache:
@@ -268,3 +315,57 @@ async def recording_avatar_urls(
         if item.resolved_username
         and (item.user_id, item.resolved_username.lower()) in by_creator
     }
+
+
+async def notification_avatar_urls(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    items: list[tuple[uuid.UUID, str | None, str | None]],
+) -> dict[uuid.UUID, str]:
+    """Avatar for each (notification id, resource type, resource id) about one
+    of the user's own channels or recordings; others get none."""
+    from app.api.serializers.watches import creator_avatar_url
+
+    def parse(value: str | None) -> uuid.UUID | None:
+        try:
+            return uuid.UUID(value) if value else None
+        except ValueError:
+            return None
+
+    watch_ids = {
+        parsed for _, kind, ref in items if kind == "watch" and (parsed := parse(ref))
+    }
+    recording_ids = {
+        parsed for _, kind, ref in items if kind == "recording" and (parsed := parse(ref))
+    }
+    by_watch: dict[uuid.UUID, str] = {}
+    if watch_ids:
+        for watch in (
+            await session.scalars(
+                select(Watch).where(Watch.id.in_(watch_ids), Watch.user_id == user_id)
+            )
+        ).all():
+            url = creator_avatar_url(watch)
+            if url:
+                by_watch[watch.id] = url
+    by_recording: dict[uuid.UUID, str] = {}
+    if recording_ids:
+        recordings = list(
+            (
+                await session.scalars(
+                    select(Recording).where(
+                        Recording.id.in_(recording_ids), Recording.user_id == user_id
+                    )
+                )
+            ).all()
+        )
+        by_recording = await recording_avatar_urls(session, recordings)
+    found: dict[uuid.UUID, str] = {}
+    for notification_id, kind, ref in items:
+        parsed = parse(ref)
+        if parsed is None:
+            continue
+        url = by_watch.get(parsed) if kind == "watch" else by_recording.get(parsed)
+        if url:
+            found[notification_id] = url
+    return found
