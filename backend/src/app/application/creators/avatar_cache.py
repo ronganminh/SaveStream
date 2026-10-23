@@ -315,3 +315,57 @@ async def recording_avatar_urls(
         if item.resolved_username
         and (item.user_id, item.resolved_username.lower()) in by_creator
     }
+
+
+async def notification_avatar_urls(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    items: list[tuple[uuid.UUID, str | None, str | None]],
+) -> dict[uuid.UUID, str]:
+    """Avatar for each (notification id, resource type, resource id) about one
+    of the user's own channels or recordings; others get none."""
+    from app.api.serializers.watches import creator_avatar_url
+
+    def parse(value: str | None) -> uuid.UUID | None:
+        try:
+            return uuid.UUID(value) if value else None
+        except ValueError:
+            return None
+
+    watch_ids = {
+        parsed for _, kind, ref in items if kind == "watch" and (parsed := parse(ref))
+    }
+    recording_ids = {
+        parsed for _, kind, ref in items if kind == "recording" and (parsed := parse(ref))
+    }
+    by_watch: dict[uuid.UUID, str] = {}
+    if watch_ids:
+        for watch in (
+            await session.scalars(
+                select(Watch).where(Watch.id.in_(watch_ids), Watch.user_id == user_id)
+            )
+        ).all():
+            url = creator_avatar_url(watch)
+            if url:
+                by_watch[watch.id] = url
+    by_recording: dict[uuid.UUID, str] = {}
+    if recording_ids:
+        recordings = list(
+            (
+                await session.scalars(
+                    select(Recording).where(
+                        Recording.id.in_(recording_ids), Recording.user_id == user_id
+                    )
+                )
+            ).all()
+        )
+        by_recording = await recording_avatar_urls(session, recordings)
+    found: dict[uuid.UUID, str] = {}
+    for notification_id, kind, ref in items:
+        parsed = parse(ref)
+        if parsed is None:
+            continue
+        url = by_watch.get(parsed) if kind == "watch" else by_recording.get(parsed)
+        if url:
+            found[notification_id] = url
+    return found

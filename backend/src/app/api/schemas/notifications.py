@@ -38,6 +38,9 @@ class NotificationResponse(StrictModel):
     resource_type: Literal["recording", "watch", "broadcast"] | None
     resource_id: str | None
     created_at: datetime
+    # Profile picture of the user's own channel the notification is about
+    # (our cached copy), when there is one.
+    avatar_url: str | None = None
 
 
 class NotificationListResponse(StrictModel):

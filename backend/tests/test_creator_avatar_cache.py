@@ -340,3 +340,51 @@ def test_lookup_avatar_copy_is_ours_and_keyed(tmp_path) -> None:
     assert asyncio.run(
         cache_lookup_avatar(settings, storage, lambda u: None, username="x", source_url=None)
     ) is None
+
+
+def test_notifications_get_the_avatar_of_the_users_own_channel(tmp_path) -> None:
+    from app.application.creators.avatar_cache import notification_avatar_urls
+
+    settings = _settings(tmp_path)
+    user_id, watch_id = asyncio.run(_seed(settings))
+    cached = "https://api.savestream.test/v1/public/creator-avatars/" + "a" * 32
+
+    async def run() -> dict[uuid.UUID, str]:
+        database = Database(settings.database_url)
+        try:
+            async with database.session() as session:
+                watch = await session.get(Watch, watch_id)
+                assert watch is not None
+                watch.creator_avatar_cached_url = cached
+                recording = Recording(
+                    user_id=user_id,
+                    source_type="username",
+                    source_value="p.c.dat25",
+                    resolved_username="p.c.dat25",
+                    status="completed",
+                    quality="best",
+                    container="mp4",
+                )
+                session.add(recording)
+                await session.commit()
+                ids = [uuid.uuid4() for _ in range(5)]
+                found = await notification_avatar_urls(
+                    session,
+                    user_id,
+                    [
+                        (ids[0], "watch", str(watch_id)),
+                        (ids[1], "recording", str(recording.id)),
+                        (ids[2], "broadcast", None),
+                        (ids[3], "watch", "not-a-uuid"),
+                        (ids[4], "watch", str(uuid.uuid4())),
+                    ],
+                )
+                # Another user never gets this user's channel picture.
+                assert await notification_avatar_urls(
+                    session, uuid.uuid4(), [(ids[0], "watch", str(watch_id))]
+                ) == {}
+                return {ids.index(key): value for key, value in found.items()}
+        finally:
+            await database.close()
+
+    assert asyncio.run(run()) == {0: cached, 1: cached}

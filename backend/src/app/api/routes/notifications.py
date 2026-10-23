@@ -17,6 +17,7 @@ from app.api.schemas.notifications import (
     UpdateNotificationPreferencesRequest,
 )
 from app.api.schemas.recordings import Pagination
+from app.application.creators.avatar_cache import notification_avatar_urls
 from app.application.notifications.service import (
     PREFERENCE_FIELDS,
     NotificationPreferenceState,
@@ -39,7 +40,7 @@ def _preferences_response(state: NotificationPreferenceState) -> NotificationPre
     )
 
 
-def _response(item: UserNotification) -> NotificationResponse:
+def _response(item: UserNotification, avatar_url: str | None = None) -> NotificationResponse:
     return NotificationResponse(
         id=str(item.id),
         type=cast(NotificationKind, item.kind),
@@ -49,6 +50,7 @@ def _response(item: UserNotification) -> NotificationResponse:
         resource_type=cast(Literal["recording", "watch"] | None, item.resource_type),
         resource_id=item.resource_id,
         created_at=item.created_at,
+        avatar_url=avatar_url,
     )
 
 
@@ -70,8 +72,13 @@ async def list_notifications(
         cursor=cursor,
         unread_only=unread_only,
     )
+    avatars = await notification_avatar_urls(
+        session,
+        principal.user_id,
+        [(item.id, item.resource_type, item.resource_id) for item in page.items],
+    )
     return NotificationListResponse(
-        items=[_response(item) for item in page.items],
+        items=[_response(item, avatars.get(item.id)) for item in page.items],
         pagination=Pagination(
             next_cursor=page.next_cursor,
             has_more=page.has_more,
