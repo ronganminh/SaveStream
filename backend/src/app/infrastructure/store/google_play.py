@@ -155,19 +155,26 @@ class GooglePlayReceiptVerifier(StoreReceiptVerifier):
             ) from exc
 
         order_id = str(payload.get("orderId") or "")
+        # ProductPurchase.productId and quantity are documented as "may not
+        # be present" (production purchases usually omit productId). The
+        # token was looked up under product_id in the URL, so only a
+        # productId that is present and different is a mismatch.
         verified_product_id = str(payload.get("productId") or "")
         state = int(payload.get("purchaseState", -1))
+        if state not in {_PURCHASED, _PENDING}:
+            # 1 = cancelled: refunded, or not acknowledged in time (Google
+            # refunds test purchases after a few minutes).
+            raise _invalid(
+                f"Google Play purchase is not active (purchaseState={state})"
+            )
+        if verified_product_id and verified_product_id != product_id:
+            raise _invalid("Google Play purchase is for another product")
         # orderId is empty for promo codes, so the app may send the purchase
         # token as its transaction id instead.
-        if (
-            state not in {_PURCHASED, _PENDING}
-            or verified_product_id != product_id
-            or (order_id and transaction_id not in {order_id, receipt})
-            or int(payload.get("quantity", 1)) != 1
-        ):
-            raise _invalid(
-                "Google Play purchase does not match the requested purchase"
-            )
+        if order_id and transaction_id not in {order_id, receipt}:
+            raise _invalid("Google Play purchase order does not match")
+        if int(payload.get("quantity") or 1) != 1:
+            raise _invalid("Google Play purchase quantity is not 1")
 
         purchased_at = None
         purchase_millis = payload.get("purchaseTimeMillis")
