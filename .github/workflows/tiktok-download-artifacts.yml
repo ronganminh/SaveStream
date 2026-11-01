@@ -1,0 +1,79 @@
+name: TikTok public video download artifacts
+
+on:
+  push:
+    branches:
+      - feat/tiktok-video-downloader-backend
+    paths:
+      - ".github/workflows/tiktok-download-artifacts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  download-public-videos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install yt-dlp and FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --upgrade pip yt-dlp
+
+      - name: Download the three supplied public TikTok links
+        id: download
+        shell: bash
+        run: |
+          mkdir -p downloads
+          failed=0
+          : > downloads/manifest.txt
+
+          urls=(
+            "https://www.tiktok.com/@tramquannsatvutru/video/7696351169647561992?is_from_webapp=1&sender_device=pc"
+            "https://www.tiktok.com/@pakesub3/video/7702676085506411809?is_from_webapp=1&sender_device=pc"
+            "https://www.tiktok.com/@wuryhochust2026/video/7702885119203216661?is_from_webapp=1&sender_device=pc"
+          )
+
+          for url in "${urls[@]}"; do
+            id="$(printf '%s' "$url" | sed -E 's#^.*/video/([0-9]+).*#\1#')"
+            echo "Downloading TikTok video $id"
+            if yt-dlp \
+              --no-warnings \
+              --no-progress \
+              --no-playlist \
+              --max-filesize 512M \
+              --format "best[ext=mp4]/best" \
+              --merge-output-format mp4 \
+              --recode-video mp4 \
+              --output "downloads/%(id)s.%(ext)s" \
+              "$url"; then
+              echo "$id: downloaded" | tee -a downloads/manifest.txt
+            else
+              echo "$id: failed (unavailable, unsupported, or blocked by TikTok)" | tee -a downloads/manifest.txt
+              failed=$((failed + 1))
+            fi
+          done
+
+          echo "failed=$failed" >> "$GITHUB_OUTPUT"
+
+      - name: Upload downloaded videos as GitHub Actions artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-public-videos
+          path: downloads/
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Fail if any video could not be downloaded
+        if: always() && steps.download.outputs.failed != '0'
+        run: |
+          echo "One or more TikTok links could not be downloaded. Check the manifest artifact and job logs."
+          exit 1
