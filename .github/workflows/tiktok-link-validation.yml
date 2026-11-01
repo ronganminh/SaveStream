@@ -28,4 +28,4 @@ jobs:
           python -m pip install -e ".[dev]"
       - name: Validate supplied TikTok links
         working-directory: backend
-        run: pytest tests/test_video_download_urls.py -q
+        run: pytest tests/test_video_download_urls.py tests/test_user_supplied_tiktok_links.py -q
