@@ -79,6 +79,7 @@ async def get_video_download(job_id: str) -> VideoDownloadStatusResponse:
             status="completed",
             title=str(data.get("title") or "TikTok video")[:300],
             format=data.get("format") if data.get("format") in {"mp4", "mp3"} else None,
+            provider=str(data.get("provider"))[:40] if data.get("provider") else None,
             download_url=data.get("download_url"),
             expires_in_seconds=int(data.get("expires_in_seconds", 0)),
         )
