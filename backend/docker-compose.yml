@@ -75,6 +75,16 @@ services:
       redis:
         condition: service_healthy
 
+  download-worker:
+    build: .
+    command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=downloads", "--concurrency=2"]
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   scheduler:
     build: .
     command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "beat", "--loglevel=INFO"]
