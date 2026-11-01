@@ -348,3 +348,18 @@ def handle_outbox_event(
         deliver_analytics_event(payload)
         return
     logger.info("outbox event handled id=%s topic=%s", event_id, topic)
+
+
+@celery_app.task(
+    bind=True,
+    name="savestream.video_download.run",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=2,
+)
+def video_download_run(self, url: str, output_format: str) -> dict[str, Any]:
+    """Run one public TikTok download on the isolated downloads worker queue."""
+    from app.infrastructure.video_downloads.worker import run_video_download
+
+    return run_video_download(str(self.request.id), url, output_format)
