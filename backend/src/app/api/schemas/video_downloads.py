@@ -22,6 +22,7 @@ class VideoDownloadStatusResponse(BaseModel):
     status: Literal["queued", "processing", "completed", "failed"]
     title: str | None = None
     format: Literal["mp4", "mp3"] | None = None
+    provider: str | None = None
     download_url: HttpUrl | None = None
     expires_in_seconds: int | None = None
     error: str | None = None
