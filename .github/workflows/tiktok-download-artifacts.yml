@@ -6,6 +6,10 @@ on:
       - feat/tiktok-video-downloader-backend
     paths:
       - ".github/workflows/tiktok-download-artifacts.yml"
+      - "backend/src/app/infrastructure/video_downloads/**"
+      - "backend/src/app/application/video_downloads/**"
+      - "backend/pyproject.toml"
+      - "backend/Dockerfile"
   workflow_dispatch:
 
 permissions:
