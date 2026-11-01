@@ -27,6 +27,7 @@ from app.api.routes.partners import admin_router as partners_admin_router
 from app.api.routes.partners import public_router as partners_public_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.users import router as users_router
+from app.api.routes.video_downloads import router as video_downloads_router
 from app.api.routes.watches import router as watches_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.store_webhooks import router as store_webhooks_router
@@ -108,6 +109,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(devices_router)
     app.include_router(pricing_router)
     app.include_router(public_router)
+    app.include_router(video_downloads_router)
     app.include_router(reports_router)
     app.include_router(partners_public_router)
     app.include_router(partners_admin_router)
