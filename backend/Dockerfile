@@ -11,7 +11,7 @@ RUN apt-get update \
 
 COPY requirements.lock ./
 RUN python -m pip install --no-cache-dir --no-deps -r requirements.lock \
-    && python -m pip install --no-cache-dir "tiktok-dlpy==2.2.1" "TikTokApi==7.3.3" "playwright>=1.50,<2" \
+    && python -m pip install --no-cache-dir "tiktok-dlpy==2.2.1" "TikTokApi==7.3.3" "playwright==1.64.1" \
     && python -m playwright install --with-deps chromium
 
 COPY pyproject.toml README.md LICENSE ./
