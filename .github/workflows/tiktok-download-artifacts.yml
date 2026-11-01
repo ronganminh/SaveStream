@@ -41,6 +41,7 @@ jobs:
         run: |
           mkdir -p downloads
           python - <<'PY'
+          import os
           import shutil
           import tempfile
           from pathlib import Path
@@ -95,10 +96,10 @@ jobs:
                   failed += 1
                   manifest.append(f"{video_id}: all providers failed")
 
-          (output / "manifest.txt").write_text("\\n".join(manifest) + "\\n", encoding="utf-8")
-          print("\\n".join(manifest))
-          with open("$GITHUB_OUTPUT", "a", encoding="utf-8") as result:
-              result.write(f"failed={failed}\\n")
+          (output / "manifest.txt").write_text("\n".join(manifest) + "\n", encoding="utf-8")
+          print("\n".join(manifest))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as result:
+              result.write(f"failed={failed}\n")
           PY
       - name: Upload downloaded videos as GitHub Actions artifact
         if: always()
