@@ -221,6 +221,28 @@ services:
       - --concurrency=${SAVESTREAM_RECORDING_CONCURRENCY:-6}
       - --hostname=recorder-green@%h
 
+  # Public downloads use a bounded pool separate from LIVE recorder workers.
+  download-worker:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.infrastructure.queue.celery_app:celery_app
+      - worker
+      - --loglevel=INFO
+      - --queues=downloads
+      - --concurrency=${SAVESTREAM_DOWNLOAD_CONCURRENCY:-2}
+      - --hostname=download@%h
+    environment: *app-env
+    secrets: *app-secrets
+    networks:
+      - backend
+    depends_on:
+      api:
+        condition: service_healthy
+
   scheduler:
     build:
       context: ../../backend
