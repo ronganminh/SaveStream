@@ -50,7 +50,11 @@ def _stream_media_url(value: str, destination: Path) -> None:
                 stream=True,
                 allow_redirects=False,
                 timeout=(10, 30),
-                headers={"User-Agent": "SaveStream/1.0", "Accept-Encoding": "identity"},
+                headers={
+                    "User-Agent": "SaveStream/1.0",
+                    "Referer": "https://www.tiktok.com/",
+                    "Accept-Encoding": "identity",
+                },
             )
             try:
                 if response.is_redirect or response.is_permanent_redirect:
