@@ -16,6 +16,7 @@ from app.settings import get_app_settings
 
 logger = logging.getLogger("savestream.video_downloads")
 _MAX_FILE_BYTES = 512 * 1024 * 1024
+_DOWNLOAD_RETENTION_SECONDS = 24 * 60 * 60
 _MEDIA_HOST_SUFFIXES = (
     ".tiktokcdn.com",
     ".tiktokv.com",
@@ -168,6 +169,18 @@ def _validate_output(output_dir: Path) -> Path:
     return source
 
 
+def _schedule_download_cleanup(storage_key: str) -> None:
+    """Schedule object deletion; the R2 lifecycle rule is the durable backstop."""
+    from app.infrastructure.queue.celery_app import celery_app
+
+    celery_app.send_task(
+        "savestream.video_download.delete",
+        args=[storage_key],
+        countdown=_DOWNLOAD_RETENTION_SECONDS,
+        queue="downloads",
+    )
+
+
 def run_video_download(job_id: str, url: str, output_format: str) -> dict[str, Any]:
     """Try independent public-video providers in order; never use account cookies."""
     if output_format not in {"mp4", "mp3"}:
@@ -234,6 +247,14 @@ def run_video_download(job_id: str, url: str, output_format: str) -> dict[str, A
         storage_key = f"downloads/{job_id}.{extension}"
         content_type = "video/mp4" if extension == "mp4" else "audio/mpeg"
         storage.upload_file(source, storage_key, content_type=content_type)
+        try:
+            _schedule_download_cleanup(storage_key)
+        except Exception as exc:
+            try:
+                storage.remove(storage_key)
+            except Exception:
+                logger.exception("could not remove artifact after cleanup scheduling failed job_id=%s", job_id)
+            raise RuntimeError("Could not schedule automatic download cleanup") from exc
         filename = f"savestream-{job_id}.{extension}"
         download_url = storage.presigned_get_url(
             storage_key,
