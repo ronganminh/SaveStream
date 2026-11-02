@@ -1,0 +1,14 @@
+{
+  "Rules": [
+    {
+      "ID": "savestream-download-expire-after-one-day",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "downloads/"
+      },
+      "Expiration": {
+        "Days": 1
+      }
+    }
+  ]
+}
