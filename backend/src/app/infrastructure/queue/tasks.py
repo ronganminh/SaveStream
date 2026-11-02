@@ -376,11 +376,9 @@ def video_download_run(self, url: str, output_format: str) -> dict[str, Any]:
 def video_download_delete(self, storage_key: str) -> None:
     """Delete a temporary public-download object after its retention window."""
     del self
-    if (
-        not storage_key.startswith("downloads/")
-        or storage_key.startswith("downloads/../")
-        or "\\" in storage_key
-    ):
+    import re
+
+    if not re.fullmatch(r"downloads/[0-9a-fA-F-]{36}\.(?:mp4|mp3)", storage_key):
         raise ValueError("Unsupported download artifact key")
     from app.infrastructure.storage.minio import MinioStorageClient
     from app.settings import get_app_settings
