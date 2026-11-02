@@ -13,8 +13,8 @@ Set these non-secret variables:
 
 Create these secret files with restrictive permissions:
 
-- \`celery_broker_url\`: the same Celery broker URL used by the API, reachable over a private VPN/tunnel only.
-- \`celery_result_backend\`: the same Celery result-backend URL used by the API, reachable over a private VPN/tunnel only.
+- \`celery_broker_url\`: a dedicated Redis ACL user/URL for the downloader (not the API's unrestricted credential), limited to the downloads queue and required Celery transport keys/commands, reachable over a private VPN/tunnel only.
+- \`celery_result_backend\`: a dedicated Redis ACL user/URL limited to the Celery result keys required for download job IDs, reachable over a private VPN/tunnel only.
 - \`download_r2_access_key\` and \`download_r2_secret_key\`: a separate R2 token scoped only to the dedicated download bucket.
 
 Do not copy the production database URL, JWT secret, payment credentials, SMTP credentials, metrics token, FCM key, or Google Play service-account key to this host. Do not expose Redis publicly; connect the two hosts through a private network and restrict the Redis firewall/ACL to the API and downloader.
