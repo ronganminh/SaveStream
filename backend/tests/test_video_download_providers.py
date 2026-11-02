@@ -12,6 +12,14 @@ def _write_valid_mp4(path: Path) -> None:
     path.write_bytes(b"\x00\x00\x00\x18ftypmp42")
 
 
+
+def test_public_download_permission_fails_closed() -> None:
+    worker._assert_public_download_enabled({"author": {"downloadSetting": 0}})
+    with pytest.raises(RuntimeError, match="Creator has not enabled"):
+        worker._assert_public_download_enabled({"author": {"downloadSetting": 3}})
+    with pytest.raises(RuntimeError, match="Creator has not enabled"):
+        worker._assert_public_download_enabled({"author": {}})
+
 def test_media_url_rejects_non_tiktok_hosts() -> None:
     with pytest.raises(RuntimeError):
         worker._validate_media_url("https://127.0.0.1/private.mp4")
@@ -43,6 +51,7 @@ def test_provider_chain_falls_back_and_reports_winner(monkeypatch: pytest.Monkey
             return "https://storage.example/download"
 
     monkeypatch.setattr(worker, "normalize_tiktok_url", lambda value: value)
+    monkeypatch.setattr(worker, "_verify_public_download_permission", lambda value: None)
     monkeypatch.setattr(worker, "get_app_settings", lambda: SimpleNamespace(artifact_presign_seconds=900))
     monkeypatch.setattr(worker, "MinioStorageClient", lambda settings: Storage())
     monkeypatch.setattr(worker, "_download_with_ytdlp", ytdlp)
