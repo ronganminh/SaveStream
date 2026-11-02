@@ -22,10 +22,10 @@ services:
       SAVESTREAM_ENVIRONMENT: staging
       SAVESTREAM_CELERY_BROKER_URL_FILE: /run/secrets/celery_broker_url
       SAVESTREAM_CELERY_RESULT_BACKEND_FILE: /run/secrets/celery_result_backend
-      SAVESTREAM_MINIO_ENDPOINT: \${SAVESTREAM_R2_ENDPOINT:?set R2 endpoint}
+      SAVESTREAM_MINIO_ENDPOINT: ${SAVESTREAM_R2_ENDPOINT:?set R2 endpoint}
       SAVESTREAM_MINIO_ACCESS_KEY_FILE: /run/secrets/download_r2_access_key
       SAVESTREAM_MINIO_SECRET_KEY_FILE: /run/secrets/download_r2_secret_key
-      SAVESTREAM_MINIO_BUCKET: \${SAVESTREAM_DOWNLOAD_R2_BUCKET:?set dedicated download bucket}
+      SAVESTREAM_MINIO_BUCKET: ${SAVESTREAM_DOWNLOAD_R2_BUCKET:?set dedicated download bucket}
       SAVESTREAM_MINIO_SECURE: "true"
       SAVESTREAM_ARTIFACT_PRESIGN_SECONDS: "900"
     secrets:
@@ -47,10 +47,10 @@ services:
 
 secrets:
   celery_broker_url:
-    file: \${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/celery_broker_url
+    file: ${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/celery_broker_url
   celery_result_backend:
-    file: \${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/celery_result_backend
+    file: ${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/celery_result_backend
   download_r2_access_key:
-    file: \${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/download_r2_access_key
+    file: ${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/download_r2_access_key
   download_r2_secret_key:
-    file: \${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/download_r2_secret_key
+    file: ${SAVESTREAM_SECRETS_DIR:?set downloader secrets dir}/download_r2_secret_key
