@@ -48,6 +48,7 @@ def test_provider_chain_falls_back_and_reports_winner(monkeypatch: pytest.Monkey
     monkeypatch.setattr(worker, "_download_with_ytdlp", ytdlp)
     monkeypatch.setattr(worker, "_download_with_tiktokdl", tiktokdl)
     monkeypatch.setattr(worker, "_download_with_tiktokapi", tiktokapi)
+    monkeypatch.setattr(worker, "_schedule_download_cleanup", lambda storage_key: None)
 
     result = worker.run_video_download("job-1", "https://www.tiktok.com/@user/video/123", "mp4")
 
