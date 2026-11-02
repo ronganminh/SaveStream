@@ -87,6 +87,27 @@ def _stream_media_url(value: str, destination: Path) -> None:
     raise RuntimeError("Too many media redirects")
 
 
+def _assert_public_download_enabled(video_info: dict[str, Any]) -> None:
+    """Fail closed unless TikTok metadata explicitly allows public downloads."""
+    author = video_info.get("author")
+    setting = author.get("downloadSetting") if isinstance(author, dict) else None
+    if type(setting) is not int or setting != 0:
+        raise RuntimeError("Creator has not enabled public video downloads")
+
+
+def _verify_public_download_permission(url: str) -> None:
+    """Read public TikTok metadata before any media provider is allowed to fetch."""
+    from TikTokApi import TikTokApi
+
+    async def inspect() -> None:
+        async with TikTokApi() as api:
+            await api.create_sessions(num_sessions=1, sleep_after=3, browser="chromium")
+            info = await api.video(url=url).info()
+            _assert_public_download_enabled(info)
+
+    asyncio.run(inspect())
+
+
 def _download_with_ytdlp(url: str, output_dir: Path) -> str:
     options: dict[str, Any] = {
         "outtmpl": str(output_dir / "source.%(ext)s"),
@@ -186,6 +207,7 @@ def run_video_download(job_id: str, url: str, output_format: str) -> dict[str, A
     if output_format not in {"mp4", "mp3"}:
         raise ValueError("Unsupported output format")
     canonical_url = normalize_tiktok_url(url)
+    _verify_public_download_permission(canonical_url)
     settings = get_app_settings()
     storage = MinioStorageClient(settings)
 
