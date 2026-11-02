@@ -95,17 +95,18 @@ def _assert_public_download_enabled(video_info: dict[str, Any]) -> None:
         raise RuntimeError("Creator has not enabled public video downloads")
 
 
-def _verify_public_download_permission(url: str) -> None:
+def _verify_public_download_permission(url: str) -> dict[str, Any]:
     """Read public TikTok metadata before any media provider is allowed to fetch."""
     from TikTokApi import TikTokApi
 
-    async def inspect() -> None:
+    async def inspect() -> dict[str, Any]:
         async with TikTokApi() as api:
             await api.create_sessions(num_sessions=1, sleep_after=3, browser="chromium")
             info = await api.video(url=url).info()
             _assert_public_download_enabled(info)
+            return info
 
-    asyncio.run(inspect())
+    return asyncio.run(inspect())
 
 
 def _download_with_ytdlp(url: str, output_dir: Path) -> str:
@@ -153,23 +154,26 @@ def _download_with_tiktokdl(url: str, output_dir: Path) -> str:
     return str(getattr(post, "post_description", None) or "TikTok video")[:300]
 
 
-def _download_with_tiktokapi(url: str, output_dir: Path) -> str:
-    from TikTokApi import TikTokApi
+def _download_with_tiktokapi(
+    url: str, output_dir: Path, *, video_info: dict[str, Any] | None = None
+) -> str:
+    if video_info is None:
+        from TikTokApi import TikTokApi
 
-    async def extract_and_download() -> str:
-        async with TikTokApi() as api:
-            await api.create_sessions(num_sessions=1, sleep_after=3, browser="chromium")
-            video = api.video(url=url)
-            data = await video.info()
-            video_data = data.get("video") or {}
-            media_url = video_data.get("downloadAddr") or video_data.get("playAddr")
-            if not media_url:
-                raise RuntimeError("TikTokApi returned no downloadable media URL")
-            _stream_media_url(str(media_url), output_dir / "tiktokapi.mp4")
-            desc = str(data.get("desc") or "TikTok video")
-            return desc[:300]
+        async def fetch_info() -> dict[str, Any]:
+            async with TikTokApi() as api:
+                await api.create_sessions(num_sessions=1, sleep_after=3, browser="chromium")
+                return await api.video(url=url).info()
 
-    return asyncio.run(extract_and_download())
+        video_info = asyncio.run(fetch_info())
+        _assert_public_download_enabled(video_info)
+
+    video_data = video_info.get("video") or {}
+    media_url = video_data.get("downloadAddr") or video_data.get("playAddr")
+    if not media_url:
+        raise RuntimeError("TikTokApi returned no downloadable media URL")
+    _stream_media_url(str(media_url), output_dir / "tiktokapi.mp4")
+    return str(video_info.get("desc") or "TikTok video")[:300]
 
 
 def _validate_output(output_dir: Path) -> Path:
@@ -207,14 +211,14 @@ def run_video_download(job_id: str, url: str, output_format: str) -> dict[str, A
     if output_format not in {"mp4", "mp3"}:
         raise ValueError("Unsupported output format")
     canonical_url = normalize_tiktok_url(url)
-    _verify_public_download_permission(canonical_url)
+    video_info = _verify_public_download_permission(canonical_url)
     settings = get_app_settings()
     storage = MinioStorageClient(settings)
 
     providers: tuple[tuple[str, Callable[[str, Path], str]], ...] = (
         ("yt-dlp", _download_with_ytdlp),
         ("tiktok-dlpy", _download_with_tiktokdl),
-        ("TikTokApi", _download_with_tiktokapi),
+        ("TikTokApi", lambda value, directory: _download_with_tiktokapi(value, directory, video_info=video_info)),
     )
     errors: list[str] = []
     title = "TikTok video"
