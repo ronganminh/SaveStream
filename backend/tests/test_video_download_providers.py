@@ -9,7 +9,7 @@ from app.infrastructure.video_downloads import worker
 
 
 def _write_valid_mp4(path: Path) -> None:
-    path.write_bytes(b"\\x00\\x00\\x00\\x18ftypmp42")
+    path.write_bytes(b"\x00\x00\x00\x18ftypmp42")
 
 
 def test_media_url_rejects_non_tiktok_hosts() -> None:
