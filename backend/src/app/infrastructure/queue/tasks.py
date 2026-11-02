@@ -363,3 +363,26 @@ def video_download_run(self, url: str, output_format: str) -> dict[str, Any]:
     from app.infrastructure.video_downloads.worker import run_video_download
 
     return run_video_download(str(self.request.id), url, output_format)
+
+
+@celery_app.task(
+    bind=True,
+    name="savestream.video_download.delete",
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_jitter=True,
+    max_retries=8,
+)
+def video_download_delete(self, storage_key: str) -> None:
+    """Delete a temporary public-download object after its retention window."""
+    del self
+    if (
+        not storage_key.startswith("downloads/")
+        or storage_key.startswith("downloads/../")
+        or "\\" in storage_key
+    ):
+        raise ValueError("Unsupported download artifact key")
+    from app.infrastructure.storage.minio import MinioStorageClient
+    from app.settings import get_app_settings
+
+    MinioStorageClient(get_app_settings()).remove(storage_key)
