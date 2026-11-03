@@ -72,6 +72,7 @@ def test_provider_chain_raises_after_all_providers_fail(monkeypatch: pytest.Monk
         pass
 
     monkeypatch.setattr(worker, "normalize_tiktok_url", lambda value: value)
+    monkeypatch.setattr(worker, "_verify_public_download_permission", lambda value: {})
     monkeypatch.setattr(worker, "get_app_settings", lambda: SimpleNamespace(artifact_presign_seconds=900))
     monkeypatch.setattr(worker, "MinioStorageClient", lambda settings: Storage())
 
