@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import re
 import tempfile
 from pathlib import Path
 from typing import Any, Callable
@@ -96,17 +98,39 @@ def _assert_public_download_enabled(video_info: dict[str, Any]) -> None:
 
 
 def _verify_public_download_permission(url: str) -> dict[str, Any]:
-    """Read public TikTok metadata before any media provider is allowed to fetch."""
-    from TikTokApi import TikTokApi
-
-    async def inspect() -> dict[str, Any]:
-        async with TikTokApi() as api:
-            await api.create_sessions(num_sessions=1, sleep_after=3, browser="chromium")
-            info = await api.video(url=url).info()
-            _assert_public_download_enabled(info)
-            return info
-
-    return asyncio.run(inspect())
+    """Read the public page's embedded metadata; this avoids a TikTokApi browser session."""
+    response = requests.get(
+        url,
+        timeout=(10, 25),
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/xhtml+xml",
+            "Referer": "https://www.tiktok.com/",
+        },
+    )
+    response.raise_for_status()
+    match = re.search(
+        r'<script[^>]+id=["\']__UNIVERSAL_DATA_FOR_REHYDRATION__["\'][^>]*>(.*?)</script>',
+        response.text,
+        flags=re.DOTALL,
+    )
+    if not match:
+        raise RuntimeError("TikTok public page did not include video metadata")
+    try:
+        page_data = json.loads(match.group(1))
+        scope = page_data.get("__DEFAULT_SCOPE__", {})
+        detail = scope.get("webapp.video-detail", {})
+        video_info = detail.get("itemInfo", {}).get("itemStruct", {})
+    except (AttributeError, TypeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("TikTok public page metadata could not be parsed") from exc
+    if not isinstance(video_info, dict) or not video_info:
+        raise RuntimeError("TikTok public page did not include video details")
+    _assert_public_download_enabled(video_info)
+    return video_info
 
 
 def _download_with_ytdlp(url: str, output_dir: Path) -> str:
