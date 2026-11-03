@@ -1,4 +1,4 @@
-name: TikTok permitted-download smoke test
+name: TikTok permitted-download smoke test (3-link verification)
 
 on:
   push:
