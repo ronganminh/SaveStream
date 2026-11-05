@@ -34,6 +34,109 @@ echo "Recorder containers (a running one with restart policy \"no\" is draining)
 docker ps -a --filter label=com.docker.compose.project=savestream-production \
   --format '{{.Names}} {{.Status}}' | grep -i recorder || echo "none"
 
+section "Channel verification, last ${DAYS} day(s) (read-only; handles hashed, codes and bios never printed)"
+echo "-- settings"
+compose exec -T api python -c "from app.settings import get_app_settings as g; s=g(); print('enforced', s.channel_verification_enforced, 'ttl_s', s.channel_verification_code_ttl_seconds, 'max_checks', s.channel_verification_max_checks, 'interval_s', s.channel_verification_check_interval_seconds)" || true
+echo "-- codes by status / last result"
+sql "select status, coalesce(last_result, '-') as last_result, count(*) as codes,
+            round(avg(attempts), 1) as avg_checks, max(attempts) as max_checks,
+            count(*) filter (where attempts = 0) as never_checked
+     from channel_verifications where created_at >= now() - interval '${DAYS} days'
+     group by 1, 2 order by 3 desc;"
+echo "-- per channel: codes issued, checks, outcome (by client type of the user's sessions)"
+sql "with v as (
+       select watch_id, user_id, count(*) as codes, sum(attempts) as checks,
+              bool_or(status = 'verified') as verified,
+              min(created_at) as first_code, max(verified_at) as verified_at,
+              string_agg(distinct coalesce(last_result, 'never_checked'), ',') as results
+       from channel_verifications where created_at >= now() - interval '${DAYS} days'
+       group by watch_id, user_id)
+     select coalesce((select string_agg(distinct s.client_type, '+') from auth_sessions s
+                      where s.user_id = v.user_id and s.created_at >= now() - interval '${DAYS} days'), '?') as clients,
+            count(*) as channels, count(*) filter (where verified) as verified,
+            round(avg(codes), 1) as avg_codes, round(avg(checks), 1) as avg_checks,
+            round(avg(extract(epoch from verified_at - first_code) / 60) filter (where verified)) as avg_min_to_verify
+     from v group by 1 order by 2 desc;"
+echo "-- latest 40 codes"
+sql "select to_char(cv.created_at, 'MM-DD HH24:MI') as created, left(md5(cv.username), 8) as handle,
+            cv.status, coalesce(cv.last_result, '-') as last_result, cv.attempts as checks,
+            round(extract(epoch from cv.last_checked_at - cv.created_at) / 60) as last_check_min,
+            round(extract(epoch from cv.verified_at - cv.created_at) / 60) as verified_min,
+            w.source_type, (w.source_value ~ '[A-Z]') as src_upper, (w.source_value like '%@%') as src_at,
+            (lower(coalesce(w.resolved_username, '')) = cv.username) as resolved_matches,
+            w.resolved_username is null as unresolved,
+            w.owner_verified_at is not null as watch_verified,
+            case when w.verification_due_at is null then '-' when w.verification_due_at < now() then 'past' else 'grace' end as due,
+            w.deleted_at is not null as deleted
+     from channel_verifications cv join watches w on w.id = cv.watch_id
+     where cv.created_at >= now() - interval '${DAYS} days'
+     order by cv.created_at desc limit 40;"
+echo "-- channels added in the window: verification state"
+sql "select count(*) as added, count(*) filter (where owner_verified_at is not null) as verified,
+            count(*) filter (where owner_verified_at is null and (verification_due_at is null or verification_due_at <= now())) as blocked_unverified,
+            count(*) filter (where owner_verified_at is null and verification_due_at > now()) as in_grace,
+            count(*) filter (where resolved_username is null) as unresolved,
+            count(*) filter (where source_type <> 'username') as non_username_source,
+            count(*) filter (where not exists (select 1 from channel_verifications cv where cv.watch_id = watches.id)) as never_started
+     from watches where created_at >= now() - interval '${DAYS} days' and deleted_at is null;"
+echo "-- API requests to verification endpoints since the api container started"
+compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 \
+  | grep -oE '"(GET|POST) /v1/watches/[^ ]+/verification(/check)? HTTP/1.1" [0-9]{3}' \
+  | sed -E 's#/v1/watches/[^/]+/#/v1/watches/{id}/#' | sort | uniq -c | sort -rn || echo "(none)"
+echo "-- lookup failures logged"
+compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 | grep -c "Channel verification lookup failed" || true
+echo "-- live probe: can the server read the bio of recently checked channels now?"
+compose exec -T -e DAYS="$DAYS" api python - <<'PY' || echo "probe could not run"
+import asyncio, hashlib, os, re, unicodedata
+from sqlalchemy import select
+from app.application.watches.verification import bio_contains_code
+from app.infrastructure.creators.tiktok_profile import TikTokChannelProfileLookup
+from app.infrastructure.db.session import Database
+from app.infrastructure.db.watch_models import ChannelVerification
+from app.settings import get_app_settings
+from datetime import datetime, timedelta, timezone
+
+ZW = re.compile("[​-‏⁠﻿]")
+
+async def main():
+    s = get_app_settings()
+    db = Database(s.database_url)
+    try:
+        async with db.session() as session:
+            since = datetime.now(timezone.utc) - timedelta(days=int(os.environ["DAYS"]))
+            rows = (await session.scalars(select(ChannelVerification)
+                .where(ChannelVerification.created_at >= since)
+                .order_by(ChannelVerification.created_at.desc()).limit(60))).all()
+        seen, picked = set(), []
+        for r in rows:
+            if r.username not in seen:
+                seen.add(r.username); picked.append(r)
+            if len(picked) >= 8:
+                break
+        lookup = TikTokChannelProfileLookup()
+        for r in picked:
+            h = hashlib.md5(r.username.encode()).hexdigest()[:8]
+            try:
+                p = await lookup.fetch(r.username)
+            except Exception as exc:
+                print(f"{h} status={r.status}: lookup error {type(exc).__name__}"); continue
+            if p is None:
+                print(f"{h} status={r.status}: no profile (blocked/WAF/login page)"); continue
+            if p.bio is None:
+                print(f"{h} status={r.status}: profile but no bio field"); continue
+            bio = p.bio
+            nfkc = ZW.sub("", unicodedata.normalize("NFKC", bio))
+            print(f"{h} status={r.status} last={r.last_result}: bio_len={len(bio)} "
+                  f"newlines={bio.count(chr(10))} non_ascii={sum(ord(c) > 127 for c in bio)} "
+                  f"fullwidth={sum(0xFF01 <= ord(c) <= 0xFF5E for c in bio)} zero_width={len(ZW.findall(bio))} "
+                  f"has_code_now={bio_contains_code(bio, r.code)} has_code_nfkc={bio_contains_code(nfkc, r.code)} "
+                  f"has_SS={'SS' in nfkc.upper()}")
+    finally:
+        await db.close()
+
+asyncio.run(main())
+PY
+
 section "Recordings by status"
 sql "select status, count(*) as jobs, sum(duration_seconds)/60 as minutes
      from recordings
