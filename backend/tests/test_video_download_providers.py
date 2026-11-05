@@ -12,13 +12,13 @@ def _write_valid_mp4(path: Path) -> None:
     path.write_bytes(b"\x00\x00\x00\x18ftypmp42")
 
 
-
 def test_public_download_permission_fails_closed() -> None:
     worker._assert_public_download_enabled({"author": {"downloadSetting": 0}})
-    with pytest.raises(RuntimeError, match="Creator has not enabled"):
+    with pytest.raises(RuntimeError, match="explicitly denies public downloads"):
         worker._assert_public_download_enabled({"author": {"downloadSetting": 3}})
-    with pytest.raises(RuntimeError, match="Creator has not enabled"):
+    with pytest.raises(RuntimeError, match="missing author.downloadSetting"):
         worker._assert_public_download_enabled({"author": {}})
+
 
 def test_media_url_rejects_non_tiktok_hosts() -> None:
     with pytest.raises(RuntimeError):
