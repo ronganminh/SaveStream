@@ -75,6 +75,26 @@ services:
       redis:
         condition: service_healthy
 
+  download-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.downloader
+    command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "worker", "--loglevel=INFO", "--queues=downloads", "--concurrency=1"]
+    environment: *backend-env
+    cpus: 1.5
+    mem_limit: 2g
+    pids_limit: 128
+    shm_size: 512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   scheduler:
     build: .
     command: ["celery", "-A", "app.infrastructure.queue.celery_app:celery_app", "beat", "--loglevel=INFO"]

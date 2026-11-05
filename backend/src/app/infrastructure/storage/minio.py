@@ -74,6 +74,7 @@ class MinioStorageClient:
         storage_key: str,
         *,
         content_disposition: str | None = None,
+        content_type: str = "video/mp4",
     ) -> str:
         """Signed GET URL. A `content_disposition` (e.g. attachment) is signed
         into the URL as `response-content-disposition`, so the browser saves
@@ -89,7 +90,7 @@ class MinioStorageClient:
         response_headers: dict[str, str | list[str] | tuple[str]] | None = (
             {
                 "response-content-disposition": content_disposition,
-                "response-content-type": "video/mp4",
+                "response-content-type": content_type,
             }
             if content_disposition
             else None

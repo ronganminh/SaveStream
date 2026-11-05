@@ -1,0 +1,97 @@
+name: TikTok permitted-download smoke test (3-link verification)
+
+on:
+  push:
+    branches:
+      - feat/tiktok-video-downloader-backend
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  permitted-public-downloads:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install FFmpeg and browser dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Install backend and TikTok providers
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m playwright install --with-deps chromium
+      - name: Test the three supplied URLs only when public downloads are enabled
+        env:
+          PYTHONPATH: backend/src
+        run: |
+          python - <<'PY'
+          import tempfile
+          from pathlib import Path
+
+          from app.application.video_downloads.urls import normalize_tiktok_url
+          from app.infrastructure.video_downloads import worker
+
+          urls = [
+              "https://www.tiktok.com/@tramquannsatvutru/video/7696351169647561992?is_from_webapp=1&sender_device=pc",
+              "https://www.tiktok.com/@pakesub3/video/7702676085506411809?is_from_webapp=1&sender_device=pc",
+              "https://www.tiktok.com/@wuryhochust2026/video/7702885119203216661?is_from_webapp=1&sender_device=pc",
+          ]
+          failed = 0
+
+          for url in urls:
+              video_id = url.split("/video/", 1)[1].split("?", 1)[0]
+              try:
+                  canonical = normalize_tiktok_url(url)
+                  info = worker._verify_public_download_permission(canonical)
+              except Exception as exc:
+                  print(f"{video_id}: blocked before download ({type(exc).__name__}: {exc})")
+                  failed += 1
+                  continue
+
+              providers = [
+                  ("yt-dlp", worker._download_with_ytdlp),
+                  ("tiktok-dlpy", worker._download_with_tiktokdl),
+                  (
+                      "TikTokApi",
+                      lambda value, directory: worker._download_with_tiktokapi(
+                          value, directory, video_info=info
+                      ),
+                  ),
+              ]
+              succeeded = False
+              for provider_name, provider in providers:
+                  with tempfile.TemporaryDirectory(prefix="savestream-permission-smoke-") as temp:
+                      directory = Path(temp)
+                      try:
+                          title = provider(canonical, directory)
+                          media = worker._validate_output(directory)
+                          print(
+                              f"{video_id}: PASS provider={provider_name} "
+                              f"bytes={media.stat().st_size} title={title[:120]}"
+                          )
+                          succeeded = True
+                          break
+                      except Exception as exc:
+                          print(f"{video_id}: {provider_name} failed ({type(exc).__name__}: {exc})")
+              if not succeeded:
+                  print(f"{video_id}: FAIL all providers exhausted")
+                  failed += 1
+
+          if failed:
+              raise SystemExit(f"{failed} of {len(urls)} links were not downloadable with permission")
+          PY

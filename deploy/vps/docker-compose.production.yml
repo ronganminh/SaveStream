@@ -221,6 +221,9 @@ services:
       - --concurrency=${SAVESTREAM_RECORDING_CONCURRENCY:-6}
       - --hostname=recorder-green@%h
 
+  # TikTok downloads are deployed on a separate host using
+  # docker-compose.download-worker.yml; never run Chromium on the LIVE host.
+
   scheduler:
     build:
       context: ../../backend

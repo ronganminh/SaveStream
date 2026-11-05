@@ -1,0 +1,31 @@
+name: TikTok link validation
+
+on:
+  push:
+    branches:
+      - feat/tiktok-video-downloader-backend
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tiktok-links:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+      - name: Install backend test dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Validate supplied TikTok links
+        working-directory: backend
+        run: pytest tests/test_video_download_urls.py tests/test_user_supplied_tiktok_links.py tests/test_video_download_providers.py -q

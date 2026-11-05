@@ -41,6 +41,9 @@ minio==7.2.20
 mypy_extensions==1.1.0
 mypy==1.18.2
 packaging==25.0
+playwright==1.64.1
+proxyproviders==0.2.2
+pyee==13.0.0
 pathspec==0.12.1
 pluggy==1.6.0
 posthog==7.60.0
@@ -67,11 +70,14 @@ setuptools==80.9.0
 six==1.17.0
 sniffio==1.3.1
 SQLAlchemy==2.0.54
+TikTokApi==7.3.3
 starlette==0.46.2
+tiktok-dlpy==2.2.1
 typing_extensions==4.16.0
 tzdata==2025.2
 tzlocal==5.3.1
 urllib3==2.7.0
+yt-dlp==2025.5.22
 uvicorn==0.34.3
 vine==5.1.0
 wcwidth==0.2.13
