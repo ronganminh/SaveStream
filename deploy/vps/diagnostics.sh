@@ -36,7 +36,7 @@ docker ps -a --filter label=com.docker.compose.project=savestream-production \
 
 section "Channel verification, last ${DAYS} day(s) (read-only; handles hashed, codes and bios never printed)"
 echo "-- settings"
-compose exec -T api python -c "from app.settings import get_app_settings as g; s=g(); print('enforced', s.channel_verification_enforced, 'ttl_s', s.channel_verification_code_ttl_seconds, 'max_checks', s.channel_verification_max_checks, 'interval_s', s.channel_verification_check_interval_seconds)" || true
+compose exec -T api python -c "from app.settings import get_app_settings as g; s=g(); print('enforced', s.channel_verification_enforced, 'ttl_s', s.channel_verification_code_ttl_seconds, 'max_checks', s.channel_verification_max_checks, 'interval_s', s.channel_verification_check_interval_seconds)" < /dev/null || true
 echo "-- codes by status / last result"
 sql "select status, coalesce(last_result, '-') as last_result, count(*) as codes,
             round(avg(attempts), 1) as avg_checks, max(attempts) as max_checks,
