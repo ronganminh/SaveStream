@@ -79,6 +79,17 @@ sql "select count(*) as added, count(*) filter (where owner_verified_at is not n
             count(*) filter (where source_type <> 'username') as non_username_source,
             count(*) filter (where not exists (select 1 from channel_verifications cv where cv.watch_id = watches.id)) as never_started
      from watches where created_at >= now() - interval '${DAYS} days' and deleted_at is null;"
+echo "-- channels added in the window, one per row (handles hashed)"
+sql "select to_char(w.created_at, 'MM-DD HH24:MI') as added, left(md5(lower(coalesce(w.resolved_username, w.source_value))), 8) as handle,
+            coalesce((select string_agg(distinct s.client_type, '+') from auth_sessions s
+                      where s.user_id = w.user_id and s.created_at between w.created_at - interval '2 days' and w.created_at + interval '1 day'), '?') as clients_near_add,
+            (select count(*) from channel_verifications cv where cv.watch_id = w.id) as codes,
+            w.owner_verified_at is not null as verified, w.auto_record,
+            (select count(*) from recordings r where r.user_id = w.user_id and r.created_at >= w.created_at) as user_recordings_since
+     from watches w where w.created_at >= now() - interval '${DAYS} days' and w.deleted_at is null
+     order by w.created_at desc;"
+echo "-- CHANNEL_NOT_VERIFIED refusals and watch auto-record skips in logs"
+compose logs --no-color --since "$((DAYS * 24))h" api worker scheduler 2>&1 | grep -c "CHANNEL_NOT_VERIFIED\|verification required\|not verified" || true
 echo "-- API requests to verification endpoints since the api container started"
 compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 \
   | grep -oE '"(GET|POST) /v1/watches/[^ ]+/verification(/check)? HTTP/1.1" [0-9]{3}' \
