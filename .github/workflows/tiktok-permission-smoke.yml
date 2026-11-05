@@ -59,7 +59,7 @@ jobs:
                   canonical = normalize_tiktok_url(url)
                   info = worker._verify_public_download_permission(canonical)
               except Exception as exc:
-                  print(f"{video_id}: blocked before download ({type(exc).__name__})")
+                  print(f"{video_id}: blocked before download ({type(exc).__name__}: {exc})")
                   failed += 1
                   continue
 
@@ -87,7 +87,7 @@ jobs:
                           succeeded = True
                           break
                       except Exception as exc:
-                          print(f"{video_id}: {provider_name} failed ({type(exc).__name__})")
+                          print(f"{video_id}: {provider_name} failed ({type(exc).__name__}: {exc})")
               if not succeeded:
                   print(f"{video_id}: FAIL all providers exhausted")
                   failed += 1
