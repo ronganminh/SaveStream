@@ -93,8 +93,10 @@ def _assert_public_download_enabled(video_info: dict[str, Any]) -> None:
     """Fail closed unless TikTok metadata explicitly allows public downloads."""
     author = video_info.get("author")
     setting = author.get("downloadSetting") if isinstance(author, dict) else None
-    if type(setting) is not int or setting != 0:
-        raise RuntimeError("Creator has not enabled public video downloads")
+    if type(setting) is not int:
+        raise RuntimeError("TikTok metadata is missing author.downloadSetting")
+    if setting != 0:
+        raise RuntimeError(f"TikTok metadata explicitly denies public downloads (downloadSetting={setting})")
 
 
 def _verify_public_download_permission(url: str) -> dict[str, Any]:
