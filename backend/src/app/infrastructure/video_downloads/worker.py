@@ -115,22 +115,40 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
         },
     )
     response.raise_for_status()
-    match = re.search(
-        r'<script[^>]+id=["\']__UNIVERSAL_DATA_FOR_REHYDRATION__["\'][^>]*>(.*?)</script>',
+    video_id = url.split("/video/", 1)[1].split("?", 1)[0]
+    scripts = re.findall(
+        r'<script[^>]+id=["\\']([^"\\']+)["\\'][^>]*>(.*?)</script>',
         response.text,
         flags=re.DOTALL,
     )
-    if not match:
-        raise RuntimeError("TikTok public page did not include video metadata")
-    try:
-        page_data = json.loads(match.group(1))
-        scope = page_data.get("__DEFAULT_SCOPE__", {})
-        detail = scope.get("webapp.video-detail", {})
-        video_info = detail.get("itemInfo", {}).get("itemStruct", {})
-    except (AttributeError, TypeError, json.JSONDecodeError) as exc:
-        raise RuntimeError("TikTok public page metadata could not be parsed") from exc
-    if not isinstance(video_info, dict) or not video_info:
-        raise RuntimeError("TikTok public page did not include video details")
+    parsed: dict[str, Any] = {}
+    for script_id, payload in scripts:
+        if script_id not in {"__UNIVERSAL_DATA_FOR_REHYDRATION__", "SIGI_STATE"}:
+            continue
+        try:
+            parsed[script_id] = json.loads(payload)
+        except json.JSONDecodeError:
+            continue
+
+    video_info: dict[str, Any] = {}
+    universal = parsed.get("__UNIVERSAL_DATA_FOR_REHYDRATION__", {})
+    if isinstance(universal, dict):
+        scope = universal.get("__DEFAULT_SCOPE__", {})
+        detail = scope.get("webapp.video-detail", {}) if isinstance(scope, dict) else {}
+        item_info = detail.get("itemInfo", {}) if isinstance(detail, dict) else {}
+        candidate = item_info.get("itemStruct", {}) if isinstance(item_info, dict) else {}
+        if isinstance(candidate, dict) and candidate:
+            video_info = candidate
+
+    if not video_info:
+        legacy = parsed.get("SIGI_STATE", {})
+        item_module = legacy.get("ItemModule", {}) if isinstance(legacy, dict) else {}
+        candidate = item_module.get(video_id, {}) if isinstance(item_module, dict) else {}
+        if isinstance(candidate, dict) and candidate:
+            video_info = candidate
+
+    if not video_info:
+        raise RuntimeError("TikTok public page did not include video details in supported metadata")
     _assert_public_download_enabled(video_info)
     return video_info
 
