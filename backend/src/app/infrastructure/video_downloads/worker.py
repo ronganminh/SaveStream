@@ -117,7 +117,7 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
     response.raise_for_status()
     video_id = url.split("/video/", 1)[1].split("?", 1)[0]
     scripts = re.findall(
-        r"""<script[^>]+id=["']([^"']+)["'][^>]*>(.*?)</script>""",
+        r"<script[^>]+id=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</script>",
         response.text,
         flags=re.DOTALL,
     )
