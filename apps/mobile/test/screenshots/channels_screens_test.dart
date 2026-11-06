@@ -300,6 +300,7 @@ void main() {
   testWidgets('Verify re-checks the bio after the code is copied', (
     WidgetTester tester,
   ) async {
+    if (_realClock(tester)) return;
     final _FakeWatches watches = await pumpVerify(
       tester,
       _FakeWatches(<WatchSummary>[_shop()]),
@@ -334,6 +335,7 @@ void main() {
 
   testWidgets('Verify re-checks when the app comes back and stops when '
       'verified', (WidgetTester tester) async {
+    if (_realClock(tester)) return;
     final _FakeWatches watches = await pumpVerify(
       tester,
       _FakeWatches(<WatchSummary>[_shop()]),
@@ -898,3 +900,9 @@ class _FakeNotifications implements NotificationsRepository {
   Future<AppNotification> markRead(String notificationId) =>
       throw UnimplementedError();
 }
+
+/// On a device (integration_test) pump() waits in real time, so the
+/// minutes-long auto re-check schedule is only exercised under the fake
+/// clock of `flutter test`.
+bool _realClock(WidgetTester tester) =>
+    tester.binding is LiveTestWidgetsFlutterBinding;
