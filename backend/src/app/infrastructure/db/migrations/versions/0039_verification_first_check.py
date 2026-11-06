@@ -3,8 +3,8 @@
 The "still checking" answer covers the first minutes after the first check,
 while TikTok may still be showing the old bio.
 
-Revision ID: 0037_verification_first_check
-Revises: 0036_device_name_optional
+Revision ID: 0039_verification_first_check
+Revises: 0038_channel_account_blocks
 """
 
 from __future__ import annotations
@@ -12,8 +12,8 @@ from __future__ import annotations
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0037_verification_first_check"
-down_revision = "0036_device_name_optional"
+revision = "0039_verification_first_check"
+down_revision = "0038_channel_account_blocks"
 branch_labels = None
 depends_on = None
 
