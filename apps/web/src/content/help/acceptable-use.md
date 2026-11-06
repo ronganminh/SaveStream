@@ -2,7 +2,7 @@
 title: What you may record
 category: getting-started
 summary: Only add TikTok channels you own, manage, or have clear permission from the creator to record.
-updated: 2026-10-14
+updated: 2026-11-06
 order: 2
 ---
 SaveStream is a recording tool for creators and the teams that work with them. It is not a way to collect other people's content.
@@ -13,7 +13,7 @@ SaveStream is a recording tool for creators and the teams that work with them. I
 - A channel you manage for a creator or a brand.
 - A channel whose creator (the rights holder) has given you explicit permission to record and archive their LIVEs.
 
-When your permission ends, stop monitoring and delete the channel. Adding a channel confirms you have the right to record it.
+When your permission ends, stop monitoring and delete the channel. On the website, you confirm this with a checkbox when you add a channel. In the SaveStream app, you also verify the channel with a short code in its TikTok bio.
 
 ## What is not allowed
 
@@ -21,7 +21,7 @@ When your permission ends, stop monitoring and delete the channel. Adding a chan
 - Getting around private, subscriber-only or other access restrictions.
 - Anything else listed in the [Acceptable Use Policy](/acceptable-use).
 
-SaveStream may pause channels or restrict recordings that break these rules, and some creators are blocked from being added at all.
+SaveStream may pause channels or restrict recordings that break these rules. After a report, we may stop one account from recording a specific channel, and some creators are blocked from being added at all.
 
 ## Age requirement
 
