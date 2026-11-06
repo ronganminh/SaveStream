@@ -1,594 +1,110 @@
 #!/usr/bin/env bash
-# Read-only production diagnostics, run ON the VPS from the repository root
-# (the Production Diagnostics workflow does this over SSH).
-#
-#   bash deploy/vps/diagnostics.sh [days]
-#
-# Prints recording outcomes and failure reasons, recent recorder/worker error
-# log lines and data-cleanup checks. It never writes to the database, never
-# restarts containers and prints no email addresses or secrets.
+# READ-ONLY check of the web ownership policy in production (not for merge).
+# Runs the app's own policy and the Android (mobile) filters against real rows
+# inside a READ ONLY transaction that is rolled back. Prints no emails,
+# usernames or ids (only short hashes and counts).
 set -Eeuo pipefail
-
-DAYS="${1:-7}"
-[[ "$DAYS" =~ ^[0-9]+$ ]] || { echo "days must be a number" >&2; exit 2; }
-
 ENV_FILE="deploy/vps/production.env"
 COMPOSE_FILE="deploy/vps/docker-compose.production.yml"
+compose() { COMPOSE_PROFILES=recorder docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 
-compose() {
-  # The "recorder" profile includes recorder-blue/green (see recorder-rollout.sh).
-  COMPOSE_PROFILES=recorder docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"
-}
+echo "== production.env sets SAVESTREAM_WEB_REQUIRE_OWNERSHIP?"
+grep -E '^\s*SAVESTREAM_WEB_REQUIRE_OWNERSHIP=' "$ENV_FILE" || echo "not set there (compose default applies)"
+echo "== deployed commit: $(git rev-parse --short HEAD)"
+for svc in api scheduler; do
+  echo "== $svc effective env: $(compose exec -T $svc printenv SAVESTREAM_WEB_REQUIRE_OWNERSHIP < /dev/null || echo '(unset)')"
+done
 
-sql() {
-  # -X ignores psqlrc; default_transaction_read_only blocks any write.
-  compose exec -T postgres psql -X -U savestream -d savestream -P pager=off \
-    -c "set default_transaction_read_only = on;" -c "$1" < /dev/null
-}
-
-section() { printf '\n==> %s\n' "$*"; }
-
-section "Revision $(git rev-parse --short HEAD), last ${DAYS} day(s)"
-compose ps
-echo "Recorder containers (a running one with restart policy \"no\" is draining):"
-docker ps -a --filter label=com.docker.compose.project=savestream-production \
-  --format '{{.Names}} {{.Status}}' | grep -i recorder || echo "none"
-
-section "Channel verification, last ${DAYS} day(s) (read-only; handles hashed, codes and bios never printed)"
-echo "-- settings"
-compose exec -T api python -c "from app.settings import get_app_settings as g; s=g(); print('enforced', s.channel_verification_enforced, 'ttl_s', s.channel_verification_code_ttl_seconds, 'max_checks', s.channel_verification_max_checks, 'interval_s', s.channel_verification_check_interval_seconds)" < /dev/null || true
-echo "-- codes by status / last result"
-sql "select status, coalesce(last_result, '-') as last_result, count(*) as codes,
-            round(avg(attempts), 1) as avg_checks, max(attempts) as max_checks,
-            count(*) filter (where attempts = 0) as never_checked
-     from channel_verifications where created_at >= now() - interval '${DAYS} days'
-     group by 1, 2 order by 3 desc;"
-echo "-- per channel: codes issued, checks, outcome (by client type of the user's sessions)"
-sql "with v as (
-       select watch_id, user_id, count(*) as codes, sum(attempts) as checks,
-              bool_or(status = 'verified') as verified,
-              min(created_at) as first_code, max(verified_at) as verified_at,
-              string_agg(distinct coalesce(last_result, 'never_checked'), ',') as results
-       from channel_verifications where created_at >= now() - interval '${DAYS} days'
-       group by watch_id, user_id)
-     select coalesce((select string_agg(distinct s.client_type, '+') from auth_sessions s
-                      where s.user_id = v.user_id and s.created_at >= now() - interval '${DAYS} days'), '?') as clients,
-            count(*) as channels, count(*) filter (where verified) as verified,
-            round(avg(codes), 1) as avg_codes, round(avg(checks), 1) as avg_checks,
-            round(avg(extract(epoch from verified_at - first_code) / 60) filter (where verified)) as avg_min_to_verify
-     from v group by 1 order by 2 desc;"
-echo "-- latest 40 codes"
-sql "select to_char(cv.created_at, 'MM-DD HH24:MI') as created, left(md5(cv.username), 8) as handle,
-            cv.status, coalesce(cv.last_result, '-') as last_result, cv.attempts as checks,
-            round(extract(epoch from cv.last_checked_at - cv.created_at) / 60) as last_check_min,
-            round(extract(epoch from cv.verified_at - cv.created_at) / 60) as verified_min,
-            w.source_type, (w.source_value ~ '[A-Z]') as src_upper, (w.source_value like '%@%') as src_at,
-            (lower(coalesce(w.resolved_username, '')) = cv.username) as resolved_matches,
-            w.resolved_username is null as unresolved,
-            w.owner_verified_at is not null as watch_verified,
-            case when w.verification_due_at is null then '-' when w.verification_due_at < now() then 'past' else 'grace' end as due,
-            w.deleted_at is not null as deleted
-     from channel_verifications cv join watches w on w.id = cv.watch_id
-     where cv.created_at >= now() - interval '${DAYS} days'
-     order by cv.created_at desc limit 40;"
-echo "-- channels added in the window: verification state"
-sql "select count(*) as added, count(*) filter (where owner_verified_at is not null) as verified,
-            count(*) filter (where owner_verified_at is null and (verification_due_at is null or verification_due_at <= now())) as blocked_unverified,
-            count(*) filter (where owner_verified_at is null and verification_due_at > now()) as in_grace,
-            count(*) filter (where resolved_username is null) as unresolved,
-            count(*) filter (where source_type <> 'username') as non_username_source,
-            count(*) filter (where not exists (select 1 from channel_verifications cv where cv.watch_id = watches.id)) as never_started
-     from watches where created_at >= now() - interval '${DAYS} days' and deleted_at is null;"
-echo "-- channels added in the window, one per row (handles hashed)"
-sql "select to_char(w.created_at, 'MM-DD HH24:MI') as added, left(md5(lower(coalesce(w.resolved_username, w.source_value))), 8) as handle,
-            coalesce((select string_agg(distinct s.client_type, '+') from auth_sessions s
-                      where s.user_id = w.user_id and s.created_at between w.created_at - interval '2 days' and w.created_at + interval '1 day'), '?') as clients_near_add,
-            (select count(*) from channel_verifications cv where cv.watch_id = w.id) as codes,
-            w.owner_verified_at is not null as verified, w.auto_record,
-            (select count(*) from recordings r where r.user_id = w.user_id and r.created_at >= w.created_at) as user_recordings_since
-     from watches w where w.created_at >= now() - interval '${DAYS} days' and w.deleted_at is null
-     order by w.created_at desc;"
-echo "-- CHANNEL_NOT_VERIFIED refusals and watch auto-record skips in logs"
-compose logs --no-color --since "$((DAYS * 24))h" api worker scheduler 2>&1 | grep -c "CHANNEL_NOT_VERIFIED\|verification required\|not verified" || true
-echo "-- API requests to verification endpoints since the api container started"
-compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 \
-  | grep -oE '"(GET|POST) /v1/watches/[^ ]+/verification(/check)? HTTP/1.1" [0-9]{3}' \
-  | sed -E 's#/v1/watches/[^/]+/#/v1/watches/{id}/#' | sort | uniq -c | sort -rn || echo "(none)"
-echo "-- lookup failures logged"
-compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 | grep -c "Channel verification lookup failed" || true
-echo "-- live probe: can the server read the bio of recently checked channels now?"
-compose exec -T -e DAYS="$DAYS" api python - <<'PY' || echo "probe could not run"
-import asyncio, hashlib, os, re, unicodedata
-from sqlalchemy import select
-from app.application.watches.verification import bio_contains_code
-from app.infrastructure.creators.tiktok_profile import TikTokChannelProfileLookup
-from app.infrastructure.db.session import Database
-from app.infrastructure.db.watch_models import ChannelVerification
+compose exec -T api python - <<'PY'
+import asyncio, hashlib, uuid
+from sqlalchemy import select, text
 from app.settings import get_app_settings
-from datetime import datetime, timedelta, timezone
+from app.infrastructure.db.session import Database
+from app.infrastructure.db.watch_models import Watch
+from app.infrastructure.db.recording_models import Recording
+from app.infrastructure.db.models import UserNotification
+from app.domain.identity.types import AuthPrincipal, scopes_for_role
+from app.domain.common.errors import ApplicationError
+from app.api.schemas.recordings import Source
+from app.application.watches.ownership import (
+    WEB_BASES, is_web_only, may_record, watch_username, mobile_hidden_resources,
+)
+from app.application.watches.verification import ensure_recording_source_verified
+from app.application.watches.service import WatchService
+from app.application.recordings.service import RecordingService
+from app.application.notifications.service import NotificationService
 
-ZW = re.compile("[​-‏⁠﻿]")
+def h(v): return hashlib.sha256(str(v).encode()).hexdigest()[:8]
 
 async def main():
     s = get_app_settings()
+    print("settings: web_require_ownership =", s.web_require_ownership,
+          "| channel_verification_enforced =", s.channel_verification_enforced)
     db = Database(s.database_url)
     try:
         async with db.session() as session:
-            since = datetime.now(timezone.utc) - timedelta(days=int(os.environ["DAYS"]))
-            rows = (await session.scalars(select(ChannelVerification)
-                .where(ChannelVerification.created_at >= since)
-                .order_by(ChannelVerification.created_at.desc()).limit(60))).all()
-        seen, picked = set(), []
-        for r in rows:
-            if r.username not in seen:
-                seen.add(r.username); picked.append(r)
-            if len(picked) >= 8:
-                break
-        lookup = TikTokChannelProfileLookup()
-        for r in picked:
-            h = hashlib.md5(r.username.encode()).hexdigest()[:8]
-            try:
-                p = await lookup.fetch(r.username)
-            except Exception as exc:
-                print(f"{h} status={r.status}: lookup error {type(exc).__name__}"); continue
-            if p is None:
-                print(f"{h} status={r.status}: no profile (blocked/WAF/login page)"); continue
-            if p.bio is None:
-                print(f"{h} status={r.status}: profile but no bio field"); continue
-            bio = p.bio
-            nfkc = ZW.sub("", unicodedata.normalize("NFKC", bio))
-            print(f"{h} status={r.status} last={r.last_result}: bio_len={len(bio)} "
-                  f"newlines={bio.count(chr(10))} non_ascii={sum(ord(c) > 127 for c in bio)} "
-                  f"fullwidth={sum(0xFF01 <= ord(c) <= 0xFF5E for c in bio)} zero_width={len(ZW.findall(bio))} "
-                  f"has_code_now={bio_contains_code(bio, r.code)} has_code_nfkc={bio_contains_code(nfkc, r.code)} "
-                  f"has_SS={'SS' in nfkc.upper()}")
+            await session.execute(text("SET TRANSACTION READ ONLY"))
+            rows = (await session.execute(text(
+                "SELECT added_via, ownership_basis, owner_verified_at IS NOT NULL v, "
+                "blocked_at IS NOT NULL b, deleted_at IS NOT NULL d, count(*) "
+                "FROM watches GROUP BY 1,2,3,4,5 ORDER BY 6 DESC"))).all()
+            print("watches by added_via/basis/verified/blocked/deleted:")
+            for r in rows: print("  ", tuple(r))
+            live = [w for w in (await session.scalars(select(Watch).where(Watch.deleted_at.is_(None)))).all()
+                    if is_web_only(w) and w.blocked_at is None]
+            users = sorted({w.user_id for w in live}, key=str)
+            print(f"live unblocked web-only channels: {len(live)} across {len(users)} accounts")
+            ok = True
+            for uid in users[:10]:
+                scopes = scopes_for_role("user")
+                web = AuthPrincipal(uid, uuid.uuid4(), "user", scopes, client_type="web")
+                app = AuthPrincipal(uid, uuid.uuid4(), "user", scopes, client_type="mobile")
+                mine = [w for w in live if w.user_id == uid]
+                wl = await WatchService(session, s).list(web, limit=200, cursor=None, status=None)
+                ml = await WatchService(session, s).list(app, limit=200, cursor=None, status=None)
+                web_ids = {w.id for w in wl.items}; app_ids = {w.id for w in ml.items}
+                for w in mine:
+                    name = watch_username(w)
+                    src = Source(type="username", value=name) if name else None
+                    async def gate(ct):
+                        if src is None: return "n/a"
+                        try:
+                            await ensure_recording_source_verified(session, s, user_id=uid, source=src, client_type=ct)
+                            return "allowed"
+                        except ApplicationError as e:
+                            return e.code
+                    res = {
+                        "basis": w.ownership_basis,
+                        "web_may_record": may_record(w, s, client_type="web"),
+                        "auto_record_may_record": may_record(w, s, client_type=None),
+                        "app_may_record": may_record(w, s, client_type="mobile"),
+                        "web_start": await gate("web"),
+                        "app_start": await gate("mobile"),
+                        "in_web_list": w.id in web_ids,
+                        "in_app_list": w.id in app_ids,
+                    }
+                    good = (res["web_may_record"] and res["web_start"] == "allowed"
+                            and not res["app_may_record"] and res["app_start"] != "allowed"
+                            and res["in_web_list"] and not res["in_app_list"])
+                    ok &= good
+                    print(f"  acct {h(uid)} ch {h(w.id)}:", res, "OK" if good else "MISMATCH")
+                hid_w, hid_r = await mobile_hidden_resources(session, uid)
+                wr = await RecordingService(session, s).list(web, limit=100, cursor=None, status=None)
+                ar = await RecordingService(session, s).list(app, limit=100, cursor=None, status=None)
+                leaked_r = [r for r in ar.items if str(r.id) in hid_r]
+                wn = await NotificationService(session).list(web, limit=100, cursor=None, unread_only=False)
+                an = await NotificationService(session).list(app, limit=100, cursor=None, unread_only=False)
+                leaked_n = [n for n in an.items if (n.resource_type == "watch" and n.resource_id in hid_w)
+                            or (n.resource_type == "recording" and n.resource_id in hid_r)]
+                web_hidden_r = sum(1 for r in wr.items if str(r.id) in hid_r)
+                web_hidden_n = sum(1 for n in wn.items if (n.resource_type == "watch" and n.resource_id in hid_w)
+                                   or (n.resource_type == "recording" and n.resource_id in hid_r))
+                print(f"  acct {h(uid)}: recordings web={len(wr.items)} (web-only {web_hidden_r}) app={len(ar.items)} leaked_to_app={len(leaked_r)};"
+                      f" notifications web={len(wn.items)} (web-only {web_hidden_n}) app={len(an.items)} leaked_to_app={len(leaked_n)}")
+                ok &= not leaked_r and not leaked_n
+            print("RESULT:", "PASS" if ok else "FAIL")
+            await session.rollback()
     finally:
         await db.close()
-
 asyncio.run(main())
 PY
-
-section "Recordings by status"
-sql "select status, count(*) as jobs, sum(duration_seconds)/60 as minutes
-     from recordings
-     where created_at >= now() - interval '${DAYS} days'
-     group by status order by jobs desc;"
-
-section "Failed / stopped recordings by reason"
-sql "select status, coalesce(error_code, '-') as error_code, count(*) as jobs,
-            left(max(coalesce(error_message, '')), 300) as sample_message
-     from recordings
-     where created_at >= now() - interval '${DAYS} days'
-       and status in ('failed', 'stopped', 'missed_no_cloud_slot')
-     group by status, error_code order by jobs desc;"
-
-section "Latest 25 failed / stopped recordings"
-sql "select created_at, status,
-            coalesce(resolved_username, source_value) as creator,
-            duration_seconds, worker_attempts,
-            coalesce(error_code, '-') as error_code,
-            left(coalesce(error_message, ''), 200) as error_message
-     from recordings
-     where created_at >= now() - interval '${DAYS} days'
-       and status in ('failed', 'stopped')
-     order by created_at desc limit 25;"
-
-section "Active recordings (heartbeat age = seconds since the worker last checked in)"
-sql "select id, status, coalesce(resolved_username, source_value) as creator,
-            started_at, updated_at,
-            extract(epoch from now() - heartbeat_at)::int as heartbeat_age_s,
-            duration_seconds, bytes_recorded / 1048576 as mib, worker_attempts
-     from recordings
-     where deleted_at is null
-       and status in ('queued', 'resolving', 'waiting_live', 'recording',
-                      'processing', 'uploading', 'stop_requested')
-     order by created_at;"
-
-section "Recent recordings: status timeline and artifacts"
-sql "select r.id, coalesce(r.resolved_username, r.source_value) as creator, r.status,
-            r.duration_seconds, r.bytes_recorded / 1048576 as mib,
-            (select count(*) from artifacts a
-              where a.recording_id = r.id and a.deleted_at is null) as artifacts,
-            (select string_agg(to_char(e.created_at, 'HH24:MI') || ' ' || e.event_type, ', '
-                               order by e.sequence)
-               from recording_events e where e.recording_id = r.id) as timeline_utc
-     from recordings r
-     where r.created_at >= now() - interval '${DAYS} days'
-     order by r.created_at desc limit 15;"
-
-# Every running recorder container, including the legacy `recorder` and a
-# draining color, which `compose ps` no longer lists by service.
-for id in $(docker ps -q --filter "label=com.docker.compose.project=savestream-production"); do
-  service="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$id")"
-  [[ "$service" == recorder* ]] || continue
-  section "${service}: local recording files and upload connections"
-  docker exec "$id" sh -c '
-    dir="${SAVESTREAM_RECORDING_TEMP_DIR:-/tmp/savestream-recordings}"
-    find "$dir" -type f -printf "%TY-%Tm-%Td %TH:%TM  %10s bytes  %p\n" 2>/dev/null | sort || true
-    echo "-- established TCP connections to port 443 (remote, send-queue bytes):"
-    awk "NR>1 && \$4==\"01\" && substr(\$3, index(\$3, \":\")+1)==\"01BB\" {print \$3, \$5}" \
-      /proc/net/tcp /proc/net/tcp6 2>/dev/null || true
-  ' || true
-  section "${service}: upload log lines (last 24h, newest 40)"
-  docker logs --since 24h "$id" 2>&1 \
-    | grep -Ei 'upload|retry|timeout|reset|broken pipe|stalled' \
-    | grep -Eiv 'password|secret|token|authorization' \
-    | tail -n 40 || true
-done
-
-section "Creator avatars: cached copy status and latency (3 tries each)"
-# The cached URLs are public (served by /v1/public/creator-avatars).
-sql "select coalesce(resolved_username, source_value) as creator,
-            creator_avatar_cached_url is not null as cached,
-            creator_avatar_refreshed_at
-     from watches where deleted_at is null order by updated_at desc limit 20;"
-compose exec -T postgres psql -X -U savestream -d savestream -tA \
-  -c "select creator_avatar_cached_url from watches
-      where deleted_at is null and creator_avatar_cached_url is not null
-      order by updated_at desc limit 8;" < /dev/null \
-  | while read -r url; do
-      [[ -n "$url" ]] || continue
-      for _ in 1 2 3; do
-        curl -s -o /dev/null -m 30 -w "%{http_code} %{time_total}s %{size_download}B  " "$url" || true
-      done
-      printf ' %s\n' "${url##*/}"
-    done
-
-section "Object storage (R2 S3 endpoint) errors in api/worker/recorder logs (24h)"
-for id in $(docker ps -q --filter "label=com.docker.compose.project=savestream-production"); do
-  service="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$id")"
-  docker logs --since 24h "$id" 2>&1 \
-    | grep -Ei 'r2\.cloudflarestorage|S3Error|ServiceUnavailable|SlowDown|\b503\b|MaxRetryError|creator-avatars/[0-9a-f]+ HTTP/1\.1" 5' \
-    | grep -Eiv 'password|secret|token|authorization|X-Amz-Signature' \
-    | tail -n 15 | sed "s/^/${service}: /" || true
-done
-
-section "Watch checks: failures by error (last 24h)"
-sql "select left(coalesce(error, '-'), 160) as error, count(*) as checks
-     from admin_watch_check_metrics
-     where checked_at >= now() - interval '24 hours' and success = false
-     group by 1 order by checks desc limit 15;"
-
-section "BUG-6 cleanup: watches with invalid sources"
-sql "select status, last_error, count(*) as watches
-     from watches
-     where deleted_at is null and last_error = 'invalid_tiktok_source'
-     group by status, last_error;"
-sql "select source_type, left(source_value, 60) as source_value, status, last_error
-     from watches
-     where deleted_at is null
-       and source_type = 'username'
-       and source_value !~ '^@?[A-Za-z0-9._]{2,24}\$';"
-
-section "BUG-4: payment orders still created/pending"
-sql "select provider, status, count(*) as orders, min(created_at) as oldest
-     from payment_orders
-     where status in ('created', 'pending')
-     group by provider, status;"
-
-for service in recorder-blue recorder-green worker scheduler; do
-  section "${service}: error lines (last 24h, newest 80)"
-  compose logs --no-color --since 24h "$service" 2>&1 \
-    | grep -Ev '\] (INFO|DEBUG)/' \
-    | grep -Ei '\b(error|exception|traceback|failed|denied|forbidden)\b|\b(403|429|5[0-9]{2})\b' \
-    | grep -Eiv 'password|secret|token|authorization' \
-    | tail -n 80 || true
-done
-
-section "PayPal readiness (no secrets printed; OAuth token check only, nothing is bought)"
-compose exec -T api python - <<'PY' || echo "PayPal check could not run"
-import httpx
-from app.settings import get_app_settings
-
-s = get_app_settings()
-base = s.payment_provider_base_url
-mode = "LIVE" if base == "https://api-m.paypal.com" else "SANDBOX" if "sandbox" in base else "other"
-print(f"provider={s.payment_provider} mode={mode} base={base}")
-print(f"client_id={'set' if s.paypal_client_id else 'MISSING'} ({len(s.paypal_client_id)} chars)"
-      f" client_secret={'set' if s.paypal_client_secret else 'MISSING'}")
-print(f"return_base={s.frontend_base_url} reconcile_every={s.payment_reconcile_seconds}s"
-      f" pending_expiry={s.payment_pending_expiry_seconds}s")
-if s.payment_provider == "paypal" and s.paypal_client_id and s.paypal_client_secret:
-    try:
-        r = httpx.post(f"{base}/v1/oauth2/token", data={"grant_type": "client_credentials"},
-                       auth=(s.paypal_client_id, s.paypal_client_secret), timeout=15)
-        body = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
-        print(f"oauth_status={r.status_code} app_id={body.get('app_id', '-')}"
-              f" error={body.get('error', '-')}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"oauth_error={type(exc).__name__}")
-PY
-sql "select key, value from admin_runtime_settings where key like 'payment%' order by key;" \
-  || echo "runtime settings table not readable"
-sql "select provider, status, count(*) as orders, max(updated_at) as latest
-     from payment_orders group by provider, status order by provider, status;"
-
-section "Google Play billing (read-only; purchase tokens and emails are not printed)"
-sql "select code, active, amount_minor, currency,
-            coalesce(google_play_product_id, '(empty)') as google_play_product_id
-     from credit_packages order by display_order, code;"
-echo "-- Google Play orders, last ${DAYS} day(s)"
-sql "select created_at, left(user_id::text, 8) as user_id, status, credits,
-            coalesce(store_order_id, '-') as order_id, store_token is not null as has_token,
-            coalesce(failure_code, '-') as failure_code, left(coalesce(failure_message, ''), 160) as failure
-     from payment_orders
-     where provider = 'google_play' and created_at >= now() - interval '${DAYS} days'
-     order by created_at;"
-echo "-- Google Play payment events (RTDN, refunds), last ${DAYS} day(s)"
-sql "select received_at, event_type, coalesce(payload->>'product_id', '-') as product,
-            coalesce(processing_error, '-') as processing_error
-     from payment_events
-     where provider = 'google_play' and received_at >= now() - interval '${DAYS} days'
-     order by received_at;"
-compose exec -T -e DAYS="$DAYS" api python - <<'PY' || echo "Google Play check could not run"
-# Read-only Android Publisher calls (GET only): can the service account sign
-# in and read the products, and what Play says about each purchase token the
-# server has seen. Nothing is acknowledged, consumed or written.
-import asyncio
-import hashlib
-import json
-import os
-from datetime import datetime, timedelta, timezone
-
-from sqlalchemy import select
-
-from app.infrastructure.db.billing_models import CreditPackage, PaymentEvent, PaymentOrder
-from app.infrastructure.db.session import Database
-from app.settings import get_app_settings
-
-s = get_app_settings()
-print(f"store_purchase_provider={s.store_purchase_provider} package={s.google_play_package_name or '(empty)'}"
-      f" service_account={'set' if s.google_play_service_account_json else 'MISSING'}"
-      f" rtdn_audience={'set' if s.google_play_rtdn_audience else 'MISSING'}"
-      f" require_account_id={s.google_play_require_account_id}")
-
-
-def short(token: str) -> str:
-    return "sha256:" + hashlib.sha256(token.encode()).hexdigest()[:12]
-
-
-async def main() -> None:
-    if not s.google_play_service_account_json:
-        return
-    from app.infrastructure.store.google_play import GooglePlayReceiptVerifier
-
-    verifier = GooglePlayReceiptVerifier(s)
-    app = f"/androidpublisher/v3/applications/{s.google_play_package_name}"
-    try:
-        await verifier._access_token()
-        email = json.loads(s.google_play_service_account_json).get("client_email", "?")
-        print(f"service_account_oauth=ok ({email})")
-    except Exception as exc:  # noqa: BLE001
-        print(f"service_account_oauth=FAILED {type(exc).__name__}")
-        return
-    database = Database(s.database_url)
-    since = datetime.now(timezone.utc) - timedelta(days=int(os.environ.get("DAYS", "7")))
-    try:
-        async with database.session() as session:
-            packages = (await session.scalars(select(CreditPackage))).all()
-            for package in packages:
-                if package.google_play_product_id:
-                    r = await verifier._request("GET", f"{app}/inappproducts/{package.google_play_product_id}")
-                    print(f"product {package.google_play_product_id}: HTTP {r.status_code}"
-                          f" {r.text[:160] if r.status_code != 200 else ''}")
-            tokens = []
-            orders = (await session.scalars(select(PaymentOrder).where(
-                PaymentOrder.provider == "google_play", PaymentOrder.store_token.is_not(None),
-                PaymentOrder.created_at >= since))).all()
-            for order in orders:
-                package = await session.get(CreditPackage, order.package_id)
-                tokens.append(("order", package.google_play_product_id if package else "", order.store_token))
-            events = (await session.scalars(select(PaymentEvent).where(
-                PaymentEvent.provider == "google_play", PaymentEvent.event_type == "purchase.unclaimed",
-                PaymentEvent.received_at >= since))).all()
-            for event in events:
-                note = (event.payload or {}).get("notification") or {}
-                one_time = note.get("oneTimeProductNotification") or {}
-                tokens.append(("rtdn-unclaimed", str(one_time.get("sku") or ""),
-                               str(one_time.get("purchaseToken") or "")))
-            for source, product, token in tokens:
-                if not (product and token):
-                    continue
-                r = await verifier._request("GET", f"{app}/purchases/products/{product}/tokens/{token}")
-                body = r.json() if r.status_code == 200 else {}
-                account = str(body.get("obfuscatedExternalAccountId") or "")
-                print(f"{source} {product} {short(token)}: HTTP {r.status_code}"
-                      f" order={body.get('orderId', '-')} state={body.get('purchaseState', '-')}"
-                      f" consumed={body.get('consumptionState', '-')} acked={body.get('acknowledgementState', '-')}"
-                      f" account_ref={account[:12] or '-'} test_purchase={body.get('purchaseType') == 0}"
-                      f" {r.text[:160] if r.status_code != 200 else ''}")
-    finally:
-        await database.close()
-
-
-asyncio.run(main())
-PY
-echo "-- API requests to store purchases / Google Play webhook, last ${DAYS} day(s) (newest 60)"
-compose logs --no-color --since "$((DAYS * 24))h" api 2>&1 \
-  | grep -E 'store-purchases|webhooks/google|androidpublisher|STORE_RECEIPT|Google Play' \
-  | sed -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]+/<email>/g; s/[A-Za-z0-9_.-]{80,}/<token>/g' \
-  | tail -n 60 || echo "(none)"
-
-section "Media links as the API signs them (latest completed recording; links are not printed)"
-compose exec -T api python - <<'PY' || echo "media link check could not run"
-import asyncio
-from urllib.parse import urlparse
-
-import httpx
-from sqlalchemy import select
-
-from app.application.recordings.download import attachment_disposition, download_filename
-from app.infrastructure.db.recording_models import RecordingArtifact as Artifact, Recording
-from app.infrastructure.db.session import Database
-from app.infrastructure.storage.minio import MinioStorageClient
-from app.settings import get_app_settings
-
-
-async def main() -> None:
-    s = get_app_settings()
-    db = Database(s.database_url)
-    try:
-        async with db.session() as session:
-            row = (
-                await session.execute(
-                    select(Artifact, Recording)
-                    .join(Recording, Recording.id == Artifact.recording_id)
-                    .where(Recording.status == "completed", Artifact.storage_key.like("%.mp4"))
-                    .order_by(Artifact.created_at.desc())
-                    .limit(1)
-                )
-            ).first()
-    finally:
-        await db.close()
-    if row is None:
-        print("no completed recording")
-        return
-    artifact, recording = row
-    minio = MinioStorageClient(s)
-    play = minio.presigned_get_url(artifact.storage_key)
-    name = download_filename(recording)
-    save = minio.presigned_get_url(
-        artifact.storage_key, content_disposition=attachment_disposition(name)
-    )
-    print(f"link host: {urlparse(play).netloc}")
-    print(f"expected file name: {name}")
-    with httpx.Client(timeout=30) as client:
-        r = client.get(play, headers={"Range": "bytes=0-1023"})
-        print(f"play  range 0-1023 -> {r.status_code} {r.headers.get('content-type')} "
-              f"content-range={r.headers.get('content-range')} bytes={len(r.content)}")
-        r = client.get(save, headers={"Range": "bytes=0-1023"})
-        print(f"download range    -> {r.status_code} disposition={r.headers.get('content-disposition')}")
-        with client.stream("GET", save) as r:
-            print(f"download full GET -> {r.status_code} length={r.headers.get('content-length')} "
-                  f"disposition={r.headers.get('content-disposition')}")
-
-
-asyncio.run(main())
-PY
-
-section "API latency incident window (read-only)"
-# QA 2026-10-16: GET /v1/me 30.5s from 08:38:45, POST /v1/auth/login 24.1s,
-# both done ~08:39:15.6 UTC; normal (~0.3s) right after.
-SINCE="${INCIDENT_SINCE:-2026-10-16T08:36:00Z}"
-UNTIL="${INCIDENT_UNTIL:-2026-10-16T08:42:00Z}"
-echo "window: $SINCE .. $UNTIL (now $(date -u +%FT%TZ))"
-echo "-- host"
-uptime || true
-nproc || true
-free -m || true
-df -h / | tail -n 1 || true
-cat /proc/pressure/cpu /proc/pressure/memory /proc/pressure/io 2>/dev/null || true
-docker stats --no-stream --format '{{.Name}} cpu={{.CPUPerc}} mem={{.MemUsage}} ({{.MemPerc}}) pids={{.PIDs}}' 2>/dev/null || true
-echo "-- kernel OOM / hung task messages (if readable)"
-(dmesg -T 2>/dev/null || journalctl -k --since "$SINCE" --no-pager 2>/dev/null || true) \
-  | grep -Ei 'oom|killed process|hung_task|blocked for more than' | tail -n 10 || true
-echo "-- containers: started, restarts, OOM, health log"
-for id in $(docker ps -aq --filter "label=com.docker.compose.project=savestream-production"); do
-  docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}} started={{.State.StartedAt}} restarts={{.RestartCount}} oom={{.State.OOMKilled}} status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}-{{end}}' "$id"
-  docker inspect -f '{{if .State.Health}}{{range .State.Health.Log}}   health {{.Start}} exit={{.ExitCode}}{{"\n"}}{{end}}{{end}}' "$id" | tail -n 6
-done
-echo "-- slowest API requests in the nginx timing log, last ${DAYS} day(s) (rt = total, urt = API)"
-if [[ -r /var/log/nginx/savestream-api-timing.log ]]; then
-  awk '{for (i = 1; i <= NF; i++) if ($i ~ /^rt=/) {split($i, a, "="); print a[2], $0}}' \
-    /var/log/nginx/savestream-api-timing.log \
-    | sort -rn | head -n 15 | cut -d' ' -f2- | sed -E 's/\?[^ "]*/?…/g' || true
-else
-  echo "timing log not readable yet (run deploy/vps/nginx-timing-logs.sh as root)"
-fi
-echo "-- deploy user can sudo without a password?"
-sudo -n true 2>/dev/null && echo yes || echo no
-echo "-- api processes (uvicorn workers)"
-docker top "$(compose ps -q api)" -o pid,etime,pcpu,rss,args 2>/dev/null | sed -E 's/(token|secret|password)=[^ ]*/\1=***/gi' || true
-for service in api worker scheduler outbox-dispatcher postgres redis; do
-  id="$(compose ps -q "$service" 2>/dev/null | head -n 1)"
-  [[ -n "$id" ]] || continue
-  echo "-- $service log lines in window (query strings removed)"
-  docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$id" 2>&1 \
-    | grep -Eiv 'password|secret|authorization|X-Amz-Signature' \
-    | sed -E 's/\?[^ "]*/?…/g; s/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/<email>/g' \
-    | tail -n 120 || true
-done
-for name in $(docker ps -a --filter label=com.docker.compose.project=savestream-production --format '{{.Names}}' | grep -i recorder); do
-  echo "-- $name log lines in window"
-  docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$name" 2>&1 \
-    | grep -Eiv 'password|secret|authorization|X-Amz-Signature|https?://' | tail -n 40 || true
-done
-echo "-- api access lines per 5 s in window (a gap = API not answering)"
-docker logs --timestamps --since "$SINCE" --until "$UNTIL" "$(compose ps -q api)" 2>&1 \
-  | grep -E '" [0-9]{3}' | cut -c12-19 | awk '{split($1,t,":"); s=t[3]-t[3]%5; printf "%s:%s:%02d\n", t[1], t[2], s}' \
-  | uniq -c || true
-echo "-- postgres: settings, connections, locks, long queries"
-sql "select name, setting from pg_settings where name in
-     ('max_connections','shared_buffers','log_min_duration_statement','log_lock_waits',
-      'deadlock_timeout','idle_in_transaction_session_timeout','statement_timeout');"
-sql "select coalesce(application_name,'-') as app, state, count(*),
-            max(now() - query_start)::text as longest
-     from pg_stat_activity where datname = 'savestream' group by 1, 2 order by 3 desc;"
-sql "select pid, state, wait_event_type, wait_event, (now() - query_start)::text as running,
-            left(regexp_replace(query, '\s+', ' ', 'g'), 120) as query
-     from pg_stat_activity
-     where datname = 'savestream' and state <> 'idle' and pid <> pg_backend_pid()
-     order by query_start limit 10;"
-sql "select count(*) as waiting_locks from pg_locks where not granted;"
-sql "select datname, deadlocks, temp_files, xact_rollback, blks_read, blks_hit,
-            stats_reset::text from pg_stat_database where datname = 'savestream';"
-sql "select checkpoints_timed, checkpoints_req, buffers_checkpoint, stats_reset::text
-     from pg_stat_bgwriter;" 2>/dev/null || true
-sql "select count(*) > 0 as pg_stat_statements_installed
-     from pg_extension where extname = 'pg_stat_statements';"
-sql "select calls, round(mean_exec_time::numeric, 1) as mean_ms,
-            round(max_exec_time::numeric, 1) as max_ms,
-            left(regexp_replace(query, '\s+', ' ', 'g'), 140) as query
-     from pg_stat_statements order by max_exec_time desc limit 15;" 2>/dev/null \
-  || echo "pg_stat_statements not available"
-sql "select relname, n_live_tup, n_dead_tup, last_autovacuum::text, last_autoanalyze::text
-     from pg_stat_user_tables order by n_dead_tup desc limit 8;"
-echo "-- redis"
-compose exec -T redis redis-cli INFO clients < /dev/null | grep -E 'connected_clients|blocked_clients' || true
-compose exec -T redis redis-cli INFO memory < /dev/null | grep -E 'used_memory_human|maxmemory_human|mem_fragmentation_ratio' || true
-compose exec -T redis redis-cli INFO persistence < /dev/null | grep -E 'rdb_last_bgsave_status|rdb_last_save_time|aof_enabled|rdb_bgsave_in_progress|latest_fork_usec' || true
-compose exec -T redis redis-cli SLOWLOG GET 10 < /dev/null | head -n 80 || true
-compose exec -T redis redis-cli LATENCY LATEST < /dev/null || true
-echo "-- app metrics: mean seconds per route since the api started (slowest 15)"
-compose exec -T api sh -c 'tok=""; for f in /run/secrets/metrics_token; do [ -r "$f" ] && tok="$(cat "$f")"; done; [ -n "$tok" ] || tok="${SAVESTREAM_METRICS_TOKEN:-}"; curl -s -m 10 -H "X-Metrics-Token: $tok" http://localhost:8000/metrics' < /dev/null 2>/dev/null \
-  | awk '/duration_seconds_sum\{/ {match($0,/\{[^}]*\}/); k=substr($0,RSTART,RLENGTH); s[k]=$NF}
-         /duration_seconds_count\{/ {match($0,/\{[^}]*\}/); k=substr($0,RSTART,RLENGTH); c[k]=$NF}
-         END {for (k in s) if (c[k] > 0) printf "%.3f s mean over %d  %s\n", s[k]/c[k], c[k], k}' \
-  | sort -rn | head -n 15 || true
-echo "-- api settings that bound waits (no secrets)"
-compose exec -T api python - <<'PY' 2>/dev/null || true
-from app.settings import AppSettings
-s = AppSettings.from_env()
-for name in sorted(vars(s)):
-    if any(k in name for k in ("timeout", "pool", "worker", "rate_limit", "rate_window")):
-        print(name, "=", getattr(s, name))
-PY
-
-section "Host nginx around the incident (read-only, if readable)"
-ls -la /var/log/nginx/ 2>&1 | head -n 12 || true
-for f in /var/log/nginx/savestream-api-timing.log /var/log/nginx/access.log /var/log/nginx/error.log; do
-  [[ -r "$f" ]] || { echo "$f not readable by $(id -un)"; continue; }
-  echo "-- $f lines 15:38:30-15:39:30 local (08:38:30-08:39:30 UTC), api host only, query strings removed"
-  grep -E '16/Oct/2026:15:3(8:[3-5][0-9]|9:[0-2][0-9])|2026/10/16 15:3(8:[3-5][0-9]|9:[0-2][0-9])' "$f" \
-    | grep -Eiv 'password|secret|authorization' \
-    | sed -E 's/\?[^ "]*/?…/g; s/^([0-9]+\.[0-9]+)\.[0-9]+\.[0-9]+/\1.x.x/' | tail -n 80 || true
-done
-nginx -T 2>/dev/null | grep -Ei 'worker_connections|worker_processes|keepalive_timeout|http2|log_format|proxy_read_timeout|limit_req|limit_conn' | head -n 20 \
-  || grep -rhEi 'worker_connections|worker_processes|log_format|limit_req|limit_conn' /etc/nginx/nginx.conf /etc/nginx/sites-enabled/ 2>/dev/null | head -n 20 || true
-echo "-- auth token lifetimes"
-compose exec -T api python - <<'PY' 2>/dev/null || true
-from app.settings import AppSettings
-s = AppSettings.from_env()
-for name in sorted(vars(s)):
-    if ("ttl" in name or "expire" in name or "lifetime" in name) and "secret" not in name:
-        print(name, "=", getattr(s, name))
-PY
-echo "-- web sessions created/revoked 08:30-08:45 UTC (no user ids)"
-sql "select date_trunc('second', coalesce(revoked_at, created_at))::text as at,
-            client_type, coalesce(revoked_reason, 'created') as what, count(*)
-     from auth_sessions
-     where (created_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
-        or (revoked_at between '2026-10-16 08:30:00+00' and '2026-10-16 08:45:00+00')
-     group by 1, 2, 3 order by 1;"
-
-section "Done"
