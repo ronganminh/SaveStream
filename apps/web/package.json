@@ -21,6 +21,7 @@
     "test:production-ux": "node scripts/production-ux-regression-audit.mjs",
     "test:repositories": "node scripts/repository-integration-audit.mjs",
     "test:watches": "node scripts/watch-integration-audit.mjs",
+    "test:ownership": "node scripts/channel-ownership-audit.mjs",
     "test:recordings": "node scripts/recording-realtime-audit.mjs",
     "test:artifacts": "node scripts/recording-artifact-audit.mjs",
     "test:credits": "node scripts/credits-usage-audit.mjs",

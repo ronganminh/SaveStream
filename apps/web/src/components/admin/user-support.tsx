@@ -1,6 +1,6 @@
 import { formatAdminDateTime } from "@/lib/formatters";
 import { Fragment, useEffect, useState, type ReactNode } from "react";
-import { Download, Eye, Gift, Search } from "lucide-react";
+import { Ban, Download, Eye, Gift, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
@@ -19,6 +19,11 @@ import {
   AdminTabsTrigger,
   AdminUserStatusBadge,
 } from "@/components/admin/foundation";
+import {
+  ChannelAccountBlockDialog,
+  ChannelAccountBlocksTable,
+  type ChannelAccountBlockAction,
+} from "@/components/admin/channel-account-blocks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,7 +44,9 @@ import {
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
+  adminSafetyApi,
   type AdminAccountStatus,
+  type AdminChannelAccountBlock,
   type AdminPrivacyRequest,
   type AdminUser,
   type AdminUserDetail,
@@ -950,6 +957,10 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
   const [danger, setDanger] = useState<DangerousAction | null>(null);
   const [reasonRequest, setReasonRequest] = useState<ReasonRequest | null>(null);
   const [statusChange, setStatusChange] = useState<AdminAccountStatus | null>(null);
+  const [channelBlocks, setChannelBlocks] = useState<AdminChannelAccountBlock[]>([]);
+  const [channelBlockAction, setChannelBlockAction] = useState<ChannelAccountBlockAction | null>(
+    null,
+  );
 
   const canWrite = admin?.role === "owner" || admin?.role === "support" || admin?.role === "admin";
   const canGrant = admin?.role === "owner" || admin?.role === "finance" || admin?.role === "admin";
@@ -961,6 +972,11 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
       const data = await adminFoundationApi.getUserDetail(userId);
       setDetail(data);
       setDisplayName(data.user.display_name ?? "");
+      // Per-account channel blocks need complaints:read; not fatal if missing.
+      adminSafetyApi
+        .listChannelAccountBlocks({ activeOnly: true, userId })
+        .then((result) => setChannelBlocks(result.items))
+        .catch(() => setChannelBlocks([]));
     } catch (requestError) {
       setError(authErrorMessage(requestError));
     } finally {
@@ -1367,9 +1383,32 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <AdminBadge tone={item.status === "active" ? "success" : "neutral"} dot>
-                        {item.status}
-                      </AdminBadge>
+                      <div className="flex flex-col items-start gap-1">
+                        <AdminBadge tone={item.status === "active" ? "success" : "neutral"} dot>
+                          {item.status}
+                        </AdminBadge>
+                        {item.blocked ? (
+                          <AdminBadge tone="danger" dot>
+                            Blocked for this account
+                          </AdminBadge>
+                        ) : canWrite ? (
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-destructive hover:underline"
+                            onClick={() =>
+                              setChannelBlockAction({
+                                mode: "block",
+                                watchId: item.id,
+                                channel: `@${(item.creator?.username ?? item.source.value).replace(/^@/, "")}`,
+                                account: detail.user.email,
+                              })
+                            }
+                          >
+                            <Ban className="size-3" />
+                            Block for this account
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                     <td className="px-4 py-3">{item.live_status}</td>
                     <td className="px-4 py-3">{item.auto_record ? "On" : "Off"}</td>
@@ -1413,6 +1452,15 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                         {item.owner_attested_at ? (
                           <span className="text-xs text-muted-foreground">
                             Self-confirmed {dateTime(item.owner_attested_at)}
+                            {item.ownership_basis === "web_attested_legacy"
+                              ? " (legacy web channel)"
+                              : item.ownership_basis === "web_attested"
+                                ? " on the website"
+                                : ""}
+                          </span>
+                        ) : item.ownership_basis === "web_attested_legacy" ? (
+                          <span className="text-xs text-muted-foreground">
+                            Legacy web channel · not confirmed yet
                           </span>
                         ) : null}
                       </div>
@@ -1429,6 +1477,18 @@ export function AdminUserDetailPage({ userId }: { userId: string }) {
                 ) : null}
               </tbody>
             </AdminDataTable>
+            <h3 className="mb-2 mt-6 text-sm font-bold">Channel blocks for this account</h3>
+            <ChannelAccountBlocksTable
+              blocks={channelBlocks}
+              showAccount={false}
+              canWrite={canWrite}
+              onUnblock={(block) => setChannelBlockAction({ mode: "unblock", block })}
+            />
+            <ChannelAccountBlockDialog
+              action={channelBlockAction}
+              onClose={() => setChannelBlockAction(null)}
+              onDone={load}
+            />
           </TabsContent>
 
           <TabsContent value="recordings" className="mt-5">

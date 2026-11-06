@@ -37,6 +37,7 @@ import {
 import {
   Activity,
   AlertCircle,
+  Ban,
   AlertTriangle,
   Apple,
   ArrowLeft,
@@ -152,7 +153,10 @@ import {
 } from "@/components/app-components";
 import { AdminGlobalSearch, AdminOwnerAccessPanel } from "@/components/admin/foundation";
 import { PayPalCheckoutButtons } from "@/components/paypal-checkout";
-import { ChannelVerificationCard } from "@/components/app/channel-verification";
+import {
+  ChannelAttestationPrompt,
+  ChannelVerificationCard,
+} from "@/components/app/channel-verification";
 import { cn } from "@/lib/utils";
 import { RecordingThumbImage } from "@/components/recordings/thumb-image";
 import { usePreferences, type Language } from "@/lib/preferences";
@@ -181,6 +185,11 @@ import {
   freeAutoRecordSentence,
   trialRecordingText,
 } from "@/lib/auto-record";
+import {
+  CHANNEL_BLOCKED_TEXT,
+  needsLegacyAttestation,
+  ownershipBadgeKind,
+} from "@/lib/channel-ownership";
 import { authApi, authErrorMessage, isExpiredLinkError } from "@/api/auth";
 import {
   AuthCardLayout,
@@ -6873,6 +6882,9 @@ function ChannelDetail({
     : null;
   const creditsUsed = history.reduce((sum, r) => sum + (r.creditsUsed ?? 0), 0);
   const tiktokUrl = `https://www.tiktok.com/${channel.handle}`;
+  // Blocked after a report: recording and resuming are off for this account.
+  const blocked = Boolean(channel.blocked);
+  const ownership = ownershipBadgeKind(channel);
 
   const setAutoRecord = async (value: boolean) => {
     try {
@@ -6894,6 +6906,10 @@ function ChannelDetail({
   }, [channel.status]);
 
   const resume = async () => {
+    if (blocked) {
+      toast.error("Could not resume monitoring", { description: CHANNEL_BLOCKED_TEXT });
+      return;
+    }
     try {
       await resumeChannel.mutateAsync(channel.id);
       if (isDemoMode) setPreviewState("Waiting");
@@ -6919,7 +6935,21 @@ function ChannelDetail({
     state === "Recording" ? ["Recording"] : state === "Live" ? ["Live"] : [state];
 
   let banner: ReactNode;
-  if (state === "Recording") {
+  if (blocked) {
+    banner = (
+      <ChannelStatusBanner
+        tone="err"
+        icon={<Ban className="size-6" />}
+        title="Recording stopped"
+        description={CHANNEL_BLOCKED_TEXT}
+        actions={
+          <Button asChild variant="outline">
+            <Link to="/contact">Contact support</Link>
+          </Button>
+        }
+      />
+    );
+  } else if (state === "Recording") {
     banner = (
       <ChannelStatusBanner
         tone="rec"
@@ -7137,6 +7167,7 @@ function ChannelDetail({
               {badges.map((badge) => (
                 <StatusBadge key={badge} status={badge} pulse={badge === "Recording"} />
               ))}
+              <ChannelVerificationBadge channel={channel} className="h-6 px-2.5 text-xs" />
             </div>
             <p className="text-sm text-muted-foreground">
               {channel.name} ·{" "}
@@ -7154,7 +7185,7 @@ function ChannelDetail({
             <label className="flex items-center gap-2.5 text-sm font-bold">
               <Switch
                 checked={monitoring}
-                disabled={pending}
+                disabled={pending || blocked}
                 onCheckedChange={toggle}
                 aria-label="Monitoring"
               />
@@ -7166,7 +7197,7 @@ function ChannelDetail({
             >
               <Switch
                 checked={channel.autoRecord && canAutoRecord}
-                disabled={pending || !canAutoRecord}
+                disabled={pending || !canAutoRecord || blocked}
                 onCheckedChange={(value) => void setAutoRecord(value)}
                 aria-label="Auto-record"
               />
@@ -7192,7 +7223,7 @@ function ChannelDetail({
                   Pause monitoring
                 </DropdownMenuItem>
               ) : (
-                <DropdownMenuItem onSelect={() => void resume()}>
+                <DropdownMenuItem disabled={blocked} onSelect={() => void resume()}>
                   <Radio />
                   Resume monitoring
                 </DropdownMenuItem>
@@ -7205,15 +7236,17 @@ function ChannelDetail({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        {!channel.ownerVerifiedAt &&
-          (channel.verificationRequired || channel.verificationDueAt) && (
-            <ChannelVerificationCard
-              watchId={channel.id}
-              handle={channel.handle}
-              dueAt={channel.verificationRequired ? null : channel.verificationDueAt}
-              startOpen={channel.verificationRequired}
-            />
-          )}
+        {needsLegacyAttestation(channel) && <ChannelAttestationPrompt watchId={channel.id} />}
+        {ownership === "verify_to_record" || ownership === "verify_by" ? (
+          <ChannelVerificationCard
+            watchId={channel.id}
+            handle={channel.handle}
+            dueAt={ownership === "verify_by" ? channel.verificationDueAt : null}
+            startOpen={ownership === "verify_to_record"}
+          />
+        ) : ownership === "not_verified" ? (
+          <ChannelVerificationCard watchId={channel.id} handle={channel.handle} optional />
+        ) : null}
 
         {banner}
 

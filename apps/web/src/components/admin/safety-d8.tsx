@@ -1,6 +1,15 @@
 import { formatAdminDateTime } from "@/lib/formatters";
 import { useEffect, useMemo, useState } from "react";
-import { Download, ExternalLink, Plus, RefreshCw, ShieldAlert, Trash2, Unlock } from "lucide-react";
+import {
+  Ban,
+  Download,
+  ExternalLink,
+  Plus,
+  RefreshCw,
+  ShieldAlert,
+  Trash2,
+  Unlock,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { authErrorMessage } from "@/api/auth";
@@ -14,6 +23,11 @@ import {
   AdminTabsTrigger,
   type AdminBadgeTone,
 } from "@/components/admin/foundation";
+import {
+  ChannelAccountBlockDialog,
+  ChannelAccountBlocksTable,
+  type ChannelAccountBlockAction,
+} from "@/components/admin/channel-account-blocks";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,11 +42,13 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
   adminFoundationApi,
   adminSafetyApi,
+  type AdminChannelAccountBlock,
   type AdminComplaint,
   type AdminComplaintFilters,
   type AdminCreatorBlock,
   type AdminSuspiciousAccount,
 } from "@/repositories/admin-api";
+import type { WatchResponse } from "@/api/types";
 
 function dateTime(value: string | null | undefined) {
   return formatAdminDateTime(value);
@@ -188,14 +204,131 @@ function CreateComplaintDialog({
   );
 }
 
+function normalizeChannel(value: string | null | undefined) {
+  return (value ?? "")
+    .trim()
+    .replace(/^https?:\/\/(www\.)?tiktok\.com\//i, "")
+    .replace(/^@/, "")
+    .replace(/[/?#].*$/, "")
+    .toLowerCase();
+}
+
+/** From a complaint: find the reported channel on one account and block it
+ * for that account only (complaint ID prefilled). */
+function BlockForAccountFromComplaint({
+  complaint,
+  onBlock,
+}: {
+  complaint: AdminComplaint;
+  onBlock: (action: ChannelAccountBlockAction) => void;
+}) {
+  const [userId, setUserId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [found, setFound] = useState<{ email: string; watches: WatchResponse[] } | null>(null);
+  const channel = normalizeChannel(complaint.channel_source_value);
+
+  useEffect(() => {
+    setUserId("");
+    setFound(null);
+  }, [complaint.id]);
+
+  const find = async () => {
+    setBusy(true);
+    try {
+      const detail = await adminFoundationApi.getUserDetail(userId.trim());
+      setFound({
+        email: detail.user.email,
+        watches: detail.watches.filter(
+          (watch) =>
+            !channel ||
+            normalizeChannel(watch.creator?.username) === channel ||
+            normalizeChannel(watch.source.value) === channel,
+        ),
+      });
+    } catch (error) {
+      setFound(null);
+      toast.error("Could not load the account", { description: authErrorMessage(error) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border p-4">
+      <div>
+        <h3 className="font-medium">Block for one account</h3>
+        <p className="text-xs text-muted-foreground">
+          Stops only that account from recording {channel ? `@${channel}` : "the channel"}. Other
+          accounts are not affected. Use Block (creator) to stop everyone.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          placeholder="Account user ID"
+          value={userId}
+          onChange={(event) => setUserId(event.target.value)}
+        />
+        <Button variant="outline" disabled={busy || !userId.trim()} onClick={() => void find()}>
+          {busy ? "Finding…" : "Find channel"}
+        </Button>
+      </div>
+      {found && (
+        <div className="space-y-2">
+          {found.watches.map((watch) => {
+            const name = `@${(watch.creator?.username ?? watch.source.value).replace(/^@/, "")}`;
+            return (
+              <div
+                key={watch.id}
+                className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm"
+              >
+                <span>
+                  <b>{name}</b>{" "}
+                  <span className="text-xs text-muted-foreground">on {found.email}</span>
+                </span>
+                {watch.blocked ? (
+                  <span className="text-xs font-bold text-destructive">Already blocked</span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      onBlock({
+                        mode: "block",
+                        watchId: watch.id,
+                        channel: name,
+                        account: found.email,
+                        complaintId: complaint.id,
+                      })
+                    }
+                  >
+                    <Ban className="size-3" />
+                    Block for this account
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+          {!found.watches.length && (
+            <p className="text-sm text-muted-foreground">
+              {found.email} has no channel matching {channel ? `@${channel}` : "this complaint"}.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ComplaintDetailDialog({
   complaint,
   onClose,
   onUpdated,
+  onBlockForAccount,
 }: {
   complaint: AdminComplaint | null;
   onClose: () => void;
   onUpdated: (complaint: AdminComplaint) => void;
+  onBlockForAccount: (action: ChannelAccountBlockAction) => void;
 }) {
   const [full, setFull] = useState<AdminComplaint | null>(null);
   const [status, setStatus] = useState<AdminComplaint["status"]>("new");
@@ -296,6 +429,10 @@ function ComplaintDetailDialog({
             <Button disabled={busy || reason.trim().length < 3} onClick={() => void update()}>
               {busy ? "Saving…" : "Update case"}
             </Button>
+
+            {full.channel_source_value && (
+              <BlockForAccountFromComplaint complaint={full} onBlock={onBlockForAccount} />
+            )}
 
             <div>
               <h3 className="mb-2 font-medium">Timeline</h3>
@@ -489,6 +626,10 @@ export function AdminSafetyD8Page() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [blocks, setBlocks] = useState<AdminCreatorBlock[]>([]);
+  const [channelBlocks, setChannelBlocks] = useState<AdminChannelAccountBlock[]>([]);
+  const [channelBlockAction, setChannelBlockAction] = useState<ChannelAccountBlockAction | null>(
+    null,
+  );
   const [suspicious, setSuspicious] = useState<AdminSuspiciousAccount[]>([]);
   const [busy, setBusy] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -512,15 +653,18 @@ export function AdminSafetyD8Page() {
     }
     setBusy(true);
     try {
-      const [complaintResult, blockResult, suspiciousResult] = await Promise.all([
-        adminSafetyApi.listComplaints(filters),
-        adminSafetyApi.listCreatorBlocks(true),
-        adminSafetyApi.suspiciousAccounts(),
-      ]);
+      const [complaintResult, blockResult, channelBlockResult, suspiciousResult] =
+        await Promise.all([
+          adminSafetyApi.listComplaints(filters),
+          adminSafetyApi.listCreatorBlocks(true),
+          adminSafetyApi.listChannelAccountBlocks({ activeOnly: true }),
+          adminSafetyApi.suspiciousAccounts(),
+        ]);
       setComplaints(complaintResult.items);
       setNextCursor(complaintResult.next_cursor);
       setHasMore(complaintResult.has_more);
       setBlocks(blockResult.items);
+      setChannelBlocks(channelBlockResult.items);
       setSuspicious(suspiciousResult.items);
     } catch (error) {
       toast.error("Could not load Safety", { description: authErrorMessage(error) });
@@ -540,9 +684,10 @@ export function AdminSafetyD8Page() {
       open: complaints.filter((item) => item.status === "new" || item.status === "reviewing")
         .length,
       blocks: blocks.length,
+      channelBlocks: channelBlocks.length,
       suspicious: suspicious.length,
     }),
-    [blocks.length, complaints, suspicious.length],
+    [blocks.length, channelBlocks.length, complaints, suspicious.length],
   );
 
   const exportCsv = async () => {
@@ -600,6 +745,9 @@ export function AdminSafetyD8Page() {
           </AdminTabsTrigger>
           <AdminTabsTrigger value="blocks" count={counts.blocks}>
             Creator blocks
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="channel-blocks" count={counts.channelBlocks}>
+            Account channel blocks
           </AdminTabsTrigger>
           <AdminTabsTrigger value="suspicious" count={counts.suspicious}>
             Suspicious accounts
@@ -781,6 +929,19 @@ export function AdminSafetyD8Page() {
           </p>
         </TabsContent>
 
+        <TabsContent value="channel-blocks" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Channels stopped for one account after a report. Other accounts can still record the
+            channel. To add one, open the user’s Channels tab (or a complaint) and choose Block for
+            this account.
+          </p>
+          <ChannelAccountBlocksTable
+            blocks={channelBlocks}
+            busy={busy}
+            onUnblock={(block) => setChannelBlockAction({ mode: "unblock", block })}
+          />
+        </TabsContent>
+
         <TabsContent value="suspicious">
           <AdminDataTable>
             <thead>
@@ -845,8 +1006,14 @@ export function AdminSafetyD8Page() {
           );
           setSelectedComplaint(updated);
         }}
+        onBlockForAccount={setChannelBlockAction}
       />
       <SafetyActionDialog action={action} onClose={() => setAction(null)} onDone={load} />
+      <ChannelAccountBlockDialog
+        action={channelBlockAction}
+        onClose={() => setChannelBlockAction(null)}
+        onDone={load}
+      />
     </AppShell>
   );
 }

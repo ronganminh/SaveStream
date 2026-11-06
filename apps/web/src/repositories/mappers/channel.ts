@@ -127,5 +127,8 @@ export function mapWatchToChannel(
     ownerVerifiedAt: watch.owner_verified_at ?? null,
     verificationDueAt: watch.verification_due_at ?? null,
     verificationRequired: watch.verification_required ?? false,
+    ownershipBasis: watch.ownership_basis ?? null,
+    ownerAttestedAt: watch.owner_attested_at ?? null,
+    blocked: watch.blocked ?? false,
   };
 }

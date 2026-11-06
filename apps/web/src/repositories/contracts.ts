@@ -76,6 +76,13 @@ export type ChannelModel = {
   verificationDueAt?: string | null;
   /** SaveStream won't record this channel until it is verified. */
   verificationRequired?: boolean;
+  /** Website: "web_attested" / "web_attested_legacy" when an unverified channel
+   * may record because the user confirmed ownership or permission. */
+  ownershipBasis?: "web_attested" | "web_attested_legacy" | null;
+  /** When the user last confirmed ownership or permission. */
+  ownerAttestedAt?: string | null;
+  /** Ops stopped this channel for this account after a report. */
+  blocked?: boolean;
 };
 
 export type RecordingModel = {

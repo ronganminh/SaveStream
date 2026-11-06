@@ -4,6 +4,11 @@ import { ApiError } from "@/api/errors";
 import type { CreateWatchRequest, UpdateWatchRequest } from "@/api/types";
 import { domainQueryKeys } from "@/hooks/use-domain-data";
 import { track } from "@/lib/analytics";
+import {
+  CHANNEL_BLOCKED_TEXT,
+  CHANNEL_NOT_VERIFIED_TEXT,
+  OWNERSHIP_REQUIRED_TEXT,
+} from "@/lib/channel-ownership";
 import { repositories } from "@/repositories";
 
 async function invalidateChannels(
@@ -88,6 +93,11 @@ export function existingWatchId(error: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/** Add channel: the server wants the ownership box ticked. */
+export function isOwnershipAttestationError(error: unknown): boolean {
+  return error instanceof ApiError && error.code === "OWNERSHIP_ATTESTATION_REQUIRED";
+}
+
 export function watchQuotaLimit(error: unknown): number | null {
   if (!(error instanceof ApiError)) return null;
   const details = detailsRecord(error);
@@ -102,6 +112,9 @@ export function watchQuotaLimit(error: unknown): number | null {
 export function channelActionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "The channel action could not be completed.";
   if (error.status === 0) return "Unable to reach SaveStream. Check your connection and try again.";
+  if (error.code === "CHANNEL_BLOCKED") return CHANNEL_BLOCKED_TEXT;
+  if (error.code === "CHANNEL_NOT_VERIFIED") return CHANNEL_NOT_VERIFIED_TEXT;
+  if (error.code === "OWNERSHIP_ATTESTATION_REQUIRED") return OWNERSHIP_REQUIRED_TEXT;
   if (error.code === "INSUFFICIENT_CREDITS") {
     return "There are not enough available credits to resume automatic recording.";
   }
