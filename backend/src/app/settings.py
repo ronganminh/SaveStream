@@ -253,8 +253,10 @@ class AppSettings:
     # each channel's verification_due_at). From the environment: on in
     # staging/production (SAVESTREAM_CHANNEL_VERIFICATION_ENFORCED overrides).
     channel_verification_enforced: bool = False
-    channel_verification_code_ttl_seconds: int = 1800
-    channel_verification_max_checks: int = 20
+    # One code per channel, valid for a day; 200 checks fit the app's
+    # automatic re-checks (every 15 s for 5 min) several times over.
+    channel_verification_code_ttl_seconds: int = 86400
+    channel_verification_max_checks: int = 200
     channel_verification_check_interval_seconds: int = 10
     retention_check_seconds: int = 3600
     recording_source_backend: str = "tiktok"
@@ -786,9 +788,9 @@ class AppSettings:
                 "CHANNEL_VERIFICATION_ENFORCED", environment_raw in {"staging", "production"}
             ),
             channel_verification_code_ttl_seconds=_int_env(
-                "CHANNEL_VERIFICATION_CODE_TTL_SECONDS", 1800
+                "CHANNEL_VERIFICATION_CODE_TTL_SECONDS", 86400
             ),
-            channel_verification_max_checks=_int_env("CHANNEL_VERIFICATION_MAX_CHECKS", 20),
+            channel_verification_max_checks=_int_env("CHANNEL_VERIFICATION_MAX_CHECKS", 200),
             channel_verification_check_interval_seconds=_int_env(
                 "CHANNEL_VERIFICATION_CHECK_INTERVAL_SECONDS", 10
             ),

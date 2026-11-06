@@ -78,6 +78,10 @@ class ChannelVerificationResponse(StrictModel):
     checks_left: int
     result: Literal["verified", "code_not_found", "retry_later"] | None = None
     retry_after_seconds: int | None = None
+    # Why a check answered retry_later (too_soon / still_checking /
+    # tiktok_unavailable) and a sentence the app can show. Optional.
+    reason: str | None = None
+    message: str | None = None
 
 
 class CreateWatchRequest(StrictModel):
