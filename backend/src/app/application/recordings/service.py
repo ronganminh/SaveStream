@@ -209,6 +209,7 @@ class RecordingService:
             principal.user_id,
             payload,
             idempotency_key=idempotency_key,
+            client_type=principal.client_type,
         )
 
     async def create_for_user(
@@ -218,6 +219,7 @@ class RecordingService:
         *,
         idempotency_key: str,
         enforce_channel_verification: bool = True,
+        client_type: str | None = None,
     ) -> Recording:
         try:
             uuid.UUID(idempotency_key)
@@ -281,7 +283,11 @@ class RecordingService:
             from app.application.watches.verification import ensure_recording_source_verified
 
             await ensure_recording_source_verified(
-                self.session, self.settings, user_id=user_id, source=source
+                self.session,
+                self.settings,
+                user_id=user_id,
+                source=source,
+                client_type=client_type,
             )
         active_key = dedupe_key(user_id, source)
         active = await self.session.scalar(
@@ -382,9 +388,22 @@ class RecordingService:
                 Recording.deleted_at.is_(None),
             )
         )
-        if recording is None:
+        if recording is None or await self._hidden_from_app(principal, recording):
             raise self._not_found()
         return recording
+
+    async def _hidden_from_app(self, principal: AuthPrincipal, recording: Recording) -> bool:
+        """Recordings of web-only channels never reach the Android app."""
+        if not principal.is_mobile:
+            return False
+        from app.application.watches.ownership import (
+            mobile_hidden_usernames,
+            recording_username,
+        )
+
+        return recording_username(recording) in await mobile_hidden_usernames(
+            self.session, principal.user_id
+        )
 
     async def list(
         self,
@@ -398,6 +417,17 @@ class RecordingService:
             Recording.user_id == principal.user_id,
             Recording.deleted_at.is_(None),
         )
+        if principal.is_mobile:
+            from app.application.watches.ownership import mobile_hidden_usernames
+
+            hidden = await mobile_hidden_usernames(self.session, principal.user_id)
+            if hidden:
+                name = func.lower(
+                    func.ltrim(
+                        func.coalesce(Recording.resolved_username, Recording.source_value), "@"
+                    )
+                )
+                statement = statement.where(name.not_in(hidden))
         if status is not None:
             try:
                 RecordingStatus(status)
@@ -511,6 +541,8 @@ class RecordingService:
         if artifact is None:
             raise self._artifact_not_found()
         recording = await self.session.get(Recording, artifact.recording_id)
+        if recording is not None and await self._hidden_from_app(principal, recording):
+            raise self._artifact_not_found()
         if (
             recording is not None
             and await recording_creator_block(self.session, recording) is not None

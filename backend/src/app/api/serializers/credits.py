@@ -17,10 +17,14 @@ def _released_credits(entry: CreditLedgerEntry) -> int | None:
 
 
 def transaction_response(
-    entry: CreditLedgerEntry, context: LedgerContext | None = None
+    entry: CreditLedgerEntry,
+    context: LedgerContext | None = None,
+    *,
+    hidden_recording_ids: frozenset[str] = frozenset(),
 ) -> CreditTransactionResponse:
     order = recording = None
-    if context is not None and entry.reference_id:
+    on_web = entry.reference_type == "recording" and entry.reference_id in hidden_recording_ids
+    if context is not None and entry.reference_id and not on_web:
         if entry.reference_type in PAYMENT_ORDER_REFERENCE_TYPES:
             order = context.orders.get(entry.reference_id)
         elif entry.reference_type == "recording":
@@ -32,7 +36,8 @@ def transaction_response(
             "amount": entry.amount,
             "balance_after": entry.balance_after,
             "reference_type": entry.reference_type,
-            "reference_id": entry.reference_id,
+            "reference_id": None if on_web else entry.reference_id,
+            "recording_on_web": on_web,
             "released_credits": _released_credits(entry),
             "store_order_id": order.store_order_id if order else None,
             "package_name": order.package_name if order else None,

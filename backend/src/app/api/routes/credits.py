@@ -55,8 +55,18 @@ async def list_credit_transactions(
         cursor=cursor,
     )
     context = await service.ledger_context(principal.user_id, page.items)
+    hidden: frozenset[str] = frozenset()
+    if principal.is_mobile:
+        # Charges for web-only channels show as "Recording on the web".
+        from app.application.watches.ownership import mobile_hidden_resources
+
+        _, recording_ids = await mobile_hidden_resources(service.session, principal.user_id)
+        hidden = frozenset(recording_ids)
     return CreditTransactionListResponse(
-        items=[transaction_response(item, context) for item in page.items],
+        items=[
+            transaction_response(item, context, hidden_recording_ids=hidden)
+            for item in page.items
+        ],
         pagination=Pagination(
             next_cursor=page.next_cursor,
             has_more=page.has_more,
