@@ -4093,11 +4093,11 @@ const LEGAL_LAST_UPDATED = "October 5, 2026";
 // SaveStream Android app (October 22, 2026) added (owner-approved). The
 // consent version stays PRIVACY_VERSION 2026-10-14, so existing users are
 // not asked to agree again.
-const PRIVACY_LAST_UPDATED = "October 22, 2026";
+const PRIVACY_LAST_UPDATED = "November 6, 2026";
 // Terms and Refund Policy: Google Play purchases in the Android app added
 // (owner-approved). The consent revision stays unchanged, so existing users
 // are not asked to agree again.
-const TERMS_LAST_UPDATED = "October 22, 2026";
+const TERMS_LAST_UPDATED = "November 6, 2026";
 const REFUND_LAST_UPDATED = "October 22, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
@@ -4130,7 +4130,14 @@ function InlineLink({
   children,
 }: {
   to:
-    "/acceptable-use" | "/copyright" | "/privacy" | "/refund" | "/terms" | "/contact" | "/pricing";
+    | "/acceptable-use"
+    | "/copyright"
+    | "/privacy"
+    | "/refund"
+    | "/terms"
+    | "/contact"
+    | "/pricing"
+    | "/report";
   children: ReactNode;
 }) {
   return (
@@ -4281,6 +4288,36 @@ export function TermsPage() {
                 monitoring or recording when your authorization ends. See our{" "}
                 <InlineLink to="/acceptable-use">Acceptable Use Policy</InlineLink> and{" "}
                 <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>.
+              </p>
+            </>
+          ),
+        },
+        {
+          h: "Confirming channel ownership or permission",
+          p: (
+            <>
+              <p>
+                When you add a channel on the SaveStream website, you must confirm that you own the
+                channel or have the creator’s permission to record it. We keep a record of each
+                confirmation (the statement you accepted, the time, your IP address, and your
+                browser details) as evidence of that confirmation.
+              </p>
+              <p>
+                You may also verify a channel by placing a one-time code in its TikTok bio. A
+                channel verified this way shows a “Verified” badge. The badge means only that the
+                code was found in the channel’s bio when we checked; it is not a determination of
+                who holds the rights in any content.
+              </p>
+              <p>
+                The SaveStream Android app records only channels that you have verified with a bio
+                code. Channels that you add on the website without verifying them are available only
+                on the website.
+              </p>
+              <p>
+                SaveStream does not verify every channel that users add. Your confirmation is your
+                own statement and you are responsible for it being true. If you no longer own a
+                channel or no longer have permission to record it, you must stop recording it and
+                remove it from your account.
               </p>
             </>
           ),
@@ -4437,6 +4474,11 @@ export function PrivacyPage() {
               </li>
               <li>
                 Device, browser, IP address, locale, diagnostics, security logs, and audit events.
+              </li>
+              <li>
+                Channel ownership confirmations: when you confirm on the website that you own a
+                channel or have the creator’s permission to record it, the statement you accepted,
+                the time, your IP address, and your browser details.
               </li>
               <li>
                 In the Android app: a random app installation identifier, a push notification token,
@@ -4808,6 +4850,10 @@ export function AcceptableUsePage() {
                 restrictions imposed by a content owner or third-party service.
               </li>
               <li>
+                Confirming that you own a channel or have the creator’s permission to record it when
+                that is not true, or misleading us about your relationship to a channel.
+              </li>
+              <li>
                 Using SaveStream primarily to facilitate copyright infringement or unauthorized
                 redistribution of third-party content.
               </li>
@@ -4839,11 +4885,20 @@ export function AcceptableUsePage() {
         {
           h: "Enforcement",
           p: (
-            <p>
-              We may pause processing, restrict access to stored material, remove material, suspend
-              accounts, or terminate accounts when we reasonably believe this policy has been
-              violated. Serious or repeated infringement may result in termination.
-            </p>
+            <>
+              <p>
+                We may pause processing, restrict access to stored material, remove material,
+                suspend accounts, or terminate accounts when we reasonably believe this policy has
+                been violated. Serious or repeated infringement may result in termination.
+              </p>
+              <p>
+                We may also stop a single account from recording a specific channel, for example
+                after the creator reports it. When we do, recordings of that channel in progress on
+                that account are stopped, Auto-record for it is turned off, and it cannot be
+                recorded from that account until we lift the restriction. Other channels on the
+                account and other accounts are not affected by this step.
+              </p>
+            </>
           ),
         },
         {
@@ -4852,7 +4907,9 @@ export function AcceptableUsePage() {
             <p>
               Report suspected abuse to <MailLink email={ABUSE_EMAIL} />. Copyright owners and their
               authorized representatives should use <MailLink email={COPYRIGHT_EMAIL} /> and review
-              our <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>.
+              our <InlineLink to="/copyright">Copyright &amp; Takedown Policy</InlineLink>. Creators
+              who believe an account is recording their channel without permission can tell us
+              through the <InlineLink to="/report">report form</InlineLink>.
             </p>
           ),
         },
