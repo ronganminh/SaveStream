@@ -1,5 +1,5 @@
 FROM mirror.gcr.io/library/python:3.12-slim
 COPY wheels /wheels
-RUN pip install --no-index --find-links=/wheels celery redis
+RUN pip install --no-index --find-links=/wheels celery redis packaging
 WORKDIR /app
 COPY tasks.py .
