@@ -1326,6 +1326,23 @@ export type AdminCreatorBlock = {
   paused_watch_ids: string[];
 };
 
+/** One account stopped from recording one channel (other accounts are not
+ * affected). Admin API: /v1/admin/watches/{id}/block, /v1/admin/channel-blocks. */
+export type AdminChannelAccountBlock = {
+  id: string;
+  user_id: string;
+  username: string;
+  complaint_id: string | null;
+  reason: string;
+  blocked_by_user_id: string | null;
+  active: boolean;
+  unblocked_at: string | null;
+  unblock_reason: string | null;
+  created_at: string;
+  stopped_recording_ids: string[];
+  paused_watch_ids: string[];
+};
+
 export type AdminSuspiciousAccount = {
   user_id: string;
   email: string;
@@ -1442,6 +1459,43 @@ export const adminSafetyApi = {
       json: { reason },
       headers: stepUpHeaders(stepUpToken),
     });
+  },
+
+  listChannelAccountBlocks(filters: { activeOnly?: boolean; userId?: string | null } = {}) {
+    const query = new URLSearchParams({
+      active_only: filters.activeOnly === false ? "false" : "true",
+    });
+    if (filters.userId) query.set("user_id", filters.userId);
+    return apiClient.get<{ items: AdminChannelAccountBlock[] }>(
+      `/v1/admin/channel-blocks?${query.toString()}`,
+    );
+  },
+
+  blockChannelForAccount(
+    watchId: string,
+    payload: { reason: string; complaint_id?: string | null },
+    stepUpToken: string,
+  ) {
+    return apiClient.post<AdminChannelAccountBlock>(
+      `/v1/admin/watches/${encodeURIComponent(watchId)}/block`,
+      {
+        json: {
+          reason: payload.reason,
+          ...(payload.complaint_id ? { complaint_id: payload.complaint_id } : {}),
+        },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
+  },
+
+  unblockChannelAccount(blockId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminChannelAccountBlock>(
+      `/v1/admin/channel-blocks/${encodeURIComponent(blockId)}/unblock`,
+      {
+        json: { reason },
+        headers: stepUpHeaders(stepUpToken),
+      },
+    );
   },
 
   suspiciousAccounts(limit = 100) {

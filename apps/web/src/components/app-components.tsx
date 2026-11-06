@@ -10,6 +10,7 @@ import {
 import {
   Activity,
   AlertTriangle,
+  Ban,
   Info,
   Bell,
   Check,
@@ -124,8 +125,16 @@ import {
 import { freeWebSentence } from "@/lib/plan-facts";
 import { autoRecordAccess, autoRecordBlockedText } from "@/lib/auto-record";
 import {
+  CHANNEL_BLOCKED_TEXT,
+  OWNERSHIP_REQUIRED_TEXT,
+  OWNERSHIP_STATEMENT,
+  needsVerificationReminder,
+  ownershipBadgeKind,
+} from "@/lib/channel-ownership";
+import {
   channelActionErrorMessage,
   existingWatchId,
+  isOwnershipAttestationError,
   useCreateChannelMutation,
   useDeleteChannelMutation,
   usePauseChannelMutation,
@@ -1061,6 +1070,7 @@ export function ChannelRow({ channel }: { channel: ChannelModel }) {
             <Switch
               checked={c.on}
               onCheckedChange={c.toggle}
+              disabled={c.pending || c.blocked}
               aria-label={`Monitoring for ${channel.handle}`}
             />
           </div>
@@ -1095,7 +1105,8 @@ export function ChannelCard({ channel }: { channel: ChannelModel }) {
       <div className="mt-4 flex items-center justify-between">
         <StatusBadge status={c.on ? channel.status : "Paused"} />
         <label className="flex items-center gap-2 text-xs text-muted-foreground">
-          {t("Monitoring")} <Switch checked={c.on} onCheckedChange={c.toggle} />
+          {t("Monitoring")}{" "}
+          <Switch checked={c.on} onCheckedChange={c.toggle} disabled={c.pending || c.blocked} />
         </label>
       </div>
       <div className="mt-4 flex justify-between border-t pt-3 text-xs">
@@ -1136,7 +1147,9 @@ function channelStatusLine(channel: ChannelModel, on: boolean): string {
   }
 }
 
-/** "Verify to record" / "Verify by …" until the owner verified the channel. */
+/** Ownership state of a channel: Verified (bio code), Not verified (neutral:
+ * on the website the owner's confirmation is enough), Verify to record /
+ * Verify by (the API needs the bio code), or Blocked after a report. */
 export function ChannelVerificationBadge({
   channel,
   className,
@@ -1144,38 +1157,50 @@ export function ChannelVerificationBadge({
   channel: ChannelModel;
   className?: string | undefined;
 }) {
-  if (channel.ownerVerifiedAt) return null;
-  if (channel.verificationRequired) {
+  const kind = ownershipBadgeKind(channel);
+  const base = "inline-flex h-5 w-fit items-center gap-1 rounded-full px-2 text-[11px] font-bold";
+  if (kind === "blocked") {
     return (
       <span
-        className={cn(
-          "inline-flex h-5 w-fit items-center rounded-full bg-warning-subtle px-2 text-[11px] font-bold text-warning",
-          className,
-        )}
+        className={cn(base, "bg-destructive/10 text-destructive", className)}
+        title={CHANNEL_BLOCKED_TEXT}
       >
+        <Ban className="size-3" aria-hidden="true" />
+        Blocked
+      </span>
+    );
+  }
+  if (kind === "verified") {
+    return (
+      <span className={cn(base, "bg-success-subtle text-success", className)}>
+        <ShieldCheck className="size-3" aria-hidden="true" />
+        Verified
+      </span>
+    );
+  }
+  if (kind === "verify_to_record") {
+    return (
+      <span className={cn(base, "bg-warning-subtle text-warning", className)}>
         Verify to record
       </span>
     );
   }
-  if (!channel.verificationDueAt) return null;
+  if (kind === "verify_by" && channel.verificationDueAt) {
+    return (
+      <span className={cn(base, "bg-surface-2 text-muted-foreground", className)}>
+        Verify by {formatDate(channel.verificationDueAt, "en", { month: "short", day: "numeric" })}
+      </span>
+    );
+  }
   return (
-    <span
-      className={cn(
-        "inline-flex h-5 w-fit items-center rounded-full bg-surface-2 px-2 text-[11px] font-bold text-muted-foreground",
-        className,
-      )}
-    >
-      Verify by {formatDate(channel.verificationDueAt, "en", { month: "short", day: "numeric" })}
-    </span>
+    <span className={cn(base, "bg-surface-2 text-muted-foreground", className)}>Not verified</span>
   );
 }
 
 /** Account-level reminder: lists channels that still need the bio-code
  * check, with the earliest grace deadline. Hidden when all are verified. */
 export function ChannelVerificationNotice({ channels }: { channels: ChannelModel[] }) {
-  const pending = channels.filter(
-    (c) => !c.ownerVerifiedAt && (c.verificationRequired || c.verificationDueAt),
-  );
+  const pending = channels.filter(needsVerificationReminder);
   const first = pending.find((c) => c.verificationRequired) ?? pending[0];
   if (!first) return null;
   const blocked = pending.filter((c) => c.verificationRequired).length;
@@ -1250,10 +1275,15 @@ export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
       <div className="flex min-h-12 items-center gap-2.5 rounded-[12px] bg-surface-2 px-3.5 py-2.5 text-sm">
         <span
           aria-hidden="true"
-          className={cn("size-2 shrink-0 rounded-full", channelLineDot[status])}
+          className={cn(
+            "size-2 shrink-0 rounded-full",
+            channel.blocked ? "bg-destructive" : channelLineDot[status],
+          )}
         />
-        <span className="min-w-0 flex-1">{channelStatusLine(channel, c.on)}</span>
-        {fix}
+        <span className="min-w-0 flex-1">
+          {channel.blocked ? CHANNEL_BLOCKED_TEXT : channelStatusLine(channel, c.on)}
+        </span>
+        {channel.blocked ? null : fix}
       </div>
       <dl className="grid grid-cols-3 gap-x-3 gap-y-1 text-[13px]">
         <dt className="text-xs text-muted-foreground">Recordings</dt>
@@ -1267,7 +1297,7 @@ export function ChannelGridCard({ channel }: { channel: ChannelModel }) {
         <Switch
           checked={c.on}
           onCheckedChange={c.toggle}
-          disabled={c.pending}
+          disabled={c.pending || c.blocked}
           aria-label={`Monitoring for ${channel.handle}`}
         />
         <span className="text-sm font-bold">Monitoring {c.on ? "on" : "off"}</span>
@@ -1313,7 +1343,7 @@ function MoreMenu({
             {t("Pause monitoring")}
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem onSelect={() => controls.toggle(true)}>
+          <DropdownMenuItem disabled={controls.blocked} onSelect={() => controls.toggle(true)}>
             <Radio />
             {t("Resume monitoring")}
           </DropdownMenuItem>
@@ -1720,10 +1750,14 @@ export function AddChannelDialog({
   const autoRecordState = autoRecordAccess(entitlement, isDemoMode);
   const canAutoRecord = autoRecordState.allowed;
   const [autoRecord, setAutoRecord] = useState(true);
-  // Optional; stored with the time so support can see it.
+  // Required on the website: "I own this channel or have the creator's
+  // permission to record it." The server keeps it as consent evidence.
   const [ownerAttested, setOwnerAttested] = useState(false);
-  // New channels must be verified (code in the TikTok bio) before recording.
+  const [attestationError, setAttestationError] = useState<string | null>(null);
+  // The API decides whether the bio code is still required before recording
+  // (`verification_required`); otherwise verifying is optional.
   const [createdNeedsVerification, setCreatedNeedsVerification] = useState(false);
+  const [showOptionalVerify, setShowOptionalVerify] = useState(false);
   const channelLimit =
     entitlement?.limits.max_watches ?? publicPricingQuery.data?.free_max_channels_per_user ?? null;
   const preview = useCreatorPreview(open && parsed ? parsed.source : null);
@@ -1772,24 +1806,36 @@ export function AddChannelDialog({
     setErrorText(null);
     setAutoRecord(true);
     setOwnerAttested(false);
+    setAttestationError(null);
     setCreatedNeedsVerification(false);
+    setShowOptionalVerify(false);
   };
 
   const submit = async () => {
     if (state !== "found" || !parsed) return;
+    if (!ownerAttested) {
+      setAttestationError(OWNERSHIP_REQUIRED_TEXT);
+      return;
+    }
     setPhase("submitting");
     setErrorText(null);
+    setAttestationError(null);
     try {
       const watch = await createChannel.mutateAsync({
         source: parsed.source,
         auto_record: canAutoRecord && autoRecord,
-        ...(ownerAttested ? { owner_attested: true } : {}),
+        owner_attested: true,
       });
       setCreatedWatchId(watch.id);
       setCreatedNeedsVerification(Boolean(watch.verification_required));
       setPhase("success");
     } catch (error) {
       setPhase("form");
+      if (isOwnershipAttestationError(error)) {
+        setOwnerAttested(false);
+        setAttestationError(OWNERSHIP_REQUIRED_TEXT);
+        return;
+      }
       const duplicateId = existingWatchId(error);
       if (duplicateId) {
         setDuplicateWatchId(duplicateId);
@@ -1833,9 +1879,7 @@ export function AddChannelDialog({
           </span>
         </div>
         <DialogTitle className="text-xl font-extrabold">
-          {createdNeedsVerification
-            ? `${handle} added — one more step`
-            : `${handle} is being watched`}
+          {createdNeedsVerification ? `${handle} added — one more step` : `${handle} is ready`}
         </DialogTitle>
         <DialogDescription className="max-w-[360px] text-sm text-muted-foreground">
           {createdNeedsVerification
@@ -1856,6 +1900,22 @@ export function AddChannelDialog({
             className="w-full text-left"
           />
         )}
+        {!createdNeedsVerification &&
+          createdWatchId &&
+          (showOptionalVerify ? (
+            <ChannelVerificationCard
+              watchId={createdWatchId}
+              handle={handle ?? "your channel"}
+              optional
+              startOpen
+              className="w-full text-left"
+            />
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setShowOptionalVerify(true)}>
+              <ShieldCheck />
+              Verify ownership (optional)
+            </Button>
+          ))}
         <div className="flex flex-wrap justify-center gap-2">
           <StatusBadge status="Waiting" />
           <span
@@ -2053,18 +2113,54 @@ export function AddChannelDialog({
           </div>
         )}
         {state === "found" && (
-          <label className="flex items-start gap-2.5 rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm leading-5">
-            <input
-              type="checkbox"
-              className="mt-0.5 size-4 shrink-0 accent-primary"
-              checked={ownerAttested}
-              onChange={(event) => setOwnerAttested(event.target.checked)}
-            />
-            <span>
-              I own or manage this account, or have permission to record it.{" "}
-              <span className="text-muted-foreground">(optional)</span>
-            </span>
-          </label>
+          <div className="flex flex-col gap-1.5">
+            <label
+              htmlFor="add-channel-owner-attested"
+              className={cn(
+                "flex items-start gap-2.5 rounded-[12px] border bg-surface-2 px-3 py-2.5 text-sm leading-5",
+                attestationError ? "border-destructive" : "border-transparent",
+              )}
+            >
+              <input
+                id="add-channel-owner-attested"
+                type="checkbox"
+                required
+                className="mt-0.5 size-4 shrink-0 accent-primary"
+                checked={ownerAttested}
+                aria-invalid={attestationError ? true : undefined}
+                aria-describedby={
+                  attestationError ? "add-channel-owner-error" : "add-channel-owner-help"
+                }
+                onChange={(event) => {
+                  setOwnerAttested(event.target.checked);
+                  if (event.target.checked) setAttestationError(null);
+                }}
+              />
+              <span className="font-semibold">{OWNERSHIP_STATEMENT}</span>
+            </label>
+            {attestationError ? (
+              <p
+                id="add-channel-owner-error"
+                role="alert"
+                className="flex items-center gap-1.5 text-xs font-semibold text-destructive"
+              >
+                <AlertTriangle className="size-3.5" />
+                {attestationError}
+              </p>
+            ) : (
+              <p id="add-channel-owner-help" className="text-xs text-muted-foreground">
+                Required. See the{" "}
+                <Link
+                  to="/acceptable-use"
+                  target="_blank"
+                  className="font-semibold text-accent-ink underline-offset-2 hover:underline"
+                >
+                  Acceptable Use Policy
+                </Link>
+                .
+              </p>
+            )}
+          </div>
         )}
         {(state === "exists" || state === "unavailable") && (
           <StateBanner
@@ -2110,16 +2206,21 @@ export function AddChannelDialog({
             }
           />
         )}
-        <p className="flex items-start gap-2 rounded-[12px] bg-primary-subtle px-3 py-2.5 text-xs text-accent-ink">
-          <ShieldCheck className="mt-px size-4 shrink-0" />
-          <span>
-            Only add channels you own, manage, or have permission to record (
-            <Link to="/acceptable-use" className="font-semibold underline-offset-2 hover:underline">
-              Acceptable Use Policy
-            </Link>
-            ).
-          </span>
-        </p>
+        {state !== "found" && (
+          <p className="flex items-start gap-2 rounded-[12px] bg-primary-subtle px-3 py-2.5 text-xs text-accent-ink">
+            <ShieldCheck className="mt-px size-4 shrink-0" />
+            <span>
+              Only add channels you own, manage, or have permission to record (
+              <Link
+                to="/acceptable-use"
+                className="font-semibold underline-offset-2 hover:underline"
+              >
+                Acceptable Use Policy
+              </Link>
+              ).
+            </span>
+          </p>
+        )}
         {isDemoMode && (
           <details className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
             <summary className="cursor-pointer">Prototype: try lookup states</summary>
@@ -2144,7 +2245,7 @@ export function AddChannelDialog({
           </Button>
           <Button
             onClick={() => void submit()}
-            disabled={state !== "found" || phase === "submitting"}
+            disabled={state !== "found" || !ownerAttested || phase === "submitting"}
           >
             {phase === "submitting" ? (
               <>
@@ -2526,8 +2627,14 @@ export function useChannelControls(channel: ChannelModel) {
   const [demoRemoved, setDemoRemoved] = useState(false);
   const on = isDemoMode ? demoOn : channel.backendStatus === "active";
   const pending = pauseChannel.isPending || resumeChannel.isPending || deleteChannel.isPending;
+  // Blocked after a report: monitoring can't be resumed from here.
+  const blocked = Boolean(channel.blocked);
 
   const resume = async () => {
+    if (blocked) {
+      toast.error("Could not resume monitoring", { description: CHANNEL_BLOCKED_TEXT });
+      return;
+    }
     try {
       await resumeChannel.mutateAsync(channel.id);
       if (isDemoMode) setDemoOn(true);
@@ -2609,6 +2716,7 @@ export function useChannelControls(channel: ChannelModel) {
     toggle,
     removed: isDemoMode ? demoRemoved : deleteChannel.isSuccess,
     pending,
+    blocked,
     openPause: () => setDialog("pause"),
     openRemove: () => setDialog("remove"),
     dialogs,

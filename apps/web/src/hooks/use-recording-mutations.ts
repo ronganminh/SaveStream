@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/api/errors";
 import { domainQueryKeys } from "@/hooks/use-domain-data";
+import { CHANNEL_BLOCKED_TEXT, CHANNEL_NOT_VERIFIED_TEXT } from "@/lib/channel-ownership";
 import { repositories } from "@/repositories";
 
 async function invalidateRecordingQueries(
@@ -61,9 +62,7 @@ export function useRecordingDownloadMutation() {
       const { recordingId, saveAs = false } =
         typeof input === "string" ? { recordingId: input } : input;
       const artifacts = await repositories.recordings.listArtifacts(recordingId);
-      const artifact = artifacts.find(
-        (item) => item.kind === "video" && item.container === "mp4",
-      );
+      const artifact = artifacts.find((item) => item.kind === "video" && item.container === "mp4");
       if (!artifact) {
         throw new Error("The recording artifact is unavailable.");
       }
@@ -125,6 +124,8 @@ export function artifactActionErrorMessage(error: unknown): string {
 export function recordingActionErrorMessage(error: unknown): string {
   if (!(error instanceof ApiError)) return "The recording action could not be completed.";
   if (error.status === 0) return "Unable to reach SaveStream. Check your connection and try again.";
+  if (error.code === "CHANNEL_BLOCKED") return CHANNEL_BLOCKED_TEXT;
+  if (error.code === "CHANNEL_NOT_VERIFIED") return CHANNEL_NOT_VERIFIED_TEXT;
   if (error.code === "INSUFFICIENT_CREDITS") {
     return "There are not enough available credits for this recording.";
   }

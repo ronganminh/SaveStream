@@ -31,6 +31,7 @@ jobs:
       - run: npm --workspace apps/web run test:analytics
       - run: npm --workspace apps/web run test:repositories
       - run: npm --workspace apps/web run test:watches
+      - run: npm --workspace apps/web run test:ownership
       - run: npm --workspace apps/web run test:recordings
       - run: npm --workspace apps/web run test:artifacts
       - run: npm --workspace apps/web run test:credits

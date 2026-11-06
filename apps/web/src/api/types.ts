@@ -43,6 +43,14 @@ export type WatchResponse = {
   verification_due_at?: string | null;
   /** True when SaveStream won't record this channel until it is verified. */
   verification_required?: boolean;
+  /**
+   * Website only: what lets an unverified channel record on the web —
+   * "web_attested" (ownership box ticked when added) or "web_attested_legacy"
+   * (added before the box was required; ask the user to tick it). Null otherwise.
+   */
+  ownership_basis?: "web_attested" | "web_attested_legacy" | null;
+  /** Ops stopped this channel for this account after a report. */
+  blocked?: boolean;
   /** Bio code waiting to be checked; null once verified or with no unexpired code. */
   pending_verification_code?: string | null;
   pending_verification_expires_at?: string | null;
@@ -111,13 +119,16 @@ export type EntitlementResponse = {
 export type CreateWatchRequest = {
   source: Source;
   auto_record: boolean;
-  /** Optional "I own or manage this account, or have permission to record it." */
+  /** "I own this channel or have the creator's permission to record it." The
+   * website always sends true (the box is required to add a channel). */
   owner_attested?: boolean;
 };
 
 export type UpdateWatchRequest = {
   auto_record?: boolean | null;
   status?: "active" | "paused" | "disabled" | null;
+  /** Tick the ownership box on an existing channel (stored as consent evidence). */
+  owner_attested?: true;
 };
 
 export type RecordingStatusValue =

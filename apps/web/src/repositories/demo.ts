@@ -249,6 +249,8 @@ export const demoRepositories: SaveStreamRepositories = {
         last_live_at: null,
         created_at: now,
         updated_at: now,
+        owner_attested_at: input.owner_attested ? now : null,
+        ownership_basis: input.owner_attested ? "web_attested" : null,
       };
       demoWatchState.push(item);
       syncDemoChannel(item);
@@ -260,6 +262,10 @@ export const demoRepositories: SaveStreamRepositories = {
       if (input.auto_record !== undefined && input.auto_record !== null)
         item.auto_record = input.auto_record;
       if (input.status) item.status = input.status;
+      if (input.owner_attested) {
+        item.owner_attested_at = new Date().toISOString();
+        item.ownership_basis = "web_attested";
+      }
       item.updated_at = new Date().toISOString();
       syncDemoChannel(item);
       return structuredClone(item);
