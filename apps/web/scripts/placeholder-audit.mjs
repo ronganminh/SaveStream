@@ -10,6 +10,7 @@ const PLACEHOLDER = /\[[A-Z]{2,}(?: [A-Z]{2,})*\]/g;
 // Library internals that look like placeholders but are never rendered.
 const ALLOWED = new Set([
   "[DEFAULT]", // Firebase's default app name
+  "[BRAND]", // @tanstack/router-core symbol lookup (value[BRAND]) in the server bundle
 ]);
 const targets = [".output/public", ".output/server", "src/content"];
 
