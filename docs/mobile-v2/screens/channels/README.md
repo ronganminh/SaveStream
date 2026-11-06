@@ -66,6 +66,15 @@ A `retry_later` answer (checked too soon, TikTok did not return the bio, or — 
 server's `retry_after_seconds`; newer servers add optional `reason` (`too_soon` /
 `still_checking` / `tiktok_unavailable`) and `message` fields.
 
+**Automatic re-checks (AVerifyStillChecking, 2.1.2).** No artboard. TikTok can take a minute to
+show an edited bio, so the screen checks again on its own: when the app returns to the
+foreground, and every 15 s (or the server's `retry_after_seconds`, if longer) for 5 minutes after
+the user copies the code, taps **Open TikTok** (the channel's profile on tiktok.com, which the
+TikTok app opens when installed) or checks. A `retry_later` answer shows "Checking your bio…
+TikTok can take a minute to show your new bio." with a spinner; a quiet automatic check that
+fails changes nothing on screen. Re-checks stop when the channel is verified, the code expires or
+the screen closes. Adding a channel during the first-run introduction also goes straight here.
+
 **Verified (AVerifyDone).** The auto-record switch shows the channel's real setting after the app
 turns it on; when the account can't auto-record (no minutes) it stays off with a note.
 

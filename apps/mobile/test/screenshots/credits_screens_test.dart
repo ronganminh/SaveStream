@@ -363,6 +363,24 @@ void main() {
     await captureScreen(tester, 'AUsageHistory');
 
     await tester.scrollUntilVisible(
+      find.text('Recording on the web'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(
+      find.text('Oct 11 · 25 min · billed per started minute'),
+      findsOneWidget,
+    );
+    // Not a link: no channel or recording to open.
+    expect(
+      find.ancestor(
+        of: find.text('Recording on the web'),
+        matching: find.byType(InkWell),
+      ),
+      findsNothing,
+    );
+
+    await tester.scrollUntilVisible(
       find.text('Free trial'),
       200,
       scrollable: find.byType(Scrollable).last,
@@ -634,6 +652,7 @@ class _FakeApi
       int? seconds,
       String? storeOrderId,
       String? packageName,
+      bool onWeb = false,
     }) => CreditTransaction(
       id: id,
       type: type,
@@ -645,6 +664,7 @@ class _FakeApi
       recordingDurationSeconds: seconds,
       storeOrderId: storeOrderId,
       packageName: packageName,
+      recordingOnWeb: onWeb,
       createdAt: at,
     );
     const CreditTransactionType charge = CreditTransactionType.charge;
@@ -709,6 +729,16 @@ class _FakeApi
             DateTime(2026, 10, day, 21),
             referenceId: 'r-$day',
           ),
+        // A recording made on the website: no channel, no recording.
+        tx(
+          'web11',
+          charge,
+          -25,
+          'recording',
+          DateTime(2026, 10, 11, 21),
+          seconds: 1500,
+          onWeb: true,
+        ),
         tx(
           't5',
           CreditTransactionType.grant,

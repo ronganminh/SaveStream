@@ -1,8 +1,10 @@
-/// A12 — Add first creator.
+/// A12 — Add first creator. Adding it finishes the introduction and goes
+/// straight to Verify ownership: the channel records only once verified.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/app_settings_controller.dart';
 import '../../../app/router/app_routes.dart';
 import '../../../app/theme/ss_tokens.dart';
 import '../../../core/widgets/savestream_widgets.dart';
@@ -11,7 +13,9 @@ import '../../channels/domain/models/watch_summary.dart';
 import '../../channels/presentation/controllers/watch_providers.dart';
 
 class AddFirstCreatorScreen extends ConsumerStatefulWidget {
-  const AddFirstCreatorScreen({super.key});
+  const AddFirstCreatorScreen({required this.settings, super.key});
+
+  final AppSettingsController settings;
 
   @override
   ConsumerState<AddFirstCreatorScreen> createState() =>
@@ -80,13 +84,9 @@ class _AddFirstCreatorScreenState extends ConsumerState<AddFirstCreatorScreen> {
               notifyOnLive: true,
             ),
           );
+      await widget.settings.markIntroCompleted();
       if (!mounted) return;
-      context.go(
-        AppRoutes.firstCreatorAddedLocation(
-          name: created.creatorDisplayName,
-          handle: created.creatorUsername,
-        ),
-      );
+      context.go(AppRoutes.channelVerify(created.id));
     } on Object catch (error) {
       if (!mounted) return;
       setState(() {

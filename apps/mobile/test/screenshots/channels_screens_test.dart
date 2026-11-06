@@ -18,6 +18,7 @@ import 'package:savestream_mobile/core/widgets/v2/ss_v2_widgets.dart';
 import 'package:savestream_mobile/features/channels/domain/models/channel_verification.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/channels/domain/repositories/watch_repository.dart';
+import 'package:savestream_mobile/features/channels/presentation/verify_ownership_screen.dart';
 import 'package:savestream_mobile/features/credits/domain/credit_balance.dart';
 import 'package:savestream_mobile/features/credits/presentation/credits_providers.dart';
 import 'package:savestream_mobile/features/entitlement/domain/models/entitlement.dart';
@@ -260,6 +261,119 @@ void main() {
     );
     expect(find.text('Check again'), findsOneWidget);
     await captureScreen(tester, 'AVerifyNotYet');
+  });
+
+  testWidgets('AVerifyStillChecking', (WidgetTester tester) async {
+    final _FakeWatches watches = await pumpVerify(
+      tester,
+      _FakeWatches(
+        <WatchSummary>[_shop()],
+        checkResult: VerificationCheckResult.retryLater,
+        retryAfterSeconds: 15,
+        reason: 'still_checking',
+      ),
+    );
+    expect(find.text('Open TikTok'), findsOneWidget);
+    await tapButton(tester, 'Check my bio');
+    await settle(tester);
+    expect(
+      find.textContaining('TikTok can take a minute to show your new bio.'),
+      findsOneWidget,
+    );
+    expect(find.text('Check again'), findsOneWidget);
+    expect(watches.checks, 1);
+    await captureScreen(tester, 'AVerifyStillChecking');
+
+    // The screen looks again after the server's retry_after_seconds.
+    await tester.pump(const Duration(seconds: 15));
+    await settle(tester);
+    expect(watches.checks, 2);
+  });
+
+  testWidgets('A day-long code shows hours left', (WidgetTester tester) async {
+    final _FakeWatches watches = _FakeWatches(<WatchSummary>[_shop()])
+      ..codeLifetime = const Duration(hours: 24);
+    await pumpVerify(tester, watches);
+    expect(find.text('Expires in 24 hours'), findsOneWidget);
+  });
+
+  testWidgets('Verify re-checks the bio after the code is copied', (
+    WidgetTester tester,
+  ) async {
+    if (_realClock(tester)) return;
+    final _FakeWatches watches = await pumpVerify(
+      tester,
+      _FakeWatches(<WatchSummary>[_shop()]),
+    );
+    await tester.tap(find.text('Copy code'));
+    await settle(tester);
+    expect(watches.checks, 0);
+
+    await tester.pump(verifyAutoCheckInterval);
+    await settle(tester);
+    expect(watches.checks, 1);
+    // A quiet check: the calmer "not yet" note, buttons still there.
+    expect(
+      find.text('We didn’t find SS-7K4Q in your bio yet.'),
+      findsOneWidget,
+    );
+    expect(find.text('Check again'), findsOneWidget);
+
+    await tester.pump(verifyAutoCheckInterval);
+    await settle(tester);
+    expect(watches.checks, 2);
+
+    // Every 15 s for 5 minutes, then it stops.
+    for (int i = 0; i < 30; i++) {
+      await tester.pump(verifyAutoCheckInterval);
+    }
+    await settle(tester);
+    expect(watches.checks, 20);
+    await tester.pump(const Duration(minutes: 2));
+    expect(watches.checks, 20);
+  });
+
+  testWidgets('Verify re-checks when the app comes back and stops when '
+      'verified', (WidgetTester tester) async {
+    if (_realClock(tester)) return;
+    final _FakeWatches watches = await pumpVerify(
+      tester,
+      _FakeWatches(<WatchSummary>[_shop()]),
+    );
+    // Open TikTok (no TikTok or browser in tests: nothing opens).
+    await tapButton(tester, 'Open TikTok');
+    await settle(tester);
+    expect(watches.checks, 0);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    // While the app is in the background the timer doesn't check.
+    await tester.pump(verifyAutoCheckInterval);
+    expect(watches.checks, 0);
+
+    watches.checkResult = VerificationCheckResult.verified;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await settle(tester);
+    expect(watches.checks, 1);
+    expect(find.text('@my_shop_live is verified'), findsOneWidget);
+
+    // Verified: no more checks.
+    await tester.pump(const Duration(minutes: 1));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await settle(tester);
+    expect(watches.checks, 1);
+  });
+
+  test('Open TikTok goes to the channel profile', () {
+    expect(
+      tikTokProfileUrl('@my_shop_live').toString(),
+      'https://www.tiktok.com/@my_shop_live',
+    );
+    expect(tikTokProfileUrl(null).toString(), 'https://www.tiktok.com/');
   });
 
   testWidgets('AVerifyExpired', (WidgetTester tester) async {
@@ -544,6 +658,8 @@ class _FakeWatches
     this.checkHangs = false,
     this.checkExpired = false,
     this.checkResult = VerificationCheckResult.codeNotFound,
+    this.retryAfterSeconds,
+    this.reason,
   }) : _items = List<WatchSummary>.of(items);
 
   final List<WatchSummary> _items;
@@ -551,7 +667,9 @@ class _FakeWatches
   final bool lookupFails;
   final bool checkHangs;
   final bool checkExpired;
-  final VerificationCheckResult checkResult;
+  VerificationCheckResult checkResult;
+  final int? retryAfterSeconds;
+  final String? reason;
 
   /// The unverified channels in the list already have a code pending.
   bool pendingCode = true;
@@ -562,7 +680,9 @@ class _FakeWatches
 
   WatchSummary byId(String id) => _items.firstWhere((w) => w.id == id);
 
-  DateTime get _expiresAt => _now.toUtc().add(const Duration(minutes: 30));
+  Duration codeLifetime = const Duration(minutes: 30);
+
+  DateTime get _expiresAt => _now.toUtc().add(codeLifetime);
 
   ChannelVerification _state(String id, {VerificationCheckResult? result}) {
     final WatchSummary? watch = _items.where((w) => w.id == id).firstOrNull;
@@ -574,8 +694,12 @@ class _FakeWatches
       verificationRequired: !verified,
       code: verified || !pendingCode ? null : _code,
       expiresAt: verified || !pendingCode ? null : _expiresAt,
-      checksLeft: verified ? 0 : 19,
+      checksLeft: verified ? 0 : 199,
       result: result,
+      retryAfterSeconds: result == VerificationCheckResult.retryLater
+          ? retryAfterSeconds
+          : null,
+      reason: result == VerificationCheckResult.retryLater ? reason : null,
     );
   }
 
@@ -776,3 +900,9 @@ class _FakeNotifications implements NotificationsRepository {
   Future<AppNotification> markRead(String notificationId) =>
       throw UnimplementedError();
 }
+
+/// On a device (integration_test) pump() waits in real time, so the
+/// minutes-long auto re-check schedule is only exercised under the fake
+/// clock of `flutter test`.
+bool _realClock(WidgetTester tester) =>
+    tester.binding is LiveTestWidgetsFlutterBinding;

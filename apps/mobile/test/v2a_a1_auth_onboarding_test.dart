@@ -9,6 +9,7 @@ import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/core/storage/app_settings_store.dart';
 import 'package:savestream_mobile/features/auth/presentation/verify_email_screen.dart';
+import 'package:savestream_mobile/features/channels/presentation/verify_ownership_screen.dart';
 import 'package:savestream_mobile/features/devices/domain/models/device_registration.dart';
 import 'package:savestream_mobile/features/onboarding/presentation/intro_watch_detect_screen.dart';
 import 'package:savestream_mobile/platform/fakes/fake_device_info_service.dart';
@@ -77,7 +78,7 @@ void main() {
     },
   );
 
-  testWidgets('A1 first-run auth and onboarding reaches Home', (
+  testWidgets('A1 first-run auth and onboarding reaches Verify ownership', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -165,13 +166,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(find.text('Linastudio added'), findsOneWidget);
-    await tester.tap(find.widgetWithText(FilledButton, 'Go to Home'));
-    await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 200));
-
+    // Adding the channel goes straight to Verify ownership.
+    expect(find.byType(VerifyOwnershipScreen), findsOneWidget);
+    expect(find.text('Verify ownership'), findsOneWidget);
     expect(settings.hasCompletedIntro, isTrue);
-    expect(find.text('Home'), findsWidgets);
   });
 
   testWidgets('A09 skips platform recording screens on iOS', (

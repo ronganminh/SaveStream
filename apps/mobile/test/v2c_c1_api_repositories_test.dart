@@ -9,7 +9,9 @@ import 'package:savestream_mobile/core/api/api_exception.dart';
 import 'package:savestream_mobile/core/config/app_config.dart';
 import 'package:savestream_mobile/core/config/app_environment.dart';
 import 'package:savestream_mobile/features/app_status/data/repositories/api_app_status_repository.dart';
+import 'package:savestream_mobile/features/channels/data/remote/watch_api_models.dart';
 import 'package:savestream_mobile/features/channels/data/repositories/api_watch_repository.dart';
+import 'package:savestream_mobile/features/channels/domain/models/channel_verification.dart';
 import 'package:savestream_mobile/features/channels/domain/models/watch_summary.dart';
 import 'package:savestream_mobile/features/credits/data/api_credit_ledger_repository.dart';
 import 'package:savestream_mobile/features/credits/domain/credit_ledger.dart';
@@ -94,13 +96,30 @@ void main() {
             'recording_duration_seconds': 5940,
             'created_at': '2026-10-21T21:00:00Z',
           },
+          <String, Object?>{
+            'id': 't3',
+            'type': 'charge',
+            'amount': -25,
+            'balance_after': 8886,
+            'reference_type': 'recording',
+            'reference_id': null,
+            'recording_channel_username': null,
+            'recording_duration_seconds': 1500,
+            'recording_on_web': true,
+            'created_at': '2026-10-22T21:00:00Z',
+          },
         ],
       },
     );
     expect(page.items.first.storeOrderId, 'GPA.1');
     expect(page.items.first.packageName, 'Standard');
-    expect(page.items.last.recordingChannelUsername, 'my_shop_live');
-    expect(page.items.last.recordingDurationSeconds, 5940);
+    expect(page.items[1].recordingChannelUsername, 'my_shop_live');
+    expect(page.items[1].recordingDurationSeconds, 5940);
+    // recording_on_web is optional: absent on older servers.
+    expect(page.items[1].recordingOnWeb, isFalse);
+    expect(page.items.last.recordingOnWeb, isTrue);
+    expect(page.items.last.recordingChannelUsername, isNull);
+    expect(page.items.last.referenceId, isNull);
 
     final List<PaymentOrder> orders = decodePaymentOrders(<String, Object?>{
       'items': <Object?>[
@@ -131,6 +150,37 @@ void main() {
     expect(orders.first.clientPriceCurrency, 'USD');
     expect(orders.last.storeOrderId, isNull);
     expect(orders.last.clientPriceAmountMicros, isNull);
+  });
+
+  test('verification check reads the optional retry reason', () {
+    Map<String, Object?> body(Map<String, Object?> extra) => <String, Object?>{
+      'watch_id': 'w1',
+      'verified': false,
+      'owner_verified_at': null,
+      'verification_due_at': null,
+      'verification_required': true,
+      'code': 'SS-7K4Q',
+      'expires_at': '2026-10-23T20:00:00Z',
+      'checks_left': 199,
+      ...extra,
+    };
+    final ChannelVerification still = decodeChannelVerification(
+      body(<String, Object?>{
+        'result': 'retry_later',
+        'retry_after_seconds': 15,
+        'reason': 'still_checking',
+        'message': 'Checking your bio…',
+      }),
+    );
+    expect(still.result, VerificationCheckResult.retryLater);
+    expect(still.retryAfterSeconds, 15);
+    expect(still.reason, 'still_checking');
+    // Older servers send neither field.
+    final ChannelVerification older = decodeChannelVerification(
+      body(<String, Object?>{'result': 'code_not_found'}),
+    );
+    expect(older.result, VerificationCheckResult.codeNotFound);
+    expect(older.reason, isNull);
   });
 
   test('501 entitlement falls back to a safe Free snapshot', () async {

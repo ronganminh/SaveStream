@@ -262,7 +262,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.onboardingAddCreator,
         builder: (BuildContext context, GoRouterState state) {
-          return const AddFirstCreatorScreen();
+          return AddFirstCreatorScreen(settings: settings);
         },
       ),
       GoRoute(

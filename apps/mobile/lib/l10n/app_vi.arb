@@ -1114,8 +1114,6 @@
   "v2CodeExpiredTitle": "Mã này đã hết hạn.",
   "v2CodeExpiredBody": "Lấy mã mới và dùng mã đó trong bio thay thế.",
   "v2GetNewCode": "Lấy mã mới",
-  "v2RetryLaterTitle": "Hiện chưa đọc được bio của bạn.",
-  "v2RetryLaterBody": "{seconds, plural, other{Thử lại sau {seconds} giây.}}",
   "v2VerifyLoadError": "Không lấy được mã xác minh. Kiểm tra kết nối rồi thử lại.",
   "v2TooManyCodes": "Quá nhiều mã xác minh. Hãy thử lại sau một giờ.",
   "v2ChannelVerifiedTitle": "{handle} đã được xác minh",

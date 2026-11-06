@@ -1181,7 +1181,7 @@
   "v2NavChannels": "Channels",
   "v2NavRecordings": "Recordings",
   "v2NavAccount": "Account",
-  "v2ChannelsIntro": "Only channels you own or manage, verified with a bio code.",
+  "v2ChannelsIntro": "Channels you own or manage. We record the ones you verify with a bio code.",
   "v2AddChannel": "Add channel",
   "v2ChannelsEmptyTitle": "No channels yet",
   "v2ChannelsEmptyBody": "Add the TikTok username you go LIVE on. You’ll verify it’s yours with a short bio code.",
@@ -1246,7 +1246,7 @@
   "v2ChannelAlreadyAdded": "This channel is already in your list.",
   "v2AddChannelFailed": "We couldn’t add this channel. Try again.",
   "v2VerifyOwnershipTitle": "Verify ownership",
-  "v2VerifyIntroLead": "To keep SaveStream for owners only, add this code to the bio of ",
+  "v2VerifyIntroLead": "To show it’s your channel, add this code to the bio of ",
   "v2VerifyIntroTail": ".",
   "v2YourVerificationCode": "Your verification code",
   "v2CopyCode": "Copy code",
@@ -1255,6 +1255,14 @@
   "@v2ExpiresIn": {
     "placeholders": {
       "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "v2ExpiresInHours": "{hours, plural, =1{Expires in 1 hour} other{Expires in {hours} hours}}",
+  "@v2ExpiresInHours": {
+    "placeholders": {
+      "hours": {
         "type": "int"
       }
     }
@@ -1273,6 +1281,8 @@
   "v2DoItLater": "I’ll do it later",
   "v2CheckingBioTitle": "Checking your bio…",
   "v2CheckingBioBody": "This usually takes a few seconds.",
+  "v2StillCheckingBody": "TikTok can take a minute to show your new bio.",
+  "v2OpenTikTok": "Open TikTok",
   "v2Checking": "Checking…",
   "v2CodeNotFoundTitle": "We didn’t find {code} in your bio yet.",
   "@v2CodeNotFoundTitle": {
@@ -1282,20 +1292,11 @@
       }
     }
   },
-  "v2CodeNotFoundBody": "Profile changes can take a minute to show. Make sure you saved your bio, then check again.",
+  "v2CodeNotFoundBody": "If you just saved your bio, wait a minute: TikTok can be slow to show changes. We’ll keep checking while this screen is open.",
   "v2CheckAgain": "Check again",
   "v2CodeExpiredTitle": "This code has expired.",
-  "v2CodeExpiredBody": "Get a new code and put it in your bio instead.",
+  "v2CodeExpiredBody": "Get a new code, then make sure the code in your bio matches it.",
   "v2GetNewCode": "Get a new code",
-  "v2RetryLaterTitle": "We couldn’t read your bio just now.",
-  "v2RetryLaterBody": "{seconds, plural, =1{Try again in 1 second.} other{Try again in {seconds} seconds.}}",
-  "@v2RetryLaterBody": {
-    "placeholders": {
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
   "v2VerifyLoadError": "We couldn’t get a verification code. Check your connection and try again.",
   "v2TooManyCodes": "Too many verification codes. Try again in an hour.",
   "v2ChannelVerifiedTitle": "{handle} is verified",
@@ -1818,6 +1819,7 @@
     }
   },
   "crLedgerRecording": "Recording",
+  "crLedgerRecordingOnWeb": "Recording on the web",
   "crLedgerRefunded": "Failed recording · refunded",
   "crLedgerReward": "Rewarded ad",
   "crLedgerPack": "{name} pack · Google Play",

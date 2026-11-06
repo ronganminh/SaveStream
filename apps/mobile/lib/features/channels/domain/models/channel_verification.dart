@@ -24,6 +24,7 @@ class ChannelVerification {
     this.checksLeft = 0,
     this.result,
     this.retryAfterSeconds,
+    this.reason,
   });
 
   final String watchId;
@@ -43,6 +44,10 @@ class ChannelVerification {
   final int checksLeft;
   final VerificationCheckResult? result;
   final int? retryAfterSeconds;
+
+  /// Why a check answered retry_later (`too_soon`, `still_checking`,
+  /// `tiktok_unavailable`); null from servers that don't say.
+  final String? reason;
 
   /// True when the code is past the server's `expires_at` at [now].
   bool isExpiredAt(DateTime now) {

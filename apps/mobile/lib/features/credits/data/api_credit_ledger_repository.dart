@@ -106,6 +106,7 @@ CreditTransaction _transaction(Object? json) {
     recordingDurationSeconds: map['recording_duration_seconds'] is int
         ? map['recording_duration_seconds']! as int
         : null,
+    recordingOnWeb: map['recording_on_web'] == true,
     createdAt: _date(map['created_at'], 'created_at'),
   );
 }
