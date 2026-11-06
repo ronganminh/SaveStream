@@ -126,3 +126,27 @@ class AdminDeleteBlockedRecordingsResponse(StrictModel):
     block_id: str
     deleted_recording_ids: list[str]
     pending_stop_recording_ids: list[str]
+
+
+class AdminChannelAccountBlockRequest(StrictModel):
+    complaint_id: str | None = None
+    reason: str = Field(min_length=3, max_length=500)
+
+
+class AdminChannelAccountBlockResponse(StrictModel):
+    id: str
+    user_id: str
+    username: str
+    complaint_id: str | None
+    reason: str
+    blocked_by_user_id: str | None
+    active: bool
+    unblocked_at: datetime | None
+    unblock_reason: str | None
+    created_at: datetime
+    stopped_recording_ids: list[str] = Field(default_factory=list)
+    paused_watch_ids: list[str] = Field(default_factory=list)
+
+
+class AdminChannelAccountBlockListResponse(StrictModel):
+    items: list[AdminChannelAccountBlockResponse]

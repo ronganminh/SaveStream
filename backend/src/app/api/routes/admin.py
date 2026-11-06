@@ -115,6 +115,9 @@ from app.api.schemas.admin_d6 import (
     AdminStoreTransactionResponse,
 )
 from app.api.schemas.admin_d8 import (
+    AdminChannelAccountBlockListResponse,
+    AdminChannelAccountBlockRequest,
+    AdminChannelAccountBlockResponse,
     AdminComplaintCreateRequest,
     AdminComplaintEventResponse,
     AdminComplaintListResponse,
@@ -174,6 +177,11 @@ from app.application.admin.security import AdminSecurityService
 from app.application.admin.service import AdminService
 from app.application.admin.system_d4 import AdminSystemStatusService
 from app.application.admin.safety_d8 import AdminSafetyService
+from app.application.watches.account_blocks import (
+    block_channel_for_account,
+    list_account_blocks,
+    unblock_channel_for_account,
+)
 from app.application.creator_safety import recording_creator_block
 from app.application.audit.service import AuditContext, AuditService
 from app.application.entitlements.service import EntitlementSnapshot
@@ -185,6 +193,7 @@ from app.application.watches.resume import resume_credit_paused_watches
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal, has_scope, is_admin_role
 from app.infrastructure.db.admin_models import AdminComplaintCase, AdminSupportReport
+from app.infrastructure.db.watch_models import ChannelAccountBlock
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.payments.factory import selected_payment_provider
 
@@ -4209,4 +4218,139 @@ async def export_admin_recordings_status_report(
         output,
         filename="savestream-recordings-by-status.csv",
         truncated=truncated,
+    )
+
+
+
+def _channel_block_response(
+    block: ChannelAccountBlock,
+    *,
+    stopped: list[str] | None = None,
+    paused: list[str] | None = None,
+) -> AdminChannelAccountBlockResponse:
+    return AdminChannelAccountBlockResponse(
+        id=str(block.id),
+        user_id=str(block.user_id),
+        username=block.username,
+        complaint_id=str(block.complaint_id) if block.complaint_id else None,
+        reason=block.reason,
+        blocked_by_user_id=str(block.blocked_by_user_id) if block.blocked_by_user_id else None,
+        active=block.unblocked_at is None,
+        unblocked_at=block.unblocked_at,
+        unblock_reason=block.unblock_reason,
+        created_at=block.created_at,
+        stopped_recording_ids=stopped or [],
+        paused_watch_ids=paused or [],
+    )
+
+
+@router.post(
+    "/watches/{watch_id}/block",
+    response_model=AdminChannelAccountBlockResponse,
+)
+async def block_admin_watch_channel(
+    watch_id: str,
+    payload: AdminChannelAccountBlockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminChannelAccountBlockResponse:
+    """Stop the account that owns this watch from recording the channel
+    (other accounts are not affected)."""
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    block, stopped, paused = await block_channel_for_account(
+        session,
+        request.app.state.settings,
+        principal=principal,
+        watch_id=watch_id,
+        reason=payload.reason,
+        complaint_id=payload.complaint_id,
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.channel_account.blocked",
+        resource_type="channel_account_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        after_state={
+            "user_id": str(block.user_id),
+            "username": block.username,
+            "watch_id": watch_id,
+            "complaint_id": str(block.complaint_id) if block.complaint_id else None,
+        },
+        details={"stopped_recording_ids": stopped, "paused_watch_ids": paused},
+    )
+    await session.commit()
+    for recording_id in stopped:
+        try:
+            await request.app.state.redis.client.set(
+                f"savestream:recording:stop:{recording_id}", "1", ex=86400
+            )
+        except Exception:
+            pass
+    return _channel_block_response(block, stopped=stopped, paused=paused)
+
+
+@router.post(
+    "/channel-blocks/{block_id}/unblock",
+    response_model=AdminChannelAccountBlockResponse,
+)
+async def unblock_admin_channel_account(
+    block_id: str,
+    payload: AdminCreatorUnblockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminChannelAccountBlockResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    block = await unblock_channel_for_account(
+        session, principal=principal, block_id=block_id, reason=payload.reason
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.channel_account.unblocked",
+        resource_type="channel_account_block",
+        resource_id=str(block.id),
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"active": True},
+        after_state={"active": False},
+    )
+    await session.commit()
+    return _channel_block_response(block)
+
+
+@router.get(
+    "/channel-blocks",
+    response_model=AdminChannelAccountBlockListResponse,
+)
+async def list_admin_channel_account_blocks(
+    active_only: bool = Query(default=True),
+    user_id: str | None = Query(default=None),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminChannelAccountBlockListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    parsed_user: uuid.UUID | None = None
+    if user_id:
+        try:
+            parsed_user = uuid.UUID(user_id)
+        except ValueError as exc:
+            raise ApplicationError(
+                "VALIDATION_ERROR", "user_id must be a UUID", status_code=422
+            ) from exc
+    blocks = await list_account_blocks(session, active_only=active_only, user_id=parsed_user)
+    return AdminChannelAccountBlockListResponse(
+        items=[_channel_block_response(block) for block in blocks]
     )

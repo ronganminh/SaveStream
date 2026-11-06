@@ -49,6 +49,8 @@ def may_record(
 ) -> bool:
     """Whether this channel may be recorded for a request from ``client_type``
     ("web", "mobile", or None for the server's own auto-record)."""
+    if watch.blocked_at is not None:
+        return False  # ops blocked this channel for this account
     if not verification_required(watch, settings, now):
         return True
     if client_type == "mobile":
