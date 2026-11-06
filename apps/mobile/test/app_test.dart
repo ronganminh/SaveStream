@@ -369,7 +369,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(
-      find.text('Only channels you own or manage, verified with a bio code.'),
+      find.text(
+        'Channels you own or manage. We record the ones you verify with a bio code.',
+      ),
       findsOneWidget,
     );
     expect(find.text('@ada_live'), findsOneWidget);

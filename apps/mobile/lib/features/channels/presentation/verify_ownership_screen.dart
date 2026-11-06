@@ -4,6 +4,10 @@
 /// `POST /v1/watches/{id}/verification` returns the current code (or a new
 /// one), `POST …/verification/check` asks the server to read the bio. The
 /// expiry shown is the server's `expires_at`.
+///
+/// TikTok can take a minute to show an edited bio, so the screen checks again
+/// on its own: when the app comes back to the foreground, and every 15 s for
+/// 5 minutes after the user copies the code, opens TikTok or checks.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -13,6 +17,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
 import '../../../core/api/api_exception.dart';
+import '../../../core/external_links.dart';
 import '../../../core/widgets/ss_feedback.dart';
 import '../../../core/widgets/v2/ss_v2_widgets.dart';
 import '../../../l10n/l10n.dart';
@@ -43,7 +48,21 @@ class VerifyOwnershipScreen extends ConsumerStatefulWidget {
       _VerifyOwnershipScreenState();
 }
 
-class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen> {
+/// How often, and for how long, the screen re-checks the bio on its own.
+const Duration verifyAutoCheckInterval = Duration(seconds: 15);
+const Duration verifyAutoCheckWindow = Duration(minutes: 5);
+
+/// The channel's TikTok profile (the TikTok app opens it when installed, and
+/// "Edit profile" is one tap away), else TikTok's home page.
+Uri tikTokProfileUrl(String? handle) {
+  final String username = (handle ?? '').replaceFirst('@', '').trim();
+  return username.isEmpty
+      ? Uri.https('www.tiktok.com', '/')
+      : Uri.https('www.tiktok.com', '/@' + username);
+}
+
+class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen>
+    with WidgetsBindingObserver {
   _Phase _phase = _Phase.loading;
   ChannelVerification? _verification;
   String? _lastCode;
@@ -52,10 +71,15 @@ class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen> {
   String? _autoRecordError;
   bool _autoRecordBusy = false;
   Timer? _expiryTicker;
+  Timer? _autoTimer;
+  // Time left for automatic re-checks; zero when they are off.
+  Duration _autoLeft = Duration.zero;
+  bool _checkInFlight = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _start();
     // Re-evaluate the server's expires_at while the screen is open.
     _expiryTicker = Timer.periodic(const Duration(seconds: 15), (_) {
@@ -65,8 +89,72 @@ class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _expiryTicker?.cancel();
+    _autoTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Back from TikTok (or anywhere else): look at the bio again at once.
+    if (state == AppLifecycleState.resumed && _canAutoCheck) {
+      _check(auto: true);
+    }
+  }
+
+  /// A live code is on screen and nothing is being checked.
+  bool get _canAutoCheck {
+    final ChannelVerification? verification = _verification;
+    return mounted &&
+        !_checkInFlight &&
+        verification != null &&
+        verification.code != null &&
+        !verification.isExpiredAt(_now()) &&
+        (_phase == _Phase.code ||
+            _phase == _Phase.notYet ||
+            _phase == _Phase.retryLater);
+  }
+
+  /// Re-check every 15 s for the next 5 minutes.
+  void _armAutoCheck() {
+    _autoLeft = verifyAutoCheckWindow;
+    if (_autoTimer?.isActive != true) _scheduleAutoCheck();
+  }
+
+  void _scheduleAutoCheck([int? retryAfterSeconds]) {
+    _autoTimer?.cancel();
+    Duration delay = verifyAutoCheckInterval;
+    if (retryAfterSeconds != null && retryAfterSeconds > delay.inSeconds) {
+      delay = Duration(seconds: retryAfterSeconds);
+    }
+    if (_autoLeft <= Duration.zero) return;
+    _autoLeft -= delay;
+    _autoTimer = Timer(delay, _onAutoTimer);
+  }
+
+  void _onAutoTimer() {
+    if (!_canAutoCheck) return;
+    final AppLifecycleState? lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) {
+      // In the background (the user is in TikTok): coming back checks.
+      _scheduleAutoCheck();
+      return;
+    }
+    _check(auto: true);
+  }
+
+  void _stopAutoCheck() {
+    _autoTimer?.cancel();
+    _autoLeft = Duration.zero;
+  }
+
+  void _onCodeCopied() => _armAutoCheck();
+
+  Future<void> _openTikTok(String? handle) async {
+    _armAutoCheck();
+    if (await openExternalUrl(tikTokProfileUrl(handle))) return;
+    await openExternalUrl(Uri.https('www.tiktok.com', '/'));
   }
 
   DateTime _now() => ref.read(homeClockProvider)().toUtc();
@@ -108,42 +196,62 @@ class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen> {
     }
   }
 
-  Future<void> _check() async {
-    setState(() {
-      _phase = _Phase.checking;
-      _actionError = null;
-    });
+  /// Asks the server to read the bio. An [auto] check keeps the screen as it
+  /// is while it runs and stays quiet when it fails.
+  Future<void> _check({bool auto = false}) async {
+    if (_checkInFlight) return;
+    _checkInFlight = true;
+    _autoTimer?.cancel();
+    if (!auto) {
+      _armAutoCheck();
+      _autoTimer?.cancel();
+      setState(() {
+        _phase = _Phase.checking;
+        _actionError = null;
+      });
+    }
     try {
       final ChannelVerification result = await ref
           .read(channelVerificationRepositoryProvider)
           .checkVerification(widget.watchId);
+      _checkInFlight = false;
       if (!mounted) return;
       if (result.verified ||
           result.result == VerificationCheckResult.verified) {
+        _stopAutoCheck();
         await _onVerified(result);
         return;
       }
       setState(() {
         _verification = result;
         _lastCode = result.code ?? _lastCode;
+        _actionError = null;
         _phase = result.result == VerificationCheckResult.retryLater
             ? _Phase.retryLater
             : _Phase.notYet;
       });
+      _scheduleAutoCheck(result.retryAfterSeconds);
     } on Object catch (error) {
+      _checkInFlight = false;
       if (!mounted) return;
-      setState(() {
-        if (error is ApiException && error.code == 'VERIFICATION_EXPIRED') {
-          _phase = _Phase.expired;
-        } else {
+      if (error is ApiException && error.code == 'VERIFICATION_EXPIRED') {
+        _stopAutoCheck();
+        setState(() => _phase = _Phase.expired);
+      } else if (auto) {
+        // Try again on the next tick; the user can still tap Check.
+        _scheduleAutoCheck();
+      } else {
+        setState(() {
           _phase = _Phase.code;
           _actionError = context.l10n.v2ActionFailed;
-        }
-      });
+        });
+        _scheduleAutoCheck();
+      }
     }
   }
 
   Future<void> _onVerified(ChannelVerification result) async {
+    _stopAutoCheck();
     setState(() {
       _verification = result;
       _phase = _Phase.verified;
@@ -241,6 +349,8 @@ class _VerifyOwnershipScreenState extends ConsumerState<VerifyOwnershipScreen> {
                 now: _now(),
                 actionError: _actionError,
                 onCheck: _check,
+                onCopied: _onCodeCopied,
+                onOpenTikTok: () => _openTikTok(handle),
                 onNewCode: _start,
                 onLater: _leave,
               ),
@@ -260,6 +370,8 @@ class _CodeBody extends StatelessWidget {
     required this.now,
     required this.actionError,
     required this.onCheck,
+    required this.onCopied,
+    required this.onOpenTikTok,
     required this.onNewCode,
     required this.onLater,
   });
@@ -270,6 +382,8 @@ class _CodeBody extends StatelessWidget {
   final DateTime now;
   final String? actionError;
   final VoidCallback onCheck;
+  final VoidCallback onCopied;
+  final VoidCallback onOpenTikTok;
   final VoidCallback onNewCode;
   final VoidCallback onLater;
 
@@ -283,19 +397,13 @@ class _CodeBody extends StatelessWidget {
 
     final Widget? status = switch (phase) {
       _Phase.checking => const _CheckingStatus(),
+      // TikTok may still be showing the old bio; the screen checks again.
+      _Phase.retryLater => const _CheckingStatus(stillChecking: true),
       _Phase.notYet => SsV2Banner(
         tone: SsV2Tone.warning,
         glyph: SsV2IconGlyph.alert,
         title: l10n.v2CodeNotFoundTitle(code),
         child: Text(l10n.v2CodeNotFoundBody),
-      ),
-      _Phase.retryLater => SsV2Banner(
-        tone: SsV2Tone.warning,
-        glyph: SsV2IconGlyph.clock,
-        title: l10n.v2RetryLaterTitle,
-        child: Text(
-          l10n.v2RetryLaterBody(verification.retryAfterSeconds ?? 10),
-        ),
       ),
       _Phase.expired => SsV2Banner(
         tone: SsV2Tone.error,
@@ -320,6 +428,12 @@ class _CodeBody extends StatelessWidget {
         SsV2Button(
           label: phase == _Phase.code ? l10n.v2CheckMyBio : l10n.v2CheckAgain,
           onPressed: onCheck,
+        ),
+        SsV2Button(
+          key: const ValueKey<String>('verify-open-tiktok'),
+          label: l10n.v2OpenTikTok,
+          variant: SsV2ButtonVariant.outlined,
+          onPressed: onOpenTikTok,
         ),
         SsV2Button(
           label: l10n.v2DoItLater,
@@ -352,6 +466,7 @@ class _CodeBody extends StatelessWidget {
           expiresAt: verification.expiresAt,
           now: now,
           expired: expired,
+          onCopied: onCopied,
         ),
         if (showSteps) const _Steps(),
         if (status != null) status,
@@ -372,26 +487,32 @@ class _CodeCard extends StatelessWidget {
     required this.expiresAt,
     required this.now,
     required this.expired,
+    required this.onCopied,
   });
 
   final String code;
   final DateTime? expiresAt;
   final DateTime now;
   final bool expired;
+  final VoidCallback onCopied;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final SsV2Palette palette = SsV2Palette.of(context);
     final DateTime? expires = expiresAt;
+    // Whole minutes left until the server's expires_at, rounded up; codes
+    // last a day, so "Expires in 23 hours" past the first hour.
+    final int minutes = expires == null
+        ? 0
+        : ((expires.difference(now).inSeconds + 59) ~/ 60).clamp(1, 1 << 20);
     final String? expiry = expired
         ? l10n.v2Expired
         : expires == null
         ? null
-        : l10n.v2ExpiresIn(
-            // Whole minutes left until the server's expires_at, rounded up.
-            ((expires.difference(now).inSeconds + 59) ~/ 60).clamp(1, 1 << 20),
-          );
+        : minutes > 60
+        ? l10n.v2ExpiresInHours(minutes ~/ 60)
+        : l10n.v2ExpiresIn(minutes);
     return Opacity(
       opacity: expired ? 0.55 : 1,
       child: Container(
@@ -440,6 +561,7 @@ class _CodeCard extends StatelessWidget {
                     onTap: expired || code.isEmpty
                         ? null
                         : () async {
+                            onCopied();
                             await Clipboard.setData(ClipboardData(text: code));
                             if (context.mounted) {
                               SsSnackbar.show(context, l10n.v2CodeCopied);
@@ -532,7 +654,10 @@ class _Steps extends StatelessWidget {
 }
 
 class _CheckingStatus extends StatelessWidget {
-  const _CheckingStatus();
+  const _CheckingStatus({this.stillChecking = false});
+
+  /// The bio didn't show the code yet: "TikTok can take a minute…".
+  final bool stillChecking;
 
   @override
   Widget build(BuildContext context) {
@@ -558,7 +683,10 @@ class _CheckingStatus extends StatelessWidget {
                       text: l10n.v2CheckingBioTitle,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    TextSpan(text: ' ${l10n.v2CheckingBioBody}'),
+                    TextSpan(
+                      text:
+                          ' ${stillChecking ? l10n.v2StillCheckingBody : l10n.v2CheckingBioBody}',
+                    ),
                   ],
                 ),
                 style: const TextStyle(fontSize: 14),

@@ -247,7 +247,9 @@ class _HistoryBody extends ConsumerWidget {
             ? '$date · ${_duration(l10n, seconds)}'
             : date;
         return LedgerLine(
-          title: channel.isNotEmpty
+          title: item.recordingOnWeb
+              ? l10n.crLedgerRecordingOnWeb
+              : channel.isNotEmpty
               ? l10n.crLedgerRecordingChannel(channel)
               : l10n.crLedgerRecording,
           subtitle: l10n.crLedgerBilled(details),

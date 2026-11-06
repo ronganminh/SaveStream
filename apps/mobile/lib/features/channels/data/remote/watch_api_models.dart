@@ -39,6 +39,8 @@ ChannelVerification decodeChannelVerification(Object? json) {
       _ => throw FormatException('Unsupported verification result: $result'),
     },
     retryAfterSeconds: retryAfter as int?,
+    // Optional and informational: anything unexpected reads as absent.
+    reason: map['reason'] is String ? map['reason']! as String : null,
   );
 }
 

@@ -16,6 +16,7 @@ class CreditTransaction {
     this.packageName,
     this.recordingChannelUsername,
     this.recordingDurationSeconds,
+    this.recordingOnWeb = false,
   });
 
   final String id;
@@ -40,6 +41,10 @@ class CreditTransaction {
   /// Recording entries: the channel and how long it recorded.
   final String? recordingChannelUsername;
   final int? recordingDurationSeconds;
+
+  /// A recording made on the website: no channel or recording to show
+  /// (`recording_on_web`; absent, so false, on older servers).
+  final bool recordingOnWeb;
   final DateTime createdAt;
 }
 
