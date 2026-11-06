@@ -122,6 +122,11 @@ class PushDeliveryService:
         notification = await self.session.get(UserNotification, parsed)
         if notification is None:
             return 0
+        # Push goes only to the app, which never sees web-only channels.
+        from app.application.watches.ownership import notification_hidden_from_app
+
+        if await notification_hidden_from_app(self.session, notification):
+            return 0
 
         handle = "SaveStream"
         if notification.resource_type == "watch" and notification.resource_id:

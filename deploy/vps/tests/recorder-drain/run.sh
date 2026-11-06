@@ -6,6 +6,7 @@
 #   bash deploy/vps/tests/recorder-drain/run.sh
 #
 # Needs Docker with Compose and Python 3 with pip (to fetch Celery wheels).
+# kombu 5.7 imports packaging without declaring it, so fetch it explicitly.
 set -Eeuo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"

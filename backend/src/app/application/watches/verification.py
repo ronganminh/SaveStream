@@ -142,8 +142,16 @@ async def ensure_recording_source_verified(
     *,
     user_id: uuid.UUID,
     source: Source,
+    client_type: str | None = None,
 ) -> None:
-    """Refuse a recording unless it is one of the user's verified channels."""
+    """Refuse a recording unless it is one of the user's channels that may be
+    recorded from this client (verified; on the web, also attested channels
+    when the web does not require verification)."""
+    from app.application.watches.account_blocks import active_account_block, blocked_error
+    from app.application.watches.ownership import may_record
+
+    if await active_account_block(session, user_id, _username_for_source(source)):
+        raise blocked_error()
     if not settings.channel_verification_enforced:
         return
     watches = list(
@@ -169,7 +177,7 @@ async def ensure_recording_source_verified(
         or (room_id is not None and watch.resolved_room_id == room_id)
     ]
     now = utcnow()
-    if any(not verification_required(watch, settings, now) for watch in matches):
+    if any(may_record(watch, settings, client_type=client_type, now=now) for watch in matches):
         return
     raise ApplicationError(
         "CHANNEL_NOT_VERIFIED",
@@ -205,7 +213,12 @@ class ChannelVerificationService:
                 Watch.deleted_at.is_(None),
             )
         )
-        if watch is None:
+        # Web-only channels (attested on the website) are verified there.
+        if watch is None or (
+            principal.is_mobile
+            and watch.owner_verified_at is None
+            and watch.ownership_basis in {"web_attested", "web_attested_legacy"}
+        ):
             raise _not_found()
         return watch
 

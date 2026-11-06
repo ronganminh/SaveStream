@@ -11,7 +11,7 @@ from app.api.schemas.watches import (
 )
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.watches.channel_stats import WatchExtras
-from app.application.watches.verification import verification_required
+from app.application.watches.ownership import may_record
 from app.infrastructure.db.recording_models import Recording
 from app.infrastructure.db.watch_models import Watch
 from app.settings import AppSettings
@@ -60,6 +60,7 @@ def watch_response(
     active_recording: Recording | None = None,
     settings: AppSettings | None = None,
     extras: WatchExtras | None = None,
+    client_type: str = "web",
 ) -> WatchResponse:
     verified = watch.owner_verified_at is not None
     creator = None
@@ -110,8 +111,12 @@ def watch_response(
         owner_verified_at=watch.owner_verified_at,
         verification_due_at=watch.verification_due_at,
         verification_required=(
-            verification_required(watch, settings) if settings is not None else False
+            not may_record(watch, settings, client_type=client_type)
+            if settings is not None
+            else False
         ),
+        ownership_basis=None if client_type == "mobile" else watch.ownership_basis,
+        blocked=watch.blocked_at is not None,
         pending_verification_code=(
             extras.pending_verification_code if extras is not None and not verified else None
         ),

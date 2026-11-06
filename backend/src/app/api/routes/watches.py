@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Query, Request, status
 
+from app.api.middleware import client_ip
 from app.api.dependencies import (
     get_channel_verification_service,
     get_watch_service,
@@ -22,11 +23,11 @@ from app.api.schemas.watches import (
 from app.api.serializers.watches import active_recording_for, watch_response
 from app.application.watches.channel_stats import watch_extras
 from app.application.creators.avatar_cache import CreatorAvatarCache, remove_avatar_copy
+from app.application.watches.ownership import may_record
 from app.application.watches.service import WatchService
 from app.application.watches.verification import (
     ChannelVerificationService,
     VerificationState,
-    verification_required,
 )
 from app.domain.identity.types import AuthPrincipal
 from app.infrastructure.creators.avatar_fetch import download_avatar
@@ -63,6 +64,7 @@ async def _watch_responses(
             active_recording=active_recording_for(watch, active_recordings),
             settings=service.settings,
             extras=extras.get(watch.id),
+            client_type=principal.client_type,
         )
         for watch in watches
     ]
@@ -80,9 +82,19 @@ async def create_watch(
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    watch = await service.create(principal, payload)
+    watch = await service.create(
+        principal, payload, **_consent_context(request, service)
+    )
     await _copy_avatar_now(request, service, watch)
     return (await _watch_responses(service, principal, [watch]))[0]
+
+
+def _consent_context(request: Request, service: WatchService) -> dict[str, str | None]:
+    """IP and user agent kept with an ownership attestation (consent evidence)."""
+    return {
+        "ip_address": client_ip(request, service.settings.trusted_proxy_cidrs),
+        "user_agent": request.headers.get("user-agent"),
+    }
 
 
 async def _copy_avatar_now(request: Request, service: WatchService, watch: Watch) -> None:
@@ -150,10 +162,13 @@ async def get_watch(
 async def update_watch(
     watch_id: str,
     payload: UpdateWatchRequest,
+    request: Request,
     principal: AuthPrincipal = Depends(require_scopes("watches:write")),
     service: WatchService = Depends(get_watch_service),
 ) -> WatchResponse:
-    watch = await service.update(principal, watch_id, payload)
+    watch = await service.update(
+        principal, watch_id, payload, **_consent_context(request, service)
+    )
     return (await _watch_responses(service, principal, [watch]))[0]
 
 
@@ -191,7 +206,9 @@ async def resume_watch(
 
 
 def _verification_response(
-    state: VerificationState, service: ChannelVerificationService
+    state: VerificationState,
+    service: ChannelVerificationService,
+    principal: AuthPrincipal,
 ) -> ChannelVerificationResponse:
     watch = state.watch
     return ChannelVerificationResponse(
@@ -199,7 +216,9 @@ def _verification_response(
         verified=watch.owner_verified_at is not None,
         owner_verified_at=watch.owner_verified_at,
         verification_due_at=watch.verification_due_at,
-        verification_required=verification_required(watch, service.settings),
+        verification_required=not may_record(
+            watch, service.settings, client_type=principal.client_type
+        ),
         code=state.code,
         expires_at=state.expires_at,
         checks_left=state.checks_left,
@@ -220,7 +239,7 @@ async def get_channel_verification(
     principal: AuthPrincipal = Depends(require_scopes("watches:read")),
     service: ChannelVerificationService = Depends(get_channel_verification_service),
 ) -> ChannelVerificationResponse:
-    return _verification_response(await service.state(principal, watch_id), service)
+    return _verification_response(await service.state(principal, watch_id), service, principal)
 
 
 @router.post(
@@ -234,7 +253,7 @@ async def start_channel_verification(
     service: ChannelVerificationService = Depends(get_channel_verification_service),
 ) -> ChannelVerificationResponse:
     """Get the bio code for this channel (the current one while it is valid)."""
-    return _verification_response(await service.start(principal, watch_id), service)
+    return _verification_response(await service.start(principal, watch_id), service, principal)
 
 
 @router.post(
@@ -248,4 +267,4 @@ async def check_channel_verification(
     service: ChannelVerificationService = Depends(get_channel_verification_service),
 ) -> ChannelVerificationResponse:
     """Look for the code in the channel's TikTok bio."""
-    return _verification_response(await service.check(principal, watch_id), service)
+    return _verification_response(await service.check(principal, watch_id), service, principal)

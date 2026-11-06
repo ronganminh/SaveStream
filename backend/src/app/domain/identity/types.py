@@ -90,3 +90,10 @@ class AuthPrincipal:
     # Explicit default keeps direct test principals/backward-compatible callers
     # working. Real request principals always set this from persisted session state.
     admin_mfa_verified: bool = True
+    # The session's client ("web" or "mobile"); decides which channels the
+    # caller may see and record (web-only channels never reach the app).
+    client_type: str = "web"
+
+    @property
+    def is_mobile(self) -> bool:
+        return self.client_type == "mobile"

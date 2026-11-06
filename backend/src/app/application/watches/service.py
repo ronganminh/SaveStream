@@ -20,6 +20,16 @@ from app.application.credits.service import CreditService
 from app.application.creator_safety import ensure_creator_not_blocked
 from app.application.entitlements.service import EntitlementService, EntitlementSnapshot
 from app.application.quotas.service import QuotaService
+from app.application.watches.account_blocks import (
+    BLOCKED_ERROR,
+    active_account_block,
+    blocked_error,
+)
+from app.application.watches.ownership import (
+    WEB_BASES,
+    record_attestation,
+    visible_to,
+)
 from app.domain.common.errors import ApplicationError
 from app.domain.identity.types import AuthPrincipal
 from app.domain.recordings.state import RecordingStatus
@@ -217,8 +227,18 @@ class WatchService:
         self,
         principal: AuthPrincipal,
         payload: CreateWatchRequest,
+        *,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> Watch:
         source = validate_tiktok_source(payload.source)
+        web = not principal.is_mobile
+        if web and not self.settings.web_require_ownership and not payload.owner_attested:
+            raise ApplicationError(
+                "OWNERSHIP_ATTESTATION_REQUIRED",
+                "Confirm that you own this channel or have the creator's permission to record it.",
+                status_code=400,
+            )
         await ensure_creator_not_blocked(
             self.session,
             source_type=source.type,
@@ -232,6 +252,14 @@ class WatchService:
             )
         )
         if existing is not None:
+            if not visible_to(existing, principal):
+                # A web-only channel: the app may not see it, not even its id.
+                raise ApplicationError(
+                    "CHANNEL_ADDED_ON_WEB",
+                    "This channel is already on your account on the SaveStream website. "
+                    "Verify it there to use it in the app.",
+                    status_code=409,
+                )
             raise ApplicationError(
                 "VALIDATION_ERROR",
                 "A Watch already exists for this source",
@@ -261,11 +289,29 @@ class WatchService:
             # Optional "I own or manage this account, or have permission to
             # record it" on Add channel; kept for admin review.
             owner_attested_at=utcnow() if payload.owner_attested else None,
-            # New channels must be verified before their first recording.
+            # New channels must be verified before their first recording
+            # (on the website, the attestation may stand in for it).
             verification_due_at=utcnow(),
+            added_via=principal.client_type,
+            ownership_basis="web_attested" if web and payload.owner_attested else None,
         )
+        if await active_account_block(self.session, principal.user_id, watch.resolved_username):
+            # Re-added after ops blocked it for this account: stays blocked.
+            watch.blocked_at = utcnow()
+            watch.status = WatchStatus.PAUSED.value
+            watch.next_check_at = None
+            watch.last_error = BLOCKED_ERROR
         self.session.add(watch)
         try:
+            await self.session.flush()
+            if web and payload.owner_attested:
+                record_attestation(
+                    self.session,
+                    watch,
+                    principal,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                )
             await self.session.commit()
         except IntegrityError as exc:
             await self.session.rollback()
@@ -312,7 +358,7 @@ class WatchService:
                 Watch.deleted_at.is_(None),
             )
         )
-        if watch is None:
+        if watch is None or not visible_to(watch, principal):
             raise self._not_found()
         return watch
 
@@ -328,6 +374,16 @@ class WatchService:
             Watch.user_id == principal.user_id,
             Watch.deleted_at.is_(None),
         )
+        if principal.is_mobile:
+            # Web-only channels (unverified, attested on the website) never
+            # reach the app.
+            statement = statement.where(
+                or_(
+                    Watch.owner_verified_at.is_not(None),
+                    Watch.ownership_basis.is_(None),
+                    Watch.ownership_basis.not_in(WEB_BASES),
+                )
+            )
         if status is not None:
             try:
                 WatchStatus(status)
@@ -366,8 +422,26 @@ class WatchService:
         principal: AuthPrincipal,
         watch_id: str,
         payload: UpdateWatchRequest,
+        *,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
     ) -> Watch:
         watch = await self.get(principal, watch_id)
+        if payload.owner_attested and not principal.is_mobile:
+            # Ticking the box on an existing web channel (legacy ones are
+            # asked to); verified channels don't need it.
+            watch.owner_attested_at = utcnow()
+            if watch.owner_verified_at is None and (
+                watch.ownership_basis is None or watch.ownership_basis in WEB_BASES
+            ):
+                watch.ownership_basis = "web_attested"
+            record_attestation(
+                self.session,
+                watch,
+                principal,
+                ip_address=ip_address,
+                user_agent=user_agent,
+            )
         if payload.auto_record is not None:
             if payload.auto_record:
                 require_auto_record(await self.entitlement_for(principal.user_id))
@@ -380,6 +454,8 @@ class WatchService:
             watch.scheduler_lease_id = None
             watch.scheduler_lease_expires_at = None
             if status is WatchStatus.ACTIVE:
+                if watch.blocked_at is not None:
+                    raise blocked_error()
                 await ensure_creator_not_blocked(
                     self.session,
                     source_type=watch.source_type,
