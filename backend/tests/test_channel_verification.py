@@ -4,6 +4,7 @@ grace period for existing channels and reminders (Android v2 plan §3.1)."""
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from dataclasses import replace
 from datetime import timedelta
@@ -32,6 +33,7 @@ from app.infrastructure.db.session import Database
 from app.infrastructure.db.watch_models import ChannelVerification, Watch
 from app.main import create_app
 from tests.credit_helpers import configure_test_pricing, grant_test_credits, mark_test_user_paid
+from app.settings import AppSettings
 from tests.identity_helpers import identity_settings
 
 
@@ -55,6 +57,14 @@ def _settings(tmp_path, name: str = "verify.db", **changes):
         **changes,
     }
     return replace(identity_settings(f"sqlite+aiosqlite:///{tmp_path / name}"), **values)
+
+
+async def _past_still_checking(session) -> None:
+    """Move the first check more than 5 minutes into the past."""
+    for row in (await session.scalars(select(ChannelVerification))).all():
+        if row.first_checked_at is not None:
+            row.first_checked_at = utcnow() - timedelta(minutes=6)
+    await session.commit()
 
 
 async def _setup(settings):
@@ -96,6 +106,22 @@ def test_codes_and_bio_matching() -> None:
     assert bio_contains_code("shop link below | SS-7K4Q", "SS-7K4Q")
     assert not bio_contains_code("SS-7K4P", "SS-7K4Q")
     assert not bio_contains_code("", "SS-7K4Q")
+    # Full-width characters (some keyboards) and invisible characters pasted
+    # along with the code still match.
+    assert bio_contains_code("Ｌｉｖｅ　ＳＳ－７Ｋ４Ｑ", "SS-7K4Q")
+    assert bio_contains_code("ss\u200b-7k\u200d4\u2060q\ufeff", "SS-7K4Q")
+    assert bio_contains_code("SS\u200e7K\u200f4Q", "SS-7K4Q")
+    assert not bio_contains_code("anything", "")
+
+
+def test_defaults_give_a_day_of_checks(monkeypatch) -> None:
+    monkeypatch.setenv("SAVESTREAM_ENVIRONMENT", "local")
+    for name in ("CODE_TTL_SECONDS", "MAX_CHECKS", "CHECK_INTERVAL_SECONDS"):
+        monkeypatch.delenv(f"SAVESTREAM_CHANNEL_VERIFICATION_{name}", raising=False)
+    settings = AppSettings.from_env()
+    assert settings.channel_verification_code_ttl_seconds == 86400
+    assert settings.channel_verification_max_checks == 200
+    assert settings.channel_verification_check_interval_seconds == 10
 
 
 def test_bio_code_verifies_the_channel(tmp_path) -> None:
@@ -116,10 +142,21 @@ def test_bio_code_verifies_the_channel(tmp_path) -> None:
             assert started.checks_left == settings.channel_verification_max_checks
 
             profiles.bio = "Shop live at 8pm"
-            assert (await service.check(principal, str(watch.id))).result == "code_not_found"
+            # Right after the first check TikTok may still show the old bio.
+            first = await service.check(principal, str(watch.id))
+            assert first.result == "retry_later"
+            assert first.reason == "still_checking"
+            assert first.retry_after_seconds == 15
+            assert first.message and "TikTok can take a minute" in first.message
+            await _past_still_checking(session)
+            missing = await service.check(principal, str(watch.id))
+            assert missing.result == "code_not_found"
+            assert missing.message and "wait a minute" in missing.message
 
             profiles.fail = True  # TikTok WAF / login page: not the user's fault
-            assert (await service.check(principal, str(watch.id))).result == "retry_later"
+            unavailable = await service.check(principal, str(watch.id))
+            assert unavailable.result == "retry_later"
+            assert unavailable.reason == "tiktok_unavailable"
             profiles.fail = False
             profiles.bio = None  # page without a bio
             assert (await service.check(principal, str(watch.id))).result == "retry_later"
@@ -127,7 +164,7 @@ def test_bio_code_verifies_the_channel(tmp_path) -> None:
             profiles.bio = f"Shop live at 8pm · {started.code.lower()}"
             verified = await service.check(principal, str(watch.id))
             assert verified.result == "verified"
-            assert profiles.calls == ["my.shop_live"] * 4
+            assert profiles.calls == ["my.shop_live"] * 5
 
             await session.refresh(watch)
             assert watch.owner_verified_at is not None
@@ -153,26 +190,30 @@ def test_expired_codes_throttling_and_other_users(tmp_path) -> None:
         try:
             service = ChannelVerificationService(session, settings, lookup=profiles)
             first = await service.start(principal, str(watch.id))
-            assert (await service.check(principal, str(watch.id))).result == "code_not_found"
+            assert (await service.check(principal, str(watch.id))).reason == "still_checking"
             throttled = await service.check(principal, str(watch.id))
             assert throttled.result == "retry_later" and throttled.retry_after_seconds
+            assert throttled.reason == "too_soon"
             assert len(profiles.calls) == 1  # no TikTok request while throttled
+            await _past_still_checking(session)
 
             row = await session.scalar(select(ChannelVerification))
             row.last_checked_at = utcnow() - timedelta(minutes=1)
             await session.commit()
             assert (await service.check(principal, str(watch.id))).result == "code_not_found"
-            # Out of checks: the code is spent and a new one is issued.
+            # Out of checks: the code is spent and reissued with the same value,
+            # so the code already in the bio keeps working.
             row.last_checked_at = utcnow() - timedelta(minutes=1)
             await session.commit()
             with pytest.raises(ApplicationError) as spent:
                 await service.check(principal, str(watch.id))
             assert spent.value.code == "VERIFICATION_EXPIRED"
             second = await service.start(principal, str(watch.id))
-            assert second.code != first.code
+            assert second.code == first.code
+            assert second.checks_left == settings.channel_verification_max_checks
 
             row = await session.scalar(
-                select(ChannelVerification).where(ChannelVerification.code == second.code)
+                select(ChannelVerification).where(ChannelVerification.status == "pending")
             )
             row.expires_at = utcnow() - timedelta(seconds=1)
             await session.commit()
@@ -188,6 +229,130 @@ def test_expired_codes_throttling_and_other_users(tmp_path) -> None:
             await close()
 
     asyncio.run(run())
+
+
+def test_codes_from_the_last_7_days_still_verify(tmp_path) -> None:
+    settings = _settings(tmp_path)
+    profiles = FakeProfiles()
+
+    async def run():
+        session, principal, watch, close = await _setup(settings)
+        try:
+            service = ChannelVerificationService(session, settings, lookup=profiles)
+            current = await service.start(principal, str(watch.id))
+            # Codes an older app version issued for this channel.
+            now = utcnow()
+            for code, age in (("SS-AAAA", timedelta(days=8)), ("SS-BBBB", timedelta(days=6))):
+                session.add(
+                    ChannelVerification(
+                        user_id=principal.user_id,
+                        watch_id=watch.id,
+                        username="my.shop_live",
+                        code=code,
+                        status="expired",
+                        attempts=20,
+                        expires_at=now - age + timedelta(minutes=30),
+                        created_at=now - age,
+                    )
+                )
+            await session.commit()
+
+            profiles.bio = "old code SS-AAAA"
+            await service.check(principal, str(watch.id))
+            await _past_still_checking(session)
+            assert (await service.check(principal, str(watch.id))).result == "code_not_found"
+
+            profiles.bio = "ＳＳ－ＢＢＢＢ"
+            verified = await service.check(principal, str(watch.id))
+            assert verified.result == "verified"
+            assert current.code not in {"SS-AAAA", "SS-BBBB"}
+        finally:
+            await close()
+
+    asyncio.run(run())
+
+
+def test_new_codes_are_still_limited_per_hour(tmp_path) -> None:
+    settings = _settings(tmp_path)
+
+    async def run():
+        session, principal, watch, close = await _setup(settings)
+        try:
+            service = ChannelVerificationService(session, settings, lookup=FakeProfiles())
+            codes = set()
+            for _ in range(10):
+                codes.add((await service.start(principal, str(watch.id))).code)
+                for row in (await session.scalars(select(ChannelVerification))).all():
+                    row.expires_at = utcnow() - timedelta(seconds=1)
+                await session.commit()
+            assert len(codes) == 1  # always the same code for the channel
+            with pytest.raises(ApplicationError) as limited:
+                await service.start(principal, str(watch.id))
+            assert limited.value.code == "RATE_LIMITED"
+        finally:
+            await close()
+
+    asyncio.run(run())
+
+
+def test_outcomes_are_logged_without_personal_data(tmp_path, caplog) -> None:
+    settings = _settings(tmp_path)
+    profiles = FakeProfiles()
+
+    async def run():
+        session, principal, watch, close = await _setup(settings)
+        try:
+            service = ChannelVerificationService(session, settings, lookup=profiles)
+            started = await service.start(principal, str(watch.id))
+            profiles.bio = "Secret bio text"
+            await service.check(principal, str(watch.id))
+            await _past_still_checking(session)
+            await service.check(principal, str(watch.id))
+            profiles.fail = True
+            await service.check(principal, str(watch.id))
+            profiles.fail = False
+            profiles.bio = f"Secret bio text {started.code}"
+            await service.check(principal, str(watch.id))
+            return started.code
+        finally:
+            await close()
+
+    with caplog.at_level(logging.INFO, logger="app.application.watches.verification"):
+        code = asyncio.run(run())
+
+    lines = [
+        record.getMessage()
+        for record in caplog.records
+        if record.getMessage().startswith("channel_verification ")
+    ]
+    assert [line.split()[1] for line in lines] == [
+        "outcome=started",
+        "outcome=still_checking",
+        "outcome=code_not_found",
+        "outcome=unavailable",
+        "outcome=verified",
+    ]
+    assert lines[-1].endswith("attempts=4")
+    text = "\n".join(lines)
+    for secret in (code, "Secret", "my.shop_live", "My.Shop_Live"):
+        assert secret not in text
+
+
+def test_expired_check_is_logged(tmp_path, caplog) -> None:
+    settings = _settings(tmp_path)
+
+    async def run():
+        session, principal, watch, close = await _setup(settings)
+        try:
+            service = ChannelVerificationService(session, settings, lookup=FakeProfiles())
+            with pytest.raises(ApplicationError):
+                await service.check(principal, str(watch.id))
+        finally:
+            await close()
+
+    with caplog.at_level(logging.INFO, logger="app.application.watches.verification"):
+        asyncio.run(run())
+    assert any("outcome=expired" in record.getMessage() for record in caplog.records)
 
 
 def _manual(username: str) -> CreateRecordingRequest:

@@ -58,9 +58,13 @@ unticked; confirming without it shows an inline error.
 `503 STREAM_UNAVAILABLE` as a TikTok outage, so both show "We couldn't find a public profile";
 only a dropped connection shows "We couldn't reach TikTok just now".
 
-**Code expiry (AVerify\*).** The artboard's "[CODE LIFETIME]" placeholder is "Expires in 30 min"
-(from `expires_at`, default TTL 1800 s). A `retry_later` answer (checked too soon, or TikTok did
-not return the bio) shows a warning with the server's `retry_after_seconds`.
+**Code expiry (AVerify\*).** The artboard's "[CODE LIFETIME]" placeholder counts down to
+`expires_at` (default TTL 24 h). Each channel keeps one code: after it expires, **Get a new code**
+returns the same value, and any code issued for the channel in the last 7 days still verifies.
+A `retry_later` answer (checked too soon, TikTok did not return the bio, or — for the first
+5 minutes after the first check — the code is not in the bio yet) shows a warning with the
+server's `retry_after_seconds`; newer servers add optional `reason` (`too_soon` /
+`still_checking` / `tiktok_unavailable`) and `message` fields.
 
 **Verified (AVerifyDone).** The auto-record switch shows the channel's real setting after the app
 turns it on; when the account can't auto-record (no minutes) it stays off with a note.

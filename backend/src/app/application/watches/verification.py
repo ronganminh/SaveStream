@@ -2,7 +2,11 @@
 
 The user adds the channel, gets a code like ``SS-7K4Q``, pastes it anywhere
 in the channel's bio and taps Check; the server reads the public profile and
-looks for the code. Only verified channels may be recorded once a channel's
+looks for the code. A channel keeps the same code: when one expires the next
+is the same value, and any code issued for the channel in the last 7 days
+still counts, so a code already in the bio never goes stale.
+
+Only verified channels may be recorded once a channel's
 ``verification_due_at`` has passed. Channels added before verification
 existed got a grace period (migration 0032); new channels must verify first.
 """
@@ -12,6 +16,7 @@ from __future__ import annotations
 import logging
 import re
 import secrets
+import unicodedata
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -32,9 +37,24 @@ logger = logging.getLogger(__name__)
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789"
 CODE_LENGTH = 4
 MAX_CODES_PER_HOUR = 10
+# Any code issued for the channel this recently is accepted in the bio.
+ACCEPTED_CODE_AGE = timedelta(days=7)
+# TikTok can show the old bio for a while after an edit: a miss this soon
+# after the first check answers "still checking" rather than "not found".
+STILL_CHECKING_WINDOW = timedelta(minutes=5)
+STILL_CHECKING_RETRY_SECONDS = 15
+
+STILL_CHECKING_MESSAGE = "Checking your bio… TikTok can take a minute to show your new bio."
+UNAVAILABLE_MESSAGE = "We couldn't read your TikTok profile just now. We'll try again shortly."
+NOT_FOUND_MESSAGE = (
+    "We couldn't find the code in your bio yet. If you just added it, wait a minute "
+    "and check again."
+)
 
 CheckResult = Literal["verified", "code_not_found", "retry_later"]
+RetryReason = Literal["too_soon", "still_checking", "tiktok_unavailable"]
 _NOT_CODE = re.compile(r"[^0-9A-Z]")
+_INVISIBLE = re.compile("[\u200b-\u200f\u2060\ufeff]")
 _PROFILE_URL = re.compile(
     r"^(?:https?://)?(?:www\.)?tiktok\.com/@([A-Za-z0-9._]{2,24})(?:[/?#].*)?$", re.IGNORECASE
 )
@@ -52,9 +72,17 @@ def new_code() -> str:
     return "SS-" + "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
 
 
+def _normalise(text: str) -> str:
+    # NFKC turns full-width "ＳＳ－７Ｋ４Ｑ" into "SS-7K4Q"; invisible characters,
+    # case, spaces and punctuation are then dropped.
+    text = _INVISIBLE.sub("", unicodedata.normalize("NFKC", text))
+    return _NOT_CODE.sub("", text.upper())
+
+
 def bio_contains_code(bio: str, code: str) -> bool:
     """Case, spaces and dashes don't matter: "ss 7k4q" matches "SS-7K4Q"."""
-    return _NOT_CODE.sub("", code.upper()) in _NOT_CODE.sub("", bio.upper())
+    wanted = _normalise(code)
+    return bool(wanted) and wanted in _normalise(bio)
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +113,18 @@ class VerificationState:
     checks_left: int
     result: CheckResult | None = None
     retry_after_seconds: int | None = None
+    reason: RetryReason | None = None
+    message: str | None = None
+
+
+def _log_outcome(outcome: str, watch: Watch, row: ChannelVerification | None) -> None:
+    # No username, bio or code: only the channel id and how many checks it took.
+    logger.info(
+        "channel_verification outcome=%s watch_id=%s attempts=%d",
+        outcome,
+        watch.id,
+        row.attempts if row is not None else 0,
+    )
 
 
 def _username_for_source(source: Source) -> str | None:
@@ -200,6 +240,26 @@ class ChannelVerificationService:
             return None
         return row
 
+    async def _previous_code(self, watch: Watch) -> str | None:
+        """The channel's last code, reissued so the one in the bio stays valid."""
+        return await self.session.scalar(
+            select(ChannelVerification.code)
+            .where(ChannelVerification.watch_id == watch.id)
+            .order_by(ChannelVerification.created_at.desc())
+            .limit(1)
+        )
+
+    async def _accepted_codes(self, watch: Watch, row: ChannelVerification, now: datetime) -> list[str]:
+        codes = (
+            await self.session.scalars(
+                select(ChannelVerification.code).where(
+                    ChannelVerification.watch_id == watch.id,
+                    ChannelVerification.created_at >= now - ACCEPTED_CODE_AGE,
+                )
+            )
+        ).all()
+        return [row.code, *(code for code in dict.fromkeys(codes) if code != row.code)]
+
     def _state(self, watch: Watch, row: ChannelVerification | None, **extra) -> VerificationState:
         return VerificationState(
             watch=watch,
@@ -258,13 +318,14 @@ class ChannelVerificationService:
                 user_id=principal.user_id,
                 watch_id=watch.id,
                 username=username.lstrip("@").casefold(),
-                code=new_code(),
+                code=await self._previous_code(watch) or new_code(),
                 status="pending",
                 attempts=0,
                 expires_at=now + timedelta(seconds=self.settings.channel_verification_code_ttl_seconds),
                 created_at=now,
             )
             self.session.add(row)
+            _log_outcome("started", watch, row)
         await self.session.commit()
         await self.session.refresh(watch)
         return self._state(watch, row)
@@ -278,6 +339,7 @@ class ChannelVerificationService:
         row = await self._pending(watch, now)
         if row is None:
             await self.session.commit()
+            _log_outcome("expired", watch, None)
             raise ApplicationError(
                 "VERIFICATION_EXPIRED",
                 "This code has expired. Get a new code and try again.",
@@ -292,9 +354,12 @@ class ChannelVerificationService:
                     row,
                     result="retry_later",
                     retry_after_seconds=max(1, int(interval - waited + 0.999)),
+                    reason="too_soon",
                 )
         row.attempts += 1
         row.last_checked_at = now
+        if row.first_checked_at is None:
+            row.first_checked_at = now
         profile = None
         if self.lookup is not None:
             try:
@@ -305,17 +370,40 @@ class ChannelVerificationService:
             # TikTok served a login/WAF page or failed: not the user's fault.
             row.last_result = "unavailable"
             await self.session.commit()
-            return self._state(watch, row, result="retry_later", retry_after_seconds=interval)
-        if not bio_contains_code(profile.bio, row.code):
+            _log_outcome("unavailable", watch, row)
+            return self._state(
+                watch,
+                row,
+                result="retry_later",
+                retry_after_seconds=interval,
+                reason="tiktok_unavailable",
+                message=UNAVAILABLE_MESSAGE,
+            )
+        codes = await self._accepted_codes(watch, row, now)
+        if not any(bio_contains_code(profile.bio, code) for code in codes):
+            if now - _aware(row.first_checked_at) < STILL_CHECKING_WINDOW:
+                row.last_result = "still_checking"
+                await self.session.commit()
+                _log_outcome("still_checking", watch, row)
+                return self._state(
+                    watch,
+                    row,
+                    result="retry_later",
+                    retry_after_seconds=max(interval, STILL_CHECKING_RETRY_SECONDS),
+                    reason="still_checking",
+                    message=STILL_CHECKING_MESSAGE,
+                )
             row.last_result = "code_not_found"
             await self.session.commit()
-            return self._state(watch, row, result="code_not_found")
+            _log_outcome("code_not_found", watch, row)
+            return self._state(watch, row, result="code_not_found", message=NOT_FOUND_MESSAGE)
         row.status = "verified"
         row.last_result = "verified"
         row.verified_at = now
         row.tiktok_user_id = profile.tiktok_user_id
         mark_watch_verified(watch, method="bio_code", tiktok_user_id=profile.tiktok_user_id, now=now)
         await self.session.commit()
+        _log_outcome("verified", watch, row)
         await self.session.refresh(watch)
         return self._state(watch, None, result="verified")
 

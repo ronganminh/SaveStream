@@ -224,6 +224,8 @@ def _verification_response(
         checks_left=state.checks_left,
         result=state.result,
         retry_after_seconds=state.retry_after_seconds,
+        reason=state.reason,
+        message=state.message,
     )
 
 
