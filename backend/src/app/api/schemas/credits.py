@@ -40,6 +40,9 @@ class CreditTransactionResponse(StrictModel):
     # long it recorded, so clients need not page through recordings.
     recording_channel_username: str | None = None
     recording_duration_seconds: int | None = Field(default=None, ge=0)
+    # App only: a recording of a channel that exists only on the website; its
+    # channel and recording id are left out ("Recording on the web").
+    recording_on_web: bool = False
     created_at: datetime
 
 

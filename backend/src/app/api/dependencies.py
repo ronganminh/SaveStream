@@ -94,6 +94,7 @@ async def get_current_principal(
             not is_admin_role(user.role)
             or auth_session.admin_mfa_verified_at is not None
         ),
+        client_type=auth_session.client_type,
     )
     if is_admin_role(user.role) and not principal.admin_mfa_verified:
         mfa_allowed_paths = {

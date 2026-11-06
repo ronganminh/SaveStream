@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Literal
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, not_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.notifications import NotificationKind
@@ -152,6 +152,32 @@ class NotificationService:
         statement = select(UserNotification).where(
             UserNotification.user_id == principal.user_id
         )
+        if principal.is_mobile:
+            # Notifications about web-only channels never reach the app.
+            from app.application.watches.ownership import mobile_hidden_resources
+
+            watch_ids, recording_ids = await mobile_hidden_resources(
+                self.session, principal.user_id
+            )
+            if watch_ids or recording_ids:
+                statement = statement.where(
+                    or_(
+                        UserNotification.resource_type.is_(None),
+                        UserNotification.resource_id.is_(None),
+                        not_(
+                            or_(
+                                and_(
+                                    UserNotification.resource_type == "watch",
+                                    UserNotification.resource_id.in_(watch_ids),
+                                ),
+                                and_(
+                                    UserNotification.resource_type == "recording",
+                                    UserNotification.resource_id.in_(recording_ids),
+                                ),
+                            )
+                        ),
+                    )
+                )
         if unread_only:
             statement = statement.where(UserNotification.read_at.is_(None))
         if cursor:

@@ -16,7 +16,7 @@ from app.application.creator_safety import watch_creator_block
 from app.application.entitlements.service import EntitlementService
 from app.application.notifications.service import ensure_creator_live_notification
 from app.application.recordings.cloud_slots import CloudSlotQueueService
-from app.application.watches.verification import verification_required
+from app.application.watches.ownership import may_record
 from app.application.recordings.service import RecordingService
 from app.domain.common.errors import ApplicationError
 from app.domain.recordings.state import ACTIVE_RECORDING_STATUSES
@@ -261,8 +261,9 @@ class WatchScheduler:
         await self.session.commit()
 
     async def _auto_record(self, watch: Watch, room_id: str) -> None:
-        # Unverified channels are still monitored but never recorded.
-        if verification_required(watch, self.settings):
+        # Channels that may not record (unverified, or web-attested while the
+        # web still requires verification) are monitored but never recorded.
+        if not may_record(watch, self.settings, client_type=None):
             return
         entitlement = await EntitlementService(
             self.session,

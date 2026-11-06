@@ -6,6 +6,7 @@
 #   bash deploy/vps/tests/recorder-drain/run.sh
 #
 # Needs Docker with Compose and Python 3 with pip (to fetch Celery wheels).
+# kombu 5.7 imports packaging without declaring it, so fetch it explicitly.
 set -Eeuo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -44,7 +45,7 @@ rollout() { RELEASE="$1" RECORDER_READY_TIMEOUT=120 bash "$rollout"; }
 
 echo "==> Building the test image"
 python3 -m pip download -q -d "$here/wheels" --only-binary=:all: \
-  --python-version 3.12 --platform manylinux2014_x86_64 celery redis
+  --python-version 3.12 --platform manylinux2014_x86_64 celery redis packaging
 RELEASE=1 COMPOSE_PROFILES=recorder,tools dc build -q
 
 echo "==> Release 1 on the legacy single recorder; start a 45 s recording"

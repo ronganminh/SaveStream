@@ -54,6 +54,13 @@ class Watch(Base):
     owner_attested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Client the channel was added from ("web" / "mobile"), and what lets an
+    # unverified channel record on the web: "web_attested" (the attestation
+    # box, with evidence in channel_ownership_attestations) or
+    # "web_attested_legacy" (added on the web before the box was required).
+    # Such channels are web-only: the Android app never sees them.
+    added_via: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    ownership_basis: Mapped[str | None] = mapped_column(String(24), nullable=True)
     # Channel ownership: the owner put a one-time code in the TikTok bio
     # (or an admin verified it). Only verified channels may be recorded once
     # verification_due_at has passed (channels added before verification
@@ -108,6 +115,29 @@ class ChannelVerification(Base):
     last_result: Mapped[str | None] = mapped_column(String(32), nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tiktok_user_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class ChannelOwnershipAttestation(Base):
+    """Consent evidence: the web user's "I own this channel or have the
+    creator's permission to record it" for one channel."""
+
+    __tablename__ = "channel_ownership_attestations"
+    __table_args__ = (Index("ix_channel_ownership_attestations_watch", "watch_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    watch_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("watches.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    statement_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    client_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

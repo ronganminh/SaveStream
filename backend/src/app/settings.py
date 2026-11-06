@@ -172,6 +172,10 @@ class AppSettings:
     public_report_rate_limit: int = 5
     public_report_rate_window_seconds: int = 3600
     turnstile_secret_key: str = field(default="", repr=False)
+    # Web only: when False, a channel added on the website with the ownership
+    # attestation may be recorded without the TikTok bio code. The Android app
+    # always requires verification and never sees such channels.
+    web_require_ownership: bool = True
     # PostHog product analytics (server-side funnel events). The project
     # token is public and write-only; empty turns server events off.
     posthog_api_key: str = ""
@@ -703,6 +707,7 @@ class AppSettings:
             public_report_rate_limit=_int_env("PUBLIC_REPORT_RATE_LIMIT", 5),
             public_report_rate_window_seconds=_int_env("PUBLIC_REPORT_RATE_WINDOW_SECONDS", 3600),
             turnstile_secret_key=_env("TURNSTILE_SECRET_KEY", ""),
+            web_require_ownership=_bool_env("WEB_REQUIRE_OWNERSHIP", True),
             posthog_api_key=_env("POSTHOG_API_KEY", ""),
             posthog_host=_env("POSTHOG_HOST", "https://us.i.posthog.com").rstrip("/")
             or "https://us.i.posthog.com",
