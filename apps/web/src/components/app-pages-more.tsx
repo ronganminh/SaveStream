@@ -4895,8 +4895,8 @@ export function AcceptableUsePage() {
                 We may also stop a single account from recording a specific channel, for example
                 after the creator reports it. When we do, recordings of that channel in progress on
                 that account are stopped, monitoring and Auto-record for it are paused, and it
-                cannot be recorded from that account until we lift the restriction. Other channels on the
-                account and other accounts are not affected by this step.
+                cannot be recorded from that account until we lift the restriction. Other channels
+                on the account and other accounts are not affected by this step.
               </p>
             </>
           ),
