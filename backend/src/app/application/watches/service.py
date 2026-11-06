@@ -20,6 +20,11 @@ from app.application.credits.service import CreditService
 from app.application.creator_safety import ensure_creator_not_blocked
 from app.application.entitlements.service import EntitlementService, EntitlementSnapshot
 from app.application.quotas.service import QuotaService
+from app.application.watches.account_blocks import (
+    BLOCKED_ERROR,
+    active_account_block,
+    blocked_error,
+)
 from app.application.watches.ownership import (
     WEB_BASES,
     record_attestation,
@@ -290,6 +295,12 @@ class WatchService:
             added_via=principal.client_type,
             ownership_basis="web_attested" if web and payload.owner_attested else None,
         )
+        if await active_account_block(self.session, principal.user_id, watch.resolved_username):
+            # Re-added after ops blocked it for this account: stays blocked.
+            watch.blocked_at = utcnow()
+            watch.status = WatchStatus.PAUSED.value
+            watch.next_check_at = None
+            watch.last_error = BLOCKED_ERROR
         self.session.add(watch)
         try:
             await self.session.flush()
@@ -443,6 +454,8 @@ class WatchService:
             watch.scheduler_lease_id = None
             watch.scheduler_lease_expires_at = None
             if status is WatchStatus.ACTIVE:
+                if watch.blocked_at is not None:
+                    raise blocked_error()
                 await ensure_creator_not_blocked(
                     self.session,
                     source_type=watch.source_type,

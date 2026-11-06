@@ -107,8 +107,11 @@ async def ensure_recording_source_verified(
     """Refuse a recording unless it is one of the user's channels that may be
     recorded from this client (verified; on the web, also attested channels
     when the web does not require verification)."""
+    from app.application.watches.account_blocks import active_account_block, blocked_error
     from app.application.watches.ownership import may_record
 
+    if await active_account_block(session, user_id, _username_for_source(source)):
+        raise blocked_error()
     if not settings.channel_verification_enforced:
         return
     watches = list(

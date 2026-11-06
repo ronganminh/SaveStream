@@ -58,6 +58,8 @@ class WatchResponse(StrictModel):
     # ("web_attested" or "web_attested_legacy"); null otherwise. Legacy
     # channels should ask the user to tick the ownership box when edited.
     ownership_basis: str | None = None
+    # Ops stopped this channel for this account after a report.
+    blocked: bool = False
     # The bio code currently waiting to be checked and when it expires; null
     # once verified or when no unexpired code exists (never created by a read).
     pending_verification_code: str | None = None

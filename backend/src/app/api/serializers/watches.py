@@ -116,6 +116,7 @@ def watch_response(
             else False
         ),
         ownership_basis=None if client_type == "mobile" else watch.ownership_basis,
+        blocked=watch.blocked_at is not None,
         pending_verification_code=(
             extras.pending_verification_code if extras is not None and not verified else None
         ),
