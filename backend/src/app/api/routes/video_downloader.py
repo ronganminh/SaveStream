@@ -8,9 +8,14 @@ import logging
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db_session
+from app.api.dependencies import get_current_principal, get_db_session
 from app.api.middleware import client_ip as trusted_client_ip
+from app.api.serializers.watches import creator_avatar_url
 from app.api.schemas.video_downloader import (
+    OwnerChannel,
+    OwnerChannelList,
+    OwnerGrantRequest,
+    OwnerGrantResponse,
     VideoDownloadReportRequest,
     VideoDownloadReportResponse,
 )
@@ -21,10 +26,57 @@ from app.application.video_downloader.blocklist import (
     new_reference,
     push_change,
 )
+from app.application.video_downloader.owner import (
+    channel_username,
+    issue_grant,
+    require_web,
+    verified_channels,
+)
+from app.domain.identity.types import AuthPrincipal
+from app.downloader.grants import GRANT_TTL_SECONDS
 from app.downloader.state import BLOCKLIST_SYNCED_KEY
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/v1/public", tags=["Video downloader"])
+owner_router = APIRouter(prefix="/v1/me/video-downloads", tags=["Video downloader"])
+
+
+@owner_router.get("/channels", response_model=OwnerChannelList)
+async def list_owner_channels(
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> OwnerChannelList:
+    require_web(principal)
+    channels = await verified_channels(session, principal.user_id)
+    return OwnerChannelList(
+        items=[
+            OwnerChannel(
+                watch_id=str(watch.id),
+                username=channel_username(watch) or "",
+                display_name=watch.creator_display_name,
+                avatar_url=creator_avatar_url(watch),
+                verified=True,
+            )
+            for watch in channels
+        ]
+    )
+
+
+@owner_router.post("/grant", response_model=OwnerGrantResponse)
+async def create_owner_grant(
+    payload: OwnerGrantRequest,
+    request: Request,
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> OwnerGrantResponse:
+    grant = await issue_grant(
+        session,
+        request.app.state.settings,
+        request.app.state.rate_limiter,
+        principal,
+        payload.url,
+    )
+    return OwnerGrantResponse(grant=grant, expires_in_seconds=GRANT_TTL_SECONDS)
 
 
 @router.post(
