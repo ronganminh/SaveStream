@@ -18,7 +18,8 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 
@@ -27,6 +28,7 @@ from app.api.middleware import client_ip
 from app.downloader.chain import ProviderChain
 from app.downloader.config import DownloaderSettings, log_startup_state
 from app.downloader.providers import TIMEOUTS, build_providers
+from app.domain.common.errors import ApplicationError
 from app.downloader.service import (
     COVER_MAX_BYTES,
     DownloaderService,
@@ -100,6 +102,16 @@ def create_app(
         openapi_url=None,
     )
     install_exception_handlers(app)
+    if config.cors_allow_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(config.cors_allow_origins),
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type"],
+            expose_headers=["Retry-After", "Content-Disposition"],
+            allow_credentials=False,
+            max_age=600,
+        )
     if service is not None:
         app.state.service = service
 
@@ -132,10 +144,21 @@ def create_app(
         )
         return JSONResponse(result, headers=NO_STORE)
 
-    @app.get(f"{PREFIX}/file/{{token}}")
-    async def file(token: str, request: Request) -> StreamingResponse:
+    @app.get(f"{PREFIX}/file/{{token}}", response_model=None)
+    async def file(token: str, request: Request) -> Response:
         service_ = svc(request)
-        entry, media, release = await service_.open_file(token, ip=ip_of(request), kind="video")
+        try:
+            entry, media, release = await service_.open_file(
+                token, ip=ip_of(request), kind="video"
+            )
+        except ApplicationError as exc:
+            if exc.code != "LINK_EXPIRED":
+                raise
+            # A plain link click: send the visitor back to the page with a
+            # message instead of showing them a JSON error.
+            return RedirectResponse(
+                f"{config.frontend_base_url}/video-downloader?expired=1", status_code=303
+            )
         headers = {
             **NO_STORE,
             "Content-Disposition": f'attachment; filename="{entry.filename}"',

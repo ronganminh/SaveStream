@@ -456,8 +456,10 @@ def test_download_links_are_tied_to_the_ip_and_capped() -> None:
         "download_url"
     ]
     other = TestClient(client.app, client=("203.0.113.9", 5000))
-    assert other.get(url).status_code == 410
-    assert client.get("/v1/public/video-downloader/file/nope").status_code == 410
+    moved = other.get(url, follow_redirects=False)
+    assert moved.status_code == 303
+    assert moved.headers["location"] == "https://savestream.online/video-downloader?expired=1"
+    assert client.get("/v1/public/video-downloader/file/nope", follow_redirects=False).status_code == 303
 
     small, _ = _client(_settings(max_bytes=500))
     small_chain_url = small.post(
@@ -499,3 +501,28 @@ def test_non_tiktok_media_is_never_fetched() -> None:
         "download_url"
     ]
     assert client.get(url).status_code == 503
+
+
+def test_cors_lets_the_website_read_errors_and_retry_after() -> None:
+    client, _ = _client(_settings(cors_allow_origins=("https://savestream.online",)))
+    preflight = client.options(
+        "/v1/public/video-downloader/resolve",
+        headers={
+            "Origin": "https://savestream.online",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == "https://savestream.online"
+    response = client.post(
+        "/v1/public/video-downloader/resolve",
+        json={"url": PAGE_URL},
+        headers={"Origin": "https://savestream.online"},
+    )
+    assert "Retry-After" in response.headers["access-control-expose-headers"]
+    evil = client.options(
+        "/v1/public/video-downloader/resolve",
+        headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"},
+    )
+    assert "access-control-allow-origin" not in evil.headers
