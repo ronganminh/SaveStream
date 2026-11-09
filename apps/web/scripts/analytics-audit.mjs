@@ -172,7 +172,7 @@ must(
   "and PostHog, Inc. (United States) for product analytics.",
 );
 must("src/components/app-pages-more.tsx", 'h: "Product analytics"');
-must("src/components/app-pages-more.tsx", 'const PRIVACY_LAST_UPDATED = "November 6, 2026";');
+must("src/components/app-pages-more.tsx", 'const PRIVACY_LAST_UPDATED = "November 9, 2026";');
 must("src/components/app-pages-more.tsx", "lastUpdated={PRIVACY_LAST_UPDATED}");
 // Owner decision: no re-consent for this addition.
 must("src/lib/legal.ts", 'export const PRIVACY_VERSION = "2026-10-14";');
