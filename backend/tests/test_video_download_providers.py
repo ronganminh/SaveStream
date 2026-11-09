@@ -20,6 +20,41 @@ def test_public_download_permission_fails_closed() -> None:
         worker._assert_public_download_enabled({"author": {}})
 
 
+
+def test_find_video_metadata_supports_nested_page_state_shapes() -> None:
+    page_state = {
+        "__DEFAULT_SCOPE__": {
+            "webapp.video-detail": {
+                "itemInfo": {
+                    "itemStruct": {
+                        "id": "7702885119203216661",
+                        "author": {"id": "creator", "downloadSetting": 0},
+                        "video": {"playAddr": "https://example.invalid/video.mp4"},
+                    }
+                }
+            }
+        }
+    }
+
+    result = worker._find_video_metadata(page_state, "7702885119203216661")
+
+    assert result is not None
+    assert result["author"]["downloadSetting"] == 0
+
+
+def test_find_video_metadata_does_not_infer_permission_from_missing_setting() -> None:
+    page_state = {
+        "ItemModule": {
+            "7702885119203216661": {
+                "id": "7702885119203216661",
+                "author": {"id": "creator"},
+            }
+        }
+    }
+
+    assert worker._find_video_metadata(page_state, "7702885119203216661") is None
+
+
 def test_media_url_rejects_non_tiktok_hosts() -> None:
     with pytest.raises(RuntimeError):
         worker._validate_media_url("https://127.0.0.1/private.mp4")
