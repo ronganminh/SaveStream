@@ -17,6 +17,8 @@ type ApiErrorOptions = {
   details?: unknown;
   requestId?: string;
   retryable?: boolean;
+  /** From the Retry-After header (seconds), when the server sent one. */
+  retryAfterSeconds?: number | null;
   cause?: unknown;
 };
 
@@ -27,6 +29,7 @@ export class ApiError extends Error {
   readonly details: unknown;
   readonly requestId: string | undefined;
   readonly retryable: boolean;
+  readonly retryAfterSeconds: number | null;
 
   constructor({
     status,
@@ -35,6 +38,7 @@ export class ApiError extends Error {
     details,
     requestId,
     retryable = false,
+    retryAfterSeconds = null,
     cause,
   }: ApiErrorOptions) {
     const statusLabel = status === 0 ? "network error" : `HTTP ${status}`;
@@ -48,12 +52,24 @@ export class ApiError extends Error {
     this.details = details;
     this.requestId = requestId;
     this.retryable = retryable;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
+}
+
+/** Retry-After in seconds (delta-seconds or an HTTP date); null when absent. */
+function parseRetryAfter(value: string | null): number | null {
+  if (!value) return null;
+  const seconds = Number(value.trim());
+  if (Number.isFinite(seconds)) return seconds > 0 ? Math.ceil(seconds) : null;
+  const date = Date.parse(value);
+  if (Number.isNaN(date)) return null;
+  const delta = Math.ceil((date - Date.now()) / 1000);
+  return delta > 0 ? delta : null;
 }
 
 function asString(value: unknown): string | undefined {
@@ -90,6 +106,7 @@ export async function apiErrorFromResponse(
       typeof error?.["retryable"] === "boolean"
         ? error["retryable"]
         : response.status === 429 || response.status >= 500,
+    retryAfterSeconds: parseRetryAfter(response.headers.get("Retry-After")),
   });
 }
 

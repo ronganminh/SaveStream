@@ -815,6 +815,10 @@ export function AppTopbar({ onMenu }: { onMenu: () => void }) {
               <Gauge />
               {t("Usage")}
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate({ to: "/my-videos" })}>
+              <Download />
+              {t("Download my videos")}
+            </DropdownMenuItem>
             <div className="hidden px-1 py-1 lg:block">
               <ThemeMenu full />
             </div>

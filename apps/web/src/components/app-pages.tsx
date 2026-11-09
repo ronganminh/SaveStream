@@ -8,6 +8,8 @@ import {
   useNotificationPreferencesData,
   useUpdateNotificationPreferencesMutation,
 } from "@/hooks/use-notifications";
+import { useVideoDownloaderStatus } from "@/hooks/use-video-downloader";
+import { showFreeToolsNav } from "@/lib/video-downloader";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -284,10 +286,13 @@ const publicLinks = [
 ] as const;
 const navLinkClass =
   "rounded-[10px] px-2.5 py-2 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground";
+/** "Free tools" in the public header/footer; hidden while the downloader is switched off. */
+const freeToolLinks = [{ to: "/video-downloader", label: "Video downloader" }] as const;
 export function PublicHeader() {
   const { t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
+  const showFreeTools = showFreeToolsNav(useVideoDownloaderStatus().status);
   return (
     <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/85 backdrop-blur-md backdrop-saturate-150">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-2 px-4 sm:px-6">
@@ -308,6 +313,24 @@ export function PublicHeader() {
                 {t(link.label)}
               </a>
             ),
+          )}
+          {showFreeTools && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className={cn(navLinkClass, "inline-flex items-center gap-1")}>
+                {t("Free tools")}
+                <ChevronDown className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {freeToolLinks.map((link) => (
+                  <DropdownMenuItem key={link.to} asChild>
+                    <Link to={link.to}>
+                      <Download />
+                      {t(link.label)}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
@@ -360,6 +383,18 @@ export function PublicHeader() {
                       <a href={link.href}>{t(link.label)}</a>
                     </Button>
                   ),
+                )}
+                {showFreeTools && (
+                  <>
+                    <p className="mt-4 px-4 text-xs font-bold uppercase tracking-[.08em] text-muted-foreground">
+                      {t("Free tools")}
+                    </p>
+                    {freeToolLinks.map((link) => (
+                      <Button key={link.to} variant="ghost" className="justify-start" asChild>
+                        <Link to={link.to}>{t(link.label)}</Link>
+                      </Button>
+                    ))}
+                  </>
                 )}
               </nav>
               <div className="mt-6 grid gap-2 border-t pt-6">
@@ -6652,6 +6687,7 @@ function DemoPricingPage() {
 
 export function PublicFooter() {
   const { t } = usePreferences();
+  const showFreeTools = showFreeToolsNav(useVideoDownloaderStatus().status);
   const cols: [string, [string, string][]][] = [
     [
       "Product",
@@ -6686,9 +6722,25 @@ export function PublicFooter() {
       ],
     ],
   ];
+  if (showFreeTools) {
+    cols.push([
+      "Free tools",
+      [
+        ["/video-downloader", "Video downloader"],
+        ["/video-downloader/report", "Video downloader: report / copyright removal"],
+      ],
+    ]);
+  }
   return (
     <footer className="mt-24 border-t">
-      <div className="mx-auto grid max-w-[1240px] gap-10 px-6 py-12 md:grid-cols-[1.5fr_repeat(3,1fr)]">
+      <div
+        className={cn(
+          "mx-auto grid max-w-[1240px] gap-10 px-6 py-12",
+          showFreeTools
+            ? "md:grid-cols-[1.5fr_repeat(4,1fr)]"
+            : "md:grid-cols-[1.5fr_repeat(3,1fr)]",
+        )}
+      >
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-sm leading-6 text-muted-foreground">
@@ -7179,6 +7231,18 @@ function ChannelDetail({
               >
                 View on TikTok ↗
               </a>
+              {ownership === "verified" && (
+                <>
+                  {" · "}
+                  <Link
+                    to="/my-videos"
+                    className="inline-flex items-center gap-1 font-semibold text-accent-ink hover:underline"
+                  >
+                    <Download className="size-3.5" />
+                    Download my videos
+                  </Link>
+                </>
+              )}
             </p>
           </div>
           <div className="flex flex-col gap-2.5">

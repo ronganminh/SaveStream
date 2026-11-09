@@ -1710,3 +1710,57 @@ export const adminPartnersApi = {
     );
   },
 };
+
+// --- Video downloader (Admin › Safety › Downloader; backend DL2) -----------------
+
+export type AdminVideoDownloaderBlock = {
+  video_id: string;
+  video_url: string;
+  reason: string;
+  source: "report" | "manual";
+  report_reference: string | null;
+  blocked_at: string;
+  unblocked_at: string | null;
+};
+
+export type AdminVideoDownloaderReport = {
+  reference: string;
+  video_id: string;
+  video_url: string;
+  reporter_name: string;
+  reporter_email: string;
+  relationship: "creator" | "rights_holder" | "agent" | "other";
+  reason: "copyright" | "privacy" | "other";
+  details: string;
+  created_at: string;
+  blocked: boolean;
+};
+
+export const adminVideoDownloaderApi = {
+  listBlocklist(activeOnly = true) {
+    return apiClient.get<{ items: AdminVideoDownloaderBlock[] }>(
+      `/v1/admin/video-downloader/blocklist?active_only=${activeOnly ? "true" : "false"}`,
+    );
+  },
+
+  /** Manual block: needs the same step-up header as the creator blocks. */
+  block(videoUrl: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminVideoDownloaderBlock>("/v1/admin/video-downloader/blocklist", {
+      json: { video_url: videoUrl, reason },
+      headers: stepUpHeaders(stepUpToken),
+    });
+  },
+
+  unblock(videoId: string, reason: string, stepUpToken: string) {
+    return apiClient.post<AdminVideoDownloaderBlock>(
+      `/v1/admin/video-downloader/blocklist/${encodeURIComponent(videoId)}/unblock`,
+      { json: { reason }, headers: stepUpHeaders(stepUpToken) },
+    );
+  },
+
+  listReports(limit = 50) {
+    return apiClient.get<{ items: AdminVideoDownloaderReport[] }>(
+      `/v1/admin/video-downloader/reports?limit=${limit}`,
+    );
+  },
+};
