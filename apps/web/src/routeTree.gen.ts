@@ -18,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CopyrightRouteImport } from './routes/copyright'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as MyVideosRouteImport } from './routes/my-videos'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as OverviewRouteImport } from './routes/overview'
@@ -36,6 +37,7 @@ import { Route as TiktokLiveRecorderRouteImport } from './routes/tiktok-live-rec
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as UsageRouteImport } from './routes/usage'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as VideoDownloaderRouteImport } from './routes/video-downloader'
 import { Route as AccountSuspendedRouteImport } from './routes/account_.suspended'
 import { Route as AccountTerminatedRouteImport } from './routes/account_.terminated'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -75,6 +77,7 @@ import { Route as SettingsNotificationsRouteImport } from './routes/settings.not
 import { Route as SettingsSecurityRouteImport } from './routes/settings.security'
 import { Route as VerifyEmailIndexRouteImport } from './routes/verify-email.index'
 import { Route as VerifyEmailSuccessRouteImport } from './routes/verify-email.success'
+import { Route as VideoDownloaderReportRouteImport } from './routes/video-downloader_.report'
 import { Route as AdminJobsIndexRouteImport } from './routes/admin/jobs.index'
 import { Route as AdminJobsIdRouteImport } from './routes/admin/jobs.$id'
 import { Route as AdminUsersIndexRouteImport } from './routes/admin/users.index'
@@ -123,6 +126,11 @@ const DeleteAccountRoute = DeleteAccountRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyVideosRoute = MyVideosRouteImport.update({
+  id: '/my-videos',
+  path: '/my-videos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsRoute = NotificationsRouteImport.update({
@@ -213,6 +221,11 @@ const UsageRoute = UsageRouteImport.update({
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
   path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VideoDownloaderRoute = VideoDownloaderRouteImport.update({
+  id: '/video-downloader',
+  path: '/video-downloader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountSuspendedRoute = AccountSuspendedRouteImport.update({
@@ -410,6 +423,11 @@ const VerifyEmailSuccessRoute = VerifyEmailSuccessRouteImport.update({
   path: '/success',
   getParentRoute: () => VerifyEmailRoute,
 } as any)
+const VideoDownloaderReportRoute = VideoDownloaderReportRouteImport.update({
+  id: '/video-downloader_/report',
+  path: '/video-downloader/report',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminJobsIndexRoute = AdminJobsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -441,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/copyright': typeof CopyrightRoute
   '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/my-videos': typeof MyVideosRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -459,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
+  '/video-downloader': typeof VideoDownloaderRoute
   '/account/suspended': typeof AccountSuspendedRoute
   '/account/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -490,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/video-downloader/report': typeof VideoDownloaderReportRoute
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
@@ -511,6 +532,7 @@ export interface FileRoutesByTo {
   '/copyright': typeof CopyrightRoute
   '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/my-videos': typeof MyVideosRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -526,6 +548,7 @@ export interface FileRoutesByTo {
   '/tiktok-live-recorder': typeof TiktokLiveRecorderRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
+  '/video-downloader': typeof VideoDownloaderRoute
   '/account/suspended': typeof AccountSuspendedRoute
   '/account/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -555,6 +578,7 @@ export interface FileRoutesByTo {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/video-downloader/report': typeof VideoDownloaderReportRoute
   '/admin': typeof AdminIndexRoute
   '/billing': typeof BillingIndexRoute
   '/channels': typeof ChannelsIndexRoute
@@ -579,6 +603,7 @@ export interface FileRoutesById {
   '/copyright': typeof CopyrightRoute
   '/delete-account': typeof DeleteAccountRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/my-videos': typeof MyVideosRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/overview': typeof OverviewRoute
@@ -597,6 +622,7 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/usage': typeof UsageRoute
   '/verify-email': typeof VerifyEmailRouteWithChildren
+  '/video-downloader': typeof VideoDownloaderRoute
   '/account_/suspended': typeof AccountSuspendedRoute
   '/account_/terminated': typeof AccountTerminatedRoute
   '/admin/catalog': typeof AdminCatalogRoute
@@ -628,6 +654,7 @@ export interface FileRoutesById {
   '/settings/notifications': typeof SettingsNotificationsRoute
   '/settings/security': typeof SettingsSecurityRoute
   '/verify-email/success': typeof VerifyEmailSuccessRoute
+  '/video-downloader_/report': typeof VideoDownloaderReportRoute
   '/admin/': typeof AdminIndexRoute
   '/billing/': typeof BillingIndexRoute
   '/channels/': typeof ChannelsIndexRoute
@@ -653,6 +680,7 @@ export interface FileRouteTypes {
     | '/copyright'
     | '/delete-account'
     | '/forgot-password'
+    | '/my-videos'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -671,6 +699,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
+    | '/video-downloader'
     | '/account/suspended'
     | '/account/terminated'
     | '/admin/catalog'
@@ -702,6 +731,7 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/video-downloader/report'
     | '/admin/'
     | '/billing/'
     | '/channels/'
@@ -723,6 +753,7 @@ export interface FileRouteTypes {
     | '/copyright'
     | '/delete-account'
     | '/forgot-password'
+    | '/my-videos'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -738,6 +769,7 @@ export interface FileRouteTypes {
     | '/tiktok-live-recorder'
     | '/unsubscribe'
     | '/usage'
+    | '/video-downloader'
     | '/account/suspended'
     | '/account/terminated'
     | '/admin/catalog'
@@ -767,6 +799,7 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/video-downloader/report'
     | '/admin'
     | '/billing'
     | '/channels'
@@ -790,6 +823,7 @@ export interface FileRouteTypes {
     | '/copyright'
     | '/delete-account'
     | '/forgot-password'
+    | '/my-videos'
     | '/notifications'
     | '/onboarding'
     | '/overview'
@@ -808,6 +842,7 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/usage'
     | '/verify-email'
+    | '/video-downloader'
     | '/account_/suspended'
     | '/account_/terminated'
     | '/admin/catalog'
@@ -839,6 +874,7 @@ export interface FileRouteTypes {
     | '/settings/notifications'
     | '/settings/security'
     | '/verify-email/success'
+    | '/video-downloader_/report'
     | '/admin/'
     | '/billing/'
     | '/channels/'
@@ -863,6 +899,7 @@ export interface RootRouteChildren {
   CopyrightRoute: typeof CopyrightRoute
   DeleteAccountRoute: typeof DeleteAccountRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  MyVideosRoute: typeof MyVideosRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   OverviewRoute: typeof OverviewRoute
@@ -881,6 +918,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   UsageRoute: typeof UsageRoute
   VerifyEmailRoute: typeof VerifyEmailRouteWithChildren
+  VideoDownloaderRoute: typeof VideoDownloaderRoute
   AccountSuspendedRoute: typeof AccountSuspendedRoute
   AccountTerminatedRoute: typeof AccountTerminatedRoute
   AdminCatalogRoute: typeof AdminCatalogRoute
@@ -900,6 +938,7 @@ export interface RootRouteChildren {
   GuidesGuideRoute: typeof GuidesGuideRoute
   HelpArticleRoute: typeof HelpArticleRoute
   PartnersApplyRoute: typeof PartnersApplyRoute
+  VideoDownloaderReportRoute: typeof VideoDownloaderReportRoute
   AdminIndexRoute: typeof AdminIndexRoute
   GuidesIndexRoute: typeof GuidesIndexRoute
   HelpIndexRoute: typeof HelpIndexRoute
@@ -968,6 +1007,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-videos': {
+      id: '/my-videos'
+      path: '/my-videos'
+      fullPath: '/my-videos'
+      preLoaderRoute: typeof MyVideosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications': {
@@ -1094,6 +1140,13 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/video-downloader': {
+      id: '/video-downloader'
+      path: '/video-downloader'
+      fullPath: '/video-downloader'
+      preLoaderRoute: typeof VideoDownloaderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account_/suspended': {
@@ -1369,6 +1422,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailSuccessRouteImport
       parentRoute: typeof VerifyEmailRoute
     }
+    '/video-downloader_/report': {
+      id: '/video-downloader_/report'
+      path: '/video-downloader/report'
+      fullPath: '/video-downloader/report'
+      preLoaderRoute: typeof VideoDownloaderReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/jobs/': {
       id: '/admin/jobs/'
       path: '/'
@@ -1521,6 +1581,7 @@ const rootRouteChildren: RootRouteChildren = {
   CopyrightRoute: CopyrightRoute,
   DeleteAccountRoute: DeleteAccountRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  MyVideosRoute: MyVideosRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   OverviewRoute: OverviewRoute,
@@ -1539,6 +1600,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   UsageRoute: UsageRoute,
   VerifyEmailRoute: VerifyEmailRouteWithChildren,
+  VideoDownloaderRoute: VideoDownloaderRoute,
   AccountSuspendedRoute: AccountSuspendedRoute,
   AccountTerminatedRoute: AccountTerminatedRoute,
   AdminCatalogRoute: AdminCatalogRoute,
@@ -1558,6 +1620,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuidesGuideRoute: GuidesGuideRoute,
   HelpArticleRoute: HelpArticleRoute,
   PartnersApplyRoute: PartnersApplyRoute,
+  VideoDownloaderReportRoute: VideoDownloaderReportRoute,
   AdminIndexRoute: AdminIndexRoute,
   GuidesIndexRoute: GuidesIndexRoute,
   HelpIndexRoute: HelpIndexRoute,

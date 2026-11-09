@@ -93,6 +93,7 @@ const protectedPrefixes = [
   "/settings",
   "/onboarding",
   "/account",
+  "/my-videos",
 ] as const;
 
 /** Public, indexable marketing and policy pages (also listed in public/sitemap.xml). */

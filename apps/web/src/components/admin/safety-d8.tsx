@@ -28,6 +28,7 @@ import {
   ChannelAccountBlocksTable,
   type ChannelAccountBlockAction,
 } from "@/components/admin/channel-account-blocks";
+import { VideoDownloaderAdminTab } from "@/components/admin/video-downloader-admin";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -752,6 +753,7 @@ export function AdminSafetyD8Page() {
           <AdminTabsTrigger value="suspicious" count={counts.suspicious}>
             Suspicious accounts
           </AdminTabsTrigger>
+          <AdminTabsTrigger value="downloader">Downloader</AdminTabsTrigger>
         </AdminTabsList>
 
         <TabsContent value="complaints" className="space-y-4">
@@ -989,6 +991,11 @@ export function AdminSafetyD8Page() {
               )}
             </tbody>
           </AdminDataTable>
+        </TabsContent>
+
+        {/* Loads on open (Radix unmounts inactive tabs). */}
+        <TabsContent value="downloader">
+          <VideoDownloaderAdminTab />
         </TabsContent>
       </Tabs>
 

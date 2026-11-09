@@ -7,5 +7,6 @@ Disallow: /usage
 Disallow: /billing
 Disallow: /notifications
 Disallow: /settings
+Disallow: /my-videos
 Disallow: /admin
 Sitemap: https://savestream.online/sitemap.xml
