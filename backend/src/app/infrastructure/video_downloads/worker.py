@@ -125,6 +125,33 @@ def _find_video_metadata(value: Any, video_id: str) -> dict[str, Any] | None:
                 return found
     return None
 
+def _describe_video_metadata_shape(value: Any, video_id: str) -> str:
+    """Return redacted schema diagnostics for objects matching the requested ID."""
+    matches: list[str] = []
+
+    def visit(node: Any) -> None:
+        if len(matches) >= 3:
+            return
+        if isinstance(node, dict):
+            object_id = node.get("id") or node.get("aweme_id")
+            if str(object_id or "") == video_id:
+                author = node.get("author")
+                author_keys = sorted(author.keys()) if isinstance(author, dict) else []
+                setting = author.get("downloadSetting") if isinstance(author, dict) else None
+                matches.append(
+                    "object_keys=" + ",".join(sorted(node.keys())[:30])
+                    + ";author_keys=" + ",".join(author_keys[:30])
+                    + ";downloadSetting_type=" + type(setting).__name__
+                )
+            for child in node.values():
+                visit(child)
+        elif isinstance(node, list):
+            for child in node:
+                visit(child)
+
+    visit(value)
+    return " | ".join(matches) or "no_object_with_matching_id"
+
 
 async def _fetch_public_metadata_with_tiktokapi(url: str) -> dict[str, Any]:
     """Fetch public video metadata through TikTokApi without account cookies."""
@@ -198,6 +225,10 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
             name for name in supported_ids
             if f'id="{name}"' in html or f"id='{name}'" in html
         ]
+        metadata_shapes = " | ".join(
+            _describe_video_metadata_shape(page_state, video_id)
+            for page_state in parsed
+        ) or "no_json_state_parsed"
         raise RuntimeError(
             "TikTok public page/API did not include matching video metadata "
             f"(status={response.status_code}, content_type="
@@ -205,6 +236,7 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
             f"body_bytes={len(response.content)}, "
             f"video_id_present={video_id in html}, "
             f"state_scripts={','.join(markers) or 'none'}, "
+            f"metadata_shapes={metadata_shapes}, "
             f"api_fallback_error={api_error})"
         )
     _assert_public_download_enabled(video_info)
