@@ -55,6 +55,72 @@ def test_find_video_metadata_does_not_infer_permission_from_missing_setting() ->
     assert worker._find_video_metadata(page_state, "7702885119203216661") is None
 
 
+
+def test_public_permission_metadata_falls_back_to_tiktokapi(monkeypatch: pytest.MonkeyPatch) -> None:
+    video_id = "7702885119203216661"
+
+    class Response:
+        text = "<html><body>page state unavailable</body></html>"
+        content = text.encode()
+        status_code = 200
+        headers = {"Content-Type": "text/html"}
+
+        def raise_for_status(self) -> None:
+            return None
+
+    monkeypatch.setattr(worker.requests, "get", lambda *args, **kwargs: Response())
+    monkeypatch.setattr(
+        worker.asyncio,
+        "run",
+        lambda awaitable: {
+            "aweme_detail": {
+                "aweme_id": video_id,
+                "author": {"uid": "creator", "downloadSetting": 0},
+                "video": {"play_addr": {"url_list": []}},
+            }
+        },
+    )
+
+    info = worker._verify_public_download_permission(
+        f"https://www.tiktok.com/@creator/video/{video_id}"
+    )
+
+    assert info["aweme_id"] == video_id
+    assert info["author"]["downloadSetting"] == 0
+
+
+def test_public_permission_api_fallback_still_rejects_disabled_downloads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    video_id = "7702885119203216661"
+
+    class Response:
+        text = "<html><body>page state unavailable</body></html>"
+        content = text.encode()
+        status_code = 200
+        headers = {"Content-Type": "text/html"}
+
+        def raise_for_status(self) -> None:
+            return None
+
+    monkeypatch.setattr(worker.requests, "get", lambda *args, **kwargs: Response())
+    monkeypatch.setattr(
+        worker.asyncio,
+        "run",
+        lambda awaitable: {
+            "aweme_detail": {
+                "aweme_id": video_id,
+                "author": {"uid": "creator", "downloadSetting": 3},
+            }
+        },
+    )
+
+    with pytest.raises(RuntimeError, match="explicitly denies public downloads"):
+        worker._verify_public_download_permission(
+            f"https://www.tiktok.com/@creator/video/{video_id}"
+        )
+
+
 def test_media_url_rejects_non_tiktok_hosts() -> None:
     with pytest.raises(RuntimeError):
         worker._validate_media_url("https://127.0.0.1/private.mp4")
