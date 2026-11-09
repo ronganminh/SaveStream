@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -10,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.errors import install_exception_handlers
 from app.api.middleware import GlobalRateLimitMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware
 from app.api.routes.admin import router as admin_router
+from app.api.routes.video_downloader import router as video_downloader_router
 from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.billing import router as billing_router
@@ -37,6 +40,7 @@ from app.infrastructure.metrics.registry import MetricsMiddleware, MetricsRegist
 from app.infrastructure.rate_limit import RedisRateLimiter
 from app.infrastructure.redis import RedisClient
 from app.infrastructure.storage.minio import MinioStorageClient
+from app.application.video_downloader.sync import sync_video_download_blocklist_forever
 from app.settings import AppSettings, get_app_settings
 
 
@@ -55,9 +59,15 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         app.state.redis = redis
         app.state.rate_limiter = RedisRateLimiter(redis.client)
         app.state.minio = minio
+        blocklist_sync = asyncio.create_task(
+            sync_video_download_blocklist_forever(database, redis.client)
+        )
         try:
             yield
         finally:
+            blocklist_sync.cancel()
+            with contextlib.suppress(asyncio.CancelledError, Exception):
+                await blocklist_sync
             await redis.close()
             await database.close()
 
@@ -109,6 +119,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(pricing_router)
     app.include_router(public_router)
     app.include_router(reports_router)
+    app.include_router(video_downloader_router)
     app.include_router(partners_public_router)
     app.include_router(partners_admin_router)
     app.include_router(billing_router)
