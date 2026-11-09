@@ -99,8 +99,35 @@ def _assert_public_download_enabled(video_info: dict[str, Any]) -> None:
         raise RuntimeError(f"TikTok metadata explicitly denies public downloads (downloadSetting={setting})")
 
 
+def _find_video_metadata(value: Any, video_id: str) -> dict[str, Any] | None:
+    """Find the requested video object without assuming one TikTok page schema."""
+    if isinstance(value, dict):
+        object_id = value.get("id") or value.get("aweme_id")
+        author = value.get("author")
+        if (
+            str(object_id or "") == video_id
+            and isinstance(author, dict)
+            and "downloadSetting" in author
+        ):
+            return value
+        for key, child in value.items():
+            if str(key) == video_id and isinstance(child, dict):
+                child_author = child.get("author")
+                if isinstance(child_author, dict) and "downloadSetting" in child_author:
+                    return child
+            found = _find_video_metadata(child, video_id)
+            if found is not None:
+                return found
+    elif isinstance(value, list):
+        for child in value:
+            found = _find_video_metadata(child, video_id)
+            if found is not None:
+                return found
+    return None
+
+
 def _verify_public_download_permission(url: str) -> dict[str, Any]:
-    """Read the public page's embedded metadata; this avoids a TikTokApi browser session."""
+    """Read public embedded metadata across TikTok's known page-state containers."""
     response = requests.get(
         url,
         timeout=(10, 25),
@@ -116,39 +143,44 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
     )
     response.raise_for_status()
     video_id = url.split("/video/", 1)[1].split("?", 1)[0]
+    html = response.text
     scripts = re.findall(
-        r"<script[^>]+id=[\"\']([^\"\']+)[\"\'][^>]*>(.*?)</script>",
-        response.text,
-        flags=re.DOTALL,
+        r"<script\b[^>]*\bid=[\"']([^\"']+)[\"'][^>]*>(.*?)</script>",
+        html,
+        flags=re.DOTALL | re.IGNORECASE,
     )
-    parsed: dict[str, Any] = {}
+    supported_ids = {
+        "__UNIVERSAL_DATA_FOR_REHYDRATION__",
+        "SIGI_STATE",
+        "__NEXT_DATA__",
+    }
+    parsed: list[Any] = []
     for script_id, payload in scripts:
-        if script_id not in {"__UNIVERSAL_DATA_FOR_REHYDRATION__", "SIGI_STATE"}:
+        if script_id not in supported_ids:
             continue
         try:
-            parsed[script_id] = json.loads(payload)
+            parsed.append(json.loads(payload))
         except json.JSONDecodeError:
             continue
 
-    video_info: dict[str, Any] = {}
-    universal = parsed.get("__UNIVERSAL_DATA_FOR_REHYDRATION__", {})
-    if isinstance(universal, dict):
-        scope = universal.get("__DEFAULT_SCOPE__", {})
-        detail = scope.get("webapp.video-detail", {}) if isinstance(scope, dict) else {}
-        item_info = detail.get("itemInfo", {}) if isinstance(detail, dict) else {}
-        candidate = item_info.get("itemStruct", {}) if isinstance(item_info, dict) else {}
-        if isinstance(candidate, dict) and candidate:
-            video_info = candidate
+    video_info: dict[str, Any] | None = None
+    for page_state in parsed:
+        video_info = _find_video_metadata(page_state, video_id)
+        if video_info is not None:
+            break
 
-    if not video_info:
-        legacy = parsed.get("SIGI_STATE", {})
-        item_module = legacy.get("ItemModule", {}) if isinstance(legacy, dict) else {}
-        candidate = item_module.get(video_id, {}) if isinstance(item_module, dict) else {}
-        if isinstance(candidate, dict) and candidate:
-            video_info = candidate
-
-    if not video_info:
-        raise RuntimeError("TikTok public page did not include video details in supported metadata")
+    if video_info is None:
+        markers = [
+            name for name in supported_ids
+            if f'id="{name}"' in html or f"id='{name}'" in html
+        ]
+        raise RuntimeError(
+            "TikTok public page did not include matching video metadata "
+            f"(status={response.status_code}, content_type="
+            f"{response.headers.get('Content-Type', 'unknown')}, "
+            f"body_bytes={len(response.content)}, "
+            f"video_id_present={video_id in html}, state_scripts={','.join(markers) or 'none'})"
+        )
     _assert_public_download_enabled(video_info)
     return video_info
 
