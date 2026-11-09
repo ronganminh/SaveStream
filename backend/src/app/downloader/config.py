@@ -28,6 +28,9 @@ class DownloaderSettings:
     turnstile_secret_key: str = field(default="", repr=False)
     grant_secret: str = field(default="", repr=False)
     trusted_proxy_cidrs: tuple[str, ...] = ()
+    # The website calls the downloader cross-origin (api. host).
+    cors_allow_origins: tuple[str, ...] = ()
+    frontend_base_url: str = "https://savestream.online"
     resolve_limit: int = 10
     resolve_window_seconds: int = 3600
     turnstile_after: int = 5
@@ -72,6 +75,8 @@ class DownloaderSettings:
             turnstile_secret_key=_optional_secret_env("TURNSTILE_SECRET_KEY"),
             grant_secret=_optional_secret_env("VIDEO_DOWNLOADER_GRANT_SECRET"),
             trusted_proxy_cidrs=_csv_env("TRUSTED_PROXY_CIDRS", ""),
+            cors_allow_origins=_csv_env("CORS_ALLOW_ORIGINS", ""),
+            frontend_base_url=_env("FRONTEND_BASE_URL", "https://savestream.online").rstrip("/"),
             resolve_limit=_int_env("VIDEO_DOWNLOADER_RESOLVE_LIMIT", 10),
             resolve_window_seconds=_int_env("VIDEO_DOWNLOADER_RESOLVE_WINDOW_SECONDS", 3600),
             turnstile_after=_int_env("VIDEO_DOWNLOADER_TURNSTILE_AFTER", 5),
