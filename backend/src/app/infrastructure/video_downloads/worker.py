@@ -126,6 +126,19 @@ def _find_video_metadata(value: Any, video_id: str) -> dict[str, Any] | None:
     return None
 
 
+async def _fetch_public_metadata_with_tiktokapi(url: str) -> dict[str, Any]:
+    """Fetch public video metadata through TikTokApi without account cookies."""
+    from TikTokApi import TikTokApi
+
+    async with TikTokApi() as api:
+        await api.create_sessions(
+            num_sessions=1,
+            sleep_after=3,
+            browser="chromium",
+        )
+        return await api.video(url=url).info()
+
+
 def _verify_public_download_permission(url: str) -> dict[str, Any]:
     """Read public embedded metadata across TikTok's known page-state containers."""
     response = requests.get(
@@ -170,16 +183,29 @@ def _verify_public_download_permission(url: str) -> dict[str, Any]:
             break
 
     if video_info is None:
+        # TikTok changes its server-rendered page state frequently. Try the
+        # public TikTokApi metadata endpoint before failing closed.
+        try:
+            api_payload = asyncio.run(_fetch_public_metadata_with_tiktokapi(url))
+        except Exception as exc:
+            api_error = type(exc).__name__
+        else:
+            api_error = "none"
+            video_info = _find_video_metadata(api_payload, video_id)
+
+    if video_info is None:
         markers = [
             name for name in supported_ids
             if f'id="{name}"' in html or f"id='{name}'" in html
         ]
         raise RuntimeError(
-            "TikTok public page did not include matching video metadata "
+            "TikTok public page/API did not include matching video metadata "
             f"(status={response.status_code}, content_type="
             f"{response.headers.get('Content-Type', 'unknown')}, "
             f"body_bytes={len(response.content)}, "
-            f"video_id_present={video_id in html}, state_scripts={','.join(markers) or 'none'})"
+            f"video_id_present={video_id in html}, "
+            f"state_scripts={','.join(markers) or 'none'}, "
+            f"api_fallback_error={api_error})"
         )
     _assert_public_download_enabled(video_info)
     return video_info
