@@ -4093,11 +4093,11 @@ const LEGAL_LAST_UPDATED = "October 5, 2026";
 // SaveStream Android app (October 22, 2026) added (owner-approved). The
 // consent version stays PRIVACY_VERSION 2026-10-14, so existing users are
 // not asked to agree again.
-const PRIVACY_LAST_UPDATED = "November 6, 2026";
+const PRIVACY_LAST_UPDATED = "November 9, 2026";
 // Terms and Refund Policy: Google Play purchases in the Android app added
 // (owner-approved). The consent revision stays unchanged, so existing users
 // are not asked to agree again.
-const TERMS_LAST_UPDATED = "November 6, 2026";
+const TERMS_LAST_UPDATED = "November 9, 2026";
 const REFUND_LAST_UPDATED = "October 22, 2026";
 const SUPPORT_EMAIL = "support@savestream.online";
 const PRIVACY_EMAIL = "privacy@savestream.online";
@@ -4394,6 +4394,44 @@ export function TermsPage() {
               these Terms, applicable law, platform rules, or third-party rights. Repeated or
               serious infringement may result in account termination.
             </p>
+          ),
+        },
+        {
+          h: "Free tools: video downloader",
+          p: (
+            <>
+              <p>
+                The SaveStream video downloader lets you save a copy of a public TikTok video only
+                when its creator has allowed downloads on TikTok. It provides the same file that
+                TikTok&apos;s own save feature offers, including TikTok&apos;s watermark. It does
+                not work for private, friends-only or removed videos, or when the creator has turned
+                downloads off.
+              </p>
+              <p>
+                Downloads are for your personal use. You are responsible for having the rights you
+                need for anything else, such as reposting, editing or commercial use, and for
+                following TikTok&apos;s terms. You may not use the downloader to infringe copyright,
+                redistribute other people&apos;s videos, or harass or track anyone.
+              </p>
+              <p>
+                Signed-in users can also download videos from their own TikTok channels that they
+                have verified with SaveStream&apos;s bio code (&ldquo;Download my videos&rdquo;),
+                even if downloads are turned off on TikTok. We check that the channel is still
+                verified on your account for every download. Use it only for your own content.
+              </p>
+              <p>
+                The downloader is free, provided as is, and limited in how often and how much it can
+                be used. We may refuse, limit or stop it at any time, and we remove a video from it
+                when its creator or rights holder asks us to (see the
+                <a
+                  href="/video-downloader/report"
+                  className="text-primary underline underline-offset-4"
+                >
+                  removal request form
+                </a>
+                ). SaveStream is not affiliated with TikTok or ByteDance.
+              </p>
+            </>
           ),
         },
         {
@@ -4794,6 +4832,33 @@ export function PrivacyPage() {
           ),
         },
         {
+          h: "Video downloader",
+          p: (
+            <>
+              <p>
+                When you use the video downloader, we process the TikTok link you paste and your IP
+                address. We use the IP address to apply usage limits; we keep it only as a one-way
+                hash that expires within an hour. Download links are tied to the same hashed IP
+                address and expire after 10 minutes. We do not store copies of the videos: files
+                stream from TikTok to you. Our server logs record the video ID and the result (for
+                example &ldquo;downloads turned off&rdquo;) to prevent abuse and fix problems, and
+                are kept like our other server logs.
+              </p>
+              <p>
+                The downloader&apos;s requests to TikTok go out through a separate server, so TikTok
+                sees that server&apos;s address, not yours. If we ask you to complete a check, it is
+                provided by Cloudflare Turnstile.
+              </p>
+              <p>
+                If you send a removal request, we keep your name, email address, the video link and
+                your message to handle the request and to keep a record of it. &ldquo;Download my
+                videos&rdquo; uses your account and your verified channels; we do not keep a list of
+                the videos you download.
+              </p>
+            </>
+          ),
+        },
+        {
           h: "Changes to this Policy",
           p: (
             <p>
@@ -4856,6 +4921,10 @@ export function AcceptableUsePage() {
               <li>
                 Using SaveStream primarily to facilitate copyright infringement or unauthorized
                 redistribution of third-party content.
+              </li>
+              <li>
+                Automating the video downloader, using it in bulk, or getting around its limits (for
+                example with scripts or many IP addresses), or selling access to it.
               </li>
               <li>
                 Using the service to harass, stalk, surveil, dox, or unlawfully collect personal
@@ -4997,6 +5066,31 @@ export function CopyrightPage() {
               and may require parties to resolve complex claims through the appropriate legal
               process.
             </p>
+          ),
+        },
+        {
+          h: "Video downloader",
+          p: (
+            <>
+              <p>
+                Creators and rights holders can ask us to remove a TikTok video from the SaveStream
+                video downloader with the
+                <a
+                  href="/video-downloader/report"
+                  className="text-primary underline underline-offset-4"
+                >
+                  removal request form
+                </a>
+                . We block the video in the downloader as soon as the request arrives, before we
+                review it, and usually reply within 3 business days. SaveStream does not host the
+                video: the downloader only passes on the file TikTok itself offers, and keeps no
+                copy.
+              </p>
+              <p>
+                If a video was blocked by mistake, the creator can contact
+                <MailLink email={COPYRIGHT_EMAIL} /> and we will review it.
+              </p>
+            </>
           ),
         },
         {
