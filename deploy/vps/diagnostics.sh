@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# READ-ONLY: downloader container log (not for merge).
+# READ-ONLY post-deploy check (not for merge).
 ENV_FILE="deploy/vps/production.env"; COMPOSE_FILE="deploy/vps/docker-compose.production.yml"
 compose() { COMPOSE_PROFILES=recorder docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
-echo "== downloader log"
-compose logs --tail=40 --no-log-prefix downloader 2>&1 | grep -vE "password|secret|token" | tail -40
-echo "== secret files (names, non-empty?)"
-d="$(sed -n 's/^SAVESTREAM_SECRETS_DIR=//p' "$ENV_FILE" | tail -n1)"
-for f in video_downloader_proxy_url video_downloader_grant_secret redis_url; do [ -e "$d/$f" ] && echo "$f exists size>0=$([ -s "$d/$f" ] && echo yes || echo no) mode=$(stat -c %a "$d/$f")" || echo "$f MISSING"; done
+sleep 20
+echo "== head $(git rev-parse --short HEAD)"
+docker ps --format '{{.Names}} | {{.Status}}' | grep savestream-production
+echo "== downloader status"; curl -s -m 5 http://127.0.0.1:18011/v1/public/video-downloader/status; echo
+echo "== downloader log"; compose logs --tail=8 --no-log-prefix downloader 2>&1 | grep -vE "password|secret" | tail -5
+echo "== limits"; docker inspect savestream-production-downloader-1 --format 'cpus={{.HostConfig.NanoCpus}} mem={{.HostConfig.Memory}} ro={{.HostConfig.ReadonlyRootfs}} capadd={{.HostConfig.CapAdd}} capdrop={{.HostConfig.CapDrop}}'
+echo "== blocklist synced marker"; compose exec -T redis sh -c 'redis-cli -a "$(cat /run/secrets/redis_password)" --no-auth-warning exists savestream:video_downloader:blocked_videos:synced' < /dev/null
+echo "== public via nginx (expect 404 until owner adds the route)"; curl -s -o /dev/null -w '%{http_code}\n' https://api.savestream.online/v1/public/video-downloader/status
+echo "== report endpoint on API (GET -> 405 means route exists)"; curl -s -o /dev/null -w '%{http_code}\n' https://api.savestream.online/v1/public/video-downloader-reports
