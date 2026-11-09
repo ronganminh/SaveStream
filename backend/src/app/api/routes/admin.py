@@ -184,6 +184,17 @@ from app.application.watches.account_blocks import (
 )
 from app.application.creator_safety import recording_creator_block
 from app.application.audit.service import AuditContext, AuditService
+from app.application.video_downloader.blocklist import BlocklistService
+from app.api.routes.video_downloader import push_blocklist_change
+from app.api.schemas.video_downloader import (
+    AdminVideoBlockListResponse,
+    AdminVideoBlockRequest,
+    AdminVideoBlockResponse,
+    AdminVideoReportListResponse,
+    AdminVideoReportResponse,
+    AdminVideoUnblockRequest,
+)
+from app.infrastructure.db.admin_models import VideoDownloadBlock
 from app.application.entitlements.service import EntitlementSnapshot
 from app.application.identity.service import ip_hint
 from app.application.privacy.service import PrivacyService
@@ -4353,4 +4364,128 @@ async def list_admin_channel_account_blocks(
     blocks = await list_account_blocks(session, active_only=active_only, user_id=parsed_user)
     return AdminChannelAccountBlockListResponse(
         items=[_channel_block_response(block) for block in blocks]
+    )
+
+
+async def _video_block_response(
+    service: BlocklistService, rows: list[VideoDownloadBlock]
+) -> list[AdminVideoBlockResponse]:
+    refs = await service.report_references({r.report_id for r in rows if r.report_id})
+    return [
+        AdminVideoBlockResponse(
+            video_id=row.video_id,
+            video_url=row.video_url,
+            reason=row.reason,
+            source=row.source,
+            report_reference=refs.get(row.report_id) if row.report_id else None,
+            blocked_at=row.blocked_at,
+            unblocked_at=row.unblocked_at,
+            unblock_reason=row.unblock_reason,
+        )
+        for row in rows
+    ]
+
+
+@router.get("/video-downloader/blocklist", response_model=AdminVideoBlockListResponse)
+async def list_video_downloader_blocklist(
+    active_only: bool = Query(default=True),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminVideoBlockListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    service = BlocklistService(session)
+    rows = await service.list_blocks(active_only=active_only)
+    return AdminVideoBlockListResponse(items=await _video_block_response(service, rows))
+
+
+@router.post("/video-downloader/blocklist", response_model=AdminVideoBlockResponse)
+async def block_video_in_downloader(
+    payload: AdminVideoBlockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminVideoBlockResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    service = BlocklistService(session)
+    row = await service.block(
+        video_url=payload.video_url, reason=payload.reason, actor_id=principal.user_id
+    )
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.video_downloader.blocked",
+        resource_type="video_download_block",
+        resource_id=row.video_id,
+        context=_context(request),
+        reason=payload.reason,
+        after_state={"video_id": row.video_id, "source": "manual"},
+    )
+    await session.commit()
+    await push_blocklist_change(request, row.video_id, blocked=True)
+    return (await _video_block_response(service, [row]))[0]
+
+
+@router.post(
+    "/video-downloader/blocklist/{video_id}/unblock", response_model=AdminVideoBlockResponse
+)
+async def unblock_video_in_downloader(
+    video_id: str,
+    payload: AdminVideoUnblockRequest,
+    request: Request,
+    step_up_token: str | None = Header(default=None, alias="X-Admin-Step-Up"),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminVideoBlockResponse:
+    _require_scope(principal, "admin:complaints:write")
+    await _require_step_up(
+        principal=principal, session=session, request=request, token=step_up_token
+    )
+    service = BlocklistService(session)
+    row = await service.unblock(video_id, reason=payload.reason, actor_id=principal.user_id)
+    await AuditService(session).record(
+        actor_user_id=principal.user_id,
+        actor_role=principal.role,
+        action="admin.video_downloader.unblocked",
+        resource_type="video_download_block",
+        resource_id=row.video_id,
+        context=_context(request),
+        reason=payload.reason,
+        before_state={"active": True},
+        after_state={"active": False},
+    )
+    await session.commit()
+    await push_blocklist_change(request, row.video_id, blocked=False)
+    return (await _video_block_response(service, [row]))[0]
+
+
+@router.get("/video-downloader/reports", response_model=AdminVideoReportListResponse)
+async def list_video_downloader_reports(
+    limit: int = Query(default=50, ge=1, le=200),
+    principal: AuthPrincipal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> AdminVideoReportListResponse:
+    _require_scope(principal, "admin:complaints:read")
+    service = BlocklistService(session)
+    reports = await service.list_reports(limit=limit)
+    active = await service.active_ids()
+    return AdminVideoReportListResponse(
+        items=[
+            AdminVideoReportResponse(
+                reference=r.reference,
+                video_id=r.video_id,
+                video_url=r.video_url,
+                reporter_name=r.reporter_name,
+                reporter_email=r.reporter_email,
+                relationship=r.relationship,
+                reason=r.reason,
+                details=r.details,
+                created_at=r.created_at,
+                blocked=r.video_id in active,
+            )
+            for r in reports
+        ]
     )

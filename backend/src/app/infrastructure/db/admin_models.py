@@ -518,3 +518,65 @@ class AdminDailyMetric(Base):
     computed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class VideoDownloadReport(Base):
+    """A takedown / copyright request from the video downloader's report form.
+
+    The video is blocked as soon as the report arrives; ops review it as an
+    admin complaint case (``complaint_id``) and can unblock it.
+    """
+
+    __tablename__ = "video_download_reports"
+    __table_args__ = (
+        Index("ix_video_download_reports_created", "created_at"),
+        Index("ix_video_download_reports_video", "video_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    reference: Mapped[str] = mapped_column(String(16), nullable=False, unique=True)
+    video_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    video_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    reporter_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    reporter_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    relationship: Mapped[str] = mapped_column(String(24), nullable=False)
+    reason: Mapped[str] = mapped_column(String(24), nullable=False)
+    details: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    complaint_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("admin_complaint_cases.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class VideoDownloadBlock(Base):
+    """A TikTok video the public downloader must refuse (one row per video)."""
+
+    __tablename__ = "video_download_blocklist"
+    __table_args__ = (Index("ix_video_download_blocklist_active", "unblocked_at", "blocked_at"),)
+
+    video_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    video_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(16), nullable=False)
+    report_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("video_download_reports.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    blocked_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    blocked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    unblocked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    unblocked_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    unblock_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
