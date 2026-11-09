@@ -309,6 +309,10 @@ services:
       - /tmp:size=16m
     cap_drop:
       - ALL
+    # Read the mounted secret files (mode 600, owned by the deploy user)
+    # without giving back any other capability.
+    cap_add:
+      - DAC_READ_SEARCH
     security_opt:
       - no-new-privileges:true
     healthcheck:
