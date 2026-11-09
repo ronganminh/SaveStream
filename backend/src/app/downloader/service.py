@@ -12,11 +12,12 @@ from typing import Any
 import httpx
 
 from app.domain.common.errors import ApplicationError
-from app.downloader import links
+from app.downloader import grants, links
 from app.downloader.chain import (
     DownloadsDisabled,
     NoProviderAnswer,
     PermissionUnknown,
+    Mode,
     ProviderChain,
     Resolved,
 )
@@ -28,6 +29,7 @@ from app.downloader.state import (
     MediaStore,
     RedisLike,
     blocklist_ready,
+    count_owner,
     count_resolve,
     ip_hash,
     is_blocked,
@@ -38,6 +40,8 @@ logger = logging.getLogger(__name__)
 TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 COVER_MAX_BYTES = 5 * 1024 * 1024
 FILE_PATH = "/v1/public/video-downloader/file/"
+OWNER_FILE_PATH = "/v1/public/video-downloader/owner/file/"
+OWNER_LIMIT_PER_HOUR = 60
 COVER_PATH = "/v1/public/video-downloader/cover/"
 
 TurnstileVerifier = Callable[[str, str], Awaitable[bool]]
@@ -155,10 +159,10 @@ class DownloaderService:
                 451,
             )
 
-    async def _resolve(self, link: links.VideoLink) -> Resolved:
+    async def _resolve(self, link: links.VideoLink, mode: Mode = "public") -> Resolved:
         assert link.video_id is not None
         try:
-            resolved = await self.chain.resolve(link.url, video_id=link.video_id, mode="public")
+            resolved = await self.chain.resolve(link.url, video_id=link.video_id, mode=mode)
         except VideoUnavailable as exc:
             raise _error(
                 "VIDEO_UNAVAILABLE",
@@ -188,10 +192,23 @@ class DownloaderService:
         return resolved
 
     async def _result(
-        self, resolved: Resolved, *, ip: str, turnstile_next: bool
+        self,
+        resolved: Resolved,
+        *,
+        ip: str,
+        turnstile_next: bool,
+        owner: grants.Grant | None = None,
     ) -> dict[str, Any]:
         info = resolved.info
         hashed = ip_hash(ip)
+        mode: Mode = "owner" if owner else "public"
+        extra: dict[str, Any] = {}
+        if owner:
+            extra = {
+                "user_id": owner.user_id,
+                "author_username": info.username,
+                "author_id": info.author_id,
+            }
         files = []
         for source in resolved.files:
             if (source.size_bytes or 0) > self.settings.max_bytes:
@@ -203,21 +220,25 @@ class DownloaderService:
                     filename=safe_filename(info.username, info.video_id, source.extension),
                     video_id=info.video_id,
                     kind="video",
-                    mode="public",
+                    mode=mode,
                     ip_hash=hashed,
                     size_bytes=source.size_bytes,
+                    **extra,
                 )
             )
+            label = "MP4"
+            if owner:
+                label = "MP4 (TikTok download)" if source.watermarked else "Original"
             files.append(
                 {
                     "kind": "video",
                     "format": "mp4",
-                    "label": "MP4",
+                    "label": label,
                     "watermarked": source.watermarked,
                     "width": source.width,
                     "height": source.height,
                     "size_bytes": source.size_bytes,
-                    "download_url": f"{FILE_PATH}{token}",
+                    "download_url": f"{OWNER_FILE_PATH if owner else FILE_PATH}{token}",
                 }
             )
         cover_url = None
@@ -229,13 +250,15 @@ class DownloaderService:
                     filename="cover.jpg",
                     video_id=info.video_id,
                     kind="cover",
-                    mode="public",
+                    mode=mode,
                     ip_hash=hashed,
+                    **extra,
                 )
             )
             cover_url = f"{COVER_PATH}{token}"
         logger.info(
-            "downloader resolved video_id=%s provider=%s files=%d",
+            "downloader resolved mode=%s video_id=%s provider=%s files=%d",
+            mode,
             info.video_id,
             info.provider,
             len(files),
@@ -256,14 +279,64 @@ class DownloaderService:
             "turnstile_required_next": turnstile_next,
         }
 
+    def _grant(self, token: str | None) -> grants.Grant:
+        try:
+            return grants.verify(self.settings.grant_secret, token)
+        except grants.InvalidGrant as exc:
+            raise _error(
+                "GRANT_INVALID",
+                "Your session for this download has expired. Please try again.",
+                403,
+            ) from exc
+
+    async def owner_resolve(self, raw_url: str, *, grant_token: str, ip: str) -> dict[str, Any]:
+        """A video from one of the signed-in user's verified channels: the
+        creator's download setting does not apply to their own videos."""
+        self.require_enabled()
+        grant = self._grant(grant_token)
+        quota = await count_owner(self.redis, grant.user_id, 3600)
+        if quota.count > OWNER_LIMIT_PER_HOUR:
+            raise _error(
+                "RATE_LIMITED",
+                "Too many downloads. Try again later.",
+                429,
+                retry_after_seconds=quota.retry_after_seconds,
+            )
+        try:
+            link = links.parse_link(raw_url)
+            if not link.is_short and not grant.owns(username=link.username, tiktok_id=None):
+                raise _not_yours()
+            link = await links.expand(link, self.http)
+        except links.InvalidLink as exc:
+            raise _error("INVALID_LINK", str(exc), 400) from exc
+        resolved = await self._resolve(link, mode="owner")
+        info = resolved.info
+        if not grant.owns(username=info.username, tiktok_id=info.author_id):
+            raise _not_yours()
+        return await self._result(resolved, ip=ip, turnstile_next=False, owner=grant)
+
     async def open_file(
-        self, token: str, *, ip: str, kind: str
+        self, token: str, *, ip: str, kind: str, grant_token: str | None = None
     ) -> tuple[MediaEntry, OpenMedia, Callable[[], None]]:
         """Check the token and open the media; the caller must call the
-        returned release function when the stream ends."""
+        returned release function when the stream ends. Owner files need a
+        fresh grant: the API re-checks ownership for every download."""
         self.require_enabled()
         entry = await self.store.get(token)
         if entry is None or entry.kind != kind or entry.ip_hash != ip_hash(ip):
+            raise _error(
+                "LINK_EXPIRED",
+                "This download link has expired. Paste the TikTok link again.",
+                410,
+            )
+        if entry.mode == "owner":
+            if kind == "video" or grant_token is not None:
+                grant = self._grant(grant_token)
+                if grant.user_id != entry.user_id or not grant.owns(
+                    username=entry.author_username, tiktok_id=entry.author_id
+                ):
+                    raise _not_yours()
+        elif grant_token is not None:
             raise _error(
                 "LINK_EXPIRED",
                 "This download link has expired. Paste the TikTok link again.",
@@ -312,6 +385,12 @@ async def stream_and_release(
         logger.info("downloader stream cut at the byte cap")
     finally:
         release()
+
+
+def _not_yours() -> ApplicationError:
+    return _error(
+        "NOT_YOUR_CHANNEL", "This video isn't from one of your verified channels.", 403
+    )
 
 
 def _noop() -> None:

@@ -70,3 +70,26 @@ class AdminVideoReportResponse(BaseModel):
 
 class AdminVideoReportListResponse(BaseModel):
     items: list[AdminVideoReportResponse]
+
+
+class OwnerChannel(BaseModel):
+    watch_id: str
+    username: str
+    display_name: str | None
+    avatar_url: str | None
+    verified: bool = True
+
+
+class OwnerChannelList(BaseModel):
+    items: list[OwnerChannel]
+
+
+class OwnerGrantRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    url: str = Field(min_length=1, max_length=2048)
+
+
+class OwnerGrantResponse(BaseModel):
+    grant: str
+    expires_in_seconds: int

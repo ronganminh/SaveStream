@@ -47,6 +47,8 @@ class MediaEntry:
     size_bytes: int | None = None
     user_id: str | None = None
     usernames: list[str] = field(default_factory=list)
+    author_username: str | None = None
+    author_id: str | None = None
 
 
 class MediaStore:
@@ -92,3 +94,12 @@ async def blocklist_ready(redis: RedisLike) -> bool:
 
 async def is_blocked(redis: RedisLike, video_id: str) -> bool:
     return bool(await redis.sismember(BLOCKLIST_KEY, video_id))
+
+
+async def count_owner(redis: RedisLike, user_id: str, window_seconds: int) -> ResolveQuota:
+    key = f"{PREFIX}:owner:{hashlib.sha256(user_id.encode()).hexdigest()[:32]}"
+    count = int(await redis.incr(key))
+    if count == 1:
+        await redis.expire(key, window_seconds)
+    ttl = int(await redis.ttl(key))
+    return ResolveQuota(count=count, retry_after_seconds=max(ttl, 0))

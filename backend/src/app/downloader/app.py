@@ -42,6 +42,11 @@ PREFIX = "/v1/public/video-downloader"
 NO_STORE = {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}
 
 
+class OwnerResolveRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+    grant: str = Field(min_length=1, max_length=4096)
+
+
 class ResolveRequest(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
     turnstile_token: str | None = Field(default=None, max_length=4096)
@@ -158,6 +163,37 @@ def create_app(
             # message instead of showing them a JSON error.
             return RedirectResponse(
                 f"{config.frontend_base_url}/video-downloader?expired=1", status_code=303
+            )
+        headers = {
+            **NO_STORE,
+            "Content-Disposition": f'attachment; filename="{entry.filename}"',
+        }
+        if media.size is not None:
+            headers["Content-Length"] = str(media.size)
+        return StreamingResponse(
+            stream_and_release(media, config.max_bytes, release),
+            media_type="video/mp4",
+            headers=headers,
+        )
+
+    @app.post(f"{PREFIX}/owner/resolve")
+    async def owner_resolve(payload: OwnerResolveRequest, request: Request) -> JSONResponse:
+        result = await svc(request).owner_resolve(
+            payload.url, grant_token=payload.grant, ip=ip_of(request)
+        )
+        return JSONResponse(result, headers=NO_STORE)
+
+    @app.get(f"{PREFIX}/owner/file/{{token}}", response_model=None)
+    async def owner_file(token: str, request: Request, grant: str = "") -> Response:
+        try:
+            entry, media, release = await svc(request).open_file(
+                token, ip=ip_of(request), kind="video", grant_token=grant or None
+            )
+        except ApplicationError as exc:
+            if exc.code not in {"LINK_EXPIRED", "GRANT_INVALID"}:
+                raise
+            return RedirectResponse(
+                f"{config.frontend_base_url}/my-videos?expired=1", status_code=303
             )
         headers = {
             **NO_STORE,

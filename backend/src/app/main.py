@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.errors import install_exception_handlers
 from app.api.middleware import GlobalRateLimitMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware
 from app.api.routes.admin import router as admin_router
+from app.api.routes.video_downloader import owner_router as video_downloader_owner_router
 from app.api.routes.video_downloader import router as video_downloader_router
 from app.api.routes.artifacts import router as artifacts_router
 from app.api.routes.auth import router as auth_router
@@ -120,6 +121,7 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
     app.include_router(public_router)
     app.include_router(reports_router)
     app.include_router(video_downloader_router)
+    app.include_router(video_downloader_owner_router)
     app.include_router(partners_public_router)
     app.include_router(partners_admin_router)
     app.include_router(billing_router)
