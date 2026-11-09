@@ -43,6 +43,18 @@ if [[ -n "$secrets_dir" && ! -s "$secrets_dir/media_signing_secret" ]]; then
   log "Creating media_signing_secret"
   (umask 077; openssl rand -hex 32 > "$secrets_dir/media_signing_secret")
 fi
+# Video downloader: a random grant key shared by the API and the downloader,
+# and the egress proxy URL, which stays empty (downloader off) until the owner
+# writes it. Never printed.
+if [[ -n "$secrets_dir" ]]; then
+  if [[ ! -s "$secrets_dir/video_downloader_grant_secret" ]]; then
+    log "Creating video_downloader_grant_secret"
+    (umask 077; openssl rand -hex 32 > "$secrets_dir/video_downloader_grant_secret")
+  fi
+  if [[ ! -e "$secrets_dir/video_downloader_proxy_url" ]]; then
+    (umask 077; : > "$secrets_dir/video_downloader_proxy_url")
+  fi
+fi
 
 log "Revision $(git rev-parse --short HEAD) on $(git branch --show-current)"
 

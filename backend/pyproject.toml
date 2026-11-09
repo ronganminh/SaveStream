@@ -32,6 +32,9 @@ dependencies = [
   "requests==2.32.5",
   "SQLAlchemy==2.0.54",
   "uvicorn==0.34.3",
+  # Video downloader extractor (Unlicense, no dependencies). Keep it on the
+  # latest release: TikTok changes break older versions.
+  "yt-dlp==2026.10.26",
 ]
 
 [project.scripts]
