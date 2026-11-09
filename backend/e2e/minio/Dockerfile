@@ -2,7 +2,8 @@ FROM golang:1.23-alpine AS build
 
 ARG MINIO_RELEASE=RELEASE.2024-05-28T17-19-04Z
 
-RUN CGO_ENABLED=0 go install "github.com/minio/minio@${MINIO_RELEASE}"
+RUN apk add --no-cache git \
+    && CGO_ENABLED=0 go install "github.com/minio/minio@${MINIO_RELEASE}"
 
 FROM alpine:3.20
 
