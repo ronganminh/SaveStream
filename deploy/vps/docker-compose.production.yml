@@ -259,6 +259,62 @@ services:
       api:
         condition: service_healthy
 
+  # Public TikTok video downloader (web "Free tools"). Its own container with
+  # hard CPU/RAM limits and only the secrets it needs (no database, storage,
+  # JWT or mail credentials). Off unless SAVESTREAM_VIDEO_DOWNLOADER_ENABLED is
+  # true AND a proxy URL gives it its own outbound IP: without one it refuses
+  # to enable, so it never shares the IP LIVE recording uses. Files stream
+  # straight through; nothing is stored. nginx routes only
+  # /v1/public/video-downloader/ here (see nginx-production.conf.example).
+  downloader:
+    build:
+      context: ../../backend
+    restart: unless-stopped
+    command:
+      - uvicorn
+      - app.downloader.app:app
+      - --host=0.0.0.0
+      - --port=8000
+      - --workers=1
+      - --no-server-header
+    environment:
+      SAVESTREAM_ENVIRONMENT: production
+      SAVESTREAM_LOG_FORMAT: json
+      SAVESTREAM_LOG_LEVEL: INFO
+      SAVESTREAM_REDIS_URL_FILE: /run/secrets/redis_url
+      SAVESTREAM_TRUSTED_PROXY_CIDRS: ${SAVESTREAM_TRUSTED_PROXY_CIDRS:?set trusted proxy CIDRs}
+      SAVESTREAM_VIDEO_DOWNLOADER_ENABLED: ${SAVESTREAM_VIDEO_DOWNLOADER_ENABLED:-false}
+      SAVESTREAM_VIDEO_DOWNLOADER_PROXY_URL_FILE: /run/secrets/video_downloader_proxy_url
+      SAVESTREAM_VIDEO_DOWNLOADER_GRANT_SECRET_FILE: /run/secrets/video_downloader_grant_secret
+      SAVESTREAM_TURNSTILE_SECRET_KEY: ${SAVESTREAM_TURNSTILE_SECRET_KEY:-}
+    secrets:
+      - redis_url
+      - video_downloader_proxy_url
+      - video_downloader_grant_secret
+    ports:
+      - "127.0.0.1:${SAVESTREAM_DOWNLOADER_BIND_PORT:-18011}:8000"
+    cpus: "0.5"
+    mem_limit: 512m
+    pids_limit: 256
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -341,3 +397,9 @@ secrets:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/push_fcm_service_account_json
   google_play_service_account_json:
     file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/google_play_service_account_json
+  # Video downloader: created by deploy.sh if missing. The proxy URL file stays
+  # empty until the owner adds the downloader's egress proxy.
+  video_downloader_proxy_url:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/video_downloader_proxy_url
+  video_downloader_grant_secret:
+    file: ${SAVESTREAM_SECRETS_DIR:?set production secrets dir}/video_downloader_grant_secret
