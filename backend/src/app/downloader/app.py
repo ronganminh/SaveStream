@@ -116,7 +116,9 @@ def create_app(
             # Authorization when signed in; the downloader ignores it).
             allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
             expose_headers=["Retry-After", "Content-Disposition", "X-Request-ID"],
-            allow_credentials=False,
+            # The website's API client uses credentials: "include". Origins
+            # are an explicit list; the downloader ignores cookies.
+            allow_credentials=True,
             max_age=600,
         )
     if service is not None:
