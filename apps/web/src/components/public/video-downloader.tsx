@@ -17,7 +17,7 @@ import {
 import { ApiError } from "@/api/errors";
 import { videoDownloaderApi } from "@/api/video-downloader";
 import { useAuth } from "@/auth/auth-context";
-import { PublicFrame } from "@/components/public/guides-pages";
+import { JsonLd, PublicFrame } from "@/components/public/guides-pages";
 import { TurnstileWidget } from "@/components/public/turnstile";
 import { Button } from "@/components/ui/button";
 import { usePublicPricingData } from "@/hooks/use-domain-data";
@@ -25,11 +25,14 @@ import { useVideoDownloaderStatus } from "@/hooks/use-video-downloader";
 import { apiBaseUrl } from "@/lib/app-config";
 import { helpVariables } from "@/lib/help-content";
 import { turnstileSiteKey } from "@/lib/turnstile";
+import { PUBLIC_SITE_URL } from "@/lib/route-metadata";
 import { cn } from "@/lib/utils";
 import {
   DOWNLOADER_NOTICE,
   DOWNLOADS_ALLOWED_LINE,
-  FILE_RETENTION_ANSWER,
+  freeToolsVisible,
+  VIDEO_DOWNLOADER_FAQ,
+  videoDownloaderStructuredData,
   INVALID_LINK_STATE,
   LINK_EXPIRED_STATE,
   TOOL_OFF_BODY,
@@ -335,7 +338,7 @@ function PublicDownloadButton({
 }
 
 export function VideoDownloaderPage({ expired = false }: { expired?: boolean }) {
-  const { enabled, loading } = useVideoDownloaderStatus();
+  const { status, loading } = useVideoDownloaderStatus();
   const [url, setUrl] = useState("");
   const [phase, setPhase] = useState<Phase>(
     expired ? { kind: "error", error: LINK_EXPIRED_STATE } : { kind: "idle" },
@@ -409,6 +412,7 @@ export function VideoDownloaderPage({ expired = false }: { expired?: boolean }) 
 
   return (
     <PublicFrame>
+      <JsonLd data={videoDownloaderStructuredData(PUBLIC_SITE_URL)} />
       <div className="relative">
         <div aria-hidden className="hero-glow" />
         <main className="relative mx-auto flex max-w-[980px] flex-col gap-7 px-4 pt-16 sm:px-6">
@@ -422,9 +426,9 @@ export function VideoDownloaderPage({ expired = false }: { expired?: boolean }) 
             </p>
           </header>
 
-          {loading ? (
-            <div className={cn(card, "h-[82px] animate-pulse")} aria-busy="true" />
-          ) : !enabled ? (
+          {/* Rendered on the server and while the status loads (search engines
+              see the tool); replaced by the notice if the tool is switched off. */}
+          {!freeToolsVisible(status, loading) ? (
             <ToolOffNotice />
           ) : (
             <>
@@ -594,16 +598,10 @@ function DownloaderInfo() {
       body: "Press Download MP4 to save the video the creator made available.",
     },
   ];
-  const faqs: { q: string; a: ReactNode }[] = [
-    { q: "Is it free? Do I need an account?", a: "Yes, it’s free and you don’t need to sign in." },
-    {
-      q: "Which videos can I download?",
-      a: "Public videos where the creator allows downloads. If a creator has turned downloads off, we respect that and won’t fetch the video.",
-    },
-    { q: "Do you keep copies of the videos?", a: FILE_RETENTION_ANSWER },
-    {
-      q: "How do I ask for a video to be removed?",
-      a: (
+  const faqs: { q: string; a: ReactNode }[] = VIDEO_DOWNLOADER_FAQ.map((item) => ({
+    q: item.question,
+    a:
+      item.question === "How do I ask for a video to be removed?" ? (
         <>
           Use the{" "}
           <Link to={REPORT_PATH} className="font-semibold text-accent-ink hover:underline">
@@ -611,13 +609,10 @@ function DownloaderInfo() {
           </Link>
           . We block links we receive valid requests for.
         </>
+      ) : (
+        item.answer
       ),
-    },
-    {
-      q: "Is SaveStream affiliated with TikTok?",
-      a: "No. SaveStream is an independent service and is not affiliated with TikTok or ByteDance.",
-    },
-  ];
+  }));
   return (
     <>
       <section className="flex flex-col gap-4" aria-labelledby="vd-how">

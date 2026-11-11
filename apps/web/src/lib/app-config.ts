@@ -111,6 +111,8 @@ export const PUBLIC_INDEXABLE_PATHS: readonly string[] = [
   "/copyright",
   "/refund",
   "/report",
+  "/video-downloader",
+  "/video-downloader/report",
   "/partners/apply",
   "/delete-account",
 ];

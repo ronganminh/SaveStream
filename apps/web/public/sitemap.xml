@@ -5,12 +5,14 @@
   <url><loc>https://savestream.online/status</loc></url>
   <url><loc>https://savestream.online/help</loc></url>
   <url><loc>https://savestream.online/contact</loc></url>
-  <url><loc>https://savestream.online/terms</loc></url>
-  <url><loc>https://savestream.online/privacy</loc></url>
-  <url><loc>https://savestream.online/acceptable-use</loc></url>
-  <url><loc>https://savestream.online/copyright</loc></url>
+  <url><loc>https://savestream.online/terms</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://savestream.online/privacy</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://savestream.online/acceptable-use</loc><lastmod>2026-11-09</lastmod></url>
+  <url><loc>https://savestream.online/copyright</loc><lastmod>2026-11-09</lastmod></url>
   <url><loc>https://savestream.online/refund</loc></url>
   <url><loc>https://savestream.online/report</loc></url>
+  <url><loc>https://savestream.online/video-downloader</loc><lastmod>2026-11-11</lastmod></url>
+  <url><loc>https://savestream.online/video-downloader/report</loc><lastmod>2026-11-11</lastmod></url>
   <url><loc>https://savestream.online/partners/apply</loc></url>
   <url><loc>https://savestream.online/delete-account</loc></url>
   <url><loc>https://savestream.online/help/acceptable-use</loc></url>
