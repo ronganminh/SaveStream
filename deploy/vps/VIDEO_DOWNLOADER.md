@@ -39,17 +39,23 @@ downloadable file. It runs in its own container (`downloader` in
    creates this file empty, and creates `video_downloader_grant_secret` with a
    random value; never print or commit either.
 
-2. **nginx.** Add the `location /v1/public/video-downloader/` block from
-   `nginx-production.conf.example` to the API server block, then
-   `sudo nginx -t && sudo systemctl reload nginx`.
+2. **nginx.** On the VPS, as root:
+   `sudo bash deploy/vps/nginx-video-downloader.sh`. It adds the
+   `location /v1/public/video-downloader/` block (as in
+   `nginx-production.conf.example`) to `/etc/nginx/sites-available/savestream-api`
+   before the API's `location /`, keeps a backup, runs `nginx -t` (restoring the
+   backup if it fails) and reloads nginx gracefully. Running it again does
+   nothing.
 
 3. **Turnstile (recommended).** In `deploy/vps/production.env` set
    `SAVESTREAM_TURNSTILE_SECRET_KEY=...` (Cloudflare Turnstile secret). Without
    it the tool stops at 5 checks per hour per IP instead of asking for a check.
 
-4. **Flag.** In `deploy/vps/production.env` set
-   `SAVESTREAM_VIDEO_DOWNLOADER_ENABLED=true`, then run the Deploy Backend
-   workflow (it drains the recorder as usual).
+4. **Flag.** The production compose file turns the tool on
+   (`SAVESTREAM_VIDEO_DOWNLOADER_ENABLED` defaults to `true` since 2026-11-11).
+   To switch it off, set `SAVESTREAM_VIDEO_DOWNLOADER_ENABLED=false` in
+   `deploy/vps/production.env` and run Deploy Backend. Without the proxy URL it
+   stays off in production anyway (startup guard).
 
 5. Check `curl https://api.savestream.online/v1/public/video-downloader/status`
    shows `"enabled": true`. If it stays false, `docker compose logs downloader`

@@ -74,7 +74,7 @@ x-app-env: &app-env
 
   # "Download my videos" (owner downloads): the API signs 60-second grants the
   # downloader container verifies. Same flag as the downloader service.
-  SAVESTREAM_VIDEO_DOWNLOADER_ENABLED: ${SAVESTREAM_VIDEO_DOWNLOADER_ENABLED:-false}
+  SAVESTREAM_VIDEO_DOWNLOADER_ENABLED: ${SAVESTREAM_VIDEO_DOWNLOADER_ENABLED:-true}
   SAVESTREAM_VIDEO_DOWNLOADER_GRANT_SECRET_FILE: /run/secrets/video_downloader_grant_secret
 
   # Web checkout supports PayPal Business. Keep disabled until LIVE credentials
@@ -291,7 +291,7 @@ services:
       SAVESTREAM_TRUSTED_PROXY_CIDRS: ${SAVESTREAM_TRUSTED_PROXY_CIDRS:?set trusted proxy CIDRs}
       SAVESTREAM_CORS_ALLOW_ORIGINS: ${SAVESTREAM_CORS_ALLOW_ORIGINS:-https://savestream.online,https://www.savestream.online}
       SAVESTREAM_FRONTEND_BASE_URL: ${SAVESTREAM_FRONTEND_ORIGIN:-https://savestream.online}
-      SAVESTREAM_VIDEO_DOWNLOADER_ENABLED: ${SAVESTREAM_VIDEO_DOWNLOADER_ENABLED:-false}
+      SAVESTREAM_VIDEO_DOWNLOADER_ENABLED: ${SAVESTREAM_VIDEO_DOWNLOADER_ENABLED:-true}
       SAVESTREAM_VIDEO_DOWNLOADER_PROXY_URL_FILE: /run/secrets/video_downloader_proxy_url
       SAVESTREAM_VIDEO_DOWNLOADER_GRANT_SECRET_FILE: /run/secrets/video_downloader_grant_secret
       SAVESTREAM_TURNSTILE_SECRET_KEY: ${SAVESTREAM_TURNSTILE_SECRET_KEY:-}
