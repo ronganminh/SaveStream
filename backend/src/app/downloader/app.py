@@ -112,8 +112,10 @@ def create_app(
             CORSMiddleware,
             allow_origins=list(config.cors_allow_origins),
             allow_methods=["GET", "POST"],
-            allow_headers=["Content-Type"],
-            expose_headers=["Retry-After", "Content-Disposition"],
+            # The website's API client always sends X-Request-ID (and
+            # Authorization when signed in; the downloader ignores it).
+            allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+            expose_headers=["Retry-After", "Content-Disposition", "X-Request-ID"],
             allow_credentials=False,
             max_age=600,
         )
