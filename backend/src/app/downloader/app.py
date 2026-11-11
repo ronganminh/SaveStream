@@ -24,6 +24,8 @@ from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 
 from app.api.errors import install_exception_handlers
+from app.api.robots import NoIndexMiddleware
+from app.api.robots import router as robots_router
 from app.api.middleware import client_ip
 from app.downloader.chain import ProviderChain
 from app.downloader.config import DownloaderSettings, log_startup_state
@@ -107,6 +109,8 @@ def create_app(
         openapi_url=None,
     )
     install_exception_handlers(app)
+    app.add_middleware(NoIndexMiddleware)
+    app.include_router(robots_router)
     if config.cors_allow_origins:
         app.add_middleware(
             CORSMiddleware,
