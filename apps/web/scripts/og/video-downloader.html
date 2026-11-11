@@ -1,0 +1,230 @@
+<!doctype html>
+<!--
+  Share image for /video-downloader (and its report page), 1200×630.
+  Rendered to public/og/video-downloader.png by scripts/render-og.mjs.
+  Brand: SaveStream mark (public/savestream-mark.svg), primary #6D4AFF,
+  Plus Jakarta Sans (the site font; files from apps/mobile/assets/fonts).
+  No TikTok logo or artwork; copy matches the page (creator allows downloads).
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @font-face {
+        font-family: "Jakarta";
+        font-weight: 500;
+        src: url("../../../mobile/assets/fonts/PlusJakartaSans-Medium.ttf");
+      }
+      @font-face {
+        font-family: "Jakarta";
+        font-weight: 700;
+        src: url("../../../mobile/assets/fonts/PlusJakartaSans-Bold.ttf");
+      }
+      @font-face {
+        font-family: "Jakarta";
+        font-weight: 800;
+        src: url("../../../mobile/assets/fonts/PlusJakartaSans-ExtraBold.ttf");
+      }
+      :root {
+        --primary: #6d4aff;
+        --ink: #15122b;
+        --muted: #56526f;
+        --subtle: #eee9ff;
+        --bg: #fbfafe;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+      }
+      body {
+        font-family: "Jakarta", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        position: relative;
+        overflow: hidden;
+      }
+      .glow {
+        position: absolute;
+        width: 760px;
+        height: 760px;
+        right: -170px;
+        top: -150px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, rgba(109, 74, 255, 0.2), rgba(109, 74, 255, 0));
+      }
+      .brand {
+        position: absolute;
+        left: 80px;
+        top: 64px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-weight: 700;
+        font-size: 30px;
+        letter-spacing: -0.01em;
+      }
+      .brand svg {
+        width: 52px;
+        height: 52px;
+      }
+      .eyebrow {
+        position: absolute;
+        left: 80px;
+        top: 192px;
+        font-weight: 800;
+        font-size: 20px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--primary);
+      }
+      h1 {
+        position: absolute;
+        left: 78px;
+        top: 228px;
+        width: 640px;
+        font-weight: 800;
+        font-size: 84px;
+        line-height: 1.02;
+        letter-spacing: -0.04em;
+      }
+      .sub {
+        position: absolute;
+        left: 80px;
+        top: 432px;
+        width: 620px;
+        font-weight: 500;
+        font-size: 30px;
+        line-height: 1.32;
+        color: var(--muted);
+      }
+      .foot {
+        position: absolute;
+        left: 80px;
+        right: 80px;
+        bottom: 44px;
+        display: flex;
+        justify-content: space-between;
+        font-weight: 500;
+        font-size: 20px;
+        color: var(--muted);
+      }
+      .foot b {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      /* Generic illustration: a video card with a download arrow (no third-party marks). */
+      .card {
+        position: absolute;
+        right: 96px;
+        top: 118px;
+        width: 300px;
+        height: 392px;
+        border-radius: 36px;
+        background: linear-gradient(160deg, #8a6cff 0%, #6d4aff 55%, #5330f0 100%);
+        box-shadow: 0 40px 80px -30px rgba(83, 48, 240, 0.55);
+      }
+      .play {
+        position: absolute;
+        left: 50%;
+        top: 42%;
+        width: 104px;
+        height: 104px;
+        margin: -52px 0 0 -52px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .play::after {
+        content: "";
+        position: absolute;
+        left: 41px;
+        top: 31px;
+        border-style: solid;
+        border-width: 21px 0 21px 34px;
+        border-color: transparent transparent transparent #fff;
+      }
+      .bar {
+        position: absolute;
+        left: 32px;
+        right: 32px;
+        bottom: 34px;
+        height: 10px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.28);
+      }
+      .bar::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 58%;
+        border-radius: 5px;
+        background: #fff;
+      }
+      .dl {
+        position: absolute;
+        right: 64px;
+        top: 420px;
+        width: 116px;
+        height: 116px;
+        border-radius: 30px;
+        background: #fff;
+        box-shadow: 0 24px 50px -20px rgba(21, 18, 43, 0.35);
+        display: grid;
+        place-items: center;
+      }
+      .dl svg {
+        width: 58px;
+        height: 58px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="#6D4AFF" />
+        <circle cx="12.5" cy="16" r="4" fill="#fff" />
+        <path
+          d="M19 10.5a8 8 0 0 1 0 11M22.5 7.5a12.5 12.5 0 0 1 0 17"
+          stroke="#fff"
+          stroke-width="2.2"
+          fill="none"
+          stroke-linecap="round"
+        />
+      </svg>
+      SaveStream
+    </div>
+    <div class="eyebrow">Free tool · no sign-up</div>
+    <h1>Download a TikTok video</h1>
+    <p class="sub">Public videos, when the creator allows downloads – free, no sign-up</p>
+    <div class="card">
+      <div class="play"></div>
+      <div class="bar"></div>
+    </div>
+    <div class="dl">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#6D4AFF"
+        stroke-width="2.4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 4v11" />
+        <path d="m7 10.5 5 5 5-5" />
+        <path d="M5 20h14" />
+      </svg>
+    </div>
+    <div class="foot">
+      <span><b>savestream.online</b>/video-downloader</span
+      ><span>Not affiliated with TikTok or ByteDance</span>
+    </div>
+  </body>
+</html>

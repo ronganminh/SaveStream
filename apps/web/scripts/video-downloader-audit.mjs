@@ -396,11 +396,34 @@ await test("page is indexable, in the sitemap, with JSON-LD and compliant copy",
     assert.ok(!copy.includes(banned), `SEO copy must not say "${banned}"`);
   }
   const route = read("src/routes/video-downloader.tsx");
+  assert.ok(route.includes('"Free TikTok video downloader"'));
+  assert.ok(route.includes("VIDEO_DOWNLOADER_DESCRIPTION,"));
+});
+await test("share image: own 1200×630 PNG under 200 KB, used by both pages", () => {
+  const png = fs.readFileSync(path.join(root, "public/og/video-downloader.png"));
+  assert.equal(png.subarray(1, 4).toString(), "PNG");
+  assert.equal(png.readUInt32BE(16), 1200);
+  assert.equal(png.readUInt32BE(20), 630);
+  assert.ok(png.length < 200 * 1024, `video-downloader.png is ${png.length} bytes`);
+  for (const file of [
+    "src/routes/video-downloader.tsx",
+    "src/routes/video-downloader_.report.tsx",
+  ]) {
+    assert.match(
+      read(file),
+      /"video-downloader",\s*\),/,
+      `${file} uses the downloader share image`,
+    );
+  }
+  const meta = read("src/lib/route-metadata.ts");
   assert.ok(
-    route.includes(
-      'publicMeta("/video-downloader", "Free TikTok video downloader", VIDEO_DOWNLOADER_DESCRIPTION)',
-    ),
+    meta.includes('property: "og:image:alt"') && meta.includes('name: "twitter:image:alt"'),
   );
+  const source = read("scripts/og/video-downloader.html").toLowerCase();
+  for (const banned of ["watermark", "any video", "bypass", "private"]) {
+    assert.ok(!source.includes(banned), `share image must not say "${banned}"`);
+  }
+  assert.ok(source.includes("not affiliated with tiktok or bytedance"));
 });
 await test("routes and links", () => {
   assert.ok(

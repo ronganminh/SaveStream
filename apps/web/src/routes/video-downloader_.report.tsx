@@ -12,6 +12,7 @@ export const Route = createFileRoute("/video-downloader_/report")({
       "/video-downloader/report",
       "Video downloader: report / copyright removal",
       "Creators and rights holders: ask for a TikTok video to be blocked in the SaveStream video downloader.",
+      "video-downloader",
     ),
   component: VideoDownloaderReportRoute,
 });

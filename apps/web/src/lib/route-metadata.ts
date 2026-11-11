@@ -4,8 +4,17 @@ export const PUBLIC_SITE_URL = (
   import.meta.env["VITE_PUBLIC_SITE_URL"] || "https://savestream.online"
 ).replace(/\/$/, "");
 
-/** 1200×630 share images in public/og (see docs/redesign). */
-export type SocialImage = "home" | "pricing" | "help";
+/** 1200×630 share images in public/og (see docs/redesign; the downloader's is
+ * rendered from scripts/og/video-downloader.html by scripts/render-og.mjs). */
+export type SocialImage = "home" | "pricing" | "help" | "video-downloader";
+
+const SOCIAL_IMAGE_ALT: Record<SocialImage, string> = {
+  home: "SaveStream: automatic cloud recording for TikTok LIVE",
+  pricing: "SaveStream pricing",
+  help: "SaveStream help center",
+  "video-downloader":
+    "SaveStream free tool: download a public TikTok video when the creator allows downloads",
+};
 
 /** Every page title is "<Page name> | SaveStream" (the same in og:/twitter:title). */
 export function pageTitle(name: string) {
@@ -30,10 +39,13 @@ const baseMeta = (
     { property: "og:image", content: imageUrl },
     { property: "og:image:width", content: "1200" },
     { property: "og:image:height", content: "630" },
+    { property: "og:image:type", content: "image/png" },
+    { property: "og:image:alt", content: SOCIAL_IMAGE_ALT[image] },
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: heading },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: imageUrl },
+    { name: "twitter:image:alt", content: SOCIAL_IMAGE_ALT[image] },
   ];
 };
 
