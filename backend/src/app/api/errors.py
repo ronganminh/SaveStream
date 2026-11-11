@@ -8,6 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from app.api.robots import X_ROBOTS_TAG
 from app.domain.common.errors import ApplicationError
 
 logger = logging.getLogger("savestream.api")
@@ -39,9 +40,10 @@ def error_response(
     retryable: bool = False,
     details: Mapping[str, Any] | None = None,
 ) -> JSONResponse:
+    headers = {"X-Robots-Tag": X_ROBOTS_TAG, **(retry_after_headers(status_code, details) or {})}
     return JSONResponse(
         status_code=status_code,
-        headers=retry_after_headers(status_code, details),
+        headers=headers,
         content={
             "error": {
                 "code": code,

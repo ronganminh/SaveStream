@@ -11,6 +11,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.errors import install_exception_handlers
 from app.api.middleware import GlobalRateLimitMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware
+from app.api.robots import NoIndexMiddleware
+from app.api.robots import router as robots_router
 from app.api.routes.admin import router as admin_router
 from app.api.routes.video_downloader import owner_router as video_downloader_owner_router
 from app.api.routes.video_downloader import router as video_downloader_router
@@ -101,11 +103,13 @@ def create_app(settings: AppSettings | None = None) -> FastAPI:
         max_age=7200,
     )
     app.add_middleware(SecurityHeadersMiddleware, settings=cfg)
+    app.add_middleware(NoIndexMiddleware)
     app.add_middleware(GlobalRateLimitMiddleware, settings=cfg)
     app.add_middleware(MetricsMiddleware, registry=metrics_registry)
     app.add_middleware(RequestIdMiddleware, header_name=cfg.request_id_header)
     app.state.metrics_registry = metrics_registry
     install_exception_handlers(app)
+    app.include_router(robots_router)
     app.include_router(health_router)
     app.include_router(auth_router)
     app.include_router(users_router)
