@@ -5,8 +5,10 @@
 //   VDDisabled, VDRate with a countdown, VDGeneric, …);
 // - the public result offers ONE "Download MP4" (TikTok's own file): no MP3,
 //   no quality picker, and no "watermark" claims anywhere;
-// - the Free tools nav links are hidden while the tool is switched off, and the
-//   page stays out of the sitemap / noindex;
+// - the Free tools nav links and the tool are server-rendered (so search
+//   engines see them) and hidden once the status says the tool is off;
+// - the page is indexable, in the sitemap, with JSON-LD (WebApplication,
+//   FAQPage from the visible FAQ, BreadcrumbList) and compliant copy;
 // - "Download my videos" asks for a fresh grant before every owner resolve
 //   and every owner file download.
 //
@@ -60,6 +62,10 @@ const {
   ownerDownloads,
   publicDownloadLabel,
   showFreeToolsNav,
+  freeToolsVisible,
+  VIDEO_DOWNLOADER_FAQ,
+  VIDEO_DOWNLOADER_DESCRIPTION,
+  videoDownloaderStructuredData,
   downloaderEnabled,
   looksLikeTikTokLink,
   formatCountdown,
@@ -276,7 +282,10 @@ await test("copy: notice, FAQ retention and report response time", () => {
     "We don't store videos. They stream straight from TikTok to you.",
   );
   assert.equal(REPORT_RESPONSE_TIME, "within 3 business days");
-  assert.ok(read(PAGE).includes("FILE_RETENTION_ANSWER"));
+  assert.ok(
+    VIDEO_DOWNLOADER_FAQ.some((item) => item.answer === FILE_RETENTION_ANSWER),
+    "the FAQ (page + FAQPage) uses the retention answer",
+  );
   assert.ok(read(REPORT).includes("REPORT_RESPONSE_TIME"));
 });
 await test("asset URLs are prefixed with the API base", () => {
@@ -301,32 +310,97 @@ await test("Free tools nav is hidden unless status says enabled:true", () => {
 await test("header and footer gate the Free tools links on the status", () => {
   const pages = "src/components/app-pages.tsx";
   const header = block(pages, "export function PublicHeader()", "function formatSampleDuration(");
-  assert.ok(header.includes("showFreeToolsNav(useVideoDownloaderStatus().status)"));
+  assert.ok(header.includes("freeToolsVisible(downloader.status, downloader.loading)"));
   const gated = header.split("{showFreeTools && (");
   assert.equal(gated.length, 3, "desktop nav and mobile sheet are both gated");
   assert.ok(!gated[0].includes("freeToolLinks"), "no ungated Free tools link");
   const footer = block(pages, "export function PublicFooter()", "const channelStates = [");
-  assert.ok(footer.includes("showFreeToolsNav(useVideoDownloaderStatus().status)"));
+  assert.ok(footer.includes("freeToolsVisible(downloader.status, downloader.loading)"));
   const beforeGate = footer.slice(0, footer.indexOf("if (showFreeTools)"));
   assert.ok(!beforeGate.includes("/video-downloader"), "footer link outside the gate");
   assert.ok(footer.includes('["/video-downloader/report",'));
 });
-await test("status hook treats errors and loading as off", () => {
+await test("server render and loading show the tool; off or failed status hides it", () => {
+  assert.equal(freeToolsVisible(undefined, true), true, "SSR / status loading");
+  assert.equal(freeToolsVisible({ enabled: true }, false), true);
+  assert.equal(freeToolsVisible({ enabled: false }, false), false);
+  assert.equal(freeToolsVisible(null, false), false, "status request failed / 404");
+  assert.ok(read(PAGE).includes("!freeToolsVisible(status, loading) ? ("));
+});
+await test("status hook treats errors as off", () => {
   const hook = read("src/hooks/use-video-downloader.ts");
   assert.ok(hook.includes("downloaderEnabled(query.data)"));
   assert.ok(hook.includes("retry: false"));
   assert.ok(read(PAGE).includes("<ToolOffNotice"));
   assert.equal(TOOL_OFF_TITLE, "This tool isn't available right now");
 });
-await test("page is noindex and not in the static sitemap", () => {
+await test("page is indexable, in the sitemap, with JSON-LD and compliant copy", () => {
   const config = read("src/lib/app-config.ts");
   const indexable = block("src/lib/app-config.ts", "PUBLIC_INDEXABLE_PATHS", "];");
-  assert.ok(!indexable.includes("/video-downloader"));
-  assert.ok(!read("public/sitemap.xml").includes("/video-downloader"));
-  assert.ok(
-    read("src/routes/video-downloader.tsx").includes('publicMeta(\n      "/video-downloader"'),
+  assert.ok(indexable.includes('"/video-downloader"'));
+  assert.ok(indexable.includes('"/video-downloader/report"'));
+  const sitemap = read("public/sitemap.xml");
+  assert.match(
+    sitemap,
+    /<loc>https:\/\/savestream\.online\/video-downloader<\/loc><lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/,
   );
+  assert.match(
+    sitemap,
+    /<loc>https:\/\/savestream\.online\/video-downloader\/report<\/loc><lastmod>/,
+  );
+  assert.ok(!sitemap.includes("/my-videos") && !sitemap.includes("/admin"));
   assert.ok(config.includes('"/my-videos"'), "/my-videos needs a session");
+  assert.ok(read("public/robots.txt").includes("Disallow: /my-videos"));
+  assert.ok(read("public/robots.txt").includes("Sitemap: https://savestream.online/sitemap.xml"));
+
+  const data = videoDownloaderStructuredData("https://savestream.online");
+  const types = data["@graph"].map((node) => node["@type"]);
+  assert.deepEqual(types, ["WebApplication", "FAQPage", "BreadcrumbList"]);
+  const app = data["@graph"][0];
+  assert.equal(app.isAccessibleForFree, true);
+  assert.equal(app.offers.price, "0");
+  assert.equal(app.url, "https://savestream.online/video-downloader");
+  const faq = data["@graph"][1].mainEntity;
+  assert.deepEqual(
+    faq.map((q) => q.name),
+    VIDEO_DOWNLOADER_FAQ.map((q) => q.question),
+    "FAQPage = the FAQ shown on the page",
+  );
+  assert.ok(read(PAGE).includes("VIDEO_DOWNLOADER_FAQ.map("));
+  assert.ok(
+    read(PAGE).includes("<JsonLd data={videoDownloaderStructuredData(PUBLIC_SITE_URL)} />"),
+  );
+  const crumbs = data["@graph"][2].itemListElement;
+  assert.deepEqual(
+    crumbs.map((c) => [c.position, c.name]),
+    [
+      [1, "Home"],
+      [2, "Video downloader"],
+    ],
+  );
+  assert.ok(
+    read("src/routes/video-downloader_.report.tsx").includes("breadcrumbData(PUBLIC_SITE_URL"),
+  );
+
+  const copy = [VIDEO_DOWNLOADER_DESCRIPTION, JSON.stringify(data)].join(" ").toLowerCase();
+  assert.ok(VIDEO_DOWNLOADER_DESCRIPTION.includes("when its creator allows downloads"));
+  assert.ok(VIDEO_DOWNLOADER_DESCRIPTION.includes("Not affiliated with TikTok or ByteDance"));
+  for (const banned of [
+    "watermark",
+    "any video",
+    "any tiktok",
+    "private video",
+    "bypass",
+    "anyone",
+  ]) {
+    assert.ok(!copy.includes(banned), `SEO copy must not say "${banned}"`);
+  }
+  const route = read("src/routes/video-downloader.tsx");
+  assert.ok(
+    route.includes(
+      'publicMeta("/video-downloader", "Free TikTok video downloader", VIDEO_DOWNLOADER_DESCRIPTION)',
+    ),
+  );
 });
 await test("routes and links", () => {
   assert.ok(

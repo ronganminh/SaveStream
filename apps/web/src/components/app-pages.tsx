@@ -9,7 +9,7 @@ import {
   useUpdateNotificationPreferencesMutation,
 } from "@/hooks/use-notifications";
 import { useVideoDownloaderStatus } from "@/hooks/use-video-downloader";
-import { showFreeToolsNav } from "@/lib/video-downloader";
+import { freeToolsVisible } from "@/lib/video-downloader";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -286,13 +286,15 @@ const publicLinks = [
 ] as const;
 const navLinkClass =
   "rounded-[10px] px-2.5 py-2 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground";
-/** "Free tools" in the public header/footer; hidden while the downloader is switched off. */
+/** "Free tools" in the public header/footer: rendered on the server and while the
+ * status loads (so crawlers see the link), hidden once the status says it is off. */
 const freeToolLinks = [{ to: "/video-downloader", label: "Video downloader" }] as const;
 export function PublicHeader() {
   const { t } = usePreferences();
   const { status } = useAuth();
   const authenticated = status === "authenticated";
-  const showFreeTools = showFreeToolsNav(useVideoDownloaderStatus().status);
+  const downloader = useVideoDownloaderStatus();
+  const showFreeTools = freeToolsVisible(downloader.status, downloader.loading);
   return (
     <header className="fixed inset-x-0 top-0 z-[var(--z-sticky)] border-b bg-background/85 backdrop-blur-md backdrop-saturate-150">
       <div className="mx-auto flex h-[72px] max-w-[1240px] items-center gap-2 px-4 sm:px-6">
@@ -6687,7 +6689,8 @@ function DemoPricingPage() {
 
 export function PublicFooter() {
   const { t } = usePreferences();
-  const showFreeTools = showFreeToolsNav(useVideoDownloaderStatus().status);
+  const downloader = useVideoDownloaderStatus();
+  const showFreeTools = freeToolsVisible(downloader.status, downloader.loading);
   const cols: [string, [string, string][]][] = [
     [
       "Product",

@@ -98,6 +98,91 @@ export function showFreeToolsNav(status: VideoDownloaderStatus | null | undefine
   return downloaderEnabled(status);
 }
 
+/**
+ * The nav links and the tool are rendered on the server (and while the status
+ * is loading) so search engines see them; they disappear once the status says
+ * the tool is off or the status request fails.
+ */
+export function freeToolsVisible(
+  status: VideoDownloaderStatus | null | undefined,
+  loading: boolean,
+): boolean {
+  return loading || showFreeToolsNav(status);
+}
+
+/** The FAQ shown on /video-downloader; also its FAQPage JSON-LD (same text). */
+export const VIDEO_DOWNLOADER_FAQ: readonly { question: string; answer: string }[] = [
+  {
+    question: "Is it free? Do I need an account?",
+    answer: "Yes, it’s free and you don’t need to sign in.",
+  },
+  {
+    question: "Which videos can I download?",
+    answer:
+      "Public videos where the creator allows downloads. If a creator has turned downloads off, we respect that and won’t fetch the video.",
+  },
+  { question: "Do you keep copies of the videos?", answer: FILE_RETENTION_ANSWER },
+  {
+    question: "How do I ask for a video to be removed?",
+    answer:
+      "Use the report / copyright removal form. We block links we receive valid requests for.",
+  },
+  {
+    question: "Is SaveStream affiliated with TikTok?",
+    answer:
+      "No. SaveStream is an independent service and is not affiliated with TikTok or ByteDance.",
+  },
+];
+
+export const VIDEO_DOWNLOADER_DESCRIPTION =
+  "Save a public TikTok video as MP4 when its creator allows downloads. Free, no sign-up. Not affiliated with TikTok or ByteDance.";
+
+/** JSON-LD for /video-downloader: the free web app, its FAQ and breadcrumbs. */
+export function videoDownloaderStructuredData(siteUrl: string) {
+  const url = `${siteUrl}/video-downloader`;
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        "@id": `${url}#app`,
+        name: "SaveStream TikTok video downloader",
+        url,
+        description: VIDEO_DOWNLOADER_DESCRIPTION,
+        applicationCategory: "MultimediaApplication",
+        operatingSystem: "Web",
+        browserRequirements: "Requires JavaScript.",
+        isAccessibleForFree: true,
+        offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        publisher: { "@type": "Organization", name: "SaveStream", url: `${siteUrl}/` },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}#faq`,
+        mainEntity: VIDEO_DOWNLOADER_FAQ.map((item) => ({
+          "@type": "Question",
+          name: item.question,
+          acceptedAnswer: { "@type": "Answer", text: item.answer },
+        })),
+      },
+      breadcrumbData(siteUrl, [["Video downloader", url]]),
+    ],
+  };
+}
+
+/** BreadcrumbList starting at the home page. */
+export function breadcrumbData(siteUrl: string, trail: readonly (readonly [string, string])[]) {
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: [["Home", `${siteUrl}/`] as const, ...trail].map(([name, item], index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name,
+      item,
+    })),
+  };
+}
+
 // --- Link checks ----------------------------------------------------------------------
 
 /** A quick client-side check before calling the API (the server decides). */
