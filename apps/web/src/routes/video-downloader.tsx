@@ -12,7 +12,12 @@ export const Route = createFileRoute("/video-downloader")({
       ? { expired: true }
       : {},
   head: () =>
-    publicMeta("/video-downloader", "Free TikTok video downloader", VIDEO_DOWNLOADER_DESCRIPTION),
+    publicMeta(
+      "/video-downloader",
+      "Free TikTok video downloader",
+      VIDEO_DOWNLOADER_DESCRIPTION,
+      "video-downloader",
+    ),
   component: VideoDownloaderRoute,
 });
 
