@@ -526,6 +526,8 @@ def test_cors_lets_the_website_read_errors_and_retry_after() -> None:
             },
         )
         assert web.status_code == 200, headers
+        assert web.headers["access-control-allow-credentials"] == "true"
+        assert web.headers["access-control-allow-origin"] == "https://savestream.online"
     assert preflight.headers["access-control-allow-origin"] == "https://savestream.online"
     response = client.post(
         "/v1/public/video-downloader/resolve",
