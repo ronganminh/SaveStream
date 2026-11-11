@@ -514,6 +514,18 @@ def test_cors_lets_the_website_read_errors_and_retry_after() -> None:
         },
     )
     assert preflight.status_code == 200
+    # The website's API client adds X-Request-ID (and Authorization when
+    # signed in) to every request, including the status check.
+    for headers in ("x-request-id", "authorization,content-type,x-request-id"):
+        web = client.options(
+            "/v1/public/video-downloader/status",
+            headers={
+                "Origin": "https://savestream.online",
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": headers,
+            },
+        )
+        assert web.status_code == 200, headers
     assert preflight.headers["access-control-allow-origin"] == "https://savestream.online"
     response = client.post(
         "/v1/public/video-downloader/resolve",
